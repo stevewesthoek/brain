@@ -59,7 +59,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-export const EXECUTOR_VERSION = '7.0.0';
+export const EXECUTOR_VERSION = '7.1.0';
 export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
@@ -68,6 +68,7 @@ const CBM_SEARCH_LIMIT = 50;
 
 // Admitted network-deny sandbox profile path (relative to repo root).
 const NETWORK_DENY_PROFILE_PATH = path.join(REPO_ROOT, 'operations', 'specs', 'b8-1-network-deny.sb');
+const EXACT_SOURCE_WORKER_PATH = path.join(REPO_ROOT, 'tools', 'lib', 'b8-1-exact-source-worker.mjs');
 
 // KNOWN_STALE_DIGESTS and computePlanDigest are imported from tools/lib/b8-1-plan-digest.mjs.
 export { KNOWN_STALE_DIGESTS };
@@ -345,7 +346,7 @@ function computeExactSourceCallerCallee(fixture, sourcesDir) {
   return { callerPrecision, callerRecall, calleePrecision, calleeRecall };
 }
 
-function runExactSourceFixture(fixture, sourcesDir) {
+export function runExactSourceFixture(fixture, sourcesDir) {
   const start = Date.now();
   const errors = [];
   let outcome = 'fail';
@@ -548,6 +549,64 @@ function runExactSourceFixture(fixture, sourcesDir) {
 
   const callerCallee = computeExactSourceCallerCallee(fixture, sourcesDir);
   return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy, ...callerCallee };
+}
+
+async function runExactSourceFixtureMeasured(fixture, sourcesDir, homeDir) {
+  const fixtureBase64 = Buffer.from(JSON.stringify(fixture), 'utf8').toString('base64url');
+  const measurement = await runChildWithTimeMetrics({
+    executable: process.execPath,
+    argv: [
+      EXACT_SOURCE_WORKER_PATH,
+      `--fixture-base64=${fixtureBase64}`,
+      `--sources-dir=${sourcesDir}`,
+    ],
+    cwd: REPO_ROOT,
+    env: {
+      HOME: homeDir,
+      PATH: process.env.PATH || '/usr/bin:/bin',
+      TMPDIR: os.tmpdir(),
+    },
+    timeout: FIXTURE_TIMEOUT_MS,
+    detached: true,
+  });
+
+  const measurementUsable = (
+    measurement.success === true &&
+    measurement.measurementValid === true &&
+    measurement.commandSucceeded === true &&
+    measurement.timedOut === false &&
+    measurement.orphanedProcessGroup === false &&
+    measurement.stdoutTruncated === false &&
+    measurement.stderrTruncated === false &&
+    measurement.metricsTruncated === false &&
+    typeof measurement.cpuPercent === 'number' &&
+    Number.isFinite(measurement.cpuPercent) &&
+    measurement.cpuPercent >= 0 &&
+    typeof measurement.peakRssMb === 'number' &&
+    Number.isFinite(measurement.peakRssMb) &&
+    measurement.peakRssMb > 0
+  );
+
+  if (!measurementUsable) {
+    return {
+      success: false,
+      error: `exact-source child measurement failed (exit=${measurement.exitCode}, signal=${measurement.signal}, timeout=${measurement.timedOut})`,
+      measurement,
+    };
+  }
+
+  let fixtureResult;
+  try {
+    fixtureResult = JSON.parse(measurement.stdout.trim());
+  } catch (error) {
+    return { success: false, error: `exact-source child output invalid: ${error.message}`, measurement };
+  }
+
+  if (!fixtureResult || typeof fixtureResult !== 'object' || typeof fixtureResult.outcome !== 'string') {
+    return { success: false, error: 'exact-source child output missing fixture result', measurement };
+  }
+
+  return { success: true, fixtureResult, measurement };
 }
 
 /**
@@ -806,11 +865,9 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
       '--mode', 'fast',
       '--name', projectName,
     ];
-    const indexStart = Date.now();
     const indexResult = await spawnBounded(binaryPath, indexArgs, {
       env, cwd: cacheDir, timeoutMs: FIXTURE_TIMEOUT_MS, sandboxProfile,
     });
-    if (opts._cbmIndexTimes) opts._cbmIndexTimes.set(repoId, Date.now() - indexStart);
     if (indexResult.timedOut) {
       return {
         outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
@@ -1103,16 +1160,17 @@ export async function runExecutor({
 
   // Track CBM measurements per repo (for subjectMetrics)
   const cbmRepositoryMetrics = new Map();
-  const exactSourceMetrics = { cpuPercent: null, peakRssMb: null };
+  const exactSourceMeasurements = [];
 
   if (!dryRun) {
     // CBM execution with hardened primitives
     const cbmCacheBaseDir = path.join(runDir, 'subjects', 'cbm', 'cache');
     const cbmConfigBaseDir = path.join(runDir, 'subjects', 'cbm', 'config');
     const cbmHomeDir = path.join(runDir, 'subjects', 'cbm', 'home');
+    const exactSourceHomeDir = path.join(runDir, 'subjects', 'exact-source', 'home');
 
     // Ensure directories exist
-    for (const dir of [cbmCacheBaseDir, cbmConfigBaseDir, cbmHomeDir]) {
+    for (const dir of [cbmCacheBaseDir, cbmConfigBaseDir, cbmHomeDir, exactSourceHomeDir]) {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
       }
@@ -1127,39 +1185,33 @@ export async function runExecutor({
 
         if (subject === 'exact-source') {
           const sourcesDir = path.join(runDir, 'sources', fixture.repositoryId);
-          // Measure exact-source execution: CPU and RSS
-          const cpuUsageBefore = process.cpuUsage();
-          const memBefore = process.memoryUsage();
-          const timeBefore = Date.now();
+          const measured = await runExactSourceFixtureMeasured(fixture, sourcesDir, exactSourceHomeDir);
 
-          const rawResult = runExactSourceFixture(fixture, sourcesDir);
-
-          const timeAfter = Date.now();
-          const memAfter = process.memoryUsage();
-          const cpuUsageAfter = process.cpuUsage(cpuUsageBefore);
-
-          // Compute CPU percent and peak RSS from this execution
-          const wallMs = timeAfter - timeBefore;
-          const cpuMs = (cpuUsageAfter.user + cpuUsageAfter.system) / 1000;
-          const cpuPercent = wallMs > 0 ? (cpuMs / wallMs) * 100 : 0;
-          const peakRssMb = Math.max(memBefore.heapUsed, memAfter.heapUsed) / (1024 * 1024);
-
-          // Capture first exact-source metrics for subjectMetrics
-          if (exactSourceMetrics.cpuPercent === null && !Number.isNaN(cpuPercent)) {
-            exactSourceMetrics.cpuPercent = cpuPercent;
+          if (!measured.success) {
+            result = {
+              outcome: 'error',
+              actual: null,
+              latencyMs: 0,
+              errors: [measured.error],
+              startedAt: fixtureStart,
+              completedAt: new Date().toISOString(),
+              subjectIdentity: { exactSource: true },
+              fileCorrect: false,
+              lineCorrect: false,
+              setAccuracy: null,
+            };
+          } else {
+            exactSourceMeasurements.push(measured.measurement);
+            result = {
+              ...measured.fixtureResult,
+              startedAt: fixtureStart,
+              completedAt: new Date().toISOString(),
+              subjectIdentity: { exactSource: true },
+              cpuPercent: measured.measurement.cpuPercent,
+              peakRssMb: measured.measurement.peakRssMb,
+              resourceProvenance: measured.measurement.provenance,
+            };
           }
-          if (exactSourceMetrics.peakRssMb === null && !Number.isNaN(peakRssMb)) {
-            exactSourceMetrics.peakRssMb = peakRssMb;
-          }
-
-          result = {
-            ...rawResult,
-            startedAt: fixtureStart,
-            completedAt: new Date().toISOString(),
-            subjectIdentity: { exactSource: true },
-            cpuPercent,
-            peakRssMb,
-          };
         } else if (subject === 'cbm') {
           const disposableRepoPath = path.join(runDir, 'sources', fixture.repositoryId);
           const repoId = fixture.repositoryId;
@@ -1210,7 +1262,16 @@ export async function runExecutor({
               // Store measurements for subjectMetrics
               cbmRepositoryMetrics.set(repoId, {
                 initialIndexWallMs: reindexResult.initialIndexWallMs,
+                initialIndexCpuPercent: reindexResult.initialIndexCpuPercent,
+                initialIndexPeakRssMb: reindexResult.initialIndexPeakRssMb,
+                initialIndexProvenance: reindexResult.initialIndexProvenance,
                 incrementalReindexWallMs: reindexResult.incrementalReindexWallMs,
+                incrementalReindexCpuPercent: reindexResult.incrementalReindexCpuPercent,
+                incrementalReindexPeakRssMb: reindexResult.incrementalReindexPeakRssMb,
+                incrementalReindexProvenance: reindexResult.incrementalReindexProvenance,
+                markerQueryCpuPercent: reindexResult.markerQueryCpuPercent,
+                markerQueryPeakRssMb: reindexResult.markerQueryPeakRssMb,
+                markerQueryProvenance: reindexResult.markerQueryProvenance,
                 cacheBytes: reindexResult.cacheBytes,
               });
             }
@@ -1356,28 +1417,72 @@ export async function runExecutor({
         }
       }
 
-      // Resource usage: real measurements from fixture execution
+      // Resource usage: aggregate maxima from bounded child measurements.
       let peakCpuPercent = null;
       let peakRssMb = null;
       let resourceProvenance = null;
 
       if (subject === 'cbm') {
-        // CBM: fail closed if measurements not available
-        // (measurements come from runIncrementalReindex via runChildWithTimeMetrics, not available until full child integration)
-        peakCpuPercent = null;
-        peakRssMb = null;
-        resourceProvenance = { method: 'hardened-incremental-reindex', status: 'unavailable' };
-        errors.push(`CBM: resource measurement not yet available from hardened reindex (pending child process integration)`);
-      } else if (subject === 'exact-source') {
-        // exact-source: use measured CPU and RSS from fixture execution
-        peakCpuPercent = exactSourceMetrics.cpuPercent;
-        peakRssMb = exactSourceMetrics.peakRssMb;
-        if (typeof peakCpuPercent !== 'number' || typeof peakRssMb !== 'number') {
-          errors.push(`exact-source: invalid resource measurements (CPU=${peakCpuPercent}, RSS=${peakRssMb})`);
-          peakCpuPercent = null;
-          peakRssMb = null;
+        const samples = [];
+        for (const repoId of manifestRepoIds) {
+          const repoMetrics = cbmRepositoryMetrics.get(repoId);
+          if (!repoMetrics) continue;
+          samples.push(
+            {
+              cpuPercent: repoMetrics.initialIndexCpuPercent,
+              peakRssMb: repoMetrics.initialIndexPeakRssMb,
+              provenance: repoMetrics.initialIndexProvenance,
+            },
+            {
+              cpuPercent: repoMetrics.incrementalReindexCpuPercent,
+              peakRssMb: repoMetrics.incrementalReindexPeakRssMb,
+              provenance: repoMetrics.incrementalReindexProvenance,
+            },
+            {
+              cpuPercent: repoMetrics.markerQueryCpuPercent,
+              peakRssMb: repoMetrics.markerQueryPeakRssMb,
+              provenance: repoMetrics.markerQueryProvenance,
+            },
+          );
         }
-        resourceProvenance = { method: 'executor-process-sampling', measuredFixtures: fixtureResults.filter(f => f.subject === 'exact-source').length };
+        const invalid = samples.find(sample => (
+          typeof sample.cpuPercent !== 'number' || !Number.isFinite(sample.cpuPercent) || sample.cpuPercent < 0 ||
+          typeof sample.peakRssMb !== 'number' || !Number.isFinite(sample.peakRssMb) || sample.peakRssMb <= 0 ||
+          !sample.provenance || sample.provenance.exitCode !== 0 || sample.provenance.timedOut === true
+        ));
+        if (samples.length !== manifestRepoIds.length * 3 || invalid) {
+          errors.push('CBM: incomplete or invalid child resource measurements');
+        } else {
+          peakCpuPercent = Math.max(...samples.map(sample => sample.cpuPercent));
+          peakRssMb = Math.max(...samples.map(sample => sample.peakRssMb));
+          resourceProvenance = {
+            method: 'bounded-child-aggregate-max',
+            executable: cbmIdentity?.resolvedPath ?? null,
+            measuredPid: null,
+            exitCode: 0,
+            durationMs: Math.round(samples.reduce((sum, sample) => sum + (sample.provenance.durationMs ?? sample.provenance.wallMs ?? 0), 0)),
+          };
+        }
+      } else if (subject === 'exact-source') {
+        const invalid = exactSourceMeasurements.find(sample => (
+          sample.success !== true || sample.measurementValid !== true || sample.commandSucceeded !== true ||
+          sample.timedOut === true || sample.orphanedProcessGroup === true ||
+          typeof sample.cpuPercent !== 'number' || !Number.isFinite(sample.cpuPercent) || sample.cpuPercent < 0 ||
+          typeof sample.peakRssMb !== 'number' || !Number.isFinite(sample.peakRssMb) || sample.peakRssMb <= 0
+        ));
+        if (exactSourceMeasurements.length !== subjectResults.length || invalid) {
+          errors.push('exact-source: incomplete or invalid bounded child measurements');
+        } else {
+          peakCpuPercent = Math.max(...exactSourceMeasurements.map(sample => sample.cpuPercent));
+          peakRssMb = Math.max(...exactSourceMeasurements.map(sample => sample.peakRssMb));
+          resourceProvenance = {
+            method: 'bounded-child-aggregate-max',
+            executable: process.execPath,
+            measuredPid: null,
+            exitCode: 0,
+            durationMs: Math.round(exactSourceMeasurements.reduce((sum, sample) => sum + (sample.provenance?.durationMs ?? sample.wallMs ?? 0), 0)),
+          };
+        }
       }
 
       subjectMetrics[subject] = buildSubjectMetrics({

@@ -96,7 +96,7 @@ function makeSyntheticRun(home, { runId, fixtures, selectedSubjects = ['exact-so
   }
 
   const planBase = {
-    planVersion: planVersionOverride ?? '7.0.0',
+    planVersion: planVersionOverride ?? '7.1.0',
     runId,
     partialEvidence: !selectedSubjects.includes('graphify'),
     selectedSubjects: [...selectedSubjects].sort(),
@@ -354,7 +354,7 @@ test('E14: execution receipt is written atomically and validates planSha256', as
     assert.equal(fs.existsSync(`${receiptPath}.tmp`), false, 'no .tmp file should remain');
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     assert.equal(receipt.planSha256, planSha256, 'receipt planSha256 must match');
-    assert.equal(receipt.executorVersion, '7.0.0');
+    assert.equal(receipt.executorVersion, '7.1.0');
   } finally { cleanup(home); }
 });
 
@@ -414,7 +414,7 @@ test('E18: loadAndVerifyRunPlan rejects stale v1/v2 digests', () => {
   try {
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '7.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '7.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error } = loadAndVerifyRunPlan(runDir, STALE);
     assert.ok(error, 'must return error for stale digest');
     assert.match(error, /stale/i);
@@ -675,7 +675,7 @@ test('E26: tampered plan field changes stored digest and causes mismatch', () =>
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
     const plan = {
-      planVersion: '7.0.0',
+      planVersion: '7.1.0',
       runId: 'b8-1-exec-e26',
       selectedSubjects: ['exact-source'],
       planSha256: '0'.repeat(64), // will mismatch recomputed
@@ -1068,10 +1068,10 @@ test('E37: canonical plan v5s JSON is placeholder-free and independently verifia
 // New tests: v5 contract changes E38–E46
 // ---------------------------------------------------------------------------
 
-// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 7.0.0
-test('E38: EXECUTOR_VERSION is 7.0.0 and REQUIRED_PLAN_VERSION is 7.0.0', () => {
-  assert.equal(EXECUTOR_VERSION, '7.0.0', 'EXECUTOR_VERSION must be 7.0.0');
-  assert.equal(REQUIRED_PLAN_VERSION, '7.0.0', 'REQUIRED_PLAN_VERSION must be 7.0.0');
+// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 7.1.0
+test('E38: EXECUTOR_VERSION is 7.1.0 and REQUIRED_PLAN_VERSION is 7.1.0', () => {
+  assert.equal(EXECUTOR_VERSION, '7.1.0', 'EXECUTOR_VERSION must be 7.1.0');
+  assert.equal(REQUIRED_PLAN_VERSION, '7.1.0', 'REQUIRED_PLAN_VERSION must be 7.1.0');
 });
 
 // E39: v4r stale digest c39e81dc... is rejected
@@ -1086,42 +1086,25 @@ test('E39: v4r stale digest c39e81dc... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E40: planVersion 7.0.0 is accepted; planVersion 6.0.0 and 5.1.0 are rejected
-test('E40: loadAndVerifyRunPlan accepts planVersion 7.0.0 and rejects 6.0.0 and 5.1.0', () => {
+// E40: planVersion 7.1.0 is accepted; prior contracts are rejected
+test('E40: loadAndVerifyRunPlan accepts planVersion 7.1.0 and rejects prior contracts', () => {
   const tmpDir = makeTempDir('b81-exec-e40-');
   try {
-    // 7.0.0 — should pass planVersion check (will fail on stale or tampered digest, that's expected)
-    const runDir70 = path.join(tmpDir, 'run70');
-    fs.mkdirSync(runDir70, { recursive: true });
-    fs.writeFileSync(path.join(runDir70, 'run-plan.json'), JSON.stringify({ planVersion: '7.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
-    const { error: err70 } = loadAndVerifyRunPlan(runDir70, '0'.repeat(64));
-    // planVersion check passes; should fail on stale or tampered, not on planVersion
-    assert.ok(!err70 || !/planVersion|7\.0\.0/i.test(err70) || /tampered|stale|mismatch/i.test(err70),
-      `7.0.0 must not be rejected for planVersion; err: ${err70}`);
+    const runDir71 = path.join(tmpDir, 'run71');
+    fs.mkdirSync(runDir71, { recursive: true });
+    fs.writeFileSync(path.join(runDir71, 'run-plan.json'), JSON.stringify({ planVersion: '7.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    const { error: err71 } = loadAndVerifyRunPlan(runDir71, '0'.repeat(64));
+    assert.ok(!err71 || !/planVersion|7\.1\.0/i.test(err71) || /tampered|stale|mismatch/i.test(err71),
+      `7.1.0 must not be rejected for planVersion; err: ${err71}`);
 
-    // 6.0.0 — should be rejected (prior contract)
-    const runDir60 = path.join(tmpDir, 'run60');
-    fs.mkdirSync(runDir60, { recursive: true });
-    fs.writeFileSync(path.join(runDir60, 'run-plan.json'), JSON.stringify({ planVersion: '6.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
-    const { error: err60 } = loadAndVerifyRunPlan(runDir60, '0'.repeat(64));
-    assert.ok(err60, 'planVersion 6.0.0 must be rejected');
-    assert.match(err60, /planVersion|7\.0\.0/i, `expected planVersion error, got: ${err60}`);
-
-    // 5.1.0 — should be rejected (prior contract)
-    const runDir51 = path.join(tmpDir, 'run51');
-    fs.mkdirSync(runDir51, { recursive: true });
-    fs.writeFileSync(path.join(runDir51, 'run-plan.json'), JSON.stringify({ planVersion: '5.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
-    const { error: err51 } = loadAndVerifyRunPlan(runDir51, '0'.repeat(64));
-    assert.ok(err51, 'planVersion 5.1.0 must be rejected');
-    assert.match(err51, /planVersion|7\.0\.0/i, `expected planVersion error, got: ${err51}`);
-
-    // 4.0.0 — should be rejected
-    const runDir4 = path.join(tmpDir, 'run4');
-    fs.mkdirSync(runDir4, { recursive: true });
-    fs.writeFileSync(path.join(runDir4, 'run-plan.json'), JSON.stringify({ planVersion: '4.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
-    const { error: err4 } = loadAndVerifyRunPlan(runDir4, '0'.repeat(64));
-    assert.ok(err4, 'planVersion 4.0.0 must be rejected');
-    assert.match(err4, /planVersion|6\.0\.0/i, `expected planVersion error, got: ${err4}`);
+    for (const prior of ['7.0.0', '6.0.0', '5.1.0', '4.0.0']) {
+      const runDir = path.join(tmpDir, `run-${prior}`);
+      fs.mkdirSync(runDir, { recursive: true });
+      fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: prior, planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+      const { error } = loadAndVerifyRunPlan(runDir, '0'.repeat(64));
+      assert.ok(error, `planVersion ${prior} must be rejected`);
+      assert.match(error, /planVersion|7\.1\.0/i, `expected planVersion error for ${prior}, got: ${error}`);
+    }
   } finally { cleanup(tmpDir); }
 });
 
@@ -1645,7 +1628,7 @@ test('E57: aggregate evidence schema 3.0.0 with full subjectMetrics for exact-so
     assert.notEqual(sm.tokenizer.name, 'cl100k_base', 'tokenizer.name must NOT be cl100k_base');
     // v7r: resourceProvenance tracks the measurement method
     assert.ok(typeof sm.resourceProvenance === 'object', 'resourceProvenance must be present');
-    assert.equal(sm.resourceProvenance.method, 'executor-process-sampling', 'measurement method must be executor-process-sampling');
+    assert.equal(sm.resourceProvenance.method, 'bounded-child-aggregate-max', 'measurement method must be bounded-child-aggregate-max');
     assert.ok(typeof sm.retrievalAccuracy === 'object', 'retrievalAccuracy must be present');
     assert.ok(typeof sm.repositoryMetrics === 'object', 'repositoryMetrics must be present');
     assert.ok('test' in sm.repositoryMetrics, 'repositoryMetrics must have test repo entry');
@@ -1771,7 +1754,7 @@ test('E59: dual-subject (cbm + exact-source) with deterministic fake CBM', async
     assert.ok(esMetrics.peakCpuPercent >= 0, 'exact-source peakCpuPercent must be non-negative');
     assert.equal(typeof esMetrics.peakRssMb, 'number', 'exact-source peakRssMb must be numeric');
     assert.ok(esMetrics.peakRssMb >= 0, 'exact-source peakRssMb must be non-negative');
-    assert.equal(esMetrics.resourceProvenance.method, 'executor-process-sampling');
+    assert.equal(esMetrics.resourceProvenance.method, 'bounded-child-aggregate-max');
 
     // Tokenizer identity is truthful
     assert.equal(esMetrics.tokenizer.name, 'utf8-bytes-div4-v1');
@@ -1791,13 +1774,13 @@ test('E59: dual-subject (cbm + exact-source) with deterministic fake CBM', async
       assert.ok('callerCalleeF1' in esMetrics.retrievalAccuracy, 'callerCalleeF1 must be computed when caller/callee data exists');
     }
 
-    // CBM: when using _cbmAdapter (test bypass), it skips runIncrementalReindex and thus fails on missing repo metrics
-    // This is correct behavior — executor fails closed on missing measurements
-    // In production, CBM would have full metrics from real runIncrementalReindex flow
-    if ('cbm' in agg.subjectMetrics) {
-      const cbmMetrics = agg.subjectMetrics.cbm;
-      assert.ok(cbmMetrics.resourceProvenance, 'CBM must have resourceProvenance when present');
-    }
+    // The test-only CBM adapter bypasses runIncrementalReindex, so aggregate evidence must
+    // fail closed instead of inventing CBM resource provenance.
+    assert.ok(
+      agg.violations.some(v => /CBM: required measurements missing|CBM: incomplete or invalid child resource measurements/.test(v.detail ?? '')),
+      'missing CBM measurements must be recorded as violations',
+    );
+    assert.equal(agg.subjectMetrics.cbm.resourceProvenance, undefined);
   } finally { cleanup(home); }
 });
 

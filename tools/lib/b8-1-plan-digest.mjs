@@ -11,7 +11,7 @@
  *   - verify-b8-1-plan-digest.mjs                (standalone verifier)
  *   - *.test.mjs                                 (tests)
  *
- * Digest contract (planVersion 7.0.0 — v7):
+ * Digest contract (planVersion 7.1.0 — v7r):
  *   Hashed fields  — logical authority over what was approved:
  *     - plan/run metadata (planVersion, runId, partialEvidence, subjects, excludedSubjects)
  *     - repo-relative Brain artifact paths + content hashes
@@ -44,8 +44,8 @@
 
 import crypto from 'node:crypto';
 
-export const PLAN_VERSION = '7.0.0';
-export const DIGEST_CONTRACT_VERSION = '7.0.0';
+export const PLAN_VERSION = '7.1.0';
+export const DIGEST_CONTRACT_VERSION = '7.1.0';
 
 // ---------------------------------------------------------------------------
 // Known stale digests — must not be accepted as valid by any consumer.

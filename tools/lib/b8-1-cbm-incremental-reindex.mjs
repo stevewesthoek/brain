@@ -446,11 +446,9 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
     return {
       visible: false,
       reason: `query failed (exit=${result.exitCode})`,
-      measurementProvenance: {
-        exitCode: result.exitCode,
-        signal: result.signal,
-        timedOut: result.timedOut,
-      }
+      cpuPercent: result.cpuPercent,
+      peakRssMb: result.peakRssMb,
+      measurementProvenance: result.provenance,
     };
   }
 
@@ -472,12 +470,9 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
     return {
       visible,
       results: output,
-      measurementProvenance: {
-        exitCode: result.exitCode,
-        signal: result.signal,
-        timedOut: result.timedOut,
-        wallMs: result.wallMs,
-      }
+      cpuPercent: result.cpuPercent,
+      peakRssMb: result.peakRssMb,
+      measurementProvenance: result.provenance,
     };
   } catch (e) {
     return { visible: false, reason: `query parse error: ${e.message}` };
@@ -508,6 +503,8 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
  *   incrementalReindexCpuPercent?: number,
  *   incrementalReindexPeakRssMb?: number,
  *   incrementalReindexProvenance?: object,
+ *   markerQueryCpuPercent?: number,
+ *   markerQueryPeakRssMb?: number,
  *   markerQueryProvenance?: object,
  *   cacheBytes?: number,
  *   cacheBytesInitial?: number,
@@ -532,6 +529,8 @@ export async function runIncrementalReindex(opts = {}) {
     incrementalReindexCpuPercent: null,
     incrementalReindexPeakRssMb: null,
     incrementalReindexProvenance: null,
+    markerQueryCpuPercent: null,
+    markerQueryPeakRssMb: null,
     markerQueryProvenance: null,
     cacheBytes: null,
     cacheBytesInitial: null,
@@ -651,6 +650,8 @@ export async function runIncrementalReindex(opts = {}) {
     }
 
     result.markerVisible = true;
+    result.markerQueryCpuPercent = visibilityResult.cpuPercent;
+    result.markerQueryPeakRssMb = visibilityResult.peakRssMb;
     result.markerQueryProvenance = visibilityResult.measurementProvenance;
 
     // Step 5: Measure cache bytes (must be nonzero and attributable)
