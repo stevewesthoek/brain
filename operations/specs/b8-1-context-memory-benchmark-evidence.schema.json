@@ -1,0 +1,579 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "b8-1-context-memory-benchmark-evidence",
+  "title": "B8.1 Context-Memory Benchmark Evidence",
+  "description": "Offline-only evidence record for a single B8.1 benchmark run. Rejects model input/output token fields.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "runId",
+    "partialEvidence",
+    "selectedSubjects",
+    "excludedSubjects",
+    "pinnedRepositoryCommits",
+    "manifestHash",
+    "preflightReceiptHash",
+    "planSha256",
+    "subjectBinaryIdentity",
+    "networkIsolationProof",
+    "fixtureResults",
+    "violations",
+    "cleanupStatus"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0", "2.1.0", "3.0.0"] },
+    "runId": { "type": "string", "pattern": "^b8-1-(?!.*\\.\\.)[a-zA-Z0-9._-]+$" },
+    "runAt": { "type": "string", "format": "date-time" },
+    "partialEvidence": { "type": "boolean" },
+    "selectedSubjects": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "enum": ["cbm", "graphify", "exact-source"] }
+    },
+    "excludedSubjects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "enum": ["cbm", "graphify", "exact-source"] }
+    },
+    "pinnedRepositoryCommits": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["commit", "repositoryId"],
+        "properties": {
+          "repositoryId": { "type": "string", "minLength": 1 },
+          "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "manifestHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "preflightReceiptHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "planSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "subjectBinaryIdentity": {
+      "type": "object",
+      "properties": {
+        "cbm": {
+          "type": "object",
+          "required": ["stablePath", "resolvedPath", "sha256", "version"],
+          "properties": {
+            "stablePath": { "type": "string", "minLength": 1 },
+            "resolvedPath": { "type": "string", "minLength": 1 },
+            "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "version": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "graphify": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "version": { "type": "string", "minLength": 1 },
+            "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "networkIsolationProof": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["required", "status"],
+          "properties": {
+            "required": { "type": "boolean", "const": false },
+            "status": { "type": "string", "const": "not-required" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["required", "status", "adapterIdentity", "runtimeIdentity", "childIdentity", "profilePath", "profileSha256", "controlSucceeded", "sandboxedChildStarted", "sandboxedConnectionDenied", "selfTestPassed"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "status": { "type": "string", "const": "passed" },
+            "adapterIdentity": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "runtimeIdentity": {
+              "type": "object",
+              "required": ["path", "sha256", "version"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "version": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "childIdentity": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "profilePath": { "type": "string", "minLength": 1 },
+            "profileSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "controlSucceeded": { "type": "boolean", "const": true },
+            "sandboxedChildStarted": { "type": "boolean", "const": true },
+            "sandboxedConnectionDenied": { "type": "boolean", "const": true },
+            "selfTestPassed": { "type": "boolean", "const": true },
+            "selfTestDetail": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["required", "status", "adapterIdentity", "runtimeIdentity", "childIdentity", "profileSha256", "controlSucceeded", "sandboxedChildStarted", "sandboxedConnectionDenied", "selfTestPassed"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "status": { "type": "string", "const": "passed" },
+            "adapterIdentity": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "runtimeIdentity": {
+              "type": "object",
+              "required": ["path", "sha256", "version"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "version": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "childIdentity": {
+              "type": "object",
+              "required": ["sha256"],
+              "properties": {
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "profileSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "controlSucceeded": { "type": "boolean", "const": true },
+            "sandboxedChildStarted": { "type": "boolean", "const": true },
+            "sandboxedConnectionDenied": { "type": "boolean", "const": true },
+            "selfTestPassed": { "type": "boolean", "const": true },
+            "selfTestDetail": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "fixtureResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fixtureId", "subject", "fileCorrect", "lineCorrect"],
+        "properties": {
+          "fixtureId": { "type": "string" },
+          "subject": { "type": "string", "enum": ["cbm", "graphify", "exact-source"] },
+          "fileCorrect": { "type": "boolean" },
+          "lineCorrect": { "type": "boolean" },
+          "callerPrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+          "callerRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+          "calleePrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+          "calleeRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+          "setAccuracy": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "offlineMetrics": {
+      "type": "object",
+      "properties": {
+        "serializedPayloadBytes": { "type": "integer", "minimum": 0 },
+        "pinnedTokenizerEstimate": { "type": "integer", "minimum": 0 },
+        "tokenizerName": { "type": "string" },
+        "tokenizerVersion": { "type": "string" },
+        "indexingDurationMs": { "type": "integer", "minimum": 0 },
+        "refreshDurationMs": { "type": "integer", "minimum": 0 },
+        "peakCpuPercent": { "type": "number", "minimum": 0 },
+        "peakMemoryMb": { "type": "number", "minimum": 0 },
+        "diskUsageMb": { "type": "number", "minimum": 0 },
+        "retrievalOperationCount": { "type": "integer", "minimum": 0 },
+        "fileAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "lineAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "setAccuracy": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "subjectMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(cbm|graphify|exact-source)$": {
+          "type": "object",
+          "required": ["retrievalAccuracy"],
+          "additionalProperties": false,
+          "properties": {
+            "initialIndexingTimeMs": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "incrementalRefreshLatencyMs": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "peakCpuPercent": {
+              "oneOf": [
+                { "type": "number", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "peakRssMb": {
+              "oneOf": [
+                { "type": "number", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "indexDiskBytes": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "serializedPayloadBytes": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "tokenizerEstimate": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["name", "version", "tokenCount"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": { "type": "string", "minLength": 1 },
+                    "version": { "type": "string", "minLength": 1 },
+                    "tokenCount": { "type": "integer", "minimum": 0 }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "retrievalOperationCount": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "retrievalAccuracy": {
+              "type": "object",
+              "required": ["fileAccuracy", "lineAccuracy"],
+              "additionalProperties": false,
+              "properties": {
+                "fileAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                "lineAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                "setAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                "callerPrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+                "callerRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+                "calleePrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+                "calleeRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+                "callerCalleeF1": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            },
+            "repositoryMetrics": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^[a-z][a-z0-9-]*$": {
+                  "type": "object",
+                  "required": ["initialIndexingTimeMs", "incrementalRefreshLatencyMs", "indexDiskBytes"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "initialIndexingTimeMs": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    },
+                    "incrementalRefreshLatencyMs": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    },
+                    "indexDiskBytes": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "resourceProvenance": {
+              "type": "object",
+              "required": ["method"],
+              "additionalProperties": false,
+              "properties": {
+                "method": { "type": "string", "minLength": 1 },
+                "executable": { "type": ["string", "null"] },
+                "measuredPid": { "type": ["integer", "null"] },
+                "exitCode": { "type": ["integer", "null"] },
+                "durationMs": { "type": ["integer", "null"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string" },
+          "detail": { "type": "string" },
+          "timestamp": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "cleanupStatus": {
+      "type": "object",
+      "required": ["runDirectory", "removed"],
+      "properties": {
+        "runDirectory": { "type": "string", "minLength": 1 },
+        "removed": { "type": "boolean" },
+        "removedAt": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "removed": { "const": true } }, "required": ["removed"] },
+          "then": { "properties": { "removedAt": true }, "required": ["removedAt"] },
+          "else": { "properties": { "removedAt": true }, "not": { "required": ["removedAt"] } }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "excludedSubjects": { "type": "array", "maxItems": 0 } }, "required": ["excludedSubjects"] },
+      "then": { "properties": { "partialEvidence": { "const": false } } },
+      "else": { "properties": { "partialEvidence": { "const": true } } }
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "contains": { "const": "cbm" } },
+            "excludedSubjects": { "type": "array", "not": { "contains": { "const": "cbm" } } }
+          }
+        },
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "not": { "contains": { "const": "cbm" } } },
+            "excludedSubjects": { "type": "array", "contains": { "const": "cbm" } }
+          }
+        }
+      ]
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "contains": { "const": "graphify" } },
+            "excludedSubjects": { "type": "array", "not": { "contains": { "const": "graphify" } } }
+          }
+        },
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "not": { "contains": { "const": "graphify" } } },
+            "excludedSubjects": { "type": "array", "contains": { "const": "graphify" } }
+          }
+        }
+      ]
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "contains": { "const": "exact-source" } },
+            "excludedSubjects": { "type": "array", "not": { "contains": { "const": "exact-source" } } }
+          }
+        },
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "not": { "contains": { "const": "exact-source" } } },
+            "excludedSubjects": { "type": "array", "contains": { "const": "exact-source" } }
+          }
+        }
+      ]
+    },
+    {
+      "if": {
+        "properties": {
+          "selectedSubjects": { "type": "array", "contains": { "const": "cbm" } }
+        },
+        "required": ["selectedSubjects"]
+      },
+      "then": {
+        "properties": {
+          "subjectBinaryIdentity": {
+            "type": "object",
+            "properties": { "cbm": true },
+            "required": ["cbm"]
+          },
+          "networkIsolationProof": {
+            "type": "object",
+            "properties": {
+              "required": { "const": true },
+              "status": { "const": "passed" }
+            },
+            "required": ["required", "status"]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "subjectBinaryIdentity": {
+            "type": "object",
+            "properties": { "cbm": false }
+          },
+          "networkIsolationProof": {
+            "type": "object",
+            "const": { "required": false, "status": "not-required" }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "schemaVersion": { "const": "3.0.0" } },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "required": ["subjectMetrics"],
+        "properties": {
+          "offlineMetrics": false,
+          "subjectMetrics": {
+            "type": "object",
+            "minProperties": 1
+          }
+        }
+      },
+      "else": {
+        "if": {
+          "properties": { "schemaVersion": { "const": "2.0.0" } },
+          "required": ["schemaVersion"]
+        },
+        "then": {
+          "required": ["subjectMetrics"],
+          "properties": { "subjectMetrics": true, "offlineMetrics": false }
+        },
+        "else": {
+          "if": {
+            "properties": { "schemaVersion": { "const": "2.1.0" } },
+            "required": ["schemaVersion"]
+          },
+          "then": {
+            "required": ["subjectMetrics"],
+            "properties": {
+              "offlineMetrics": false,
+              "subjectMetrics": {
+                "type": "object",
+                "minProperties": 1
+              }
+            }
+          },
+          "else": {
+            "required": ["offlineMetrics"],
+            "properties": { "offlineMetrics": true, "subjectMetrics": false }
+          }
+        }
+      }
+    }
+  ]
+}
