@@ -1,0 +1,61 @@
+{
+  "dryRunReceipt": true,
+  "receiptVersion": "7.0.0",
+  "runId": "b8-1-canonical-authorization-20260806-final-v7",
+  "selectedSubjects": ["cbm", "exact-source"],
+  "excludedSubjects": ["graphify"],
+  "partialEvidence": true,
+  "graphifyExcluded": true,
+  "executionReady": true,
+  "blockers": [],
+  "noRunDirectory": true,
+  "planVersion": "7.0.0",
+  "evidenceSchemaVersion": "3.0.0",
+  "implementationIdentity": {
+    "executor": {
+      "repoRelPath": "tools/execute-b8-1-benchmark.mjs",
+      "sha256": "60ae735c17dd1a4188a3d8da7af9bae8b90e9e117771c2864d4151b5f4dc755a"
+    },
+    "evidenceValidator": {
+      "repoRelPath": "tools/validate-b8-1-benchmark-evidence.mjs",
+      "sha256": "a1bfec48044d17030686c0a76c152c53e9f55f500accc8ca274728b70b668579"
+    },
+    "scorer": {
+      "repoRelPath": "tools/lib/b8-1-scoring.mjs",
+      "sha256": "538c4b615f762f8b7b1356621bf9c33478645c27aebea6a3c5fd7d6c19e0d516"
+    },
+    "metricCollector": {
+      "repoRelPath": "tools/lib/b8-1-metrics.mjs",
+      "sha256": "908f65c180ed95c4623d1e215cfe3cabc75cf4d5d7d560181a42a9f13c29b7ad"
+    },
+    "planDigest": {
+      "repoRelPath": "tools/lib/b8-1-plan-digest.mjs",
+      "sha256": "f2a7628957781b4a1b0abe13403096fc91402917178a1060fb0b3f93f7656823"
+    },
+    "evidenceSchema": {
+      "repoRelPath": "operations/specs/b8-1-context-memory-benchmark-evidence.schema.json",
+      "sha256": "d906e5b77ba727a3138d05714861e181601c6b9d950606047dd124f7b88f5af2"
+    },
+    "manifestSchema": {
+      "repoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.schema.json",
+      "sha256": "9d697c04f9325e0b4c6101aa367c5fc78ff71b6cc6c323331bbf322f48695e83"
+    }
+  },
+  "v6rStaleDigest": "44ebf1c49863d4cacaa6d26af348781473440f43b774ea69f52ae0aab6cc100d",
+  "v6rStaleReason": "CPU hardcoded 0, RSS measures executor not subject, no CBM refresh measurement, shared cache duplicated for every repo, source-tree bytes reported as index disk, cl100k_base claimed but implementation is UTF-8 bytes/4, E57 checks types not measurements, validator does not bind subjects/repos/aggregates",
+  "v7Fixes": [
+    "Real CPU/RSS via /usr/bin/time -l or injected sampler with provenance",
+    "Per-repo isolated CBM cache directories",
+    "Truthful tokenizer identity: utf8-bytes-div4-v1",
+    "No zero-fallback for missing measurements — typed null or error",
+    "Validator binds subjectMetrics keys to selectedSubjects",
+    "Validator binds repositoryMetrics keys to pinned repositories",
+    "Validator requires aggregate callerCalleeF1 when caller/callee data present",
+    "Validator rejects false tokenizer identity cl100k_base in schema 3.0.0",
+    "Validator requires resourceProvenance in schema 3.0.0",
+    "exact-source repositoryMetrics uses typed N/A for indexDiskBytes (not source-tree bytes)",
+    "preflightReceiptHash never falls back to 64 zeros — errors instead",
+    "Aggregate F1 computed in buildSubjectMetrics"
+  ],
+  "note": "This is a dry-run receipt only. No run directory was created. No execution occurred. Plan digest will be computed at preflight time when source-state-binding passes."
+}

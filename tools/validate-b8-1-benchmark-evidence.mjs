@@ -648,32 +648,73 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
     }
   }
 
-  // --- Semantic check E53: schema 2.1.0 strict metric enforcement ---
-  if (evidence.schemaVersion === '2.1.0') {
+  // --- Semantic check E53: schema 2.1.0/3.0.0 strict metric enforcement ---
+  if (evidence.schemaVersion === '2.1.0' || evidence.schemaVersion === '3.0.0') {
     // offlineMetrics must be absent
     if ('offlineMetrics' in evidence) {
-      errors.push('Semantic(E53): offlineMetrics must not be present when schemaVersion is "2.1.0"');
+      errors.push(`Semantic(E53): offlineMetrics must not be present when schemaVersion is "${evidence.schemaVersion}"`);
     }
 
     // subjectMetrics must be present with at least one entry
     const subjectMetrics = evidence.subjectMetrics;
     if (!subjectMetrics || typeof subjectMetrics !== 'object' || Array.isArray(subjectMetrics)) {
-      errors.push('Semantic(E53): subjectMetrics must be a non-empty object when schemaVersion is "2.1.0"');
+      errors.push(`Semantic(E53): subjectMetrics must be a non-empty object when schemaVersion is "${evidence.schemaVersion}"`);
     } else if (Object.keys(subjectMetrics).length === 0) {
-      errors.push('Semantic(E53): subjectMetrics must have at least one entry when schemaVersion is "2.1.0"');
+      errors.push(`Semantic(E53): subjectMetrics must have at least one entry when schemaVersion is "${evidence.schemaVersion}"`);
     } else {
+      // v7 binding: subjectMetrics keys must exactly equal selectedSubjects
+      const metricSubjects = new Set(Object.keys(subjectMetrics));
+      const selected = new Set(evidence.selectedSubjects ?? []);
+      for (const subj of selected) {
+        if (!metricSubjects.has(subj)) {
+          errors.push(`Semantic(E53): subjectMetrics missing entry for selected subject "${subj}"`);
+        }
+      }
+      for (const subj of metricSubjects) {
+        if (!selected.has(subj)) {
+          errors.push(`Semantic(E53): subjectMetrics contains entry for non-selected subject "${subj}"`);
+        }
+      }
+
       for (const [subjectId, metrics] of Object.entries(subjectMetrics)) {
         if (!isRecord(metrics)) {
           errors.push(`Semantic(E53): subjectMetrics.${subjectId} must be an object`);
           continue;
         }
-        // These fields may NEVER be N/A
-        const numericOnlyFields = ['peakCpuPercent', 'peakRssMb', 'serializedPayloadBytes', 'retrievalOperationCount'];
-        for (const field of numericOnlyFields) {
-          if (!(field in metrics)) {
-            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} is required`);
-          } else if (typeof metrics[field] !== 'number') {
-            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} must be numeric (not-applicable is forbidden)`);
+
+        // v7 (3.0.0): peakCpuPercent and peakRssMb may be null (not measured) but must not be zero-fallback
+        if (evidence.schemaVersion === '3.0.0') {
+          const requiredNumericFields = ['serializedPayloadBytes', 'retrievalOperationCount'];
+          for (const field of requiredNumericFields) {
+            if (!(field in metrics)) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} is required`);
+            } else if (typeof metrics[field] !== 'number') {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} must be numeric`);
+            }
+          }
+          // CPU/RSS: must be numeric or null — zero is only valid if actually measured
+          for (const field of ['peakCpuPercent', 'peakRssMb']) {
+            if (!(field in metrics)) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} is required`);
+            } else if (metrics[field] !== null && typeof metrics[field] !== 'number') {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} must be numeric or null`);
+            }
+          }
+          // resourceProvenance required for schema 3.0.0
+          if (!('resourceProvenance' in metrics) || !isRecord(metrics.resourceProvenance)) {
+            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.resourceProvenance is required for schema 3.0.0`);
+          } else if (typeof metrics.resourceProvenance.method !== 'string' || metrics.resourceProvenance.method.length === 0) {
+            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.resourceProvenance.method must be a non-empty string`);
+          }
+        } else {
+          // 2.1.0: original strict numeric enforcement
+          const numericOnlyFields = ['peakCpuPercent', 'peakRssMb', 'serializedPayloadBytes', 'retrievalOperationCount'];
+          for (const field of numericOnlyFields) {
+            if (!(field in metrics)) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} is required`);
+            } else if (typeof metrics[field] !== 'number') {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} must be numeric (not-applicable is forbidden)`);
+            }
           }
         }
 
@@ -694,31 +735,68 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
             if (typeof tok.tokenCount !== 'number' || !Number.isInteger(tok.tokenCount) || tok.tokenCount < 0) {
               errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer.tokenCount must be a non-negative integer`);
             }
+            // v7: reject false tokenizer identity
+            if (evidence.schemaVersion === '3.0.0' && tok.name === 'cl100k_base') {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer.name "cl100k_base" is a false identity — use a truthful estimator name`);
+            }
           }
         }
 
-        // retrievalAccuracy must be present
+        // retrievalAccuracy must be present and contain callerCalleeF1 when caller/callee data exists
         if (!('retrievalAccuracy' in metrics)) {
           errors.push(`Semantic(E53): subjectMetrics.${subjectId}.retrievalAccuracy is required`);
+        } else if (evidence.schemaVersion === '3.0.0' && isRecord(metrics.retrievalAccuracy)) {
+          const ra = metrics.retrievalAccuracy;
+          if (ra.callerRecall !== undefined && ra.calleeRecall !== undefined) {
+            if (!('callerCalleeF1' in ra)) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.retrievalAccuracy.callerCalleeF1 is required when callerRecall and calleeRecall are present`);
+            }
+          }
         }
 
-        // repositoryMetrics must be present
+        // repositoryMetrics must be present and bound to pinned repos
         if (!('repositoryMetrics' in metrics)) {
           errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics is required`);
         } else if (!isRecord(metrics.repositoryMetrics)) {
           errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics must be an object`);
         } else {
+          // v7 binding: repositoryMetrics keys must equal pinned repository IDs
+          if (evidence.schemaVersion === '3.0.0') {
+            const pinnedRepoIds = new Set(Object.values(evidence.pinnedRepositoryCommits ?? {}).map(r => r.repositoryId));
+            const repoMetricKeys = new Set(Object.keys(metrics.repositoryMetrics));
+            for (const repoId of pinnedRepoIds) {
+              if (!repoMetricKeys.has(repoId)) {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics missing entry for pinned repo "${repoId}"`);
+              }
+            }
+            for (const repoId of repoMetricKeys) {
+              if (!pinnedRepoIds.has(repoId)) {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics contains entry for non-pinned repo "${repoId}"`);
+              }
+            }
+          }
+
           for (const [repoId, repoMetrics] of Object.entries(metrics.repositoryMetrics)) {
             if (!isRecord(repoMetrics)) {
               errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId} must be an object`);
               continue;
             }
-            // indexDiskBytes must be numeric
-            if (typeof repoMetrics.indexDiskBytes !== 'number' || !Number.isInteger(repoMetrics.indexDiskBytes) || repoMetrics.indexDiskBytes < 0) {
-              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.indexDiskBytes must be a non-negative integer`);
+            // indexDiskBytes: numeric for cbm, N/A object for exact-source in 3.0.0
+            const idxVal = repoMetrics.indexDiskBytes;
+            if (evidence.schemaVersion === '3.0.0') {
+              if (idxVal === undefined || idxVal === null) {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.indexDiskBytes is required`);
+              } else if (typeof idxVal === 'number' && (idxVal < 0 || !Number.isInteger(idxVal))) {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.indexDiskBytes must be a non-negative integer or N/A object`);
+              } else if (typeof idxVal !== 'number' && !(isRecord(idxVal) && idxVal.status === 'not-applicable')) {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.indexDiskBytes must be a non-negative integer or N/A object`);
+              }
+            } else {
+              if (typeof idxVal !== 'number' || !Number.isInteger(idxVal) || idxVal < 0) {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.indexDiskBytes must be a non-negative integer`);
+              }
             }
-            // For exact-source subject, initialIndexingTimeMs and incrementalRefreshLatencyMs may be N/A
-            // For cbm subject, they must be numeric
+            // Timing fields
             for (const timingField of ['initialIndexingTimeMs', 'incrementalRefreshLatencyMs']) {
               const val = repoMetrics[timingField];
               if (val === undefined || val === null) {

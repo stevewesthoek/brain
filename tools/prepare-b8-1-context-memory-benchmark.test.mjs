@@ -1732,9 +1732,9 @@ test('T59: changed network profile sha256 changes digest', () => {
 // v6 contract tests (T60–T64)
 // ---------------------------------------------------------------------------
 
-test('T60: canonical plan has planVersion 6.0.0', () => {
+test('T60: canonical plan has planVersion 7.0.0', () => {
   const plan = makeCanonicalPlanFixture();
-  assert.equal(plan.planVersion, '6.0.0', 'planVersion must be 6.0.0 (v6r)');
+  assert.equal(plan.planVersion, '7.0.0', 'planVersion must be 7.0.0 (v7)');
 });
 
 test('T61: known stale v1/v2 digests are rejected at materialization', async () => {

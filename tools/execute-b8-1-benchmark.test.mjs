@@ -96,7 +96,7 @@ function makeSyntheticRun(home, { runId, fixtures, selectedSubjects = ['exact-so
   }
 
   const planBase = {
-    planVersion: planVersionOverride ?? '6.0.0',
+    planVersion: planVersionOverride ?? '7.0.0',
     runId,
     partialEvidence: !selectedSubjects.includes('graphify'),
     selectedSubjects: [...selectedSubjects].sort(),
@@ -354,7 +354,7 @@ test('E14: execution receipt is written atomically and validates planSha256', as
     assert.equal(fs.existsSync(`${receiptPath}.tmp`), false, 'no .tmp file should remain');
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     assert.equal(receipt.planSha256, planSha256, 'receipt planSha256 must match');
-    assert.equal(receipt.executorVersion, '6.0.0');
+    assert.equal(receipt.executorVersion, '7.0.0');
   } finally { cleanup(home); }
 });
 
@@ -414,7 +414,7 @@ test('E18: loadAndVerifyRunPlan rejects stale v1/v2 digests', () => {
   try {
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '6.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '7.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error } = loadAndVerifyRunPlan(runDir, STALE);
     assert.ok(error, 'must return error for stale digest');
     assert.match(error, /stale/i);
@@ -565,15 +565,18 @@ test('E23: aggregate evidence.json is written to run directory after execution',
       approvedPlanSha256: planSha256,
       _homeOverride: home,
       _manifestOverride: syntheticManifest,
+      _resourceMeasurements: {
+        'exact-source': { peakCpuPercent: 5.2, peakRssMb: 30.0, provenance: { method: 'test', executable: null, measuredPid: null, exitCode: null, durationMs: null } },
+      },
     });
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath), 'evidence.json must be written to run directory');
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '2.1.0', 'aggregate evidence must have schemaVersion 2.1.0');
+    assert.equal(agg.schemaVersion, '3.0.0', 'aggregate evidence must have schemaVersion 3.0.0');
     assert.equal(agg.runId, 'b8-1-exec-e23', 'aggregate evidence runId must match');
     assert.ok(Array.isArray(agg.fixtureResults), 'fixtureResults must be an array');
     assert.equal(agg.fixtureResults.length, 1, 'must have 1 fixture result');
-    assert.ok(!('offlineMetrics' in agg), 'offlineMetrics must NOT be present in schema 2.1.0');
+    assert.ok(!('offlineMetrics' in agg), 'offlineMetrics must NOT be present in schema 3.0.0');
     assert.ok(typeof agg.subjectMetrics === 'object' && agg.subjectMetrics !== null, 'subjectMetrics must be present');
     assert.ok('exact-source' in agg.subjectMetrics, 'subjectMetrics must have exact-source entry');
     const sm = agg.subjectMetrics['exact-source'];
@@ -672,7 +675,7 @@ test('E26: tampered plan field changes stored digest and causes mismatch', () =>
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
     const plan = {
-      planVersion: '6.0.0',
+      planVersion: '7.0.0',
       runId: 'b8-1-exec-e26',
       selectedSubjects: ['exact-source'],
       planSha256: '0'.repeat(64), // will mismatch recomputed
@@ -1065,10 +1068,10 @@ test('E37: canonical plan v5s JSON is placeholder-free and independently verifia
 // New tests: v5 contract changes E38–E46
 // ---------------------------------------------------------------------------
 
-// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 6.0.0
-test('E38: EXECUTOR_VERSION is 6.0.0 and REQUIRED_PLAN_VERSION is 6.0.0', () => {
-  assert.equal(EXECUTOR_VERSION, '6.0.0', 'EXECUTOR_VERSION must be 6.0.0');
-  assert.equal(REQUIRED_PLAN_VERSION, '6.0.0', 'REQUIRED_PLAN_VERSION must be 6.0.0');
+// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 7.0.0
+test('E38: EXECUTOR_VERSION is 7.0.0 and REQUIRED_PLAN_VERSION is 7.0.0', () => {
+  assert.equal(EXECUTOR_VERSION, '7.0.0', 'EXECUTOR_VERSION must be 7.0.0');
+  assert.equal(REQUIRED_PLAN_VERSION, '7.0.0', 'REQUIRED_PLAN_VERSION must be 7.0.0');
 });
 
 // E39: v4r stale digest c39e81dc... is rejected
@@ -1083,18 +1086,26 @@ test('E39: v4r stale digest c39e81dc... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E40: planVersion 6.0.0 is accepted; planVersion 5.1.0 and 4.0.0 are rejected
-test('E40: loadAndVerifyRunPlan accepts planVersion 6.0.0 and rejects 5.1.0 and 4.0.0', () => {
+// E40: planVersion 7.0.0 is accepted; planVersion 6.0.0 and 5.1.0 are rejected
+test('E40: loadAndVerifyRunPlan accepts planVersion 7.0.0 and rejects 6.0.0 and 5.1.0', () => {
   const tmpDir = makeTempDir('b81-exec-e40-');
   try {
-    // 6.0.0 — should pass planVersion check (will fail on stale or tampered digest, that's expected)
+    // 7.0.0 — should pass planVersion check (will fail on stale or tampered digest, that's expected)
+    const runDir70 = path.join(tmpDir, 'run70');
+    fs.mkdirSync(runDir70, { recursive: true });
+    fs.writeFileSync(path.join(runDir70, 'run-plan.json'), JSON.stringify({ planVersion: '7.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    const { error: err70 } = loadAndVerifyRunPlan(runDir70, '0'.repeat(64));
+    // planVersion check passes; should fail on stale or tampered, not on planVersion
+    assert.ok(!err70 || !/planVersion|7\.0\.0/i.test(err70) || /tampered|stale|mismatch/i.test(err70),
+      `7.0.0 must not be rejected for planVersion; err: ${err70}`);
+
+    // 6.0.0 — should be rejected (prior contract)
     const runDir60 = path.join(tmpDir, 'run60');
     fs.mkdirSync(runDir60, { recursive: true });
     fs.writeFileSync(path.join(runDir60, 'run-plan.json'), JSON.stringify({ planVersion: '6.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error: err60 } = loadAndVerifyRunPlan(runDir60, '0'.repeat(64));
-    // planVersion check passes; should fail on stale or tampered, not on planVersion
-    assert.ok(!err60 || !/planVersion|6\.0\.0/i.test(err60) || /tampered|stale|mismatch/i.test(err60),
-      `6.0.0 must not be rejected for planVersion; err: ${err60}`);
+    assert.ok(err60, 'planVersion 6.0.0 must be rejected');
+    assert.match(err60, /planVersion|7\.0\.0/i, `expected planVersion error, got: ${err60}`);
 
     // 5.1.0 — should be rejected (prior contract)
     const runDir51 = path.join(tmpDir, 'run51');
@@ -1102,7 +1113,7 @@ test('E40: loadAndVerifyRunPlan accepts planVersion 6.0.0 and rejects 5.1.0 and 
     fs.writeFileSync(path.join(runDir51, 'run-plan.json'), JSON.stringify({ planVersion: '5.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error: err51 } = loadAndVerifyRunPlan(runDir51, '0'.repeat(64));
     assert.ok(err51, 'planVersion 5.1.0 must be rejected');
-    assert.match(err51, /planVersion|6\.0\.0/i, `expected planVersion error, got: ${err51}`);
+    assert.match(err51, /planVersion|7\.0\.0/i, `expected planVersion error, got: ${err51}`);
 
     // 4.0.0 — should be rejected
     const runDir4 = path.join(tmpDir, 'run4');
@@ -1527,29 +1538,37 @@ test('E53: evidence schema enforces version-conditional metrics', () => {
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
   assert.ok(schema.properties.schemaVersion.enum.includes('2.0.0'), 'schema must accept 2.0.0');
   assert.ok(schema.properties.schemaVersion.enum.includes('2.1.0'), 'schema must accept 2.1.0');
+  assert.ok(schema.properties.schemaVersion.enum.includes('3.0.0'), 'schema must accept 3.0.0');
   assert.ok(schema.properties.subjectMetrics, 'schema must define subjectMetrics');
   assert.ok(schema.properties.offlineMetrics, 'schema must still define offlineMetrics (backward compat)');
 
-  // 2.0.0 conditional
-  const versionConditional = schema.allOf.find(c =>
-    c.if?.properties?.schemaVersion?.const === '2.0.0'
+  // 3.0.0 conditional is at the top level of the version-routing allOf entry
+  const versionConditional30 = schema.allOf.find(c =>
+    c.if?.properties?.schemaVersion?.const === '3.0.0'
   );
-  assert.ok(versionConditional, 'must have a version conditional for 2.0.0');
-  assert.ok(versionConditional.then.required.includes('subjectMetrics'), '2.0.0 must require subjectMetrics');
-  assert.equal(versionConditional.then.properties.offlineMetrics, false, '2.0.0 must forbid offlineMetrics');
+  assert.ok(versionConditional30, 'must have a version conditional for 3.0.0');
+  assert.ok(versionConditional30.then.required.includes('subjectMetrics'), '3.0.0 must require subjectMetrics');
+  assert.equal(versionConditional30.then.properties.offlineMetrics, false, '3.0.0 must forbid offlineMetrics');
+
+  // 2.0.0 conditional: nested in else of 3.0.0 conditional
+  const nested20 = versionConditional30.else;
+  assert.ok(nested20, 'else branch of 3.0.0 conditional must exist');
+  assert.equal(nested20.if?.properties?.schemaVersion?.const, '2.0.0', 'nested if must match 2.0.0');
+  assert.ok(nested20.then.required.includes('subjectMetrics'), '2.0.0 must require subjectMetrics');
+  assert.equal(nested20.then.properties.offlineMetrics, false, '2.0.0 must forbid offlineMetrics');
 
   // 2.1.0 conditional: nested in else of 2.0.0 conditional
-  const nested21 = versionConditional.else;
+  const nested21 = nested20.else;
   assert.ok(nested21, 'else branch of 2.0.0 conditional must exist');
   assert.equal(nested21.if?.properties?.schemaVersion?.const, '2.1.0', 'nested if must match 2.1.0');
   assert.ok(nested21.then.required.includes('subjectMetrics'), '2.1.0 must require subjectMetrics');
   assert.equal(nested21.then.properties.offlineMetrics, false, '2.1.0 must forbid offlineMetrics');
 
-  // legacy (non-2.0.0, non-2.1.0): the else.else branch
+  // legacy (non-2.x, non-3.0.0): the else.else.else branch
   const legacyElse = nested21.else;
   assert.ok(legacyElse, 'must have legacy else for non-2.x versions');
-  assert.ok(legacyElse.required.includes('offlineMetrics'), 'non-2.x must require offlineMetrics');
-  assert.equal(legacyElse.properties.subjectMetrics, false, 'non-2.x must forbid subjectMetrics');
+  assert.ok(legacyElse.required.includes('offlineMetrics'), 'non-2.x/3.x must require offlineMetrics');
+  assert.equal(legacyElse.properties.subjectMetrics, false, 'non-2.x/3.x must forbid subjectMetrics');
 });
 
 // E54: manifest brain_f3 fixture now has itemProperty: "name"
@@ -1584,8 +1603,8 @@ test('E56: v6 stale digest ac5b3c79... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E57: aggregate evidence has schema 2.1.0 and subjectMetrics with all required fields
-test('E57: aggregate evidence schema 2.1.0 with full subjectMetrics for dual-subject run', async () => {
+// E57: aggregate evidence has schema 3.0.0 and subjectMetrics with provenance and correct tokenizer
+test('E57: aggregate evidence schema 3.0.0 with full subjectMetrics for exact-source run', async () => {
   const home = makeTempDir('b81-exec-e57-');
   try {
     const fixtures = [
@@ -1602,31 +1621,40 @@ test('E57: aggregate evidence schema 2.1.0 with full subjectMetrics for dual-sub
       approvedPlanSha256: planSha256,
       _homeOverride: home,
       _manifestOverride: syntheticManifest,
+      _resourceMeasurements: {
+        'exact-source': { peakCpuPercent: 12.5, peakRssMb: 45.3, provenance: { method: '/usr/bin/time -l', executable: '/usr/bin/node', measuredPid: 1234, exitCode: 0, durationMs: 500 } },
+      },
     });
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath));
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '2.1.0');
+    assert.equal(agg.schemaVersion, '3.0.0');
     assert.ok(!('offlineMetrics' in agg), 'offlineMetrics must be absent');
     const sm = agg.subjectMetrics?.['exact-source'];
     assert.ok(sm, 'exact-source subjectMetrics must exist');
-    assert.equal(typeof sm.peakCpuPercent, 'number', 'peakCpuPercent must be numeric');
-    assert.equal(typeof sm.peakRssMb, 'number', 'peakRssMb must be numeric');
+    // v7: peakCpuPercent and peakRssMb come from injected measurements, not zero-fallback
+    assert.equal(sm.peakCpuPercent, 12.5, 'peakCpuPercent must match injected measurement');
+    assert.equal(sm.peakRssMb, 45.3, 'peakRssMb must match injected measurement');
     assert.equal(typeof sm.serializedPayloadBytes, 'number', 'serializedPayloadBytes must be numeric');
     assert.equal(typeof sm.retrievalOperationCount, 'number', 'retrievalOperationCount must be numeric');
     assert.equal(sm.retrievalOperationCount, 2, 'operation count equals fixture count');
+    // v7: truthful tokenizer identity
     assert.ok(typeof sm.tokenizer === 'object', 'tokenizer must be an object');
-    assert.equal(typeof sm.tokenizer.name, 'string', 'tokenizer.name must be a string');
+    assert.equal(sm.tokenizer.name, 'utf8-bytes-div4-v1', 'tokenizer.name must be truthful utf8-bytes-div4-v1');
     assert.equal(typeof sm.tokenizer.version, 'string', 'tokenizer.version must be a string');
     assert.equal(typeof sm.tokenizer.tokenCount, 'number', 'tokenizer.tokenCount must be numeric');
+    assert.notEqual(sm.tokenizer.name, 'cl100k_base', 'tokenizer.name must NOT be cl100k_base');
+    // v7: resourceProvenance required
+    assert.ok(typeof sm.resourceProvenance === 'object', 'resourceProvenance must be present');
+    assert.equal(sm.resourceProvenance.method, '/usr/bin/time -l');
     assert.ok(typeof sm.retrievalAccuracy === 'object', 'retrievalAccuracy must be present');
     assert.ok(typeof sm.repositoryMetrics === 'object', 'repositoryMetrics must be present');
     assert.ok('test' in sm.repositoryMetrics, 'repositoryMetrics must have test repo entry');
     const repoM = sm.repositoryMetrics['test'];
-    // exact-source: initialIndexingTimeMs and incrementalRefreshLatencyMs are N/A objects
+    // exact-source: all fields are N/A objects in v7
     assert.equal(repoM.initialIndexingTimeMs?.status, 'not-applicable');
     assert.equal(repoM.incrementalRefreshLatencyMs?.status, 'not-applicable');
-    assert.equal(typeof repoM.indexDiskBytes, 'number', 'indexDiskBytes must be numeric');
+    assert.equal(repoM.indexDiskBytes?.status, 'not-applicable');
   } finally { cleanup(home); }
 });
 
@@ -1665,5 +1693,242 @@ test('E58: validateExpectedCount fails before execution for file-name-count with
     // Must fail with a pre-execution validation error
     assert.equal(result.outcome, 'fail', 'must fail when expectedCount is missing');
     assert.ok(result.errors.some(e => /expectedCount.*required/i.test(e)), `expected error about expectedCount, got: ${result.errors.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+// ---------------------------------------------------------------------------
+// v7 tests: dual-subject, provenance, negative tests
+// ---------------------------------------------------------------------------
+
+// E59: dual-subject end-to-end with deterministic fake CBM subprocess
+test('E59: dual-subject (cbm + exact-source) with deterministic fake CBM', async () => {
+  const home = makeTempDir('b81-exec-e59-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40),
+        expectedFile: 'README.md', scoringType: 'exact-match', question: 'q?',
+        callerCalleeApplicable: true, expectedCallers: ['README.md'], expectedCallees: ['README'],
+        verification: { algorithm: 'line-contains', contains: ['content'], line: 1 },
+      },
+      {
+        fixtureId: 'f2', repositoryId: 'test', pinnedCommit: '4'.repeat(40),
+        expectedFile: 'src/main.ts', scoringType: 'exact-match', question: 'q?',
+        callerCalleeApplicable: true, expectedCallers: ['src/main.ts'], expectedCallees: ['main'],
+        verification: { algorithm: 'symbol-at-line', contains: ['content'], line: 1 },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e59',
+      fixtures,
+      selectedSubjects: ['cbm', 'exact-source'],
+    });
+
+    // Write source files for exact-source
+    const sourcesDir = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(sourcesDir, 'README.md'), 'content of README\n');
+    fs.mkdirSync(path.join(sourcesDir, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(sourcesDir, 'src/main.ts'), 'content of main\n');
+
+    // Deterministic fake CBM adapter that returns known results
+    const fakeCbmAdapter = async (fixture) => {
+      return {
+        outcome: 'pass',
+        actual: fixture.expectedFile,
+        fileCorrect: true,
+        lineCorrect: true,
+        setAccuracy: null,
+        errors: [],
+      };
+    };
+
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e59',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+      _cbmAdapter: fakeCbmAdapter,
+      _resourceMeasurements: {
+        cbm: { peakCpuPercent: 25.0, peakRssMb: 120.5, provenance: { method: '/usr/bin/time -l', executable: '/fake/cbm', measuredPid: 5678, exitCode: 0, durationMs: 1500 } },
+        'exact-source': { peakCpuPercent: 8.3, peakRssMb: 32.1, provenance: { method: '/usr/bin/time -l', executable: '/usr/bin/node', measuredPid: 9012, exitCode: 0, durationMs: 200 } },
+      },
+    });
+
+    // Must produce results for both subjects
+    assert.ok(result.fixtureResults.length >= 4, `expected at least 4 fixture results (2 fixtures * 2 subjects), got ${result.fixtureResults.length}`);
+    const cbmResults = result.fixtureResults.filter(f => f.subject === 'cbm');
+    const esResults = result.fixtureResults.filter(f => f.subject === 'exact-source');
+    assert.equal(cbmResults.length, 2);
+    assert.equal(esResults.length, 2);
+
+    // Check aggregate evidence
+    const evidencePath = path.join(runDir, 'evidence.json');
+    assert.ok(fs.existsSync(evidencePath));
+    const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+    assert.equal(agg.schemaVersion, '3.0.0');
+
+    // Both subjects must have metrics
+    assert.ok('cbm' in agg.subjectMetrics);
+    assert.ok('exact-source' in agg.subjectMetrics);
+
+    // CBM: nonzero CPU/RSS from injected measurements
+    const cbmMetrics = agg.subjectMetrics.cbm;
+    assert.equal(cbmMetrics.peakCpuPercent, 25.0);
+    assert.equal(cbmMetrics.peakRssMb, 120.5);
+    assert.ok(cbmMetrics.resourceProvenance);
+    assert.equal(cbmMetrics.resourceProvenance.method, '/usr/bin/time -l');
+
+    // exact-source: nonzero measurements
+    const esMetrics = agg.subjectMetrics['exact-source'];
+    assert.equal(esMetrics.peakCpuPercent, 8.3);
+    assert.equal(esMetrics.peakRssMb, 32.1);
+
+    // Tokenizer identity is truthful
+    assert.equal(cbmMetrics.tokenizer.name, 'utf8-bytes-div4-v1');
+    assert.equal(esMetrics.tokenizer.name, 'utf8-bytes-div4-v1');
+    assert.notEqual(cbmMetrics.tokenizer.name, 'cl100k_base');
+
+    // Per-repo cache isolation: repositoryMetrics keys match manifest repos
+    assert.ok('test' in cbmMetrics.repositoryMetrics);
+    assert.ok('test' in esMetrics.repositoryMetrics);
+
+    // exact-source has N/A for index/refresh/disk
+    const esRepoM = esMetrics.repositoryMetrics.test;
+    assert.equal(esRepoM.initialIndexingTimeMs?.status, 'not-applicable');
+    assert.equal(esRepoM.incrementalRefreshLatencyMs?.status, 'not-applicable');
+    assert.equal(esRepoM.indexDiskBytes?.status, 'not-applicable');
+
+    // Caller/callee F1 is computed when data is available
+    if (esMetrics.retrievalAccuracy.callerRecall !== undefined && esMetrics.retrievalAccuracy.calleeRecall !== undefined) {
+      assert.ok('callerCalleeF1' in esMetrics.retrievalAccuracy, 'callerCalleeF1 must be computed when caller/callee data exists');
+    }
+  } finally { cleanup(home); }
+});
+
+// E60: v6r stale digest is rejected
+test('E60: v6r stale digest 44ebf1c4... is rejected', async () => {
+  const STALE_V6R = '44ebf1c49863d4cacaa6d26af348781473440f43b774ea69f52ae0aab6cc100d';
+  const home = makeTempDir('b81-exec-e60-');
+  try {
+    makeSyntheticRun(home, { runId: 'b8-1-exec-e60', fixtures: [] });
+    const result = await runExecutor({ runId: 'b8-1-exec-e60', approvedPlanSha256: STALE_V6R, _homeOverride: home });
+    assert.equal(result.outcome, 'fail');
+    assert.ok(result.errors.some(e => /stale/i.test(e)), `errors: ${result.errors.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+// E61: zero CPU fallback is rejected (no _resourceMeasurements for CBM)
+test('E61: missing resource measurements for CBM produces error, not zero fallback', async () => {
+  const home = makeTempDir('b81-exec-e61-');
+  try {
+    const fixtures = [
+      { fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'README.md', scoringType: 'exact-match', question: 'q?' },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e61',
+      fixtures,
+      selectedSubjects: ['cbm', 'exact-source'],
+    });
+    const sourcesDir = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(sourcesDir, 'README.md'), 'content\n');
+
+    const fakeCbmAdapter = async (fixture) => ({
+      outcome: 'pass', actual: fixture.expectedFile, fileCorrect: true, lineCorrect: true, setAccuracy: null, errors: [],
+    });
+
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e61',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+      _cbmAdapter: fakeCbmAdapter,
+      // No _resourceMeasurements — should produce error for CBM
+    });
+
+    // Check evidence was still written but contains error about missing measurements
+    const evidencePath = path.join(runDir, 'evidence.json');
+    if (fs.existsSync(evidencePath)) {
+      const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+      assert.ok(
+        agg.violations.some(v => /CPU|RSS|measurement|unavailable/i.test(v.detail ?? '')),
+        'must report unavailable measurement as violation'
+      );
+      // CPU must NOT be zero (the old fallback behavior)
+      const cbmMetrics = agg.subjectMetrics?.cbm;
+      if (cbmMetrics) {
+        assert.ok(cbmMetrics.peakCpuPercent === null || cbmMetrics.peakCpuPercent > 0, 'peakCpuPercent must not be hardcoded zero');
+      }
+    }
+  } finally { cleanup(home); }
+});
+
+// E62: false tokenizer identity cl100k_base is never emitted
+test('E62: tokenizer name is utf8-bytes-div4-v1, never cl100k_base', async () => {
+  const home = makeTempDir('b81-exec-e62-');
+  try {
+    const fixtures = [
+      { fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'README.md', scoringType: 'exact-match', question: 'q?' },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e62',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const sourcesDir = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(sourcesDir, 'README.md'), 'content\n');
+
+    await runExecutor({
+      runId: 'b8-1-exec-e62',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+      _resourceMeasurements: {
+        'exact-source': { peakCpuPercent: 5, peakRssMb: 20, provenance: { method: 'test', executable: null, measuredPid: null, exitCode: null, durationMs: null } },
+      },
+    });
+    const evidencePath = path.join(runDir, 'evidence.json');
+    const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+    const tok = agg.subjectMetrics?.['exact-source']?.tokenizer;
+    assert.ok(tok, 'tokenizer must be present');
+    assert.equal(tok.name, 'utf8-bytes-div4-v1');
+    assert.notEqual(tok.name, 'cl100k_base');
+  } finally { cleanup(home); }
+});
+
+// E63: subjectMetrics keys must exactly match selectedSubjects
+test('E63: subjectMetrics keys match selectedSubjects in aggregate evidence', async () => {
+  const home = makeTempDir('b81-exec-e63-');
+  try {
+    const fixtures = [
+      { fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'README.md', scoringType: 'exact-match', question: 'q?' },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e63',
+      fixtures,
+      selectedSubjects: ['cbm', 'exact-source'],
+    });
+    const sourcesDir = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(sourcesDir, 'README.md'), 'content\n');
+
+    const fakeCbmAdapter = async (fixture) => ({
+      outcome: 'pass', actual: fixture.expectedFile, fileCorrect: true, lineCorrect: true, setAccuracy: null, errors: [],
+    });
+
+    await runExecutor({
+      runId: 'b8-1-exec-e63',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+      _cbmAdapter: fakeCbmAdapter,
+      _resourceMeasurements: {
+        cbm: { peakCpuPercent: 10, peakRssMb: 50, provenance: { method: 'test', executable: null, measuredPid: null, exitCode: null, durationMs: null } },
+        'exact-source': { peakCpuPercent: 5, peakRssMb: 20, provenance: { method: 'test', executable: null, measuredPid: null, exitCode: null, durationMs: null } },
+      },
+    });
+    const evidencePath = path.join(runDir, 'evidence.json');
+    const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+    const metricKeys = Object.keys(agg.subjectMetrics).sort();
+    const selectedKeys = [...agg.selectedSubjects].sort();
+    assert.deepEqual(metricKeys, selectedKeys, 'subjectMetrics keys must exactly equal selectedSubjects');
   } finally { cleanup(home); }
 });

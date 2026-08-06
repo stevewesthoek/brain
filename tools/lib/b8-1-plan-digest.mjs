@@ -11,7 +11,7 @@
  *   - verify-b8-1-plan-digest.mjs                (standalone verifier)
  *   - *.test.mjs                                 (tests)
  *
- * Digest contract (planVersion 6.0.0 — v6r):
+ * Digest contract (planVersion 7.0.0 — v7):
  *   Hashed fields  — logical authority over what was approved:
  *     - plan/run metadata (planVersion, runId, partialEvidence, subjects, excludedSubjects)
  *     - repo-relative Brain artifact paths + content hashes
@@ -44,8 +44,8 @@
 
 import crypto from 'node:crypto';
 
-export const PLAN_VERSION = '6.0.0';
-export const DIGEST_CONTRACT_VERSION = '6.0.0';
+export const PLAN_VERSION = '7.0.0';
+export const DIGEST_CONTRACT_VERSION = '7.0.0';
 
 // ---------------------------------------------------------------------------
 // Known stale digests — must not be accepted as valid by any consumer.
@@ -59,6 +59,7 @@ export const KNOWN_STALE_DIGESTS = new Set([
   '87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f', // v5r (stale — Brain-worktree paths in childIdentity.path, profilePath, governancePath; v5s supersedes)
   '47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0', // v5s (stale for new runs — executed 2026-08-05, rejected as insufficient; harness defects + missing per-subject metrics; v6 supersedes)
   'ac5b3c79a9cce3e2463dceac8097dada7bb883f313ebef5e696078296a1359dc', // v6 (stale — missing implementationIdentity, missing subjectMetrics, offlineMetrics only; v6r supersedes)
+  '44ebf1c49863d4cacaa6d26af348781473440f43b774ea69f52ae0aab6cc100d', // v6r (stale — CPU hardcoded 0, RSS measures executor not subject, no CBM refresh measurement, shared cache duplicated, false cl100k_base identity, validator gaps; v7 supersedes)
 ]);
 
 // ---------------------------------------------------------------------------

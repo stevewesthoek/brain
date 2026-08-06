@@ -3,13 +3,19 @@
  *
  * Collects: CPU, RSS, payload bytes, tokenizer, operation count, indexing time,
  * refresh latency, disk bytes — per subject per repository.
+ *
+ * v7 changes:
+ * - Truthful tokenizer identity (utf8-bytes-div4-v1, not cl100k_base)
+ * - No zero-fallback for missing measurements — use typed N/A or throw
+ * - Aggregate callerCalleeF1 computed from per-fixture F1 values
+ * - Resource provenance tracking (method, executable, timestamps)
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 
-const TOKENIZER_NAME = 'cl100k_base';
-const TOKENIZER_VERSION = '1.0.0';
+export const TOKENIZER_NAME = 'utf8-bytes-div4-v1';
+export const TOKENIZER_VERSION = '1.0.0';
 const BYTES_PER_TOKEN_ESTIMATE = 4;
 
 /**
@@ -21,8 +27,9 @@ export function measureSerializedPayloadBytes(fixtureResults) {
 }
 
 /**
- * Estimate token count using a pinned local tokenizer (byte-based estimate).
- * Uses cl100k_base approximation: ~4 bytes per token.
+ * Estimate token count using a truthful local estimator.
+ * Identity: utf8-bytes-div4-v1 — UTF-8 byte count divided by 4.
+ * This is NOT a real tokenizer; it is an approximation with known identity.
  */
 export function estimateTokenCount(payloadBytes) {
   return {
@@ -54,49 +61,87 @@ export function measureIndexDiskBytes(indexDir) {
 }
 
 /**
- * Measure peak CPU% and RSS MB from a bounded child process execution.
- * On macOS, uses /usr/bin/time -l to get max RSS.
- * Returns { peakCpuPercent, peakRssMb }.
+ * Parse resource usage from /usr/bin/time -l output on macOS.
+ * Returns { peakCpuPercent, peakRssMb } with provenance.
+ * Returns null values (not zero) when parsing fails — caller must handle.
  */
-export function measureResourceUsage(childResult) {
-  // Parse from stderr of /usr/bin/time output if available
-  let peakRssMb = 0;
-  let peakCpuPercent = 0;
-  if (childResult && childResult.stderr) {
-    const rssMatch = childResult.stderr.match(/(\d+)\s+maximum resident set size/);
+export function parseTimeOutput(stderr) {
+  let peakRssMb = null;
+  let peakCpuPercent = null;
+  if (stderr) {
+    const rssMatch = stderr.match(/(\d+)\s+maximum resident set size/);
     if (rssMatch) peakRssMb = parseInt(rssMatch[1], 10) / (1024 * 1024);
-    const cpuMatch = childResult.stderr.match(/([\d.]+)%\s+CPU/);
+    const cpuMatch = stderr.match(/([\d.]+)%\s+CPU/);
     if (cpuMatch) peakCpuPercent = parseFloat(cpuMatch[1]);
   }
   return { peakCpuPercent, peakRssMb };
 }
 
 /**
+ * Build resource measurement with provenance from a bounded child process execution.
+ * Requires /usr/bin/time -l wrapper on macOS.
+ *
+ * @param {object} childResult - { stderr, exitCode, durationMs, pid }
+ * @param {object} opts - { executable, method }
+ * @returns {{ peakCpuPercent: number|null, peakRssMb: number|null, provenance: object }}
+ */
+export function measureResourceUsage(childResult, opts = {}) {
+  const { peakCpuPercent, peakRssMb } = parseTimeOutput(childResult?.stderr);
+  return {
+    peakCpuPercent,
+    peakRssMb,
+    provenance: {
+      method: opts.method || '/usr/bin/time -l',
+      executable: opts.executable || null,
+      measuredPid: childResult?.pid || null,
+      exitCode: childResult?.exitCode ?? null,
+      durationMs: childResult?.durationMs ?? null,
+    },
+  };
+}
+
+/**
  * Build repository metrics for a single repo.
+ * For CBM: requires actual measured values — no zero-fallback.
+ * For exact-source: indexing/refresh are typed N/A; indexDiskBytes reports source tree bytes.
+ *
  * @param {object} opts
  * @param {string} opts.repositoryId
- * @param {number|null} opts.initialIndexingTimeMs
- * @param {number|null} opts.incrementalRefreshLatencyMs
- * @param {number} opts.indexDiskBytes
+ * @param {number|{status:string,reason:string}} opts.initialIndexingTimeMs
+ * @param {number|{status:string,reason:string}} opts.incrementalRefreshLatencyMs
+ * @param {number|{status:string,reason:string}} opts.indexDiskBytes
  * @param {string} opts.subject - 'cbm' or 'exact-source'
  */
 export function buildRepositoryMetric({ repositoryId, initialIndexingTimeMs, incrementalRefreshLatencyMs, indexDiskBytes, subject }) {
-  const metric = { indexDiskBytes };
-
-  // For exact-source, indexing and refresh are not applicable
   if (subject === 'exact-source') {
-    metric.initialIndexingTimeMs = { status: 'not-applicable', reason: 'exact-source-no-index' };
-    metric.incrementalRefreshLatencyMs = { status: 'not-applicable', reason: 'exact-source-no-refresh' };
-  } else {
-    metric.initialIndexingTimeMs = initialIndexingTimeMs ?? 0;
-    metric.incrementalRefreshLatencyMs = incrementalRefreshLatencyMs ?? 0;
+    return {
+      initialIndexingTimeMs: { status: 'not-applicable', reason: 'exact-source-no-index' },
+      incrementalRefreshLatencyMs: { status: 'not-applicable', reason: 'exact-source-no-refresh' },
+      indexDiskBytes: { status: 'not-applicable', reason: 'exact-source-no-index-disk' },
+    };
   }
 
-  return metric;
+  // CBM: require actual values, never substitute zero
+  if (initialIndexingTimeMs === null || initialIndexingTimeMs === undefined) {
+    throw new Error(`buildRepositoryMetric: initialIndexingTimeMs is required for ${subject}/${repositoryId}`);
+  }
+  if (incrementalRefreshLatencyMs === null || incrementalRefreshLatencyMs === undefined) {
+    throw new Error(`buildRepositoryMetric: incrementalRefreshLatencyMs is required for ${subject}/${repositoryId}`);
+  }
+  if (indexDiskBytes === null || indexDiskBytes === undefined) {
+    throw new Error(`buildRepositoryMetric: indexDiskBytes is required for ${subject}/${repositoryId}`);
+  }
+
+  return {
+    initialIndexingTimeMs,
+    incrementalRefreshLatencyMs,
+    indexDiskBytes,
+  };
 }
 
 /**
  * Build complete subject metrics for a subject.
+ * Includes aggregate callerCalleeF1.
  */
 export function buildSubjectMetrics({
   subject,
@@ -107,6 +152,7 @@ export function buildSubjectMetrics({
   serializedPayloadBytes,
   tokenizer,
   retrievalOperationCount,
+  resourceProvenance,
 }) {
   const fileCorrectCount = fixtureResults.filter(f => f.fileCorrect).length;
   const lineCorrectCount = fixtureResults.filter(f => f.lineCorrect).length;
@@ -139,7 +185,14 @@ export function buildSubjectMetrics({
     retrievalAccuracy.calleePrecision = calleePrecs.reduce((a, b) => a + b, 0) / calleePrecs.length;
   }
 
-  return {
+  // Aggregate callerCalleeF1: harmonic mean of average callerPrecision (or callerRecall) and average calleeRecall
+  if (retrievalAccuracy.callerRecall !== undefined && retrievalAccuracy.calleeRecall !== undefined) {
+    const p = retrievalAccuracy.callerPrecision ?? retrievalAccuracy.callerRecall;
+    const r = retrievalAccuracy.calleeRecall;
+    retrievalAccuracy.callerCalleeF1 = (p + r) > 0 ? (2 * p * r) / (p + r) : 0;
+  }
+
+  const metrics = {
     retrievalAccuracy,
     peakCpuPercent,
     peakRssMb,
@@ -148,4 +201,10 @@ export function buildSubjectMetrics({
     retrievalOperationCount,
     repositoryMetrics,
   };
+
+  if (resourceProvenance) {
+    metrics.resourceProvenance = resourceProvenance;
+  }
+
+  return metrics;
 }

@@ -22,7 +22,7 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0", "2.1.0"] },
+    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0", "2.1.0", "3.0.0"] },
     "runId": { "type": "string", "pattern": "^b8-1-(?!.*\\.\\.)[a-zA-Z0-9._-]+$" },
     "runAt": { "type": "string", "format": "date-time" },
     "partialEvidence": { "type": "boolean" },
@@ -381,9 +381,26 @@
                         {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
                       ]
                     },
-                    "indexDiskBytes": {"type": "integer", "minimum": 0}
+                    "indexDiskBytes": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    }
                   }
                 }
+              }
+            },
+            "resourceProvenance": {
+              "type": "object",
+              "required": ["method"],
+              "additionalProperties": false,
+              "properties": {
+                "method": { "type": "string", "minLength": 1 },
+                "executable": { "type": ["string", "null"] },
+                "measuredPid": { "type": ["integer", "null"] },
+                "exitCode": { "type": ["integer", "null"] },
+                "durationMs": { "type": ["integer", "null"] }
               }
             }
           }
@@ -514,31 +531,47 @@
     },
     {
       "if": {
-        "properties": { "schemaVersion": { "const": "2.0.0" } },
+        "properties": { "schemaVersion": { "const": "3.0.0" } },
         "required": ["schemaVersion"]
       },
       "then": {
         "required": ["subjectMetrics"],
-        "properties": { "subjectMetrics": true, "offlineMetrics": false }
+        "properties": {
+          "offlineMetrics": false,
+          "subjectMetrics": {
+            "type": "object",
+            "minProperties": 1
+          }
+        }
       },
       "else": {
         "if": {
-          "properties": { "schemaVersion": { "const": "2.1.0" } },
+          "properties": { "schemaVersion": { "const": "2.0.0" } },
           "required": ["schemaVersion"]
         },
         "then": {
           "required": ["subjectMetrics"],
-          "properties": {
-            "offlineMetrics": false,
-            "subjectMetrics": {
-              "type": "object",
-              "minProperties": 1
-            }
-          }
+          "properties": { "subjectMetrics": true, "offlineMetrics": false }
         },
         "else": {
-          "required": ["offlineMetrics"],
-          "properties": { "offlineMetrics": true, "subjectMetrics": false }
+          "if": {
+            "properties": { "schemaVersion": { "const": "2.1.0" } },
+            "required": ["schemaVersion"]
+          },
+          "then": {
+            "required": ["subjectMetrics"],
+            "properties": {
+              "offlineMetrics": false,
+              "subjectMetrics": {
+                "type": "object",
+                "minProperties": 1
+              }
+            }
+          },
+          "else": {
+            "required": ["offlineMetrics"],
+            "properties": { "offlineMetrics": true, "subjectMetrics": false }
+          }
         }
       }
     }

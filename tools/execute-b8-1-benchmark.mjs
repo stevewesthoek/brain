@@ -5,7 +5,7 @@
  * Bounded B8.1 benchmark executor.
  *
  * Responsibilities:
- *   - Verify an approved v6 plan digest against a materialized run
+ *   - Verify an approved v7 plan digest against a materialized run
  *   - Execute each fixture with bounded timeout/output using cbm or exact-source adapters
  *   - Record evidence atomically
  *   - Terminate children; produce execution and cleanup receipts
@@ -45,6 +45,7 @@ import {
   measureSerializedPayloadBytes,
   estimateTokenCount,
   measureIndexDiskBytes,
+  measureResourceUsage,
   buildRepositoryMetric,
   buildSubjectMetrics,
 } from './lib/b8-1-metrics.mjs';
@@ -52,7 +53,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-export const EXECUTOR_VERSION = '6.0.0';
+export const EXECUTOR_VERSION = '7.0.0';
 export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
@@ -127,7 +128,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     return { plan: null, error: 'approvedPlanSha256 must be exactly 64 lowercase hexadecimal characters' };
   }
   if (KNOWN_STALE_DIGESTS.has(approvedPlanSha256)) {
-    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v6.0.0 plan contract (run-id b8-1-canonical-authorization-20260806-final-v6r)' };
+    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v7.0.0 plan contract' };
   }
 
   // Recompute the digest from the stored plan fields (excluding planSha256/createdAt/runContext)
@@ -1007,6 +1008,7 @@ export async function runExecutor({
   _homeOverride,
   _cbmAdapter,
   _manifestOverride,  // inject a manifest object directly (tests only)
+  _resourceMeasurements,  // inject resource measurements { cbm: {peakCpuPercent, peakRssMb, provenance}, 'exact-source': ... }
 } = {}) {
   const home = _homeOverride ?? os.homedir();
   const errors = [];
@@ -1177,15 +1179,22 @@ export async function runExecutor({
     outcome = 'pass';
   }
 
-  // Build aggregate evidence with schema 2.1.0 + subjectMetrics (no offlineMetrics)
+  // Build aggregate evidence with schema 3.0.0 + subjectMetrics + provenance (no offlineMetrics)
   if (!dryRun) {
     const excludedSubjects = plan.excludedSubjects ?? [];
+    const preflightReceiptPath = path.join(runDir, 'preflight-receipt.json');
+    if (!fs.existsSync(preflightReceiptPath)) {
+      errors.push('preflight-receipt.json missing — cannot compute receipt hash');
+    }
     const preflightReceiptHash = (() => {
       try {
-        const receiptBytes = fs.readFileSync(path.join(runDir, 'preflight-receipt.json'));
+        const receiptBytes = fs.readFileSync(preflightReceiptPath);
         return `sha256:${crypto.createHash('sha256').update(receiptBytes).digest('hex')}`;
       } catch { return null; }
     })();
+    if (!preflightReceiptHash) {
+      errors.push('preflightReceiptHash could not be computed — receipt unreadable');
+    }
 
     // Group fixture results by subject
     const resultsBySubject = {};
@@ -1193,38 +1202,81 @@ export async function runExecutor({
       resultsBySubject[subject] = fixtureResults.filter(f => f.subject === subject);
     }
 
-    // Build subject metrics
+    // Build subject metrics with real measurements and provenance
     const subjectMetrics = {};
+    const manifestRepoIds = (manifest.repositories ?? []).map(r => r.repositoryId);
+
     for (const subject of selectedSubjects) {
       const subjectResults = resultsBySubject[subject];
       const subjectPayloadBytes = measureSerializedPayloadBytes(subjectResults);
       const tokenizer = estimateTokenCount(subjectPayloadBytes);
       const operationCount = subjectResults.length;
 
-      // Repository metrics
-      const repoIds = [...new Set(subjectResults.map(r => r.repositoryId).filter(Boolean))];
-      // Fall back to manifest repos if fixture records don't carry repositoryId
-      const manifestRepoIds = (manifest.repositories ?? []).map(r => r.repositoryId);
-      const allRepoIds = repoIds.length > 0 ? repoIds : manifestRepoIds;
+      // Repository metrics — per-repo isolation for CBM cache
       const repositoryMetrics = {};
-      for (const repoId of allRepoIds) {
-        const cbmCacheDir = path.join(runDir, 'subjects', 'cbm', 'cache');
-        const diskBytes = subject === 'cbm'
-          ? measureIndexDiskBytes(cbmCacheDir)
-          : measureIndexDiskBytes(path.join(runDir, 'sources', repoId));
-        repositoryMetrics[repoId] = buildRepositoryMetric({
-          repositoryId: repoId,
-          initialIndexingTimeMs: subject === 'cbm' ? (cbmIndexTimes.get(repoId) ?? 0) : null,
-          incrementalRefreshLatencyMs: subject === 'cbm' ? (cbmRefreshTimes.get(repoId) ?? 0) : null,
-          indexDiskBytes: diskBytes,
-          subject,
-        });
+      for (const repoId of manifestRepoIds) {
+        if (subject === 'cbm') {
+          // Per-repo isolated cache directory
+          const repoCacheDir = path.join(runDir, 'subjects', 'cbm', 'cache', repoId);
+          const diskBytes = measureIndexDiskBytes(repoCacheDir);
+          const indexTimeMs = cbmIndexTimes.get(repoId) ?? null;
+          const refreshTimeMs = cbmRefreshTimes.get(repoId) ?? null;
+          if (indexTimeMs === null) {
+            errors.push(`CBM indexing time missing for repository ${repoId}`);
+          }
+          if (refreshTimeMs === null) {
+            errors.push(`CBM refresh time missing for repository ${repoId}`);
+          }
+          // Use measured values or typed N/A with error provenance
+          try {
+            repositoryMetrics[repoId] = buildRepositoryMetric({
+              repositoryId: repoId,
+              initialIndexingTimeMs: indexTimeMs,
+              incrementalRefreshLatencyMs: refreshTimeMs,
+              indexDiskBytes: diskBytes,
+              subject,
+            });
+          } catch (e) {
+            errors.push(e.message);
+            repositoryMetrics[repoId] = {
+              initialIndexingTimeMs: indexTimeMs ?? { status: 'not-applicable', reason: 'measurement-unavailable' },
+              incrementalRefreshLatencyMs: refreshTimeMs ?? { status: 'not-applicable', reason: 'measurement-unavailable' },
+              indexDiskBytes: diskBytes,
+            };
+          }
+        } else {
+          // exact-source: no index disk, no indexing time, no refresh
+          repositoryMetrics[repoId] = buildRepositoryMetric({
+            repositoryId: repoId,
+            initialIndexingTimeMs: null,
+            incrementalRefreshLatencyMs: null,
+            indexDiskBytes: null,
+            subject,
+          });
+        }
       }
 
-      // CPU/RSS from process memory (approximate — process.memoryUsage() reflects current process)
-      const memUsage = process.memoryUsage();
-      const peakRssMb = Math.round((memUsage.rss / (1024 * 1024)) * 100) / 100;
-      const peakCpuPercent = 0; // Measured from /usr/bin/time in bounded child; 0 for current process-level approximation
+      // Resource usage: use measured values from bounded children when available
+      let peakCpuPercent = null;
+      let peakRssMb = null;
+      let resourceProvenance = null;
+
+      if (subject === 'cbm' && _resourceMeasurements?.cbm) {
+        const measured = _resourceMeasurements.cbm;
+        peakCpuPercent = measured.peakCpuPercent;
+        peakRssMb = measured.peakRssMb;
+        resourceProvenance = measured.provenance;
+      } else if (subject === 'exact-source' && _resourceMeasurements?.['exact-source']) {
+        const measured = _resourceMeasurements['exact-source'];
+        peakCpuPercent = measured.peakCpuPercent;
+        peakRssMb = measured.peakRssMb;
+        resourceProvenance = measured.provenance;
+      }
+
+      // Fail if no real measurement available for CBM
+      if (subject === 'cbm' && (peakCpuPercent === null || peakRssMb === null)) {
+        errors.push(`real CPU/RSS measurement unavailable for subject ${subject} — cannot substitute zero`);
+      }
 
       subjectMetrics[subject] = buildSubjectMetrics({
         subject,
@@ -1235,11 +1287,12 @@ export async function runExecutor({
         serializedPayloadBytes: subjectPayloadBytes,
         tokenizer,
         retrievalOperationCount: operationCount,
+        resourceProvenance,
       });
     }
 
     const aggregateEvidence = {
-      schemaVersion: '2.1.0',
+      schemaVersion: '3.0.0',
       runId,
       partialEvidence: excludedSubjects.length > 0,
       selectedSubjects: [...selectedSubjects].sort(),
@@ -1252,7 +1305,7 @@ export async function runExecutor({
         return commits;
       })(),
       manifestHash: plan.manifestHash ?? null,
-      preflightReceiptHash: preflightReceiptHash ?? `sha256:${'0'.repeat(64)}`,
+      preflightReceiptHash,
       planSha256,
       subjectBinaryIdentity: plan.subjectBinaryIdentity ?? {},
       networkIsolationProof: plan.networkIsolationProof ?? { required: false, status: 'not-required' },

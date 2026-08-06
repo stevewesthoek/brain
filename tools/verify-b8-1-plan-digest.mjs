@@ -39,7 +39,7 @@ import {
   findUnknownTopLevelFields,
 } from './lib/b8-1-plan-digest.mjs';
 
-export const VERIFIER_VERSION = '3.0.0';
+export const VERIFIER_VERSION = '4.0.0';
 export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 
 // Re-export shared contract symbols for tests.
