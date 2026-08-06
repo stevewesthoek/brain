@@ -131,7 +131,7 @@ export function computeCpuPercent(wallSeconds, userSeconds, systemSeconds) {
 
 /**
  * Execute a child process with /usr/bin/time -l wrapper.
- * Metrics are written to a temporary file and separated from child stderr.
+ * Metrics are written to a temporary file (mode 0600, exclusive creation) and separated from child stderr.
  *
  * @param {object} opts
  * @param {string} opts.executable - absolute path to executable
@@ -149,9 +149,13 @@ export function computeCpuPercent(wallSeconds, userSeconds, systemSeconds) {
  *   wallMs: number|null,
  *   stdout: string,
  *   stderr: string,
+ *   stdoutTruncated: boolean,
+ *   stderrTruncated: boolean,
+ *   metricsTruncated: boolean,
  *   exitCode: number|null,
  *   signal: string|null,
  *   timedOut: boolean,
+ *   orphanedProcessGroup: boolean,
  *   provenance: {method, samplerPid, childPid, exitCode, signal, durationMs, timeoutMs}
  * }>}
  */
@@ -168,9 +172,13 @@ export async function runChildWithTimeMetrics(opts = {}) {
       wallMs: null,
       stdout: '',
       stderr: '',
+      stdoutTruncated: false,
+      stderrTruncated: false,
+      metricsTruncated: false,
       exitCode: null,
       signal: null,
       timedOut: false,
+      orphanedProcessGroup: false,
       provenance: {
         method: '/usr/bin/time -l (via metrics file)',
         samplerPid: null,
@@ -183,8 +191,43 @@ export async function runChildWithTimeMetrics(opts = {}) {
     };
   }
 
-  // Create temporary metrics file in /tmp with owner-only permissions
-  const metricsFile = path.join(os.tmpdir(), `b8-1-metrics-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  // Create temporary metrics file with exclusive creation (0600 permissions)
+  let metricsFile;
+  try {
+    const tmpDir = os.tmpdir();
+    const metricsName = `b8-1-metrics-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    metricsFile = path.join(tmpDir, metricsName);
+    // Exclusive creation with owner-only permissions
+    const fd = fs.openSync(metricsFile, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_WRONLY, 0o600);
+    fs.closeSync(fd);
+  } catch (e) {
+    return {
+      success: false,
+      measurementValid: false,
+      commandSucceeded: false,
+      cpuPercent: null,
+      peakRssMb: null,
+      wallMs: null,
+      stdout: '',
+      stderr: `metrics file creation failed: ${e.message}`,
+      stdoutTruncated: false,
+      stderrTruncated: false,
+      metricsTruncated: false,
+      exitCode: null,
+      signal: null,
+      timedOut: false,
+      orphanedProcessGroup: false,
+      provenance: {
+        method: '/usr/bin/time -l (via metrics file)',
+        samplerPid: null,
+        childPid: null,
+        exitCode: null,
+        signal: null,
+        durationMs: null,
+        timeoutMs: timeout,
+      },
+    };
+  }
 
   return new Promise((resolve) => {
     const startTime = Date.now();
@@ -192,9 +235,10 @@ export async function runChildWithTimeMetrics(opts = {}) {
     let timeoutHandle = null;
     let samplerPid = null;
     let childPid = null;
+    let orphanedProcessGroup = false;
 
     try {
-      // Spawn /usr/bin/time with explicit metrics file output (-o for output file, -l for detailed metrics)
+      // Spawn /usr/bin/time with explicit metrics file output
       const timeProcess = spawn('/usr/bin/time', ['-l', '-o', metricsFile, executable, ...argv], {
         cwd,
         env, // Explicit environment, no merge
@@ -204,11 +248,12 @@ export async function runChildWithTimeMetrics(opts = {}) {
       });
 
       samplerPid = timeProcess.pid;
-      childPid = null; // We don't have direct child PID; time process wraps it
+      childPid = null; // time process wraps the child
       let childStdout = '';
       let childStderr = '';
       let stdoutTruncated = false;
       let stderrTruncated = false;
+      let metricsTruncated = false;
 
       if (timeProcess.stdout) {
         timeProcess.stdout.on('data', (chunk) => {
@@ -252,11 +297,30 @@ export async function runChildWithTimeMetrics(opts = {}) {
         if (timeoutHandle) clearTimeout(timeoutHandle);
         const durationMs = Date.now() - startTime;
 
-        // Read metrics file
+        // If timeout occurred, verify process group is actually dead
+        if (timedOut && detached && samplerPid) {
+          try {
+            // Try to send signal 0 to test if process group exists
+            process.kill(-samplerPid, 0);
+            // If we get here without error, process group still exists
+            orphanedProcessGroup = true;
+          } catch (e) {
+            // Process group doesn't exist, cleanup was successful
+            orphanedProcessGroup = false;
+          }
+        }
+
+        // Read metrics file and check its size
         let metrics = { wallSeconds: null, userSeconds: null, systemSeconds: null, rssBytes: null, parsed: false };
         try {
           if (fs.existsSync(metricsFile)) {
-            metrics = parseTimeMetricsFile(metricsFile);
+            const stat = fs.statSync(metricsFile);
+            if (stat.size > 1024 * 1024) { // 1MB limit for metrics file
+              metricsTruncated = true;
+              metrics.reason = 'metrics file too large';
+            } else {
+              metrics = parseTimeMetricsFile(metricsFile);
+            }
           }
         } catch (e) {
           metrics.reason = `metrics read error: ${e.message}`;
@@ -277,10 +341,13 @@ export async function runChildWithTimeMetrics(opts = {}) {
           peakRssMb = metrics.rssBytes / (1024 * 1024);
         }
 
-        // Overall success requires: valid metrics, exit 0, no signal, no timeout
-        const success = validation.valid && code === 0 && !signal && !timedOut;
-        const measurementValid = validation.valid;
-        const commandSucceeded = code === 0 && !signal && !timedOut;
+        // Treat any truncation as failure
+        const truncationFailed = stdoutTruncated || stderrTruncated || metricsTruncated;
+
+        // Overall success requires: valid metrics, exit 0, no signal, no timeout, no truncation, no orphaned process
+        const success = validation.valid && code === 0 && !signal && !timedOut && !truncationFailed && !orphanedProcessGroup;
+        const measurementValid = validation.valid && !truncationFailed;
+        const commandSucceeded = code === 0 && !signal && !timedOut && !truncationFailed && !orphanedProcessGroup;
 
         resolve({
           success,
@@ -291,9 +358,13 @@ export async function runChildWithTimeMetrics(opts = {}) {
           wallMs: metrics.wallSeconds !== null ? Math.round(metrics.wallSeconds * 1000) : null,
           stdout: childStdout,
           stderr: childStderr,
+          stdoutTruncated,
+          stderrTruncated,
+          metricsTruncated,
           exitCode: code,
           signal: signal || null,
           timedOut,
+          orphanedProcessGroup,
           provenance: {
             method: '/usr/bin/time -l (via metrics file)',
             samplerPid,
@@ -322,9 +393,13 @@ export async function runChildWithTimeMetrics(opts = {}) {
           wallMs: null,
           stdout: '',
           stderr: `spawn error: ${err.message}`,
+          stdoutTruncated: false,
+          stderrTruncated: false,
+          metricsTruncated: false,
           exitCode: null,
           signal: null,
           timedOut,
+          orphanedProcessGroup: false,
           provenance: {
             method: '/usr/bin/time -l (via metrics file)',
             samplerPid: null,
@@ -350,9 +425,13 @@ export async function runChildWithTimeMetrics(opts = {}) {
         wallMs: null,
         stdout: '',
         stderr: `error: ${e.message}`,
+        stdoutTruncated: false,
+        stderrTruncated: false,
+        metricsTruncated: false,
         exitCode: null,
         signal: null,
-        timedOut,
+        timedOut: false,
+        orphanedProcessGroup: false,
         provenance: {
           method: '/usr/bin/time -l (via metrics file)',
           samplerPid: null,

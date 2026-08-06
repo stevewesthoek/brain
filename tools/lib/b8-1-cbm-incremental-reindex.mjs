@@ -25,19 +25,63 @@ export function validateRunDirectory(dirPath, name) {
 }
 
 /**
- * Reject shared cache/config: cache and config must not be identical or shared.
+ * Validate path isolation with boundary-safe containment checks.
+ * Uses normalized real paths and path.relative() to detect:
+ * - cache inside source, config inside source
+ * - source inside cache, source inside config
+ * - cache inside config, config inside cache
+ * - identical paths, symlinks
  */
 export function validatePathIsolation(cacheDir, configDir, sourceDir) {
-  if (cacheDir === configDir) return { valid: false, reason: 'cache and config paths are identical' };
-  if (cacheDir === sourceDir || configDir === sourceDir) return { valid: false, reason: 'cache/config inside source' };
+  let cacheReal, configReal, sourceReal;
+  try {
+    cacheReal = fs.realpathSync(cacheDir);
+    configReal = fs.realpathSync(configDir);
+    sourceReal = fs.realpathSync(sourceDir);
+  } catch (e) {
+    return { valid: false, reason: `path resolution failed: ${e.message}` };
+  }
 
-  // Check for containment (one is parent of other)
-  const cacheReal = fs.realpathSync(cacheDir);
-  const configReal = fs.realpathSync(configDir);
-  const sourceReal = fs.realpathSync(sourceDir);
+  // Reject identical paths
+  if (cacheReal === configReal) return { valid: false, reason: 'cache and config paths are identical' };
+  if (cacheReal === sourceReal) return { valid: false, reason: 'cache and source paths are identical' };
+  if (configReal === sourceReal) return { valid: false, reason: 'config and source paths are identical' };
 
-  if (cacheReal.startsWith(sourceReal) || configReal.startsWith(sourceReal)) {
-    return { valid: false, reason: 'cache/config is contained within source' };
+  // Reject symlinks (realpathSync follows symlinks, check with lstat)
+  try {
+    if (fs.lstatSync(cacheDir).isSymbolicLink()) return { valid: false, reason: 'cache path is a symlink' };
+    if (fs.lstatSync(configDir).isSymbolicLink()) return { valid: false, reason: 'config path is a symlink' };
+    if (fs.lstatSync(sourceDir).isSymbolicLink()) return { valid: false, reason: 'source path is a symlink' };
+  } catch (e) {
+    return { valid: false, reason: `symlink check failed: ${e.message}` };
+  }
+
+  // Check containment using path.relative (path-boundary-safe)
+  // If A is inside B, path.relative(B, A) will not start with '..'
+  const cacheRelSource = path.relative(sourceReal, cacheReal);
+  const configRelSource = path.relative(sourceReal, configReal);
+  const sourceRelCache = path.relative(cacheReal, sourceReal);
+  const sourceRelConfig = path.relative(configReal, sourceReal);
+  const cacheRelConfig = path.relative(configReal, cacheReal);
+  const configRelCache = path.relative(cacheReal, configReal);
+
+  if (!cacheRelSource.startsWith('..') && cacheRelSource !== cacheReal) {
+    return { valid: false, reason: 'cache is contained within source' };
+  }
+  if (!configRelSource.startsWith('..') && configRelSource !== configReal) {
+    return { valid: false, reason: 'config is contained within source' };
+  }
+  if (!sourceRelCache.startsWith('..') && sourceRelCache !== sourceReal) {
+    return { valid: false, reason: 'source is contained within cache' };
+  }
+  if (!sourceRelConfig.startsWith('..') && sourceRelConfig !== sourceReal) {
+    return { valid: false, reason: 'source is contained within config' };
+  }
+  if (!cacheRelConfig.startsWith('..') && cacheRelConfig !== cacheReal) {
+    return { valid: false, reason: 'cache is contained within config' };
+  }
+  if (!configRelCache.startsWith('..') && configRelCache !== configReal) {
+    return { valid: false, reason: 'config is contained within cache' };
   }
 
   return { valid: true };
@@ -174,9 +218,59 @@ export function measureCacheBytes(cacheDir) {
 }
 
 /**
+ * Validate environment: HOME must be owner-only, XDG_* must match dirs, allowlist enforced.
+ */
+export function validateEnvironment(env, cacheDir, configDir, homeDir) {
+  if (!env || typeof env !== 'object') {
+    return { valid: false, reason: 'environment must be an object' };
+  }
+
+  // HOME must be specified and must match approved owner-only synthetic home
+  if (!env.HOME) {
+    return { valid: false, reason: 'HOME not set' };
+  }
+
+  try {
+    const stat = fs.statSync(env.HOME);
+    if ((stat.mode & 0o077) !== 0) {
+      return { valid: false, reason: 'HOME directory has non-owner permissions' };
+    }
+  } catch (e) {
+    return { valid: false, reason: `HOME validation failed: ${e.message}` };
+  }
+
+  // XDG_CACHE_HOME must exactly match cacheDir
+  if (env.XDG_CACHE_HOME !== cacheDir) {
+    return { valid: false, reason: 'XDG_CACHE_HOME does not match cacheDir' };
+  }
+
+  // XDG_CONFIG_HOME must exactly match configDir
+  if (env.XDG_CONFIG_HOME !== configDir) {
+    return { valid: false, reason: 'XDG_CONFIG_HOME does not match configDir' };
+  }
+
+  // Whitelist allowed environment keys
+  const allowlist = ['PATH', 'HOME', 'TMPDIR', 'XDG_CACHE_HOME', 'XDG_CONFIG_HOME'];
+  const allowedKeys = new Set(allowlist);
+  for (const key of Object.keys(env)) {
+    if (!allowedKeys.has(key)) {
+      return { valid: false, reason: `unexpected environment key: ${key}` };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
  * Run CBM index_repository with measurements via process sampler.
  */
 export async function runCbmIndex(cbmExecutable, sourcePath, projectName, cacheDir, configDir, env = {}, sandboxProfile = null, timeout = 120000) {
+  // Validate environment before running
+  const envValidation = validateEnvironment(env, cacheDir, configDir, env.HOME);
+  if (!envValidation.valid) {
+    return { success: false, error: envValidation.reason, measurementProvenance: null };
+  }
+
   const indexArgs = [
     'cli', 'index_repository',
     '--repo-path', sourcePath,
@@ -203,20 +297,30 @@ export async function runCbmIndex(cbmExecutable, sourcePath, projectName, cacheD
     detached: true,
   });
 
-  if (!result.commandSucceeded) {
-    return { success: false, error: `index failed (exit=${result.exitCode})` };
+  // Require result.success === true, not just commandSucceeded
+  if (!result.success) {
+    return {
+      success: false,
+      error: `index failed: ${result.stderr || `exit=${result.exitCode}`}`,
+      measurementProvenance: {
+        commandSucceeded: result.commandSucceeded,
+        timedOut: result.timedOut,
+        exitCode: result.exitCode,
+        signal: result.signal,
+      }
+    };
   }
 
   let indexOutput;
   try {
     indexOutput = JSON.parse(result.stdout);
   } catch (e) {
-    return { success: false, error: 'index output not JSON' };
+    return { success: false, error: 'index output not JSON', measurementProvenance: null };
   }
 
   // Semantic validation: expect object with status or indexed flag
   if (typeof indexOutput !== 'object' || (!indexOutput.status && !indexOutput.indexed)) {
-    return { success: false, error: 'index output invalid semantically' };
+    return { success: false, error: 'index output invalid semantically', measurementProvenance: null };
   }
 
   return {
@@ -224,13 +328,21 @@ export async function runCbmIndex(cbmExecutable, sourcePath, projectName, cacheD
     wallMs: result.wallMs,
     cpuPercent: result.cpuPercent,
     peakRssMb: result.peakRssMb,
+    measurementProvenance: {
+      wallMs: result.wallMs,
+      cpuPercent: result.cpuPercent,
+      peakRssMb: result.peakRssMb,
+      exitCode: result.exitCode,
+      signal: result.signal,
+      timedOut: result.timedOut,
+    }
   };
 }
 
 /**
  * Query CBM with search_code to verify marker visibility.
  */
-export async function queryCbmMarker(cbmExecutable, projectName, marker, cacheDir, configDir, env = {}, sandboxProfile = null, timeout = 30000) {
+export async function queryCbmMarker(cbmExecutable, projectName, marker, targetPath, cacheDir, configDir, env = {}, sandboxProfile = null, timeout = 30000) {
   const searchArgs = [
     'cli', 'search_code',
     '--pattern', marker,
@@ -247,6 +359,12 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, cacheDi
     argv = ['-f', sandboxProfile, cbmExecutable, ...searchArgs];
   }
 
+  // Validate environment
+  const envValidation = validateEnvironment(env, cacheDir, configDir, env.HOME);
+  if (!envValidation.valid) {
+    return { visible: false, reason: `environment invalid: ${envValidation.reason}` };
+  }
+
   const result = await runChildWithTimeMetrics({
     executable,
     argv,
@@ -256,8 +374,17 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, cacheDi
     detached: true,
   });
 
-  if (!result.commandSucceeded) {
-    return { visible: false, reason: `query failed (exit=${result.exitCode})` };
+  // Require result.success === true, not just commandSucceeded
+  if (!result.success) {
+    return {
+      visible: false,
+      reason: `query failed (exit=${result.exitCode})`,
+      measurementProvenance: {
+        exitCode: result.exitCode,
+        signal: result.signal,
+        timedOut: result.timedOut,
+      }
+    };
   }
 
   try {
@@ -266,8 +393,25 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, cacheDi
       return { visible: false, reason: 'query output not array' };
     }
     // Marker is visible only if exact marker string appears in results
-    const visible = output.some(r => r && typeof r === 'object' && r.text && r.text.includes(marker));
-    return { visible, results: output };
+    // AND the result file matches the expected target path relative to repository
+    const visible = output.some(r => {
+      if (!r || typeof r !== 'object') return false;
+      if (!r.text || !r.text.includes(marker)) return false;
+      // Verify the marker appeared in the target file (check by filename or path)
+      const resultFile = r.file || '';
+      const targetFilename = path.basename(targetPath);
+      return resultFile === targetFilename || resultFile.includes(targetFilename);
+    });
+    return {
+      visible,
+      results: output,
+      measurementProvenance: {
+        exitCode: result.exitCode,
+        signal: result.signal,
+        timedOut: result.timedOut,
+        wallMs: result.wallMs,
+      }
+    };
   } catch (e) {
     return { visible: false, reason: `query parse error: ${e.message}` };
   }
@@ -292,10 +436,14 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, cacheDi
  *   initialIndexWallMs?: number,
  *   initialIndexCpuPercent?: number,
  *   initialIndexPeakRssMb?: number,
+ *   initialIndexProvenance?: object,
  *   incrementalReindexWallMs?: number,
  *   incrementalReindexCpuPercent?: number,
  *   incrementalReindexPeakRssMb?: number,
+ *   incrementalReindexProvenance?: object,
+ *   markerQueryProvenance?: object,
  *   cacheBytes?: number,
+ *   cacheBytesInitial?: number,
  *   markerVisible?: boolean,
  *   restorationVerified?: boolean,
  *   marker?: string,
@@ -306,106 +454,185 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, cacheDi
 export async function runIncrementalReindex(opts = {}) {
   const { cbmExecutable, disposableRepositoryPath, repoId, projectName, cacheDir, configDir, env, sandboxProfile, timeout = 120000 } = opts;
 
+  let result = {
+    success: false,
+    reason: null,
+    initialIndexWallMs: null,
+    initialIndexCpuPercent: null,
+    initialIndexPeakRssMb: null,
+    initialIndexProvenance: null,
+    incrementalReindexWallMs: null,
+    incrementalReindexCpuPercent: null,
+    incrementalReindexPeakRssMb: null,
+    incrementalReindexProvenance: null,
+    markerQueryProvenance: null,
+    cacheBytes: null,
+    cacheBytesInitial: null,
+    markerVisible: false,
+    restorationVerified: false,
+    marker: null,
+    targetFilePath: null,
+    provenance: null,
+  };
+
   if (!cbmExecutable || !disposableRepositoryPath || !repoId || !projectName || !cacheDir || !configDir || !env) {
-    return { success: false, reason: 'missing required parameters' };
+    result.reason = 'missing required parameters';
+    return result;
   }
 
   // Validate directories
   let validation = validateRunDirectory(cacheDir, 'cacheDir');
-  if (!validation.valid) return { success: false, reason: validation.reason };
+  if (!validation.valid) {
+    result.reason = validation.reason;
+    return result;
+  }
 
   validation = validateRunDirectory(configDir, 'configDir');
-  if (!validation.valid) return { success: false, reason: validation.reason };
+  if (!validation.valid) {
+    result.reason = validation.reason;
+    return result;
+  }
 
   if (!fs.existsSync(disposableRepositoryPath)) {
-    return { success: false, reason: 'disposable repository does not exist' };
+    result.reason = 'disposable repository does not exist';
+    return result;
   }
 
   // Validate isolation
   validation = validatePathIsolation(cacheDir, configDir, disposableRepositoryPath);
-  if (!validation.valid) return { success: false, reason: validation.reason };
+  if (!validation.valid) {
+    result.reason = validation.reason;
+    return result;
+  }
 
   // Find target file
   const targetFilePath = findTargetFile(disposableRepositoryPath);
   if (!targetFilePath) {
-    return { success: false, reason: 'no target file found (.ts or .js)' };
+    result.reason = 'no target file found (.ts or .js)';
+    return result;
   }
+
+  result.targetFilePath = targetFilePath;
 
   // Hash initial state
   const initialTargetHash = hashFile(targetFilePath);
   const initialRepoHash = hashDirectory(disposableRepositoryPath);
   if (!initialTargetHash || !initialRepoHash) {
-    return { success: false, reason: 'failed to hash initial state' };
+    result.reason = 'failed to hash initial state';
+    return result;
   }
 
+  // Measure initial cache bytes
+  const cacheBytesInitial = measureCacheBytes(cacheDir);
+  result.cacheBytesInitial = cacheBytesInitial;
+
   const marker = generateMarker();
+  result.marker = marker;
   let markerLine = null;
 
   try {
     // Step 1: Initial index
     const initialIndexResult = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout);
     if (!initialIndexResult.success) {
-      return { success: false, reason: `initial index failed: ${initialIndexResult.error}` };
+      result.reason = `initial index failed: ${initialIndexResult.error}`;
+      return result;
     }
+
+    result.initialIndexWallMs = initialIndexResult.wallMs;
+    result.initialIndexCpuPercent = initialIndexResult.cpuPercent;
+    result.initialIndexPeakRssMb = initialIndexResult.peakRssMb;
+    result.initialIndexProvenance = initialIndexResult.measurementProvenance;
 
     // Step 2: Apply marker
     markerLine = applyMarker(targetFilePath, marker);
     if (!markerLine) {
-      return { success: false, reason: 'failed to apply marker' };
+      result.reason = 'failed to apply marker';
+      return result;
     }
 
     // Step 3: Re-index
     const reindexResult = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout);
     if (!reindexResult.success) {
-      return { success: false, reason: `incremental reindex failed: ${reindexResult.error}` };
+      result.reason = `incremental reindex failed: ${reindexResult.error}`;
+      return result;
     }
+
+    result.incrementalReindexWallMs = reindexResult.wallMs;
+    result.incrementalReindexCpuPercent = reindexResult.cpuPercent;
+    result.incrementalReindexPeakRssMb = reindexResult.peakRssMb;
+    result.incrementalReindexProvenance = reindexResult.measurementProvenance;
 
     // Step 4: Query for visibility
-    const visibilityResult = await queryCbmMarker(cbmExecutable, projectName, marker, cacheDir, configDir, env, sandboxProfile, timeout);
-    const markerVisible = visibilityResult.visible;
-
-    if (!markerVisible) {
-      return { success: false, reason: 'marker not visible after reindex' };
+    const visibilityResult = await queryCbmMarker(cbmExecutable, projectName, marker, targetFilePath, cacheDir, configDir, env, sandboxProfile, timeout);
+    if (!visibilityResult.visible) {
+      result.reason = `marker not visible after reindex: ${visibilityResult.reason || 'unknown'}`;
+      result.markerQueryProvenance = visibilityResult.measurementProvenance;
+      return result;
     }
 
-    // Step 5: Measure cache bytes (must be nonzero)
-    const cacheBytes = measureCacheBytes(cacheDir);
-    if (cacheBytes === 0) {
-      return { success: false, reason: 'cache bytes is zero after indexing' };
+    result.markerVisible = true;
+    result.markerQueryProvenance = visibilityResult.measurementProvenance;
+
+    // Step 5: Measure cache bytes (must be nonzero and attributable)
+    const cacheBytesFinal = measureCacheBytes(cacheDir);
+    result.cacheBytes = cacheBytesFinal;
+    if (cacheBytesFinal === 0) {
+      result.reason = 'cache bytes is zero after indexing';
+      return result;
     }
 
-    return {
-      success: true,
-      initialIndexWallMs: initialIndexResult.wallMs,
-      initialIndexCpuPercent: initialIndexResult.cpuPercent,
-      initialIndexPeakRssMb: initialIndexResult.peakRssMb,
-      incrementalReindexWallMs: reindexResult.wallMs,
-      incrementalReindexCpuPercent: reindexResult.cpuPercent,
-      incrementalReindexPeakRssMb: reindexResult.peakRssMb,
-      cacheBytes,
-      markerVisible,
-      restorationVerified: true,
-      marker,
-      targetFilePath,
-      provenance: {
-        cacheDir,
-        configDir,
-        sandboxProfile,
-      },
-    };
+    // Verify cache delta is positive and attributable
+    const cacheDelta = cacheBytesFinal - cacheBytesInitial;
+    if (cacheDelta <= 0) {
+      result.reason = `no attributable cache delta (initial=${cacheBytesInitial}, final=${cacheBytesFinal})`;
+      return result;
+    }
+
+    // Mark success only if all prior checks passed
+    result.success = true;
+
   } finally {
     // Always restore on exit
+    let restorationError = null;
     if (markerLine) {
-      restoreFile(targetFilePath, markerLine);
-    }
-
-    // Verify restoration
-    const finalTargetHash = hashFile(targetFilePath);
-    const finalRepoHash = hashDirectory(disposableRepositoryPath);
-    if (finalTargetHash !== initialTargetHash || finalRepoHash !== initialRepoHash) {
-      if (arguments[0].success !== false) { // Only override if not already failed
-        // This should update existing success path to add failure
+      const restoreResult = restoreFile(targetFilePath, markerLine);
+      if (!restoreResult.success) {
+        restorationError = restoreResult.reason;
+        // Restoration failure overrides all earlier success
+        result.success = false;
+        if (!result.reason) {
+          result.reason = `restoration failed: ${restorationError}`;
+        }
       }
     }
+
+    // Verify restoration by comparing hashes
+    const finalTargetHash = hashFile(targetFilePath);
+    const finalRepoHash = hashDirectory(disposableRepositoryPath);
+    const targetHashMatches = finalTargetHash === initialTargetHash;
+    const repoHashMatches = finalRepoHash === initialRepoHash;
+
+    result.restorationVerified = targetHashMatches && repoHashMatches && !restorationError;
+
+    if (!targetHashMatches || !repoHashMatches) {
+      result.success = false;
+      if (!result.reason) {
+        result.reason = 'restoration verification failed: hashes do not match';
+      }
+    }
+
+    result.provenance = {
+      cacheDir,
+      configDir,
+      sandboxProfile,
+      initialTargetHash,
+      initialRepoHash,
+      finalTargetHash,
+      finalRepoHash,
+      targetHashMatches,
+      repoHashMatches,
+    };
   }
+
+  return result;
 }

@@ -31,7 +31,7 @@ function cleanup(dir) {
 }
 
 /**
- * Create a deterministic fake CBM executable that logs argv and env.
+ * Create a deterministic fake CBM executable that logs argv and env, and creates cache artifacts.
  */
 function createFakeCbm(tmpDir) {
   const fakeCbmPath = path.join(tmpDir, 'fake-cbm');
@@ -43,6 +43,12 @@ echo "$@" >> "$ARGV_LOG"
 env | grep -E "(HOME|XDG_)" | sort >> "$ENV_LOG"
 
 if [[ "$1" == "cli" && "$2" == "index_repository" ]]; then
+  # Create cache artifacts for proof of indexing
+  CACHE_DIR="\${XDG_CACHE_HOME}"
+  if [[ -n "$CACHE_DIR" && -d "$CACHE_DIR" ]]; then
+    mkdir -p "$CACHE_DIR/cbm-cache"
+    dd if=/dev/zero of="$CACHE_DIR/cbm-cache/index.bin" bs=1024 count=10 2>/dev/null
+  fi
   echo '{"indexed": true, "project": "'$(grep -- '--name' <(echo "$@") | head -1 | awk '{print $NF}')'"}'
   exit 0
 elif [[ "$1" == "cli" && "$2" == "search_code" ]]; then
@@ -250,17 +256,170 @@ test('runIncrementalReindex: no target file found', async () => {
   } finally { cleanup(tmpDir); }
 });
 
-test('runIncrementalReindex: with deterministic fake CBM', async () => {
+test('runIncrementalReindex: comprehensive fake-CBM success with full provenance', async () => {
   const tmpDir = makeTempDir();
   try {
     const repoDir = path.join(tmpDir, 'source');
     const cacheDir = path.join(tmpDir, 'cache');
     const configDir = path.join(tmpDir, 'config');
+    const homeDir = path.join(tmpDir, 'home');
     fs.mkdirSync(repoDir);
     fs.mkdirSync(cacheDir);
     fs.mkdirSync(configDir);
+    fs.mkdirSync(homeDir);
+    fs.chmodSync(homeDir, 0o700);
     fs.writeFileSync(path.join(repoDir, 'index.ts'), 'export const x = 1;');
-    fs.writeFileSync(path.join(cacheDir, 'dummy'), 'cache');
+    // Pre-populate cache with bytes before indexing
+    fs.writeFileSync(path.join(cacheDir, 'precache'), 'x'.repeat(100));
+
+    const fakeCbm = createFakeCbm(tmpDir);
+
+    const result = await runIncrementalReindex({
+      cbmExecutable: fakeCbm,
+      disposableRepositoryPath: repoDir,
+      repoId: 'test-repo-123',
+      projectName: 'test-project',
+      cacheDir,
+      configDir,
+      env: {
+        HOME: homeDir,
+        PATH: '/bin:/usr/bin',
+        XDG_CACHE_HOME: cacheDir,
+        XDG_CONFIG_HOME: configDir,
+      },
+      timeout: 10000,
+    });
+
+    // Verify successful result
+    assert.equal(result.success, true, `Expected success, got: ${result.reason}`);
+    assert.equal(result.marker !== null, true, 'marker should be set');
+    assert.ok(result.marker.startsWith('B8.1-mark-'), 'marker format incorrect');
+    assert.equal(result.targetFilePath !== null, true, 'targetFilePath should be set');
+    assert.ok(result.targetFilePath.endsWith('index.ts'), 'targetFilePath should be index.ts');
+
+    // Verify two index calls + one search call
+    assert.equal(result.initialIndexWallMs !== null, true, 'initial index wallMs should be measured');
+    assert.equal(result.incrementalReindexWallMs !== null, true, 'incremental reindex wallMs should be measured');
+    assert.equal(result.markerVisible, true, 'marker should be visible');
+
+    // Verify isolated environment
+    assert.equal(result.provenance.cacheDir, cacheDir, 'cache dir mismatch');
+    assert.equal(result.provenance.configDir, configDir, 'config dir mismatch');
+
+    // Verify distinct paths
+    assert.notEqual(repoDir, cacheDir, 'repo and cache should be distinct');
+    assert.notEqual(repoDir, configDir, 'repo and config should be distinct');
+    assert.notEqual(cacheDir, configDir, 'cache and config should be distinct');
+
+    // Verify positive attributable cache evidence
+    assert.ok(result.cacheBytes > result.cacheBytesInitial, 'cache delta should be positive');
+    const cacheDelta = result.cacheBytes - result.cacheBytesInitial;
+    assert.ok(cacheDelta > 0, `cache delta should be positive: ${cacheDelta}`);
+
+    // Verify valid provenance
+    assert.equal(result.provenance.targetHashMatches, true, 'target file should be restored');
+    assert.equal(result.provenance.repoHashMatches, true, 'repo should be restored');
+    assert.equal(result.restorationVerified, true, 'restoration should be verified');
+  } finally { cleanup(tmpDir); }
+});
+
+test('runIncrementalReindex: restoration failure overrides success', async () => {
+  const tmpDir = makeTempDir();
+  try {
+    const repoDir = path.join(tmpDir, 'source');
+    const cacheDir = path.join(tmpDir, 'cache');
+    const configDir = path.join(tmpDir, 'config');
+    const homeDir = path.join(tmpDir, 'home');
+    fs.mkdirSync(repoDir);
+    fs.mkdirSync(cacheDir);
+    fs.mkdirSync(configDir);
+    fs.mkdirSync(homeDir);
+    fs.chmodSync(homeDir, 0o700);
+    const targetFile = path.join(repoDir, 'index.ts');
+    fs.writeFileSync(targetFile, 'export const x = 1;');
+
+    const fakeCbm = createFakeCbm(tmpDir);
+
+    // Run normally first
+    const result = await runIncrementalReindex({
+      cbmExecutable: fakeCbm,
+      disposableRepositoryPath: repoDir,
+      repoId: 'test',
+      projectName: 'test-project',
+      cacheDir,
+      configDir,
+      env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir },
+      timeout: 10000,
+    });
+
+    // Even if it succeeds, the file should be restored and hashes should match
+    assert.equal(result.restorationVerified, true, 'restoration should be verified');
+  } finally { cleanup(tmpDir); }
+});
+
+test('runIncrementalReindex: source inside cache rejected', async () => {
+  const tmpDir = makeTempDir();
+  try {
+    const cacheDir = path.join(tmpDir, 'cache');
+    const repoDir = path.join(cacheDir, 'source');
+    const configDir = path.join(tmpDir, 'config');
+    fs.mkdirSync(cacheDir);
+    fs.mkdirSync(repoDir);
+    fs.mkdirSync(configDir);
+    fs.writeFileSync(path.join(repoDir, 'index.ts'), 'code');
+
+    const result = await runIncrementalReindex({
+      cbmExecutable: '/fake/cbm',
+      disposableRepositoryPath: repoDir,
+      repoId: 'test',
+      projectName: 'test-project',
+      cacheDir,
+      configDir,
+      env: { HOME: '/tmp' },
+    });
+    assert.equal(result.success, false, 'should reject source inside cache');
+    assert.match(result.reason, /contained within cache/);
+  } finally { cleanup(tmpDir); }
+});
+
+test('runIncrementalReindex: cache inside config rejected', async () => {
+  const tmpDir = makeTempDir();
+  try {
+    const configDir = path.join(tmpDir, 'config');
+    const cacheDir = path.join(configDir, 'cache');
+    const repoDir = path.join(tmpDir, 'source');
+    fs.mkdirSync(configDir);
+    fs.mkdirSync(cacheDir);
+    fs.mkdirSync(repoDir);
+    fs.writeFileSync(path.join(repoDir, 'index.ts'), 'code');
+
+    const result = await runIncrementalReindex({
+      cbmExecutable: '/fake/cbm',
+      disposableRepositoryPath: repoDir,
+      repoId: 'test',
+      projectName: 'test-project',
+      cacheDir,
+      configDir,
+      env: { HOME: '/tmp' },
+    });
+    assert.equal(result.success, false, 'should reject cache inside config');
+    assert.match(result.reason, /contained within config/);
+  } finally { cleanup(tmpDir); }
+});
+
+test('runIncrementalReindex: wrong XDG environment rejected', async () => {
+  const tmpDir = makeTempDir();
+  try {
+    const repoDir = path.join(tmpDir, 'source');
+    const cacheDir = path.join(tmpDir, 'cache');
+    const configDir = path.join(tmpDir, 'config');
+    const homeDir = path.join(tmpDir, 'home');
+    fs.mkdirSync(repoDir);
+    fs.mkdirSync(cacheDir);
+    fs.mkdirSync(configDir);
+    fs.mkdirSync(homeDir);
+    fs.chmodSync(homeDir, 0o700);
+    fs.writeFileSync(path.join(repoDir, 'index.ts'), 'code');
 
     const fakeCbm = createFakeCbm(tmpDir);
 
@@ -271,11 +430,41 @@ test('runIncrementalReindex: with deterministic fake CBM', async () => {
       projectName: 'test-project',
       cacheDir,
       configDir,
+      env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: '/wrong' },
+      timeout: 10000,
+    });
+    assert.equal(result.success, false, 'should reject wrong XDG_CACHE_HOME');
+  } finally { cleanup(tmpDir); }
+});
+
+test('runIncrementalReindex: invalid measurement despite exit zero', async () => {
+  const tmpDir = makeTempDir();
+  try {
+    const repoDir = path.join(tmpDir, 'source');
+    const cacheDir = path.join(tmpDir, 'cache');
+    const configDir = path.join(tmpDir, 'config');
+    fs.mkdirSync(repoDir);
+    fs.mkdirSync(cacheDir);
+    fs.mkdirSync(configDir);
+    fs.writeFileSync(path.join(repoDir, 'index.ts'), 'code');
+
+    // Fake CBM that returns invalid JSON
+    const fakeCbmPath = path.join(tmpDir, 'fake-cbm-bad');
+    fs.writeFileSync(fakeCbmPath, '#!/bin/bash\necho "not json"\nexit 0', 'utf8');
+    fs.chmodSync(fakeCbmPath, 0o755);
+
+    const result = await runIncrementalReindex({
+      cbmExecutable: fakeCbmPath,
+      disposableRepositoryPath: repoDir,
+      repoId: 'test',
+      projectName: 'test-project',
+      cacheDir,
+      configDir,
       env: { HOME: tmpDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir },
       timeout: 10000,
     });
-    // May succeed or fail depending on fake CBM behavior, but should have structure
-    assert.ok(result.hasOwnProperty('success'));
+    assert.equal(result.success, false, 'should reject invalid measurement');
+    assert.match(result.reason, /initial index failed/);
   } finally { cleanup(tmpDir); }
 });
 

@@ -78,10 +78,14 @@ test('runChildWithTimeMetrics: success with echo', async () => {
     env: { PATH: '/bin:/usr/bin' },
     timeout: 5000,
   });
-  assert.equal(result.success, true);
-  assert.equal(result.measurementValid, true);
-  assert.equal(result.commandSucceeded, true);
-  assert.ok(result.cpuPercent !== null);
+  assert.equal(result.success, true, 'echo should succeed');
+  assert.equal(result.measurementValid, true, 'measurement should be valid');
+  assert.equal(result.commandSucceeded, true, 'command should succeed');
+  assert.ok(result.cpuPercent !== null, 'cpuPercent should be measured');
+  assert.equal(result.stdoutTruncated, false, 'stdout should not be truncated');
+  assert.equal(result.stderrTruncated, false, 'stderr should not be truncated');
+  assert.equal(result.metricsTruncated, false, 'metrics should not be truncated');
+  assert.equal(result.orphanedProcessGroup, false, 'process group should be cleaned');
 });
 
 test('runChildWithTimeMetrics: explicit env isolation', async () => {
@@ -91,8 +95,9 @@ test('runChildWithTimeMetrics: explicit env isolation', async () => {
     env: { PATH: '/bin:/usr/bin', TEST_VAR: 'explicit_value' },
     timeout: 5000,
   });
-  assert.equal(result.exitCode, 0);
-  assert.ok(result.stdout.includes('explicit_value'));
+  assert.equal(result.exitCode, 0, 'should exit 0');
+  assert.ok(result.stdout.includes('explicit_value'), 'should echo test var');
+  assert.equal(result.commandSucceeded, true, 'command should succeed');
 });
 
 test('runChildWithTimeMetrics: nonzero exit fails success', async () => {
@@ -102,7 +107,8 @@ test('runChildWithTimeMetrics: nonzero exit fails success', async () => {
     env: { PATH: '/bin:/usr/bin' },
     timeout: 5000,
   });
-  assert.equal(result.success, false);
+  assert.equal(result.success, false, 'nonzero exit should fail');
+  assert.equal(result.commandSucceeded, false, 'commandSucceeded should be false');
   assert.equal(result.exitCode, 42);
 });
 
@@ -134,8 +140,9 @@ test('runChildWithTimeMetrics: timeout kills process', async () => {
     timeout: 300,
     detached: true,
   });
-  assert.equal(result.timedOut, true);
-  assert.equal(result.success, false);
+  assert.equal(result.timedOut, true, 'should be marked as timed out');
+  assert.equal(result.success, false, 'timeout should fail');
+  assert.equal(result.orphanedProcessGroup, false, 'process group should be cleaned up');
 });
 
 test('runChildWithTimeMetrics: provenance recorded', async () => {
@@ -145,7 +152,30 @@ test('runChildWithTimeMetrics: provenance recorded', async () => {
     env: { PATH: '/bin' },
     timeout: 5000,
   });
-  assert.ok(result.provenance);
+  assert.ok(result.provenance, 'provenance should exist');
   assert.equal(result.provenance.method, '/usr/bin/time -l (via metrics file)');
-  assert.ok(result.provenance.samplerPid);
+  assert.ok(result.provenance.samplerPid, 'samplerPid should be recorded');
+});
+
+test('runChildWithTimeMetrics: stdout truncation detected and fails', async () => {
+  const result = await runChildWithTimeMetrics({
+    executable: '/bin/sh',
+    argv: ['-c', 'head -c 20000000 /dev/zero'],
+    env: { PATH: '/bin:/usr/bin' },
+    timeout: 5000,
+  });
+  assert.equal(result.stdoutTruncated, true, 'should detect stdout truncation');
+  assert.equal(result.success, false, 'truncation should fail success');
+});
+
+test('runChildWithTimeMetrics: orphan cleanup verified', async () => {
+  const result = await runChildWithTimeMetrics({
+    executable: '/bin/sh',
+    argv: ['-c', 'sleep 60'],
+    env: { PATH: '/bin:/usr/bin' },
+    timeout: 200,
+    detached: true,
+  });
+  // Should not be marked as orphaned if cleanup succeeded
+  assert.equal(result.orphanedProcessGroup, false, 'process group should be cleaned up after timeout');
 });
