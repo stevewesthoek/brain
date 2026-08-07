@@ -4,9 +4,9 @@
 
 Generate B8.1 v7u canonical authorization package (Node 20 binding). Supersede noncompliant Node 25 v7t. No materialization or execution.
 
-## Current state — 2026-08-07 09:50 UTC (V7U Recovery)
+## Current state — 2026-08-07 ~10:30 UTC (V7U Consistency Recovery)
 
-- Source: `brain-next`, branch `main`, HEAD `39e33b69` (synced with origin/main).
+- Source: `brain-next`, branch `main`, HEAD `d3825520` (synced with origin/main).
 - **Active:** v7u canonical approvable contract (Node 20 binding).
 - v7u plan: `operations/reports/b8-1-canonical-plan-v7u-2026-08-07.json` (11.9 KB).
 - v7u receipt: `operations/reports/b8-1-dry-run-receipt-v7u-2026-08-07.json` (4.2 KB).
@@ -18,7 +18,7 @@ Generate B8.1 v7u canonical authorization package (Node 20 binding). Supersede n
 - Subjects: `cbm`, `exact-source`; Graphify excluded; partial evidence true.
 - Preflight: **executionReady=true**, zero blockers, 21 contained write paths, minimum 2000 MB disk constraint passed.
 - All 13 checks pass (12 pass, 1 excluded-subject per spec).
-- All six focused B8.1 suites: 268/268 pass.
+- All six focused B8.1 suites: 269/269 pass (executor, process-metrics, cbm-reindex, evidence-validator, preflight/plan, manifest + stale-digest rejection extended).
 - JSON validation, document consistency, MCP admission, Graphify-profile validation, secret scan: all pass.
 - `git diff --check`: pass.
 - B8.1 status: `corrected-contract-awaiting-owner-approval`.

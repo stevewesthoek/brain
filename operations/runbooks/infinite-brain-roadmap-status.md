@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-07
-**Audited:** 2026-08-07 — B8.1 v7r / 7.1.0 is authorization-ready with a verified two-subject dry-run plan; no materialization or execution has occurred
+**Last verified:** 2026-08-07 (v7u recovery)
+**Audited:** 2026-08-07 — B8.1 v7u / 7.1.0 is canonical approvable contract with explicit Node 20.20.2 binding; v7t (Node 25) marked stale; all 269/269 focused tests pass; no materialization or execution has occurred
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
@@ -42,17 +42,19 @@ but failed: CBM marker-query output-format mismatch in incremental-reindex. All
 10 CBM fixtures failed; exact-source fixtures all passed (10/10). Root cause
 identified and repaired in commit `2ca2b9ec`. Failed v7r evidence archived
 immutably at `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260806-final-v7r/`.
-The corrected v7s / 7.1.0 two-subject contract is now the sole approvable contract:
-`operations/reports/b8-1-canonical-plan-v7s-2026-08-07.json` independently
-verifies at digest
-`90ef52be30be8db5f2df34d04ba8c07f7e16d32798f131c741d627b3f60bcc66`.
-The paired dry-run receipt records `executionReady=false` (dry-run only),
+v7s (2026-08-07, noncanonical hand-simplified output) and v7t (2026-08-07, Node 25 runtime
+binding noncompliant with Node 20 stop condition) marked historical.
+The canonical v7u / 7.1.0 two-subject contract with explicit Node 20.20.2 binding is now
+the sole approvable contract: `operations/reports/b8-1-canonical-plan-v7u-2026-08-07.json`
+independently verifies at digest `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed`.
+Node runtime: `/Users/Office/.nvm/versions/node/v20.20.2/bin/node` (SHA-256 `38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6`).
+The paired dry-run receipt records `executionReady=true`,
 zero blockers, `cbm,exact-source` selected, Graphify excluded, incremental-reindex
-repaired (SHA256 `438a154b...`), and no materialization/execution. All six
-focused B8.1 suites pass 324/324 (including new regression tests). No materialization,
+bound (SHA256 `438a154b...`), and no materialization/execution. All six
+focused B8.1 suites pass 269/269. No materialization,
 benchmark execution, or owner approval has occurred yet.
 B8.1 status: `corrected-contract-awaiting-owner-approval`. B8.2 remains
-blocked pending owner-approved v7s materialization, execution, evidence validation,
+blocked pending owner-approved v7u materialization, execution, evidence validation,
 and owner disposition. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.
