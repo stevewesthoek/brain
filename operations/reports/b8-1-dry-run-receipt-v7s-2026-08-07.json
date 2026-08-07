@@ -1,0 +1,77 @@
+{
+  "receiptVersion": "1.0.0",
+  "preflight": {
+    "runId": "b8-1-canonical-authorization-20260807-final-v7s",
+    "planVersion": "7.1.0",
+    "selectedSubjects": ["cbm", "exact-source"],
+    "excludedSubjects": ["graphify"],
+    "partialEvidence": true,
+    "createdAt": "2026-08-07T12:00:00Z",
+    "dryRun": true
+  },
+  "checks": {
+    "manifest-validation": {
+      "status": "pass",
+      "detail": "10 fixtures across 3 repos; sha256=a70a87ac33fdbe47..."
+    },
+    "pinned-commit:brain": {
+      "status": "pass",
+      "commit": "f683edff753937944018dd00bf5494c85f62e881"
+    },
+    "pinned-commit:workbench": {
+      "status": "pass",
+      "commit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2"
+    },
+    "pinned-commit:prochat": {
+      "status": "pass",
+      "commit": "85087d54f712b1333be7c620f23b6bcac9cde90b"
+    },
+    "run-id-valid": {
+      "status": "pass",
+      "runId": "b8-1-canonical-authorization-20260807-final-v7s"
+    },
+    "cbm-binary-identity": {
+      "status": "pass",
+      "version": "v0.9.0",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+    },
+    "network-isolation": {
+      "status": "pass",
+      "adapter": "sandbox-exec",
+      "profileSha256": "bd1de96bd9906950492a3d919ada1dfc6dfefd60780c7b242f87e6689c4f675a"
+    },
+    "graphify-subject": {
+      "status": "excluded-subject",
+      "detail": "graphify not selected; bounded code-only invocation remains blocked"
+    },
+    "exact-source-ready": {
+      "status": "pass",
+      "tools": ["grep", "find", "cat"]
+    },
+    "disk-budget": {
+      "status": "pass",
+      "available_mb": 3891,
+      "constraint_mb": 2000
+    },
+    "planned-write-containment": {
+      "status": "pass",
+      "plannedPathsCount": 21,
+      "containedIn": "/Users/Office/.brain"
+    }
+  },
+  "implementation_identity": {
+    "cbm_incremental_reindex": {
+      "file": "tools/lib/b8-1-cbm-incremental-reindex.mjs",
+      "sha256": "438a154b0232a36191683ab503fb6941cd90e37408c6b9dc7764b1db9b36fd98",
+      "status": "repaired-v7s",
+      "previousSha256": "2b15855fff59e0e2c9b6354542befe5649bee4738b3f822cee8a2b9168ca9461",
+      "previousStatus": "failed-v7r-query-output-not-array"
+    }
+  },
+  "summary": {
+    "executionReady": false,
+    "materialized": false,
+    "reason": "dry-run only; does not require source-state-binding for plan generation",
+    "nextStep": "owner approval of digest then materialize and execute with clean sources"
+  }
+}

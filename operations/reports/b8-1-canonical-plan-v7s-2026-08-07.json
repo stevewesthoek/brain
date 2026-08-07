@@ -1,0 +1,149 @@
+{
+  "planVersion": "7.1.0",
+  "runId": "b8-1-canonical-authorization-20260807-final-v7s",
+  "partialEvidence": true,
+  "selectedSubjects": [
+    "cbm",
+    "exact-source"
+  ],
+  "excludedSubjects": [
+    "graphify"
+  ],
+  "manifestRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.json",
+  "manifestHash": "sha256:a70a87ac33fdbe47592089680e8c183fd0c21db7d309441a503b40b4c1aced09",
+  "manifestSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.schema.json",
+  "manifestSchemaHash": "sha256:9d697c04f9325e0b4c6101aa367c5fc78ff71b6cc6c323331bbf322f48695e83",
+  "evidenceSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-evidence.schema.json",
+  "evidenceSchemaHash": "sha256:d906e5b77ba727a3138d05714861e181601c6b9d950606047dd124f7b88f5af2",
+  "pinnedRepositoryCommits": [
+    {
+      "repositoryId": "brain",
+      "commit": "f683edff753937944018dd00bf5494c85f62e881"
+    },
+    {
+      "repositoryId": "workbench",
+      "commit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2"
+    },
+    {
+      "repositoryId": "prochat",
+      "commit": "85087d54f712b1333be7c620f23b6bcac9cde90b"
+    }
+  ],
+  "subjectBinaryIdentity": {
+    "cbm": {
+      "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
+      "resolvedPath": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+      "version": "v0.9.0",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+    }
+  },
+  "networkIsolationProof": {
+    "required": true,
+    "status": "passed",
+    "adapterIdentity": {
+      "path": "/usr/bin/sandbox-exec",
+      "sha256": "8290e4be7387a0df83cd1559e86afd880464f269450573d012795761fe298f16"
+    },
+    "runtimeIdentity": {
+      "path": "/opt/homebrew/Cellar/node/25.9.0_1/bin/node",
+      "sha256": "a46ed02589ca3af795237111ff854262064f8ff5c5b58d75c1509f37311eb15e",
+      "version": "v25.9.0"
+    },
+    "profileSha256": "bd1de96bd9906950492a3d919ada1dfc6dfefd60780c7b242f87e6689c4f675a",
+    "controlSucceeded": true,
+    "sandboxedChildStarted": true,
+    "sandboxedConnectionDenied": true,
+    "selfTestPassed": true,
+    "selfTestDetail": "control succeeded; sandboxed child started; connection denied with EPERM",
+    "childIdentity": {
+      "sha256": "207a19ce264c25b3944264879d15b96dca46bfe4397468df956248f41fbd06db"
+    }
+  },
+  "cbmVerification": {
+    "required": true,
+    "status": "passed",
+    "binaryIdentity": {
+      "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
+      "resolvedPath": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+      "version": "v0.9.0",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+    },
+    "networkIsolationProof": {
+      "required": true,
+      "status": "passed",
+      "adapterIdentity": {
+        "path": "/usr/bin/sandbox-exec",
+        "sha256": "8290e4be7387a0df83cd1559e86afd880464f269450573d012795761fe298f16"
+      },
+      "runtimeIdentity": {
+        "path": "/opt/homebrew/Cellar/node/25.9.0_1/bin/node",
+        "sha256": "a46ed02589ca3af795237111ff854262064f8ff5c5b58d75c1509f37311eb15e",
+        "version": "v25.9.0"
+      },
+      "profileSha256": "bd1de96bd9906950492a3d919ada1dfc6dfefd60780c7b242f87e6689c4f675a",
+      "controlSucceeded": true,
+      "sandboxedChildStarted": true,
+      "sandboxedConnectionDenied": true,
+      "selfTestPassed": true,
+      "selfTestDetail": "control succeeded; sandboxed child started; connection denied with EPERM",
+      "childIdentity": {
+        "sha256": "207a19ce264c25b3944264879d15b96dca46bfe4397468df956248f41fbd06db"
+      }
+    }
+  },
+  "graphifyStatus": {
+    "governanceSha256": "25b5af6579f4e6d6bf062c7ca3d501aeef4f548aa03fad9710880eba25b73086",
+    "profileSha256": "8a9f1b142c005ae1cc9a1196e3339ef681ed663fb039c1ccf41eb51002e1f202",
+    "reason": "graphify not selected; bounded code-only invocation remains blocked",
+    "status": "excluded-subject"
+  },
+  "diskResult": {
+    "available_mb": 3891,
+    "constraint_mb": 2000,
+    "ok": true
+  },
+  "sourceStateHash": "treeSha-not-materialized",
+  "sourceLogicalIdentity": {
+    "brain": {
+      "pinnedCommit": "f683edff753937944018dd00bf5494c85f62e881",
+      "treeMatch": true
+    },
+    "workbench": {
+      "pinnedCommit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2",
+      "treeMatch": true
+    },
+    "prochat": {
+      "pinnedCommit": "85087d54f712b1333be7c620f23b6bcac9cde90b",
+      "treeMatch": true
+    }
+  },
+  "checks": [
+    {
+      "name": "manifest-validation",
+      "status": "pass",
+      "detail": "10 fixtures"
+    },
+    {
+      "name": "cbm-binary-identity",
+      "status": "pass",
+      "detail": "v0.9.0"
+    },
+    {
+      "name": "network-isolation",
+      "status": "pass",
+      "detail": "denied"
+    },
+    {
+      "name": "exact-source-ready",
+      "status": "pass",
+      "detail": "available"
+    },
+    {
+      "name": "disk-budget",
+      "status": "pass",
+      "detail": "3891MB"
+    }
+  ],
+  "planSha256": "90ef52be30be8db5f2df34d04ba8c07f7e16d32798f131c741d627b3f60bcc66",
+  "createdAt": "2026-08-07T12:27:54.365Z"
+}
