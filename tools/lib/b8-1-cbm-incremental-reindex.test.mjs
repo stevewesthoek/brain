@@ -757,3 +757,84 @@ test('runIncrementalReindex: child directory named ..cache allowed when isolated
     assert.equal(result.valid, true, 'child named ..cache should be allowed if isolated from source');
   } finally { cleanup(tmpDir); }
 });
+
+test('runIncrementalReindex: CBM search_code returns {results:[...]} object format (regression fix b8-1-v7r)', async () => {
+  // Regression: CBM v0.9.0 returns { results: [...] }, not bare [...]
+  // Previous code expected bare array, causing all marker queries to fail with "query output not array"
+  // This test reproduces the exact failed-run condition and proves the fix handles both formats.
+  const tmpDir = makeTempDir();
+  try {
+    const repoDir = path.join(tmpDir, 'source');
+    const cacheDir = path.join(tmpDir, 'cache');
+    const configDir = path.join(tmpDir, 'config');
+    const homeDir = path.join(tmpDir, 'home');
+    fs.mkdirSync(repoDir);
+    fs.mkdirSync(cacheDir);
+    fs.chmodSync(cacheDir, 0o700);
+    fs.mkdirSync(configDir);
+    fs.chmodSync(configDir, 0o700);
+    fs.mkdirSync(homeDir);
+    fs.chmodSync(homeDir, 0o700);
+    fs.writeFileSync(path.join(repoDir, 'index.ts'), 'export const marker_target = 1;');
+    fs.writeFileSync(path.join(cacheDir, 'precache'), 'x'.repeat(100));
+
+    // Create fake CBM that returns { results: [...] } (v0.9.0 real behavior)
+    const fakeCbmPath = path.join(tmpDir, 'cbm-object-output');
+    const fakeCbmScript = `#!/bin/bash
+CACHE_DIR="\${XDG_CACHE_HOME}"
+if [[ -n "$CACHE_DIR" && -d "$CACHE_DIR" ]]; then
+  mkdir -p "$CACHE_DIR/cbm-cache"
+  dd if=/dev/zero of="$CACHE_DIR/cbm-cache/index.bin" bs=1024 count=10 2>/dev/null
+fi
+
+if [[ "$1" == "cli" && "$2" == "index_repository" ]]; then
+  echo '{"indexed": true}'
+  exit 0
+elif [[ "$1" == "cli" && "$2" == "search_code" ]]; then
+  PATTERN=""
+  for i in "$@"; do
+    if [[ "$prev" == "--pattern" ]]; then
+      PATTERN="$i"
+    fi
+    prev="$i"
+  done
+  if [[ -n "$PATTERN" ]]; then
+    # Real v0.9.0 behavior: returns { results: [...] }, not bare array
+    echo '{"results": [{"file": "index.ts", "text": "'$PATTERN'", "line": 1}]}'
+  else
+    echo '{"results": []}'
+  fi
+  exit 0
+else
+  echo '{"error": "unknown command"}'
+  exit 1
+fi
+`;
+    fs.writeFileSync(fakeCbmPath, fakeCbmScript, 'utf8');
+    fs.chmodSync(fakeCbmPath, 0o755);
+
+    const result = await runIncrementalReindex({
+      cbmExecutable: fakeCbmPath,
+      disposableRepositoryPath: repoDir,
+      repoId: 'test-repo',
+      projectName: 'test-project',
+      cacheDir,
+      configDir,
+      env: {
+        HOME: homeDir,
+        PATH: '/bin:/usr/bin',
+        XDG_CACHE_HOME: cacheDir,
+        XDG_CONFIG_HOME: configDir,
+      },
+      timeout: 10000,
+    });
+
+    if (!result.success) {
+      console.error('Test failure reason:', result.reason);
+    }
+    assert.equal(result.success, true, `should succeed with CBM returning {results:[...]}, but got reason: ${result.reason}`);
+    assert.equal(result.markerVisible, true, 'marker should be visible despite object wrapper');
+    assert.ok(result.cacheBytes > 0, 'cache bytes should be measurable');
+    assert.ok(result.restorationVerified, 'restoration should be verified');
+  } finally { cleanup(tmpDir); }
+});

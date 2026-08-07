@@ -454,12 +454,11 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
 
   try {
     const output = JSON.parse(result.stdout);
-    if (!Array.isArray(output)) {
-      return { visible: false, reason: 'query output not array' };
-    }
+    // CBM may return either bare array or { results: [...] }
+    const results = Array.isArray(output) ? output : (Array.isArray(output?.results) ? output.results : []);
 
     // Exact match required: marker must be in the exact target file path, nowhere else
-    const visible = output.some(r => {
+    const visible = results.some(r => {
       if (!r || typeof r !== 'object') return false;
       if (!r.text || !r.text.includes(marker)) return false;
       // Exact path match (relative to repository)
@@ -469,7 +468,7 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
 
     return {
       visible,
-      results: output,
+      results,
       cpuPercent: result.cpuPercent,
       peakRssMb: result.peakRssMb,
       measurementProvenance: result.provenance,
