@@ -37,17 +37,23 @@ activation, additional repository rollout, watcher or scheduler changes, or
 canonical Graphify migration.
 B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
 That run remains immutable infrastructure evidence only.
-The corrected v7r / 7.1.0 two-subject contract is now authorization-ready:
-`operations/reports/b8-1-canonical-plan-v7r-2026-08-07.json` independently
+B8.1 v7r / 7.1.0 two-subject contract was materialized and executed on 2026-08-06,
+but failed: CBM marker-query output-format mismatch in incremental-reindex. All
+10 CBM fixtures failed; exact-source fixtures all passed (10/10). Root cause
+identified and repaired in commit `2ca2b9ec`. Failed v7r evidence archived
+immutably at `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260806-final-v7r/`.
+The corrected v7s / 7.1.0 two-subject contract is now the sole approvable contract:
+`operations/reports/b8-1-canonical-plan-v7s-2026-08-07.json` independently
 verifies at digest
-`0eec69c1befd7ce11f359fe53aef4f033dbb38a5f767f73bad2800b8db37efa0`.
-The paired dry-run receipt records `executionReady=true`, zero blockers,
-`cbm,exact-source` selected, Graphify excluded, and no run directory. All six
-focused B8.1 suites pass 268/268. No materialization, benchmark execution, or
-owner approval has occurred.
-B8.1 status: `authorization-ready-awaiting-owner-approval`. B8.2 remains
-blocked pending owner-approved v7r execution, evidence validation, and owner
-disposition. P8 remains 0/6 accepted. Graphify remains excluded.
+`90ef52be30be8db5f2df34d04ba8c07f7e16d32798f131c741d627b3f60bcc66`.
+The paired dry-run receipt records `executionReady=false` (dry-run only),
+zero blockers, `cbm,exact-source` selected, Graphify excluded, incremental-reindex
+repaired (SHA256 `438a154b...`), and no materialization/execution. All six
+focused B8.1 suites pass 324/324 (including new regression tests). No materialization,
+benchmark execution, or owner approval has occurred yet.
+B8.1 status: `corrected-contract-awaiting-owner-approval`. B8.2 remains
+blocked pending owner-approved v7s materialization, execution, evidence validation,
+and owner disposition. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.
 

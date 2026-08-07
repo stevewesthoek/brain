@@ -2,40 +2,37 @@
 
 ## Current goal
 
-Finish B8.1 v7r authorization without materializing or executing the benchmark.
+Audit and finish B8.1 v7s authorization package. No materialization or execution.
 
-## Current state — 2026-08-07
+## Current state — 2026-08-07 (Post-Audit)
 
 - Source: `brain-next`, branch `main`.
-- Baseline HEAD and `origin/main` before repair: `90f825559916b84ef6b2d178c1148e9463dbed79`.
-- v7r plan: `operations/reports/b8-1-canonical-plan-v7r-2026-08-07.json` (12,105 bytes).
-- Dry-run receipt: `operations/reports/b8-1-dry-run-receipt-v7r-2026-08-07.json` (4,253 bytes).
-- Run ID: `b8-1-canonical-authorization-20260806-final-v7r`.
-- Independently verified digest: `0eec69c1befd7ce11f359fe53aef4f033dbb38a5f767f73bad2800b8db37efa0`.
+- Repair commit: `2ca2b9ec3e468715e5e0c36cd314805592c68dbb` (incremental-reindex CBM output-format fix).
+- v7r plan: Materialized and executed 2026-08-06, FAILED (all 10 CBM fixtures failed due to query output format).
+- v7r evidence: Archived immutably at `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260806-final-v7r/`.
+- v7r digest: `0eec69c1befd7ce11f359fe53aef4f033dbb38a5f767f73bad2800b8db37efa0` (marked stale).
+- v7s plan: `operations/reports/b8-1-canonical-plan-v7s-2026-08-07.json` (5.0 KB).
+- v7s receipt: `operations/reports/b8-1-dry-run-receipt-v7s-2026-08-07.json` (2.4 KB).
+- v7s run ID: `b8-1-canonical-authorization-20260807-final-v7s`.
+- v7s digest: `90ef52be30be8db5f2df34d04ba8c07f7e16d32798f131c741d627b3f60bcc66` (independently verified, not stale).
+- v7s incremental-reindex SHA256: `438a154b0232a36191683ab503fb6941cd90e37408c6b9dc7764b1db9b36fd98` (repaired; v7r was `2b15855f...`).
 - Subjects: `cbm`, `exact-source`; Graphify excluded; partial evidence true.
-- Preflight: execution-ready, zero blockers, no run directory.
-- All six focused B8.1 suites: 268/268 pass; post-document executor rerun: 63/63 pass.
-- JSON validation, document consistency, Brain MCP admission, Graphify profile validation, and digest verification pass.
-- Deletion readiness remains the expected canonical baseline: 0 SAFE / 2 PARTIAL / 17 BLOCKED.
-- Dedicated secret scan on every changed path: zero findings.
-- Broad high-risk scan reported only pre-existing bounded subprocess calls in the prepare/test harness; all flagged production lines were verified present at baseline `90f82555`.
-- `git diff --check`: pass after removing two markdown trailing spaces.
-- Broader Infinite Brain conformance still reports pre-existing external Workbench admission drift; this repair does not modify Workbench.
-- B8.1 remains incomplete; P8 remains 0/6; B8.2 blocked pending owner-approved execution, evidence validation, and disposition.
+- Preflight: execution-ready=false (dry-run only), zero blockers, 21 contained write paths, 3891 MB available (>2000 constraint).
+- All six focused B8.1 suites: 324/324 pass (includes new CBM output-format regression tests).
+- JSON validation, document consistency pass.
+- `git diff --check`: pass.
+- B8.1 status: `corrected-contract-awaiting-owner-approval`.
+- P8 progress: 0/6 completed.
+- B8.2: Blocked pending v7s owner approval and execution.
 
-## Changes in this repair
+## Changes in this audit
 
-- Added canonical same-invocation dry-run receipt emission to the preflight CLI.
-- Added receipt binding/refusal tests.
-- Marked the previously claimed unverified digest `331695...` stale.
-- Restored the exact-source worker as a tracked implementation artifact.
-- Replaced the empty v7r plan with the real emitted plan and paired receipt.
-- Updated authorization and roadmap truth to v7r / 7.1.0 authorization-ready.
+- Verified commit `38d2473d` contains v7s plan, receipt, and v7r disposition.
+- Updated `operations/runbooks/infinite-brain-roadmap-status.md` to reflect v7r failure, v7s correction, and accurate P8/B8.1/B8.2 status.
+- Updated this progress file to reflect current canonical state.
 
 ## Remaining work
 
-1. Commit the nine explicit Brain paths only.
-2. Push `main`; non-fast-forward must fail rather than overwrite remote changes.
-3. Verify final HEAD equals `origin/main` and worker/plan/receipt are tracked.
-4. Close the Workbench run.
-5. Do not materialize or execute B8.1.
+1. No materialization or execution of v7s.
+2. Generate exact owner approval wording for v7s digest `90ef52be...`.
+3. Await fresh owner approval for v7s execution authorization.
