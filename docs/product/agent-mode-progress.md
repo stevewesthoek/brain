@@ -2,37 +2,48 @@
 
 ## Current goal
 
-Audit and finish B8.1 v7s authorization package. No materialization or execution.
+Generate B8.1 v7u canonical authorization package (Node 20 binding). Supersede noncompliant Node 25 v7t. No materialization or execution.
 
-## Current state — 2026-08-07 (Post-Audit)
+## Current state — 2026-08-07 09:50 UTC (V7U Recovery)
 
-- Source: `brain-next`, branch `main`.
-- Repair commit: `2ca2b9ec3e468715e5e0c36cd314805592c68dbb` (incremental-reindex CBM output-format fix).
-- v7r plan: Materialized and executed 2026-08-06, FAILED (all 10 CBM fixtures failed due to query output format).
-- v7r evidence: Archived immutably at `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260806-final-v7r/`.
-- v7r digest: `0eec69c1befd7ce11f359fe53aef4f033dbb38a5f767f73bad2800b8db37efa0` (marked stale).
-- v7s plan: `operations/reports/b8-1-canonical-plan-v7s-2026-08-07.json` (5.0 KB).
-- v7s receipt: `operations/reports/b8-1-dry-run-receipt-v7s-2026-08-07.json` (2.4 KB).
-- v7s run ID: `b8-1-canonical-authorization-20260807-final-v7s`.
-- v7s digest: `90ef52be30be8db5f2df34d04ba8c07f7e16d32798f131c741d627b3f60bcc66` (independently verified, not stale).
-- v7s incremental-reindex SHA256: `438a154b0232a36191683ab503fb6941cd90e37408c6b9dc7764b1db9b36fd98` (repaired; v7r was `2b15855f...`).
+- Source: `brain-next`, branch `main`, HEAD `39e33b69` (synced with origin/main).
+- **Active:** v7u canonical approvable contract (Node 20 binding).
+- v7u plan: `operations/reports/b8-1-canonical-plan-v7u-2026-08-07.json` (11.9 KB).
+- v7u receipt: `operations/reports/b8-1-dry-run-receipt-v7u-2026-08-07.json` (4.2 KB).
+- v7u run ID: `b8-1-canonical-authorization-20260807-final-v7u`.
+- **v7u digest:** `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed` ✓ VERIFIED.
+- **Node runtime:** `/Users/Office/.nvm/versions/node/v20.20.2/bin/node` (SHA-256: `38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6`).
+- incremental-reindex SHA256: `438a154b0232a36191683ab503fb6941cd90e37408c6b9dc7764b1db9b36fd98`.
+- sourceStateHash: `sha256:a0af2027907af240ffc93f12ff8fe842a5405e9b0b894055acd9ac9bc64bb643`.
 - Subjects: `cbm`, `exact-source`; Graphify excluded; partial evidence true.
-- Preflight: execution-ready=false (dry-run only), zero blockers, 21 contained write paths, 3891 MB available (>2000 constraint).
-- All six focused B8.1 suites: 324/324 pass (includes new CBM output-format regression tests).
-- JSON validation, document consistency pass.
+- Preflight: **executionReady=true**, zero blockers, 21 contained write paths, minimum 2000 MB disk constraint passed.
+- All 13 checks pass (12 pass, 1 excluded-subject per spec).
+- All six focused B8.1 suites: 268/268 pass.
+- JSON validation, document consistency, MCP admission, Graphify-profile validation, secret scan: all pass.
 - `git diff --check`: pass.
 - B8.1 status: `corrected-contract-awaiting-owner-approval`.
-- P8 progress: 0/6 completed.
-- B8.2: Blocked pending v7s owner approval and execution.
+- P8 progress: 0/6 completed (awaiting B8.1 owner approval).
+- B8.2: Blocked pending v7u owner approval and execution.
 
-## Changes in this audit
+## Historical versions (superseded)
 
-- Verified commit `38d2473d` contains v7s plan, receipt, and v7r disposition.
-- Updated `operations/runbooks/infinite-brain-roadmap-status.md` to reflect v7r failure, v7s correction, and accurate P8/B8.1/B8.2 status.
-- Updated this progress file to reflect current canonical state.
+| Version | Node | Digest | Status | Notes |
+|---------|------|--------|--------|-------|
+| v7r | v25.9.0 | `0eec69c1befd7ce...` | failed historical | Executed 2026-08-06; all 10 CBM fixtures failed (output format) |
+| v7s | v25.9.0 | `90ef52be30be8d...` | noncanonical historical | Roadmap/handoff stale; not canonical |
+| v7t | v25.9.0 | `1c0892469683acb...` | runtime-mismatch historical | Node 25 binding; violated Node 20 stop condition; never executed; see `b8-1-v7t-disposition-2026-08-07.md` |
+
+## Changes in this recovery
+
+- Preserved v7t as historical disposition: `b8-1-v7t-disposition-2026-08-07.md` (canonical Node 25 output; noncompliant runtime; never materialized).
+- Generated v7u with explicit Node 20.20.2 binary binding.
+- Verified v7u digest exactly matches pre-calculated canonical: `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed`.
+- Updated `operations/reports/b8-1-benchmark-authorization-package-2026-08-04.md`: v7u sole approvable; v7r/v7s/v7t marked historical; Node 20 binding documented.
+- All validation suites pass; ready for owner approval.
 
 ## Remaining work
 
-1. No materialization or execution of v7s.
-2. Generate exact owner approval wording for v7s digest `90ef52be...`.
-3. Await fresh owner approval for v7s execution authorization.
+1. **Do NOT materialize or execute v7u** (awaiting owner approval only).
+2. Owner provides exact approval wording (see authorization package).
+3. After approval: materialize, execute, validate evidence, owner disposition (separate steps).
+4. Post-execution: B8.2 unblocks; P8 tasks become actionable.
