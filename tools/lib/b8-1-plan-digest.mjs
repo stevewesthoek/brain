@@ -60,6 +60,7 @@ export const KNOWN_STALE_DIGESTS = new Set([
   '47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0', // v5s (stale for new runs — executed 2026-08-05, rejected as insufficient; harness defects + missing per-subject metrics; v6 supersedes)
   'ac5b3c79a9cce3e2463dceac8097dada7bb883f313ebef5e696078296a1359dc', // v6 (stale — missing implementationIdentity, missing subjectMetrics, offlineMetrics only; v6r supersedes)
   '44ebf1c49863d4cacaa6d26af348781473440f43b774ea69f52ae0aab6cc100d', // v6r (stale — CPU hardcoded 0, RSS measures executor not subject, no CBM refresh measurement, shared cache duplicated, false cl100k_base identity, validator gaps; v7 supersedes)
+  '331695165eb9dd91b061efc414d7a4e9711828d581c4c46511dea1c5812038e2', // claimed v7r digest from incomplete 0-byte/untracked plan; never established or approvable
 ]);
 
 // ---------------------------------------------------------------------------

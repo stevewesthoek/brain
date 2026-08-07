@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-06
-**Audited:** 2026-08-06 — B8.1 v5s executed (17/20 pass) but rejected as insufficient; two harness defects and one genuine CBM miss identified; v6 contract in preparation
+**Last verified:** 2026-08-07
+**Audited:** 2026-08-07 — B8.1 v7r / 7.1.0 is authorization-ready with a verified two-subject dry-run plan; no materialization or execution has occurred
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
@@ -24,34 +24,30 @@ The stabilization program is the highest-priority execution lane. `BS0.1`
 through `BS0.23` are complete (23 tasks), and all runtime priority tasks
 P1–P7 (B1.0–B1.7, B2.1–B2.8, B3.1–B3.4, B4.1–B4.4, B5.1–B5.4, B6.1–B6.3,
 B7.1–B7.7) are complete. All stabilization tasks and runtime priorities P1
-through P7 are complete. P8 remains intentionally deferred. No canonical P8
-task is accepted complete or authorized for continued execution. Preliminary
-and out-of-sequence Codebase Memory experiments, candidate installation,
-indexes, governance, and design artifacts already exist under an obsolete B8
-numbering scheme; those artifacts do not satisfy or bypass the current
-B8.1–B8.6 dependency chain.
-A full roadmap audit was performed on 2026-08-01 and confirmed this state;
-see `operations/reports/roadmap-audit-2026-08-01.md`.
-The remaining documented work is P8 context-memory efficiency (B8.1–B8.6),
-planned post-stabilization and not yet authorized. B8.1 benchmark evidence
-is required before approved default admission or activation, additional
-repository rollout, watcher or scheduler changes, or canonical Graphify
-migration. The existing candidate binary, preliminary indexes, and
-obsolete-numbered artifacts remain evidence only and do not satisfy the
-canonical dependency chain. B8.1 is the first canonical task when P8 is
-explicitly authorized; it is not the current approved execution task.
-B8.1 was executed on 2026-08-05 (run `b8-1-canonical-authorization-20260805-final-v5s`,
-17/20 pass). The owner rejected the v5s run as insufficient for B8.1 completion
-because: (1) evidence records only aggregate accuracy and per-fixture latency,
-not the per-subject indexing/refresh/CPU/RSS/disk/payload/tokenizer/operation
-metrics required by the plan; (2) two harness defects were identified
-(brain_f3 json-pointer-set resolves to objects not strings; prochat_f2
-assertion.expected=null passes incorrectly); (3) brain_f4 is a genuine CBM
-retrieval miss; (4) metrics are not partitioned per subject. The v5s run is
-preserved as valid infrastructure evidence but does not complete B8.1.
-B8.1 status: `executed-partial-needs-corrected-run`. B8.2 remains blocked.
-P8 remains 0/6 accepted. Graphify remains excluded. The next action is a
-corrected v6 contract execution with per-subject typed metrics.
+through P7 are complete. P8 is now at its first authorization gate, but no
+canonical P8 task is accepted complete. Preliminary and out-of-sequence
+Codebase Memory experiments, candidate installation, indexes, governance, and
+design artifacts under obsolete B8 numbering do not satisfy or bypass the
+current B8.1–B8.6 dependency chain.
+A full roadmap audit was performed on 2026-08-01; see
+`operations/reports/roadmap-audit-2026-08-01.md`.
+The remaining documented work is P8 context-memory efficiency (B8.1–B8.6).
+B8.1 benchmark evidence is required before approved default admission or
+activation, additional repository rollout, watcher or scheduler changes, or
+canonical Graphify migration.
+B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
+That run remains immutable infrastructure evidence only.
+The corrected v7r / 7.1.0 two-subject contract is now authorization-ready:
+`operations/reports/b8-1-canonical-plan-v7r-2026-08-07.json` independently
+verifies at digest
+`0eec69c1befd7ce11f359fe53aef4f033dbb38a5f767f73bad2800b8db37efa0`.
+The paired dry-run receipt records `executionReady=true`, zero blockers,
+`cbm,exact-source` selected, Graphify excluded, and no run directory. All six
+focused B8.1 suites pass 268/268. No materialization, benchmark execution, or
+owner approval has occurred.
+B8.1 status: `authorization-ready-awaiting-owner-approval`. B8.2 remains
+blocked pending owner-approved v7r execution, evidence validation, and owner
+disposition. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.
 

@@ -1505,6 +1505,36 @@ export async function runPreflight({
   return { checks: [...checks], summary, runDir, dryRun, canonicalPlan };
 }
 
+export function buildDryRunReceipt({ summary, canonicalPlan, checks, runDir, planPath }) {
+  if (!summary?.executionReady || summary.materialized || !canonicalPlan || !summary.planSha256) {
+    throw new Error('dry-run receipt requires an execution-ready, non-materialized canonical plan');
+  }
+  if (runDir && fs.existsSync(runDir)) {
+    throw new Error(`dry-run receipt refused because run directory exists: ${runDir}`);
+  }
+  const planRepoRelPath = planPath
+    ? path.relative(REPO_ROOT, path.resolve(planPath)).split(path.sep).join('/')
+    : null;
+  return {
+    dryRunReceipt: true,
+    receiptVersion: PLAN_VERSION,
+    runId: summary.runId,
+    selectedSubjects: [...summary.selectedSubjects],
+    excludedSubjects: [...summary.excludedSubjects],
+    partialEvidence: canonicalPlan.partialEvidence === true,
+    graphifyExcluded: summary.excludedSubjects.includes('graphify'),
+    executionReady: true,
+    blockers: [],
+    noRunDirectory: true,
+    planVersion: canonicalPlan.planVersion,
+    evidenceSchemaVersion: '3.0.0',
+    planSha256: summary.planSha256,
+    planRepoRelPath,
+    implementationIdentity: canonicalPlan.implementationIdentity,
+    checks: checks.map(check => ({ name: check.name, status: check.status, detail: check.detail ?? null })),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
@@ -1565,6 +1595,23 @@ if (IS_MAIN) {
   }
   if (writePlanPath && doMaterialize) {
     console.error('ERROR: --write-plan may only be used with --dry-run, not --materialize');
+    process.exit(2);
+  }
+
+  let writeDryRunReceiptPath = null;
+  const writeReceiptArg = args.find(a => a.startsWith('--write-dry-run-receipt='));
+  if (writeReceiptArg) {
+    writeDryRunReceiptPath = writeReceiptArg.slice('--write-dry-run-receipt='.length);
+  } else {
+    const idx = args.indexOf('--write-dry-run-receipt');
+    if (idx >= 0 && idx + 1 < args.length) writeDryRunReceiptPath = args[idx + 1];
+  }
+  if (writeDryRunReceiptPath && doMaterialize) {
+    console.error('ERROR: --write-dry-run-receipt may only be used with --dry-run, not --materialize');
+    process.exit(2);
+  }
+  if (writeDryRunReceiptPath && !writePlanPath) {
+    console.error('ERROR: --write-dry-run-receipt requires --write-plan in the same invocation');
     process.exit(2);
   }
 
@@ -1642,6 +1689,23 @@ if (IS_MAIN) {
       process.exitCode = 1;
     } else if (writePlanPath && !canonicalPlan) {
       console.error('ERROR: --write-plan skipped — no canonical plan was computed');
+      process.exitCode = 1;
+    }
+
+    if (writeDryRunReceiptPath && summary.executionReady && canonicalPlan && summary.planSha256) {
+      const receipt = buildDryRunReceipt({
+        summary,
+        canonicalPlan,
+        checks,
+        runDir,
+        planPath: writePlanPath,
+      });
+      const tmpReceiptPath = `${writeDryRunReceiptPath}.tmp`;
+      fs.writeFileSync(tmpReceiptPath, JSON.stringify(receipt, null, 2));
+      fs.renameSync(tmpReceiptPath, writeDryRunReceiptPath);
+      console.log(`# Dry-run receipt written to: ${writeDryRunReceiptPath}`);
+    } else if (writeDryRunReceiptPath) {
+      console.error('ERROR: --write-dry-run-receipt skipped — preflight is not executionReady');
       process.exitCode = 1;
     }
 

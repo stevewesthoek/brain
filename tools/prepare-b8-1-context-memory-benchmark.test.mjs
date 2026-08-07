@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   buildCanonicalPlan,
+  buildDryRunReceipt,
   computeLogicalSourceIdentity,
   computePlanDigest,
   interpretSandboxedChildResult,
@@ -1986,4 +1987,58 @@ test('T72: unknown top-level fields are detected by verifier allowlist', () => {
   // All fields in a clean fixture must be known
   const cleanUnknown = findUnknownTopLevelFields(plan);
   assert.equal(cleanUnknown.length, 0, 'clean fixture must have no unknown fields');
+});
+
+
+test('T73: dry-run receipt binds the same canonical plan result', () => {
+  const tmpDir = makeTempDir('b81-t73-');
+  try {
+    const canonicalPlan = makeCanonicalPlanFixture({ selectedSubjects: ['cbm', 'exact-source'] });
+    const planSha256 = computePlanDigest(canonicalPlan);
+    const summary = {
+      executionReady: true,
+      materialized: false,
+      selectedSubjects: ['cbm', 'exact-source'],
+      excludedSubjects: ['graphify'],
+      blockingChecks: [],
+      runId: 'b8-1-t73',
+      planSha256,
+    };
+    const receipt = buildDryRunReceipt({
+      summary,
+      canonicalPlan,
+      checks: [{ name: 'manifest-validation', status: 'pass', detail: 'ok' }],
+      runDir: path.join(tmpDir, 'nonexistent-run'),
+      planPath: path.join(REPO_ROOT, 'operations/reports/test-plan.json'),
+    });
+    assert.equal(receipt.dryRunReceipt, true);
+    assert.equal(receipt.receiptVersion, '7.1.0');
+    assert.equal(receipt.planVersion, '7.1.0');
+    assert.equal(receipt.planSha256, planSha256);
+    assert.deepEqual(receipt.selectedSubjects, ['cbm', 'exact-source']);
+    assert.deepEqual(receipt.excludedSubjects, ['graphify']);
+    assert.equal(receipt.graphifyExcluded, true);
+    assert.equal(receipt.noRunDirectory, true);
+    assert.equal(receipt.planRepoRelPath, 'operations/reports/test-plan.json');
+    assert.deepEqual(receipt.implementationIdentity, canonicalPlan.implementationIdentity);
+  } finally { cleanup(tmpDir); }
+});
+
+test('T74: dry-run receipt refuses an existing run directory', () => {
+  const tmpDir = makeTempDir('b81-t74-');
+  try {
+    const runDir = path.join(tmpDir, 'existing-run');
+    fs.mkdirSync(runDir, { recursive: true });
+    const canonicalPlan = makeCanonicalPlanFixture({ selectedSubjects: ['exact-source'] });
+    const summary = {
+      executionReady: true,
+      materialized: false,
+      selectedSubjects: ['exact-source'],
+      excludedSubjects: ['cbm', 'graphify'],
+      blockingChecks: [],
+      runId: 'b8-1-t74',
+      planSha256: computePlanDigest(canonicalPlan),
+    };
+    assert.throws(() => buildDryRunReceipt({ summary, canonicalPlan, checks: [], runDir, planPath: null }), /run directory exists/);
+  } finally { cleanup(tmpDir); }
 });
