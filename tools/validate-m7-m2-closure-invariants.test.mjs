@@ -90,10 +90,10 @@ test('M2.4: provider revision is 076b9f97 (live approved)', () => {
   );
 });
 
-test('M2.4: Mind pin is a21f9ed5', () => {
+test('M2.4: Mind pin is abf2e471', () => {
   assert.equal(
     mcAdmission.scope.fixedEnvironment.MIND_CONTEXT_EXPECTED_HEAD,
-    'a21f9ed5d7270ae7dd939b93c5df525c933091f8'
+    'abf2e4711f80bcd85d142d14584f1694765ca86c'
   );
 });
 

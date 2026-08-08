@@ -3,6 +3,7 @@
 **Status:** canonical live status
 **Last verified:** 2026-08-07 (v7u recovery)
 **Audited:** 2026-08-07 — B8.1 v7u / 7.1.0 is canonical approvable contract with explicit Node 20.20.2 binding; v7t (Node 25) marked stale; all 269/269 focused tests pass; no materialization or execution has occurred
+**Mind provider verified:** 2026-08-07 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered, expected, and source Mind HEAD `abf2e4711f80bcd85d142d14584f1694765ca86c`; `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 

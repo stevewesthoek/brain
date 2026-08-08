@@ -4,7 +4,7 @@
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
 **Provider source lock:** `076b9f97030e1c90bc66ffbb61d29456b41ed69f`
-**Mind source lock:** `a21f9ed5d7270ae7dd939b93c5df525c933091f8` (updated 2026-08-05; previous: `2b59119dd119ecd965b66ce601db14cb32ca3852`)
+**Mind source lock:** `abf2e4711f80bcd85d142d14584f1694765ca86c` (updated 2026-08-07; previous: `a21f9ed5d7270ae7dd939b93c5df525c933091f8`)
 
 ## Boundary
 
@@ -53,7 +53,7 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
   "providerRevision": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
-  "mindCommit": "a21f9ed5d7270ae7dd939b93c5df525c933091f8",
+  "mindCommit": "abf2e4711f80bcd85d142d14584f1694765ca86c",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
 ```
@@ -120,6 +120,9 @@ authorized Mind entrypoint closure and completed
 enabled-client, live-readback, unavailable-service, mutation-rejection, and
 disable/restore checks. See
 `operations/reports/m2-4-context-gateway-activation-2026-08-04.md`.
+
+Final Mind source repin and live-health reconciliation evidence is recorded in
+`operations/reports/mind-context-final-repin-2026-08-07.md`.
 
 ## Claude Code discovery — Brain-project versus Mind-local
 
