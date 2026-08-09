@@ -64,6 +64,8 @@ export const KNOWN_STALE_DIGESTS = new Set([
   '0eec69c1befd7ce11f359fe53aef4f033dbb38a5f767f73bad2800b8db37efa0', // v7r (failed 2026-08-06 — CBM query output not array; incrementalReindex SHA256 2b15855f obsolete; v7s supersedes with fixed marker-query)
   '90ef52be30be8db5f2df34d04ba8c07f7e16d32798f131c741d627b3f60bcc66', // v7s (noncanonical hand-simplified dry-run; missing implementationIdentity, missing source-state-binding checks, receiptVersion=1.0.0 not 7.1.0; v7t supersedes with real CLI output)
   '1c0892469683acba82534d3cd7c3f27aae9368a54a5a5fe49989de13aca067e4', // v7t (Node v25.9.0 runtime binding — violated required Node 20 stop condition; canonical plan but noncompliant authorization; never materialized/executed; v7u supersedes with explicit Node 20.20.2 binding)
+  '0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed', // v7u (historical for new execution — machine-bound sandbox identity superseded; never materialized/executed)
+  '86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30', // v7w (executed once 2026-08-09; rejected evidence; owner approval consumed and immutable)
 ]);
 
 // ---------------------------------------------------------------------------

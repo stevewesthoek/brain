@@ -1279,8 +1279,8 @@ test('E45: manifest brain pin is f683edff753937944018dd00bf5494c85f62e881', () =
   assert.equal(brainRepo.pinnedCommit, 'f683edff753937944018dd00bf5494c85f62e881', 'brain pin must be f683edff...');
 });
 
-// E46: KNOWN_STALE_DIGESTS contains v4r, v5, v5r, v5s, v7r, v7s, and v7t digests
-test('E46: KNOWN_STALE_DIGESTS contains all stale historical digests including v7t', () => {
+// E46: KNOWN_STALE_DIGESTS contains every obsolete, historical, or consumed digest
+test('E46: KNOWN_STALE_DIGESTS contains all stale historical and consumed digests through v7w', () => {
   const V4R_DIGEST = 'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4';
   const V5_DIGEST  = 'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42';
   const V5R_DIGEST = '87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f';
@@ -1288,6 +1288,8 @@ test('E46: KNOWN_STALE_DIGESTS contains all stale historical digests including v
   const V7R_DIGEST = '0eec69c1befd7ce11f359fe53aef4f033dbb38a5f767f73bad2800b8db37efa0';
   const V7S_DIGEST = '90ef52be30be8db5f2df34d04ba8c07f7e16d32798f131c741d627b3f60bcc66';
   const V7T_DIGEST = '1c0892469683acba82534d3cd7c3f27aae9368a54a5a5fe49989de13aca067e4';
+  const V7U_DIGEST = '0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed';
+  const V7W_DIGEST = '86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30';
   assert.ok(KNOWN_STALE_DIGESTS.has(V4R_DIGEST), 'must contain v4r digest');
   assert.ok(KNOWN_STALE_DIGESTS.has(V5_DIGEST), 'must contain v5 digest');
   assert.ok(KNOWN_STALE_DIGESTS.has(V5R_DIGEST), 'must contain v5r digest');
@@ -1295,6 +1297,8 @@ test('E46: KNOWN_STALE_DIGESTS contains all stale historical digests including v
   assert.ok(KNOWN_STALE_DIGESTS.has(V7R_DIGEST), 'must contain v7r digest (failed execution 2026-08-06)');
   assert.ok(KNOWN_STALE_DIGESTS.has(V7S_DIGEST), 'must contain v7s digest (noncanonical hand-simplified output)');
   assert.ok(KNOWN_STALE_DIGESTS.has(V7T_DIGEST), 'must contain v7t digest (Node 25 runtime binding, violated Node 20 stop condition)');
+  assert.ok(KNOWN_STALE_DIGESTS.has(V7U_DIGEST), 'must contain v7u digest (historical machine-bound plan)');
+  assert.ok(KNOWN_STALE_DIGESTS.has(V7W_DIGEST), 'must contain v7w digest (rejected execution with consumed approval)');
 });
 
 // ---------------------------------------------------------------------------

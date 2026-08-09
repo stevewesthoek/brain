@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-09 (v7w rejected-run disposition)
-**Audited:** 2026-08-09 — owner-approved B8.1 v7w / 7.1.0 was materialized once and executed once with explicit Node 20.20.2 and current `/usr/bin/sandbox-exec` bindings; exact-source passed 10/10, CBM errored 10/10, canonical evidence validation failed, cleanup and source-integrity checks passed, the run was rejected as insufficient, and its authorization is consumed
+**Last verified:** 2026-08-09 (v7x fresh-approval checkpoint after v7w harness recovery)
+**Audited:** 2026-08-09 — v7w remains rejected and immutable; follow-up isolated diagnostics proved and repaired Brain's CBM v0.9.0 marker-field and cache-binding mismatches; the repaired live harness passed, all 269 focused tests passed, and canonical v7x / 7.1.0 dry-run plan `c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588` is execution-ready with no run directory and no current execution authority
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -58,7 +58,20 @@ excluded and not invoked. The immutable run is at
 `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/`;
 its canonical disposition is
 `operations/reports/b8-1-failed-run-disposition-v7w-2026-08-09.md`.
-B8.1 status: `incomplete-after-rejected-v7w-run`. The approval is consumed and
+Follow-up diagnosis proved CBM v0.9.0 indexed and reindexed the disposable source
+correctly. Brain's harness inspected fake-adapter `text` instead of the live
+`source` field and measured `XDG_CACHE_HOME` instead of the provider's
+`CBM_CACHE_DIR`. Commit `4bd4047d6e726bf1f65197b49a3d41617eb71296`
+repairs both contracts. The isolated real-provider harness passed with exact marker
+visibility, source restoration, attributable cache measurement, sandbox isolation,
+cleanup, and no lingering process; all six focused suites passed 269/269.
+The fresh canonical v7x dry-run plan is
+`operations/reports/b8-1-canonical-plan-v7x-2026-08-09.json`, run ID
+`b8-1-canonical-authorization-20260809-final-v7x`, digest
+`c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588`.
+It is execution-ready with zero blockers, selects CBM and exact-source, excludes
+Graphify, and has not been materialized or executed.
+B8.1 status: `awaiting-fresh-v7x-owner-approval`. The v7w approval is consumed and
 current execution authority is `none`. B8.2–B8.6 remain blocked because accepted
 B8.1 evidence is absent. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
