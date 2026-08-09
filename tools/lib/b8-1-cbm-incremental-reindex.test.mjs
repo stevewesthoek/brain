@@ -40,7 +40,7 @@ ARGV_LOG="${tmpDir}/cbm-argv.log"
 ENV_LOG="${tmpDir}/cbm-env.log"
 echo "$$" >> "$ARGV_LOG"
 echo "$@" >> "$ARGV_LOG"
-env | grep -E "(HOME|XDG_)" | sort >> "$ENV_LOG"
+env | grep -E "(HOME|XDG_|CBM_CACHE_DIR)" | sort >> "$ENV_LOG"
 
 if [[ "$1" == "cli" && "$2" == "index_repository" ]]; then
   # Create cache artifacts for proof of indexing
@@ -316,7 +316,9 @@ test('runIncrementalReindex: comprehensive fake-CBM success with full provenance
 
     // Verify isolated environment
     assert.equal(result.provenance.cacheDir, cacheDir, 'cache dir mismatch');
+    assert.equal(result.provenance.cacheEnvironmentVariable, 'CBM_CACHE_DIR', 'provider cache binding mismatch');
     assert.equal(result.provenance.configDir, configDir, 'config dir mismatch');
+    assert.match(fs.readFileSync(path.join(tmpDir, 'cbm-env.log'), 'utf8'), new RegExp(`^CBM_CACHE_DIR=${cacheDir}$`, 'm'));
 
     // Verify distinct paths
     assert.notEqual(repoDir, cacheDir, 'repo and cache should be distinct');
@@ -758,10 +760,10 @@ test('runIncrementalReindex: child directory named ..cache allowed when isolated
   } finally { cleanup(tmpDir); }
 });
 
-test('runIncrementalReindex: CBM search_code returns {results:[...]} object format (regression fix b8-1-v7r)', async () => {
-  // Regression: CBM v0.9.0 returns { results: [...] }, not bare [...]
-  // Previous code expected bare array, causing all marker queries to fail with "query output not array"
-  // This test reproduces the exact failed-run condition and proves the fix handles both formats.
+test('runIncrementalReindex: CBM search_code returns the live v0.9.0 result contract', async () => {
+  // Regressions: CBM v0.9.0 returns { results: [...] }, not bare [...], and
+  // places full-mode source text in `source`, not the fake adapter's `text` field.
+  // Both mismatches previously made every real marker query fail closed.
   const tmpDir = makeTempDir();
   try {
     const repoDir = path.join(tmpDir, 'source');
@@ -799,8 +801,8 @@ elif [[ "$1" == "cli" && "$2" == "search_code" ]]; then
     prev="$i"
   done
   if [[ -n "$PATTERN" ]]; then
-    # Real v0.9.0 behavior: returns { results: [...] }, not bare array
-    echo '{"results": [{"file": "index.ts", "text": "'$PATTERN'", "line": 1}]}'
+    # Real v0.9.0 full-mode result shape.
+    echo '{"results": [{"node": "index.ts", "qualified_name": "test-project.index", "label": "Module", "file": "index.ts", "start_line": 1, "end_line": 2, "match_lines": [1], "source": "// '$PATTERN'\\nexport const marker_target = 1;\\n"}]}'
   else
     echo '{"results": []}'
   fi
@@ -832,8 +834,8 @@ fi
     if (!result.success) {
       console.error('Test failure reason:', result.reason);
     }
-    assert.equal(result.success, true, `should succeed with CBM returning {results:[...]}, but got reason: ${result.reason}`);
-    assert.equal(result.markerVisible, true, 'marker should be visible despite object wrapper');
+    assert.equal(result.success, true, `should succeed with the live CBM v0.9.0 result contract, but got reason: ${result.reason}`);
+    assert.equal(result.markerVisible, true, 'marker should be visible in the live source field');
     assert.ok(result.cacheBytes > 0, 'cache bytes should be measurable');
     assert.ok(result.restorationVerified, 'restoration should be verified');
   } finally { cleanup(tmpDir); }

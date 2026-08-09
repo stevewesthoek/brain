@@ -2,6 +2,7 @@
  * b8-1-cbm-incremental-reindex.mjs — Hardened CBM incremental reindexing with strict validation.
  *
  * Requires: existing distinct cache/config dirs, isolated HOME/XDG_* env, sandbox wrapping,
+ * provider cache binding via a derived CBM_CACHE_DIR,
  * exact marker verification, semantic index output validation, nonzero cache bytes.
  *
  * Uses real CBM CLI: index_repository, search_code --pattern --project.
@@ -271,7 +272,9 @@ export function measureCacheBytes(cacheDir) {
 
 /**
  * Validate environment: HOME must exactly match homeDir, XDG_* must exactly match dirs.
- * Enforce strict allowlist: PATH, HOME, TMPDIR, XDG_CACHE_HOME, XDG_CONFIG_HOME only.
+ * Enforce strict caller-controlled allowlist: PATH, HOME, TMPDIR, XDG_CACHE_HOME,
+ * XDG_CONFIG_HOME only. The provider-specific CBM_CACHE_DIR is derived from the
+ * validated cacheDir after this check and cannot be supplied by the caller.
  * Reject missing or unexpected keys.
  */
 export function validateEnvironment(env, cacheDir, configDir, homeDir) {
@@ -346,7 +349,7 @@ export async function runCbmIndex(cbmExecutable, sourcePath, projectName, cacheD
     executable,
     argv,
     cwd: cacheDir,
-    env,
+    env: { ...env, CBM_CACHE_DIR: cacheDir },
     timeout,
     detached: true,
   });
@@ -436,7 +439,7 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
     executable,
     argv,
     cwd: cacheDir,
-    env,
+    env: { ...env, CBM_CACHE_DIR: cacheDir },
     timeout,
     detached: true,
   });
@@ -460,7 +463,8 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
     // Exact match required: marker must be in the exact target file path, nowhere else
     const visible = results.some(r => {
       if (!r || typeof r !== 'object') return false;
-      if (!r.text || !r.text.includes(marker)) return false;
+      const resultSource = typeof r.source === 'string' ? r.source : r.text;
+      if (typeof resultSource !== 'string' || !resultSource.includes(marker)) return false;
       // Exact path match (relative to repository)
       const resultFile = r.file || '';
       return resultFile === exactRelativePath;
@@ -468,6 +472,7 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
 
     return {
       visible,
+      reason: visible ? null : 'no exact marker match in query results',
       results,
       cpuPercent: result.cpuPercent,
       peakRssMb: result.peakRssMb,
@@ -703,6 +708,7 @@ export async function runIncrementalReindex(opts = {}) {
 
     result.provenance = {
       cacheDir,
+      cacheEnvironmentVariable: 'CBM_CACHE_DIR',
       configDir,
       sandboxProfile,
       initialTargetHash,
