@@ -247,7 +247,7 @@
         "fixedEnvironment": {
           "MIND_CONTEXT_ACTIVATION_APPROVAL_FILE": "/Users/Office/.brain/approvals/mind-context-read-only.json",
           "MIND_CONTEXT_ALLOWED_SCOPES": "faith,knowledge,organizations,people,projects,resources,system,tasks,wiki",
-          "MIND_CONTEXT_EXPECTED_HEAD": "abf2e4711f80bcd85d142d14584f1694765ca86c",
+          "MIND_CONTEXT_EXPECTED_HEAD": "91ae8ce55c6daf67b728ef9b8d841504f24a97c9",
           "MIND_CONTEXT_PREPARATION_APPROVAL_FILE": "/Users/Office/.brain/approvals/mind-context-preparation.json",
           "MIND_CONTEXT_PREPARATION_MODE": "0",
           "MIND_CONTEXT_PROVIDER_REVISION": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
