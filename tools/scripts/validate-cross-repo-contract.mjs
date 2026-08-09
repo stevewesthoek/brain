@@ -7,10 +7,13 @@ import { fileURLToPath } from 'node:url';
 
 const BRAIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const MIND_ROOT = path.resolve(BRAIN_ROOT, '../mind');
+// Only list files tracked in canonical Brain git. Cursor's AGENTS.md is
+// workstation-local deployment metadata (the cursor folder is symlinked from
+// ~/.cursor and ignores everything by default) — requiring it breaks any
+// clean canonical checkout that has not deployed cursor locally.
 const ACTIVE_INSTRUCTIONS = [
   'operations/system-configs/claude/CLAUDE.md',
   'operations/system-configs/codex/AGENTS.md',
-  'operations/system-configs/cursor/AGENTS.md',
   'operations/system-configs/gemini/GEMINI.md',
   'operations/system-configs/ide-context.md',
   'operations/system-configs/kiro/steering/brain-mind-context.md',
