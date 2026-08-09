@@ -384,7 +384,7 @@ function main() {
   const argv = process.argv.slice(2);
   const brainRoot = option(argv, '--brain-root', SCRIPT_ROOT);
   const mindRoot = option(argv, '--mind-root', path.resolve(brainRoot, '../mind'));
-  const workbenchRoot = option(argv, '--workbench-root', path.resolve(brainRoot, '../../prochattools/saas/workbench-mrp6'));
+  const workbenchRoot = option(argv, '--workbench-root', path.resolve(brainRoot, '../../prochattools/saas/workbench-private'));
   const report = runConformanceSuite({ brainRoot, mindRoot, workbenchRoot });
   if (argv.includes('--inventory-json')) {
     process.stdout.write(`${JSON.stringify({ result: report.result, warnings: report.warnings, errors: report.errors, inventory: report.inventory }, null, 2)}\n`);

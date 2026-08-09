@@ -137,6 +137,32 @@ test('active-local admission with matching registration passes', () => {
   assert.equal(result.value, 'none', `Expected none but got: ${result.value}`);
 });
 
+test('Claude project-scoped registration satisfies active-local discovery', () => {
+  const claude = JSON.stringify({
+    projects: {
+      '/Users/user/project': { mcpServers: { workbench: { type: 'stdio', command: '/usr/bin/node', args: ['/repo/server.js'] } } }
+    }
+  });
+  const result = detectAdmissionWithoutRegistration({
+    fixtureOnly: true,
+    codexTomlText: '',
+    claudeJsonText: claude,
+    registry: makeRegistry({ workbenchStatus: 'active-local' })
+  });
+  assert.equal(result.value, 'none');
+});
+
+test('Codex project-scoped registration satisfies active-local discovery', () => {
+  const result = detectAdmissionWithoutRegistration({
+    fixtureOnly: true,
+    codexTomlText: '',
+    codexProjectTomlText: makeCodexToml({ includeWorkbench: true }),
+    claudeJsonText: makeClaudeJson({ mcpServers: {} }),
+    registry: makeRegistry({ workbenchStatus: 'active-local' })
+  });
+  assert.equal(result.value, 'none');
+});
+
 // ---------------------------------------------------------------------------
 // Test 3: candidate provider described as default in a document → detects it
 // ---------------------------------------------------------------------------
@@ -267,6 +293,24 @@ WORKBENCH_MCP_ALLOWED_TOOLS = "getWorkbenchStatus,readWorkbenchContext,runWorkbe
   });
   assert.equal(result.key, 'bare-credential-in-config');
   assert.equal(result.value, 'none-detected', `Expected none-detected but got: ${result.value}`);
+});
+
+test('trusted SHA-256 allowlists and instruction text are not classified as credentials', () => {
+  const nonSecretMetadata = `[mcp_servers.node_repl.env]
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "${'a'.repeat(64)}"
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "${'read-only browser integration instructions '.repeat(4)}"
+`;
+  const result = detectBareCredentialInConfig({
+    fixtureOnly: true,
+    configTexts: { 'test-config': nonSecretMetadata }
+  });
+  assert.equal(result.value, 'none-detected');
+});
+
+test('long random values under ordinary env keys still fail closed', () => {
+  const suspicious = `[mcp_servers.example.env]\nEXAMPLE_RUNTIME_VALUE = "${'x'.repeat(96)}"\n`;
+  const result = detectBareCredentialInConfig({ fixtureOnly: true, configTexts: { suspicious } });
+  assert.equal(result.level, 'fail');
 });
 
 // ---------------------------------------------------------------------------

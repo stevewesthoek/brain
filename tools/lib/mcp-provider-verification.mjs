@@ -41,12 +41,103 @@ function digest(filePath) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
 }
 
+function digestBytes(bytes) {
+  return crypto.createHash('sha256').update(bytes).digest('hex');
+}
+
+function aggregateRecords(records) {
+  const canonical = records.map((item) => `${item.path}\0${item.sha256}\0${item.bytes}\n`).join('');
+  return digestBytes(Buffer.from(canonical));
+}
+
 function isWorkingTreeOnly(artifact) {
   return typeof artifact.note === 'string' && artifact.note.includes('working-tree-only');
 }
 
 function isVirtualPath(artifactPath) {
   return artifactPath.startsWith('archive:') || artifactPath.startsWith('npm:');
+}
+
+function verifyRegularFile(root, record, label, issues) {
+  if (!record || typeof record.path !== 'string' || !/^[a-f0-9]{64}$/.test(record.sha256 ?? '') || !Number.isSafeInteger(record.bytes) || record.bytes < 0) {
+    issues.push(`${label}: invalid provenance record`);
+    return false;
+  }
+  const absolute = path.resolve(root, record.path);
+  const relative = path.relative(root, absolute);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    issues.push(`${label}: provenance path escapes provider root`);
+    return false;
+  }
+  try {
+    const stat = fs.lstatSync(absolute);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('not a regular file');
+    if (stat.size !== record.bytes || digest(absolute) !== record.sha256) throw new Error('digest or size mismatch');
+    return true;
+  } catch {
+    issues.push(`${label}/${record.path}: provenance-digest-mismatch`);
+    return false;
+  }
+}
+
+function verifyReproducibleBuild({ admission, root, isGitRoot, admittedRevision, issues }) {
+  const provider = admission.provider ?? {};
+  if (provider.sourceState !== 'reproducible-build') return true;
+  const manifestPath = provider.runtimeProvenanceManifest;
+  if (!manifestPath || !isGitRoot) {
+    issues.push(`${provider.providerId}: reproducible-build provenance requires the admitted Git provider root`);
+    return false;
+  }
+
+  let manifest;
+  try {
+    execFileSync('git', ['ls-files', '--error-unmatch', '--', manifestPath], { cwd: root, stdio: 'ignore' });
+    manifest = JSON.parse(fs.readFileSync(path.join(root, manifestPath), 'utf8'));
+  } catch {
+    issues.push(`${provider.providerId}: runtime-provenance-manifest-unavailable`);
+    return false;
+  }
+
+  let valid = true;
+  const reject = (message) => { issues.push(`${provider.providerId}: ${message}`); valid = false; };
+  if (manifest.schemaVersion !== 'workbench-mcp-runtime-provenance/v1' || manifest.sourceState !== 'reproducible-build') reject('runtime-provenance-schema-invalid');
+  if (!/^[a-f0-9]{40}$/.test(manifest.sourceRevision ?? '')) reject('runtime-provenance-source-revision-invalid');
+  if (manifest.packageVersion !== provider.version) reject('runtime-provenance-version-mismatch');
+  if (manifest.entrypoint?.path !== provider.entrypoint) reject('runtime-provenance-entrypoint-mismatch');
+  if (!Array.isArray(manifest.sourceInputs) || manifest.sourceInputs.length === 0) reject('runtime-provenance-source-inputs-missing');
+  if (!Array.isArray(manifest.runtimeArtifacts) || manifest.runtimeArtifacts.length === 0) reject('runtime-provenance-runtime-artifacts-missing');
+  if (!valid) return false;
+
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', manifest.sourceRevision, admittedRevision], { cwd: root, stdio: 'ignore' });
+    const changed = execFileSync('git', ['diff', '--name-only', `${manifest.sourceRevision}..${admittedRevision}`], { cwd: root, encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+    if (changed.length !== 1 || changed[0] !== manifestPath) reject(`runtime-provenance-revision-delta-invalid (${changed.join(',') || 'none'})`);
+  } catch {
+    reject('runtime-provenance-source-revision-not-admitted');
+  }
+
+  const entrypointAdmission = provider.artifacts?.find((item) => item.path === provider.entrypoint);
+  const entrypointRuntime = manifest.runtimeArtifacts.find((item) => item.path === provider.entrypoint);
+  if (!entrypointAdmission || !entrypointRuntime || manifest.entrypoint.sha256 !== entrypointAdmission.sha256 || manifest.entrypoint.sha256 !== entrypointRuntime.sha256 || manifest.entrypoint.bytes !== entrypointRuntime.bytes) {
+    reject('runtime-provenance-entrypoint-digest-mismatch');
+  }
+  if (aggregateRecords(manifest.sourceInputs) !== manifest.sourceAggregateSha256) reject('runtime-provenance-source-aggregate-mismatch');
+  if (aggregateRecords(manifest.runtimeArtifacts) !== manifest.runtimeAggregateSha256) reject('runtime-provenance-runtime-aggregate-mismatch');
+
+  for (const record of manifest.runtimeArtifacts) {
+    if (!verifyRegularFile(root, record, provider.providerId, issues)) valid = false;
+  }
+  for (const record of manifest.sourceInputs) {
+    if (!verifyRegularFile(root, record, provider.providerId, issues)) valid = false;
+    try {
+      const committed = execFileSync('git', ['show', `${manifest.sourceRevision}:${record.path}`], { cwd: root, stdio: ['ignore', 'pipe', 'ignore'] });
+      if (committed.length !== record.bytes || digestBytes(committed) !== record.sha256) throw new Error('committed digest mismatch');
+    } catch {
+      issues.push(`${provider.providerId}/${record.path}: committed-source-provenance-mismatch`);
+      valid = false;
+    }
+  }
+  return valid;
 }
 
 /**
@@ -180,6 +271,8 @@ export function verifyProvider({ admission, rootPath, explicitRevision = null })
     }
   }
 
+  const reproducibleBuildVerified = verifyReproducibleBuild({ admission, root, isGitRoot, admittedRevision, issues });
+
   // Only set sourceArtifactsVerified if revision is verified AND all non-WTO artifacts pass
   if (revisionVerified && allSourceArtifactsVerified && sourceArtifactCount > 0) {
     sourceArtifactsVerified = true;
@@ -193,7 +286,7 @@ export function verifyProvider({ admission, rootPath, explicitRevision = null })
   }
 
   // Runtime artifacts verified (all non-WTO artifacts pass digest check and revision verified)
-  if (revisionVerified && entrypointFound && allRuntimeArtifactsVerified && artifacts.length > 0) {
+  if (revisionVerified && entrypointFound && allRuntimeArtifactsVerified && artifacts.length > 0 && reproducibleBuildVerified) {
     runtimeArtifactsVerified = true;
   }
 

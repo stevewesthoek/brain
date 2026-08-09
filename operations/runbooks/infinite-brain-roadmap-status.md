@@ -81,6 +81,13 @@ task IDs; existing B2 Context Gateway tasks are unchanged.
   admitted MRP-6 two-phase migration path on 2026-07-22. One candidate update
   and two readbacks confirmed the exact approved candidate canonical hash;
   protected domains remained unchanged and no rollback update was required.
+- Workbench MCP is now `active-local` at canonical Workbench revision
+  `87ce34385277ce5bcbfd45266dbe2d925a536933`. Its gitignored entrypoint is
+  admitted through committed reproducible-build provenance, and the
+  Brain-project Codex registration exposes only the three admitted tools with
+  `n8n_workflow_migration` as the sole command suboperation. Mind Context remains
+  separately `active-local`, project-scoped, read-only, and healthy at Mind pin
+  `91ae8ce55c6daf67b728ef9b8d841504f24a97c9`.
 - `B5.4 — Controlled write pilot` completed 2026-07-31 after Mind M5.1–M5.3
   resolved. Three repeatability runs passed; all rejection and rollback gates
   passed; no repository mutation occurred.

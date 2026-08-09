@@ -196,7 +196,7 @@
       ],
       "validationCommands": [
         "node operations/automations/n8n/validate-mind-inbox-paths.mjs",
-        "node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=/Users/Office/Repos/prochattools/saas/workbench-mrp6"
+        "node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=/Users/Office/Repos/prochattools/saas/workbench-private"
       ],
       "reviewedAt": "2026-07-14",
       "blockers": [],
@@ -410,7 +410,7 @@
         "tools/validate-mcp-provider-admissions.mjs"
       ],
       "validationCommands": [
-        "node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=/Users/Office/Repos/prochattools/saas/workbench-mrp6",
+        "node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=/Users/Office/Repos/prochattools/saas/workbench-private",
         "node --test tools/validate-mcp-provider-admissions.test.mjs"
       ],
       "reviewedAt": "2026-07-14",
@@ -419,7 +419,7 @@
         "approval-broker",
         "save-to-mind-candidate"
       ],
-      "notes": "Project-scoped authenticated MRP-6 Workbench provider is admitted for status, context reads, and the n8n workflow migration command only; one fresh guarded B1.0a migration completed with exact canonical readback."
+      "notes": "Project-scoped authenticated Workbench provider is active-local at the canonical workbench-private revision with committed reproducible-build provenance; admission remains limited to status, context reads, and the n8n workflow migration command only."
     }
   ]
 }

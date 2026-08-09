@@ -175,9 +175,14 @@ function configContainsCredentialValue(text) {
     // Skip comments
     if (trimmed.startsWith('#') || trimmed.startsWith('//')) continue;
     // Look for patterns after = or : that look like bare credentials
-    const match = trimmed.match(/[:=]\s*["']?([^\s"',}\]]+)["']?/);
+    const match = trimmed.match(/^([A-Za-z0-9_.-]+)\s*[:=]\s*["']?([^\s"',}\]]+)["']?/);
     if (!match) continue;
-    const candidate = match[1];
+    const key = match[1];
+    const candidate = match[2];
+    // Known metadata keys can contain long digest or instruction values without
+    // carrying authentication material. Keep exclusions deliberately narrow.
+    if (/(?:SHA256S?|DIGESTS?|HASHES?)$/.test(key) && /^[a-fA-F0-9]{40,}$/.test(candidate)) continue;
+    if (key.startsWith('NODE_REPL_INSTRUCTIONS_')) continue;
     if (/^[a-fA-F0-9]{40,}$/.test(candidate)) return true;
     if (/^Bearer\s+\S{20,}/.test(candidate)) return true;
     if (/^sk-[a-zA-Z0-9]{20,}/.test(candidate)) return true;
@@ -277,7 +282,7 @@ args = ["/repo/tools/mcp/b1-0a-guarded-save-to-mind.mjs"]
 // ---------------------------------------------------------------------------
 
 export function detectAdmissionWithoutRegistration(opts = {}) {
-  const { fixtureOnly = false, codexTomlText = null, claudeJsonText = null, registry = null } = opts;
+  const { fixtureOnly = false, codexTomlText = null, codexProjectTomlText = null, claudeJsonText = null, claudeProjectMcpText = null, registry = null } = opts;
 
   let tomlContent = codexTomlText;
   let claudeContent = claudeJsonText;
@@ -304,10 +309,10 @@ export function detectAdmissionWithoutRegistration(opts = {}) {
 
   for (const admission of activeAdmissions) {
     const serverName = admission.transport?.serverName ?? admission.admissionId;
-    const codexState = tomlMcpServerState(tomlContent, serverName);
-    const claudeState = claudeJsonMcpServerPresent(claudeContent, serverName);
+    const codexStates = [tomlMcpServerState(tomlContent, serverName), tomlMcpServerState(codexProjectTomlText, serverName)];
+    const claudeStates = [claudeJsonMcpServerPresent(claudeContent, serverName), claudeJsonMcpServerPresent(claudeProjectMcpText, serverName)];
 
-    if (codexState !== 'present-enabled' && claudeState !== 'present') {
+    if (!codexStates.includes('present-enabled') && !claudeStates.includes('present')) {
       issues.push(`${admission.admissionId}: active-local but not registered in codex or claude`);
     }
   }
@@ -323,7 +328,9 @@ function claudeJsonMcpServerPresent(claudeJsonText, serverName) {
   try {
     const obj = JSON.parse(claudeJsonText);
     const servers = obj?.mcpServers ?? {};
-    return serverName in servers ? 'present' : 'absent';
+    if (serverName in servers) return 'present';
+    const projects = obj?.projects && typeof obj.projects === 'object' ? Object.values(obj.projects) : [];
+    return projects.some((project) => project?.mcpServers && serverName in project.mcpServers) ? 'present' : 'absent';
   } catch {
     return 'parse-error';
   }
@@ -412,7 +419,7 @@ function loadKnownBrainDocs() {
 // ---------------------------------------------------------------------------
 
 export function detectRetiredBridgeEnabled(opts = {}) {
-  const { fixtureOnly = false, codexTomlText = null } = opts;
+  const { fixtureOnly = false, codexTomlText = null, codexProjectTomlText = null } = opts;
 
   let tomlContent = codexTomlText;
   if (fixtureOnly) {
@@ -421,16 +428,16 @@ export function detectRetiredBridgeEnabled(opts = {}) {
     tomlContent = tomlContent ?? safeReadText(path.join(os.homedir(), '.codex/config.toml'));
   }
 
-  const state = tomlMcpServerState(tomlContent, 'b1_0a_guarded_save_to_mind');
+  const states = [tomlMcpServerState(tomlContent, 'b1_0a_guarded_save_to_mind'), tomlMcpServerState(codexProjectTomlText, 'b1_0a_guarded_save_to_mind')];
 
-  if (state === 'present-enabled') {
+  if (states.includes('present-enabled')) {
     return {
       key: 'retired-bridge-enabled',
       value: 'b1_0a_guarded_save_to_mind is present and enabled in ~/.codex/config.toml; expected enabled=false',
       level: 'fail'
     };
   }
-  if (state === 'file-missing') {
+  if (states.every((state) => state === 'file-missing')) {
     return { key: 'retired-bridge-enabled', value: 'codex-config-missing', level: 'warn' };
   }
   return { key: 'retired-bridge-enabled', value: 'not-detected', level: 'info' };
@@ -482,7 +489,7 @@ export async function detectProviderRevisionMismatch(opts = {}) {
 // ---------------------------------------------------------------------------
 
 export function detectPrematureCodebaseMemoryRegistration(opts = {}) {
-  const { fixtureOnly = false, codexTomlText = null, claudeJsonText = null, registry = null } = opts;
+  const { fixtureOnly = false, codexTomlText = null, codexProjectTomlText = null, claudeJsonText = null, claudeProjectMcpText = null, registry = null } = opts;
 
   let tomlContent = codexTomlText;
   let claudeContent = claudeJsonText;
@@ -510,13 +517,13 @@ export function detectPrematureCodebaseMemoryRegistration(opts = {}) {
   }
 
   // B8.2 not complete — check if registered anywhere
-  const codexState = tomlMcpServerState(tomlContent, 'codebase-memory-mcp');
-  const claudeState = claudeJsonMcpServerPresent(claudeContent, 'codebase-memory-mcp');
+  const codexStates = [tomlMcpServerState(tomlContent, 'codebase-memory-mcp'), tomlMcpServerState(codexProjectTomlText, 'codebase-memory-mcp')];
+  const claudeStates = [claudeJsonMcpServerPresent(claudeContent, 'codebase-memory-mcp'), claudeJsonMcpServerPresent(claudeProjectMcpText, 'codebase-memory-mcp')];
 
-  if (codexState === 'present-enabled' || claudeState === 'present') {
+  if (codexStates.includes('present-enabled') || claudeStates.includes('present')) {
     const where = [
-      codexState === 'present-enabled' ? 'codex' : null,
-      claudeState === 'present' ? 'claude' : null
+      codexStates.includes('present-enabled') ? 'codex' : null,
+      claudeStates.includes('present') ? 'claude' : null
     ].filter(Boolean).join(', ');
     return {
       key: 'premature-codebase-memory-registration',
@@ -533,7 +540,7 @@ export function detectPrematureCodebaseMemoryRegistration(opts = {}) {
 // ---------------------------------------------------------------------------
 
 export function detectWorkbenchScopeExceedance(opts = {}) {
-  const { fixtureOnly = false, codexTomlText = null, registry = null } = opts;
+  const { fixtureOnly = false, codexTomlText = null, codexProjectTomlText = null, registry = null } = opts;
 
   let tomlContent = codexTomlText;
   let admissionRegistry = registry;
@@ -557,7 +564,9 @@ export function detectWorkbenchScopeExceedance(opts = {}) {
       ?.flatMap((t) => t.allowedSuboperations ?? []) ?? []
   );
 
-  const envInfo = tomlMcpServerEnvKeys(tomlContent, 'workbench');
+  const projectEnvInfo = tomlMcpServerEnvKeys(codexProjectTomlText, 'workbench');
+  const effectiveToml = projectEnvInfo.keys.length ? codexProjectTomlText : tomlContent;
+  const envInfo = tomlMcpServerEnvKeys(effectiveToml, 'workbench');
   if (!envInfo.keys.length) {
     return { key: 'workbench-scope-exceedance', value: 'not-registered-or-no-env', level: 'info' };
   }
@@ -568,7 +577,7 @@ export function detectWorkbenchScopeExceedance(opts = {}) {
 
   // Re-parse env block to get actual string values for the allowlist vars only
   // (These are not secrets — they are tool names)
-  const envValues = parseTomlEnvBlockSafe(tomlContent, 'workbench');
+  const envValues = parseTomlEnvBlockSafe(effectiveToml, 'workbench');
 
   const configuredTools = envValues['WORKBENCH_MCP_ALLOWED_TOOLS']
     ? envValues['WORKBENCH_MCP_ALLOWED_TOOLS'].split(',').map((t) => t.trim()).filter(Boolean)
@@ -1022,12 +1031,14 @@ async function runRealMode(strict = false) {
 
   const admissionRegistry = loadAdmissionRegistry(registryPath);
   const codexTomlText = safeReadText(path.join(os.homedir(), '.codex/config.toml'));
+  const codexProjectTomlText = safeReadText(path.join(SCRIPT_ROOT, '.codex/config.toml'));
   const claudeJsonText = safeReadText(path.join(os.homedir(), '.claude.json'));
+  const claudeProjectMcpText = safeReadText(path.join(SCRIPT_ROOT, '.mcp.json'));
   const docTexts = loadKnownBrainDocs();
   const govPath = path.join(SCRIPT_ROOT, 'operations/specs/graphify-transition-governance.json');
   const governanceJson = safeReadJson(govPath);
 
-  const sharedOpts = { fixtureOnly: false, codexTomlText, claudeJsonText, registry: admissionRegistry, docTexts, governanceJson };
+  const sharedOpts = { fixtureOnly: false, codexTomlText, codexProjectTomlText, claudeJsonText, claudeProjectMcpText, registry: admissionRegistry, docTexts, governanceJson };
 
   const providerRevisionResult = await detectProviderRevisionMismatch({
     fixtureOnly: false,

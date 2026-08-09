@@ -30,6 +30,13 @@ provider, grant, policy, or business decision.
 - Every admission source-locks a provider revision and immutable artifact
   digests. A version, schema, source lock, or digest mismatch fails closed until
   Brain records and validates a deliberate replacement.
+- A gitignored generated runtime may be admitted only with a committed
+  reproducible-build manifest that binds exact committed source blobs,
+  toolchain identity, build commands, the runtime entrypoint, and all required
+  runtime artifact digests. The admitted revision may differ from the manifest's
+  source revision only by the manifest itself. Brain verifies both Git blobs and
+  the actual runtime files; a random or merely hashed working-tree build is not
+  runtime provenance.
 - Compatibility and development adapters are labeled explicitly, disabled when
   superseded, and retained only until their evidence-backed deletion gate.
 

@@ -18,7 +18,11 @@
           "owner": { "const": "brain-runtime" },
           "provider": {
             "type": "object",
-            "required": ["providerId", "repository", "revision", "sourceState", "version", "entrypoint", "artifacts"]
+            "required": ["providerId", "repository", "revision", "sourceState", "version", "entrypoint", "artifacts"],
+            "properties": {
+              "sourceState": { "enum": ["committed", "pinned-working-tree", "mixed", "reproducible-build"] },
+              "runtimeProvenanceManifest": { "type": "string" }
+            }
           },
           "transport": {
             "type": "object",

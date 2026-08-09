@@ -1,29 +1,31 @@
 # Workbench MCP Provider for Brain
 
-**Admission status:** `candidate`
+**Admission status:** `active-local`
 **Admission:** `operations/specs/mcp-provider-admissions.json`
 **Standard:** `operations/system-configs/mcp/MCP-PROVIDER-ADMISSION-STANDARD.md`
 **Provider Repository:** `prochattools/workbench-private`
-**MCP Entrypoint:** `packages/mcp/dist/server.js` (working-tree-only — not verifiable from committed objects)
-**Current client registration:** none
-**Server running:** not observed
+**MCP Entrypoint:** `packages/mcp/dist/server.js` (gitignored runtime, verified by committed reproducible-build provenance)
+**Current client registration:** Brain-project Codex registration in `.codex/config.toml`, profile `brain`
+**Server health:** observed healthy through a bounded direct MCP initialize/tools-list/status proof
 
-> **Why `candidate` and not `active-local`:**
-> The committed source at `aa7bf7ec...` was reviewed and is admissible. However the
-> runtime entrypoint (`packages/mcp/dist/server.js`) and all 12 dist artifacts are
-> gitignored and exist only in the working tree. They cannot be verified from committed
-> objects. No reproducible build record exists. Until the runtime entrypoint provenance
-> is established, the truthful admission status is `candidate`.
+> **Why `active-local` is now truthful:**
+> Workbench revision `87ce34385277ce5bcbfd45266dbe2d925a536933` commits
+> `packages/mcp/runtime-provenance.json`. The manifest binds 54 committed source
+> inputs at source revision `7acdb6f88bcd0db37c1b515dfe627a1594ed1a32`
+> to 32 generated JavaScript runtime artifacts using Node `v20.20.2` and pnpm
+> `10.33.0`; the admitted revision differs from the build-source revision only
+> by that manifest. Brain validates the manifest against Git blobs and the actual
+> runtime files before treating the entrypoint as verified.
 >
 > **Source review is not runtime provenance.** Reviewing the committed source confirms
 > the code is admissible. It does not confirm that the file that will actually execute
-> matches that reviewed source.
+> matches that reviewed source. The reproducible-build manifest is the separate proof.
 >
 > **Admission is NOT client registration.** `candidate` means Brain has reviewed and
-> approved the committed source for local use pending runtime-entrypoint provenance.
-> It does not mean the server is running or any client has connected to it.
-> As of 2026-08-02, no `[mcp_servers.workbench]` entry exists in `~/.codex/config.toml`
-> and no `mcpServers.workbench` entry exists in `~/.claude.json`.
+> approved source but has not admitted it for runtime use. `active-local` still does
+> not imply global registration. The current registration is project-scoped to the
+> Brain checkout, uses the exact three-tool `brain` profile, and references the
+> canonical owner-only credential file without embedding its value.
 
 Workbench is an external provider and consumer-facing execution host. Its MCP
 server, authentication, action projection, source policy, grants, operation and

@@ -31,11 +31,80 @@ function fixture() {
   return { root, registry };
 }
 
+function reproducibleBuildFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-mcp-reproducible-'));
+  fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.gitignore'), 'dist/\n');
+  fs.writeFileSync(path.join(root, 'src/server.ts'), 'export const value = "reproducible";\n');
+  fs.writeFileSync(path.join(root, 'dist/server.js'), 'export const value = "reproducible";\n');
+  execFileSync('git', ['init', '-q'], { cwd: root });
+  execFileSync('git', ['add', '.gitignore', 'src/server.ts'], { cwd: root });
+  execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'source'], { cwd: root });
+  const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  const sourceBytes = fs.readFileSync(path.join(root, 'src/server.ts'));
+  const runtimeBytes = fs.readFileSync(path.join(root, 'dist/server.js'));
+  const sourceInputs = [{ path: 'src/server.ts', sha256: crypto.createHash('sha256').update(sourceBytes).digest('hex'), bytes: sourceBytes.length }];
+  const runtimeArtifacts = [{ path: 'dist/server.js', sha256: crypto.createHash('sha256').update(runtimeBytes).digest('hex'), bytes: runtimeBytes.length }];
+  const aggregate = (items) => crypto.createHash('sha256').update(items.map((item) => `${item.path}\0${item.sha256}\0${item.bytes}\n`).join('')).digest('hex');
+  const manifest = {
+    schemaVersion: 'workbench-mcp-runtime-provenance/v1',
+    sourceState: 'reproducible-build',
+    sourceRevision,
+    packageVersion: '1.0.0',
+    toolchain: { node: 'v20.20.2', pnpm: '10.33.0' },
+    buildCommands: [{ command: 'pnpm', args: ['build'] }],
+    entrypoint: runtimeArtifacts[0],
+    sourceInputs,
+    sourceAggregateSha256: aggregate(sourceInputs),
+    runtimeArtifacts,
+    runtimeAggregateSha256: aggregate(runtimeArtifacts),
+  };
+  fs.writeFileSync(path.join(root, 'runtime-provenance.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  execFileSync('git', ['add', 'runtime-provenance.json'], { cwd: root });
+  execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'provenance'], { cwd: root });
+  const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  const manifestSha = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'runtime-provenance.json'))).digest('hex');
+  const base = fixture();
+  fs.rmSync(base.root, { recursive: true });
+  const admission = base.registry.admissions[0];
+  admission.provider = {
+    providerId: 'example', repository: 'example/provider', revision,
+    sourceState: 'reproducible-build', version: '1.0.0', entrypoint: 'dist/server.js',
+    runtimeProvenanceManifest: 'runtime-provenance.json',
+    artifacts: [
+      { path: 'dist/server.js', sha256: runtimeArtifacts[0].sha256 },
+      { path: 'runtime-provenance.json', sha256: manifestSha },
+    ],
+  };
+  return { root, registry: base.registry };
+}
+
 test('validates identity, scope, and pinned provider artifacts', () => {
   const item = fixture();
   assert.deepEqual(validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) }), []);
   fs.writeFileSync(path.join(item.root, 'dist/server.js'), 'tampered');
   assert(validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) }).some((error) => error.includes('artifact-digest-mismatch')));
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('admits a gitignored runtime only through committed reproducible-build provenance', () => {
+  const item = reproducibleBuildFixture();
+  assert.deepEqual(validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) }), []);
+  fs.writeFileSync(path.join(item.root, 'dist/server.js'), 'tampered runtime');
+  const errors = validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) });
+  assert(errors.some((error) => error.includes('artifact-digest-mismatch') || error.includes('provenance-digest-mismatch')), `errors: ${errors}`);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('reproducible-build rejects a provenance commit that also changes provider source', () => {
+  const item = reproducibleBuildFixture();
+  fs.writeFileSync(path.join(item.root, 'src/extra.ts'), 'export const widened = true;\n');
+  execFileSync('git', ['add', 'src/extra.ts'], { cwd: item.root });
+  execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-qm', 'unattested source'], { cwd: item.root });
+  item.registry.admissions[0].provider.revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: item.root, encoding: 'utf8' }).trim();
+  const errors = validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) });
+  assert(errors.some((error) => error.includes('runtime-provenance-revision-delta-invalid')), `errors: ${errors}`);
   fs.rmSync(item.root, { recursive: true });
 });
 

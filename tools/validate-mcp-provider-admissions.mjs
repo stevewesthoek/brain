@@ -37,7 +37,7 @@ function validateAdmissionRegistryCore(registry, errors) {
     if (admission?.consumer !== 'brain') errors.push(`${prefix}: consumer must be brain`);
     const provider = admission?.provider;
     if (!ID.test(provider?.providerId ?? '') || typeof provider?.repository !== 'string' || !/^[a-f0-9]{40}$/.test(provider?.revision ?? '')) errors.push(`${prefix}: provider identity or revision is invalid`);
-    if (!['committed', 'pinned-working-tree', 'mixed'].includes(provider?.sourceState)) errors.push(`${prefix}: provider sourceState is invalid`);
+    if (!['committed', 'pinned-working-tree', 'mixed', 'reproducible-build'].includes(provider?.sourceState)) errors.push(`${prefix}: provider sourceState is invalid`);
     if (!SAFE_PATH(provider?.entrypoint) || !Array.isArray(provider?.artifacts) || provider.artifacts.length === 0) errors.push(`${prefix}: provider entrypoint/artifacts are invalid`);
     const artifactPaths = new Set();
     for (const artifact of provider?.artifacts ?? []) {
@@ -45,6 +45,12 @@ function validateAdmissionRegistryCore(registry, errors) {
       artifactPaths.add(artifact?.path);
     }
     if (!artifactPaths.has(provider?.entrypoint)) errors.push(`${prefix}: entrypoint must be digest-pinned`);
+    if (provider?.sourceState === 'reproducible-build') {
+      if (!SAFE_PATH(provider?.runtimeProvenanceManifest)) errors.push(`${prefix}: reproducible-build requires runtimeProvenanceManifest`);
+      else if (!artifactPaths.has(provider.runtimeProvenanceManifest)) errors.push(`${prefix}: runtime provenance manifest must be digest-pinned`);
+    } else if (provider?.runtimeProvenanceManifest !== undefined) {
+      errors.push(`${prefix}: runtimeProvenanceManifest requires sourceState reproducible-build`);
+    }
     const transport = admission?.transport;
     const validNetworkPolicies = ['loopback-only', 'loopback-with-bounded-egress'];
     if (transport?.kind !== 'stdio' || transport?.projectScoped !== true || transport?.shell !== false || !validNetworkPolicies.includes(transport?.networkPolicy)) errors.push(`${prefix}: stdio must be project-scoped, shell-free, and loopback-only or loopback-with-bounded-egress`);
