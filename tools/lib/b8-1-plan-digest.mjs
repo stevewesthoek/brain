@@ -66,6 +66,7 @@ export const KNOWN_STALE_DIGESTS = new Set([
   '1c0892469683acba82534d3cd7c3f27aae9368a54a5a5fe49989de13aca067e4', // v7t (Node v25.9.0 runtime binding — violated required Node 20 stop condition; canonical plan but noncompliant authorization; never materialized/executed; v7u supersedes with explicit Node 20.20.2 binding)
   '0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed', // v7u (historical for new execution — machine-bound sandbox identity superseded; never materialized/executed)
   '86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30', // v7w (executed once 2026-08-09; rejected evidence; owner approval consumed and immutable)
+  'c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588', // v7x (executed once 2026-08-09; partial/invalid evidence; owner approval consumed and immutable)
 ]);
 
 // ---------------------------------------------------------------------------

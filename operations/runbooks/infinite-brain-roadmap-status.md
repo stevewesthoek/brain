@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-09 (v7x fresh-approval checkpoint after v7w harness recovery)
-**Audited:** 2026-08-09 — v7w remains rejected and immutable; follow-up isolated diagnostics proved and repaired Brain's CBM v0.9.0 marker-field and cache-binding mismatches; the repaired live harness passed, all 269 focused tests passed, and canonical v7x / 7.1.0 dry-run plan `c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588` is execution-ready with no run directory and no current execution authority
+**Last verified:** 2026-08-09 (v7x rejected-run disposition)
+**Audited:** 2026-08-09 — owner-approved B8.1 v7x / 7.1.0 was materialized once and executed once; exact-source passed 10/10, CBM produced 3 passes, 1 failure, and 6 errors, canonical evidence validation failed, cleanup and source-integrity checks passed, the run was rejected as insufficient, and its authorization is consumed
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -65,13 +65,21 @@ correctly. Brain's harness inspected fake-adapter `text` instead of the live
 repairs both contracts. The isolated real-provider harness passed with exact marker
 visibility, source restoration, attributable cache measurement, sandbox isolation,
 cleanup, and no lingering process; all six focused suites passed 269/269.
-The fresh canonical v7x dry-run plan is
+The canonical v7x dry-run plan was
 `operations/reports/b8-1-canonical-plan-v7x-2026-08-09.json`, run ID
 `b8-1-canonical-authorization-20260809-final-v7x`, digest
 `c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588`.
-It is execution-ready with zero blockers, selects CBM and exact-source, excludes
-Graphify, and has not been materialized or executed.
-B8.1 status: `awaiting-fresh-v7x-owner-approval`. The v7w approval is consumed and
+It passed preflight with zero blockers, selected CBM and exact-source, and excluded
+Graphify. The owner approved it; it was materialized once and executed once.
+Exact-source passed 10/10. CBM produced 3 passes, 1 failure, and 6 errors; its
+file and line accuracy were both 30%, and Brain/Workbench resource evidence was
+absent. The canonical evidence validator returned INVALID. Source-state files
+were byte-identical, no marker or process remained, and Graphify was not invoked.
+The immutable evidence SHA-256 is
+`5453867cb7e7b46475842e6fd6de72bdb4d3ba97ff589811cc99238b57fde869`;
+the disposition is
+`operations/reports/b8-1-failed-run-disposition-v7x-2026-08-09.md`.
+B8.1 status: `incomplete-after-rejected-v7x-run`. The v7x approval is consumed and
 current execution authority is `none`. B8.2–B8.6 remain blocked because accepted
 B8.1 evidence is absent. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later

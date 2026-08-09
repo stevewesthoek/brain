@@ -1,14 +1,15 @@
-# B8.1 Benchmark Authorization Package — v7x (AWAITING FRESH APPROVAL)
+# B8.1 Benchmark Authorization Package — v7x (EXECUTED / REJECTED)
 
-**Status:** execution-ready dry-run; not materialized; not executed; fresh exact owner approval required
+**Status:** owner-approved; materialized once; executed once; evidence invalid; rejected; authorization consumed
 **Verified:** 2026-08-09
 **Owner:** Brain operations
 
-## Fresh canonical contract (NOT YET AUTHORIZED)
+## Canonical executed contract (CONSUMED)
 
-The **v7x / 7.1.0** contract is the only current approval candidate. It binds
-the repaired Brain harness and marks v7u and v7w digests non-reusable. The
-dry-run passed with zero blockers and created no benchmark run directory.
+The **v7x / 7.1.0** contract bound the repaired Brain harness and marked v7u
+and v7w digests non-reusable. Its dry-run passed with zero blockers. The owner
+then approved the exact contract; it was materialized once and executed once.
+Its approval is consumed and the v7x digest cannot authorize another run.
 
 - Plan: `operations/reports/b8-1-canonical-plan-v7x-2026-08-09.json`
 - Dry-run receipt: `operations/reports/b8-1-dry-run-receipt-v7x-2026-08-09.json`
@@ -22,9 +23,9 @@ dry-run passed with zero blockers and created no benchmark run directory.
 - `partialEvidence=true`
 - `executionReady=true`
 - Blocking checks: none
-- Materialized/executed: no/no
+- Materialized/executed: once/once
 
-Independent verification:
+Immediately before materialization, independent verification returned:
 
 ```bash
 /Users/Office/.nvm/versions/node/v20.20.2/bin/node \
@@ -39,6 +40,9 @@ Expected result:
 PASS  planSha256: c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588
       verified via shared digest contract (tools/lib/b8-1-plan-digest.mjs)
 ```
+
+After execution, the digest was added to `KNOWN_STALE_DIGESTS`; current tools
+must reject it for any future approval or execution.
 
 ## Recovery from v7w
 
@@ -65,6 +69,26 @@ and every acceptance threshold are unchanged.
 
 v7w was not rerun or modified. Its evidence SHA-256 remains
 `ff36efca08deb8e38fa126c07cb29f70112328c6f718801266e0b2fdfdd88e85`.
+
+## v7x execution and evidence disposition
+
+The executor completed 20 fixture-subject cases once:
+
+- exact-source: 10 passed, 0 failed, 0 errors;
+- CBM: 3 passed, 1 failed, 6 errors;
+- total: 13 passed, 1 failed, 6 errors, 0 timeouts;
+- executor outcome: `partial`;
+- canonical evidence validator: `INVALID`.
+
+CBM file and line accuracy were both 30%, below the required 90% and 80%.
+Brain and Workbench post-reindex marker checks failed, leaving their repository
+measurements and aggregate CBM CPU/RSS evidence absent. The evidence validator
+also rejected the resulting subject-metric shape. Exact-source file accuracy
+was 100%, line accuracy 80%, and caller/callee F1 1.0.
+
+The run is **REJECTED as insufficient for B8.1 completion**. Evidence SHA-256
+is `5453867cb7e7b46475842e6fd6de72bdb4d3ba97ff589811cc99238b57fde869`.
+See `operations/reports/b8-1-failed-run-disposition-v7x-2026-08-09.md`.
 
 ## Historical executed contract (v7w, CONSUMED)
 
@@ -224,7 +248,7 @@ Graphify remains excluded. The contained M7.1 baseline does not grant a B8.1 pro
 
 ## Historical and stale approvals
 
-All digests listed below are historical, consumed, stale, failed, or otherwise invalid for a new run. The separate v7x digest above is the only current approval candidate:
+No digest is currently approvable. All digests listed below are historical, consumed, stale, failed, or otherwise invalid for a new run:
 
 - v1 `dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4` (2026-08-04, historical)
 - v2 `1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda` (2026-08-04, historical)
@@ -240,55 +264,40 @@ All digests listed below are historical, consumed, stale, failed, or otherwise i
 - v7t `1c0892469683acba82534d3cd7c3f27aae9368a54a5a5fe49989de13aca067e4` (2026-08-07, runtime-mismatch historical; Node 25 output, noncompliant with Node 20 stop condition; never materialized/executed; see `b8-1-v7t-disposition-2026-08-07.md`)
 - v7u `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed` (2026-08-07, historical for new execution; its machine-bound `/usr/bin/sandbox-exec` identity no longer matches the current machine; never materialized/executed)
 - v7w `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30` (2026-08-09, owner-approved and consumed; executed once; exact-source 10/10, CBM 0/10 with 10 errors; evidence invalid; rejected; immutable run preserved)
+- v7x `c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588` (2026-08-09, owner-approved and consumed; executed once; exact-source 10/10, CBM 3 pass / 1 fail / 6 errors; evidence invalid; rejected; immutable run preserved)
 - claimed but never established incomplete-plan digest `331695165eb9dd91b061efc414d7a4e9711828d581c4c46511dea1c5812038e2`
 
 The v5s execution from 2026-08-05 remains immutable infrastructure evidence: run `b8-1-canonical-authorization-20260805-final-v5s`, 17/20 passed, but the owner rejected it as insufficient for B8.1 completion.
 
-**Supersession chain:** v7t (Node 25 binding) violated the required Node 20 stop condition. v7u corrected that binding but became stale for new execution when its machine-bound isolation-adapter identity changed. v7w preserved the Node 20 correction and rebound the current adapter without weakening isolation, then executed once and was rejected on invalid CBM evidence. v7x preserves the accepted contract and source pins, binds the repaired marker/cache harness and stale-digest protections, and awaits fresh approval.
+**Supersession chain:** v7t (Node 25 binding) violated the required Node 20 stop condition. v7u corrected that binding but became stale for new execution when its machine-bound isolation-adapter identity changed. v7w preserved the Node 20 correction and rebound the current adapter without weakening isolation, then executed once and was rejected on invalid CBM evidence. v7x bound the repaired marker/cache harness and stale-digest protections, executed once, and was also rejected on incomplete and invalid CBM evidence.
 
 ## Current roadmap truth
 
-B8.1 is **awaiting-fresh-v7x-owner-approval**. P8 remains **0/6 accepted**. B8.2–B8.6 remain blocked because accepted B8.1 evidence is absent and no structural default decision can be established. Graphify remains excluded. v7x is execution-ready but is neither materialized nor authorized.
+B8.1 is **incomplete-after-rejected-v7x-run**. P8 remains **0/6 accepted**. B8.2–B8.6 remain blocked because accepted B8.1 evidence is absent and no structural default decision can be established. Graphify remains excluded. v7x is immutable and its approval is consumed.
 
 ### Milestone status
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| B8.1 | `awaiting-fresh-v7x-owner-approval` | v7w remains rejected/immutable; Brain harness repaired; v7x dry-run ready with zero blockers; fresh approval required |
+| B8.1 | `incomplete-after-rejected-v7x-run` | v7x executed once; exact-source 10/10; CBM 3 pass / 1 fail / 6 errors; evidence invalid; approval consumed |
 | P8 | 0/6 | No P8 task accepted complete |
 | B8.2–B8.6 | blocked | Accepted B8.1 evidence is absent |
 
 ## Approval and execution record
 
-The exact owner approval was received and consumed on 2026-08-09:
+The exact v7x owner approval was received and consumed on 2026-08-09:
 
 - one exact `--materialize` invocation succeeded;
 - one benchmark execution completed with outcome `partial`;
-- the immutable v7w run directory is preserved;
+- the immutable v7x run directory is preserved;
 - no retry or second execution occurred;
 - no Graphify invocation or Mind mutation occurred;
 - no provider activation, default registration, watcher, or scheduler was created;
 - no P8 task was accepted complete.
 
-## Consumed owner approval wording
+## Consumed v7x owner approval wording
 
 The owner provided the following exact approval. It is retained as history and **must not be reused**:
-
-```text
-I approve B8.1 benchmark execution with plan digest
-86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30
-for run-id b8-1-canonical-authorization-20260809-final-v7w.
-Node runtime: v20.20.2 (SHA-256: 38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6).
-Subjects: cbm, exact-source. Graphify excluded.
-Partial evidence accepted.
-```
-
-The plan digest and all machine/source bindings were independently reverified immediately before materialization. That approval is historical and cannot authorize v7x. Threshold weakening or in-place evidence repair is not permitted.
-
-## Required fresh owner approval wording
-
-No materialization or execution may occur unless the owner now provides this
-exact v7x approval:
 
 ```text
 I approve B8.1 benchmark execution with plan digest
@@ -299,4 +308,7 @@ Subjects: cbm, exact-source. Graphify excluded.
 Partial evidence accepted.
 ```
 
-Until that exact approval is received, execution authority remains `none`.
+The plan digest and all machine/source bindings were independently reverified
+immediately before materialization. That approval is historical and cannot
+authorize another materialization or execution. Threshold weakening, in-place
+evidence repair, and retry under the consumed approval are not permitted.
