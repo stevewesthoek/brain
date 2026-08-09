@@ -112,12 +112,13 @@ export function measureResourceUsage(childResult, opts = {}) {
  * @param {number|{status:string,reason:string}} opts.indexDiskBytes
  * @param {string} opts.subject - 'cbm' or 'exact-source'
  */
-export function buildRepositoryMetric({ repositoryId, initialIndexingTimeMs, incrementalRefreshLatencyMs, indexDiskBytes, subject }) {
+export function buildRepositoryMetric({ repositoryId, initialIndexingTimeMs, incrementalRefreshLatencyMs, indexDiskBytes, refreshProbeTarget, subject }) {
   if (subject === 'exact-source') {
     return {
       initialIndexingTimeMs: { status: 'not-applicable', reason: 'exact-source-no-index' },
       incrementalRefreshLatencyMs: { status: 'not-applicable', reason: 'exact-source-no-refresh' },
       indexDiskBytes: { status: 'not-applicable', reason: 'exact-source-no-index-disk' },
+      refreshProbeTarget: { status: 'not-applicable', reason: 'exact-source-no-refresh-probe' },
     };
   }
 
@@ -131,11 +132,15 @@ export function buildRepositoryMetric({ repositoryId, initialIndexingTimeMs, inc
   if (indexDiskBytes === null || indexDiskBytes === undefined) {
     throw new Error(`buildRepositoryMetric: indexDiskBytes is required for ${subject}/${repositoryId}`);
   }
+  if (typeof refreshProbeTarget !== 'string' || refreshProbeTarget.length === 0) {
+    throw new Error(`buildRepositoryMetric: refreshProbeTarget is required for ${subject}/${repositoryId}`);
+  }
 
   return {
     initialIndexingTimeMs,
     incrementalRefreshLatencyMs,
     indexDiskBytes,
+    refreshProbeTarget,
   };
 }
 

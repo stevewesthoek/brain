@@ -51,6 +51,7 @@ import {
 } from './lib/b8-1-metrics.mjs';
 import {
   runIncrementalReindex,
+  selectRefreshProbeTarget,
 } from './lib/b8-1-cbm-incremental-reindex.mjs';
 import {
   runChildWithTimeMetrics,
@@ -59,7 +60,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-export const EXECUTOR_VERSION = '7.1.0';
+export const EXECUTOR_VERSION = '7.2.0';
 export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
@@ -124,7 +125,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     const gotVersion = plan.planVersion ?? `absent (schemaVersion=${plan.schemaVersion ?? 'absent'})`;
     return {
       plan: null,
-      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v6.0 preflight`,
+      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with the current preflight`,
     };
   }
 
@@ -1124,6 +1125,17 @@ export async function runExecutor({
     return { outcome: 'fail', fixtureResults: [], executionReceipt: null, cleanupReceipt: null, errors: ['manifest has no fixtures'] };
   }
 
+  const refreshProbeTargets = new Map();
+  if (selectedSubjects.includes('cbm') && !_cbmAdapter) {
+    for (const repo of manifest.repositories ?? []) {
+      const target = selectRefreshProbeTarget(manifest, repo.repositoryId);
+      if (!target) {
+        return { outcome: 'fail', fixtureResults: [], executionReceipt: null, cleanupReceipt: null, errors: [`manifest has no admitted refresh probe target for repository ${repo.repositoryId}`] };
+      }
+      refreshProbeTargets.set(repo.repositoryId, target);
+    }
+  }
+
   // Validate fixture scoring preconditions before execution
   for (const fixture of fixtures) {
     const countErr = validateExpectedCount(fixture);
@@ -1160,6 +1172,8 @@ export async function runExecutor({
 
   // Track CBM measurements per repo (for subjectMetrics)
   const cbmRepositoryMetrics = new Map();
+  const cbmReindexAttempts = new Set();
+  const cbmReindexFailures = new Map();
   const exactSourceMeasurements = [];
 
   if (!dryRun) {
@@ -1219,6 +1233,19 @@ export async function runExecutor({
           const perRepoCacheDir = path.join(cbmCacheBaseDir, repoId);
           const perRepoConfigDir = path.join(cbmConfigBaseDir, repoId);
 
+          if (cbmReindexFailures.has(repoId)) {
+            result = {
+              outcome: 'error',
+              actual: null,
+              latencyMs: 0,
+              errors: [cbmReindexFailures.get(repoId)],
+              subjectIdentity: { cbm: { version: cbmIdentity.version, sha256: cbmIdentity.sha256 } },
+              fileCorrect: false,
+              lineCorrect: false,
+              setAccuracy: null,
+            };
+          }
+
           // Create per-repository isolated directories
           for (const dir of [perRepoHomeDir, perRepoCacheDir, perRepoConfigDir]) {
             if (!fs.existsSync(dir)) {
@@ -1228,13 +1255,15 @@ export async function runExecutor({
 
           // Use hardened incremental reindex only if not injected with adapter (tests bypass reindex)
           let reindexResult = null;
-          if (!_cbmAdapter && !cbmRepositoryMetrics.has(repoId) && cbmIdentity?.resolvedPath) {
+          if (!_cbmAdapter && !cbmReindexAttempts.has(repoId) && cbmIdentity?.resolvedPath) {
+            cbmReindexAttempts.add(repoId);
             const projectName = `${runId}-${repoId}`;
             reindexResult = await runIncrementalReindex({
               cbmExecutable: cbmIdentity.resolvedPath,
               disposableRepositoryPath: disposableRepoPath,
               repoId,
               projectName,
+              refreshProbeTarget: refreshProbeTargets.get(repoId),
               cacheDir: perRepoCacheDir,
               configDir: perRepoConfigDir,
               env: {
@@ -1248,11 +1277,13 @@ export async function runExecutor({
             });
 
             if (!reindexResult.success) {
+              const reindexFailure = reindexResult.reason || 'CBM incremental reindex failed';
+              cbmReindexFailures.set(repoId, reindexFailure);
               result = {
                 outcome: 'error',
                 actual: null,
                 latencyMs: Date.now() - new Date(fixtureStart).getTime(),
-                errors: [reindexResult.reason || 'CBM incremental reindex failed'],
+                errors: [reindexFailure],
                 subjectIdentity: { cbm: { version: cbmIdentity.version, sha256: cbmIdentity.sha256 } },
                 fileCorrect: false,
                 lineCorrect: false,
@@ -1272,6 +1303,13 @@ export async function runExecutor({
                 markerQueryCpuPercent: reindexResult.markerQueryCpuPercent,
                 markerQueryPeakRssMb: reindexResult.markerQueryPeakRssMb,
                 markerQueryProvenance: reindexResult.markerQueryProvenance,
+                restorationReindexCpuPercent: reindexResult.restorationReindexCpuPercent,
+                restorationReindexPeakRssMb: reindexResult.restorationReindexPeakRssMb,
+                restorationReindexProvenance: reindexResult.restorationReindexProvenance,
+                restorationQueryCpuPercent: reindexResult.restorationQueryCpuPercent,
+                restorationQueryPeakRssMb: reindexResult.restorationQueryPeakRssMb,
+                restorationQueryProvenance: reindexResult.restorationQueryProvenance,
+                refreshProbeTarget: reindexResult.refreshProbeTarget,
                 cacheBytes: reindexResult.cacheBytes,
               });
             }
@@ -1336,7 +1374,7 @@ export async function runExecutor({
     outcome = 'pass';
   }
 
-  // Build aggregate evidence with schema 3.0.0 + subjectMetrics + provenance (no offlineMetrics)
+  // Build aggregate evidence with schema 3.1.0 + subjectMetrics + provenance (no offlineMetrics)
   if (!dryRun) {
     const excludedSubjects = plan.excludedSubjects ?? [];
     const preflightReceiptPath = path.join(runDir, 'preflight-receipt.json');
@@ -1403,6 +1441,7 @@ export async function runExecutor({
             initialIndexingTimeMs: indexTimeMs,
             incrementalRefreshLatencyMs: refreshTimeMs,
             indexDiskBytes: diskBytes,
+            refreshProbeTarget: repoMetrics.refreshProbeTarget,
             subject,
           });
         } else {
@@ -1412,6 +1451,7 @@ export async function runExecutor({
             initialIndexingTimeMs: null,
             incrementalRefreshLatencyMs: null,
             indexDiskBytes: null,
+            refreshProbeTarget: null,
             subject,
           });
         }
@@ -1443,6 +1483,16 @@ export async function runExecutor({
               peakRssMb: repoMetrics.markerQueryPeakRssMb,
               provenance: repoMetrics.markerQueryProvenance,
             },
+            {
+              cpuPercent: repoMetrics.restorationReindexCpuPercent,
+              peakRssMb: repoMetrics.restorationReindexPeakRssMb,
+              provenance: repoMetrics.restorationReindexProvenance,
+            },
+            {
+              cpuPercent: repoMetrics.restorationQueryCpuPercent,
+              peakRssMb: repoMetrics.restorationQueryPeakRssMb,
+              provenance: repoMetrics.restorationQueryProvenance,
+            },
           );
         }
         const invalid = samples.find(sample => (
@@ -1450,7 +1500,7 @@ export async function runExecutor({
           typeof sample.peakRssMb !== 'number' || !Number.isFinite(sample.peakRssMb) || sample.peakRssMb <= 0 ||
           !sample.provenance || sample.provenance.exitCode !== 0 || sample.provenance.timedOut === true
         ));
-        if (samples.length !== manifestRepoIds.length * 3 || invalid) {
+        if (samples.length !== manifestRepoIds.length * 5 || invalid) {
           errors.push('CBM: incomplete or invalid child resource measurements');
         } else {
           peakCpuPercent = Math.max(...samples.map(sample => sample.cpuPercent));
@@ -1499,7 +1549,7 @@ export async function runExecutor({
     }
 
     const aggregateEvidence = {
-      schemaVersion: '3.0.0',
+      schemaVersion: '3.1.0',
       runId,
       partialEvidence: excludedSubjects.length > 0,
       selectedSubjects: [...selectedSubjects].sort(),

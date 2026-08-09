@@ -1124,3 +1124,71 @@ test('v5s schema rejects networkIsolationProof with missing profileSha256', () =
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('schema 3.1 binds refreshProbeTarget to the manifest and requires the field', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'b8-1-refresh-target-evidence-'));
+  try {
+    const commit = '1'.repeat(40);
+    const manifest = {
+      schemaVersion: '1.0.0',
+      repositories: [{ repositoryId: 'repo', localPath: '../repo', pinnedCommit: commit }],
+      fixtures: [{ fixtureId: 'fixture-1', repositoryId: 'repo', expectedFile: 'src/main.ts' }],
+    };
+    const manifestPath = path.join(tempRoot, 'manifest.json');
+    writeJson(manifestPath, manifest);
+    const manifestHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(manifestPath)).digest('hex')}`;
+    const base = minimalEvidence({
+      schemaVersion: '3.1.0',
+      runId: 'b8-1-refresh-target-binding',
+      partialEvidence: true,
+      selectedSubjects: ['cbm'],
+      excludedSubjects: ['graphify', 'exact-source'],
+      pinnedRepositoryCommits: { repo: { repositoryId: 'repo', commit } },
+      manifestHash,
+      fixtureResults: [{ fixtureId: 'fixture-1', subject: 'cbm', fileCorrect: true, lineCorrect: true }],
+      subjectMetrics: {
+        cbm: {
+          retrievalAccuracy: { fileAccuracy: 1, lineAccuracy: 1 },
+          peakCpuPercent: 10,
+          peakRssMb: 20,
+          serializedPayloadBytes: 100,
+          tokenizer: { name: 'utf8-bytes-div4-v1', version: '1.0.0', tokenCount: 25 },
+          retrievalOperationCount: 1,
+          repositoryMetrics: {
+            repo: {
+              initialIndexingTimeMs: 100,
+              incrementalRefreshLatencyMs: 50,
+              indexDiskBytes: 1024,
+              refreshProbeTarget: 'src/main.ts',
+            },
+          },
+          resourceProvenance: { method: 'bounded-child-aggregate-max', executable: '/synthetic/cbm', measuredPid: null, exitCode: 0, durationMs: 150 },
+        },
+      },
+    });
+    delete base.offlineMetrics;
+
+    const validPath = path.join(tempRoot, 'valid.json');
+    writeJson(validPath, base);
+    const validResult = validateEvidence(validPath, DEFAULT_SCHEMA, { manifestPath });
+    assert.equal(validResult.valid, true, validResult.errors.join('; '));
+
+    const omitted = structuredClone(base);
+    delete omitted.subjectMetrics.cbm.repositoryMetrics.repo.refreshProbeTarget;
+    const omittedPath = path.join(tempRoot, 'omitted.json');
+    writeJson(omittedPath, omitted);
+    const omittedResult = validateEvidence(omittedPath, DEFAULT_SCHEMA, { manifestPath });
+    assert.equal(omittedResult.valid, false);
+    assert.ok(omittedResult.errors.some(error => /refreshProbeTarget/.test(error)));
+
+    const mismatched = structuredClone(base);
+    mismatched.subjectMetrics.cbm.repositoryMetrics.repo.refreshProbeTarget = 'src/other.ts';
+    const mismatchedPath = path.join(tempRoot, 'mismatched.json');
+    writeJson(mismatchedPath, mismatched);
+    const mismatchedResult = validateEvidence(mismatchedPath, DEFAULT_SCHEMA, { manifestPath });
+    assert.equal(mismatchedResult.valid, false);
+    assert.ok(mismatchedResult.errors.some(error => /manifest-derived target/.test(error)));
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});

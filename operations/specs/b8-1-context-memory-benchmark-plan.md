@@ -1,9 +1,9 @@
 # B8.1 Context-memory benchmark plan
 
-**Status:** B8.1 incomplete — owner-approved v7x executed once and was rejected as insufficient; exact-source passed 10/10, CBM produced 3 passes / 1 failure / 6 errors, and canonical evidence validation failed
+**Status:** B8.1 incomplete — v7x was rejected; its refresh-target root cause is repaired and validated, and canonical v7y dry-run is awaiting exact owner approval
 **Date:** 2026-08-09 (v7x and v7w dispositions); 2026-08-06 (v6 historical); 2026-08-04 (v5s historical)
 **Dependency:** This plan does NOT authorize activation of any context-memory service.
-**Next step:** No execution is currently authorized. v7x is immutable and its approval is consumed. Any future investigation or attempt requires a separate task, new implementation identity and run ID, fresh canonical plan/receipt, and fresh exact owner approval.
+**Next step:** No execution is currently authorized. Review and exactly approve canonical v7y plan digest `57156d49e4f3ab273efb791dc3e4e128a839ba10552b860ab3219ae58e8bd1d1` for run ID `b8-1-canonical-authorization-20260809-final-v7y` before any materialization or execution.
 **v7w disposition:** Run `b8-1-canonical-authorization-20260809-final-v7w` executed 2026-08-09 under digest `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30`; exact-source passed 10/10, CBM errored 10/10, evidence validation failed, and the run was rejected as insufficient. The approval is consumed and the immutable evidence is preserved.
 **v7x disposition:** Run `b8-1-canonical-authorization-20260809-final-v7x` executed 2026-08-09 under digest `c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588`; exact-source passed 10/10, CBM produced 3 passes / 1 failure / 6 errors, required CBM metrics were incomplete, evidence validation failed, and the run was rejected as insufficient. The approval is consumed and the immutable evidence is preserved.
 **v5s disposition:** Executed 2026-08-05; preserved as infrastructure evidence; rejected as insufficient for B8.1 completion (missing per-subject metrics, two harness defects, one genuine CBM miss).

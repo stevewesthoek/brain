@@ -20,6 +20,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { computePlanDigest } from './lib/b8-1-plan-digest.mjs';
+import { selectRefreshProbeTarget } from './lib/b8-1-cbm-incremental-reindex.mjs';
 
 // ---------------------------------------------------------------------------
 // Load Ajv from local repository, not n8n.
@@ -648,8 +649,9 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
     }
   }
 
-  // --- Semantic check E53: schema 2.1.0/3.0.0 strict metric enforcement ---
-  if (evidence.schemaVersion === '2.1.0' || evidence.schemaVersion === '3.0.0') {
+  // --- Semantic check E53: schema 2.1.0/3.x strict metric enforcement ---
+  if (evidence.schemaVersion === '2.1.0' || evidence.schemaVersion === '3.0.0' || evidence.schemaVersion === '3.1.0') {
+    const isV7MetricSchema = evidence.schemaVersion === '3.0.0' || evidence.schemaVersion === '3.1.0';
     // offlineMetrics must be absent
     if ('offlineMetrics' in evidence) {
       errors.push(`Semantic(E53): offlineMetrics must not be present when schemaVersion is "${evidence.schemaVersion}"`);
@@ -682,8 +684,8 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
           continue;
         }
 
-        // v7 (3.0.0): peakCpuPercent and peakRssMb may be null (not measured) but must not be zero-fallback
-        if (evidence.schemaVersion === '3.0.0') {
+        // v7 (3.x): peakCpuPercent and peakRssMb may be null (not measured) but must not be zero-fallback
+        if (isV7MetricSchema) {
           const requiredNumericFields = ['serializedPayloadBytes', 'retrievalOperationCount'];
           for (const field of requiredNumericFields) {
             if (!(field in metrics)) {
@@ -700,9 +702,9 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
               errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} must be numeric or null`);
             }
           }
-          // resourceProvenance required for schema 3.0.0
+          // resourceProvenance required for schema 3.x
           if (!('resourceProvenance' in metrics) || !isRecord(metrics.resourceProvenance)) {
-            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.resourceProvenance is required for schema 3.0.0`);
+            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.resourceProvenance is required for schema 3.x`);
           } else if (typeof metrics.resourceProvenance.method !== 'string' || metrics.resourceProvenance.method.length === 0) {
             errors.push(`Semantic(E53): subjectMetrics.${subjectId}.resourceProvenance.method must be a non-empty string`);
           }
@@ -736,7 +738,7 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
               errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer.tokenCount must be a non-negative integer`);
             }
             // v7: reject false tokenizer identity
-            if (evidence.schemaVersion === '3.0.0' && tok.name === 'cl100k_base') {
+            if (isV7MetricSchema && tok.name === 'cl100k_base') {
               errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer.name "cl100k_base" is a false identity — use a truthful estimator name`);
             }
           }
@@ -745,7 +747,7 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
         // retrievalAccuracy must be present and contain callerCalleeF1 when caller/callee data exists
         if (!('retrievalAccuracy' in metrics)) {
           errors.push(`Semantic(E53): subjectMetrics.${subjectId}.retrievalAccuracy is required`);
-        } else if (evidence.schemaVersion === '3.0.0' && isRecord(metrics.retrievalAccuracy)) {
+        } else if (isV7MetricSchema && isRecord(metrics.retrievalAccuracy)) {
           const ra = metrics.retrievalAccuracy;
           if (ra.callerRecall !== undefined && ra.calleeRecall !== undefined) {
             if (!('callerCalleeF1' in ra)) {
@@ -761,7 +763,7 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
           errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics must be an object`);
         } else {
           // v7 binding: repositoryMetrics keys must equal pinned repository IDs
-          if (evidence.schemaVersion === '3.0.0') {
+          if (isV7MetricSchema) {
             const pinnedRepoIds = new Set(Object.values(evidence.pinnedRepositoryCommits ?? {}).map(r => r.repositoryId));
             const repoMetricKeys = new Set(Object.keys(metrics.repositoryMetrics));
             for (const repoId of pinnedRepoIds) {
@@ -781,9 +783,9 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
               errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId} must be an object`);
               continue;
             }
-            // indexDiskBytes: numeric for cbm, N/A object for exact-source in 3.0.0
+            // indexDiskBytes: numeric for cbm, N/A object for exact-source in schema 3.x
             const idxVal = repoMetrics.indexDiskBytes;
-            if (evidence.schemaVersion === '3.0.0') {
+            if (isV7MetricSchema) {
               if (idxVal === undefined || idxVal === null) {
                 errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.indexDiskBytes is required`);
               } else if (typeof idxVal === 'number' && (idxVal < 0 || !Number.isInteger(idxVal))) {
@@ -803,6 +805,17 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
                 errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.${timingField} is required`);
               } else if (subjectId !== 'exact-source' && typeof val !== 'number') {
                 errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.${timingField} must be numeric for subject "${subjectId}"`);
+              }
+            }
+            if (evidence.schemaVersion === '3.1.0') {
+              const refreshTarget = repoMetrics.refreshProbeTarget;
+              if (subjectId === 'cbm') {
+                const expectedTarget = selectRefreshProbeTarget(manifest, repoId);
+                if (typeof refreshTarget !== 'string' || refreshTarget !== expectedTarget) {
+                  errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.refreshProbeTarget must equal manifest-derived target "${expectedTarget}"`);
+                }
+              } else if (!(isRecord(refreshTarget) && refreshTarget.status === 'not-applicable')) {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.refreshProbeTarget must be a not-applicable object`);
               }
             }
           }

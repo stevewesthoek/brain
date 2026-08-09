@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-09 (v7x rejected-run disposition)
-**Audited:** 2026-08-09 — owner-approved B8.1 v7x / 7.1.0 was materialized once and executed once; exact-source passed 10/10, CBM produced 3 passes, 1 failure, and 6 errors, canonical evidence validation failed, cleanup and source-integrity checks passed, the run was rejected as insufficient, and its authorization is consumed
+**Last verified:** 2026-08-09 (v7y repair readiness and canonical dry-run)
+**Audited:** 2026-08-09 — the v7x refresh-target defect is proven and repaired under plan/executor 7.2.0 and evidence schema 3.1.0; real pinned-CBM validation passed 9/9 repeated repository cases with marker appearance, byte restoration, restored-index refresh, marker disappearance, and no orphan; canonical v7y dry-run passed with zero blockers, but no v7y materialization or execution is authorized yet
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -80,7 +80,17 @@ The immutable evidence SHA-256 is
 the disposition is
 `operations/reports/b8-1-failed-run-disposition-v7x-2026-08-09.md`.
 B8.1 status: `incomplete-after-rejected-v7x-run`. The v7x approval is consumed and
-current execution authority is `none`. B8.2–B8.6 remain blocked because accepted
+the filesystem-order refresh-target root cause is now repaired and validated.
+The canonical v7y / 7.2.0 dry-run plan is
+`operations/reports/b8-1-canonical-plan-v7y-2026-08-09.json`, run ID
+`b8-1-canonical-authorization-20260809-final-v7y`, digest
+`57156d49e4f3ab273efb791dc3e4e128a839ba10552b860ab3219ae58e8bd1d1`.
+It passed with zero blockers, but has not been materialized or executed; current
+execution authority remains `none` pending exact owner approval. Repeated real-CBM
+repair validation passed 9/9, while separately observing Brain RSS/refresh and
+Workbench refresh measurements above the existing acceptance thresholds. Evidence
+and disposition: `operations/reports/b8-1-refresh-target-repair-and-v7y-readiness-2026-08-09.md`.
+B8.2–B8.6 remain blocked because accepted
 B8.1 evidence is absent. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.

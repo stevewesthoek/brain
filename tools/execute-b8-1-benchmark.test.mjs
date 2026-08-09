@@ -96,7 +96,7 @@ function makeSyntheticRun(home, { runId, fixtures, selectedSubjects = ['exact-so
   }
 
   const planBase = {
-    planVersion: planVersionOverride ?? '7.1.0',
+    planVersion: planVersionOverride ?? '7.2.0',
     runId,
     partialEvidence: !selectedSubjects.includes('graphify'),
     selectedSubjects: [...selectedSubjects].sort(),
@@ -354,7 +354,7 @@ test('E14: execution receipt is written atomically and validates planSha256', as
     assert.equal(fs.existsSync(`${receiptPath}.tmp`), false, 'no .tmp file should remain');
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     assert.equal(receipt.planSha256, planSha256, 'receipt planSha256 must match');
-    assert.equal(receipt.executorVersion, '7.1.0');
+    assert.equal(receipt.executorVersion, '7.2.0');
   } finally { cleanup(home); }
 });
 
@@ -414,7 +414,7 @@ test('E18: loadAndVerifyRunPlan rejects stale v1/v2 digests', () => {
   try {
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '7.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '7.2.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error } = loadAndVerifyRunPlan(runDir, STALE);
     assert.ok(error, 'must return error for stale digest');
     assert.match(error, /stale/i);
@@ -572,7 +572,7 @@ test('E23: aggregate evidence.json is written to run directory after execution',
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath), 'evidence.json must be written to run directory');
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '3.0.0', 'aggregate evidence must have schemaVersion 3.0.0');
+    assert.equal(agg.schemaVersion, '3.1.0', 'aggregate evidence must have schemaVersion 3.1.0');
     assert.equal(agg.runId, 'b8-1-exec-e23', 'aggregate evidence runId must match');
     assert.ok(Array.isArray(agg.fixtureResults), 'fixtureResults must be an array');
     assert.equal(agg.fixtureResults.length, 1, 'must have 1 fixture result');
@@ -675,7 +675,7 @@ test('E26: tampered plan field changes stored digest and causes mismatch', () =>
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
     const plan = {
-      planVersion: '7.1.0',
+      planVersion: '7.2.0',
       runId: 'b8-1-exec-e26',
       selectedSubjects: ['exact-source'],
       planSha256: '0'.repeat(64), // will mismatch recomputed
@@ -1068,10 +1068,10 @@ test('E37: canonical plan v5s JSON is placeholder-free and independently verifia
 // New tests: v5 contract changes E38–E46
 // ---------------------------------------------------------------------------
 
-// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 7.1.0
-test('E38: EXECUTOR_VERSION is 7.1.0 and REQUIRED_PLAN_VERSION is 7.1.0', () => {
-  assert.equal(EXECUTOR_VERSION, '7.1.0', 'EXECUTOR_VERSION must be 7.1.0');
-  assert.equal(REQUIRED_PLAN_VERSION, '7.1.0', 'REQUIRED_PLAN_VERSION must be 7.1.0');
+// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 7.2.0
+test('E38: EXECUTOR_VERSION is 7.2.0 and REQUIRED_PLAN_VERSION is 7.2.0', () => {
+  assert.equal(EXECUTOR_VERSION, '7.2.0', 'EXECUTOR_VERSION must be 7.2.0');
+  assert.equal(REQUIRED_PLAN_VERSION, '7.2.0', 'REQUIRED_PLAN_VERSION must be 7.2.0');
 });
 
 // E39: v4r stale digest c39e81dc... is rejected
@@ -1086,16 +1086,16 @@ test('E39: v4r stale digest c39e81dc... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E40: planVersion 7.1.0 is accepted; prior contracts are rejected
-test('E40: loadAndVerifyRunPlan accepts planVersion 7.1.0 and rejects prior contracts', () => {
+// E40: planVersion 7.2.0 is accepted; prior contracts are rejected
+test('E40: loadAndVerifyRunPlan accepts planVersion 7.2.0 and rejects prior contracts', () => {
   const tmpDir = makeTempDir('b81-exec-e40-');
   try {
     const runDir71 = path.join(tmpDir, 'run71');
     fs.mkdirSync(runDir71, { recursive: true });
-    fs.writeFileSync(path.join(runDir71, 'run-plan.json'), JSON.stringify({ planVersion: '7.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir71, 'run-plan.json'), JSON.stringify({ planVersion: '7.2.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error: err71 } = loadAndVerifyRunPlan(runDir71, '0'.repeat(64));
     assert.ok(!err71 || !/planVersion|7\.1\.0/i.test(err71) || /tampered|stale|mismatch/i.test(err71),
-      `7.1.0 must not be rejected for planVersion; err: ${err71}`);
+      `7.2.0 must not be rejected for planVersion; err: ${err71}`);
 
     for (const prior of ['7.0.0', '6.0.0', '5.1.0', '4.0.0']) {
       const runDir = path.join(tmpDir, `run-${prior}`);
@@ -1534,12 +1534,13 @@ test('E53: evidence schema enforces version-conditional metrics', () => {
   assert.ok(schema.properties.schemaVersion.enum.includes('2.0.0'), 'schema must accept 2.0.0');
   assert.ok(schema.properties.schemaVersion.enum.includes('2.1.0'), 'schema must accept 2.1.0');
   assert.ok(schema.properties.schemaVersion.enum.includes('3.0.0'), 'schema must accept 3.0.0');
+  assert.ok(schema.properties.schemaVersion.enum.includes('3.1.0'), 'schema must accept 3.1.0');
   assert.ok(schema.properties.subjectMetrics, 'schema must define subjectMetrics');
   assert.ok(schema.properties.offlineMetrics, 'schema must still define offlineMetrics (backward compat)');
 
   // 3.0.0 conditional is at the top level of the version-routing allOf entry
   const versionConditional30 = schema.allOf.find(c =>
-    c.if?.properties?.schemaVersion?.const === '3.0.0'
+    c.if?.properties?.schemaVersion?.enum?.includes('3.0.0') && c.if?.properties?.schemaVersion?.enum?.includes('3.1.0')
   );
   assert.ok(versionConditional30, 'must have a version conditional for 3.0.0');
   assert.ok(versionConditional30.then.required.includes('subjectMetrics'), '3.0.0 must require subjectMetrics');
@@ -1598,8 +1599,8 @@ test('E56: v6 stale digest ac5b3c79... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E57: aggregate evidence has schema 3.0.0 and subjectMetrics with provenance and correct tokenizer
-test('E57: aggregate evidence schema 3.0.0 with full subjectMetrics for exact-source run', async () => {
+// E57: aggregate evidence has schema 3.1.0 and subjectMetrics with provenance and correct tokenizer
+test('E57: aggregate evidence schema 3.1.0 with full subjectMetrics for exact-source run', async () => {
   const home = makeTempDir('b81-exec-e57-');
   try {
     const fixtures = [
@@ -1620,7 +1621,7 @@ test('E57: aggregate evidence schema 3.0.0 with full subjectMetrics for exact-so
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath));
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '3.0.0');
+    assert.equal(agg.schemaVersion, '3.1.0');
     assert.ok(!('offlineMetrics' in agg), 'offlineMetrics must be absent');
     const sm = agg.subjectMetrics?.['exact-source'];
     assert.ok(sm, 'exact-source subjectMetrics must exist');
@@ -1649,6 +1650,7 @@ test('E57: aggregate evidence schema 3.0.0 with full subjectMetrics for exact-so
     assert.equal(repoM.initialIndexingTimeMs?.status, 'not-applicable');
     assert.equal(repoM.incrementalRefreshLatencyMs?.status, 'not-applicable');
     assert.equal(repoM.indexDiskBytes?.status, 'not-applicable');
+    assert.equal(repoM.refreshProbeTarget?.status, 'not-applicable');
   } finally { cleanup(home); }
 });
 
@@ -1755,7 +1757,7 @@ test('E59: dual-subject (cbm + exact-source) with deterministic fake CBM', async
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath));
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '3.0.0');
+    assert.equal(agg.schemaVersion, '3.1.0');
 
     // exact-source must have metrics
     assert.ok('exact-source' in agg.subjectMetrics, 'exact-source must be in subjectMetrics');

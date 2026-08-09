@@ -22,7 +22,7 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0", "2.1.0", "3.0.0"] },
+    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0", "2.1.0", "3.0.0", "3.1.0"] },
     "runId": { "type": "string", "pattern": "^b8-1-(?!.*\\.\\.)[a-zA-Z0-9._-]+$" },
     "runAt": { "type": "string", "format": "date-time" },
     "partialEvidence": { "type": "boolean" },
@@ -308,7 +308,7 @@
                 }
               ]
             },
-            "tokenizerEstimate": {
+            "tokenizer": {
               "oneOf": [
                 {
                   "type": "object",
@@ -384,6 +384,12 @@
                     "indexDiskBytes": {
                       "oneOf": [
                         {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    },
+                    "refreshProbeTarget": {
+                      "oneOf": [
+                        {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+\\.(?:ts|tsx|js|mjs|cjs)$"},
                         {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
                       ]
                     }
@@ -531,7 +537,7 @@
     },
     {
       "if": {
-        "properties": { "schemaVersion": { "const": "3.0.0" } },
+        "properties": { "schemaVersion": { "enum": ["3.0.0", "3.1.0"] } },
         "required": ["schemaVersion"]
       },
       "then": {
@@ -571,6 +577,36 @@
           "else": {
             "required": ["offlineMetrics"],
             "properties": { "offlineMetrics": true, "subjectMetrics": false }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "schemaVersion": { "const": "3.1.0" } },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "properties": {
+          "subjectMetrics": {
+            "type": "object",
+            "patternProperties": {
+              "^(cbm|graphify|exact-source)$": {
+                "type": "object",
+                "properties": {
+                  "repositoryMetrics": {
+                    "type": "object",
+                    "patternProperties": {
+                      "^[a-z][a-z0-9-]*$": {
+                        "type": "object",
+                        "properties": { "refreshProbeTarget": true },
+                        "required": ["refreshProbeTarget"]
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

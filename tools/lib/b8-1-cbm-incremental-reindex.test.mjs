@@ -13,6 +13,9 @@ import {
   hashFile,
   hashDirectory,
   findTargetFile,
+  isAdmittedRefreshProbePath,
+  selectRefreshProbeTarget,
+  validateRefreshProbeTarget,
   generateMarker,
   applyMarker,
   restoreFile,
@@ -43,6 +46,12 @@ echo "$@" >> "$ARGV_LOG"
 env | grep -E "(HOME|XDG_|CBM_CACHE_DIR)" | sort >> "$ENV_LOG"
 
 if [[ "$1" == "cli" && "$2" == "index_repository" ]]; then
+  REPO_PATH=""
+  for i in "$@"; do
+    if [[ "$prev" == "--repo-path" ]]; then REPO_PATH="$i"; fi
+    prev="$i"
+  done
+  printf '%s' "$REPO_PATH" > "${tmpDir}/indexed-repo"
   # Create cache artifacts for proof of indexing
   CACHE_DIR="\${XDG_CACHE_HOME}"
   if [[ -n "$CACHE_DIR" && -d "$CACHE_DIR" ]]; then
@@ -59,8 +68,15 @@ elif [[ "$1" == "cli" && "$2" == "search_code" ]]; then
     fi
     prev="$i"
   done
-  if [[ -n "$PATTERN" ]]; then
-    echo '[{"file": "index.ts", "text": "'$PATTERN'", "line": 1}]'
+  if [[ -f "${tmpDir}/indexed-repo" ]]; then
+    REPO_PATH=$(cat "${tmpDir}/indexed-repo")
+  else
+    REPO_PATH="${tmpDir}/source"
+  fi
+  FOUND=$(cd "$REPO_PATH" && grep -RIlF -- "$PATTERN" . 2>/dev/null | head -1)
+  if [[ -n "$PATTERN" && -n "$FOUND" ]]; then
+    RELATIVE="\${FOUND#./}"
+    printf '[{"file":"%s","source":"%s","line":1}]\n' "$RELATIVE" "$PATTERN"
   else
     echo '[]'
   fi
@@ -153,6 +169,36 @@ test('findTargetFile: finds .ts file', () => {
   } finally { cleanup(tmpDir); }
 });
 
+test('selectRefreshProbeTarget: uses manifest order and ignores vendor/generated candidates', () => {
+  const manifest = { fixtures: [
+    { repositoryId: 'brain', expectedFile: 'vendor/generated.js' },
+    { repositoryId: 'brain', expectedFile: 'apps/web/next-env.d.ts' },
+    { repositoryId: 'brain', expectedFile: 'projects/brain-core/src/mind-paths.ts' },
+  ] };
+  assert.equal(selectRefreshProbeTarget(manifest, 'brain'), 'projects/brain-core/src/mind-paths.ts');
+  assert.equal(isAdmittedRefreshProbePath('vendor/generated.js'), false);
+  assert.equal(isAdmittedRefreshProbePath('apps/web/next-env.d.ts'), false);
+});
+
+test('selectRefreshProbeTarget: canonical manifest targets are deterministic', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.resolve('operations/specs/b8-1-context-memory-benchmark-manifest.json'), 'utf8'));
+  assert.equal(selectRefreshProbeTarget(manifest, 'brain'), 'projects/brain-core/src/mind-paths.ts');
+  assert.equal(selectRefreshProbeTarget(manifest, 'workbench'), 'packages/mcp/src/configure-core.ts');
+  assert.equal(selectRefreshProbeTarget(manifest, 'prochat'), 'src/app/layout.tsx');
+});
+
+test('validateRefreshProbeTarget: rejects missing, traversal, and symlink targets', () => {
+  const tmpDir = makeTempDir();
+  try {
+    fs.writeFileSync(path.join(tmpDir, 'index.ts'), 'code');
+    fs.symlinkSync(path.join(tmpDir, 'index.ts'), path.join(tmpDir, 'link.ts'));
+    assert.equal(validateRefreshProbeTarget(tmpDir, 'missing.ts').valid, false);
+    assert.equal(validateRefreshProbeTarget(tmpDir, '../index.ts').valid, false);
+    assert.equal(validateRefreshProbeTarget(tmpDir, 'link.ts').valid, false);
+    assert.equal(validateRefreshProbeTarget(tmpDir, 'vendor/generated.js').valid, false);
+  } finally { cleanup(tmpDir); }
+});
+
 test('generateMarker: produces valid identifier', () => {
   const marker = generateMarker();
   assert.ok(marker.startsWith('B8.1-mark-'));
@@ -227,6 +273,7 @@ test('runIncrementalReindex: cache inside source rejected', async () => {
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir },
@@ -257,12 +304,13 @@ test('runIncrementalReindex: no target file found', async () => {
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir },
     });
     assert.equal(result.success, false);
-    assert.match(result.reason, /no target file/);
+    assert.match(result.reason, /refreshProbeTarget missing or unreadable/);
   } finally { cleanup(tmpDir); }
 });
 
@@ -285,12 +333,14 @@ test('runIncrementalReindex: comprehensive fake-CBM success with full provenance
     fs.writeFileSync(path.join(cacheDir, 'precache'), 'x'.repeat(100));
 
     const fakeCbm = createFakeCbm(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'indexed-repo'), repoDir);
 
     const result = await runIncrementalReindex({
       cbmExecutable: fakeCbm,
       disposableRepositoryPath: repoDir,
       repoId: 'test-repo-123',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: {
@@ -356,6 +406,7 @@ test('runIncrementalReindex: restoration failure overrides success', async () =>
     fs.writeFileSync(path.join(cacheDir, 'precache'), 'x'.repeat(100));
 
     const fakeCbm = createFakeCbm(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'indexed-repo'), repoDir);
 
     // Run normally first
     const result = await runIncrementalReindex({
@@ -363,6 +414,7 @@ test('runIncrementalReindex: restoration failure overrides success', async () =>
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir },
@@ -395,6 +447,7 @@ test('runIncrementalReindex: source inside cache rejected', async () => {
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir },
@@ -425,6 +478,7 @@ test('runIncrementalReindex: cache inside config rejected', async () => {
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir },
@@ -455,6 +509,7 @@ test('runIncrementalReindex: wrong XDG environment rejected', async () => {
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: '/wrong' },
@@ -490,6 +545,7 @@ test('runIncrementalReindex: invalid measurement despite exit zero', async () =>
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir },
@@ -548,6 +604,7 @@ test('validateRunDirectory: wrong HOME path rejected', async () => {
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: {
@@ -582,6 +639,7 @@ test('validateRunDirectory: wrong owner-only mode rejected', async () => {
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: {
@@ -661,6 +719,7 @@ test('queryCbmMarker: marker returned for wrong file rejected', async () => {
 
     const fakeCbm = createFakeCbm(tmpDir);
     const marker = generateMarker();
+    applyMarker(targetFile, marker);
 
     // Import the function being tested
     const { queryCbmMarker } = await import('./b8-1-cbm-incremental-reindex.mjs');
@@ -684,6 +743,32 @@ test('queryCbmMarker: marker returned for wrong file rejected', async () => {
 
     // Same marker in different file fails (fake CBM always returns index.ts but we're querying for other.ts)
     assert.equal(result.visible, false, 'marker in wrong file should be rejected');
+    assert.equal(result.markerPresentAnywhere, true, 'wrong-path marker must remain visible to cleanup safety checks');
+  } finally { cleanup(tmpDir); }
+});
+
+test('queryCbmMarker: successful command with malformed result shape fails closed', async () => {
+  const tmpDir = makeTempDir();
+  try {
+    const repoDir = path.join(tmpDir, 'source');
+    const cacheDir = path.join(tmpDir, 'cache');
+    const configDir = path.join(tmpDir, 'config');
+    const homeDir = path.join(tmpDir, 'home');
+    for (const dir of [repoDir, cacheDir, configDir, homeDir]) fs.mkdirSync(dir);
+    fs.chmodSync(cacheDir, 0o700);
+    fs.chmodSync(configDir, 0o700);
+    fs.chmodSync(homeDir, 0o700);
+    const targetFile = path.join(repoDir, 'index.ts');
+    fs.writeFileSync(targetFile, 'export const x = 1;');
+    const fakeCbm = path.join(tmpDir, 'malformed-shape-cbm');
+    fs.writeFileSync(fakeCbm, '#!/bin/bash\necho "{}"\n', 'utf8');
+    fs.chmodSync(fakeCbm, 0o755);
+    const result = await (await import('./b8-1-cbm-incremental-reindex.mjs')).queryCbmMarker(
+      fakeCbm, 'test-project', generateMarker(), targetFile, repoDir, cacheDir, configDir,
+      { HOME: homeDir, PATH: '/bin:/usr/bin', XDG_CACHE_HOME: cacheDir, XDG_CONFIG_HOME: configDir }, null, 10000,
+    );
+    assert.equal(result.querySucceeded, false);
+    assert.match(result.reason, /invalid result shape/);
   } finally { cleanup(tmpDir); }
 });
 
@@ -718,6 +803,7 @@ test('runIncrementalReindex: test-only hook forces restoration corruption and ov
       disposableRepositoryPath: repoDir,
       repoId: 'test',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: {
@@ -800,7 +886,7 @@ elif [[ "$1" == "cli" && "$2" == "search_code" ]]; then
     fi
     prev="$i"
   done
-  if [[ -n "$PATTERN" ]]; then
+  if [[ -n "$PATTERN" ]] && grep -Fq -- "$PATTERN" "${repoDir}/index.ts"; then
     # Real v0.9.0 full-mode result shape.
     echo '{"results": [{"node": "index.ts", "qualified_name": "test-project.index", "label": "Module", "file": "index.ts", "start_line": 1, "end_line": 2, "match_lines": [1], "source": "// '$PATTERN'\\nexport const marker_target = 1;\\n"}]}'
   else
@@ -820,6 +906,7 @@ fi
       disposableRepositoryPath: repoDir,
       repoId: 'test-repo',
       projectName: 'test-project',
+      refreshProbeTarget: 'index.ts',
       cacheDir,
       configDir,
       env: {
@@ -836,6 +923,7 @@ fi
     }
     assert.equal(result.success, true, `should succeed with the live CBM v0.9.0 result contract, but got reason: ${result.reason}`);
     assert.equal(result.markerVisible, true, 'marker should be visible in the live source field');
+    assert.equal(result.markerAbsentAfterRestoration, true, 'marker must disappear after restoration reindex');
     assert.ok(result.cacheBytes > 0, 'cache bytes should be measurable');
     assert.ok(result.restorationVerified, 'restoration should be verified');
   } finally { cleanup(tmpDir); }

@@ -210,6 +210,73 @@ export function findTargetFile(dirPath) {
   }
 }
 
+const REFRESH_PROBE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs']);
+const REFRESH_PROBE_EXCLUDED_SEGMENTS = new Set([
+  '.git', 'node_modules', 'vendor', 'vendors', 'dist', 'build', 'coverage', 'generated', 'graphify-out',
+]);
+
+export function isAdmittedRefreshProbePath(candidatePath) {
+  if (typeof candidatePath !== 'string' || candidatePath.length === 0 || path.isAbsolute(candidatePath) || candidatePath.includes('\\')) return false;
+  const segments = candidatePath.split('/');
+  if (segments.some(segment => !segment || segment === '.' || segment === '..' || REFRESH_PROBE_EXCLUDED_SEGMENTS.has(segment.toLowerCase()))) return false;
+  if (path.posix.normalize(candidatePath) !== candidatePath) return false;
+  const basename = path.posix.basename(candidatePath).toLowerCase();
+  if (basename.endsWith('.d.ts') || basename.includes('.generated.') || basename.includes('.gen.')) return false;
+  return REFRESH_PROBE_EXTENSIONS.has(path.posix.extname(candidatePath).toLowerCase());
+}
+
+/**
+ * Select the first manifest-admitted code fixture for a repository.
+ * Manifest order is authority; filesystem traversal order is never consulted.
+ */
+export function selectRefreshProbeTarget(manifest, repositoryId) {
+  if (!manifest || !Array.isArray(manifest.fixtures) || !repositoryId) return null;
+  const fixture = manifest.fixtures.find(candidate => (
+    candidate?.repositoryId === repositoryId &&
+    isAdmittedRefreshProbePath(candidate.expectedFile)
+  ));
+  return fixture?.expectedFile ?? null;
+}
+
+/** Resolve and validate a manifest-derived, repository-relative refresh target. */
+export function validateRefreshProbeTarget(sourceDir, refreshProbeTarget) {
+  if (typeof refreshProbeTarget !== 'string' || refreshProbeTarget.length === 0) {
+    return { valid: false, reason: 'refreshProbeTarget is required' };
+  }
+  if (path.isAbsolute(refreshProbeTarget) || refreshProbeTarget.includes('\\')) {
+    return { valid: false, reason: 'refreshProbeTarget must be a normalized POSIX repository-relative path' };
+  }
+  const segments = refreshProbeTarget.split('/');
+  if (segments.some(segment => !segment || segment === '.' || segment === '..') || path.posix.normalize(refreshProbeTarget) !== refreshProbeTarget) {
+    return { valid: false, reason: 'refreshProbeTarget contains traversal or non-normalized segments' };
+  }
+  if (!isAdmittedRefreshProbePath(refreshProbeTarget)) {
+    return { valid: false, reason: 'refreshProbeTarget is not an admitted source path' };
+  }
+
+  const sourceReal = fs.realpathSync(sourceDir);
+  let cursor = sourceReal;
+  try {
+    for (const segment of segments) {
+      cursor = path.join(cursor, segment);
+      const stat = fs.lstatSync(cursor);
+      if (stat.isSymbolicLink()) {
+        return { valid: false, reason: 'refreshProbeTarget or an ancestor is a symlink' };
+      }
+    }
+    if (!fs.statSync(cursor).isFile()) {
+      return { valid: false, reason: 'refreshProbeTarget is not a regular file' };
+    }
+    const targetReal = fs.realpathSync(cursor);
+    if (!isPathContainedIn(targetReal, sourceReal)) {
+      return { valid: false, reason: 'refreshProbeTarget escapes disposable repository' };
+    }
+    return { valid: true, targetFilePath: targetReal };
+  } catch (error) {
+    return { valid: false, reason: `refreshProbeTarget missing or unreadable: ${error.message}` };
+  }
+}
+
 /**
  * Generate valid marker identifier: `B8.1-mark-<uuid>-<timestamp>`
  */
@@ -422,17 +489,17 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
   // Validate environment
   const envValidation = validateEnvironment(env, cacheDir, configDir, env.HOME);
   if (!envValidation.valid) {
-    return { visible: false, reason: `environment invalid: ${envValidation.reason}` };
+    return { querySucceeded: false, visible: false, reason: `environment invalid: ${envValidation.reason}` };
   }
 
   // Compute exact relative path for comparison
   let exactRelativePath;
   try {
-    const normalizedTarget = path.normalize(targetPath);
-    const normalizedRepo = path.normalize(disposableRepositoryPath);
+    const normalizedTarget = fs.realpathSync(targetPath);
+    const normalizedRepo = fs.realpathSync(disposableRepositoryPath);
     exactRelativePath = path.relative(normalizedRepo, normalizedTarget);
   } catch (e) {
-    return { visible: false, reason: `failed to compute relative path: ${e.message}` };
+    return { querySucceeded: false, visible: false, reason: `failed to compute relative path: ${e.message}` };
   }
 
   const result = await runChildWithTimeMetrics({
@@ -447,6 +514,7 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
   // Require result.success === true, not just commandSucceeded
   if (!result.success) {
     return {
+      querySucceeded: false,
       visible: false,
       reason: `query failed (exit=${result.exitCode})`,
       cpuPercent: result.cpuPercent,
@@ -458,7 +526,16 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
   try {
     const output = JSON.parse(result.stdout);
     // CBM may return either bare array or { results: [...] }
-    const results = Array.isArray(output) ? output : (Array.isArray(output?.results) ? output.results : []);
+    if (!Array.isArray(output) && !Array.isArray(output?.results)) {
+      return { querySucceeded: false, visible: false, markerPresentAnywhere: false, reason: 'query output has invalid result shape' };
+    }
+    const results = Array.isArray(output) ? output : output.results;
+
+    const markerPresentAnywhere = results.some(r => {
+      if (!r || typeof r !== 'object') return false;
+      const resultSource = typeof r.source === 'string' ? r.source : r.text;
+      return typeof resultSource === 'string' && resultSource.includes(marker);
+    });
 
     // Exact match required: marker must be in the exact target file path, nowhere else
     const visible = results.some(r => {
@@ -471,7 +548,9 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
     });
 
     return {
+      querySucceeded: true,
       visible,
+      markerPresentAnywhere,
       reason: visible ? null : 'no exact marker match in query results',
       results,
       cpuPercent: result.cpuPercent,
@@ -479,7 +558,7 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
       measurementProvenance: result.provenance,
     };
   } catch (e) {
-    return { visible: false, reason: `query parse error: ${e.message}` };
+    return { querySucceeded: false, visible: false, reason: `query parse error: ${e.message}` };
   }
 }
 
@@ -520,7 +599,7 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
  * }>}
  */
 export async function runIncrementalReindex(opts = {}) {
-  const { cbmExecutable, disposableRepositoryPath, repoId, projectName, cacheDir, configDir, env, sandboxProfile, timeout = 120000 } = opts;
+  const { cbmExecutable, disposableRepositoryPath, repoId, projectName, refreshProbeTarget, cacheDir, configDir, env, sandboxProfile, timeout = 120000 } = opts;
 
   let result = {
     success: false,
@@ -536,12 +615,20 @@ export async function runIncrementalReindex(opts = {}) {
     markerQueryCpuPercent: null,
     markerQueryPeakRssMb: null,
     markerQueryProvenance: null,
+    restorationReindexCpuPercent: null,
+    restorationReindexPeakRssMb: null,
+    restorationReindexProvenance: null,
+    restorationQueryCpuPercent: null,
+    restorationQueryPeakRssMb: null,
+    restorationQueryProvenance: null,
     cacheBytes: null,
     cacheBytesInitial: null,
     markerVisible: false,
+    markerAbsentAfterRestoration: false,
     restorationVerified: false,
     marker: null,
     targetFilePath: null,
+    refreshProbeTarget: null,
     provenance: null,
   };
 
@@ -588,14 +675,16 @@ export async function runIncrementalReindex(opts = {}) {
     return result;
   }
 
-  // Find target file
-  const targetFilePath = findTargetFile(disposableRepositoryPath);
-  if (!targetFilePath) {
-    result.reason = 'no target file found (.ts or .js)';
+  // Resolve the manifest-derived target. Never fall back to filesystem order.
+  const targetValidation = validateRefreshProbeTarget(disposableRepositoryPath, refreshProbeTarget);
+  if (!targetValidation.valid) {
+    result.reason = targetValidation.reason;
     return result;
   }
+  const targetFilePath = targetValidation.targetFilePath;
 
   result.targetFilePath = targetFilePath;
+  result.refreshProbeTarget = refreshProbeTarget;
 
   // Hash initial state
   const initialTargetHash = hashFile(targetFilePath);
@@ -677,7 +766,7 @@ export async function runIncrementalReindex(opts = {}) {
     result.success = true;
 
   } finally {
-    // Always restore on exit
+    // Always restore on exit, then refresh the restored tree and prove the marker disappeared.
     let restorationError = null;
     if (markerLine) {
       const restoreResult = restoreFile(targetFilePath, markerLine);
@@ -706,6 +795,35 @@ export async function runIncrementalReindex(opts = {}) {
       }
     }
 
+    if (markerLine && result.restorationVerified) {
+      const restorationReindex = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout);
+      result.restorationReindexCpuPercent = restorationReindex.cpuPercent ?? null;
+      result.restorationReindexPeakRssMb = restorationReindex.peakRssMb ?? null;
+      result.restorationReindexProvenance = restorationReindex.measurementProvenance ?? null;
+      if (!restorationReindex.success) {
+        result.success = false;
+        result.reason = result.reason || `restoration reindex failed: ${restorationReindex.error}`;
+      } else {
+        const restorationQuery = await queryCbmMarker(cbmExecutable, projectName, marker, targetFilePath, disposableRepositoryPath, cacheDir, configDir, env, sandboxProfile, timeout);
+        result.restorationQueryCpuPercent = restorationQuery.cpuPercent ?? null;
+        result.restorationQueryPeakRssMb = restorationQuery.peakRssMb ?? null;
+        result.restorationQueryProvenance = restorationQuery.measurementProvenance ?? null;
+        result.markerAbsentAfterRestoration = restorationQuery.querySucceeded === true && restorationQuery.markerPresentAnywhere === false;
+        if (!result.markerAbsentAfterRestoration) {
+          result.success = false;
+          result.reason = result.reason || `marker still visible or restoration query failed: ${restorationQuery.reason || 'unknown'}`;
+        }
+      }
+    }
+
+    // Final disk evidence must include the restored index and its verification query.
+    const cacheBytesAfterRestoration = measureCacheBytes(cacheDir);
+    result.cacheBytes = cacheBytesAfterRestoration;
+    if (result.success && cacheBytesAfterRestoration <= cacheBytesInitial) {
+      result.success = false;
+      result.reason = `no attributable final cache delta (initial=${cacheBytesInitial}, final=${cacheBytesAfterRestoration})`;
+    }
+
     result.provenance = {
       cacheDir,
       cacheEnvironmentVariable: 'CBM_CACHE_DIR',
@@ -717,6 +835,9 @@ export async function runIncrementalReindex(opts = {}) {
       finalRepoHash,
       targetHashMatches,
       repoHashMatches,
+      refreshProbeTarget,
+      markerAbsentAfterRestoration: result.markerAbsentAfterRestoration,
+      cacheBytesAfterRestoration,
     };
   }
 
