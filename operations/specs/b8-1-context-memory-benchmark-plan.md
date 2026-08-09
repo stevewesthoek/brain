@@ -1,9 +1,10 @@
 # B8.1 Context-memory benchmark plan
 
-**Status:** v6 contract ready — v5s executed (17/20 pass) but rejected as insufficient; two harness defects and one genuine CBM miss identified; v6 corrects evaluator and adds per-subject typed metrics
-**Date:** 2026-08-06 (v6); 2026-08-04 (v5s, superseded)
+**Status:** B8.1 incomplete — owner-approved v7w executed once and rejected as insufficient; exact-source passed 10/10, CBM errored 10/10, and canonical evidence validation failed
+**Date:** 2026-08-09 (v7w disposition); 2026-08-06 (v6 historical); 2026-08-04 (v5s historical)
 **Dependency:** This plan does NOT authorize activation of any context-memory service.
-**Next step:** v6 dry-run and digest approval required before materialization and execution.
+**Next step:** No execution is currently authorized. Any investigation, repair, or new run requires a separate task, a new run ID and canonical plan, and fresh exact owner approval.
+**v7w disposition:** Run `b8-1-canonical-authorization-20260809-final-v7w` executed 2026-08-09 under digest `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30`; exact-source passed 10/10, CBM errored 10/10, evidence validation failed, and the run was rejected as insufficient. The approval is consumed and the immutable evidence is preserved.
 **v5s disposition:** Executed 2026-08-05; preserved as infrastructure evidence; rejected as insufficient for B8.1 completion (missing per-subject metrics, two harness defects, one genuine CBM miss).
 **v6 changes from v5s:** (1) evidence schema 2.0.0 requires `subjectMetrics` per-subject with typed not-applicable states; (2) `json-pointer-set` algorithm extended with generic `itemProperty` projection; (3) `file-name-count` rejects null `expectedCount`; (4) negative tests for malformed projections, null counts, duplicate metrics, fabricated N/A values.
 
@@ -13,7 +14,7 @@
 
 Establish a reproducible, bounded benchmark comparing context-retrieval approaches across three representative repositories. This plan does NOT authorize activation of any context-memory service. It defines the conditions, metrics, and acceptance thresholds for B8.2 evaluation.
 
-B8.1 is the first canonical task in Priority 8 (context-memory efficiency and freshness). It is not the current approved execution phase. No task in P8 is accepted as complete.
+B8.1 is the first canonical task in Priority 8 (context-memory efficiency and freshness). It remains incomplete after the rejected v7w execution. No task in P8 is accepted as complete.
 
 ---
 
@@ -253,4 +254,6 @@ This document defines the benchmark and its execution gate. **B8.1 is NOT comple
 
 **v6 contract (2026-08-06):** Corrects two harness defects (`json-pointer-set` object projection, `file-name-count` null expectedCount), upgrades evidence schema to 2.0.0 with per-subject typed metrics, and prepares a fresh dry-run authorization cycle. The v5s run does not establish a preferred structural default for context-memory.
 
-Graphify remains blocked because no exact bounded code-only executable contract and passing self-test exist. P8 (B8.1–B8.6) remains 0/6 accepted and is not the current approved execution phase.
+**v7w execution (2026-08-09):** Owner-approved run `b8-1-canonical-authorization-20260809-final-v7w` used Node `v20.20.2`, selected `cbm,exact-source`, and excluded Graphify with `partialEvidence=true`. Exact-source passed 10/10. All 10 CBM fixtures failed closed with `marker not visible after reindex: unknown`; required CBM metrics were absent and the canonical evidence validator returned INVALID. The run is rejected as insufficient, its authorization is consumed, and the immutable evidence is preserved. Partial-evidence approval did not waive the selected CBM evidence requirements or authorize B8.2.
+
+Graphify remains blocked because no exact bounded code-only executable contract and passing self-test exist. P8 (B8.1–B8.6) remains 0/6 accepted, B8.2–B8.6 remain blocked, and current benchmark execution authority is `none`.

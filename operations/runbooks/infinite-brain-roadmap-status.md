@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-09 (v7w machine reauthorization)
-**Audited:** 2026-08-09 — B8.1 v7w / 7.1.0 is the current dry-run authorization candidate with explicit Node 20.20.2 and current `/usr/bin/sandbox-exec` bindings; v7u is superseded for new execution because its machine-bound adapter identity is stale; all 269/269 focused tests pass; no materialization or execution has occurred
+**Last verified:** 2026-08-09 (v7w rejected-run disposition)
+**Audited:** 2026-08-09 — owner-approved B8.1 v7w / 7.1.0 was materialized once and executed once with explicit Node 20.20.2 and current `/usr/bin/sandbox-exec` bindings; exact-source passed 10/10, CBM errored 10/10, canonical evidence validation failed, cleanup and source-integrity checks passed, the run was rejected as insufficient, and its authorization is consumed
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -48,18 +48,19 @@ binding noncompliant with Node 20 stop condition) are historical. v7u is also hi
 for new execution because its machine-bound `/usr/bin/sandbox-exec` identity no longer
 matches the current machine.
 The canonical v7w / 7.1.0 two-subject contract with explicit Node 20.20.2 and current
-machine-isolation bindings is now the sole approvable contract:
-`operations/reports/b8-1-canonical-plan-v7w-2026-08-09.json` independently verifies at
-digest `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30`.
-Node runtime: `/Users/Office/.nvm/versions/node/v20.20.2/bin/node` (SHA-256 `38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6`).
-The paired dry-run receipt records `executionReady=true`,
-zero blockers, `cbm,exact-source` selected, Graphify excluded, incremental-reindex
-bound (SHA256 `438a154b...`), and no materialization/execution. All six
-focused B8.1 suites pass 269/269. No materialization,
-benchmark execution, or owner approval has occurred yet.
-B8.1 status: `corrected-contract-awaiting-owner-approval`. B8.2 remains
-blocked pending owner-approved v7w materialization, execution, evidence validation,
-and owner disposition. P8 remains 0/6 accepted. Graphify remains excluded.
+machine-isolation bindings was owner-approved, materialized once, and executed once.
+Its plan digest was `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30`.
+Exact-source passed all 10 fixtures. CBM passed none: all 10 fixtures failed closed
+with `marker not visible after reindex: unknown`, leaving required CBM metrics absent.
+The canonical evidence validator returned INVALID. Source-state before/after was
+byte-identical, cleanup was clean with zero orphaned processes, and Graphify was
+excluded and not invoked. The immutable run is at
+`/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/`;
+its canonical disposition is
+`operations/reports/b8-1-failed-run-disposition-v7w-2026-08-09.md`.
+B8.1 status: `incomplete-after-rejected-v7w-run`. The approval is consumed and
+current execution authority is `none`. B8.2–B8.6 remain blocked because accepted
+B8.1 evidence is absent. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.
 
