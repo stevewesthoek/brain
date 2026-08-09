@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-07 (v7u recovery)
-**Audited:** 2026-08-07 — B8.1 v7u / 7.1.0 is canonical approvable contract with explicit Node 20.20.2 binding; v7t (Node 25) marked stale; all 269/269 focused tests pass; no materialization or execution has occurred
+**Last verified:** 2026-08-09 (v7w machine reauthorization)
+**Audited:** 2026-08-09 — B8.1 v7w / 7.1.0 is the current dry-run authorization candidate with explicit Node 20.20.2 and current `/usr/bin/sandbox-exec` bindings; v7u is superseded for new execution because its machine-bound adapter identity is stale; all 269/269 focused tests pass; no materialization or execution has occurred
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -44,10 +44,13 @@ but failed: CBM marker-query output-format mismatch in incremental-reindex. All
 identified and repaired in commit `2ca2b9ec`. Failed v7r evidence archived
 immutably at `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260806-final-v7r/`.
 v7s (2026-08-07, noncanonical hand-simplified output) and v7t (2026-08-07, Node 25 runtime
-binding noncompliant with Node 20 stop condition) marked historical.
-The canonical v7u / 7.1.0 two-subject contract with explicit Node 20.20.2 binding is now
-the sole approvable contract: `operations/reports/b8-1-canonical-plan-v7u-2026-08-07.json`
-independently verifies at digest `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed`.
+binding noncompliant with Node 20 stop condition) are historical. v7u is also historical
+for new execution because its machine-bound `/usr/bin/sandbox-exec` identity no longer
+matches the current machine.
+The canonical v7w / 7.1.0 two-subject contract with explicit Node 20.20.2 and current
+machine-isolation bindings is now the sole approvable contract:
+`operations/reports/b8-1-canonical-plan-v7w-2026-08-09.json` independently verifies at
+digest `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30`.
 Node runtime: `/Users/Office/.nvm/versions/node/v20.20.2/bin/node` (SHA-256 `38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6`).
 The paired dry-run receipt records `executionReady=true`,
 zero blockers, `cbm,exact-source` selected, Graphify excluded, incremental-reindex
@@ -55,7 +58,7 @@ bound (SHA256 `438a154b...`), and no materialization/execution. All six
 focused B8.1 suites pass 269/269. No materialization,
 benchmark execution, or owner approval has occurred yet.
 B8.1 status: `corrected-contract-awaiting-owner-approval`. B8.2 remains
-blocked pending owner-approved v7u materialization, execution, evidence validation,
+blocked pending owner-approved v7w materialization, execution, evidence validation,
 and owner disposition. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.

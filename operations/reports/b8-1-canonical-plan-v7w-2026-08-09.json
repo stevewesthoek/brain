@@ -1,0 +1,275 @@
+{
+  "planVersion": "7.1.0",
+  "runId": "b8-1-canonical-authorization-20260809-final-v7w",
+  "partialEvidence": true,
+  "selectedSubjects": [
+    "cbm",
+    "exact-source"
+  ],
+  "excludedSubjects": [
+    "graphify"
+  ],
+  "manifestRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.json",
+  "manifestHash": "sha256:a70a87ac33fdbe47592089680e8c183fd0c21db7d309441a503b40b4c1aced09",
+  "manifestSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.schema.json",
+  "manifestSchemaHash": "sha256:9d697c04f9325e0b4c6101aa367c5fc78ff71b6cc6c323331bbf322f48695e83",
+  "evidenceSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-evidence.schema.json",
+  "evidenceSchemaHash": "sha256:d906e5b77ba727a3138d05714861e181601c6b9d950606047dd124f7b88f5af2",
+  "pinnedRepositoryCommits": [
+    {
+      "repositoryId": "brain",
+      "commit": "f683edff753937944018dd00bf5494c85f62e881"
+    },
+    {
+      "repositoryId": "prochat",
+      "commit": "85087d54f712b1333be7c620f23b6bcac9cde90b"
+    },
+    {
+      "repositoryId": "workbench",
+      "commit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2"
+    }
+  ],
+  "subjectBinaryIdentity": {
+    "cbm": {
+      "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
+      "resolvedPath": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+      "version": "v0.9.0",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+    }
+  },
+  "networkIsolationProof": {
+    "required": true,
+    "status": "passed",
+    "adapterIdentity": {
+      "path": "/usr/bin/sandbox-exec",
+      "sha256": "e3d7a792c58a5d3783d2f7274c82d70062393830d8cb1ded713ca554a470bd2f"
+    },
+    "runtimeIdentity": {
+      "path": "/Users/Office/.nvm/versions/node/v20.20.2/bin/node",
+      "sha256": "38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6",
+      "version": "v20.20.2"
+    },
+    "profileSha256": "bd1de96bd9906950492a3d919ada1dfc6dfefd60780c7b242f87e6689c4f675a",
+    "controlSucceeded": true,
+    "sandboxedChildStarted": true,
+    "sandboxedConnectionDenied": true,
+    "selfTestPassed": true,
+    "selfTestDetail": "control succeeded; sandboxed child started; connection denied with EPERM",
+    "childIdentity": {
+      "sha256": "207a19ce264c25b3944264879d15b96dca46bfe4397468df956248f41fbd06db"
+    }
+  },
+  "cbmVerification": {
+    "required": true,
+    "status": "passed",
+    "binaryIdentity": {
+      "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
+      "resolvedPath": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+      "version": "v0.9.0",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+    },
+    "networkIsolationProof": {
+      "required": true,
+      "status": "passed",
+      "adapterIdentity": {
+        "path": "/usr/bin/sandbox-exec",
+        "sha256": "e3d7a792c58a5d3783d2f7274c82d70062393830d8cb1ded713ca554a470bd2f"
+      },
+      "runtimeIdentity": {
+        "path": "/Users/Office/.nvm/versions/node/v20.20.2/bin/node",
+        "sha256": "38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6",
+        "version": "v20.20.2"
+      },
+      "profileSha256": "bd1de96bd9906950492a3d919ada1dfc6dfefd60780c7b242f87e6689c4f675a",
+      "controlSucceeded": true,
+      "sandboxedChildStarted": true,
+      "sandboxedConnectionDenied": true,
+      "selfTestPassed": true,
+      "selfTestDetail": "control succeeded; sandboxed child started; connection denied with EPERM",
+      "childIdentity": {
+        "sha256": "207a19ce264c25b3944264879d15b96dca46bfe4397468df956248f41fbd06db"
+      }
+    }
+  },
+  "graphifyStatus": {
+    "governanceSha256": "25b5af6579f4e6d6bf062c7ca3d501aeef4f548aa03fad9710880eba25b73086",
+    "profileSha256": "8a9f1b142c005ae1cc9a1196e3339ef681ed663fb039c1ccf41eb51002e1f202",
+    "reason": "graphify not selected; bounded code-only invocation remains blocked",
+    "status": "excluded-subject"
+  },
+  "diskResult": {
+    "detail": "minimum 2000 MB available (verified via df)",
+    "name": "disk-budget",
+    "status": "pass"
+  },
+  "sourceStateHash": "sha256:a0af2027907af240ffc93f12ff8fe842a5405e9b0b894055acd9ac9bc64bb643",
+  "sourceLogicalIdentity": {
+    "schemaVersion": 2,
+    "repositories": [
+      {
+        "repositoryId": "brain",
+        "pinnedCommit": "f683edff753937944018dd00bf5494c85f62e881",
+        "HEAD": "f683edff753937944018dd00bf5494c85f62e881",
+        "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pinnedCommitAvailable": true,
+        "exportedTreeSha256": "dd66e105ae6311cb2d5081f8e0a44023248fed360546ee375329028d8f5e0b75"
+      },
+      {
+        "repositoryId": "prochat",
+        "pinnedCommit": "85087d54f712b1333be7c620f23b6bcac9cde90b",
+        "HEAD": "85087d54f712b1333be7c620f23b6bcac9cde90b",
+        "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pinnedCommitAvailable": true,
+        "exportedTreeSha256": "227e1360d09b674c93809cca4a9404e1fcf7bf7022b846f4fd758833e61c0907"
+      },
+      {
+        "repositoryId": "workbench",
+        "pinnedCommit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2",
+        "HEAD": "bc4908613f23f6d818b60fe9a4b4945efa537ec2",
+        "statusSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pinnedCommitAvailable": true,
+        "exportedTreeSha256": "abbb177d894374534d12a3625d0fa4f46c1ad6e20647de1121e90a14a402bc8c"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "source-root-overrides",
+      "status": "pass",
+      "detail": "brain@f683edff753937944018dd00bf5494c85f62e881; prochat@85087d54f712b1333be7c620f23b6bcac9cde90b; workbench@bc4908613f23f6d818b60fe9a4b4945efa537ec2"
+    },
+    {
+      "name": "manifest-validation",
+      "status": "pass",
+      "detail": "10 fixtures across 3 repos; sha256=a70a87ac33fdbe47..."
+    },
+    {
+      "name": "pinned-commit:brain",
+      "status": "pass",
+      "detail": "f683edff7539"
+    },
+    {
+      "name": "pinned-commit:workbench",
+      "status": "pass",
+      "detail": "bc4908613f23"
+    },
+    {
+      "name": "pinned-commit:prochat",
+      "status": "pass",
+      "detail": "85087d54f712"
+    },
+    {
+      "name": "run-id-valid",
+      "status": "pass",
+      "detail": "b8-1-canonical-authorization-20260809-final-v7w"
+    },
+    {
+      "name": "cbm-binary-identity",
+      "status": "pass",
+      "detail": "sha256=d9fbdd7d8570a77b... version=v0.9.0"
+    },
+    {
+      "name": "network-isolation",
+      "status": "pass",
+      "detail": "adapter=sandbox-exec; control=pass; sandboxed=denied; profile-sha256=bd1de96bd9906950..."
+    },
+    {
+      "name": "graphify-subject",
+      "status": "excluded-subject",
+      "detail": "graphify not selected; bounded code-only invocation remains blocked"
+    },
+    {
+      "name": "exact-source-ready",
+      "status": "pass",
+      "detail": "grep, find, cat available"
+    },
+    {
+      "name": "disk-budget",
+      "status": "pass",
+      "detail": "minimum 2000 MB available (verified via df)"
+    },
+    {
+      "name": "planned-write-containment",
+      "status": "pass",
+      "detail": "21 planned paths confined to /Users/Office/.brain"
+    },
+    {
+      "name": "source-state-binding",
+      "status": "pass",
+      "detail": "sha256=a0af2027907af240..."
+    }
+  ],
+  "implementationIdentity": {
+    "executor": {
+      "repoRelPath": "tools/execute-b8-1-benchmark.mjs",
+      "sha256": "c4b5db7e3be5d18b3101db6ac0d6b35fd848b0b5ada3476b410ffbf4fb3e3203"
+    },
+    "evidenceValidator": {
+      "repoRelPath": "tools/validate-b8-1-benchmark-evidence.mjs",
+      "sha256": "a1bfec48044d17030686c0a76c152c53e9f55f500accc8ca274728b70b668579"
+    },
+    "scorer": {
+      "repoRelPath": "tools/lib/b8-1-scoring.mjs",
+      "sha256": "538c4b615f762f8b7b1356621bf9c33478645c27aebea6a3c5fd7d6c19e0d516"
+    },
+    "metricCollector": {
+      "repoRelPath": "tools/lib/b8-1-metrics.mjs",
+      "sha256": "908f65c180ed95c4623d1e215cfe3cabc75cf4d5d7d560181a42a9f13c29b7ad"
+    },
+    "processSampler": {
+      "repoRelPath": "tools/lib/b8-1-process-metrics.mjs",
+      "sha256": "409b83386ca8c61a762e503000c7039c58b5d42529f7c991863a8f42a0cc95df"
+    },
+    "incrementalReindex": {
+      "repoRelPath": "tools/lib/b8-1-cbm-incremental-reindex.mjs",
+      "sha256": "438a154b0232a36191683ab503fb6941cd90e37408c6b9dc7764b1db9b36fd98"
+    },
+    "exactSourceWorker": {
+      "repoRelPath": "tools/lib/b8-1-exact-source-worker.mjs",
+      "sha256": "668d8775e442cb939aff893e95f8a0b7156b1f9b5b49557d46d2f131ffb53d16"
+    },
+    "planDigest": {
+      "repoRelPath": "tools/lib/b8-1-plan-digest.mjs",
+      "sha256": "72930a63a30829ef8b73f509d2e1ef3587ccd9fd1b9bdd0ff7f5f6f3912bbbd3"
+    },
+    "evidenceSchema": {
+      "repoRelPath": "operations/specs/b8-1-context-memory-benchmark-evidence.schema.json",
+      "sha256": "d906e5b77ba727a3138d05714861e181601c6b9d950606047dd124f7b88f5af2"
+    },
+    "manifestSchema": {
+      "repoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.schema.json",
+      "sha256": "9d697c04f9325e0b4c6101aa367c5fc78ff71b6cc6c323331bbf322f48695e83"
+    }
+  },
+  "runContext": {
+    "runDirectoryPhysical": "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w",
+    "plannedWritePaths": [
+      "/Users/Office/.brain",
+      "/Users/Office/.brain/benchmark",
+      "/Users/Office/.brain/benchmark/b8-1",
+      "/Users/Office/.brain/benchmark/b8-1/runs",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/_archive_brain.tar",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/_archive_prochat.tar",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/_archive_workbench.tar",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/cleanup-manifest.json",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/evidence",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/logs",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/preflight-receipt.json",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/run-plan.json",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/source-state-after.json",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/source-state-before.json",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/sources/brain",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/sources/prochat",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/sources/workbench",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/subjects/cbm/cache",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/subjects/cbm/config",
+      "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260809-final-v7w/subjects/exact-source"
+    ],
+    "networkDenyProfilePath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/specs/b8-1-network-deny.sb",
+    "networkChildPath": "/Users/Office/Repos/stevewesthoek/brain-next/tools/lib/b8-1-network-isolation-child.mjs",
+    "graphifyProfilePath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/specs/graphify-operational-profiles.json",
+    "graphifyGovernancePath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/specs/graphify-transition-governance.json"
+  },
+  "planSha256": "86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30"
+}

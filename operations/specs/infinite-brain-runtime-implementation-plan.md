@@ -720,7 +720,7 @@ Context Gateway tasks are unchanged.
 
 ### B8.1 — Benchmark structural code-memory options on the M1 Pro
 
-- **Status:** incomplete and not executed. P8 remains 0/6 accepted; dry-run validation is not benchmark authorization.
+- **Status:** incomplete and not executed. The v7w dry-run authorization candidate is awaiting exact owner approval; it has not been materialized or executed. P8 remains 0/6 accepted; dry-run validation is not benchmark authorization.
 - **Scope:** Codebase Memory MCP, Graphify only after its bounded executable contract is proven, and exact-source exploration on representative Brain, Workbench, and one normal application repository. Graphify is currently blocked.
 - **Change:** after explicit benchmark authorization and approval of the exact emitted plan digest, record indexing time, incremental refresh latency, CPU, peak memory, disk use, retrieval quality, and offline operation counts; keep all tests local and read-only. Offline evidence excludes model-mediated token fields.
 - **Verify:** repeatable benchmark fixtures and a dated comparison report identify the preferred default and fallback.

@@ -1,21 +1,21 @@
-# B8.1 Benchmark Authorization Package — v7u (CURRENT)
+# B8.1 Benchmark Authorization Package — v7w (CURRENT)
 
 **Status:** authorization-ready; corrected-contract-awaiting-owner-approval; not materialized; not executed
-**Verified:** 2026-08-07 09:45 UTC
+**Verified:** 2026-08-09 12:55 UTC
 **Owner:** Brain operations
 
 ## Canonical approvable contract (CURRENT)
 
-The sole approvable B8.1 contract is **v7u / 7.1.0** (Node 20 binding).
+The sole approvable B8.1 contract is **v7w / 7.1.0** (Node 20 binding and current machine isolation adapter).
 
-- Plan: `operations/reports/b8-1-canonical-plan-v7u-2026-08-07.json`
-- Dry-run receipt: `operations/reports/b8-1-dry-run-receipt-v7u-2026-08-07.json`
-- Run ID: `b8-1-canonical-authorization-20260807-final-v7u`
+- Plan: `operations/reports/b8-1-canonical-plan-v7w-2026-08-09.json`
+- Dry-run receipt: `operations/reports/b8-1-dry-run-receipt-v7w-2026-08-09.json`
+- Run ID: `b8-1-canonical-authorization-20260809-final-v7w`
 - Plan version: `7.1.0`
 - Executor version: `7.1.0`
 - Evidence schema: `3.0.0`
 - Manifest schema: `1.1.0` contract
-- Plan SHA-256: `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed`
+- Plan SHA-256: `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30`
 - **Node runtime:** Node 20.20.2 (SHA-256: `38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6`)
 - Selected subjects: `cbm`, `exact-source`
 - Excluded subject: `graphify`
@@ -26,14 +26,14 @@ The sole approvable B8.1 contract is **v7u / 7.1.0** (Node 20 binding).
 Independent verification:
 
 ```bash
-/Users/Office/.nvm/versions/node/v20.20.2/bin/node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v7u-2026-08-07.json
+/Users/Office/.nvm/versions/node/v20.20.2/bin/node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v7w-2026-08-09.json
 ```
 
 Expected result:
 
 ```text
-PASS  planSha256: 0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed
-Node: v20.20.2
+PASS  planSha256: 86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30
+      verified via shared digest contract (tools/lib/b8-1-plan-digest.mjs)
 ```
 
 ## Source bindings
@@ -50,7 +50,7 @@ All three source roots passed exact-commit, clean-state, and exported-tree bindi
 
 ## Preflight result
 
-The canonical v7u dry-run completed with 12 passing checks, one excluded-subject check, and zero blockers:
+The canonical v7w dry-run completed with 12 passing checks, one excluded-subject check, and zero blockers:
 
 - source-root-overrides: PASS
 - manifest-validation: PASS — 10 fixtures / 3 repositories
@@ -83,11 +83,11 @@ v7r removes the invalid v6r/v7 measurement shortcuts.
 
 ## Validation
 
-The exact v7u implementation passed all six focused B8.1 suites plus JSON validation, document consistency, MCP admission, Graphify-profile validation (without invoking Graphify), secret scan, and `git diff --check`:
+The exact v7w implementation passed all six focused B8.1 suites plus JSON validation, document consistency, MCP admission, Graphify-profile validation (without invoking Graphify), secret scan, and `git diff --check`:
 
 - executor: 63
 - process metrics: 18
-- CBM incremental re-index: 29
+- CBM incremental re-index: 30
 - evidence validator: 46
 - preflight/plan: 74
 - manifest: 38
@@ -97,19 +97,30 @@ The exact v7u implementation passed all six focused B8.1 suites plus JSON valida
 - Graphify-profile validation: pass (non-invocation)
 - Secret scan: pass
 - git diff --check: pass
-- **Total: 268 pass, 0 fail (plus 6 auxiliary validation suites)**
+- **Total: 269 pass, 0 fail (plus 6 auxiliary validation suites)**
 
 The emitted plan independently verifies with the shared digest contract. The plan and dry-run receipt carry the same run ID and digest.
 
+## Semantic comparison with v7u
+
+The v7w dry-run was compared recursively with v7u. The only differences are the new run ID and its contained run paths, the current machine-bound `/usr/bin/sandbox-exec` SHA-256, the plan-digest module identity, and the resulting plan digest. The plan-digest module changed only because commit `8058e3dd` added the rejected v7t Node 25 digest to `KNOWN_STALE_DIGESTS`; measurement behavior, thresholds, selected subjects, fixtures, source pins, schemas, Node/CBM/profile identities, write containment, and fail-closed execution semantics are unchanged.
+
+| Binding | v7u | v7w | Disposition |
+|---|---|---|---|
+| Run ID | `b8-1-canonical-authorization-20260807-final-v7u` | `b8-1-canonical-authorization-20260809-final-v7w` | Fresh authorization candidate |
+| `/usr/bin/sandbox-exec` SHA-256 | `8290e4be7387a0df83cd1559e86afd880464f269450573d012795761fe298f16` | `e3d7a792c58a5d3783d2f7274c82d70062393830d8cb1ded713ca554a470bd2f` | Required current-machine rebind; isolation self-test passed |
+| Plan-digest module SHA-256 | `f8208a8eca83a8d1e8eeb5ab4d60998c0fb626d239796849d801151fdb10eb69` | `72930a63a30829ef8b73f509d2e1ef3587ccd9fd1b9bdd0ff7f5f6f3912bbbd3` | Safety-only stale-digest registry addition |
+| Plan SHA-256 | `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed` | `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30` | v7w is the only current approvable digest |
+
 ## Node 20 binding proof
 
-v7u was generated using the explicit Node 20.20.2 binary:
+v7w was generated using the explicit Node 20.20.2 binary:
 
 ```bash
 /Users/Office/.nvm/versions/node/v20.20.2/bin/node \
   tools/prepare-b8-1-context-memory-benchmark.mjs \
   --dry-run --subjects cbm,exact-source \
-  --run-id b8-1-canonical-authorization-20260807-final-v7u \
+  --run-id b8-1-canonical-authorization-20260809-final-v7w \
   ...
 ```
 
@@ -127,7 +138,7 @@ This binding is invariant across the entire execution plan.
 - CBM version: `v0.9.0`
 - CBM SHA-256: `d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6`
 - Network adapter: `/usr/bin/sandbox-exec`
-- Adapter SHA-256: `8290e4be7387a0df83cd1559e86afd880464f269450573d012795761fe298f16`
+- Adapter SHA-256: `e3d7a792c58a5d3783d2f7274c82d70062393830d8cb1ded713ca554a470bd2f`
 - Network deny profile SHA-256: `bd1de96bd9906950492a3d919ada1dfc6dfefd60780c7b242f87e6689c4f675a`
 - Self-test: control connection succeeded; sandboxed child started; connection denied with `EPERM`.
 
@@ -137,7 +148,7 @@ Graphify remains excluded. The contained M7.1 baseline does not grant a B8.1 pro
 
 ## Historical and stale approvals
 
-Only the v7u digest above is approvable. All earlier approval digests are historical and invalid for a new run:
+Only the v7w digest above is approvable. All earlier approval digests are historical and invalid for a new run:
 
 - v1 `dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4` (2026-08-04, historical)
 - v2 `1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda` (2026-08-04, historical)
@@ -151,21 +162,22 @@ Only the v7u digest above is approvable. All earlier approval digests are histor
 - v7r `0eec69c1befd7ce11f359fe53aef4f033dbb38a5f767f73bad2800b8db37efa0` (2026-08-07, failed historical; Node 25 runtime, noncompliant)
 - v7s (2026-08-07, noncanonical historical; roadmap/handoff stale)
 - v7t `1c0892469683acba82534d3cd7c3f27aae9368a54a5a5fe49989de13aca067e4` (2026-08-07, runtime-mismatch historical; Node 25 output, noncompliant with Node 20 stop condition; never materialized/executed; see `b8-1-v7t-disposition-2026-08-07.md`)
+- v7u `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed` (2026-08-07, historical for new execution; its machine-bound `/usr/bin/sandbox-exec` identity no longer matches the current machine; never materialized/executed)
 - claimed but never established incomplete-plan digest `331695165eb9dd91b061efc414d7a4e9711828d581c4c46511dea1c5812038e2`
 
 The v5s execution from 2026-08-05 remains immutable infrastructure evidence: run `b8-1-canonical-authorization-20260805-final-v5s`, 17/20 passed, but the owner rejected it as insufficient for B8.1 completion.
 
-**v7t supersession:** v7t (Node 25 binding) was a valid plan but violated the required Node 20 stop condition. See `operations/reports/b8-1-v7t-disposition-2026-08-07.md` for disposition and why v7u (Node 20 binding) is the canonical correction.
+**Supersession chain:** v7t (Node 25 binding) violated the required Node 20 stop condition. v7u corrected that binding but is now stale for new execution because its machine-bound isolation-adapter identity changed. v7w preserves the Node 20 correction and rebinds the current adapter without weakening isolation.
 
 ## Current roadmap truth
 
-B8.1 is **corrected-contract-awaiting-owner-approval**. P8 remains **0/6 accepted**. B8.2 remains blocked pending one owner-approved v7u materialization/execution, evidence validation, and owner disposition. Graphify remains excluded.
+B8.1 is **corrected-contract-awaiting-owner-approval**. P8 remains **0/6 accepted**. B8.2 remains blocked pending one owner-approved v7w materialization/execution, evidence validation, and owner disposition. Graphify remains excluded.
 
 ### Milestone status
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| B8.1 | `corrected-contract-awaiting-owner-approval` | v7u dry-run complete; Node 20 binding verified; awaiting owner approval |
+| B8.1 | `corrected-contract-awaiting-owner-approval` | v7w dry-run complete; Node 20 and current-machine isolation bindings verified; awaiting owner approval |
 | P8 | 0/6 | All tasks unaccepted pending B8.1 owner approval |
 | B8.2 | blocked | Depends on B8.1 owner approval and execution |
 
@@ -184,12 +196,12 @@ This package records dry-run authorization artifacts only:
 
 ## Required owner approval wording
 
-To authorize the exact v7u benchmark, the owner must provide:
+To authorize the exact v7w benchmark, the owner must provide:
 
 ```text
 I approve B8.1 benchmark execution with plan digest
-0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed
-for run-id b8-1-canonical-authorization-20260807-final-v7u.
+86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30
+for run-id b8-1-canonical-authorization-20260809-final-v7w.
 Node runtime: v20.20.2 (SHA-256: 38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6).
 Subjects: cbm, exact-source. Graphify excluded.
 Partial evidence accepted.
@@ -199,7 +211,7 @@ After receiving that exact approval, independently reverify the plan digest usin
 
 ```bash
 /Users/Office/.nvm/versions/node/v20.20.2/bin/node tools/verify-b8-1-plan-digest.mjs \
-  operations/reports/b8-1-canonical-plan-v7u-2026-08-07.json
+  operations/reports/b8-1-canonical-plan-v7w-2026-08-09.json
 ```
 
 Then materialize only with the same source-root overrides and exact approved digest. Execution and evidence disposition remain separate subsequent steps.
