@@ -2,7 +2,7 @@
 
 **Status:** canonical live status
 **Last verified:** 2026-08-10 (canonical v7y execution and rejected disposition)
-**Audited:** 2026-08-10 — owner-approved canonical v7y was materialized once and executed once; exact-source passed 10/10 and CBM passed 8/10, but valid partial evidence failed file accuracy, line accuracy, Brain/Workbench refresh latency, and peak-RSS thresholds; B8.1 remains incomplete, B8.2–B8.6 remain blocked, P8 remains 0/6 accepted, and current execution authority is none
+**Audited:** 2026-08-10 — owner-approved canonical v7y was materialized once and executed once; its rejection is unchanged after a read-only audit proved one CBM index-coverage miss, one inventory-versus-ranked-search scoring defect, non-applicable line-denominator errors, a zero-accuracy passing set fixture, missing CBM caller/callee F1, and independent refresh/RSS threshold failures; B8.1 remains incomplete, B8.2–B8.6 remain blocked, P8 remains 0/6 accepted, and current execution authority is none
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -96,6 +96,14 @@ consumed, and current execution authority is `none`. The immutable evidence SHA-
 is `bc6406e4f15d7c0e81d69168395a23acb9c5b062f89db10c23629ae38afc0f78`;
 the disposition is
 `operations/reports/b8-1-failed-run-disposition-v7y-2026-08-10.md`.
+A subsequent read-only audit proved the expected `brain_f4` file was absent from
+the persisted Brain index, while ProChat's persisted CBM inventory contained all
+27 expected `route.ts` files and the harness compared that inventory expectation
+with only four ranked search rows. The audit also found non-applicable fixtures
+in the line-accuracy denominator, a passing set fixture with zero set accuracy,
+and missing required CBM caller/callee F1. The rejection is unchanged; the
+schema-valid accuracy aggregates are not admission-grade. Evidence:
+`operations/reports/b8-1-v7y-post-run-diagnosis-2026-08-10.md`.
 B8.2–B8.6 remain blocked because accepted
 B8.1 evidence is absent. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
@@ -273,7 +281,7 @@ git diff --check → pass
 3. Capability-truth exposure is now complete through B4.4, but proven continuous automation value remains unproven.
 4. Meaningful time savings and maintenance reduction remain unproven.
 5. Deletion-readiness gate (`node tools/validate-deletion-readiness.mjs`) after contract-reconciliation pass (2026-08-01): 0 SAFE; 2 PARTIAL (router-root, sources-root); 17 BLOCKED. No path has the complete structured proof chain plus explicit human deletion approval and rollback expectations required for SAFE. Both Graphify paths (graphify-operational-output and graphify-compatibility-output) are BLOCKED: the profile catalog governs `runtime/local/graphify/...` output roots and explicitly excludes both `.graphify-out/` and `graphify-out/` from the corpus; a catalog pass for a different root cannot satisfy the `graphify-profile-conformance` prerequisite for either compatibility root; additionally, graphify-transition-governance.json explicitly prohibits deletion of `graphify-out/` until the retention gate is cleared. legacy-task-summary (`live/tasks.md`) is BLOCKED: M1.4 proves retirement and task-authority migration, but retirement is not deletion approval — no Brain artifact records human-approved deletion ownership or rollback expectations. BLOCKED breakdown: 5 missing `approved-folder-cleanup` artifact; 2 Graphify prerequisite-scope-mismatch or governance-prohibited deletion; 2 active deployed n8n consumers; 5 unresolved scoped or Mind authority cases; 1 missing human deletion approval (legacy-task-summary); 1 active consumer (wiki-root); 1 active dependency (wiki-log). PARTIAL is fail-closed for deletion.
-6. All stabilization tasks and runtime priorities P1 through P7 are complete. P8 (context-memory efficiency B8.1–B8.6) is intentionally deferred. No canonical P8 task is accepted complete.
+6. All stabilization tasks and runtime priorities P1 through P7 are complete. P8 (context-memory efficiency B8.1–B8.6) is blocked after rejected v7y evidence; no canonical P8 task is accepted complete and no investigation, repair, or rerun is currently authorized.
 
 ## Next approved work
 
@@ -290,7 +298,8 @@ complete. B8.1 benchmark evidence is required before approved canonical
 admission or default activation, additional repository rollout, watcher or
 scheduler changes, or canonical Graphify migration. The preliminary candidate
 installation and indexes remain evidence only. P8 is not the current approved
-execution phase; it requires separate authorization.
+execution phase; a future investigation/repair tranche requires separate owner
+authorization before any new canonical plan can be prepared.
 
 Do not activate broad Mind writes, continuous execution, new external actions,
 or context-memory services while their prerequisite task and approval boundary

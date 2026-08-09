@@ -40,22 +40,31 @@ The CBM failures were:
 | CBM incremental refresh | Brain 1,150 ms; Workbench 530 ms; ProChat 110 ms | at most 500 ms per repository | fail |
 | CBM peak RSS | 572.75 MB | at most 512 MB | fail |
 | CBM index disk | Brain 90,472,448 bytes; Workbench 30,048,256 bytes; ProChat 8,028,160 bytes | at most 500 MB per repository | pass |
+| CBM caller/callee F1 | absent | at least 0.75 | fail |
 | exact-source file accuracy | 100% | comparison baseline | pass |
 | exact-source line accuracy | 80% | comparison baseline | pass |
 | exact-source caller/callee F1 | 1.0 | comparison baseline | pass |
 
-CBM therefore fails four required acceptance checks: file accuracy, line
-accuracy, Brain and Workbench refresh latency, and peak RSS. The two-subject
-partition is also partial evidence by contract and cannot complete B8.1 or
-authorize B8.2 even if its selected subjects had met every threshold.
+CBM therefore fails required acceptance checks for file accuracy, line
+accuracy, caller/callee F1 evidence, Brain and Workbench refresh latency, and
+peak RSS. The two-subject partition is also partial evidence by contract and
+cannot complete B8.1 or authorize B8.2 even if its selected subjects had met
+every threshold.
 
 ## Canonical evidence validation
 
 The evidence validator returned `OK: evidence is valid` against the committed
-manifest and exact materialized run directory. The evidence includes complete
-typed metrics for both selected subjects, manifest-bound refresh targets,
-truthful resource provenance, and plan/run bindings. Schema validity does not
-override the failed acceptance thresholds.
+manifest and exact materialized run directory. The evidence includes the
+schema-required typed fields for both selected subjects, manifest-bound refresh
+targets, truthful resource provenance, and plan/run bindings. Schema validity
+does not prove semantic completeness or override failed acceptance thresholds.
+
+The subsequent read-only audit in
+`operations/reports/b8-1-v7y-post-run-diagnosis-2026-08-10.md` found that the
+file-count fixture compares ranked search rows with repository inventory, two
+non-line fixtures are counted as line failures, one set fixture passes with
+zero set accuracy, and CBM caller/callee F1 is absent. These findings strengthen
+the rejection and do not alter immutable v7y evidence.
 
 ## Safety and cleanup
 
@@ -80,6 +89,7 @@ B8.1 remains incomplete after a rejected canonical run. B8.2–B8.6 remain
 blocked, P8 remains 0/6 accepted, Codebase Memory remains a non-default
 candidate, and Graphify remains excluded/frozen.
 
-No repair, investigation, or rerun is authorized. Any future attempt requires
-a separately approved investigation, a new implementation identity and run ID,
-a fresh canonical dry-run plan and receipt, and fresh exact owner approval.
+No provider/harness repair, provider-runtime investigation, or rerun is
+authorized. Any future attempt requires a separately approved investigation, a
+new implementation identity and run ID, a fresh canonical dry-run plan and
+receipt, and fresh exact owner approval.

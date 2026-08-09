@@ -3,7 +3,7 @@
 **Status:** B8.1 incomplete — canonical v7y executed once and was rejected because valid partial evidence failed accuracy, refresh-latency, and peak-RSS thresholds
 **Date:** 2026-08-10 (v7y disposition); 2026-08-09 (v7x and v7w dispositions); 2026-08-06 (v6 historical); 2026-08-04 (v5s historical)
 **Dependency:** This plan does NOT authorize activation of any context-memory service.
-**Next step:** No execution, repair, investigation, or rerun is currently authorized. The v7y approval is consumed; any future attempt requires a separately approved investigation and a fresh canonical plan, run ID, receipt, and exact owner approval.
+**Next step:** No execution, repair, provider-runtime investigation, or rerun is currently authorized. The v7y approval is consumed; any future attempt requires a separately approved investigation and a fresh canonical plan, run ID, receipt, and exact owner approval. The completed read-only post-run evidence audit does not supply that authority.
 **v7w disposition:** Run `b8-1-canonical-authorization-20260809-final-v7w` executed 2026-08-09 under digest `86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30`; exact-source passed 10/10, CBM errored 10/10, evidence validation failed, and the run was rejected as insufficient. The approval is consumed and the immutable evidence is preserved.
 **v7x disposition:** Run `b8-1-canonical-authorization-20260809-final-v7x` executed 2026-08-09 under digest `c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588`; exact-source passed 10/10, CBM produced 3 passes / 1 failure / 6 errors, required CBM metrics were incomplete, evidence validation failed, and the run was rejected as insufficient. The approval is consumed and the immutable evidence is preserved.
 **v5s disposition:** Executed 2026-08-05; preserved as infrastructure evidence; rejected as insufficient for B8.1 completion (missing per-subject metrics, two harness defects, one genuine CBM miss).
@@ -15,7 +15,7 @@
 
 Establish a reproducible, bounded benchmark comparing context-retrieval approaches across three representative repositories. This plan does NOT authorize activation of any context-memory service. It defines the conditions, metrics, and acceptance thresholds for B8.2 evaluation.
 
-B8.1 is the first canonical task in Priority 8 (context-memory efficiency and freshness). It remains incomplete after the rejected v7x execution. No task in P8 is accepted as complete.
+B8.1 is the first canonical task in Priority 8 (context-memory efficiency and freshness). It remains incomplete after the rejected v7y execution. No task in P8 is accepted as complete.
 
 ---
 
@@ -260,5 +260,7 @@ This document defines the benchmark and its execution gate. **B8.1 is NOT comple
 **v7x execution (2026-08-09):** The owner-approved canonical plan selected `cbm,exact-source`, excluded Graphify, and passed all preflight bindings before one materialization and one execution. Exact-source passed 10/10. CBM produced 3 passes, 1 failure, and 6 post-reindex marker errors; file and line accuracy were 30%, Brain/Workbench metrics and aggregate CBM CPU/RSS provenance were absent, and the evidence validator returned INVALID. The run is rejected as insufficient, its authorization is consumed, and the immutable evidence is preserved under SHA-256 `5453867cb7e7b46475842e6fd6de72bdb4d3ba97ff589811cc99238b57fde869`. Partial-evidence approval did not waive the selected CBM evidence requirements or authorize B8.2.
 
 **v7y execution (2026-08-09 UTC):** The owner-approved canonical plan selected `cbm,exact-source`, excluded Graphify, and passed all preflight bindings before one materialization and one execution. Exact-source passed 10/10. CBM passed 8/10, with 80% file accuracy and 70% line accuracy; Brain/Workbench refresh latency was 1,150/530 ms and aggregate CBM peak RSS was 572.75 MB. The committed-manifest evidence validator returned valid, but the run fails the 90% file, 80% line, 500 ms refresh, and 512 MB RSS thresholds. The run is rejected, its authorization is consumed, and the immutable evidence is preserved under SHA-256 `bc6406e4f15d7c0e81d69168395a23acb9c5b062f89db10c23629ae38afc0f78`. Partial evidence cannot complete B8.1 or authorize B8.2.
+
+**v7y post-run diagnosis (2026-08-10):** Read-only inspection proved `brain_f4`'s expected file was absent from the persisted CBM index, while the ProChat index contained all 27 expected `route.ts` files and `prochat_f2` incorrectly compared a four-row ranked search response with repository inventory. It also found non-applicable fixtures in the line-accuracy denominator, a passing set fixture with zero set accuracy, and missing required CBM caller/callee F1. The v7y rejection is unchanged; schema-valid evidence is not admission-complete. No repair or rerun is authorized. Evidence: `operations/reports/b8-1-v7y-post-run-diagnosis-2026-08-10.md`.
 
 Graphify remains blocked because no exact bounded code-only executable contract and passing self-test exist. P8 (B8.1–B8.6) remains 0/6 accepted, B8.2–B8.6 remain blocked, and current benchmark execution authority is `none`.
