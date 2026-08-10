@@ -7,7 +7,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
-import { buildGates, isolationProof, validateDiagnosticReport } from './run-b8-1-v2-disposable-evaluation.mjs';
+import { assertPinnedRuntime, buildGates, isolationProof, validateDiagnosticReport } from './run-b8-1-v2-disposable-evaluation.mjs';
 import { PLAN_VERSION, CONTRACT_VERSION, computePlanDigest, verifyPlan } from './lib/b8-1-v2-plan-digest.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -48,6 +48,7 @@ function checkSchema(schemaPath, dataPath) {
 }
 
 async function main() {
+  assertPinnedRuntime();
   const args = parseArgs();
   if (!args['run-id'] || !args.provider || !args['rehearsal-report'] || !args.output) throw new Error('required: --run-id=... --provider=... --rehearsal-report=... --output=...');
   if (!/^b8-1-v2-[a-zA-Z0-9._-]+$/.test(args['run-id']) || args['run-id'].includes('..')) throw new Error('invalid V2 run ID');

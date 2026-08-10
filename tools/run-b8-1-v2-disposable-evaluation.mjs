@@ -21,6 +21,17 @@ const MANIFEST_PATH = path.join(ROOT, 'operations/specs/b8-1-v2-context-memory-b
 const PROFILE = path.join(ROOT, 'operations/specs/b8-1-v2-network-isolation.sb');
 const PROBE = path.join(ROOT, 'tools/lib/b8-1-v2-isolation-probe.mjs');
 const STRUCTURAL_LABELS = ['Function', 'Method', 'Route'];
+const PINNED_RUNTIME_PATH = '/Users/Office/.nvm/versions/node/v20.20.2/bin/node';
+const PINNED_RUNTIME_SHA256 = '38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6';
+const PINNED_RUNTIME_VERSION = 'v20.20.2';
+export function assertPinnedRuntime() {
+  const actual = fs.realpathSync(process.execPath);
+  const expected = fs.realpathSync(PINNED_RUNTIME_PATH);
+  if (actual !== expected) throw new Error(`runtime identity drift: evaluator must run under ${PINNED_RUNTIME_PATH} (got ${actual})`);
+  const actualSha = crypto.createHash('sha256').update(fs.readFileSync(actual)).digest('hex');
+  if (actualSha !== PINNED_RUNTIME_SHA256) throw new Error(`runtime SHA mismatch: expected ${PINNED_RUNTIME_SHA256} got ${actualSha}`);
+  if (process.version !== PINNED_RUNTIME_VERSION) throw new Error(`runtime version mismatch: expected ${PINNED_RUNTIME_VERSION} got ${process.version}`);
+}
 
 function sha256File(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
 function mkdir(dir) { fs.mkdirSync(dir, { recursive: true, mode: 0o700 }); }
@@ -211,6 +222,7 @@ async function nodeSource(binary, project, label, file, symbol, state) {
   return snippet.value?.source ?? snippet.value?.text ?? null;
 }
 export async function isolationProof() {
+  assertPinnedRuntime();
   const ipcRoot = `/private/tmp/cbm-daemon-${process.getuid()}`; mkdir(ipcRoot);
   const ipcStat = fs.lstatSync(ipcRoot);
   if (!ipcStat.isDirectory() || ipcStat.isSymbolicLink() || ipcStat.uid !== process.getuid()) throw new Error('CBM IPC root failed ownership/type validation');
@@ -616,6 +628,7 @@ export function validateDiagnosticReport(manifest, report) {
 }
 
 async function main() {
+  assertPinnedRuntime();
   const args = Object.fromEntries(process.argv.slice(2).map(arg => { const index = arg.indexOf('='); return index < 0 ? [arg.replace(/^--/, ''), true] : [arg.slice(2, index), arg.slice(index + 1)]; }));
   if (!args.provider || !args.output) throw new Error('usage: --provider=/absolute/path --output=/absolute/diagnostic-dir [--repetitions=5] [--repositories=brain,workbench,prochat]');
   const binary = fs.realpathSync(args.provider); const output = path.resolve(args.output);
