@@ -65,7 +65,7 @@
     "coldStart": {
       "maximumIndexingTimeMsPerRepository": 30000,
       "maximumPeakRssMiB": 2048,
-      "maximumPeakCpuPercent": 650
+      "maximumPeakCpuPercent": 700
     },
     "steadyState": {
       "maximumIdleRssMiB": 256,

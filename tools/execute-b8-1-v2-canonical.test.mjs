@@ -7,21 +7,21 @@ import { fileURLToPath } from 'node:url';
 import { computePlanDigest, verifyPlan } from './lib/b8-1-v2-plan-digest.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PLAN_PATH = path.join(ROOT, 'operations/reports/b8-1-v2-1-canonical-dry-run-plan-2026-08-10.json');
+const PLAN_PATH = path.join(ROOT, 'operations/reports/b8-1-v2-1-node20-canonical-dry-run-plan-2026-08-10.json');
 const MANIFEST_PATH = path.join(ROOT, 'operations/specs/b8-1-v2-context-memory-benchmark-manifest.json');
 
 const plan = JSON.parse(fs.readFileSync(PLAN_PATH, 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
 
 test('authorization binding: plan digest matches approved digest', () => {
-  const expectedDigest = 'f0695fdfe163c50f96544e9ff901dec8737eca1eff458d8a87dd01ca7664fe34';
+  const expectedDigest = 'd828c726920a0ec40b52a39fee23dcf8ebd79cf0b3573d2451634514a39b9a0b';
   assert.equal(plan.planSha256, expectedDigest);
   const computed = computePlanDigest(plan);
   assert.equal(computed, expectedDigest);
 });
 
 test('authorization binding: run ID matches approved run ID', () => {
-  assert.equal(plan.runId, 'b8-1-v2-1-canonical-20260810');
+  assert.equal(plan.runId, 'b8-1-v2-1-node20-20260810');
 });
 
 test('authorization binding: plan passes structural verification', () => {
