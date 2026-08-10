@@ -23,6 +23,7 @@ const artifacts = {
   evidenceValidator: 'tools/validate-b8-1-v2-evidence.mjs',
   preparer: 'tools/prepare-b8-1-v2-authorization.mjs',
   digest: 'tools/lib/b8-1-v2-plan-digest.mjs',
+  canonicalExecutor: 'tools/execute-b8-1-v2-canonical.mjs',
 };
 function hashFile(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
 function isStrictDescendant(parent, candidate) {
@@ -110,6 +111,13 @@ async function main() {
   const freeDisk = fs.statfsSync(path.dirname(output)); const host = { memoryBytes: os.totalmem(), logicalCpuCount: os.cpus().length, freeMemoryPercent: freeMemoryPercent(), freeDiskBytes: freeDisk.bavail * freeDisk.bsize };
   if (host.freeMemoryPercent < manifest.resourceBudget.basis.minimumStartFreeMemoryPercent) throw new Error('insufficient free memory for authorization preflight');
   if (host.freeDiskBytes < manifest.resourceBudget.basis.minimumStartFreeDiskBytes) throw new Error('insufficient free disk for authorization preflight');
+  // Executor must be present and unmodified relative to git index before plan generation
+  const executorPath = path.join(ROOT, artifacts.canonicalExecutor);
+  if (!fs.existsSync(executorPath)) throw new Error(`canonical executor not found: ${executorPath}`);
+  const executorSha = hashFile(executorPath);
+  const gitExecutorStatus = execFileSync('git', ['-C', ROOT, 'status', '--porcelain', '--', artifacts.canonicalExecutor], { encoding: 'utf8' }).trim();
+  if (gitExecutorStatus.length > 0) throw new Error(`canonical executor has uncommitted changes: ${gitExecutorStatus}`);
+
   const brainHead = execFileSync('git', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const checks = [
     'manifest-schema-valid', 'evidence-schema-compiles', 'source-pins-resolve', 'provider-identity-matches-rehearsal',

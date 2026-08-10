@@ -104,6 +104,18 @@ export function validateAuthorization({ planPath, authorizedPlanSha256, authoriz
     errors.push('plan.partialEvidence must be false');
   }
 
+  // 9. Canonical executor identity: plan must record canonicalExecutor SHA and it must match this file
+  const executorIdentity = plan.implementationIdentity?.canonicalExecutor;
+  if (!executorIdentity) {
+    errors.push('plan.implementationIdentity.canonicalExecutor is missing — plan was generated before executor was bound');
+  } else {
+    const selfPath = fs.realpathSync(fileURLToPath(import.meta.url));
+    const selfSha = sha256File(selfPath);
+    if (selfSha !== executorIdentity.sha256) {
+      errors.push(`executor SHA drift: plan records ${executorIdentity.sha256} but this file hashes to ${selfSha}`);
+    }
+  }
+
   return { valid: errors.length === 0, errors, plan: errors.length ? null : plan };
 }
 

@@ -113,8 +113,12 @@ test('KNOWN_STALE_DIGESTS: superseded Node20 plan digest is blocked', () => {
   assert.ok(KNOWN_STALE_DIGESTS.has('d828c726920a0ec40b52a39fee23dcf8ebd79cf0b3573d2451634514a39b9a0b'));
 });
 
-test('KNOWN_STALE_DIGESTS: contains at least 7 entries covering all superseded plans', () => {
-  assert.ok(KNOWN_STALE_DIGESTS.size >= 7);
+test('KNOWN_STALE_DIGESTS: auth-binding plan (no executor identity) is blocked', () => {
+  assert.ok(KNOWN_STALE_DIGESTS.has('d6b9586e898a9e3a5ef24eaf13456f5d54be5101ae9765fb00a4d59aa46d36c6'));
+});
+
+test('KNOWN_STALE_DIGESTS: contains at least 8 entries covering all superseded plans', () => {
+  assert.ok(KNOWN_STALE_DIGESTS.size >= 8);
 });
 
 // ── validateAuthorization: exact approval binding (current plan) ──────────────
@@ -126,6 +130,63 @@ test('validateAuthorization: correct plan/digest/runId passes', (t) => {
   assert.equal(result.valid, true, `expected valid, got errors: ${result.errors.join(', ')}`);
   assert.ok(result.plan !== null);
   assert.equal(result.plan.runId, planEntry.plan.runId);
+});
+
+// ── Executor identity binding (current plan) ─────────────────────────────────
+
+test('current plan: implementationIdentity.canonicalExecutor is present', (t) => {
+  const planEntry = currentPlanOrSkip(t);
+  if (!planEntry) return;
+  assert.ok(planEntry.plan.implementationIdentity?.canonicalExecutor, 'canonicalExecutor missing from implementationIdentity');
+  assert.ok(planEntry.plan.implementationIdentity.canonicalExecutor.sha256, 'canonicalExecutor.sha256 missing');
+  assert.ok(planEntry.plan.implementationIdentity.canonicalExecutor.repoRelPath, 'canonicalExecutor.repoRelPath missing');
+});
+
+test('current plan: canonicalExecutor SHA matches actual executor file', (t) => {
+  const planEntry = currentPlanOrSkip(t);
+  if (!planEntry) return;
+  const executorPath = path.join(ROOT, 'tools/execute-b8-1-v2-canonical.mjs');
+  const actualSha = crypto.createHash('sha256').update(fs.readFileSync(executorPath)).digest('hex');
+  assert.equal(actualSha, planEntry.plan.implementationIdentity.canonicalExecutor.sha256,
+    'Executor SHA in plan does not match current file — plan must be regenerated after executor changes');
+});
+
+test('validateAuthorization: plan without canonicalExecutor identity fails closed', async (t) => {
+  const planEntry = currentPlanOrSkip(t);
+  if (!planEntry) return;
+  const { computePlanDigest: recompute } = await import('./lib/b8-1-v2-plan-digest.mjs');
+  const tampered = JSON.parse(JSON.stringify(planEntry.plan));
+  delete tampered.implementationIdentity.canonicalExecutor;
+  tampered.planSha256 = recompute(tampered);
+  const tmpPath = path.join(ROOT, 'operations/reports', `__test-no-executor-${process.pid}.json`);
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(tampered, null, 2) + '\n');
+    const result = validateAuthorization({ planPath: tmpPath, authorizedPlanSha256: tampered.planSha256, authorizedRunId: tampered.runId });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('canonicalExecutor') || e.includes('executor')),
+      `Expected executor error, got: ${result.errors.join('; ')}`);
+  } finally {
+    if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+  }
+});
+
+test('validateAuthorization: plan with wrong executor SHA fails closed', async (t) => {
+  const planEntry = currentPlanOrSkip(t);
+  if (!planEntry) return;
+  const { computePlanDigest: recompute } = await import('./lib/b8-1-v2-plan-digest.mjs');
+  const tampered = JSON.parse(JSON.stringify(planEntry.plan));
+  tampered.implementationIdentity.canonicalExecutor.sha256 = '0000000000000000000000000000000000000000000000000000000000000000';
+  tampered.planSha256 = recompute(tampered);
+  const tmpPath = path.join(ROOT, 'operations/reports', `__test-wrong-executor-${process.pid}.json`);
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(tampered, null, 2) + '\n');
+    const result = validateAuthorization({ planPath: tmpPath, authorizedPlanSha256: tampered.planSha256, authorizedRunId: tampered.runId });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => e.includes('executor') || e.includes('drift')),
+      `Expected executor drift error, got: ${result.errors.join('; ')}`);
+  } finally {
+    if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+  }
 });
 
 // ── Plan structural integrity (current plan) ─────────────────────────────────
