@@ -143,3 +143,30 @@
 **Status:** Configuration complete. Ready for IB1 implementation.
 
 **Next:** Proceed to IB1 (entity changelog infrastructure).
+
+---
+
+## D10: B8.1 Contract V2 structural-memory architecture
+
+**Decision:** Use deterministic repository-isolated structural memory with
+incremental freshness as a navigation layer; exact source remains authoritative.
+
+**Selected implementation:** Codebase Memory MCP v0.9.0 in full mode with
+persistence and auto-watch disabled, evaluated alongside deterministic
+exact-source retrieval. Full mode is mandatory because v0.9.0 fast mode omits
+eligible top-level source directories such as Brain's `tools` directory.
+
+**Provider-version disposition:** Retain the installed v0.9.0 binary. The newer
+v0.9.1-rc.1 candidate was rejected in disposable evaluation because its full-Brain
+refresh exceeded the 7.5-second maximum and its per-command temporary-daemon
+lifecycle did not provide valid child-only resource attribution.
+
+**Authority boundary:** Structural-memory results are never write authority.
+Unindexed eligible files require exact-source fallback. Graphify is a separate
+architecture and is excluded from B8.1 Contract V2. Mind is out of scope.
+
+**Execution gate:** Contract V2 is dry-run ready but B8.1 remains incomplete.
+Canonical materialization and execution require exact owner approval of run ID
+`b8-1-v2-canonical-authorization-20260810-final-v1` and plan digest
+`d95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284`.
+Prior B8.1 approvals do not apply. Partial evidence is not accepted.
