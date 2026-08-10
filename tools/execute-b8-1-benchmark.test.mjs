@@ -17,7 +17,9 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
+  buildCbmCallerCalleeQueries,
   buildFixtureEvidence,
+  cbmResultMatchesExpectedLine,
   checkSandboxAvailable,
   countCbmInventoryRows,
   EXECUTOR_VERSION,
@@ -26,6 +28,7 @@ import {
   REQUIRED_PLAN_VERSION,
   runExecutor,
   scoreCbmCallerCalleeRows,
+  selectCbmSearchResult,
   validateExecutorInputs,
 } from './execute-b8-1-benchmark.mjs';
 
@@ -2041,4 +2044,92 @@ test('E69: structural set scoring cannot count one qualified prediction as multi
   );
   assert.equal(scored.calleePrecision, 1);
   assert.equal(scored.calleeRecall, 0.5);
+});
+
+test('E70: CBM search selection prefers a later exact symbol over an earlier same-file result', () => {
+  const fixture = {
+    expectedFile: 'projects/brain-core/src/mind-paths.ts',
+    expectedSymbol: 'MIND_TARGET_PATHS',
+    expectedLine: 21,
+  };
+  const selected = selectCbmSearchResult([
+    {
+      node: 'buildMindInboxCapturePath', label: 'Function',
+      file: fixture.expectedFile, start_line: 205, end_line: 210, match_lines: [205],
+    },
+    {
+      node: 'MIND_TARGET_PATHS', label: 'Variable',
+      file: fixture.expectedFile, start_line: 21, end_line: 37, match_lines: [21],
+    },
+  ], fixture);
+  assert.equal(selected.node, 'MIND_TARGET_PATHS');
+  assert.equal(cbmResultMatchesExpectedLine(selected, fixture.expectedLine), true);
+});
+
+test('E71: CBM line matching uses all match lines and the provider node range', () => {
+  assert.equal(cbmResultMatchesExpectedLine({ start_line: 100, end_line: 120, match_lines: [80, 106] }, 105), true);
+  assert.equal(cbmResultMatchesExpectedLine({ start_line: 100, end_line: 120, match_lines: [] }, 115), true);
+  assert.equal(cbmResultMatchesExpectedLine({ start_line: 100, end_line: 120, match_lines: [80] }, 130), false);
+});
+
+test('E72: CBM structural queries bind the provider label and semantic relationship type', () => {
+  const fixture = {
+    expectedFile: 'projects/mind-steward/src/classifier.ts',
+    expectedSymbol: 'classifyMindCaptureInbox',
+  };
+  const built = buildCbmCallerCalleeQueries(fixture, {
+    node: fixture.expectedSymbol,
+    label: 'Function',
+    file: fixture.expectedFile,
+  });
+  assert.equal(built.error, undefined);
+  assert.equal(built.missingTarget, false);
+  assert.match(built.queries[0], /\[r:CALLS\]->\(target:Function\)/);
+  assert.match(built.queries[1], /\(source:Function\)-\[r:CALLS\]/);
+  assert.match(built.queries[2], /r:IMPORTS/);
+
+  const variable = buildCbmCallerCalleeQueries(
+    { expectedFile: 'src/config.ts', expectedSymbol: 'CONFIG' },
+    { node: 'CONFIG', label: 'Variable', file: 'src/config.ts' },
+  );
+  assert.match(variable.queries[0], /\[r:USAGE\]->\(target:Variable\)/);
+});
+
+test('E73: CBM import caller evidence is symbol-specific', () => {
+  const scored = scoreCbmCallerCalleeRows(
+    {
+      callerCalleeApplicable: true,
+      expectedSymbol: 'TARGET',
+      expectedCallers: ['src/actual.ts'],
+      expectedCallees: [],
+    },
+    [],
+    [],
+    [
+      { source_file: 'src/actual.ts', local_name: 'TARGET' },
+      { source_file: 'src/noise.ts', local_name: 'OTHER' },
+    ],
+  );
+  assert.equal(scored.callerPrecision, 1);
+  assert.equal(scored.callerRecall, 1);
+});
+
+test('E74: missing or unsupported structural targets fail closed without unsafe Cypher labels', () => {
+  const fixture = { expectedFile: 'src/main.ts', expectedSymbol: 'main' };
+  assert.deepEqual(buildCbmCallerCalleeQueries(fixture, null), { missingTarget: true, queries: [] });
+  assert.match(
+    buildCbmCallerCalleeQueries(fixture, { node: 'main', label: 'Function) MATCH (n' }).error,
+    /unsupported node label/,
+  );
+});
+
+test('E75: a broad non-symbol node range cannot fabricate line correctness', () => {
+  const broadModule = { node: 'src/main.ts', label: 'Module', start_line: 1, end_line: 500, match_lines: [300] };
+  assert.equal(cbmResultMatchesExpectedLine(broadModule, 3, 5, false), false);
+});
+
+test('E76: CBM search selection requires an exact relative path or suffix boundary', () => {
+  const fixture = { expectedFile: 'src/main.ts', expectedLine: 10 };
+  assert.equal(selectCbmSearchResult([{ file: 'src/main.ts.bak', match_lines: [10] }], fixture), null);
+  assert.equal(selectCbmSearchResult([{ file: '/snapshot/src/main.ts', match_lines: [10] }], fixture).file, '/snapshot/src/main.ts');
 });

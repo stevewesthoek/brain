@@ -69,6 +69,10 @@ const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
 const SUPPORTED_SUBJECTS = new Set(['cbm', 'exact-source']);
 const CBM_SEARCH_LIMIT = 50;
+const CBM_STRUCTURAL_LABELS = new Set([
+  'Class', 'Enum', 'Field', 'File', 'Function', 'Interface', 'Method',
+  'Module', 'Route', 'Struct', 'Trait', 'Variable',
+]);
 
 // Admitted network-deny sandbox profile path (relative to repo root).
 const NETWORK_DENY_PROFILE_PATH = path.join(REPO_ROOT, 'operations', 'specs', 'b8-1-network-deny.sb');
@@ -339,6 +343,64 @@ function normalizeRelativePath(value) {
   return String(value ?? '').replaceAll('\\\\', '/').replace(/^\.\//, '');
 }
 
+function cbmResultFile(result) {
+  return normalizeRelativePath(result?.file ?? result?.path ?? '');
+}
+
+function cbmResultMatchesFile(result, expectedFile) {
+  const candidate = cbmResultFile(result);
+  const expected = normalizeRelativePath(expectedFile);
+  return !expected || candidate === expected || candidate.endsWith(`/${expected}`);
+}
+
+function cbmResultMatchesSymbol(result, expectedSymbol) {
+  if (!expectedSymbol) return false;
+  return [result?.node, result?.name].some(value => value === expectedSymbol);
+}
+
+export function cbmResultMatchesExpectedLine(result, expectedLine, tolerance = 5, allowRange = true) {
+  if (!Number.isInteger(expectedLine)) return false;
+  const directLines = [result?.line, ...(Array.isArray(result?.match_lines) ? result.match_lines : [])]
+    .filter(Number.isInteger);
+  if (directLines.some(line => Math.abs(line - expectedLine) <= tolerance)) return true;
+  if (allowRange && Number.isInteger(result?.start_line) && Math.abs(result.start_line - expectedLine) <= tolerance) return true;
+  if (allowRange && Number.isInteger(result?.start_line) && Number.isInteger(result?.end_line)) {
+    return expectedLine >= result.start_line - tolerance && expectedLine <= result.end_line + tolerance;
+  }
+  return false;
+}
+
+export function selectCbmSearchResult(results, fixture) {
+  if (!Array.isArray(results)) return null;
+  const candidates = results.filter(result => cbmResultMatchesFile(result, fixture.expectedFile));
+  if (candidates.length === 0) return null;
+
+  const exactSymbol = candidates.find(result => cbmResultMatchesSymbol(result, fixture.expectedSymbol));
+  if (exactSymbol) return exactSymbol;
+
+  if (Number.isInteger(fixture.expectedLine)) {
+    const exactMatchLine = candidates.find(result => (
+      [result?.line, ...(Array.isArray(result?.match_lines) ? result.match_lines : [])]
+        .filter(Number.isInteger)
+        .includes(fixture.expectedLine)
+    ));
+    if (exactMatchLine) return exactMatchLine;
+
+    const containingRange = candidates.find(result => (
+      Number.isInteger(result?.start_line)
+      && Number.isInteger(result?.end_line)
+      && fixture.expectedLine >= result.start_line
+      && fixture.expectedLine <= result.end_line
+    ));
+    if (containingRange) return containingRange;
+
+    const toleranceMatch = candidates.find(result => cbmResultMatchesExpectedLine(result, fixture.expectedLine));
+    if (toleranceMatch) return toleranceMatch;
+  }
+
+  return candidates[0];
+}
+
 export function countCbmInventoryRows(rows, root = '.') {
   const normalizedRoot = normalizeRelativePath(root).replace(/\/$/, '');
   return rows.map(row => normalizeRelativePath(row.file_path)).filter(filePath => (
@@ -382,7 +444,10 @@ export function scoreCbmCallerCalleeRows(fixture, inboundRows, outboundRows, imp
       .filter(row => row.rel === 'CALLS' || row.rel === 'USAGE')
       .map(row => normalizeRelativePath(row.source_file))
       .filter(Boolean),
-    ...importRows.map(row => normalizeRelativePath(row.source_file)).filter(Boolean),
+    ...importRows
+      .filter(row => !fixture.expectedSymbol || row.local_name === fixture.expectedSymbol)
+      .map(row => normalizeRelativePath(row.source_file))
+      .filter(Boolean),
   ])];
   const predictedCallees = [...new Set(outboundRows
     .filter(row => row.rel === 'CALLS' || row.rel === 'USAGE' || row.rel === 'IMPORTS')
@@ -403,26 +468,51 @@ export function scoreCbmCallerCalleeRows(fixture, inboundRows, outboundRows, imp
   };
 }
 
-async function queryCbmCallerCallee(fixture, binaryPath, projectName, execution) {
-  if (!fixture.callerCalleeApplicable) return scoreCbmCallerCalleeRows(fixture, [], [], []);
+function structuralRelationshipForLabel(label) {
+  if (label === 'Module') return 'IMPORTS';
+  if (label === 'Function' || label === 'Method' || label === 'Route') return 'CALLS';
+  return 'USAGE';
+}
+
+export function buildCbmCallerCalleeQueries(fixture, selectedSearchMatch = null) {
   const targetFile = normalizeRelativePath(fixture.expectedFile ?? fixture.verification?.path ?? '');
   if (!targetFile) return { error: 'caller/callee fixture has no target file' };
+
   const targetSymbol = fixture.expectedSymbol ?? null;
-  const targetPattern = targetSymbol ? '(target)' : '(target:Module)';
-  const sourcePattern = targetSymbol ? '(source)' : '(source:Module)';
+  if (targetSymbol && !cbmResultMatchesSymbol(selectedSearchMatch, targetSymbol)) {
+    return { missingTarget: true, queries: [] };
+  }
+
+  const label = targetSymbol ? selectedSearchMatch?.label : 'Module';
+  if (!CBM_STRUCTURAL_LABELS.has(label)) {
+    return { error: `CBM structural evidence has unsupported node label: ${label ?? 'missing'}` };
+  }
+
+  const relationship = structuralRelationshipForLabel(label);
   const targetPredicate = targetSymbol
     ? `target.file_path = ${cypherLiteral(targetFile)} AND target.name = ${cypherLiteral(targetSymbol)}`
     : `target.file_path = ${cypherLiteral(targetFile)}`;
   const sourcePredicate = targetSymbol
     ? `source.file_path = ${cypherLiteral(targetFile)} AND source.name = ${cypherLiteral(targetSymbol)}`
     : `source.file_path = ${cypherLiteral(targetFile)}`;
-  const queries = [
-    `MATCH (source)-[r]->${targetPattern} WHERE ${targetPredicate} RETURN type(r) AS rel, source.file_path AS source_file`,
-    `MATCH ${sourcePattern}-[r]->(target) WHERE ${sourcePredicate} RETURN type(r) AS rel, target.name AS target_name, target.file_path AS target_file, r.callee AS callee`,
-    `MATCH (source)-[r:IMPORTS]->(target:Module) WHERE target.file_path = ${cypherLiteral(targetFile)} RETURN source.file_path AS source_file, r.local_name AS local_name`,
-  ];
+
+  return {
+    missingTarget: false,
+    queries: [
+      `MATCH (source)-[r:${relationship}]->(target:${label}) WHERE ${targetPredicate} RETURN type(r) AS rel, source.file_path AS source_file`,
+      `MATCH (source:${label})-[r:${relationship}]->(target) WHERE ${sourcePredicate} RETURN type(r) AS rel, target.name AS target_name, target.file_path AS target_file, r.callee AS callee`,
+      `MATCH (source)-[r:IMPORTS]->(target:Module) WHERE target.file_path = ${cypherLiteral(targetFile)} RETURN source.file_path AS source_file, r.local_name AS local_name`,
+    ],
+  };
+}
+
+async function queryCbmCallerCallee(fixture, selectedSearchMatch, binaryPath, projectName, execution) {
+  if (!fixture.callerCalleeApplicable) return scoreCbmCallerCalleeRows(fixture, [], [], []);
+  const built = buildCbmCallerCalleeQueries(fixture, selectedSearchMatch);
+  if (built.error) return { error: built.error };
+  if (built.missingTarget) return scoreCbmCallerCalleeRows(fixture, [], [], []);
   const rowSets = [];
-  for (const query of queries) {
+  for (const query of built.queries) {
     const result = await runCbmJsonTool(binaryPath, 'query_graph', ['--query', query, '--project', projectName, '--max-rows', '100000'], execution);
     if (result.error) return { error: result.error };
     const rows = parseCbmRows(result.value);
@@ -1011,6 +1101,7 @@ export async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, 
   let setAccuracy = null;
   let actual = null;
   let outcome = 'fail';
+  let selectedSearchMatch = null;
   const execution = { env, cwd: cacheDir, sandboxProfile, start };
 
   if (algorithm === 'file-name-count') {
@@ -1091,16 +1182,14 @@ export async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, 
         errors.push(searchResult.error);
         outcome = 'error';
       }
-      const match = results.find(r => {
-        const file = r.file ?? r.path ?? '';
-        return expectedFile ? file.endsWith(expectedFile) || file.includes(expectedFile) : true;
-      });
+      const match = selectCbmSearchResult(results, fixture);
+      selectedSearchMatch = match;
       if (match) {
         actual = match.file ?? match.path ?? null;
-        fileCorrect = expectedFile ? !!(actual && (actual.endsWith(expectedFile) || actual.includes(expectedFile))) : true;
-        const matchedLine = match.line ?? match.start_line ?? (Array.isArray(match.match_lines) ? match.match_lines[0] : undefined);
-        if (isLineMetricApplicable(fixture) && expectedLine !== null && matchedLine !== undefined) {
-          lineCorrect = Math.abs(matchedLine - expectedLine) <= 5;
+        fileCorrect = expectedFile ? cbmResultMatchesFile(match, expectedFile) : true;
+        if (isLineMetricApplicable(fixture) && expectedLine !== null) {
+          const allowNodeRange = !fixture.expectedSymbol || cbmResultMatchesSymbol(match, fixture.expectedSymbol);
+          lineCorrect = cbmResultMatchesExpectedLine(match, expectedLine, 5, allowNodeRange);
         } else if (isLineMetricApplicable(fixture)) {
           lineCorrect = false;
         } else {
@@ -1112,7 +1201,7 @@ export async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, 
     }
   }
 
-  const callerCallee = await queryCbmCallerCallee(fixture, binaryPath, projectName, execution);
+  const callerCallee = await queryCbmCallerCallee(fixture, selectedSearchMatch, binaryPath, projectName, execution);
   if (callerCallee.error) {
     errors.push(callerCallee.error);
     outcome = 'error';
