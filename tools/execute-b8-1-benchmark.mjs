@@ -38,6 +38,9 @@ import {
   canonicalize,
 } from './lib/b8-1-plan-digest.mjs';
 import {
+  isLineMetricApplicable,
+  scorePredictedSet,
+  scoreSetValues,
   validateExpectedCount,
   validateItemProperty,
 } from './lib/b8-1-scoring.mjs';
@@ -60,7 +63,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-export const EXECUTOR_VERSION = '7.2.0';
+export const EXECUTOR_VERSION = '7.3.0';
 export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
@@ -250,7 +253,7 @@ export function buildFixtureEvidence(fixture, result, subject, runMeta) {
     errors: errors ?? [],
     subjectIdentity: subjectIdentity ?? null,
     fileCorrect: result.fileCorrect ?? (outcome === 'pass'),
-    lineCorrect: result.lineCorrect ?? false,
+    lineCorrect: result.lineCorrect === null ? null : (result.lineCorrect ?? false),
     setAccuracy: result.setAccuracy ?? null,
   };
 
@@ -283,6 +286,150 @@ const KNOWN_ALGORITHMS = new Set(['file-exists', 'line-contains', 'symbol-at-lin
  */
 function unescapeJsonPointerSegment(seg) {
   return seg.replace(/~1/g, '/').replace(/~0/g, '~');
+}
+
+function extractJsonPointerSet(source, verification) {
+  let parsed;
+  try {
+    parsed = JSON.parse(source);
+  } catch (error) {
+    return { error: `failed to parse JSON: ${error.message}` };
+  }
+
+  const pointer = verification.jsonPointer ?? '';
+  let node = parsed;
+  if (pointer !== '') {
+    if (!pointer.startsWith('/')) {
+      return { error: `invalid JSON pointer "${pointer}": must start with /` };
+    }
+    for (const part of pointer.slice(1).split('/').map(unescapeJsonPointerSegment)) {
+      if (node === null || typeof node !== 'object') {
+        node = undefined;
+        break;
+      }
+      node = Array.isArray(node) ? node[Number(part)] : node[part];
+    }
+  }
+  if (!Array.isArray(node)) {
+    return { error: `JSON pointer "${pointer}" did not resolve to an array` };
+  }
+
+  const itemProperty = verification.itemProperty ?? null;
+  const values = itemProperty === null ? node : node.map(item => {
+    if (item !== null && typeof item === 'object' && !Array.isArray(item)) return item[itemProperty];
+    return item;
+  });
+  const missing = values.filter(value => value === undefined).length;
+  if (missing > 0) {
+    return { error: `itemProperty "${itemProperty}" missing from ${missing} element(s)` };
+  }
+  return { values };
+}
+
+function parseCbmRows(payload) {
+  if (!payload || !Array.isArray(payload.columns) || !Array.isArray(payload.rows)) return null;
+  return payload.rows.map(row => Object.fromEntries(payload.columns.map((column, index) => [column, row[index]])));
+}
+
+function cypherLiteral(value) {
+  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+function normalizeRelativePath(value) {
+  return String(value ?? '').replaceAll('\\\\', '/').replace(/^\.\//, '');
+}
+
+export function countCbmInventoryRows(rows, root = '.') {
+  const normalizedRoot = normalizeRelativePath(root).replace(/\/$/, '');
+  return rows.map(row => normalizeRelativePath(row.file_path)).filter(filePath => (
+    normalizedRoot === '.' || normalizedRoot === '' || filePath === normalizedRoot || filePath.startsWith(`${normalizedRoot}/`)
+  )).length;
+}
+
+function calleePredictionMatches(predicted, expected) {
+  const candidate = String(predicted ?? '');
+  const truth = String(expected ?? '');
+  if (candidate === truth) return true;
+  if (candidate.endsWith(`.${truth}`) || truth.endsWith(`.${candidate}`)) return true;
+  return normalizeRelativePath(candidate) === normalizeRelativePath(truth);
+}
+
+function remainingFixtureMs(start) {
+  return Math.max(0, FIXTURE_TIMEOUT_MS - (Date.now() - start));
+}
+
+async function runCbmJsonTool(binaryPath, tool, args, { env, cwd, sandboxProfile, start }) {
+  const timeoutMs = remainingFixtureMs(start);
+  if (timeoutMs <= 0) return { error: `CBM ${tool} timed out (no time remaining)` };
+  const result = await spawnBounded(binaryPath, ['cli', tool, ...args], { env, cwd, timeoutMs, sandboxProfile });
+  if (result.timedOut) return { error: `CBM ${tool} timed out` };
+  if (result.exitCode !== 0) return { error: `CBM ${tool} failed (exit=${result.exitCode}): ${result.stderr}` };
+  try {
+    return { value: JSON.parse(result.stdout) };
+  } catch {
+    return { error: `CBM ${tool} returned unparseable output` };
+  }
+}
+
+export function scoreCbmCallerCalleeRows(fixture, inboundRows, outboundRows, importRows) {
+  if (!fixture.callerCalleeApplicable) {
+    return { callerPrecision: null, callerRecall: null, calleePrecision: null, calleeRecall: null };
+  }
+  const expectedCallers = Array.isArray(fixture.expectedCallers) ? fixture.expectedCallers : [];
+  const expectedCallees = Array.isArray(fixture.expectedCallees) ? fixture.expectedCallees : [];
+  const predictedCallers = [...new Set([
+    ...inboundRows
+      .filter(row => row.rel === 'CALLS' || row.rel === 'USAGE')
+      .map(row => normalizeRelativePath(row.source_file))
+      .filter(Boolean),
+    ...importRows.map(row => normalizeRelativePath(row.source_file)).filter(Boolean),
+  ])];
+  const predictedCallees = [...new Set(outboundRows
+    .filter(row => row.rel === 'CALLS' || row.rel === 'USAGE' || row.rel === 'IMPORTS')
+    .map(row => row.callee || row.target_name || row.target_file)
+    .filter(Boolean))];
+
+  const caller = scorePredictedSet(
+    expectedCallers.map(normalizeRelativePath),
+    predictedCallers,
+    (predicted, expected) => predicted === expected,
+  );
+  const callee = scorePredictedSet(expectedCallees, predictedCallees, calleePredictionMatches);
+  return {
+    callerPrecision: caller.precision,
+    callerRecall: caller.recall,
+    calleePrecision: callee.precision,
+    calleeRecall: callee.recall,
+  };
+}
+
+async function queryCbmCallerCallee(fixture, binaryPath, projectName, execution) {
+  if (!fixture.callerCalleeApplicable) return scoreCbmCallerCalleeRows(fixture, [], [], []);
+  const targetFile = normalizeRelativePath(fixture.expectedFile ?? fixture.verification?.path ?? '');
+  if (!targetFile) return { error: 'caller/callee fixture has no target file' };
+  const targetSymbol = fixture.expectedSymbol ?? null;
+  const targetPattern = targetSymbol ? '(target)' : '(target:Module)';
+  const sourcePattern = targetSymbol ? '(source)' : '(source:Module)';
+  const targetPredicate = targetSymbol
+    ? `target.file_path = ${cypherLiteral(targetFile)} AND target.name = ${cypherLiteral(targetSymbol)}`
+    : `target.file_path = ${cypherLiteral(targetFile)}`;
+  const sourcePredicate = targetSymbol
+    ? `source.file_path = ${cypherLiteral(targetFile)} AND source.name = ${cypherLiteral(targetSymbol)}`
+    : `source.file_path = ${cypherLiteral(targetFile)}`;
+  const queries = [
+    `MATCH (source)-[r]->${targetPattern} WHERE ${targetPredicate} RETURN type(r) AS rel, source.file_path AS source_file`,
+    `MATCH ${sourcePattern}-[r]->(target) WHERE ${sourcePredicate} RETURN type(r) AS rel, target.name AS target_name, target.file_path AS target_file, r.callee AS callee`,
+    `MATCH (source)-[r:IMPORTS]->(target:Module) WHERE target.file_path = ${cypherLiteral(targetFile)} RETURN source.file_path AS source_file, r.local_name AS local_name`,
+  ];
+  const rowSets = [];
+  for (const query of queries) {
+    const result = await runCbmJsonTool(binaryPath, 'query_graph', ['--query', query, '--project', projectName, '--max-rows', '100000'], execution);
+    if (result.error) return { error: result.error };
+    const rows = parseCbmRows(result.value);
+    if (rows === null) return { error: 'CBM query_graph returned an invalid row contract' };
+    rowSets.push(rows);
+  }
+  return scoreCbmCallerCalleeRows(fixture, rowSets[0], rowSets[1], rowSets[2]);
 }
 
 /**
@@ -353,7 +500,7 @@ export function runExactSourceFixture(fixture, sourcesDir) {
   let outcome = 'fail';
   let actual = null;
   let fileCorrect = false;
-  let lineCorrect = false;
+  let lineCorrect = isLineMetricApplicable(fixture) ? false : null;
   let setAccuracy = null;
 
   try {
@@ -408,7 +555,7 @@ export function runExactSourceFixture(fixture, sourcesDir) {
       countFiles(rootDir);
       actual = count;
       fileCorrect = count === expectedCount;
-      lineCorrect = false;
+      lineCorrect = null;
       outcome = fileCorrect ? 'pass' : 'fail';
       if (!fileCorrect) errors.push(`expected ${expectedCount} files named "${fileName}" but found ${count}`);
 
@@ -439,7 +586,7 @@ export function runExactSourceFixture(fixture, sourcesDir) {
     fileCorrect = true;
 
     if (algorithm === 'file-exists') {
-      lineCorrect = false;
+      lineCorrect = null;
       outcome = 'pass';
     } else if (algorithm === 'line-contains' || algorithm === 'symbol-at-line') {
       const verPath = verification.path ?? expectedFile;
@@ -486,60 +633,18 @@ export function runExactSourceFixture(fixture, sourcesDir) {
         errors.push(`verification file not found: ${verPath}`);
         outcome = 'fail';
       } else {
-        let parsed;
-        try { parsed = JSON.parse(fs.readFileSync(verFilePath, 'utf8')); }
-        catch (e) { errors.push(`failed to parse JSON: ${e.message}`); outcome = 'error'; parsed = null; }
-        if (parsed !== null) {
-          // Defect 7: proper RFC 6901 pointer evaluation with segment unescaping
-          const pointer = verification.jsonPointer ?? '';
-          let node = parsed;
-          if (pointer !== '') {
-            if (!pointer.startsWith('/')) {
-              errors.push(`invalid JSON pointer "${pointer}": must start with /`);
-              outcome = 'error';
-              node = null;
-            } else {
-              const parts = pointer.slice(1).split('/').map(unescapeJsonPointerSegment);
-              for (const part of parts) {
-                if (node === null || typeof node !== 'object') { node = undefined; break; }
-                node = Array.isArray(node) ? node[Number(part)] : node[part];
-              }
-            }
-          }
-          if (node !== null && outcome !== 'error') {
-            const expected = Array.isArray(verification.expected) ? verification.expected : [];
-            if (Array.isArray(node)) {
-              const itemProperty = verification.itemProperty ?? null;
-              let projected = node;
-              if (itemProperty !== null) {
-                projected = node.map(item => {
-                  if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
-                    return item[itemProperty];
-                  }
-                  return item;
-                });
-                // Reject if any projected value is undefined (property missing from object)
-                const missing = projected.filter(v => v === undefined);
-                if (missing.length > 0) {
-                  errors.push(`itemProperty "${itemProperty}" missing from ${missing.length} element(s)`);
-                  outcome = 'error';
-                  const callerCallee = computeExactSourceCallerCallee(fixture, sourcesDir);
-                  return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy, ...callerCallee };
-                }
-              }
-              const actualSet = new Set(projected);
-              const expectedSet = new Set(expected);
-              const intersection = expected.filter(v => actualSet.has(v)).length;
-              setAccuracy = expected.length > 0 ? intersection / Math.max(actualSet.size, expectedSet.size) : 1;
-              const setsMatch = actualSet.size === expectedSet.size && expected.every(v => actualSet.has(v));
-              lineCorrect = false;
-              outcome = setsMatch ? 'pass' : 'fail';
-              if (!setsMatch) errors.push(`set mismatch: expected [${expected.join(',')}] got [${[...actualSet].join(',')}]`);
-            } else if (outcome !== 'error') {
-              errors.push(`JSON pointer "${pointer}" did not resolve to an array`);
-              outcome = 'fail';
-            }
-          }
+        const extracted = extractJsonPointerSet(fs.readFileSync(verFilePath, 'utf8'), verification);
+        if (extracted.error) {
+          errors.push(extracted.error);
+          outcome = extracted.error.startsWith('failed to parse JSON') || extracted.error.startsWith('invalid JSON pointer')
+            || extracted.error.startsWith('itemProperty') ? 'error' : 'fail';
+        } else {
+          const scoredSet = scoreSetValues(verification.expected, extracted.values);
+          setAccuracy = scoredSet.setAccuracy;
+          actual = scoredSet.actual;
+          lineCorrect = null;
+          outcome = scoredSet.setsMatch ? 'pass' : 'fail';
+          if (!scoredSet.setsMatch) errors.push(`set mismatch: expected [${scoredSet.expected.join(',')}] got [${scoredSet.actual.join(',')}]`);
         }
       }
     }
@@ -721,11 +826,12 @@ const spawnCbmCommand = (binaryPath, args, opts) => spawnBounded(binaryPath, arg
  * @param {string} configDir     - per-run CBM config directory
  * @param {string} runId         - run ID for CBM project naming
  * @param {object} opts          - injectable test hooks: { _cbmAdapter, _repoIndexed: Map }
- * @returns {Promise<{ outcome, actual, latencyMs, errors, subjectIdentity, fileCorrect, lineCorrect, setAccuracy }>}
+ * @returns {Promise<{ outcome, actual, latencyMs, errors, subjectIdentity, fileCorrect, lineCorrect, setAccuracy, callerPrecision, callerRecall, calleePrecision, calleeRecall }>}
  */
-async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configDir, runId, opts = {}) {
+export async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configDir, runId, opts = {}) {
   const start = Date.now();
   const errors = [];
+  const lineCorrectDefault = isLineMetricApplicable(fixture) ? false : null;
   const subjectIdentity = cbmIdentity ? { cbm: { version: cbmIdentity.version, sha256: cbmIdentity.sha256 } } : null;
 
   const adapter = opts._cbmAdapter;
@@ -748,7 +854,7 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
         return {
           outcome: 'error', actual: null, latencyMs: Date.now() - start,
           errors: [`output exceeds ${MAX_OUTPUT_BYTES} bytes`], subjectIdentity: null,
-          fileCorrect: false, lineCorrect: false, setAccuracy: null,
+          fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
         };
       }
       let parsed;
@@ -757,7 +863,7 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
         return {
           outcome: 'error', actual: null, latencyMs: Date.now() - start,
           errors: [`malformed output: ${e.message}`], subjectIdentity: null,
-          fileCorrect: false, lineCorrect: false, setAccuracy: null,
+          fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
         };
       }
       return {
@@ -767,8 +873,12 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
         errors: parsed.errors ?? [],
         subjectIdentity,
         fileCorrect: parsed.fileCorrect ?? false,
-        lineCorrect: parsed.lineCorrect ?? false,
+        lineCorrect: parsed.lineCorrect === null ? null : (parsed.lineCorrect ?? lineCorrectDefault),
         setAccuracy: parsed.setAccuracy ?? null,
+        callerPrecision: parsed.callerPrecision ?? null,
+        callerRecall: parsed.callerRecall ?? null,
+        calleePrecision: parsed.calleePrecision ?? null,
+        calleeRecall: parsed.calleeRecall ?? null,
       };
     } catch (e) {
       if (timer !== null) { clearTimeout(timer); timer = null; }
@@ -776,13 +886,13 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
         return {
           outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
           errors: ['fixture timed out after 30s'], subjectIdentity: null,
-          fileCorrect: false, lineCorrect: false, setAccuracy: null,
+          fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
         };
       }
       return {
         outcome: 'error', actual: null, latencyMs: Date.now() - start,
         errors: [e.message], subjectIdentity: null,
-        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
       };
     }
   }
@@ -794,7 +904,7 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
     return {
       outcome: 'skipped', actual: null, latencyMs: Date.now() - start,
       errors: ['cbmIdentity.resolvedPath is not available'],
-      subjectIdentity: null, fileCorrect: false, lineCorrect: false, setAccuracy: null,
+      subjectIdentity: null, fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
     };
   }
 
@@ -813,7 +923,7 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
     errors.push('internal: _repoIndexed map required for one-index-per-repo');
     return {
       outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
-      fileCorrect: false, lineCorrect: false, setAccuracy: null,
+      fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
     };
   }
 
@@ -824,7 +934,7 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
       return {
         outcome: 'error', actual: null, latencyMs: Date.now() - start,
         errors: [sandboxCheckResult.error], subjectIdentity,
-        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
       };
     }
     opts._repoIndexed.set('_sandboxChecked', true);
@@ -839,7 +949,7 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
       errors.push(`CBM config set auto_watch false failed (exit=${configSetResult.exitCode})`);
       return {
         outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
-        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
       };
     }
     // Verify: config get auto_watch must return 'false'
@@ -851,7 +961,7 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
       errors.push(`CBM auto_watch verification failed: got "${configVal}", expected "false"`);
       return {
         outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
-        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
       };
     }
     opts._repoIndexed.set('_configDone', true);
@@ -873,7 +983,7 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
       return {
         outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
         errors: ['CBM index_repository timed out'], subjectIdentity,
-        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
       };
     }
     let indexParsed;
@@ -883,126 +993,135 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
       errors.push(`CBM index_repository failed (exit=${indexResult.exitCode})`);
       return {
         outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
-        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        fileCorrect: false, lineCorrect: lineCorrectDefault, setAccuracy: null,
       };
     }
     opts._repoIndexed.set(repoId, projectName);
   }
 
-  // Step 2: query based on verification algorithm
+  // Step 2: query based on verification algorithm. Count fixtures use graph
+  // inventory, and set fixtures retrieve indexed source; neither is a ranked
+  // search-result-count problem.
   const verification = fixture.verification ?? {};
   const algorithm = verification.algorithm ?? 'symbol-at-line';
-  let queryPattern = '';
-
-  if (algorithm === 'line-contains' || algorithm === 'symbol-at-line') {
-    const contains = Array.isArray(verification.contains) ? verification.contains : [];
-    queryPattern = contains[0] ?? fixture.expectedSymbol ?? '';
-  } else if (algorithm === 'file-name-count') {
-    queryPattern = verification.fileName ?? '';
-  } else if (algorithm === 'json-pointer-set') {
-    const expected = Array.isArray(verification.expected) ? verification.expected : [];
-    queryPattern = expected[0] ?? '';
-  } else if (algorithm === 'file-exists') {
-    queryPattern = path.basename(fixture.expectedFile ?? '');
-  } else {
-    queryPattern = fixture.expectedSymbol ?? fixture.expectedFile ?? '';
-  }
-
-  if (!queryPattern) {
-    errors.push(`no query pattern for algorithm "${algorithm}"`);
-    return {
-      outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
-      fileCorrect: false, lineCorrect: false, setAccuracy: null,
-    };
-  }
-
-  const remainingMs = FIXTURE_TIMEOUT_MS - (Date.now() - start);
-  if (remainingMs <= 0) {
-    return {
-      outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
-      errors: ['CBM query timed out (no time remaining)'], subjectIdentity,
-      fileCorrect: false, lineCorrect: false, setAccuracy: null,
-    };
-  }
-
-  const searchArgs = [
-    'cli', 'search_code',
-    '--pattern', queryPattern,
-    '--project', projectName,
-    '--mode', 'compact',
-    '--limit', String(CBM_SEARCH_LIMIT),
-  ];
-  const searchResult = await spawnBounded(binaryPath, searchArgs, {
-    env, cwd: cacheDir, timeoutMs: remainingMs, sandboxProfile,
-  });
-  if (searchResult.timedOut) {
-    return {
-      outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
-      errors: ['CBM search_code timed out'], subjectIdentity,
-      fileCorrect: false, lineCorrect: false, setAccuracy: null,
-    };
-  }
-
-  let searchParsed;
-  try { searchParsed = JSON.parse(searchResult.stdout); }
-  catch { searchParsed = null; }
-
-  if (!searchParsed) {
-    errors.push('CBM search_code returned unparseable output');
-    return {
-      outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
-      fileCorrect: false, lineCorrect: false, setAccuracy: null,
-    };
-  }
-
-  // Score the result
   const expectedFile = fixture.expectedFile ?? null;
   const expectedLine = fixture.expectedLine ?? null;
-  const results = Array.isArray(searchParsed?.results) ? searchParsed.results
-    : Array.isArray(searchParsed) ? searchParsed : [];
-
   let fileCorrect = false;
-  let lineCorrect = false;
+  let lineCorrect = lineCorrectDefault;
   let setAccuracy = null;
   let actual = null;
+  let outcome = 'fail';
+  const execution = { env, cwd: cacheDir, sandboxProfile, start };
 
   if (algorithm === 'file-name-count') {
-    const count = results.length;
-    const expectedCount = verification.expectedCount ?? null;
-    actual = count;
-    fileCorrect = expectedCount === null ? true : count === expectedCount;
-    lineCorrect = false;
-  } else if (algorithm === 'json-pointer-set') {
-    const expected = Array.isArray(verification.expected) ? verification.expected : [];
-    const found = new Set(results.map(r => r.value ?? r.name ?? r.symbol ?? '').filter(Boolean));
-    const intersection = expected.filter(v => found.has(v)).length;
-    setAccuracy = expected.length > 0 ? intersection / Math.max(found.size, expected.length) : 1;
-    fileCorrect = expectedFile ? results.some(r => (r.file ?? r.path ?? '').includes(expectedFile)) : true;
-    lineCorrect = false;
-    actual = [...found].join(',') || null;
-  } else {
-    // line-contains, symbol-at-line, file-exists
-    const match = results.find(r => {
-      const file = r.file ?? r.path ?? '';
-      return expectedFile ? file.endsWith(expectedFile) || file.includes(expectedFile) : true;
-    });
-    if (match) {
-      actual = match.file ?? match.path ?? null;
-      fileCorrect = expectedFile ? !!(actual && (actual.endsWith(expectedFile) || actual.includes(expectedFile))) : true;
-      if (expectedLine !== null && match.line !== undefined) {
-        lineCorrect = Math.abs((match.line ?? 0) - expectedLine) <= 5;
+    const fileName = verification.fileName ?? '';
+    if (!fileName) {
+      errors.push('verification.fileName is required for file-name-count');
+      outcome = 'error';
+    } else {
+      const query = `MATCH (n:File) WHERE n.name = ${cypherLiteral(fileName)} RETURN n.file_path AS file_path`;
+      const inventoryResult = await runCbmJsonTool(binaryPath, 'query_graph', ['--query', query, '--project', projectName, '--max-rows', '100000'], execution);
+      const rows = inventoryResult.error ? null : parseCbmRows(inventoryResult.value);
+      if (inventoryResult.error || rows === null) {
+        errors.push(inventoryResult.error ?? 'CBM query_graph returned an invalid row contract');
+        outcome = 'error';
       } else {
-        lineCorrect = fileCorrect;
+        actual = countCbmInventoryRows(rows, verification.root ?? '.');
+        const expectedCount = verification.expectedCount;
+        fileCorrect = Number.isInteger(expectedCount) && actual === expectedCount;
+        lineCorrect = null;
+        outcome = fileCorrect ? 'pass' : 'fail';
+        if (!fileCorrect) errors.push(`expected ${expectedCount} indexed files named "${fileName}" but found ${actual}`);
       }
+    }
+  } else if (algorithm === 'json-pointer-set') {
+    const targetFile = normalizeRelativePath(verification.path ?? expectedFile ?? '');
+    const moduleQuery = `MATCH (n:Module) WHERE n.file_path = ${cypherLiteral(targetFile)} RETURN n.qualified_name AS qualified_name`;
+    const moduleResult = await runCbmJsonTool(binaryPath, 'query_graph', ['--query', moduleQuery, '--project', projectName, '--max-rows', '2'], execution);
+    const moduleRows = moduleResult.error ? null : parseCbmRows(moduleResult.value);
+    const qualifiedName = moduleRows?.[0]?.qualified_name ?? null;
+    if (moduleResult.error || moduleRows === null || !qualifiedName) {
+      errors.push(moduleResult.error ?? `CBM index has no module for ${targetFile}`);
+      outcome = moduleResult.error ? 'error' : 'fail';
+    } else {
+      const snippetResult = await runCbmJsonTool(binaryPath, 'get_code_snippet', [
+        '--qualified-name', qualifiedName,
+        '--project', projectName,
+        '--include-neighbors', 'false',
+      ], execution);
+      if (snippetResult.error || typeof snippetResult.value?.source !== 'string') {
+        errors.push(snippetResult.error ?? 'CBM get_code_snippet returned no indexed source');
+        outcome = 'error';
+      } else {
+        const snippetPath = normalizeRelativePath(snippetResult.value.file_path);
+        fileCorrect = snippetPath.endsWith(targetFile);
+        const extracted = extractJsonPointerSet(snippetResult.value.source, verification);
+        if (extracted.error) {
+          errors.push(extracted.error);
+          outcome = extracted.error.startsWith('JSON pointer') ? 'fail' : 'error';
+        } else {
+          const scoredSet = scoreSetValues(verification.expected, extracted.values);
+          setAccuracy = scoredSet.setAccuracy;
+          actual = scoredSet.actual;
+          lineCorrect = null;
+          outcome = fileCorrect && scoredSet.setsMatch ? 'pass' : 'fail';
+          if (!fileCorrect) errors.push(`CBM indexed-source path mismatch: expected ${targetFile}, got ${snippetPath}`);
+          if (!scoredSet.setsMatch) errors.push(`set mismatch: expected [${scoredSet.expected.join(',')}] got [${scoredSet.actual.join(',')}]`);
+        }
+      }
+    }
+  } else {
+    const contains = Array.isArray(verification.contains) ? verification.contains : [];
+    const queryPattern = algorithm === 'file-exists'
+      ? path.basename(expectedFile ?? '')
+      : (contains[0] ?? fixture.expectedSymbol ?? '');
+    if (!queryPattern) {
+      errors.push(`no query pattern for algorithm "${algorithm}"`);
+      outcome = 'error';
+    } else {
+      const searchResult = await runCbmJsonTool(binaryPath, 'search_code', [
+        '--pattern', queryPattern,
+        '--project', projectName,
+        '--mode', 'compact',
+        '--limit', String(CBM_SEARCH_LIMIT),
+      ], execution);
+      const results = searchResult.error ? [] : Array.isArray(searchResult.value?.results)
+        ? searchResult.value.results : Array.isArray(searchResult.value) ? searchResult.value : [];
+      if (searchResult.error) {
+        errors.push(searchResult.error);
+        outcome = 'error';
+      }
+      const match = results.find(r => {
+        const file = r.file ?? r.path ?? '';
+        return expectedFile ? file.endsWith(expectedFile) || file.includes(expectedFile) : true;
+      });
+      if (match) {
+        actual = match.file ?? match.path ?? null;
+        fileCorrect = expectedFile ? !!(actual && (actual.endsWith(expectedFile) || actual.includes(expectedFile))) : true;
+        const matchedLine = match.line ?? match.start_line ?? (Array.isArray(match.match_lines) ? match.match_lines[0] : undefined);
+        if (isLineMetricApplicable(fixture) && expectedLine !== null && matchedLine !== undefined) {
+          lineCorrect = Math.abs(matchedLine - expectedLine) <= 5;
+        } else if (isLineMetricApplicable(fixture)) {
+          lineCorrect = false;
+        } else {
+          lineCorrect = null;
+        }
+      }
+      outcome = fileCorrect ? 'pass' : 'fail';
+      if (!fileCorrect && expectedFile) errors.push(`CBM did not return expected file: ${expectedFile}`);
     }
   }
 
-  const outcome = fileCorrect ? 'pass' : 'fail';
-  if (!fileCorrect && expectedFile) errors.push(`CBM did not return expected file: ${expectedFile}`);
+  const callerCallee = await queryCbmCallerCallee(fixture, binaryPath, projectName, execution);
+  if (callerCallee.error) {
+    errors.push(callerCallee.error);
+    outcome = 'error';
+  }
 
   return {
     outcome, actual, latencyMs: Date.now() - start, errors, subjectIdentity,
     fileCorrect, lineCorrect, setAccuracy,
+    ...(callerCallee.error ? {} : callerCallee),
   };
 }
 
@@ -1211,7 +1330,7 @@ export async function runExecutor({
               completedAt: new Date().toISOString(),
               subjectIdentity: { exactSource: true },
               fileCorrect: false,
-              lineCorrect: false,
+              lineCorrect: isLineMetricApplicable(fixture) ? false : null,
               setAccuracy: null,
             };
           } else {
@@ -1241,7 +1360,7 @@ export async function runExecutor({
               errors: [cbmReindexFailures.get(repoId)],
               subjectIdentity: { cbm: { version: cbmIdentity.version, sha256: cbmIdentity.sha256 } },
               fileCorrect: false,
-              lineCorrect: false,
+              lineCorrect: isLineMetricApplicable(fixture) ? false : null,
               setAccuracy: null,
             };
           }
@@ -1286,7 +1405,7 @@ export async function runExecutor({
                 errors: [reindexFailure],
                 subjectIdentity: { cbm: { version: cbmIdentity.version, sha256: cbmIdentity.sha256 } },
                 fileCorrect: false,
-                lineCorrect: false,
+                lineCorrect: isLineMetricApplicable(fixture) ? false : null,
                 setAccuracy: null,
               };
             } else {
@@ -1332,7 +1451,8 @@ export async function runExecutor({
             outcome: 'skipped', actual: null, latencyMs: 0,
             errors: [`unsupported subject: ${subject}`],
             startedAt: fixtureStart, completedAt: new Date().toISOString(),
-            subjectIdentity: null, fileCorrect: false, lineCorrect: false, setAccuracy: null,
+            subjectIdentity: null, fileCorrect: false,
+            lineCorrect: isLineMetricApplicable(fixture) ? false : null, setAccuracy: null,
           };
         }
 
@@ -1549,7 +1669,7 @@ export async function runExecutor({
     }
 
     const aggregateEvidence = {
-      schemaVersion: '3.1.0',
+      schemaVersion: '3.2.0',
       runId,
       partialEvidence: excludedSubjects.length > 0,
       selectedSubjects: [...selectedSubjects].sort(),
@@ -1571,7 +1691,7 @@ export async function runExecutor({
           fixtureId: f.fixtureId,
           subject: f.subject,
           fileCorrect: f.fileCorrect ?? false,
-          lineCorrect: f.lineCorrect ?? false,
+          lineCorrect: f.lineCorrect === null ? null : (f.lineCorrect ?? false),
         };
         if (f.setAccuracy !== null && f.setAccuracy !== undefined) fr.setAccuracy = f.setAccuracy;
         if (f.callerPrecision !== null && f.callerPrecision !== undefined) fr.callerPrecision = f.callerPrecision;

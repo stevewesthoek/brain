@@ -61,6 +61,14 @@ function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+function mean(values) {
+  return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) / values.length : undefined;
+}
+
+function sameMetric(actual, expected) {
+  return typeof actual === 'number' && typeof expected === 'number' && Math.abs(actual - expected) <= 1e-12;
+}
+
 function normalizePinnedCommits(value) {
   const entries = Array.isArray(value) ? value : isRecord(value) ? Object.values(value) : [];
   return entries
@@ -207,6 +215,9 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
     if (excludedSubjects.includes(result.subject)) {
       errors.push(`Semantic: fixtureResult for excluded subject "${result.subject}" is not allowed`);
     }
+    if (evidence.schemaVersion !== '3.2.0' && result.lineCorrect === null) {
+      errors.push(`Semantic: null lineCorrect requires schemaVersion 3.2.0`);
+    }
   }
 
   // --- Semantic check 5: bind the actual manifest and fixture coverage ------
@@ -257,6 +268,33 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
     );
     if (!sameValue(normalizePinnedCommits(evidence.pinnedRepositoryCommits), manifestCommits)) {
       errors.push('Binding: evidence pinnedRepositoryCommits do not match the actual manifest');
+    }
+
+    if (evidence.schemaVersion === '3.2.0') {
+      const fixturesById = new Map(manifestFixtures.filter(isRecord).map(fixture => [fixture.fixtureId, fixture]));
+      for (const result of fixtureResults) {
+        if (!isRecord(result)) continue;
+        const fixture = fixturesById.get(result.fixtureId);
+        if (!fixture) continue;
+        const algorithm = fixture.verification?.algorithm ?? 'file-exists';
+        const lineApplicable = algorithm === 'line-contains' || algorithm === 'symbol-at-line';
+        if (lineApplicable && typeof result.lineCorrect !== 'boolean') {
+          errors.push(`Semantic(E64): ${result.subject}/${result.fixtureId}.lineCorrect must be boolean for line-applicable algorithm ${algorithm}`);
+        }
+        if (!lineApplicable && result.lineCorrect !== null) {
+          errors.push(`Semantic(E64): ${result.subject}/${result.fixtureId}.lineCorrect must be null when line accuracy is not applicable to ${algorithm}`);
+        }
+        if (algorithm === 'json-pointer-set' && typeof result.setAccuracy !== 'number') {
+          errors.push(`Semantic(E64): ${result.subject}/${result.fixtureId}.setAccuracy is required for json-pointer-set`);
+        }
+        if (result.subject === 'cbm' && fixture.callerCalleeApplicable === true) {
+          for (const field of ['callerPrecision', 'callerRecall', 'calleePrecision', 'calleeRecall']) {
+            if (typeof result[field] !== 'number') {
+              errors.push(`Semantic(E65): cbm/${result.fixtureId}.${field} is required for caller/callee-applicable CBM evidence`);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -650,8 +688,8 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
   }
 
   // --- Semantic check E53: schema 2.1.0/3.x strict metric enforcement ---
-  if (evidence.schemaVersion === '2.1.0' || evidence.schemaVersion === '3.0.0' || evidence.schemaVersion === '3.1.0') {
-    const isV7MetricSchema = evidence.schemaVersion === '3.0.0' || evidence.schemaVersion === '3.1.0';
+  if (evidence.schemaVersion === '2.1.0' || evidence.schemaVersion === '3.0.0' || evidence.schemaVersion === '3.1.0' || evidence.schemaVersion === '3.2.0') {
+    const isV7MetricSchema = evidence.schemaVersion === '3.0.0' || evidence.schemaVersion === '3.1.0' || evidence.schemaVersion === '3.2.0';
     // offlineMetrics must be absent
     if ('offlineMetrics' in evidence) {
       errors.push(`Semantic(E53): offlineMetrics must not be present when schemaVersion is "${evidence.schemaVersion}"`);
@@ -754,6 +792,13 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
               errors.push(`Semantic(E53): subjectMetrics.${subjectId}.retrievalAccuracy.callerCalleeF1 is required when callerRecall and calleeRecall are present`);
             }
           }
+          if (evidence.schemaVersion === '3.2.0' && subjectId === 'cbm') {
+            for (const field of ['callerPrecision', 'callerRecall', 'calleePrecision', 'calleeRecall', 'callerCalleeF1']) {
+              if (typeof ra[field] !== 'number') {
+                errors.push(`Semantic(E65): subjectMetrics.cbm.retrievalAccuracy.${field} is required for schema 3.2.0`);
+              }
+            }
+          }
         }
 
         // repositoryMetrics must be present and bound to pinned repos
@@ -807,7 +852,7 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
                 errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.${timingField} must be numeric for subject "${subjectId}"`);
               }
             }
-            if (evidence.schemaVersion === '3.1.0') {
+            if (evidence.schemaVersion === '3.1.0' || evidence.schemaVersion === '3.2.0') {
               const refreshTarget = repoMetrics.refreshProbeTarget;
               if (subjectId === 'cbm') {
                 const expectedTarget = selectRefreshProbeTarget(manifest, repoId);
@@ -817,6 +862,45 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
               } else if (!(isRecord(refreshTarget) && refreshTarget.status === 'not-applicable')) {
                 errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.refreshProbeTarget must be a not-applicable object`);
               }
+            }
+          }
+        }
+
+        if (evidence.schemaVersion === '3.2.0' && isRecord(metrics.retrievalAccuracy)) {
+          const subjectResults = fixtureResults.filter(result => isRecord(result) && result.subject === subjectId);
+          const ra = metrics.retrievalAccuracy;
+          const expectedFileAccuracy = subjectResults.length > 0
+            ? subjectResults.filter(result => result.fileCorrect === true).length / subjectResults.length : 0;
+          const lineResults = subjectResults.filter(result => typeof result.lineCorrect === 'boolean');
+          const expectedLineAccuracy = lineResults.length > 0
+            ? lineResults.filter(result => result.lineCorrect === true).length / lineResults.length : 0;
+          const setValues = subjectResults.map(result => result.setAccuracy).filter(value => typeof value === 'number');
+          const expectedSetAccuracy = mean(setValues);
+          if (!sameMetric(ra.fileAccuracy, expectedFileAccuracy)) {
+            errors.push(`Semantic(E66): subjectMetrics.${subjectId}.retrievalAccuracy.fileAccuracy does not match fixtureResults`);
+          }
+          if (!sameMetric(ra.lineAccuracy, expectedLineAccuracy)) {
+            errors.push(`Semantic(E66): subjectMetrics.${subjectId}.retrievalAccuracy.lineAccuracy must use only line-applicable fixtureResults`);
+          }
+          if (expectedSetAccuracy !== undefined && !sameMetric(ra.setAccuracy, expectedSetAccuracy)) {
+            errors.push(`Semantic(E66): subjectMetrics.${subjectId}.retrievalAccuracy.setAccuracy does not match fixtureResults`);
+          }
+
+          const callerPrecision = mean(subjectResults.map(result => result.callerPrecision).filter(value => typeof value === 'number'));
+          const callerRecall = mean(subjectResults.map(result => result.callerRecall).filter(value => typeof value === 'number'));
+          const calleePrecision = mean(subjectResults.map(result => result.calleePrecision).filter(value => typeof value === 'number'));
+          const calleeRecall = mean(subjectResults.map(result => result.calleeRecall).filter(value => typeof value === 'number'));
+          for (const [field, expectedValue] of Object.entries({ callerPrecision, callerRecall, calleePrecision, calleeRecall })) {
+            if (expectedValue !== undefined && !sameMetric(ra[field], expectedValue)) {
+              errors.push(`Semantic(E66): subjectMetrics.${subjectId}.retrievalAccuracy.${field} does not match fixtureResults`);
+            }
+          }
+          const precision = mean([callerPrecision, calleePrecision].filter(value => value !== undefined));
+          const recall = mean([callerRecall, calleeRecall].filter(value => value !== undefined));
+          if (precision !== undefined && recall !== undefined) {
+            const expectedF1 = precision + recall > 0 ? 2 * precision * recall / (precision + recall) : 0;
+            if (!sameMetric(ra.callerCalleeF1, expectedF1)) {
+              errors.push(`Semantic(E66): subjectMetrics.${subjectId}.retrievalAccuracy.callerCalleeF1 does not match precision/recall evidence`);
             }
           }
         }

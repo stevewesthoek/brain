@@ -1733,9 +1733,9 @@ test('T59: changed network profile sha256 changes digest', () => {
 // v6 contract tests (T60–T64)
 // ---------------------------------------------------------------------------
 
-test('T60: canonical plan has planVersion 7.2.0', () => {
+test('T60: canonical plan has planVersion 7.3.0', () => {
   const plan = makeCanonicalPlanFixture();
-  assert.equal(plan.planVersion, '7.2.0', 'planVersion must be 7.2.0');
+  assert.equal(plan.planVersion, '7.3.0', 'planVersion must be 7.3.0');
 });
 
 test('T61: known stale v1/v2 digests are rejected at materialization', async () => {
@@ -2012,8 +2012,9 @@ test('T73: dry-run receipt binds the same canonical plan result', () => {
       planPath: path.join(REPO_ROOT, 'operations/reports/test-plan.json'),
     });
     assert.equal(receipt.dryRunReceipt, true);
-    assert.equal(receipt.receiptVersion, '7.2.0');
-    assert.equal(receipt.planVersion, '7.2.0');
+    assert.equal(receipt.receiptVersion, '7.3.0');
+    assert.equal(receipt.planVersion, '7.3.0');
+    assert.equal(receipt.evidenceSchemaVersion, '3.2.0');
     assert.equal(receipt.planSha256, planSha256);
     assert.deepEqual(receipt.selectedSubjects, ['cbm', 'exact-source']);
     assert.deepEqual(receipt.excludedSubjects, ['graphify']);

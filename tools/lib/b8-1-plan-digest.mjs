@@ -11,7 +11,7 @@
  *   - verify-b8-1-plan-digest.mjs                (standalone verifier)
  *   - *.test.mjs                                 (tests)
  *
- * Digest contract (planVersion 7.2.0 — deterministic manifest-derived refresh targets):
+ * Digest contract (planVersion 7.3.0 — applicability-aware scoring and required CBM structural evidence):
  *   Hashed fields  — logical authority over what was approved:
  *     - plan/run metadata (planVersion, runId, partialEvidence, subjects, excludedSubjects)
  *     - repo-relative Brain artifact paths + content hashes
@@ -44,8 +44,8 @@
 
 import crypto from 'node:crypto';
 
-export const PLAN_VERSION = '7.2.0';
-export const DIGEST_CONTRACT_VERSION = '7.2.0';
+export const PLAN_VERSION = '7.3.0';
+export const DIGEST_CONTRACT_VERSION = '7.3.0';
 
 // ---------------------------------------------------------------------------
 // Known stale digests — must not be accepted as valid by any consumer.
@@ -67,6 +67,7 @@ export const KNOWN_STALE_DIGESTS = new Set([
   '0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed', // v7u (historical for new execution — machine-bound sandbox identity superseded; never materialized/executed)
   '86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30', // v7w (executed once 2026-08-09; rejected evidence; owner approval consumed and immutable)
   'c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588', // v7x (executed once 2026-08-09; partial/invalid evidence; owner approval consumed and immutable)
+  '57156d49e4f3ab273efb791dc3e4e128a839ba10552b860ab3219ae58e8bd1d1', // v7y (executed once 2026-08-09; rejected after post-run scoring audit; owner approval consumed and immutable)
 ]);
 
 // ---------------------------------------------------------------------------

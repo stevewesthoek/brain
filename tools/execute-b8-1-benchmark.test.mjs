@@ -19,11 +19,13 @@ import { fileURLToPath } from 'node:url';
 import {
   buildFixtureEvidence,
   checkSandboxAvailable,
+  countCbmInventoryRows,
   EXECUTOR_VERSION,
   KNOWN_STALE_DIGESTS,
   loadAndVerifyRunPlan,
   REQUIRED_PLAN_VERSION,
   runExecutor,
+  scoreCbmCallerCalleeRows,
   validateExecutorInputs,
 } from './execute-b8-1-benchmark.mjs';
 
@@ -96,7 +98,7 @@ function makeSyntheticRun(home, { runId, fixtures, selectedSubjects = ['exact-so
   }
 
   const planBase = {
-    planVersion: planVersionOverride ?? '7.2.0',
+    planVersion: planVersionOverride ?? '7.3.0',
     runId,
     partialEvidence: !selectedSubjects.includes('graphify'),
     selectedSubjects: [...selectedSubjects].sort(),
@@ -354,7 +356,7 @@ test('E14: execution receipt is written atomically and validates planSha256', as
     assert.equal(fs.existsSync(`${receiptPath}.tmp`), false, 'no .tmp file should remain');
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     assert.equal(receipt.planSha256, planSha256, 'receipt planSha256 must match');
-    assert.equal(receipt.executorVersion, '7.2.0');
+    assert.equal(receipt.executorVersion, '7.3.0');
   } finally { cleanup(home); }
 });
 
@@ -414,7 +416,7 @@ test('E18: loadAndVerifyRunPlan rejects stale v1/v2 digests', () => {
   try {
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '7.2.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '7.3.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error } = loadAndVerifyRunPlan(runDir, STALE);
     assert.ok(error, 'must return error for stale digest');
     assert.match(error, /stale/i);
@@ -572,7 +574,7 @@ test('E23: aggregate evidence.json is written to run directory after execution',
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath), 'evidence.json must be written to run directory');
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '3.1.0', 'aggregate evidence must have schemaVersion 3.1.0');
+    assert.equal(agg.schemaVersion, '3.2.0', 'aggregate evidence must have schemaVersion 3.2.0');
     assert.equal(agg.runId, 'b8-1-exec-e23', 'aggregate evidence runId must match');
     assert.ok(Array.isArray(agg.fixtureResults), 'fixtureResults must be an array');
     assert.equal(agg.fixtureResults.length, 1, 'must have 1 fixture result');
@@ -675,7 +677,7 @@ test('E26: tampered plan field changes stored digest and causes mismatch', () =>
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
     const plan = {
-      planVersion: '7.2.0',
+      planVersion: '7.3.0',
       runId: 'b8-1-exec-e26',
       selectedSubjects: ['exact-source'],
       planSha256: '0'.repeat(64), // will mismatch recomputed
@@ -1068,10 +1070,10 @@ test('E37: canonical plan v5s JSON is placeholder-free and independently verifia
 // New tests: v5 contract changes E38–E46
 // ---------------------------------------------------------------------------
 
-// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 7.2.0
-test('E38: EXECUTOR_VERSION is 7.2.0 and REQUIRED_PLAN_VERSION is 7.2.0', () => {
-  assert.equal(EXECUTOR_VERSION, '7.2.0', 'EXECUTOR_VERSION must be 7.2.0');
-  assert.equal(REQUIRED_PLAN_VERSION, '7.2.0', 'REQUIRED_PLAN_VERSION must be 7.2.0');
+// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 7.3.0
+test('E38: EXECUTOR_VERSION is 7.3.0 and REQUIRED_PLAN_VERSION is 7.3.0', () => {
+  assert.equal(EXECUTOR_VERSION, '7.3.0', 'EXECUTOR_VERSION must be 7.3.0');
+  assert.equal(REQUIRED_PLAN_VERSION, '7.3.0', 'REQUIRED_PLAN_VERSION must be 7.3.0');
 });
 
 // E39: v4r stale digest c39e81dc... is rejected
@@ -1086,18 +1088,18 @@ test('E39: v4r stale digest c39e81dc... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E40: planVersion 7.2.0 is accepted; prior contracts are rejected
-test('E40: loadAndVerifyRunPlan accepts planVersion 7.2.0 and rejects prior contracts', () => {
+// E40: planVersion 7.3.0 is accepted; prior contracts are rejected
+test('E40: loadAndVerifyRunPlan accepts planVersion 7.3.0 and rejects prior contracts', () => {
   const tmpDir = makeTempDir('b81-exec-e40-');
   try {
     const runDir71 = path.join(tmpDir, 'run71');
     fs.mkdirSync(runDir71, { recursive: true });
-    fs.writeFileSync(path.join(runDir71, 'run-plan.json'), JSON.stringify({ planVersion: '7.2.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir71, 'run-plan.json'), JSON.stringify({ planVersion: '7.3.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error: err71 } = loadAndVerifyRunPlan(runDir71, '0'.repeat(64));
     assert.ok(!err71 || !/planVersion|7\.1\.0/i.test(err71) || /tampered|stale|mismatch/i.test(err71),
-      `7.2.0 must not be rejected for planVersion; err: ${err71}`);
+      `7.3.0 must not be rejected for planVersion; err: ${err71}`);
 
-    for (const prior of ['7.0.0', '6.0.0', '5.1.0', '4.0.0']) {
+    for (const prior of ['7.2.0', '7.0.0', '6.0.0', '5.1.0', '4.0.0']) {
       const runDir = path.join(tmpDir, `run-${prior}`);
       fs.mkdirSync(runDir, { recursive: true });
       fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: prior, planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
@@ -1535,12 +1537,13 @@ test('E53: evidence schema enforces version-conditional metrics', () => {
   assert.ok(schema.properties.schemaVersion.enum.includes('2.1.0'), 'schema must accept 2.1.0');
   assert.ok(schema.properties.schemaVersion.enum.includes('3.0.0'), 'schema must accept 3.0.0');
   assert.ok(schema.properties.schemaVersion.enum.includes('3.1.0'), 'schema must accept 3.1.0');
+  assert.ok(schema.properties.schemaVersion.enum.includes('3.2.0'), 'schema must accept 3.2.0');
   assert.ok(schema.properties.subjectMetrics, 'schema must define subjectMetrics');
   assert.ok(schema.properties.offlineMetrics, 'schema must still define offlineMetrics (backward compat)');
 
   // 3.0.0 conditional is at the top level of the version-routing allOf entry
   const versionConditional30 = schema.allOf.find(c =>
-    c.if?.properties?.schemaVersion?.enum?.includes('3.0.0') && c.if?.properties?.schemaVersion?.enum?.includes('3.1.0')
+    c.if?.properties?.schemaVersion?.enum?.includes('3.0.0') && c.if?.properties?.schemaVersion?.enum?.includes('3.2.0')
   );
   assert.ok(versionConditional30, 'must have a version conditional for 3.0.0');
   assert.ok(versionConditional30.then.required.includes('subjectMetrics'), '3.0.0 must require subjectMetrics');
@@ -1599,8 +1602,8 @@ test('E56: v6 stale digest ac5b3c79... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E57: aggregate evidence has schema 3.1.0 and subjectMetrics with provenance and correct tokenizer
-test('E57: aggregate evidence schema 3.1.0 with full subjectMetrics for exact-source run', async () => {
+// E57: aggregate evidence has schema 3.2.0 and subjectMetrics with provenance and correct tokenizer
+test('E57: aggregate evidence schema 3.2.0 with full subjectMetrics for exact-source run', async () => {
   const home = makeTempDir('b81-exec-e57-');
   try {
     const fixtures = [
@@ -1621,7 +1624,7 @@ test('E57: aggregate evidence schema 3.1.0 with full subjectMetrics for exact-so
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath));
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '3.1.0');
+    assert.equal(agg.schemaVersion, '3.2.0');
     assert.ok(!('offlineMetrics' in agg), 'offlineMetrics must be absent');
     const sm = agg.subjectMetrics?.['exact-source'];
     assert.ok(sm, 'exact-source subjectMetrics must exist');
@@ -1734,6 +1737,10 @@ test('E59: dual-subject (cbm + exact-source) with deterministic fake CBM', async
         fileCorrect: true,
         lineCorrect: true,
         setAccuracy: null,
+        callerPrecision: 1,
+        callerRecall: 1,
+        calleePrecision: 1,
+        calleeRecall: 1,
         errors: [],
       };
     };
@@ -1757,7 +1764,7 @@ test('E59: dual-subject (cbm + exact-source) with deterministic fake CBM', async
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath));
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '3.1.0');
+    assert.equal(agg.schemaVersion, '3.2.0');
 
     // exact-source must have metrics
     assert.ok('exact-source' in agg.subjectMetrics, 'exact-source must be in subjectMetrics');
@@ -1783,10 +1790,10 @@ test('E59: dual-subject (cbm + exact-source) with deterministic fake CBM', async
     assert.equal(esRepoM.incrementalRefreshLatencyMs?.status, 'not-applicable');
     assert.equal(esRepoM.indexDiskBytes?.status, 'not-applicable');
 
-    // Caller/callee F1 is computed when data is available
-    if (esMetrics.retrievalAccuracy.callerRecall !== undefined && esMetrics.retrievalAccuracy.calleeRecall !== undefined) {
-      assert.ok('callerCalleeF1' in esMetrics.retrievalAccuracy, 'callerCalleeF1 must be computed when caller/callee data exists');
-    }
+    // Exact-source only proves expected-item recall and therefore must not
+    // synthesize F1. CBM supplies predicted sets and must emit real F1.
+    assert.equal(esMetrics.retrievalAccuracy.callerCalleeF1, undefined);
+    assert.equal(agg.subjectMetrics.cbm.retrievalAccuracy.callerCalleeF1, 1);
 
     // The test-only CBM adapter bypasses runIncrementalReindex, so aggregate evidence must
     // fail closed instead of inventing CBM resource provenance.
@@ -1917,4 +1924,121 @@ test('E63: subjectMetrics keys match selectedSubjects in aggregate evidence', as
     const selectedKeys = [...agg.selectedSubjects].sort();
     assert.deepEqual(metricKeys, selectedKeys, 'subjectMetrics keys must exactly equal selectedSubjects');
   } finally { cleanup(home); }
+});
+
+test('E64: line accuracy excludes count and set fixtures with explicit null applicability', async () => {
+  const home = makeTempDir('b81-exec-e64-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'line', repositoryId: 'test', pinnedCommit: '4'.repeat(40),
+        expectedFile: 'src/main.ts', expectedLine: 1, scoringType: 'exact-match', question: 'q?',
+        verification: { algorithm: 'line-contains', path: 'src/main.ts', line: 1, contains: ['marker'] },
+      },
+      {
+        fixtureId: 'count', repositoryId: 'test', pinnedCommit: '4'.repeat(40),
+        expectedFileCount: 1, scoringType: 'count-match', question: 'q?',
+        verification: { algorithm: 'file-name-count', root: '.', fileName: 'route.ts', expectedCount: 1 },
+      },
+      {
+        fixtureId: 'set', repositoryId: 'test', pinnedCommit: '4'.repeat(40),
+        expectedFile: 'data.json', scoringType: 'set-match', question: 'q?',
+        verification: { algorithm: 'json-pointer-set', path: 'data.json', jsonPointer: '/items', expected: ['a', 'b'] },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e64', fixtures, selectedSubjects: ['exact-source'],
+    });
+    const source = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(source, 'src/main.ts'), 'marker\n');
+    fs.mkdirSync(path.join(source, 'api'), { recursive: true });
+    fs.writeFileSync(path.join(source, 'api/route.ts'), 'export const GET = 1;\n');
+    fs.writeFileSync(path.join(source, 'data.json'), JSON.stringify({ items: ['a', 'b'] }));
+
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e64', approvedPlanSha256: planSha256,
+      _homeOverride: home, _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.outcome, 'pass', result.errors.join('; '));
+    const aggregate = JSON.parse(fs.readFileSync(path.join(runDir, 'evidence.json'), 'utf8'));
+    const byId = new Map(aggregate.fixtureResults.map(item => [item.fixtureId, item]));
+    assert.equal(byId.get('line').lineCorrect, true);
+    assert.equal(byId.get('count').lineCorrect, null);
+    assert.equal(byId.get('set').lineCorrect, null);
+    assert.equal(aggregate.subjectMetrics['exact-source'].retrievalAccuracy.lineAccuracy, 1);
+  } finally { cleanup(home); }
+});
+
+test('E65: json-pointer-set outcome fails on a set mismatch even when the expected file is found', async () => {
+  const home = makeTempDir('b81-exec-e65-');
+  try {
+    const fixtures = [{
+      fixtureId: 'set', repositoryId: 'test', pinnedCommit: '4'.repeat(40),
+      expectedFile: 'data.json', scoringType: 'set-match', question: 'q?',
+      verification: { algorithm: 'json-pointer-set', path: 'data.json', jsonPointer: '/items', expected: ['a', 'b'] },
+    }];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e65', fixtures, selectedSubjects: ['exact-source'],
+    });
+    fs.writeFileSync(path.join(runDir, 'sources/test/data.json'), JSON.stringify({ items: ['a'] }));
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e65', approvedPlanSha256: planSha256,
+      _homeOverride: home, _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.outcome, 'fail');
+    assert.equal(result.fixtureResults[0].result, 'fail');
+    assert.equal(result.fixtureResults[0].fileCorrect, true);
+    assert.equal(result.fixtureResults[0].lineCorrect, null);
+    assert.equal(result.fixtureResults[0].setAccuracy, 0.5);
+  } finally { cleanup(home); }
+});
+
+test('E66: CBM inventory scoring counts graph File rows rather than ranked search hits', () => {
+  const rows = Array.from({ length: 27 }, (_, index) => ({ file_path: `src/app/api/${index}/route.ts` }));
+  rows.push({ file_path: 'other/route.ts' });
+  assert.equal(countCbmInventoryRows(rows, 'src/app'), 27);
+  assert.equal(countCbmInventoryRows(rows, '.'), 28);
+});
+
+test('E67: CBM caller/callee scoring uses provider-predicted relationship sets', () => {
+  const fixture = {
+    callerCalleeApplicable: true,
+    expectedCallers: ['src/caller.ts'],
+    expectedCallees: ['client.send'],
+  };
+  const scored = scoreCbmCallerCalleeRows(
+    fixture,
+    [
+      { rel: 'CALLS', source_file: 'src/caller.ts' },
+      { rel: 'CALLS', source_file: 'src/noise.ts' },
+      { rel: 'DEFINES', source_file: 'src/target.ts' },
+    ],
+    [{ rel: 'CALLS', callee: 'send', target_name: 'send' }],
+    [],
+  );
+  assert.deepEqual(scored, {
+    callerPrecision: 0.5,
+    callerRecall: 1,
+    calleePrecision: 1,
+    calleeRecall: 1,
+  });
+});
+
+test('E68: v7y consumed approval digest is stale under the 7.3.0 contract', () => {
+  assert.ok(KNOWN_STALE_DIGESTS.has('57156d49e4f3ab273efb791dc3e4e128a839ba10552b860ab3219ae58e8bd1d1'));
+});
+
+test('E69: structural set scoring cannot count one qualified prediction as multiple true positives', () => {
+  const scored = scoreCbmCallerCalleeRows(
+    {
+      callerCalleeApplicable: true,
+      expectedCallers: [],
+      expectedCallees: ['send', 'client.send'],
+    },
+    [],
+    [{ rel: 'CALLS', callee: 'client.send' }],
+    [],
+  );
+  assert.equal(scored.calleePrecision, 1);
+  assert.equal(scored.calleeRecall, 0.5);
 });

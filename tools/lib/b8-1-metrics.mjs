@@ -7,7 +7,7 @@
  * v7 changes:
  * - Truthful tokenizer identity (utf8-bytes-div4-v1, not cl100k_base)
  * - No zero-fallback for missing measurements — use typed N/A or throw
- * - Aggregate callerCalleeF1 computed from per-fixture F1 values
+ * - Aggregate callerCalleeF1 computed from the macro precision/recall evidence
  * - Resource provenance tracking (method, executable, timestamps)
  */
 
@@ -160,13 +160,14 @@ export function buildSubjectMetrics({
   resourceProvenance,
 }) {
   const fileCorrectCount = fixtureResults.filter(f => f.fileCorrect).length;
-  const lineCorrectCount = fixtureResults.filter(f => f.lineCorrect).length;
   const total = fixtureResults.length;
+  const lineApplicableResults = fixtureResults.filter(f => f.lineCorrect !== null && f.lineCorrect !== undefined);
+  const lineCorrectCount = lineApplicableResults.filter(f => f.lineCorrect === true).length;
   const setAccuracyValues = fixtureResults.map(f => f.setAccuracy).filter(v => v !== null && v !== undefined);
 
   const retrievalAccuracy = {
     fileAccuracy: total > 0 ? fileCorrectCount / total : 0,
-    lineAccuracy: total > 0 ? lineCorrectCount / total : 0,
+    lineAccuracy: lineApplicableResults.length > 0 ? lineCorrectCount / lineApplicableResults.length : 0,
   };
   if (setAccuracyValues.length > 0) {
     retrievalAccuracy.setAccuracy = setAccuracyValues.reduce((a, b) => a + b, 0) / setAccuracyValues.length;
@@ -190,10 +191,16 @@ export function buildSubjectMetrics({
     retrievalAccuracy.calleePrecision = calleePrecs.reduce((a, b) => a + b, 0) / calleePrecs.length;
   }
 
-  // Aggregate callerCalleeF1: harmonic mean of average callerPrecision (or callerRecall) and average calleeRecall
-  if (retrievalAccuracy.callerRecall !== undefined && retrievalAccuracy.calleeRecall !== undefined) {
-    const p = retrievalAccuracy.callerPrecision ?? retrievalAccuracy.callerRecall;
-    const r = retrievalAccuracy.calleeRecall;
+  // Aggregate caller/callee F1 from the mean available precision dimensions and
+  // the mean available recall dimensions. Do not substitute recall for missing
+  // precision: a subject must emit real predicted-set evidence to receive F1.
+  const precisionDimensions = [retrievalAccuracy.callerPrecision, retrievalAccuracy.calleePrecision]
+    .filter(value => value !== undefined);
+  const recallDimensions = [retrievalAccuracy.callerRecall, retrievalAccuracy.calleeRecall]
+    .filter(value => value !== undefined);
+  if (precisionDimensions.length > 0 && recallDimensions.length > 0) {
+    const p = precisionDimensions.reduce((sum, value) => sum + value, 0) / precisionDimensions.length;
+    const r = recallDimensions.reduce((sum, value) => sum + value, 0) / recallDimensions.length;
     retrievalAccuracy.callerCalleeF1 = (p + r) > 0 ? (2 * p * r) / (p + r) : 0;
   }
 

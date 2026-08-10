@@ -113,3 +113,17 @@ authorize an investigation/repair tranche that:
    immutable v7w/v7x/v7y runs;
 6. validates the repair with real isolated CBM before preparing a new unique
    plan, digest, and run ID for fresh exact owner approval.
+
+## Authorized repair-tranche addendum — 2026-08-10
+
+The owner subsequently authorized exactly that bounded investigation and repair
+tranche, without authorizing canonical materialization or execution. Real
+isolated CBM proved `brain_f4` is omitted because CBM v0.9.0 fast mode excludes
+the top-level `tools` directory; full mode indexes the same file and `main`
+function. Contract 7.3.0 / evidence schema 3.2.0 repairs inventory counting,
+metric applicability, set outcomes, and required CBM caller/callee evidence.
+The repaired real-provider path and 191 focused tests pass.
+
+A fresh non-materializing v7z plan and receipt are ready for exact approval;
+canonical execution authority remains none. Evidence:
+`operations/reports/b8-1-post-v7y-repair-and-v7z-readiness-2026-08-10.md`.

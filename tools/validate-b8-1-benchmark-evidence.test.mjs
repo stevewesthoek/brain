@@ -1192,3 +1192,102 @@ test('schema 3.1 binds refreshProbeTarget to the manifest and requires the field
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
 });
+
+test('schema 3.2 enforces metric applicability, aggregate binding, and required CBM caller/callee F1 evidence', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'b8-1-v32-evidence-'));
+  try {
+    const commit = '2'.repeat(40);
+    const manifest = {
+      schemaVersion: '1.0.0',
+      repositories: [{ repositoryId: 'repo', localPath: '../repo', pinnedCommit: commit }],
+      fixtures: [
+        {
+          fixtureId: 'line', repositoryId: 'repo', expectedFile: 'src/main.ts', expectedSymbol: 'main',
+          callerCalleeApplicable: true, expectedCallers: ['src/caller.ts'], expectedCallees: ['helper'],
+          verification: { algorithm: 'symbol-at-line', path: 'src/main.ts', line: 1, contains: ['main'] },
+        },
+        {
+          fixtureId: 'count', repositoryId: 'repo', expectedFileCount: 1, callerCalleeApplicable: false,
+          verification: { algorithm: 'file-name-count', root: '.', fileName: 'route.ts', expectedCount: 1 },
+        },
+        {
+          fixtureId: 'set', repositoryId: 'repo', expectedFile: 'data.json', callerCalleeApplicable: false,
+          verification: { algorithm: 'json-pointer-set', path: 'data.json', jsonPointer: '/items', expected: ['a'] },
+        },
+      ],
+    };
+    const manifestPath = path.join(tempRoot, 'manifest.json');
+    writeJson(manifestPath, manifest);
+    const manifestHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(manifestPath)).digest('hex')}`;
+    const template = minimalEvidence();
+    const evidence = minimalEvidence({
+      schemaVersion: '3.2.0',
+      runId: 'b8-1-v32-contract',
+      pinnedRepositoryCommits: { repo: { repositoryId: 'repo', commit } },
+      manifestHash,
+      fixtureResults: [
+        {
+          fixtureId: 'line', subject: 'cbm', fileCorrect: true, lineCorrect: true,
+          callerPrecision: 1, callerRecall: 1, calleePrecision: 1, calleeRecall: 1,
+        },
+        { fixtureId: 'count', subject: 'cbm', fileCorrect: true, lineCorrect: null },
+        { fixtureId: 'set', subject: 'cbm', fileCorrect: true, lineCorrect: null, setAccuracy: 1 },
+      ],
+      subjectMetrics: {
+        cbm: {
+          retrievalAccuracy: {
+            fileAccuracy: 1, lineAccuracy: 1, setAccuracy: 1,
+            callerPrecision: 1, callerRecall: 1, calleePrecision: 1, calleeRecall: 1, callerCalleeF1: 1,
+          },
+          peakCpuPercent: 10,
+          peakRssMb: 20,
+          serializedPayloadBytes: 100,
+          tokenizer: { name: 'utf8-bytes-div4-v1', version: '1.0.0', tokenCount: 25 },
+          retrievalOperationCount: 3,
+          repositoryMetrics: {
+            repo: {
+              initialIndexingTimeMs: 100,
+              incrementalRefreshLatencyMs: 50,
+              indexDiskBytes: 1024,
+              refreshProbeTarget: 'src/main.ts',
+            },
+          },
+          resourceProvenance: { method: 'bounded-child-aggregate-max', executable: template.subjectBinaryIdentity.cbm.resolvedPath, measuredPid: null, exitCode: 0, durationMs: 150 },
+        },
+      },
+    });
+    delete evidence.offlineMetrics;
+
+    const validPath = path.join(tempRoot, 'valid.json');
+    writeJson(validPath, evidence);
+    const valid = validateEvidence(validPath, DEFAULT_SCHEMA, { manifestPath });
+    assert.equal(valid.valid, true, valid.errors.join('; '));
+
+    const wrongApplicability = structuredClone(evidence);
+    wrongApplicability.fixtureResults.find(result => result.fixtureId === 'count').lineCorrect = false;
+    const wrongApplicabilityPath = path.join(tempRoot, 'wrong-applicability.json');
+    writeJson(wrongApplicabilityPath, wrongApplicability);
+    const applicabilityResult = validateEvidence(wrongApplicabilityPath, DEFAULT_SCHEMA, { manifestPath });
+    assert.equal(applicabilityResult.valid, false);
+    assert.ok(applicabilityResult.errors.some(error => /E64.*lineCorrect must be null/.test(error)));
+
+    const missingStructural = structuredClone(evidence);
+    delete missingStructural.fixtureResults[0].calleePrecision;
+    delete missingStructural.subjectMetrics.cbm.retrievalAccuracy.callerCalleeF1;
+    const missingStructuralPath = path.join(tempRoot, 'missing-structural.json');
+    writeJson(missingStructuralPath, missingStructural);
+    const structuralResult = validateEvidence(missingStructuralPath, DEFAULT_SCHEMA, { manifestPath });
+    assert.equal(structuralResult.valid, false);
+    assert.ok(structuralResult.errors.some(error => /E65.*calleePrecision|E65.*callerCalleeF1/.test(error)));
+
+    const wrongAggregate = structuredClone(evidence);
+    wrongAggregate.subjectMetrics.cbm.retrievalAccuracy.lineAccuracy = 1 / 3;
+    const wrongAggregatePath = path.join(tempRoot, 'wrong-aggregate.json');
+    writeJson(wrongAggregatePath, wrongAggregate);
+    const aggregateResult = validateEvidence(wrongAggregatePath, DEFAULT_SCHEMA, { manifestPath });
+    assert.equal(aggregateResult.valid, false);
+    assert.ok(aggregateResult.errors.some(error => /E66.*lineAccuracy/.test(error)));
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});

@@ -22,7 +22,7 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0", "2.1.0", "3.0.0", "3.1.0"] },
+    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0", "2.1.0", "3.0.0", "3.1.0", "3.2.0"] },
     "runId": { "type": "string", "pattern": "^b8-1-(?!.*\\.\\.)[a-zA-Z0-9._-]+$" },
     "runAt": { "type": "string", "format": "date-time" },
     "partialEvidence": { "type": "boolean" },
@@ -186,7 +186,7 @@
           "fixtureId": { "type": "string" },
           "subject": { "type": "string", "enum": ["cbm", "graphify", "exact-source"] },
           "fileCorrect": { "type": "boolean" },
-          "lineCorrect": { "type": "boolean" },
+          "lineCorrect": { "type": ["boolean", "null"] },
           "callerPrecision": { "type": "number", "minimum": 0, "maximum": 1 },
           "callerRecall": { "type": "number", "minimum": 0, "maximum": 1 },
           "calleePrecision": { "type": "number", "minimum": 0, "maximum": 1 },
@@ -537,7 +537,7 @@
     },
     {
       "if": {
-        "properties": { "schemaVersion": { "enum": ["3.0.0", "3.1.0"] } },
+        "properties": { "schemaVersion": { "enum": ["3.0.0", "3.1.0", "3.2.0"] } },
         "required": ["schemaVersion"]
       },
       "then": {
@@ -583,7 +583,7 @@
     },
     {
       "if": {
-        "properties": { "schemaVersion": { "const": "3.1.0" } },
+        "properties": { "schemaVersion": { "enum": ["3.1.0", "3.2.0"] } },
         "required": ["schemaVersion"]
       },
       "then": {

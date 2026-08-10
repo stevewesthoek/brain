@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-10 (canonical v7y execution and rejected disposition)
-**Audited:** 2026-08-10 — owner-approved canonical v7y was materialized once and executed once; its rejection is unchanged after a read-only audit proved one CBM index-coverage miss, one inventory-versus-ranked-search scoring defect, non-applicable line-denominator errors, a zero-accuracy passing set fixture, missing CBM caller/callee F1, and independent refresh/RSS threshold failures; B8.1 remains incomplete, B8.2–B8.6 remain blocked, P8 remains 0/6 accepted, and current execution authority is none
+**Last verified:** 2026-08-10 (post-v7y repair validated; canonical v7z dry-run awaiting exact approval)
+**Audited:** 2026-08-10 — real isolated CBM proved `brain_f4` is omitted by the provider's fast-mode top-level `tools` exclusion; contract 7.3.0 / evidence schema 3.2.0 repairs inventory counting, metric applicability, set outcomes, and required CBM caller/callee evidence; the v7z dry-run passed with zero blockers, but no run directory exists and current materialization/execution authority is none; B8.1 remains incomplete, B8.2–B8.6 remain blocked, and P8 remains 0/6 accepted
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -104,6 +104,20 @@ in the line-accuracy denominator, a passing set fixture with zero set accuracy,
 and missing required CBM caller/callee F1. The rejection is unchanged; the
 schema-valid accuracy aggregates are not admission-grade. Evidence:
 `operations/reports/b8-1-v7y-post-run-diagnosis-2026-08-10.md`.
+A bounded owner-authorized repair tranche then proved the provider-side reason:
+CBM v0.9.0 fast mode excludes the top-level `tools` directory, while full mode
+indexes the same `brain_f4` file and `main` function. Contract 7.3.0 / evidence
+schema 3.2.0 repairs graph-inventory count scoring, non-applicable line metrics,
+indexed-source set scoring, and required caller/callee precision/recall/F1.
+Real isolated CBM validation passed the repaired production path, and the focused
+suite passed 191/191. The canonical v7z dry-run plan is
+`operations/reports/b8-1-canonical-plan-v7z-2026-08-10.json`, run ID
+`b8-1-canonical-authorization-20260810-final-v7z`, digest
+`02971f6e644b004094ec6b60015ad3a5c379b63c25b14ea292ce425a5618dcbf`.
+It passed with zero blockers, selects CBM and exact-source, excludes Graphify,
+and records partial evidence. No v7z run directory exists; no materialization or
+execution is authorized. Evidence:
+`operations/reports/b8-1-post-v7y-repair-and-v7z-readiness-2026-08-10.md`.
 B8.2–B8.6 remain blocked because accepted
 B8.1 evidence is absent. P8 remains 0/6 accepted. Graphify remains excluded.
 The stabilization tasks remain separate from the existing B1, B2, and later
@@ -281,7 +295,7 @@ git diff --check → pass
 3. Capability-truth exposure is now complete through B4.4, but proven continuous automation value remains unproven.
 4. Meaningful time savings and maintenance reduction remain unproven.
 5. Deletion-readiness gate (`node tools/validate-deletion-readiness.mjs`) after contract-reconciliation pass (2026-08-01): 0 SAFE; 2 PARTIAL (router-root, sources-root); 17 BLOCKED. No path has the complete structured proof chain plus explicit human deletion approval and rollback expectations required for SAFE. Both Graphify paths (graphify-operational-output and graphify-compatibility-output) are BLOCKED: the profile catalog governs `runtime/local/graphify/...` output roots and explicitly excludes both `.graphify-out/` and `graphify-out/` from the corpus; a catalog pass for a different root cannot satisfy the `graphify-profile-conformance` prerequisite for either compatibility root; additionally, graphify-transition-governance.json explicitly prohibits deletion of `graphify-out/` until the retention gate is cleared. legacy-task-summary (`live/tasks.md`) is BLOCKED: M1.4 proves retirement and task-authority migration, but retirement is not deletion approval — no Brain artifact records human-approved deletion ownership or rollback expectations. BLOCKED breakdown: 5 missing `approved-folder-cleanup` artifact; 2 Graphify prerequisite-scope-mismatch or governance-prohibited deletion; 2 active deployed n8n consumers; 5 unresolved scoped or Mind authority cases; 1 missing human deletion approval (legacy-task-summary); 1 active consumer (wiki-root); 1 active dependency (wiki-log). PARTIAL is fail-closed for deletion.
-6. All stabilization tasks and runtime priorities P1 through P7 are complete. P8 (context-memory efficiency B8.1–B8.6) is blocked after rejected v7y evidence; no canonical P8 task is accepted complete and no investigation, repair, or rerun is currently authorized.
+6. All stabilization tasks and runtime priorities P1 through P7 are complete. P8 (context-memory efficiency B8.1–B8.6) remains blocked after rejected v7y evidence; the bounded repair is complete and v7z has a passing dry-run package, but no canonical P8 task is accepted complete and no materialization or execution is authorized without exact owner approval.
 
 ## Next approved work
 
@@ -297,9 +311,9 @@ All stabilization tasks (BS0.1–BS0.23) and P1–P7 runtime priorities are
 complete. B8.1 benchmark evidence is required before approved canonical
 admission or default activation, additional repository rollout, watcher or
 scheduler changes, or canonical Graphify migration. The preliminary candidate
-installation and indexes remain evidence only. P8 is not the current approved
-execution phase; a future investigation/repair tranche requires separate owner
-authorization before any new canonical plan can be prepared.
+installation and indexes remain evidence only. The bounded repair tranche is
+complete and the v7z dry-run package awaits exact owner approval. P8 is not an
+approved execution phase; do not materialize or execute v7z without that approval.
 
 Do not activate broad Mind writes, continuous execution, new external actions,
 or context-memory services while their prerequisite task and approval boundary

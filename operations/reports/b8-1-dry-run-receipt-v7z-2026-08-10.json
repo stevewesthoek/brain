@@ -1,0 +1,130 @@
+{
+  "dryRunReceipt": true,
+  "receiptVersion": "7.3.0",
+  "runId": "b8-1-canonical-authorization-20260810-final-v7z",
+  "selectedSubjects": [
+    "cbm",
+    "exact-source"
+  ],
+  "excludedSubjects": [
+    "graphify"
+  ],
+  "partialEvidence": true,
+  "graphifyExcluded": true,
+  "executionReady": true,
+  "blockers": [],
+  "noRunDirectory": true,
+  "planVersion": "7.3.0",
+  "evidenceSchemaVersion": "3.2.0",
+  "planSha256": "02971f6e644b004094ec6b60015ad3a5c379b63c25b14ea292ce425a5618dcbf",
+  "planRepoRelPath": "operations/reports/b8-1-canonical-plan-v7z-2026-08-10.json",
+  "implementationIdentity": {
+    "executor": {
+      "repoRelPath": "tools/execute-b8-1-benchmark.mjs",
+      "sha256": "620fcc67f0448824a02b3066b41e226c4abe2d4fba360309eca03b549d4477ac"
+    },
+    "evidenceValidator": {
+      "repoRelPath": "tools/validate-b8-1-benchmark-evidence.mjs",
+      "sha256": "5e8f118973d0cffb36b548a9acff86e9a5ae1a6539f3797859ba71796ed0da49"
+    },
+    "scorer": {
+      "repoRelPath": "tools/lib/b8-1-scoring.mjs",
+      "sha256": "861bc98cab0eac1bacc8fad6ece51ec2952d100841e138f1de7e0d35df268cc8"
+    },
+    "metricCollector": {
+      "repoRelPath": "tools/lib/b8-1-metrics.mjs",
+      "sha256": "91f906f44f6084b5613641774f1a501920d622c3604510994f9681b3f3382646"
+    },
+    "processSampler": {
+      "repoRelPath": "tools/lib/b8-1-process-metrics.mjs",
+      "sha256": "409b83386ca8c61a762e503000c7039c58b5d42529f7c991863a8f42a0cc95df"
+    },
+    "incrementalReindex": {
+      "repoRelPath": "tools/lib/b8-1-cbm-incremental-reindex.mjs",
+      "sha256": "78a4bd6cc088d2dfba53f55649dfef53a5aabb13c3fb3ef2b26755cfa4d5888c"
+    },
+    "exactSourceWorker": {
+      "repoRelPath": "tools/lib/b8-1-exact-source-worker.mjs",
+      "sha256": "668d8775e442cb939aff893e95f8a0b7156b1f9b5b49557d46d2f131ffb53d16"
+    },
+    "planDigest": {
+      "repoRelPath": "tools/lib/b8-1-plan-digest.mjs",
+      "sha256": "d624f947493c4ab4562536bfdb58b017f624d51b85bbe24c12df86b8280f0162"
+    },
+    "evidenceSchema": {
+      "repoRelPath": "operations/specs/b8-1-context-memory-benchmark-evidence.schema.json",
+      "sha256": "024ecefb9c32d6c569aeaebefd5a22897de7c3370bf1c990ef23e8bebceddd6e"
+    },
+    "manifestSchema": {
+      "repoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.schema.json",
+      "sha256": "9d697c04f9325e0b4c6101aa367c5fc78ff71b6cc6c323331bbf322f48695e83"
+    }
+  },
+  "checks": [
+    {
+      "name": "source-root-overrides",
+      "status": "pass",
+      "detail": "brain@f683edff753937944018dd00bf5494c85f62e881; prochat@85087d54f712b1333be7c620f23b6bcac9cde90b; workbench@bc4908613f23f6d818b60fe9a4b4945efa537ec2"
+    },
+    {
+      "name": "manifest-validation",
+      "status": "pass",
+      "detail": "10 fixtures across 3 repos; sha256=a70a87ac33fdbe47..."
+    },
+    {
+      "name": "pinned-commit:brain",
+      "status": "pass",
+      "detail": "f683edff7539"
+    },
+    {
+      "name": "pinned-commit:workbench",
+      "status": "pass",
+      "detail": "bc4908613f23"
+    },
+    {
+      "name": "pinned-commit:prochat",
+      "status": "pass",
+      "detail": "85087d54f712"
+    },
+    {
+      "name": "run-id-valid",
+      "status": "pass",
+      "detail": "b8-1-canonical-authorization-20260810-final-v7z"
+    },
+    {
+      "name": "cbm-binary-identity",
+      "status": "pass",
+      "detail": "sha256=d9fbdd7d8570a77b... version=v0.9.0"
+    },
+    {
+      "name": "network-isolation",
+      "status": "pass",
+      "detail": "adapter=sandbox-exec; control=pass; sandboxed=denied; profile-sha256=bd1de96bd9906950..."
+    },
+    {
+      "name": "graphify-subject",
+      "status": "excluded-subject",
+      "detail": "graphify not selected; bounded code-only invocation remains blocked"
+    },
+    {
+      "name": "exact-source-ready",
+      "status": "pass",
+      "detail": "grep, find, cat available"
+    },
+    {
+      "name": "disk-budget",
+      "status": "pass",
+      "detail": "minimum 2000 MB available (verified via df)"
+    },
+    {
+      "name": "planned-write-containment",
+      "status": "pass",
+      "detail": "21 planned paths confined to /Users/Office/.brain"
+    },
+    {
+      "name": "source-state-binding",
+      "status": "pass",
+      "detail": "sha256=a0af2027907af240..."
+    }
+  ]
+}

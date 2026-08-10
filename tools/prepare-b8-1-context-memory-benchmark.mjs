@@ -1527,7 +1527,7 @@ export function buildDryRunReceipt({ summary, canonicalPlan, checks, runDir, pla
     blockers: [],
     noRunDirectory: true,
     planVersion: canonicalPlan.planVersion,
-    evidenceSchemaVersion: '3.1.0',
+    evidenceSchemaVersion: '3.2.0',
     planSha256: summary.planSha256,
     planRepoRelPath,
     implementationIdentity: canonicalPlan.implementationIdentity,
