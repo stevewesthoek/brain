@@ -415,7 +415,7 @@ async function fixtureResult(binary, project, fixture, sourceRoot, indexedSet, i
   const structural = targetIndexed ? await structuralPrediction(binary, project, fixture, state) : null;
   return { fixtureId: fixture.fixtureId, scoringType: fixture.scoringType, retrievalPattern: fixture.retrievalPattern ?? fixture.verification.fileName, retrievedFiles, targetRank, targetIndexed, fallbackRequired: !targetIndexed, exactSource, exactSourcePassed: exactSource.passed, fileCorrect, lineCorrect, literalCorrect, setAccuracy, structural };
 }
-async function evaluateRepository({ binary, manifest, repository, repetition, root }) {
+export async function evaluateRepository({ binary, manifest, repository, repetition, root }) {
   const runRoot = path.join(root, `r${repetition}`, repository.repositoryId);
   const source = path.join(runRoot, 'source'); const state = { cache: path.join(runRoot, 'cache'), config: path.join(runRoot, 'config'), home: path.join(runRoot, 'home'), tmp: path.join(runRoot, 'tmp') };
   for (const dir of [state.cache, state.config, state.home, state.tmp]) mkdir(dir);
