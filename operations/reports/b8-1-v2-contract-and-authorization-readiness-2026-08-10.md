@@ -176,7 +176,81 @@ No canonical benchmark was materialized or executed. Graphify was not invoked.
 Mind was not modified. The installed provider was not replaced. No branch was
 pushed. The candidate evaluation used only disposable diagnostic state.
 
-## 21. Required owner approval
+## Required 21-point owner handoff
+
+1. **Architecture decision:** one deterministic structural index/service per active
+   repository, or equivalent repository isolation, for navigation only; exact
+   pinned source remains authoritative.
+2. **Old-contract retirement:** v7 conflated lifecycle phases, relied on fast mode
+   despite material omissions, used historical rather than host-derived resource
+   limits, blocked required local IPC, and scored incomplete structural truth.
+   Its immutable evidence remains rejected and cannot authorize V2.
+3. **Revised coverage:** full mode; at least 95% per repository and 97% aggregate;
+   zero unknown files; every declared unindexed eligible file gets observable,
+   deterministic exact-source fallback and zero structural credit.
+4. **Cold-start semantics:** from no usable cache through a full pinned-repository
+   index becoming queryable, including provider initialization; measured once per
+   repository in each independent repetition.
+5. **Steady-state refresh semantics:** modify one admitted source in a disposable
+   export, start the timer before refreshing the same project, stop only when the
+   changed marker is queryable from the exact file, then restore byte-for-byte,
+   refresh again, and prove marker absence. Idle service state is measured before
+   provider shutdown.
+6. **IPC/network isolation:** default-deny IPv4, IPv6, and Unix sockets, admitting
+   only the validated mode-0700 current-UID `/private/tmp/cbm-daemon-<uid>` root;
+   all four positive/negative controls passed, with the same-UID trust boundary
+   explicit.
+7. **Resource derivation:** the 24 GiB / 12-core host permits at most 1,536 MiB and
+   600% CPU for bounded cold work, 768 MiB and 300% CPU for refresh, 256 MiB and 5%
+   CPU idle, 1,536 MiB projected simultaneous service RSS, and 512 MiB per index;
+   five of five runs require 10% headroom.
+8. **Structural truth:** exact pinned symbol identities use exhaustive caller sets
+   of import consumers/call sites/no-caller and callee sets of initializer
+   dependencies/body-code targets/no-callee, with tests admitted, generated trees
+   excluded, and one-to-one scoring for precision, recall, and F1.
+9. **Provider comparison:** installed v0.9.0 passed five of five; official
+   v0.9.1-rc.1 failed the refresh maximum and lifecycle-provenance contract. No
+   newer official stable candidate superseded v0.9.0 during the bounded review.
+10. **Selection:** unchanged installed `codebase-memory-mcp 0.9.0`, full mode,
+    persistence false, auto-watch false; exact-source is the mandatory fallback.
+11. **Repeated metrics:** aggregate coverage 0.9921, indexed file accuracy 0.90,
+    applicable-line accuracy 0.875, MRR 0.4944, set outcome 1.0,
+    caller/callee F1 1.0; cold p95 4.27 seconds / 1,111.2 MiB; refresh maxima
+    Brain 2.71 seconds, Workbench 0.94 seconds, ProChat 0.32 seconds.
+12. **Acceptance gates:** all five repetitions and every coverage, retrieval,
+    structural, exact-source/fallback, capacity, isolation, restoration, cleanup,
+    provenance, and headroom gate passed; partial evidence is rejected.
+13. **New contract files:** the five spec artifacts listed in section 6 plus the
+    evaluator, authorization preparer, digest helper, isolation helper, contract
+    validator/tests, and future canonical-evidence validator in `tools/`.
+14. **New Brain commits:** implementation `25a66f1472c81780a629380270d6cce3ef4b2014`;
+    authorization documentation `419cb154`; formatting/readiness follow-up
+    `0f0505b1`. All remain local on `codex/b8-1-v2-contract`.
+15. **Plan filename:**
+    `operations/reports/b8-1-v2-canonical-dry-run-plan-2026-08-10.json`.
+16. **Run ID:** `b8-1-v2-canonical-authorization-20260810-final-v1`.
+17. **Plan SHA:**
+    `d95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284`.
+18. **Provider SHA:**
+    `d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6`.
+19. **Runtime/sandbox identities:** Node v20.20.2 SHA-256
+    `38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6`;
+    `/usr/bin/sandbox-exec` SHA-256
+    `e3d7a792c58a5d3783d2f7274c82d70062393830d8cb1ded713ca554a470bd2f`;
+    isolation profile SHA-256
+    `87899ef5c1aed8573034beda57d0e51278417d86b2e7cb4ebac3fe89ecab8d9b`.
+20. **Semantic diff from v7:** implicit fast-mode scope becomes measured full-mode
+    coverage plus explicit fallback; cold and refresh lifecycles are separated;
+    blanket IPC denial becomes minimum local-IPC admission with four controls;
+    historical thresholds become host/topology-derived budgets; incomplete
+    structural labels become exhaustive pinned truth; five-of-five full evidence
+    replaces acceptance of partial results.
+21. **Boundary confirmation:** no canonical materialization or execution; no
+    B8.2–B8.6 work; no Graphify invocation; no Mind modification; no provider
+    replacement; no push. The planned run directory is absent and execution
+    authority remains none.
+
+## Exact owner approval statement
 
 The next authorized action is limited to one materialization and one execution of
 the exact dry-run plan above after the owner provides this exact statement:
