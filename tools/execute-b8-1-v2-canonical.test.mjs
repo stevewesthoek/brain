@@ -8,11 +8,14 @@ import { fileURLToPath } from 'node:url';
 import { computePlanDigest, verifyPlan, KNOWN_STALE_DIGESTS } from './lib/b8-1-v2-plan-digest.mjs';
 import { validateAuthorization } from './execute-b8-1-v2-canonical.mjs';
 import { aggregateQualityPasses, fallbackProbeIsBound, targetRankIsValid } from './validate-b8-1-v2-evidence.mjs';
+import { buildFinalEvidence, validateRecoveryAuthorization } from './finalize-b8-1-v2-accepted-run.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = path.join(ROOT, 'operations/specs/b8-1-v2-context-memory-benchmark-manifest.json');
+const RECOVERY_PLAN_PATH = path.join(ROOT, 'operations/reports/b8-1-v2-1-validation-fixed-plan-2026-08-10.json');
 
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
+const recoveryPlan = JSON.parse(fs.readFileSync(RECOVERY_PLAN_PATH, 'utf8'));
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -32,6 +35,18 @@ function currentPlanOrSkip(t) {
   if (!result || KNOWN_STALE_DIGESTS.has(result.plan.planSha256)) {
     t.skip('no valid current plan — run preparer first');
     return null;
+  }
+  if (fs.existsSync(result.plan.plannedCanonicalRunPath)) {
+    t.skip('current plan is already consumed — canonical run path exists');
+    return null;
+  }
+  const dispositionPath = path.join(ROOT, 'operations/reports/b8-1-v2-evidence/disposition.json');
+  if (fs.existsSync(dispositionPath)) {
+    const disposition = JSON.parse(fs.readFileSync(dispositionPath, 'utf8'));
+    if (disposition.runId === result.plan.runId && disposition.planDigest === result.plan.planSha256) {
+      t.skip(`current plan is already consumed — disposition ${disposition.disposition}`);
+      return null;
+    }
   }
   return result;
 }
@@ -132,6 +147,12 @@ test('KNOWN_STALE_DIGESTS: validation-failed post-interruption run is blocked', 
 
 test('KNOWN_STALE_DIGESTS: contains at least 11 entries covering all superseded plans', () => {
   assert.ok(KNOWN_STALE_DIGESTS.size >= 11);
+});
+
+test('validateAuthorization: accepted canonical disposition permanently consumes the run', () => {
+  const result = validateAuthorization({ planPath: RECOVERY_PLAN_PATH, authorizedPlanSha256: recoveryPlan.planSha256, authorizedRunId: recoveryPlan.runId });
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(error => error.includes('already consumed with disposition ACCEPTED')));
 });
 
 // ── validateAuthorization: exact approval binding (current plan) ──────────────
@@ -359,6 +380,18 @@ test('evidence validation: indexed miss may have null rank and contributes zero 
   assert.equal(targetRankIsValid({ subject: 'cbm', targetIndexed: true, fileCorrect: false, targetRank: null }, authority, 20), true);
   assert.equal(targetRankIsValid({ subject: 'cbm', targetIndexed: true, fileCorrect: true, targetRank: null }, authority, 20), false);
   assert.equal(targetRankIsValid({ subject: 'cbm', targetIndexed: true, fileCorrect: true, targetRank: 2 }, authority, 20), true);
+});
+
+test('accepted-run recovery: exact plan digest and run id are required', () => {
+  assert.equal(validateRecoveryAuthorization({ plan: recoveryPlan, authorizedPlanSha256: recoveryPlan.planSha256, authorizedRunId: recoveryPlan.runId }).valid, true);
+  assert.equal(validateRecoveryAuthorization({ plan: recoveryPlan, authorizedPlanSha256: '0'.repeat(64), authorizedRunId: recoveryPlan.runId }).valid, false);
+  assert.equal(validateRecoveryAuthorization({ plan: recoveryPlan, authorizedPlanSha256: recoveryPlan.planSha256, authorizedRunId: 'wrong-run' }).valid, false);
+});
+
+test('accepted-run recovery: finalized cleanup metadata includes removedAt', () => {
+  const removedAt = '2026-08-10T21:30:00.000Z';
+  const evidence = buildFinalEvidence({ cleanupStatus: { removed: false, runDirectory: recoveryPlan.plannedCanonicalRunPath } }, recoveryPlan, removedAt);
+  assert.deepEqual(evidence.cleanupStatus, { removed: true, runDirectory: recoveryPlan.plannedCanonicalRunPath, removedAt });
 });
 
 // ── Cleanup requirement ───────────────────────────────────────────────────────

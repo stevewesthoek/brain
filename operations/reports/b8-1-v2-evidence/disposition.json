@@ -1,14 +1,16 @@
 {
-  "runId": "b8-1-v2-1-final-20260810",
+  "runId": "b8-1-v2-1-validation-fixed-20260810",
   "contractVersion": "B8.1-V2.1",
-  "disposition": "REJECTED",
-  "evidencePath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/reports/b8-1-v2-evidence/b8-1-v2-canonical-evidence-REJECTED.json",
+  "disposition": "ACCEPTED",
+  "evidencePath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/reports/b8-1-v2-evidence/b8-1-v2-canonical-evidence.json",
   "preflightReceiptPath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/reports/b8-1-v2-evidence/preflight-receipt.json",
-  "planDigest": "c4fa507e06b9614d7e23914d90a3fbf9bef2bfc3f371b6e8b7eeb6415707ac07",
-  "completedAt": "2026-08-10T17:11:21.708Z",
-  "durationMs": 195710,
-  "passingRuns": 0,
+  "planDigest": "412bc36e81797f5069ba76de835ab52035befb1bbd14e591af052f2e91a76e9b",
+  "completedAt": "2026-08-10T21:49:35.353Z",
+  "passingRuns": 5,
   "requiredPassingRuns": 5,
-  "failedGates": [],
-  "reason": "Gates failed: "
+  "recovery": {
+    "reason": "post-acceptance cleanup metadata finalization",
+    "rawEvidenceSha256": "e7760b4eb8dd88a2adbda2bbb4dafaad7e34bfbb37fd5813bc69a367688d0f92",
+    "benchmarkRerun": false
+  }
 }

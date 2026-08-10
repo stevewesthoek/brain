@@ -94,6 +94,19 @@ export function validateAuthorization({ planPath, authorizedPlanSha256, authoriz
     errors.push(`plan.runId ${plan.runId} does not match --authorized-run-id ${authorizedRunId}`);
   }
 
+  // 6b. Canonical disposition is a durable single-use receipt even after run-directory cleanup.
+  const dispositionPath = path.join(ROOT, 'operations/reports/b8-1-v2-evidence/disposition.json');
+  if (fs.existsSync(dispositionPath)) {
+    try {
+      const disposition = JSON.parse(fs.readFileSync(dispositionPath, 'utf8'));
+      if (disposition.runId === plan.runId && disposition.planDigest === plan.planSha256 && ['ACCEPTED', 'REJECTED'].includes(disposition.disposition)) {
+        errors.push(`canonical run ${plan.runId} is already consumed with disposition ${disposition.disposition}`);
+      }
+    } catch (error) {
+      errors.push(`canonical disposition parse error: ${error.message}`);
+    }
+  }
+
   // 7. Plan mode is authorization-only dry-run (not already a canonical execution record)
   if (plan.mode !== 'canonical-dry-run-authorization-only') {
     errors.push(`plan mode must be canonical-dry-run-authorization-only, got ${plan.mode}`);
@@ -433,7 +446,7 @@ async function main() {
   fs.mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
 
   if (!allGatesPassed) {
-    evidence.cleanupStatus = { removed: true, runDirectory: plan.plannedCanonicalRunPath };
+    evidence.cleanupStatus = { removed: true, runDirectory: plan.plannedCanonicalRunPath, removedAt: new Date().toISOString() };
     const rejectionEvidencePath = path.join(evidenceDir, 'b8-1-v2-canonical-evidence-REJECTED.json');
     writeJson(rejectionEvidencePath, evidence);
     const finalReceiptPath = path.join(evidenceDir, 'preflight-receipt.json');
@@ -478,7 +491,7 @@ async function main() {
     }
   }
 
-  evidence.cleanupStatus = { removed: true, runDirectory: plan.plannedCanonicalRunPath };
+  evidence.cleanupStatus = { removed: true, runDirectory: plan.plannedCanonicalRunPath, removedAt: new Date().toISOString() };
   if (!validate(evidence)) { console.error('SCHEMA VALIDATION FAILED after cleanup update'); process.exitCode = 2; return; }
 
   const finalEvidencePath = path.join(evidenceDir, 'b8-1-v2-canonical-evidence.json');
