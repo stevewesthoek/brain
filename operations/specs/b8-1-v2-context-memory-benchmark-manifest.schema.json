@@ -17,7 +17,7 @@
     },
     "contractVersion": {
       "type": "string",
-      "const": "B8.1-V2"
+      "enum": ["B8.1-V2", "B8.1-V2.1"]
     },
     "createdAt": {
       "type": "string",

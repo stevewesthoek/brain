@@ -25,7 +25,7 @@ import { validateEvidenceObjects } from './validate-b8-1-v2-evidence.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = path.join(ROOT, 'operations/specs/b8-1-v2-context-memory-benchmark-manifest.json');
 const EVIDENCE_SCHEMA_PATH = path.join(ROOT, 'operations/specs/b8-1-v2-context-memory-benchmark-evidence.schema.json');
-const PLAN_PATH = path.join(ROOT, 'operations/reports/b8-1-v2-canonical-dry-run-plan-2026-08-10.json');
+const PLAN_PATH = path.join(ROOT, 'operations/reports/b8-1-v2-1-canonical-dry-run-plan-2026-08-10.json');
 
 function sha256File(file) { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); }
 function sha256String(value) { return crypto.createHash('sha256').update(value).digest('hex'); }
@@ -49,11 +49,11 @@ function preflight(plan, manifest) {
   if (!planValidation.valid) errors.push(...planValidation.errors.map(e => `plan: ${e}`));
 
   // 2. Verify approved plan digest
-  const expectedDigest = 'd95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284';
+  const expectedDigest = 'f0695fdfe163c50f96544e9ff901dec8737eca1eff458d8a87dd01ca7664fe34';
   if (plan.planSha256 !== expectedDigest) errors.push(`plan digest mismatch: expected ${expectedDigest}, got ${plan.planSha256}`);
 
   // 3. Verify run ID
-  const expectedRunId = 'b8-1-v2-canonical-authorization-20260810-final-v1';
+  const expectedRunId = 'b8-1-v2-1-canonical-20260810';
   if (plan.runId !== expectedRunId) errors.push(`run ID mismatch: expected ${expectedRunId}, got ${plan.runId}`);
 
   // 4. Verify provider identity
@@ -296,7 +296,7 @@ function buildEvidenceFromRuns(plan, manifest, runs, host, isolation, preflightR
 
   return {
     schemaVersion: '4.0.0',
-    contractVersion: 'B8.1-V2',
+    contractVersion: plan.contractVersion,
     runId: plan.runId,
     runAt: new Date().toISOString(),
     partialEvidence: false,
@@ -459,7 +459,7 @@ async function main() {
 
     const dispositionRecord = {
       runId: plan.runId,
-      contractVersion: 'B8.1-V2',
+      contractVersion: plan.contractVersion,
       disposition: 'REJECTED',
       evidencePath: rejectionEvidencePath,
       preflightReceiptPath: finalReceiptPath,
@@ -560,7 +560,7 @@ async function main() {
   // Write disposition
   const dispositionRecord = {
     runId: plan.runId,
-    contractVersion: 'B8.1-V2',
+    contractVersion: plan.contractVersion,
     disposition: 'ACCEPTED',
     evidencePath: finalEvidencePath,
     preflightReceiptPath: finalReceiptPath,

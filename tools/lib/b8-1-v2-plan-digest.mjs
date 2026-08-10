@@ -1,12 +1,13 @@
 import crypto from 'node:crypto';
 
 export const PLAN_VERSION = '8.0.0';
-export const CONTRACT_VERSION = 'B8.1-V2';
+export const CONTRACT_VERSION = 'B8.1-V2.1';
 export const KNOWN_STALE_DIGESTS = new Set([
   '86859184919a029c9a3aaa989c55240ad07aff368c09e6895d9564577dfadf30',
   'c037d9e2dbf67431ee8df0958a4cbe3d95e93dddefeef019a801661aeb939588',
   '57156d49e4f3ab273efb791dc3e4e128a839ba10552b860ab3219ae58e8bd1d1',
   '02971f6e644b004094ec6b60015ad3a5c379b63c25b14ea292ce425a5618dcbf',
+  'd95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284',
 ]);
 export const EXCLUDED_FIELDS = new Set(['planSha256', 'createdAt']);
 export const ALLOWED_PLAN_FIELDS = new Set([

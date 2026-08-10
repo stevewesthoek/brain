@@ -48,7 +48,7 @@ test('fuzzy set matching is one-to-one', () => {
 test('V2 evidence routes to subject metrics and requires all four isolation controls', () => {
   const hash = '0'.repeat(64);
   const evidence = {
-    schemaVersion: '4.0.0', contractVersion: 'B8.1-V2', runId: 'b8-1-v2-test', partialEvidence: false,
+    schemaVersion: '4.0.0', contractVersion: 'B8.1-V2.1', runId: 'b8-1-v2-test', partialEvidence: false,
     selectedSubjects: ['cbm', 'exact-source'], excludedSubjects: [],
     pinnedRepositoryCommits: { repo: { repositoryId: 'repo', commit: 'a'.repeat(40) } },
     manifestHash: `sha256:${hash}`, preflightReceiptHash: `sha256:${hash}`, planSha256: hash,

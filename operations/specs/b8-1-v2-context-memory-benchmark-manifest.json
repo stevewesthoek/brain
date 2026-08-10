@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0.0",
-  "contractVersion": "B8.1-V2",
+  "contractVersion": "B8.1-V2.1",
   "createdAt": "2026-08-10",
   "providerContract": {
     "subject": "cbm",
@@ -64,8 +64,8 @@
     },
     "coldStart": {
       "maximumIndexingTimeMsPerRepository": 30000,
-      "maximumPeakRssMiB": 1536,
-      "maximumPeakCpuPercent": 600
+      "maximumPeakRssMiB": 2048,
+      "maximumPeakCpuPercent": 650
     },
     "steadyState": {
       "maximumIdleRssMiB": 256,

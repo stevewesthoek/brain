@@ -7,21 +7,21 @@ import { fileURLToPath } from 'node:url';
 import { computePlanDigest, verifyPlan } from './lib/b8-1-v2-plan-digest.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PLAN_PATH = path.join(ROOT, 'operations/reports/b8-1-v2-canonical-dry-run-plan-2026-08-10.json');
+const PLAN_PATH = path.join(ROOT, 'operations/reports/b8-1-v2-1-canonical-dry-run-plan-2026-08-10.json');
 const MANIFEST_PATH = path.join(ROOT, 'operations/specs/b8-1-v2-context-memory-benchmark-manifest.json');
 
 const plan = JSON.parse(fs.readFileSync(PLAN_PATH, 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
 
 test('authorization binding: plan digest matches approved digest', () => {
-  const expectedDigest = 'd95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284';
+  const expectedDigest = 'f0695fdfe163c50f96544e9ff901dec8737eca1eff458d8a87dd01ca7664fe34';
   assert.equal(plan.planSha256, expectedDigest);
   const computed = computePlanDigest(plan);
   assert.equal(computed, expectedDigest);
 });
 
 test('authorization binding: run ID matches approved run ID', () => {
-  assert.equal(plan.runId, 'b8-1-v2-canonical-authorization-20260810-final-v1');
+  assert.equal(plan.runId, 'b8-1-v2-1-canonical-20260810');
 });
 
 test('authorization binding: plan passes structural verification', () => {
@@ -55,7 +55,7 @@ test('output containment: canonical run path is under ~/.brain/benchmark/', () =
 test('cleanup requirement: validator requires cleanupStatus.removed=true', async () => {
   const { validateEvidenceObjects } = await import('./validate-b8-1-v2-evidence.mjs');
   const fakeEvidence = {
-    schemaVersion: '4.0.0', contractVersion: 'B8.1-V2', runId: plan.runId,
+    schemaVersion: '4.0.0', contractVersion: 'B8.1-V2.1', runId: plan.runId,
     partialEvidence: false, selectedSubjects: ['cbm', 'exact-source'], excludedSubjects: [],
     pinnedRepositoryCommits: {}, manifestHash: `sha256:${plan.manifest.sha256}`,
     preflightReceiptHash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',

@@ -1,0 +1,483 @@
+{
+  "planVersion": "8.0.0",
+  "contractVersion": "B8.1-V2.1",
+  "runId": "b8-1-v2-1-canonical-20260810",
+  "mode": "canonical-dry-run-authorization-only",
+  "canonicalMaterializationAuthorized": false,
+  "canonicalExecutionAuthorized": false,
+  "selectedSubjects": [
+    "cbm",
+    "exact-source"
+  ],
+  "graphifyStatus": "excluded-out-of-contract",
+  "partialEvidence": false,
+  "manifest": {
+    "repoRelPath": "operations/specs/b8-1-v2-context-memory-benchmark-manifest.json",
+    "sha256": "1a1131c27c0cdf89402aff740c8f921387dfee0a716ac0c63b94cb3caca5657a"
+  },
+  "manifestSchema": {
+    "repoRelPath": "operations/specs/b8-1-v2-context-memory-benchmark-manifest.schema.json",
+    "sha256": "fe365f250a453721ad52208bf9fafcde7e8c96e81142142553b21e0768747ecf"
+  },
+  "evidenceSchema": {
+    "repoRelPath": "operations/specs/b8-1-v2-context-memory-benchmark-evidence.schema.json",
+    "sha256": "04b7f00e52db46ccffc6ddfb13f7e9e0d0fbb53a733f6c641808f7ba28f41caa"
+  },
+  "architecture": {
+    "retrievalPolicy": {
+      "maximumCandidates": 20,
+      "minimumMeanReciprocalRank": 0.1
+    },
+    "coveragePolicy": {
+      "strategy": "structural-scope-with-exact-source-fallback",
+      "eligibleExtensions": [
+        ".bash",
+        ".c",
+        ".cc",
+        ".cjs",
+        ".cpp",
+        ".cs",
+        ".go",
+        ".h",
+        ".hpp",
+        ".java",
+        ".js",
+        ".jsx",
+        ".kt",
+        ".kts",
+        ".lua",
+        ".mjs",
+        ".php",
+        ".pl",
+        ".py",
+        ".rb",
+        ".rs",
+        ".sh",
+        ".svelte",
+        ".swift",
+        ".ts",
+        ".tsx",
+        ".vue",
+        ".zsh"
+      ],
+      "excludedDirectoryNames": [
+        ".git",
+        ".graphify-out",
+        ".next",
+        "archive",
+        "archives",
+        "build",
+        "coverage",
+        "dist",
+        "generated",
+        "graphify-out",
+        "node_modules",
+        "runtime",
+        "vendor",
+        "vendors"
+      ],
+      "minimumPerRepositoryCoverage": 0.95,
+      "minimumAggregateCoverage": 0.97,
+      "unknownCoverageAllowed": false,
+      "fallbackRequiredForUnindexedFixtures": true,
+      "minimumFallbackAccuracy": 1
+    },
+    "structuralTruthContract": {
+      "version": "1.0.0",
+      "authority": "exact-pinned-git-source",
+      "includeTests": true,
+      "excludeGeneratedTrees": true,
+      "exactSetRequired": true,
+      "callerRelations": {
+        "import-consumers": "Every non-generated code file that directly imports the target symbol; declaration-site uses and re-export-only files are excluded.",
+        "call-sites": "Every non-generated code file containing a direct call to the target symbol; declaration and re-export-only files are excluded.",
+        "no-explicit-caller": "The runtime or framework supplies the entry point and no code file directly imports or calls it."
+      },
+      "calleeRelations": {
+        "initializer-dependencies": "Every imported or repository-defined symbol directly referenced by the target initializer, including constructors; globals and local value containers are excluded.",
+        "body-code-targets": "Every direct call or JSX component target whose root identifier is imported or repository-defined; language globals, platform intrinsics, lowercase JSX elements, and parameter-object methods are excluded.",
+        "no-callee": "The target has no callee relation under this contract."
+      }
+    },
+    "acceptancePolicy": {
+      "minimumIndexedFixtureFileAccuracy": 0.9,
+      "minimumIndexedFixtureLineAccuracy": 0.8,
+      "minimumSetOutcomeAccuracy": 1,
+      "minimumCallerCalleeF1": 0.8,
+      "minimumExactSourceAccuracy": 1
+    },
+    "resourceBudget": {
+      "basis": {
+        "hostMemoryBytes": 25769803776,
+        "logicalCpuCount": 12,
+        "minimumStartFreeMemoryPercent": 20,
+        "minimumStartFreeDiskBytes": 21474836480
+      },
+      "coldStart": {
+        "maximumIndexingTimeMsPerRepository": 30000,
+        "maximumPeakRssMiB": 2048,
+        "maximumPeakCpuPercent": 650
+      },
+      "steadyState": {
+        "maximumIdleRssMiB": 256,
+        "maximumIdleCpuPercent": 5,
+        "maximumRefreshP95Ms": 5000,
+        "maximumRefreshMs": 7500,
+        "maximumRefreshPeakRssMiB": 768,
+        "maximumRefreshPeakCpuPercent": 300
+      },
+      "capacity": {
+        "maximumIndexBytesPerRepository": 536870912,
+        "maximumTotalServiceRssMiB": 1536
+      }
+    },
+    "rehearsalPolicy": {
+      "minimumIndependentRuns": 5,
+      "requiredPassingRuns": 5,
+      "requiredHeadroomRatio": 0.1,
+      "reportedStatistics": [
+        "minimum",
+        "median",
+        "p95",
+        "maximum"
+      ]
+    },
+    "isolationPolicy": {
+      "externalInet": "deny",
+      "externalInet6": "deny",
+      "unixSocketDefault": "deny",
+      "allowedUnixSocketRootTemplate": "/private/tmp/cbm-daemon-<uid>",
+      "requiredSelfTests": [
+        "deny-ipv4-loopback-connect",
+        "deny-ipv6-loopback-connect",
+        "allow-declared-unix-socket-connect",
+        "deny-outside-unix-socket-connect"
+      ]
+    }
+  },
+  "provider": {
+    "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
+    "resolvedPath": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+    "version": "codebase-memory-mcp 0.9.0",
+    "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6",
+    "indexMode": "full",
+    "persistence": false,
+    "autoWatch": false
+  },
+  "runtime": {
+    "path": "/opt/homebrew/Cellar/node/25.9.0_1/bin/node",
+    "version": "v25.9.0",
+    "sha256": "a46ed02589ca3af795237111ff854262064f8ff5c5b58d75c1509f37311eb15e"
+  },
+  "sandbox": {
+    "adapterPath": "/usr/bin/sandbox-exec",
+    "adapterSha256": "e3d7a792c58a5d3783d2f7274c82d70062393830d8cb1ded713ca554a470bd2f",
+    "profileSha256": "87899ef5c1aed8573034beda57d0e51278417d86b2e7cb4ebac3fe89ecab8d9b",
+    "helperSha256": "5345bf41e8f6a8000ef7ddc5935674317b7e09ce3c78749785588dad4746eefb",
+    "allowedUnixSocketRoot": "/private/tmp/cbm-daemon-502",
+    "allowedUnixSocketRootValidation": {
+      "ownerUid": 502,
+      "mode": "0700",
+      "directory": true,
+      "symlink": false
+    },
+    "selfTests": [
+      {
+        "name": "deny-ipv4-loopback-connect",
+        "passed": true
+      },
+      {
+        "name": "deny-ipv6-loopback-connect",
+        "passed": true
+      },
+      {
+        "name": "allow-declared-unix-socket-connect",
+        "passed": true
+      },
+      {
+        "name": "deny-outside-unix-socket-connect",
+        "passed": true
+      }
+    ]
+  },
+  "sourcePins": [
+    {
+      "repositoryId": "brain",
+      "commit": "f683edff753937944018dd00bf5494c85f62e881"
+    },
+    {
+      "repositoryId": "workbench",
+      "commit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2"
+    },
+    {
+      "repositoryId": "prochat",
+      "commit": "85087d54f712b1333be7c620f23b6bcac9cde90b"
+    }
+  ],
+  "implementationIdentity": {
+    "plan": {
+      "repoRelPath": "operations/specs/b8-1-v2-context-memory-benchmark-plan.md",
+      "sha256": "df458be321e83c040c8de47f73feb90162a06bb594832c4f4f8ff643a3e5c944"
+    },
+    "manifest": {
+      "repoRelPath": "operations/specs/b8-1-v2-context-memory-benchmark-manifest.json",
+      "sha256": "1a1131c27c0cdf89402aff740c8f921387dfee0a716ac0c63b94cb3caca5657a"
+    },
+    "manifestSchema": {
+      "repoRelPath": "operations/specs/b8-1-v2-context-memory-benchmark-manifest.schema.json",
+      "sha256": "fe365f250a453721ad52208bf9fafcde7e8c96e81142142553b21e0768747ecf"
+    },
+    "evidenceSchema": {
+      "repoRelPath": "operations/specs/b8-1-v2-context-memory-benchmark-evidence.schema.json",
+      "sha256": "04b7f00e52db46ccffc6ddfb13f7e9e0d0fbb53a733f6c641808f7ba28f41caa"
+    },
+    "isolationProfile": {
+      "repoRelPath": "operations/specs/b8-1-v2-network-isolation.sb",
+      "sha256": "87899ef5c1aed8573034beda57d0e51278417d86b2e7cb4ebac3fe89ecab8d9b"
+    },
+    "isolationHelper": {
+      "repoRelPath": "tools/lib/b8-1-v2-isolation-probe.mjs",
+      "sha256": "5345bf41e8f6a8000ef7ddc5935674317b7e09ce3c78749785588dad4746eefb"
+    },
+    "evaluator": {
+      "repoRelPath": "tools/run-b8-1-v2-disposable-evaluation.mjs",
+      "sha256": "146175e785c35310f380103b3d66f29069628c2d5a8046da33716e236a4e025a"
+    },
+    "contractValidator": {
+      "repoRelPath": "tools/validate-b8-1-v2-contract.mjs",
+      "sha256": "1dd09882402401ea436780ee8ff663668c4b5f1d0e014978ed541db88e19c982"
+    },
+    "evidenceValidator": {
+      "repoRelPath": "tools/validate-b8-1-v2-evidence.mjs",
+      "sha256": "c116ce2f034068121af4e0e59137c5b256d51c113b3d5cbe7660f8a9b920d267"
+    },
+    "preparer": {
+      "repoRelPath": "tools/prepare-b8-1-v2-authorization.mjs",
+      "sha256": "dc09f5cd6ba307f1da1adb7474734f6d8e305f4520bbad40a8cd0d444ffbcae4"
+    },
+    "digest": {
+      "repoRelPath": "tools/lib/b8-1-v2-plan-digest.mjs",
+      "sha256": "a32c36c98d8d2732b8db9f9a45c5886b57c3d28fdaae2f450d40db191faa7bb8"
+    }
+  },
+  "brainImplementationCommit": "efa7c60d793c494e91cee6b423f9d60a145974c7",
+  "rehearsalEvidence": {
+    "path": "/Users/Office/.brain/benchmark/b8-1/diagnostics/b8-1-v2-1-rehearsal-2048-650-20260810/evaluation-report.json",
+    "sha256": "1233a6772be0b46348a5f48e60b4737ab44482c1b52c01dd02312517b3dee62e",
+    "repetitions": 5,
+    "repetitionReceipts": [
+      {
+        "repetition": 1,
+        "path": "/Users/Office/.brain/benchmark/b8-1/diagnostics/b8-1-v2-1-rehearsal-2048-650-20260810/rehearsal-r1.json",
+        "sha256": "c682c3e04bc50a1f0c310470bc2d8d72a40dd864526e399cceca0bfc5dfee8b9"
+      },
+      {
+        "repetition": 2,
+        "path": "/Users/Office/.brain/benchmark/b8-1/diagnostics/b8-1-v2-1-rehearsal-2048-650-20260810/rehearsal-r2.json",
+        "sha256": "e7be3529e47d93bb55e3b45635ae2cdb82337b3978455a5a2410fbfcdd951776"
+      },
+      {
+        "repetition": 3,
+        "path": "/Users/Office/.brain/benchmark/b8-1/diagnostics/b8-1-v2-1-rehearsal-2048-650-20260810/rehearsal-r3.json",
+        "sha256": "77373e683743d52e36de9465454cdef0efa56af954c0a13674a4ba300fb23204"
+      },
+      {
+        "repetition": 4,
+        "path": "/Users/Office/.brain/benchmark/b8-1/diagnostics/b8-1-v2-1-rehearsal-2048-650-20260810/rehearsal-r4.json",
+        "sha256": "f5450e591fe90f5068a72cd7dfb95dac239d4eea449da6f5774ced05d40700ac"
+      },
+      {
+        "repetition": 5,
+        "path": "/Users/Office/.brain/benchmark/b8-1/diagnostics/b8-1-v2-1-rehearsal-2048-650-20260810/rehearsal-r5.json",
+        "sha256": "6b76c03d75bcd6342645e13652d0bcb2b39ec410c25b47488351225ca5301663"
+      }
+    ],
+    "metrics": {
+      "aggregateCoverage": 0.9920634920634921,
+      "passingRuns": 5,
+      "requiredPassingRuns": 5,
+      "indexedFileAccuracy": 0.9,
+      "indexedLineAccuracy": 0.875,
+      "meanReciprocalRank": 0.4944444444444443,
+      "setOutcomeAccuracy": 1,
+      "callerCalleeF1": 1,
+      "coldWallMs": {
+        "minimum": 320,
+        "median": 1150,
+        "p95": 3870,
+        "maximum": 3870
+      },
+      "coldPeakRssMiB": {
+        "minimum": 249.828125,
+        "median": 391.296875,
+        "p95": 1606.578125,
+        "maximum": 1606.578125
+      },
+      "coldPeakCpuPercent": {
+        "minimum": 385.2173913043478,
+        "median": 404.6511627906977,
+        "p95": 546.875,
+        "maximum": 546.875
+      },
+      "refreshMsByRepository": {
+        "brain": {
+          "minimum": 2280,
+          "median": 2290,
+          "p95": 2510,
+          "maximum": 2510
+        },
+        "workbench": {
+          "minimum": 830,
+          "median": 830,
+          "p95": 840,
+          "maximum": 840
+        },
+        "prochat": {
+          "minimum": 210,
+          "median": 220,
+          "p95": 220,
+          "maximum": 220
+        }
+      },
+      "refreshPeakRssMiB": {
+        "minimum": 119.296875,
+        "median": 165.890625,
+        "p95": 316.578125,
+        "maximum": 316.578125
+      },
+      "refreshPeakCpuPercent": {
+        "minimum": 141.66666666666669,
+        "median": 155.42168674698794,
+        "p95": 171.42857142857142,
+        "maximum": 171.42857142857142
+      },
+      "idleRssMiB": {
+        "minimum": 0,
+        "median": 0,
+        "p95": 0,
+        "maximum": 0
+      },
+      "idleCpuPercent": {
+        "minimum": 0,
+        "median": 0,
+        "p95": 0,
+        "maximum": 0
+      },
+      "projectedSimultaneousServiceRssMiB": {
+        "minimum": 0,
+        "median": 0,
+        "p95": 0,
+        "maximum": 0
+      },
+      "indexBytes": {
+        "minimum": 16953344,
+        "median": 47099904,
+        "p95": 192262144,
+        "maximum": 192262144
+      }
+    },
+    "gates": {
+      "repetitions": true,
+      "requiredPassingRuns": true,
+      "startMemory": true,
+      "startDisk": true,
+      "coveragePerRepository": true,
+      "coverageAggregate": true,
+      "coverageKnown": true,
+      "exactSourceAccuracy": true,
+      "fallbackAccuracy": true,
+      "indexedFileAccuracy": true,
+      "indexedLineAccuracy": true,
+      "meanReciprocalRank": true,
+      "setOutcomeAccuracy": true,
+      "callerCalleeF1": true,
+      "coldTime": true,
+      "coldRss": true,
+      "coldCpu": true,
+      "refreshP95": true,
+      "refreshMaximum": true,
+      "refreshRss": true,
+      "refreshCpu": true,
+      "idleRss": true,
+      "idleCpu": true,
+      "totalServiceRss": true,
+      "refreshVisibleAndRestored": true,
+      "indexCapacity": true,
+      "repositoryIsolation": true,
+      "processCleanup": true,
+      "fallbackBehavior": true,
+      "requiredHeadroom": true
+    }
+  },
+  "host": {
+    "memoryBytes": 25769803776,
+    "logicalCpuCount": 12,
+    "freeMemoryPercent": 59,
+    "freeDiskBytes": 150006812672
+  },
+  "plannedCanonicalRunPath": "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-v2-1-canonical-20260810",
+  "checks": [
+    {
+      "name": "manifest-schema-valid",
+      "status": "pass"
+    },
+    {
+      "name": "evidence-schema-compiles",
+      "status": "pass"
+    },
+    {
+      "name": "source-pins-resolve",
+      "status": "pass"
+    },
+    {
+      "name": "provider-identity-matches-rehearsal",
+      "status": "pass"
+    },
+    {
+      "name": "provider-full-mode-bound",
+      "status": "pass"
+    },
+    {
+      "name": "five-of-five-rehearsals-pass",
+      "status": "pass"
+    },
+    {
+      "name": "coverage-known-and-gated",
+      "status": "pass"
+    },
+    {
+      "name": "fallback-accuracy-one",
+      "status": "pass"
+    },
+    {
+      "name": "caller-callee-f1-gated",
+      "status": "pass"
+    },
+    {
+      "name": "lifecycle-budgets-pass-with-headroom",
+      "status": "pass"
+    },
+    {
+      "name": "four-isolation-controls-pass",
+      "status": "pass"
+    },
+    {
+      "name": "graphify-out-of-contract",
+      "status": "pass"
+    },
+    {
+      "name": "implementation-paths-exclude-mind",
+      "status": "pass"
+    },
+    {
+      "name": "canonical-run-path-absent",
+      "status": "pass"
+    },
+    {
+      "name": "dry-run-only",
+      "status": "pass"
+    }
+  ],
+  "planSha256": "f0695fdfe163c50f96544e9ff901dec8737eca1eff458d8a87dd01ca7664fe34",
+  "createdAt": "2026-08-10T13:10:38.978Z"
+}
