@@ -13,6 +13,33 @@ const sha256 = file => crypto.createHash('sha256').update(fs.readFileSync(file))
 const close = (a, b) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= Number.EPSILON * Math.max(1, Math.abs(a), Math.abs(b));
 const percentile = (values, fraction) => [...values].sort((a, b) => a - b)[Math.max(0, Math.ceil(values.length * fraction) - 1)];
 
+export function aggregateQualityPasses(aggregate, manifest) {
+  return Boolean(aggregate)
+    && aggregate.fileAccuracy >= manifest.acceptancePolicy.minimumIndexedFixtureFileAccuracy
+    && aggregate.lineAccuracy >= manifest.acceptancePolicy.minimumIndexedFixtureLineAccuracy
+    && aggregate.meanReciprocalRank >= manifest.retrievalPolicy.minimumMeanReciprocalRank
+    && aggregate.setOutcomeAccuracy >= manifest.acceptancePolicy.minimumSetOutcomeAccuracy
+    && aggregate.callerCalleeF1 >= manifest.acceptancePolicy.minimumCallerCalleeF1
+    && aggregate.exactSourceAccuracy === 1
+    && aggregate.fallbackAccuracy === 1;
+}
+
+export function fallbackProbeIsBound(probe, coverage) {
+  return Boolean(probe && coverage)
+    && coverage.unindexedFiles.includes(probe.expectedFile)
+    && probe.exactSourceCandidates.includes(probe.expectedFile)
+    && probe.targetIndexed === false
+    && probe.cbmStructuralCredit === 0
+    && probe.exactSourcePassed === true
+    && JSON.stringify(coverage.fallbackFixtureIds) === JSON.stringify([probe.fixtureId]);
+}
+
+export function targetRankIsValid(result, authority, maximumCandidates) {
+  if (result.subject !== 'cbm' || !result.targetIndexed || authority?.scoringType === 'count-match') return true;
+  const validRank = Number.isInteger(result.targetRank) && result.targetRank >= 1 && result.targetRank <= maximumCandidates;
+  return result.fileCorrect ? validRank : (result.targetRank === null || validRank);
+}
+
 export function validateEvidenceObjects({ evidence, plan, manifest, preflightReceiptPath, checkFilesystem = true }) {
   const errors = [];
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH));
@@ -75,9 +102,6 @@ export function validateEvidenceObjects({ evidence, plan, manifest, preflightRec
       refreshByRepository[repositoryId].push(result.steadyState.refreshMs); runServiceRss += result.steadyState.totalServiceRssMiB;
       const budget = manifest.resourceBudget;
       runPassed &&= result.coverageRatio >= manifest.coveragePolicy.minimumPerRepositoryCoverage && result.unknownCount === 0
-        && result.fileAccuracy >= manifest.acceptancePolicy.minimumIndexedFixtureFileAccuracy && result.lineAccuracy >= manifest.acceptancePolicy.minimumIndexedFixtureLineAccuracy
-        && result.meanReciprocalRank >= manifest.retrievalPolicy.minimumMeanReciprocalRank && result.setOutcomeAccuracy >= manifest.acceptancePolicy.minimumSetOutcomeAccuracy
-        && result.callerCalleeF1 >= manifest.acceptancePolicy.minimumCallerCalleeF1 && result.exactSourceAccuracy === 1 && result.fallbackAccuracy === 1
         && result.coldStart.wallMs <= budget.coldStart.maximumIndexingTimeMsPerRepository * headroom
         && result.coldStart.peakRssMiB <= budget.coldStart.maximumPeakRssMiB * headroom && result.coldStart.peakCpuPercent <= budget.coldStart.maximumPeakCpuPercent * headroom
         && result.steadyState.refreshMs <= budget.steadyState.maximumRefreshP95Ms * headroom
@@ -85,7 +109,8 @@ export function validateEvidenceObjects({ evidence, plan, manifest, preflightRec
         && result.steadyState.idleRssMiB <= budget.steadyState.maximumIdleRssMiB * headroom && result.steadyState.idleCpuPercent <= budget.steadyState.maximumIdleCpuPercent * headroom
         && result.indexBytes <= budget.capacity.maximumIndexBytesPerRepository * headroom;
     }
-    runPassed &&= runServiceRss <= manifest.resourceBudget.capacity.maximumTotalServiceRssMiB * headroom;
+    runPassed &&= aggregateQualityPasses(run.aggregateQuality, manifest)
+      && runServiceRss <= manifest.resourceBudget.capacity.maximumTotalServiceRssMiB * headroom;
     if (run.allGatesPassed !== runPassed) errors.push(`run ${run.repetition}: allGatesPassed mismatch`);
     if (runPassed) computedPassingRuns += 1;
   }
@@ -97,7 +122,7 @@ export function validateEvidenceObjects({ evidence, plan, manifest, preflightRec
   if (JSON.stringify(fallbackIds) !== JSON.stringify(requiredRepositories)) errors.push('fallback probe repository set mismatch');
   for (const repositoryId of requiredRepositories) {
     const probe = evidence.fallbackProbes?.[repositoryId]; const coverage = evidence.coverageEvidence?.[repositoryId]; if (!probe || !coverage) continue;
-    if (!coverage.unindexedFiles.includes(probe.expectedFile) || !probe.exactSourceCandidates.includes(probe.expectedFile) || probe.targetIndexed !== false || probe.cbmStructuralCredit !== 0 || probe.exactSourcePassed !== true || JSON.stringify(coverage.fallbackFixtureIds) !== JSON.stringify([probe.fixtureId])) errors.push(`${repositoryId}: fallback probe is not bound to unindexed coverage`);
+    if (!fallbackProbeIsBound(probe, coverage)) errors.push(`${repositoryId}: fallback probe is not bound to unindexed coverage`);
   }
   const expectedFixtureKeys = manifest.fixtures.flatMap(fixture => plan.selectedSubjects.map(subject => `${subject}:${fixture.fixtureId}`)).sort();
   const actualFixtureKeys = (evidence.fixtureResults ?? []).map(result => `${result.subject}:${result.fixtureId}`).sort();
@@ -105,7 +130,7 @@ export function validateEvidenceObjects({ evidence, plan, manifest, preflightRec
   for (const result of evidence.fixtureResults ?? []) {
     const authority = manifest.fixtures.find(fixture => fixture.fixtureId === result.fixtureId);
     if (!authority || result.retrievalPattern !== (authority.retrievalPattern ?? authority.verification.fileName)) errors.push(`${result.subject}:${result.fixtureId}: retrieval authority mismatch`);
-    if (result.subject === 'cbm' && result.targetIndexed && authority?.scoringType !== 'count-match' && !(Number.isInteger(result.targetRank) && result.targetRank >= 1 && result.targetRank <= manifest.retrievalPolicy.maximumCandidates)) errors.push(`${result.subject}:${result.fixtureId}: invalid target rank`);
+    if (!targetRankIsValid(result, authority, manifest.retrievalPolicy.maximumCandidates)) errors.push(`${result.subject}:${result.fixtureId}: invalid target rank`);
     if (authority && (Number.isInteger(authority.expectedLine) ? typeof result.lineCorrect !== 'boolean' : result.lineCorrect !== null)) errors.push(`${result.subject}:${result.fixtureId}: line applicability mismatch`);
   }
   const cbmResults = (evidence.fixtureResults ?? []).filter(result => result.subject === 'cbm');

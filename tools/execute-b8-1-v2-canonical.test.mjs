@@ -7,6 +7,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { computePlanDigest, verifyPlan, KNOWN_STALE_DIGESTS } from './lib/b8-1-v2-plan-digest.mjs';
 import { validateAuthorization } from './execute-b8-1-v2-canonical.mjs';
+import { aggregateQualityPasses, fallbackProbeIsBound, targetRankIsValid } from './validate-b8-1-v2-evidence.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = path.join(ROOT, 'operations/specs/b8-1-v2-context-memory-benchmark-manifest.json');
@@ -121,8 +122,16 @@ test('KNOWN_STALE_DIGESTS: final plan (per-repo gate bug) is blocked', () => {
   assert.ok(KNOWN_STALE_DIGESTS.has('c4fa507e06b9614d7e23914d90a3fbf9bef2bfc3f371b6e8b7eeb6415707ac07'));
 });
 
-test('KNOWN_STALE_DIGESTS: contains at least 9 entries covering all superseded plans', () => {
-  assert.ok(KNOWN_STALE_DIGESTS.size >= 9);
+test('KNOWN_STALE_DIGESTS: interrupted corrected run is blocked', () => {
+  assert.ok(KNOWN_STALE_DIGESTS.has('b0989d74accd1419802cb41712b9d52e57a1098c07dee524b193f36ebb628f02'));
+});
+
+test('KNOWN_STALE_DIGESTS: validation-failed post-interruption run is blocked', () => {
+  assert.ok(KNOWN_STALE_DIGESTS.has('6f78fb9714cc3254751ec260f40cd9d8a7320600758af9209526a3b5247e42d2'));
+});
+
+test('KNOWN_STALE_DIGESTS: contains at least 11 entries covering all superseded plans', () => {
+  assert.ok(KNOWN_STALE_DIGESTS.size >= 11);
 });
 
 // ── validateAuthorization: exact approval binding (current plan) ──────────────
@@ -330,6 +339,26 @@ test('evidence validation: schema compiles without error', async () => {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   const validate = ajv.compile(schema);
   assert.ok(typeof validate === 'function');
+});
+
+test('evidence validation: aggregate quality uses contract-wide thresholds, not per-repository quality', () => {
+  const aggregate = { fileAccuracy: 0.9, lineAccuracy: 0.875, meanReciprocalRank: 0.49, setOutcomeAccuracy: 1, callerCalleeF1: 1, exactSourceAccuracy: 1, fallbackAccuracy: 1 };
+  assert.equal(aggregateQualityPasses(aggregate, manifest), true);
+  assert.equal(aggregateQualityPasses({ ...aggregate, fileAccuracy: 0.89 }, manifest), false);
+});
+
+test('evidence validation: fallback probe must bind exactly to unindexed coverage', () => {
+  const probe = { fixtureId: 'fallback-brain', expectedFile: 'tools/missed.mjs', exactSourceCandidates: ['tools/missed.mjs'], targetIndexed: false, cbmStructuralCredit: 0, exactSourcePassed: true };
+  const coverage = { unindexedFiles: ['tools/missed.mjs'], fallbackFixtureIds: ['fallback-brain'] };
+  assert.equal(fallbackProbeIsBound(probe, coverage), true);
+  assert.equal(fallbackProbeIsBound(probe, { ...coverage, fallbackFixtureIds: [] }), false);
+});
+
+test('evidence validation: indexed miss may have null rank and contributes zero MRR', () => {
+  const authority = { scoringType: 'exact-match' };
+  assert.equal(targetRankIsValid({ subject: 'cbm', targetIndexed: true, fileCorrect: false, targetRank: null }, authority, 20), true);
+  assert.equal(targetRankIsValid({ subject: 'cbm', targetIndexed: true, fileCorrect: true, targetRank: null }, authority, 20), false);
+  assert.equal(targetRankIsValid({ subject: 'cbm', targetIndexed: true, fileCorrect: true, targetRank: 2 }, authority, 20), true);
 });
 
 // ── Cleanup requirement ───────────────────────────────────────────────────────

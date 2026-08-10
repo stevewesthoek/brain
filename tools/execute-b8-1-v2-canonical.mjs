@@ -199,8 +199,7 @@ function buildEvidenceFromRuns(plan, manifest, runs, host, isolation, preflightR
   const coverageEvidence = {};
   const lastRun = runs[runs.length - 1];
   for (const repo of lastRun.repositories) {
-    const fallbackFixtureIds = repo.fallbackProbe?.file ? manifest.fixtures.filter(f => f.repositoryId === repo.repositoryId && f.expectedFile === repo.fallbackProbe.file).map(f => f.fixtureId) : [];
-    coverageEvidence[repo.repositoryId] = { eligibleCount: repo.coverage.eligibleCount, indexedCount: repo.coverage.indexedCount, unindexedCount: repo.coverage.unindexedCount, unknownCount: repo.coverage.unknownCount, coverageRatio: repo.coverage.ratio, unindexedFiles: repo.coverage.unindexedFiles, fallbackFixtureIds };
+    coverageEvidence[repo.repositoryId] = { eligibleCount: repo.coverage.eligibleCount, indexedCount: repo.coverage.indexedCount, unindexedCount: repo.coverage.unindexedCount, unknownCount: repo.coverage.unknownCount, coverageRatio: repo.coverage.ratio, unindexedFiles: repo.coverage.unindexedFiles, fallbackFixtureIds: [] };
   }
 
   const fallbackProbes = {};
@@ -208,6 +207,7 @@ function buildEvidenceFromRuns(plan, manifest, runs, host, isolation, preflightR
     if (repo.fallbackProbe?.file) {
       const authority = manifest.fixtures.find(f => f.repositoryId === repo.repositoryId && f.expectedFile === repo.fallbackProbe.file);
       fallbackProbes[repo.repositoryId] = { fixtureId: authority?.fixtureId ?? `fallback-${repo.repositoryId}`, question: repo.fallbackProbe.question, retrievalPattern: repo.fallbackProbe.retrievalPattern, expectedFile: repo.fallbackProbe.file, exactSourceCandidates: repo.fallbackProbe.exactSourceCandidates, targetIndexed: false, cbmStructuralCredit: 0, exactSourceSha256: repo.fallbackProbe.exactSourceSha256, exactSourcePassed: repo.fallbackProbe.exactSourcePassed };
+      coverageEvidence[repo.repositoryId].fallbackFixtureIds = [fallbackProbes[repo.repositoryId].fixtureId];
     }
   }
 
@@ -288,7 +288,7 @@ function buildEvidenceFromRuns(plan, manifest, runs, host, isolation, preflightR
     const hostAtStart = run.hostAtStart;
     if (hostAtStart.freeMemoryPercentAtStart < budget.basis.minimumStartFreeMemoryPercent) allPass = false;
     if (hostAtStart.freeDiskBytesAtStart < budget.basis.minimumStartFreeDiskBytes) allPass = false;
-    return { repetition: run.repetition, startCapacity: { freeMemoryPercent: hostAtStart.freeMemoryPercentAtStart, freeDiskBytes: hostAtStart.freeDiskBytesAtStart }, repositories, allGatesPassed: allPass };
+    return { repetition: run.repetition, startCapacity: { freeMemoryPercent: hostAtStart.freeMemoryPercentAtStart, freeDiskBytes: hostAtStart.freeDiskBytesAtStart }, repositories, aggregateQuality: { fileAccuracy: aggFileAcc, lineAccuracy: aggLineAcc, meanReciprocalRank: aggMrr, setOutcomeAccuracy: aggSetAcc, callerCalleeF1: aggF1, exactSourceAccuracy: aggExactAll ? 1 : 0, fallbackAccuracy: aggFallbackAll ? 1 : 0 }, allGatesPassed: allPass };
   });
 
   const fixtureResults = [];

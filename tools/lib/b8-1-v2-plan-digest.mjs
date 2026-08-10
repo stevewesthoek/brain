@@ -13,6 +13,7 @@ export const KNOWN_STALE_DIGESTS = new Set([
   'd6b9586e898a9e3a5ef24eaf13456f5d54be5101ae9765fb00a4d59aa46d36c6',
   'c4fa507e06b9614d7e23914d90a3fbf9bef2bfc3f371b6e8b7eeb6415707ac07',
   'b0989d74accd1419802cb41712b9d52e57a1098c07dee524b193f36ebb628f02',
+  '6f78fb9714cc3254751ec260f40cd9d8a7320600758af9209526a3b5247e42d2',
 ]);
 export const EXCLUDED_FIELDS = new Set(['planSha256', 'createdAt']);
 export const ALLOWED_PLAN_FIELDS = new Set([
