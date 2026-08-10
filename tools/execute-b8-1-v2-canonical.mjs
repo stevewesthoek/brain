@@ -228,7 +228,7 @@ function buildEvidenceFromRuns(plan, manifest, runs, host, isolation, preflightR
   const runResults = runs.map(run => {
     const repositories = {};
     let runServiceRss = 0;
-    let allPass = true;
+    // Per-repo metrics (for evidence recording only — NOT for per-repo gate decisions)
     for (const repo of run.repositories) {
       const indexed = repo.fixtures.filter(f => f.targetIndexed);
       const lines = indexed.filter(f => f.lineCorrect !== null);
@@ -242,32 +242,52 @@ function buildEvidenceFromRuns(plan, manifest, runs, host, isolation, preflightR
       const f1 = structural.length ? structural.reduce((sum, v) => sum + v, 0) / structural.length : 0;
       const exactAll = repo.fixtures.every(f => f.exactSourcePassed);
       const fallbackAll = repo.fixtures.filter(f => f.fallbackRequired).every(f => f.exactSourcePassed);
-      const budget = manifest.resourceBudget;
-      const repoPass = repo.coverage.ratio >= manifest.coveragePolicy.minimumPerRepositoryCoverage
-        && repo.coverage.unknownCount === 0
-        && fileAccuracy >= manifest.acceptancePolicy.minimumIndexedFixtureFileAccuracy
-        && lineAccuracy >= manifest.acceptancePolicy.minimumIndexedFixtureLineAccuracy
-        && mrr >= manifest.retrievalPolicy.minimumMeanReciprocalRank
-        && setOutcome >= manifest.acceptancePolicy.minimumSetOutcomeAccuracy
-        && f1 >= manifest.acceptancePolicy.minimumCallerCalleeF1
-        && exactAll && fallbackAll
-        && repo.coldStart.wallMs <= budget.coldStart.maximumIndexingTimeMsPerRepository * headroom
-        && repo.coldStart.peakRssMiB <= budget.coldStart.maximumPeakRssMiB * headroom
-        && repo.coldStart.peakCpuPercent <= budget.coldStart.maximumPeakCpuPercent * headroom
-        && repo.steadyState.refreshMs <= budget.steadyState.maximumRefreshP95Ms * headroom
-        && repo.steadyState.refreshPeakRssMiB <= budget.steadyState.maximumRefreshPeakRssMiB * headroom
-        && repo.steadyState.refreshPeakCpuPercent <= budget.steadyState.maximumRefreshPeakCpuPercent * headroom
-        && repo.steadyState.idleRssMiB <= budget.steadyState.maximumIdleRssMiB * headroom
-        && repo.steadyState.idleCpuPercent <= budget.steadyState.maximumIdleCpuPercent * headroom
-        && repo.indexBytes <= budget.capacity.maximumIndexBytesPerRepository * headroom;
-      if (!repoPass) allPass = false;
       runServiceRss += repo.steadyState.totalServiceRssMiB;
       repositories[repo.repositoryId] = { coverageRatio: repo.coverage.ratio, unknownCount: 0, fileAccuracy, lineAccuracy, meanReciprocalRank: mrr, setOutcomeAccuracy: setOutcome, callerCalleeF1: f1, exactSourceAccuracy: exactAll ? 1 : 0, fallbackAccuracy: fallbackAll ? 1 : 0, coldStart: repo.coldStart, steadyState: { refreshMs: repo.steadyState.refreshMs, refreshPeakRssMiB: repo.steadyState.refreshPeakRssMiB, refreshPeakCpuPercent: repo.steadyState.refreshPeakCpuPercent, idleRssMiB: repo.steadyState.idleRssMiB, idleCpuPercent: repo.steadyState.idleCpuPercent, totalServiceRssMiB: repo.steadyState.totalServiceRssMiB }, indexBytes: repo.indexBytes };
     }
-    if (runServiceRss > manifest.resourceBudget.capacity.maximumTotalServiceRssMiB * headroom) allPass = false;
+
+    // Aggregate quality gates across all repos in this run — matching buildGates() semantics exactly
+    const allIndexed = run.repositories.flatMap(r => r.fixtures.filter(f => f.targetIndexed));
+    const allLines = allIndexed.filter(f => f.lineCorrect !== null);
+    const allSets = allIndexed.filter(f => f.scoringType === 'set-match');
+    const allRanked = allIndexed.filter(f => f.scoringType !== 'count-match');
+    const allStructural = allIndexed.filter(f => f.structural).flatMap(f => [f.structural.caller.f1, f.structural.callee.f1]);
+    const allExact = run.repositories.flatMap(r => r.fixtures);
+    const aggFileAcc = allIndexed.length ? allIndexed.filter(f => f.fileCorrect).length / allIndexed.length : 0;
+    const aggLineAcc = allLines.length ? allLines.filter(f => f.lineCorrect).length / allLines.length : 0;
+    const aggMrr = allRanked.length ? allRanked.reduce((sum, f) => sum + (f.targetRank ? 1 / f.targetRank : 0), 0) / allRanked.length : 0;
+    const aggSetAcc = allSets.length ? allSets.reduce((sum, f) => sum + f.setAccuracy, 0) / allSets.length : 1;
+    const aggF1 = allStructural.length ? allStructural.reduce((sum, v) => sum + v, 0) / allStructural.length : 0;
+    const aggExactAll = allExact.every(f => f.exactSourcePassed);
+    const aggFallbackAll = allExact.filter(f => f.fallbackRequired).every(f => f.exactSourcePassed);
+
+    const budget = manifest.resourceBudget;
+    let allPass = true;
+    // Aggregate quality gates
+    if (aggFileAcc < manifest.acceptancePolicy.minimumIndexedFixtureFileAccuracy) allPass = false;
+    if (aggLineAcc < manifest.acceptancePolicy.minimumIndexedFixtureLineAccuracy) allPass = false;
+    if (aggMrr < manifest.retrievalPolicy.minimumMeanReciprocalRank) allPass = false;
+    if (aggSetAcc < manifest.acceptancePolicy.minimumSetOutcomeAccuracy) allPass = false;
+    if (aggF1 < manifest.acceptancePolicy.minimumCallerCalleeF1) allPass = false;
+    if (!aggExactAll || !aggFallbackAll) allPass = false;
+    // Per-repo structural/coverage/resource gates
+    for (const repo of run.repositories) {
+      if (repo.coverage.ratio < manifest.coveragePolicy.minimumPerRepositoryCoverage) allPass = false;
+      if (repo.coverage.unknownCount > 0) allPass = false;
+      if (repo.coldStart.wallMs > budget.coldStart.maximumIndexingTimeMsPerRepository * headroom) allPass = false;
+      if (repo.coldStart.peakRssMiB > budget.coldStart.maximumPeakRssMiB * headroom) allPass = false;
+      if (repo.coldStart.peakCpuPercent > budget.coldStart.maximumPeakCpuPercent * headroom) allPass = false;
+      if (repo.steadyState.refreshMs > budget.steadyState.maximumRefreshP95Ms * headroom) allPass = false;
+      if (repo.steadyState.refreshPeakRssMiB > budget.steadyState.maximumRefreshPeakRssMiB * headroom) allPass = false;
+      if (repo.steadyState.refreshPeakCpuPercent > budget.steadyState.maximumRefreshPeakCpuPercent * headroom) allPass = false;
+      if (repo.steadyState.idleRssMiB > budget.steadyState.maximumIdleRssMiB * headroom) allPass = false;
+      if (repo.steadyState.idleCpuPercent > budget.steadyState.maximumIdleCpuPercent * headroom) allPass = false;
+      if (repo.indexBytes > budget.capacity.maximumIndexBytesPerRepository * headroom) allPass = false;
+    }
+    if (runServiceRss > budget.capacity.maximumTotalServiceRssMiB * headroom) allPass = false;
     const hostAtStart = run.hostAtStart;
-    if (hostAtStart.freeMemoryPercentAtStart < manifest.resourceBudget.basis.minimumStartFreeMemoryPercent) allPass = false;
-    if (hostAtStart.freeDiskBytesAtStart < manifest.resourceBudget.basis.minimumStartFreeDiskBytes) allPass = false;
+    if (hostAtStart.freeMemoryPercentAtStart < budget.basis.minimumStartFreeMemoryPercent) allPass = false;
+    if (hostAtStart.freeDiskBytesAtStart < budget.basis.minimumStartFreeDiskBytes) allPass = false;
     return { repetition: run.repetition, startCapacity: { freeMemoryPercent: hostAtStart.freeMemoryPercentAtStart, freeDiskBytes: hostAtStart.freeDiskBytesAtStart }, repositories, allGatesPassed: allPass };
   });
 

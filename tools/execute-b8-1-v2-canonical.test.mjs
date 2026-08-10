@@ -117,8 +117,12 @@ test('KNOWN_STALE_DIGESTS: auth-binding plan (no executor identity) is blocked',
   assert.ok(KNOWN_STALE_DIGESTS.has('d6b9586e898a9e3a5ef24eaf13456f5d54be5101ae9765fb00a4d59aa46d36c6'));
 });
 
-test('KNOWN_STALE_DIGESTS: contains at least 8 entries covering all superseded plans', () => {
-  assert.ok(KNOWN_STALE_DIGESTS.size >= 8);
+test('KNOWN_STALE_DIGESTS: final plan (per-repo gate bug) is blocked', () => {
+  assert.ok(KNOWN_STALE_DIGESTS.has('c4fa507e06b9614d7e23914d90a3fbf9bef2bfc3f371b6e8b7eeb6415707ac07'));
+});
+
+test('KNOWN_STALE_DIGESTS: contains at least 9 entries covering all superseded plans', () => {
+  assert.ok(KNOWN_STALE_DIGESTS.size >= 9);
 });
 
 // ── validateAuthorization: exact approval binding (current plan) ──────────────
