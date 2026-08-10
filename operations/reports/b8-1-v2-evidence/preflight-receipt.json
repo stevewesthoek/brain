@@ -1,6 +1,8 @@
 {
-  "runId": "b8-1-v2-canonical-authorization-20260810-final-v1",
-  "planSha256": "d95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284",
+  "runId": "b8-1-v2-1-final-20260810",
+  "planSha256": "c4fa507e06b9614d7e23914d90a3fbf9bef2bfc3f371b6e8b7eeb6415707ac07",
+  "authorizedPlanSha256": "c4fa507e06b9614d7e23914d90a3fbf9bef2bfc3f371b6e8b7eeb6415707ac07",
+  "authorizedRunId": "b8-1-v2-1-final-20260810",
   "providerIdentity": {
     "path": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
     "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6",
@@ -15,12 +17,12 @@
     "adapter": "e3d7a792c58a5d3783d2f7274c82d70062393830d8cb1ded713ca554a470bd2f",
     "profile": "87899ef5c1aed8573034beda57d0e51278417d86b2e7cb4ebac3fe89ecab8d9b"
   },
-  "manifestSha256": "a280ad11cc21df0e2eccfffcfcb8ed4deeaef9326d3d9eefbd44431f0e0a444f",
-  "startedAt": "2026-08-10T11:36:49.500Z",
+  "manifestSha256": "e20e1fff3607bf01c181262eac656faa5d8994eded1e5cf4702da5fc9ef3a629",
+  "startedAt": "2026-08-10T17:08:06.331Z",
   "hostAtStart": {
     "memoryBytes": 25769803776,
     "logicalCpuCount": 12,
-    "freeMemoryPercent": 77,
-    "freeDiskBytes": 162005209088
+    "freeMemoryPercent": 55,
+    "freeDiskBytes": 145220599808
   }
 }

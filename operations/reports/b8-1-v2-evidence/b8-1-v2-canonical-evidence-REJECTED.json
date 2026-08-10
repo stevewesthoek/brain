@@ -1,8 +1,8 @@
 {
   "schemaVersion": "4.0.0",
-  "contractVersion": "B8.1-V2",
-  "runId": "b8-1-v2-canonical-authorization-20260810-final-v1",
-  "runAt": "2026-08-10T11:39:42.300Z",
+  "contractVersion": "B8.1-V2.1",
+  "runId": "b8-1-v2-1-final-20260810",
+  "runAt": "2026-08-10T17:11:21.706Z",
   "partialEvidence": false,
   "selectedSubjects": [
     "cbm",
@@ -23,9 +23,9 @@
       "commit": "85087d54f712b1333be7c620f23b6bcac9cde90b"
     }
   },
-  "manifestHash": "sha256:a280ad11cc21df0e2eccfffcfcb8ed4deeaef9326d3d9eefbd44431f0e0a444f",
-  "preflightReceiptHash": "sha256:e8df5f1017b1f84d75040040651b08ad773dc56cb20c120591223f3b306f3994",
-  "planSha256": "d95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284",
+  "manifestHash": "sha256:e20e1fff3607bf01c181262eac656faa5d8994eded1e5cf4702da5fc9ef3a629",
+  "preflightReceiptHash": "sha256:b1779d52ca21fc69a39ce37b0ca0294d798bb5daf0f00f990e4534d7312c9859",
+  "planSha256": "c4fa507e06b9614d7e23914d90a3fbf9bef2bfc3f371b6e8b7eeb6415707ac07",
   "subjectBinaryIdentity": {
     "cbm": {
       "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
@@ -210,265 +210,95 @@
   "lifecycleMetrics": {
     "brain": {
       "coldStart": {
-        "wallMs": 3650,
-        "peakRssMiB": 1606.140625,
-        "peakCpuPercent": 512.7536231884056
+        "wallMs": 4090,
+        "peakRssMiB": 1506.109375,
+        "peakCpuPercent": 486.43617021276606
       },
       "steadyState": {
         "idleRssMiB": 0,
         "idleCpuPercent": 0,
         "totalServiceRssMiB": 0,
         "refreshSamplesMs": [
-          2090,
-          2070,
-          2190,
-          2100,
-          2190
+          2290,
+          2290,
+          2390,
+          2400,
+          2290
         ],
         "refreshStatistics": {
-          "minimum": 2070,
-          "median": 2100,
-          "p95": 2190,
-          "maximum": 2190
+          "minimum": 2290,
+          "median": 2290,
+          "p95": 2400,
+          "maximum": 2400
         },
-        "refreshPeakRssMiB": 327.765625,
-        "refreshPeakCpuPercent": 166.18357487922705
+        "refreshPeakRssMiB": 313.859375,
+        "refreshPeakCpuPercent": 161.57205240174673
       },
-      "indexBytes": 209694720
+      "indexBytes": 172863488
     },
     "prochat": {
       "coldStart": {
-        "wallMs": 320,
-        "peakRssMiB": 255.3125,
-        "peakCpuPercent": 541.9354838709677
+        "wallMs": 430,
+        "peakRssMiB": 251.890625,
+        "peakCpuPercent": 540.625
       },
       "steadyState": {
         "idleRssMiB": 0,
         "idleCpuPercent": 0,
         "totalServiceRssMiB": 0,
         "refreshSamplesMs": [
-          210,
-          210,
-          210,
           220,
+          220,
+          240,
+          210,
           220
         ],
         "refreshStatistics": {
           "minimum": 210,
-          "median": 210,
-          "p95": 220,
-          "maximum": 220
+          "median": 220,
+          "p95": 240,
+          "maximum": 240
         },
-        "refreshPeakRssMiB": 121.09375,
-        "refreshPeakCpuPercent": 161.9047619047619
+        "refreshPeakRssMiB": 118.953125,
+        "refreshPeakCpuPercent": 166.66666666666666
       },
-      "indexBytes": 18132992
+      "indexBytes": 15380480
     },
     "workbench": {
       "coldStart": {
-        "wallMs": 1050,
-        "peakRssMiB": 394.59375,
-        "peakCpuPercent": 413.33333333333326
+        "wallMs": 1290,
+        "peakRssMiB": 400.125,
+        "peakCpuPercent": 394.7826086956522
       },
       "steadyState": {
         "idleRssMiB": 0,
         "idleCpuPercent": 0,
         "totalServiceRssMiB": 0,
         "refreshSamplesMs": [
-          730,
-          730,
-          730,
-          740,
-          730
+          830,
+          850,
+          830,
+          950,
+          840
         ],
         "refreshStatistics": {
-          "minimum": 730,
-          "median": 730,
-          "p95": 740,
-          "maximum": 740
+          "minimum": 830,
+          "median": 840,
+          "p95": 950,
+          "maximum": 950
         },
-        "refreshPeakRssMiB": 168.53125,
-        "refreshPeakCpuPercent": 158.9041095890411
+        "refreshPeakRssMiB": 173.90625,
+        "refreshPeakCpuPercent": 143.37349397590364
       },
-      "indexBytes": 50966528
+      "indexBytes": 42446848
     }
   },
   "runResults": [
     {
       "repetition": 1,
       "startCapacity": {
-        "freeMemoryPercent": 77,
-        "freeDiskBytes": 162005176320
-      },
-      "repositories": {
-        "brain": {
-          "coverageRatio": 0.9887971698113207,
-          "unknownCount": 0,
-          "fileAccuracy": 1,
-          "lineAccuracy": 1,
-          "meanReciprocalRank": 0.5708333333333333,
-          "setOutcomeAccuracy": 1,
-          "callerCalleeF1": 1,
-          "exactSourceAccuracy": 1,
-          "fallbackAccuracy": 1,
-          "coldStart": {
-            "wallMs": 3340,
-            "peakRssMiB": 1573.265625,
-            "peakCpuPercent": 498.2035928143713
-          },
-          "steadyState": {
-            "refreshMs": 2090,
-            "refreshPeakRssMiB": 315.96875,
-            "refreshPeakCpuPercent": 164.59330143540674,
-            "idleRssMiB": 0,
-            "idleCpuPercent": 0,
-            "totalServiceRssMiB": 0
-          },
-          "indexBytes": 209301504
-        },
-        "workbench": {
-          "coverageRatio": 0.9980769230769231,
-          "unknownCount": 0,
-          "fileAccuracy": 1,
-          "lineAccuracy": 1,
-          "meanReciprocalRank": 0.41666666666666663,
-          "setOutcomeAccuracy": 1,
-          "callerCalleeF1": 1,
-          "exactSourceAccuracy": 1,
-          "fallbackAccuracy": 1,
-          "coldStart": {
-            "wallMs": 1050,
-            "peakRssMiB": 391.546875,
-            "peakCpuPercent": 413.33333333333326
-          },
-          "steadyState": {
-            "refreshMs": 730,
-            "refreshPeakRssMiB": 162.078125,
-            "refreshPeakCpuPercent": 156.16438356164386,
-            "idleRssMiB": 0,
-            "idleCpuPercent": 0,
-            "totalServiceRssMiB": 0
-          },
-          "indexBytes": 50966528
-        },
-        "prochat": {
-          "coverageRatio": 0.9976744186046511,
-          "unknownCount": 0,
-          "fileAccuracy": 0.75,
-          "lineAccuracy": 0.6666666666666666,
-          "meanReciprocalRank": 0.4444444444444444,
-          "setOutcomeAccuracy": 1,
-          "callerCalleeF1": 1,
-          "exactSourceAccuracy": 1,
-          "fallbackAccuracy": 1,
-          "coldStart": {
-            "wallMs": 320,
-            "peakRssMiB": 253.265625,
-            "peakCpuPercent": 525
-          },
-          "steadyState": {
-            "refreshMs": 210,
-            "refreshPeakRssMiB": 120.953125,
-            "refreshPeakCpuPercent": 157.14285714285714,
-            "idleRssMiB": 0,
-            "idleCpuPercent": 0,
-            "totalServiceRssMiB": 0
-          },
-          "indexBytes": 18132992
-        }
-      },
-      "allGatesPassed": false
-    },
-    {
-      "repetition": 2,
-      "startCapacity": {
-        "freeMemoryPercent": 77,
-        "freeDiskBytes": 161334583296
-      },
-      "repositories": {
-        "brain": {
-          "coverageRatio": 0.9887971698113207,
-          "unknownCount": 0,
-          "fileAccuracy": 1,
-          "lineAccuracy": 1,
-          "meanReciprocalRank": 0.5708333333333333,
-          "setOutcomeAccuracy": 1,
-          "callerCalleeF1": 1,
-          "exactSourceAccuracy": 1,
-          "fallbackAccuracy": 1,
-          "coldStart": {
-            "wallMs": 3350,
-            "peakRssMiB": 1571.171875,
-            "peakCpuPercent": 507.7611940298507
-          },
-          "steadyState": {
-            "refreshMs": 2070,
-            "refreshPeakRssMiB": 327.765625,
-            "refreshPeakCpuPercent": 166.18357487922705,
-            "idleRssMiB": 0,
-            "idleCpuPercent": 0,
-            "totalServiceRssMiB": 0
-          },
-          "indexBytes": 209432576
-        },
-        "workbench": {
-          "coverageRatio": 0.9980769230769231,
-          "unknownCount": 0,
-          "fileAccuracy": 1,
-          "lineAccuracy": 1,
-          "meanReciprocalRank": 0.41666666666666663,
-          "setOutcomeAccuracy": 1,
-          "callerCalleeF1": 1,
-          "exactSourceAccuracy": 1,
-          "fallbackAccuracy": 1,
-          "coldStart": {
-            "wallMs": 1040,
-            "peakRssMiB": 394.59375,
-            "peakCpuPercent": 408.6538461538462
-          },
-          "steadyState": {
-            "refreshMs": 730,
-            "refreshPeakRssMiB": 168.09375,
-            "refreshPeakCpuPercent": 157.5342465753425,
-            "idleRssMiB": 0,
-            "idleCpuPercent": 0,
-            "totalServiceRssMiB": 0
-          },
-          "indexBytes": 50966528
-        },
-        "prochat": {
-          "coverageRatio": 0.9976744186046511,
-          "unknownCount": 0,
-          "fileAccuracy": 0.75,
-          "lineAccuracy": 0.6666666666666666,
-          "meanReciprocalRank": 0.4444444444444444,
-          "setOutcomeAccuracy": 1,
-          "callerCalleeF1": 1,
-          "exactSourceAccuracy": 1,
-          "fallbackAccuracy": 1,
-          "coldStart": {
-            "wallMs": 320,
-            "peakRssMiB": 250.90625,
-            "peakCpuPercent": 534.375
-          },
-          "steadyState": {
-            "refreshMs": 210,
-            "refreshPeakRssMiB": 120.984375,
-            "refreshPeakCpuPercent": 157.14285714285714,
-            "idleRssMiB": 0,
-            "idleCpuPercent": 0,
-            "totalServiceRssMiB": 0
-          },
-          "indexBytes": 18132992
-        }
-      },
-      "allGatesPassed": false
-    },
-    {
-      "repetition": 3,
-      "startCapacity": {
-        "freeMemoryPercent": 77,
-        "freeDiskBytes": 160667701248
+        "freeMemoryPercent": 54,
+        "freeDiskBytes": 145218519040
       },
       "repositories": {
         "brain": {
@@ -483,18 +313,18 @@
           "fallbackAccuracy": 1,
           "coldStart": {
             "wallMs": 3650,
-            "peakRssMiB": 1565.5,
-            "peakCpuPercent": 495.34246575342473
+            "peakRssMiB": 1465.109375,
+            "peakCpuPercent": 479.72602739726034
           },
           "steadyState": {
-            "refreshMs": 2190,
-            "refreshPeakRssMiB": 324.328125,
-            "refreshPeakCpuPercent": 158.4474885844749,
+            "refreshMs": 2290,
+            "refreshPeakRssMiB": 311.71875,
+            "refreshPeakCpuPercent": 158.07860262008734,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 209694720
+          "indexBytes": 172601344
         },
         "workbench": {
           "coverageRatio": 0.9980769230769231,
@@ -507,19 +337,19 @@
           "exactSourceAccuracy": 1,
           "fallbackAccuracy": 1,
           "coldStart": {
-            "wallMs": 1050,
-            "peakRssMiB": 392.734375,
-            "peakCpuPercent": 406.66666666666674
+            "wallMs": 1140,
+            "peakRssMiB": 394.28125,
+            "peakCpuPercent": 378.9473684210527
           },
           "steadyState": {
-            "refreshMs": 730,
-            "refreshPeakRssMiB": 161.734375,
-            "refreshPeakCpuPercent": 157.5342465753425,
+            "refreshMs": 830,
+            "refreshPeakRssMiB": 163.359375,
+            "refreshPeakCpuPercent": 143.37349397590364,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 50966528
+          "indexBytes": 42446848
         },
         "prochat": {
           "coverageRatio": 0.9976744186046511,
@@ -532,19 +362,189 @@
           "exactSourceAccuracy": 1,
           "fallbackAccuracy": 1,
           "coldStart": {
-            "wallMs": 310,
-            "peakRssMiB": 253.109375,
-            "peakCpuPercent": 541.9354838709677
+            "wallMs": 320,
+            "peakRssMiB": 251.765625,
+            "peakCpuPercent": 540.625
           },
           "steadyState": {
-            "refreshMs": 210,
-            "refreshPeakRssMiB": 119.25,
-            "refreshPeakCpuPercent": 161.9047619047619,
+            "refreshMs": 220,
+            "refreshPeakRssMiB": 117.796875,
+            "refreshPeakCpuPercent": 154.54545454545453,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 18132992
+          "indexBytes": 15380480
+        }
+      },
+      "allGatesPassed": false
+    },
+    {
+      "repetition": 2,
+      "startCapacity": {
+        "freeMemoryPercent": 51,
+        "freeDiskBytes": 144552722432
+      },
+      "repositories": {
+        "brain": {
+          "coverageRatio": 0.9887971698113207,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.5708333333333333,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 4090,
+            "peakRssMiB": 1503.671875,
+            "peakCpuPercent": 440.09779951100245
+          },
+          "steadyState": {
+            "refreshMs": 2290,
+            "refreshPeakRssMiB": 312.078125,
+            "refreshPeakCpuPercent": 156.76855895196508,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 172535808
+        },
+        "workbench": {
+          "coverageRatio": 0.9980769230769231,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.41666666666666663,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 1150,
+            "peakRssMiB": 399.171875,
+            "peakCpuPercent": 386.95652173913044
+          },
+          "steadyState": {
+            "refreshMs": 850,
+            "refreshPeakRssMiB": 173.90625,
+            "refreshPeakCpuPercent": 138.82352941176472,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 42381312
+        },
+        "prochat": {
+          "coverageRatio": 0.9976744186046511,
+          "unknownCount": 0,
+          "fileAccuracy": 0.75,
+          "lineAccuracy": 0.6666666666666666,
+          "meanReciprocalRank": 0.4444444444444444,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 320,
+            "peakRssMiB": 248.703125,
+            "peakCpuPercent": 528.125
+          },
+          "steadyState": {
+            "refreshMs": 220,
+            "refreshPeakRssMiB": 117.046875,
+            "refreshPeakCpuPercent": 159.0909090909091,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 15380480
+        }
+      },
+      "allGatesPassed": false
+    },
+    {
+      "repetition": 3,
+      "startCapacity": {
+        "freeMemoryPercent": 50,
+        "freeDiskBytes": 143881945088
+      },
+      "repositories": {
+        "brain": {
+          "coverageRatio": 0.9887971698113207,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.5708333333333333,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 3830,
+            "peakRssMiB": 1491.46875,
+            "peakCpuPercent": 477.02349869451695
+          },
+          "steadyState": {
+            "refreshMs": 2390,
+            "refreshPeakRssMiB": 313.859375,
+            "refreshPeakCpuPercent": 153.55648535564853,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 172666880
+        },
+        "workbench": {
+          "coverageRatio": 0.9980769230769231,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.41666666666666663,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 1150,
+            "peakRssMiB": 400.125,
+            "peakCpuPercent": 392.17391304347836
+          },
+          "steadyState": {
+            "refreshMs": 830,
+            "refreshPeakRssMiB": 165.328125,
+            "refreshPeakCpuPercent": 142.16867469879523,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 42381312
+        },
+        "prochat": {
+          "coverageRatio": 0.9976744186046511,
+          "unknownCount": 0,
+          "fileAccuracy": 0.75,
+          "lineAccuracy": 0.6666666666666666,
+          "meanReciprocalRank": 0.4444444444444444,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 320,
+            "peakRssMiB": 247.765625,
+            "peakCpuPercent": 525
+          },
+          "steadyState": {
+            "refreshMs": 240,
+            "refreshPeakRssMiB": 118.953125,
+            "refreshPeakCpuPercent": 154.16666666666669,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 15380480
         }
       },
       "allGatesPassed": false
@@ -552,8 +552,8 @@
     {
       "repetition": 4,
       "startCapacity": {
-        "freeMemoryPercent": 77,
-        "freeDiskBytes": 159998386176
+        "freeMemoryPercent": 49,
+        "freeDiskBytes": 143207116800
       },
       "repositories": {
         "brain": {
@@ -567,19 +567,19 @@
           "exactSourceAccuracy": 1,
           "fallbackAccuracy": 1,
           "coldStart": {
-            "wallMs": 3350,
-            "peakRssMiB": 1606.140625,
-            "peakCpuPercent": 505.9701492537313
+            "wallMs": 3760,
+            "peakRssMiB": 1133.328125,
+            "peakCpuPercent": 486.43617021276606
           },
           "steadyState": {
-            "refreshMs": 2100,
-            "refreshPeakRssMiB": 316.78125,
-            "refreshPeakCpuPercent": 163.33333333333331,
+            "refreshMs": 2400,
+            "refreshPeakRssMiB": 313.390625,
+            "refreshPeakCpuPercent": 155.83333333333337,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 209367040
+          "indexBytes": 172863488
         },
         "workbench": {
           "coverageRatio": 0.9980769230769231,
@@ -592,19 +592,19 @@
           "exactSourceAccuracy": 1,
           "fallbackAccuracy": 1,
           "coldStart": {
-            "wallMs": 1050,
-            "peakRssMiB": 393.625,
-            "peakCpuPercent": 401.9047619047619
+            "wallMs": 1290,
+            "peakRssMiB": 390,
+            "peakCpuPercent": 361.2403100775194
           },
           "steadyState": {
-            "refreshMs": 740,
-            "refreshPeakRssMiB": 165,
-            "refreshPeakCpuPercent": 155.40540540540542,
+            "refreshMs": 950,
+            "refreshPeakRssMiB": 166.46875,
+            "refreshPeakCpuPercent": 128.42105263157896,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 50966528
+          "indexBytes": 42381312
         },
         "prochat": {
           "coverageRatio": 0.9976744186046511,
@@ -618,18 +618,18 @@
           "fallbackAccuracy": 1,
           "coldStart": {
             "wallMs": 320,
-            "peakRssMiB": 252.296875,
-            "peakCpuPercent": 509.375
+            "peakRssMiB": 251.890625,
+            "peakCpuPercent": 534.375
           },
           "steadyState": {
-            "refreshMs": 220,
-            "refreshPeakRssMiB": 121.09375,
-            "refreshPeakCpuPercent": 149.99999999999997,
+            "refreshMs": 210,
+            "refreshPeakRssMiB": 116.265625,
+            "refreshPeakCpuPercent": 166.66666666666666,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 18132992
+          "indexBytes": 15380480
         }
       },
       "allGatesPassed": false
@@ -637,8 +637,8 @@
     {
       "repetition": 5,
       "startCapacity": {
-        "freeMemoryPercent": 77,
-        "freeDiskBytes": 159331643392
+        "freeMemoryPercent": 50,
+        "freeDiskBytes": 142542241792
       },
       "repositories": {
         "brain": {
@@ -652,19 +652,19 @@
           "exactSourceAccuracy": 1,
           "fallbackAccuracy": 1,
           "coldStart": {
-            "wallMs": 3450,
-            "peakRssMiB": 1604.28125,
-            "peakCpuPercent": 512.7536231884056
+            "wallMs": 3960,
+            "peakRssMiB": 1506.109375,
+            "peakCpuPercent": 473.98989898989896
           },
           "steadyState": {
-            "refreshMs": 2190,
-            "refreshPeakRssMiB": 325.859375,
-            "refreshPeakCpuPercent": 162.55707762557077,
+            "refreshMs": 2290,
+            "refreshPeakRssMiB": 312.15625,
+            "refreshPeakCpuPercent": 161.57205240174673,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 209432576
+          "indexBytes": 172732416
         },
         "workbench": {
           "coverageRatio": 0.9980769230769231,
@@ -677,19 +677,19 @@
           "exactSourceAccuracy": 1,
           "fallbackAccuracy": 1,
           "coldStart": {
-            "wallMs": 1050,
-            "peakRssMiB": 388.71875,
-            "peakCpuPercent": 405.71428571428567
+            "wallMs": 1150,
+            "peakRssMiB": 391.109375,
+            "peakCpuPercent": 394.7826086956522
           },
           "steadyState": {
-            "refreshMs": 730,
-            "refreshPeakRssMiB": 168.53125,
-            "refreshPeakCpuPercent": 158.9041095890411,
+            "refreshMs": 840,
+            "refreshPeakRssMiB": 163.8125,
+            "refreshPeakCpuPercent": 142.8571428571429,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 50966528
+          "indexBytes": 42381312
         },
         "prochat": {
           "coverageRatio": 0.9976744186046511,
@@ -702,19 +702,19 @@
           "exactSourceAccuracy": 1,
           "fallbackAccuracy": 1,
           "coldStart": {
-            "wallMs": 320,
-            "peakRssMiB": 255.3125,
-            "peakCpuPercent": 528.125
+            "wallMs": 430,
+            "peakRssMiB": 250.09375,
+            "peakCpuPercent": 390.6976744186046
           },
           "steadyState": {
             "refreshMs": 220,
-            "refreshPeakRssMiB": 120.8125,
-            "refreshPeakCpuPercent": 149.99999999999997,
+            "refreshPeakRssMiB": 116.90625,
+            "refreshPeakCpuPercent": 159.0909090909091,
             "idleRssMiB": 0,
             "idleCpuPercent": 0,
             "totalServiceRssMiB": 0
           },
-          "indexBytes": 18132992
+          "indexBytes": 15380480
         }
       },
       "allGatesPassed": false
@@ -966,11 +966,11 @@
   ],
   "subjectMetrics": {
     "cbm": {
-      "initialIndexingTimeMs": 3650,
-      "incrementalRefreshLatencyMs": 2190,
-      "peakCpuPercent": 541.9354838709677,
-      "peakRssMb": 1606.140625,
-      "indexDiskBytes": 278794240,
+      "initialIndexingTimeMs": 4090,
+      "incrementalRefreshLatencyMs": 2400,
+      "peakCpuPercent": 540.625,
+      "peakRssMb": 1506.109375,
+      "indexDiskBytes": 230690816,
       "serializedPayloadBytes": {
         "status": "not-applicable",
         "reason": "CBM uses on-disk index, not serialized payload"
@@ -1030,6 +1030,6 @@
   "violations": [],
   "cleanupStatus": {
     "removed": true,
-    "runDirectory": "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-v2-canonical-authorization-20260810-final-v1"
+    "runDirectory": "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-v2-1-final-20260810"
   }
 }
