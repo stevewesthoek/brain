@@ -432,16 +432,70 @@ async function main() {
   console.log('Building evidence...');
   const evidence = buildEvidenceFromRuns(plan, manifest, runs, host, isolation, preflightReceiptPath);
 
-  // === SCHEMA VALIDATION ===
+  // === DETERMINE DISPOSITION (before schema validation — schema requires pass) ===
+  const allGatesPassed = evidence.acceptanceSummary.allGatesPassed;
+  const disposition = allGatesPassed ? 'ACCEPTED' : 'REJECTED';
+  console.log(`\nB8.1 Contract V2 disposition: ${disposition}`);
+
+  // Permanent evidence location
+  const evidenceDir = path.join(ROOT, 'operations/reports/b8-1-v2-evidence');
+  fs.mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
+
+  if (!allGatesPassed) {
+    // === REJECTION PATH ===
+    // Record immutable rejection evidence and clean up workspace.
+    // Evidence schema requires allGatesPassed=true so we store raw measurements
+    // alongside a rejection disposition. The run ID is consumed (cannot be rerun).
+    console.log('Recording REJECTION evidence...');
+    evidence.cleanupStatus = { removed: true, runDirectory: plan.plannedCanonicalRunPath };
+    const rejectionEvidencePath = path.join(evidenceDir, 'b8-1-v2-canonical-evidence-REJECTED.json');
+    writeJson(rejectionEvidencePath, evidence);
+    const finalReceiptPath = path.join(evidenceDir, 'preflight-receipt.json');
+    fs.copyFileSync(preflightReceiptPath, finalReceiptPath);
+
+    // Compute failing gates for disposition record
+    const gateResult = buildGates(manifest, runs, host);
+    const failedGates = Object.entries(gateResult.gates).filter(([, v]) => !v).map(([k]) => k);
+
+    const dispositionRecord = {
+      runId: plan.runId,
+      contractVersion: 'B8.1-V2',
+      disposition: 'REJECTED',
+      evidencePath: rejectionEvidencePath,
+      preflightReceiptPath: finalReceiptPath,
+      planDigest: plan.planSha256,
+      completedAt: new Date().toISOString(),
+      durationMs: Date.now() - startTime,
+      passingRuns: evidence.acceptanceSummary.passingRuns,
+      requiredPassingRuns: evidence.acceptanceSummary.requiredPassingRuns,
+      failedGates,
+      reason: `Gates failed: ${failedGates.join(', ')}`,
+    };
+    writeJson(path.join(evidenceDir, 'disposition.json'), dispositionRecord);
+
+    // Remove canonical run workspace
+    fs.rmSync(runDir, { recursive: true, force: true });
+    console.log(`\n=== B8.1 Contract V2 REJECTED ===`);
+    console.log(`Failed gates: ${failedGates.join(', ')}`);
+    console.log(`Evidence: ${rejectionEvidencePath}`);
+    console.log(`Duration: ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
+    console.log(`Run directory removed: ${!fs.existsSync(runDir)}`);
+    console.log(`Run ID consumed — cannot be rerun: ${plan.runId}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // === ACCEPTANCE PATH ===
+  // Schema validation (only valid for passing evidence)
   console.log('Validating evidence against schema...');
   const schema = JSON.parse(fs.readFileSync(EVIDENCE_SCHEMA_PATH, 'utf8'));
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   const validate = ajv.compile(schema);
   if (!validate(evidence)) {
-    console.error('SCHEMA VALIDATION FAILED:');
+    console.error('SCHEMA VALIDATION FAILED (unexpected for passing evidence):');
     for (const err of validate.errors ?? []) console.error(`  ${err.instancePath}: ${err.message}`);
     writeJson(path.join(runDir, 'evidence-INVALID.json'), evidence);
-    process.exitCode = 1;
+    process.exitCode = 2;
     return;
   }
 
@@ -449,53 +503,40 @@ async function main() {
   const evidencePath = path.join(runDir, 'evidence.json');
   writeJson(evidencePath, evidence);
 
-  // === CONTRACT VALIDATION ===
+  // Contract validation (pre-cleanup)
   console.log('Running contract V2 evidence validator...');
   const contractResult = validateEvidenceObjects({ evidence, plan, manifest, preflightReceiptPath, checkFilesystem: false });
   if (!contractResult.valid) {
-    console.error('CONTRACT VALIDATION FAILED (pre-cleanup):');
-    for (const err of contractResult.errors) console.error(`  - ${err}`);
-    // Check if only cleanup error
     const nonCleanupErrors = contractResult.errors.filter(e => !e.includes('cleanup'));
     if (nonCleanupErrors.length > 0) {
-      process.exitCode = 1;
+      console.error('CONTRACT VALIDATION FAILED (pre-cleanup):');
+      for (const err of contractResult.errors) console.error(`  - ${err}`);
+      process.exitCode = 2;
       return;
     }
   }
 
-  // === DETERMINE DISPOSITION ===
-  const allGatesPassed = evidence.acceptanceSummary.allGatesPassed;
-  const disposition = allGatesPassed ? 'ACCEPTED' : 'REJECTED';
-  console.log(`\nB8.1 Contract V2 disposition: ${disposition}`);
-
-  // === CLEANUP: Remove workspace, preserve evidence ===
+  // Update cleanup status and finalize
   console.log('Performing canonical cleanup...');
-  // Copy evidence and receipt to permanent location
-  const evidenceDir = path.join(ROOT, 'operations/reports/b8-1-v2-evidence');
-  fs.mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
-
-  // Update cleanup status
   evidence.cleanupStatus = { removed: true, runDirectory: plan.plannedCanonicalRunPath };
 
-  // Re-validate schema after cleanup update
   if (!validate(evidence)) {
     console.error('SCHEMA VALIDATION FAILED after cleanup update');
-    process.exitCode = 1;
+    process.exitCode = 2;
     return;
   }
 
-  // Write final evidence
   const finalEvidencePath = path.join(evidenceDir, 'b8-1-v2-canonical-evidence.json');
   writeJson(finalEvidencePath, evidence);
   const finalReceiptPath = path.join(evidenceDir, 'preflight-receipt.json');
   fs.copyFileSync(preflightReceiptPath, finalReceiptPath);
 
-  // Final contract validation (with cleanup=true, filesystem check disabled since we're about to delete)
+  // Final contract validation
   const finalValidation = validateEvidenceObjects({ evidence, plan, manifest, preflightReceiptPath: finalReceiptPath, checkFilesystem: false });
   if (!finalValidation.valid) {
     console.error('FINAL CONTRACT VALIDATION FAILED:');
     for (const err of finalValidation.errors) console.error(`  - ${err}`);
-    process.exitCode = 1;
+    process.exitCode = 2;
     return;
   }
 
@@ -503,7 +544,7 @@ async function main() {
   fs.rmSync(runDir, { recursive: true, force: true });
   if (fs.existsSync(runDir)) {
     console.error(`CLEANUP FAILED: ${runDir} still exists`);
-    process.exitCode = 1;
+    process.exitCode = 2;
     return;
   }
 
@@ -512,7 +553,7 @@ async function main() {
   if (!postCleanupValidation.valid) {
     console.error('POST-CLEANUP VALIDATION FAILED:');
     for (const err of postCleanupValidation.errors) console.error(`  - ${err}`);
-    process.exitCode = 1;
+    process.exitCode = 2;
     return;
   }
 
@@ -520,7 +561,7 @@ async function main() {
   const dispositionRecord = {
     runId: plan.runId,
     contractVersion: 'B8.1-V2',
-    disposition,
+    disposition: 'ACCEPTED',
     evidencePath: finalEvidencePath,
     preflightReceiptPath: finalReceiptPath,
     planDigest: plan.planSha256,
@@ -531,12 +572,11 @@ async function main() {
   };
   writeJson(path.join(evidenceDir, 'disposition.json'), dispositionRecord);
 
-  console.log(`\n=== B8.1 Contract V2 COMPLETE ===`);
-  console.log(`Disposition: ${disposition}`);
+  console.log(`\n=== B8.1 Contract V2 ACCEPTED ===`);
   console.log(`Evidence: ${finalEvidencePath}`);
   console.log(`Duration: ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
   console.log(`Run directory removed: ${!fs.existsSync(runDir)}`);
-  process.exitCode = disposition === 'ACCEPTED' ? 0 : 1;
+  process.exitCode = 0;
 }
 
 const IS_MAIN = process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
