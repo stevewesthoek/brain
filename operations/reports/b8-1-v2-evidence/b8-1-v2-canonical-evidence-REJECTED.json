@@ -1,0 +1,1035 @@
+{
+  "schemaVersion": "4.0.0",
+  "contractVersion": "B8.1-V2",
+  "runId": "b8-1-v2-canonical-authorization-20260810-final-v1",
+  "runAt": "2026-08-10T11:39:42.300Z",
+  "partialEvidence": false,
+  "selectedSubjects": [
+    "cbm",
+    "exact-source"
+  ],
+  "excludedSubjects": [],
+  "pinnedRepositoryCommits": {
+    "brain": {
+      "repositoryId": "brain",
+      "commit": "f683edff753937944018dd00bf5494c85f62e881"
+    },
+    "workbench": {
+      "repositoryId": "workbench",
+      "commit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2"
+    },
+    "prochat": {
+      "repositoryId": "prochat",
+      "commit": "85087d54f712b1333be7c620f23b6bcac9cde90b"
+    }
+  },
+  "manifestHash": "sha256:a280ad11cc21df0e2eccfffcfcb8ed4deeaef9326d3d9eefbd44431f0e0a444f",
+  "preflightReceiptHash": "sha256:e8df5f1017b1f84d75040040651b08ad773dc56cb20c120591223f3b306f3994",
+  "planSha256": "d95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284",
+  "subjectBinaryIdentity": {
+    "cbm": {
+      "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
+      "resolvedPath": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6",
+      "version": "codebase-memory-mcp 0.9.0"
+    }
+  },
+  "networkIsolationProof": {
+    "required": true,
+    "status": "passed",
+    "adapterIdentity": {
+      "path": "/usr/bin/sandbox-exec",
+      "sha256": "e3d7a792c58a5d3783d2f7274c82d70062393830d8cb1ded713ca554a470bd2f"
+    },
+    "runtimeIdentity": {
+      "path": "/Users/Office/.nvm/versions/node/v20.20.2/bin/node",
+      "sha256": "38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6",
+      "version": "v20.20.2"
+    },
+    "childIdentity": {
+      "path": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+    },
+    "profilePath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/specs/b8-1-v2-network-isolation.sb",
+    "profileSha256": "87899ef5c1aed8573034beda57d0e51278417d86b2e7cb4ebac3fe89ecab8d9b",
+    "controlSucceeded": true,
+    "sandboxedChildStarted": true,
+    "sandboxedConnectionDenied": true,
+    "selfTestPassed": true,
+    "selfTestDetail": "deny-ipv4-loopback-connect:pass, deny-ipv6-loopback-connect:pass, allow-declared-unix-socket-connect:pass, deny-outside-unix-socket-connect:pass"
+  },
+  "isolationSelfTests": {
+    "allowedUnixSocketRoot": "/private/tmp/cbm-daemon-502",
+    "allowedUnixSocketRootValidation": {
+      "ownerUid": 502,
+      "mode": "0700",
+      "directory": true,
+      "symlink": false
+    },
+    "results": [
+      {
+        "name": "deny-ipv4-loopback-connect",
+        "passed": true
+      },
+      {
+        "name": "deny-ipv6-loopback-connect",
+        "passed": true
+      },
+      {
+        "name": "allow-declared-unix-socket-connect",
+        "passed": true
+      },
+      {
+        "name": "deny-outside-unix-socket-connect",
+        "passed": true
+      }
+    ]
+  },
+  "coverageEvidence": {
+    "brain": {
+      "eligibleCount": 1696,
+      "indexedCount": 1677,
+      "unindexedCount": 19,
+      "unknownCount": 0,
+      "coverageRatio": 0.9887971698113207,
+      "unindexedFiles": [
+        "operations/deploy/firecrawl/test-api.sh",
+        "operations/system-configs/codex/skills-dormant/screenshot/scripts/take_screenshot.py",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/canvas-tokens.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/chart-primitives.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/collapsible-section.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/dag-layout.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/diff-view.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/form-primitives.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/hooks.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/index.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/swatch.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/theme.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/todo-list.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/ui-primitives.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/ui-primitives.test.d.ts",
+        "operations/system-configs/cursor/skills-cursor/canvas/sdk/usage-bar.d.ts",
+        "tools/firecrawl/apps/js-sdk/example.ts",
+        "tools/firecrawl/apps/js-sdk/example_v1.ts",
+        "tools/google-ads/dashboard-server.ts"
+      ],
+      "fallbackFixtureIds": []
+    },
+    "workbench": {
+      "eligibleCount": 520,
+      "indexedCount": 519,
+      "unindexedCount": 1,
+      "unknownCount": 0,
+      "coverageRatio": 0.9980769230769231,
+      "unindexedFiles": [
+        "packages/cli/tests/cli-compatibility.test.ts"
+      ],
+      "fallbackFixtureIds": []
+    },
+    "prochat": {
+      "eligibleCount": 430,
+      "indexedCount": 429,
+      "unindexedCount": 1,
+      "unknownCount": 0,
+      "coverageRatio": 0.9976744186046511,
+      "unindexedFiles": [
+        "scripts/deploy/prepare-production.sh"
+      ],
+      "fallbackFixtureIds": []
+    }
+  },
+  "fallbackProbes": {
+    "brain": {
+      "fixtureId": "fallback-brain",
+      "question": "Where is $API_HOST defined?",
+      "retrievalPattern": "$API_HOST",
+      "expectedFile": "operations/deploy/firecrawl/test-api.sh",
+      "exactSourceCandidates": [
+        "operations/deploy/firecrawl/test-api.sh"
+      ],
+      "targetIndexed": false,
+      "cbmStructuralCredit": 0,
+      "exactSourceSha256": "711b83e61814d41d49819a626f4146f3db1430e7f33e96228f0bda9939a6748a",
+      "exactSourcePassed": true
+    },
+    "workbench": {
+      "fixtureId": "fallback-workbench",
+      "question": "Where is Initialize defined?",
+      "retrievalPattern": "Initialize",
+      "expectedFile": "packages/cli/tests/cli-compatibility.test.ts",
+      "exactSourceCandidates": [
+        "DEMO_LOCAL.md",
+        "DEMO_QUICK.sh",
+        "DEMO_README.md",
+        "IMPLEMENTATION.md",
+        "MANIFEST.md",
+        "RELAY_SECRETS.md",
+        "REPAIR_SUMMARY.txt",
+        "apps/macos/Sources/WorkbenchMac/AppState.swift",
+        "apps/macos/Sources/WorkbenchMac/XPC/SourceManagementProvider.swift",
+        "apps/macos/Tests/WorkbenchMacTests/PhaseOTests.swift",
+        "demo.sh",
+        "packages/bridge/src/storage/token-store.ts",
+        "packages/cli/src/cli.ts",
+        "packages/cli/tests/cli-compatibility.test.ts"
+      ],
+      "targetIndexed": false,
+      "cbmStructuralCredit": 0,
+      "exactSourceSha256": "44cb72b7e584dac2a0557a6164841ed931afcb32c007ddeb1d8bcc256e34cf69",
+      "exactSourcePassed": true
+    },
+    "prochat": {
+      "fixtureId": "fallback-prochat",
+      "question": "Where is APP_SLUG defined?",
+      "retrievalPattern": "APP_SLUG",
+      "expectedFile": "scripts/deploy/prepare-production.sh",
+      "exactSourceCandidates": [
+        ".env.example",
+        ".env.production",
+        ".github/workflows/main.yml",
+        ".github/workflows/wave1-browser-equivalence.yml",
+        "docs-public/environment.md",
+        "docs/ai-guidelines.md",
+        "docs/deployment.md",
+        "docs/development.md",
+        "docs/getting-started.md",
+        "docs/production-lifecycle.md",
+        "scripts/db/cleanup-tenant.js",
+        "scripts/db/init-tenant.js",
+        "scripts/deploy/prepare-production.sh",
+        "scripts/dev/bootstrap-env.js",
+        "scripts/provision-auto.js",
+        "scripts/provision-saas.sh"
+      ],
+      "targetIndexed": false,
+      "cbmStructuralCredit": 0,
+      "exactSourceSha256": "2223f2576f46d3ed4121e8ce129193a1f9e0664e8b063a02ecbaf2d66903db0c",
+      "exactSourcePassed": true
+    }
+  },
+  "lifecycleMetrics": {
+    "brain": {
+      "coldStart": {
+        "wallMs": 3650,
+        "peakRssMiB": 1606.140625,
+        "peakCpuPercent": 512.7536231884056
+      },
+      "steadyState": {
+        "idleRssMiB": 0,
+        "idleCpuPercent": 0,
+        "totalServiceRssMiB": 0,
+        "refreshSamplesMs": [
+          2090,
+          2070,
+          2190,
+          2100,
+          2190
+        ],
+        "refreshStatistics": {
+          "minimum": 2070,
+          "median": 2100,
+          "p95": 2190,
+          "maximum": 2190
+        },
+        "refreshPeakRssMiB": 327.765625,
+        "refreshPeakCpuPercent": 166.18357487922705
+      },
+      "indexBytes": 209694720
+    },
+    "prochat": {
+      "coldStart": {
+        "wallMs": 320,
+        "peakRssMiB": 255.3125,
+        "peakCpuPercent": 541.9354838709677
+      },
+      "steadyState": {
+        "idleRssMiB": 0,
+        "idleCpuPercent": 0,
+        "totalServiceRssMiB": 0,
+        "refreshSamplesMs": [
+          210,
+          210,
+          210,
+          220,
+          220
+        ],
+        "refreshStatistics": {
+          "minimum": 210,
+          "median": 210,
+          "p95": 220,
+          "maximum": 220
+        },
+        "refreshPeakRssMiB": 121.09375,
+        "refreshPeakCpuPercent": 161.9047619047619
+      },
+      "indexBytes": 18132992
+    },
+    "workbench": {
+      "coldStart": {
+        "wallMs": 1050,
+        "peakRssMiB": 394.59375,
+        "peakCpuPercent": 413.33333333333326
+      },
+      "steadyState": {
+        "idleRssMiB": 0,
+        "idleCpuPercent": 0,
+        "totalServiceRssMiB": 0,
+        "refreshSamplesMs": [
+          730,
+          730,
+          730,
+          740,
+          730
+        ],
+        "refreshStatistics": {
+          "minimum": 730,
+          "median": 730,
+          "p95": 740,
+          "maximum": 740
+        },
+        "refreshPeakRssMiB": 168.53125,
+        "refreshPeakCpuPercent": 158.9041095890411
+      },
+      "indexBytes": 50966528
+    }
+  },
+  "runResults": [
+    {
+      "repetition": 1,
+      "startCapacity": {
+        "freeMemoryPercent": 77,
+        "freeDiskBytes": 162005176320
+      },
+      "repositories": {
+        "brain": {
+          "coverageRatio": 0.9887971698113207,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.5708333333333333,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 3340,
+            "peakRssMiB": 1573.265625,
+            "peakCpuPercent": 498.2035928143713
+          },
+          "steadyState": {
+            "refreshMs": 2090,
+            "refreshPeakRssMiB": 315.96875,
+            "refreshPeakCpuPercent": 164.59330143540674,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 209301504
+        },
+        "workbench": {
+          "coverageRatio": 0.9980769230769231,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.41666666666666663,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 1050,
+            "peakRssMiB": 391.546875,
+            "peakCpuPercent": 413.33333333333326
+          },
+          "steadyState": {
+            "refreshMs": 730,
+            "refreshPeakRssMiB": 162.078125,
+            "refreshPeakCpuPercent": 156.16438356164386,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 50966528
+        },
+        "prochat": {
+          "coverageRatio": 0.9976744186046511,
+          "unknownCount": 0,
+          "fileAccuracy": 0.75,
+          "lineAccuracy": 0.6666666666666666,
+          "meanReciprocalRank": 0.4444444444444444,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 320,
+            "peakRssMiB": 253.265625,
+            "peakCpuPercent": 525
+          },
+          "steadyState": {
+            "refreshMs": 210,
+            "refreshPeakRssMiB": 120.953125,
+            "refreshPeakCpuPercent": 157.14285714285714,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 18132992
+        }
+      },
+      "allGatesPassed": false
+    },
+    {
+      "repetition": 2,
+      "startCapacity": {
+        "freeMemoryPercent": 77,
+        "freeDiskBytes": 161334583296
+      },
+      "repositories": {
+        "brain": {
+          "coverageRatio": 0.9887971698113207,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.5708333333333333,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 3350,
+            "peakRssMiB": 1571.171875,
+            "peakCpuPercent": 507.7611940298507
+          },
+          "steadyState": {
+            "refreshMs": 2070,
+            "refreshPeakRssMiB": 327.765625,
+            "refreshPeakCpuPercent": 166.18357487922705,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 209432576
+        },
+        "workbench": {
+          "coverageRatio": 0.9980769230769231,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.41666666666666663,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 1040,
+            "peakRssMiB": 394.59375,
+            "peakCpuPercent": 408.6538461538462
+          },
+          "steadyState": {
+            "refreshMs": 730,
+            "refreshPeakRssMiB": 168.09375,
+            "refreshPeakCpuPercent": 157.5342465753425,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 50966528
+        },
+        "prochat": {
+          "coverageRatio": 0.9976744186046511,
+          "unknownCount": 0,
+          "fileAccuracy": 0.75,
+          "lineAccuracy": 0.6666666666666666,
+          "meanReciprocalRank": 0.4444444444444444,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 320,
+            "peakRssMiB": 250.90625,
+            "peakCpuPercent": 534.375
+          },
+          "steadyState": {
+            "refreshMs": 210,
+            "refreshPeakRssMiB": 120.984375,
+            "refreshPeakCpuPercent": 157.14285714285714,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 18132992
+        }
+      },
+      "allGatesPassed": false
+    },
+    {
+      "repetition": 3,
+      "startCapacity": {
+        "freeMemoryPercent": 77,
+        "freeDiskBytes": 160667701248
+      },
+      "repositories": {
+        "brain": {
+          "coverageRatio": 0.9887971698113207,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.5708333333333333,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 3650,
+            "peakRssMiB": 1565.5,
+            "peakCpuPercent": 495.34246575342473
+          },
+          "steadyState": {
+            "refreshMs": 2190,
+            "refreshPeakRssMiB": 324.328125,
+            "refreshPeakCpuPercent": 158.4474885844749,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 209694720
+        },
+        "workbench": {
+          "coverageRatio": 0.9980769230769231,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.41666666666666663,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 1050,
+            "peakRssMiB": 392.734375,
+            "peakCpuPercent": 406.66666666666674
+          },
+          "steadyState": {
+            "refreshMs": 730,
+            "refreshPeakRssMiB": 161.734375,
+            "refreshPeakCpuPercent": 157.5342465753425,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 50966528
+        },
+        "prochat": {
+          "coverageRatio": 0.9976744186046511,
+          "unknownCount": 0,
+          "fileAccuracy": 0.75,
+          "lineAccuracy": 0.6666666666666666,
+          "meanReciprocalRank": 0.4444444444444444,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 310,
+            "peakRssMiB": 253.109375,
+            "peakCpuPercent": 541.9354838709677
+          },
+          "steadyState": {
+            "refreshMs": 210,
+            "refreshPeakRssMiB": 119.25,
+            "refreshPeakCpuPercent": 161.9047619047619,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 18132992
+        }
+      },
+      "allGatesPassed": false
+    },
+    {
+      "repetition": 4,
+      "startCapacity": {
+        "freeMemoryPercent": 77,
+        "freeDiskBytes": 159998386176
+      },
+      "repositories": {
+        "brain": {
+          "coverageRatio": 0.9887971698113207,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.5708333333333333,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 3350,
+            "peakRssMiB": 1606.140625,
+            "peakCpuPercent": 505.9701492537313
+          },
+          "steadyState": {
+            "refreshMs": 2100,
+            "refreshPeakRssMiB": 316.78125,
+            "refreshPeakCpuPercent": 163.33333333333331,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 209367040
+        },
+        "workbench": {
+          "coverageRatio": 0.9980769230769231,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.41666666666666663,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 1050,
+            "peakRssMiB": 393.625,
+            "peakCpuPercent": 401.9047619047619
+          },
+          "steadyState": {
+            "refreshMs": 740,
+            "refreshPeakRssMiB": 165,
+            "refreshPeakCpuPercent": 155.40540540540542,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 50966528
+        },
+        "prochat": {
+          "coverageRatio": 0.9976744186046511,
+          "unknownCount": 0,
+          "fileAccuracy": 0.75,
+          "lineAccuracy": 0.6666666666666666,
+          "meanReciprocalRank": 0.4444444444444444,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 320,
+            "peakRssMiB": 252.296875,
+            "peakCpuPercent": 509.375
+          },
+          "steadyState": {
+            "refreshMs": 220,
+            "refreshPeakRssMiB": 121.09375,
+            "refreshPeakCpuPercent": 149.99999999999997,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 18132992
+        }
+      },
+      "allGatesPassed": false
+    },
+    {
+      "repetition": 5,
+      "startCapacity": {
+        "freeMemoryPercent": 77,
+        "freeDiskBytes": 159331643392
+      },
+      "repositories": {
+        "brain": {
+          "coverageRatio": 0.9887971698113207,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.5708333333333333,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 3450,
+            "peakRssMiB": 1604.28125,
+            "peakCpuPercent": 512.7536231884056
+          },
+          "steadyState": {
+            "refreshMs": 2190,
+            "refreshPeakRssMiB": 325.859375,
+            "refreshPeakCpuPercent": 162.55707762557077,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 209432576
+        },
+        "workbench": {
+          "coverageRatio": 0.9980769230769231,
+          "unknownCount": 0,
+          "fileAccuracy": 1,
+          "lineAccuracy": 1,
+          "meanReciprocalRank": 0.41666666666666663,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 1050,
+            "peakRssMiB": 388.71875,
+            "peakCpuPercent": 405.71428571428567
+          },
+          "steadyState": {
+            "refreshMs": 730,
+            "refreshPeakRssMiB": 168.53125,
+            "refreshPeakCpuPercent": 158.9041095890411,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 50966528
+        },
+        "prochat": {
+          "coverageRatio": 0.9976744186046511,
+          "unknownCount": 0,
+          "fileAccuracy": 0.75,
+          "lineAccuracy": 0.6666666666666666,
+          "meanReciprocalRank": 0.4444444444444444,
+          "setOutcomeAccuracy": 1,
+          "callerCalleeF1": 1,
+          "exactSourceAccuracy": 1,
+          "fallbackAccuracy": 1,
+          "coldStart": {
+            "wallMs": 320,
+            "peakRssMiB": 255.3125,
+            "peakCpuPercent": 528.125
+          },
+          "steadyState": {
+            "refreshMs": 220,
+            "refreshPeakRssMiB": 120.8125,
+            "refreshPeakCpuPercent": 149.99999999999997,
+            "idleRssMiB": 0,
+            "idleCpuPercent": 0,
+            "totalServiceRssMiB": 0
+          },
+          "indexBytes": 18132992
+        }
+      },
+      "allGatesPassed": false
+    }
+  ],
+  "acceptanceSummary": {
+    "passingRuns": 0,
+    "requiredPassingRuns": 5,
+    "meanReciprocalRank": 0.49444444444444446,
+    "setOutcomeAccuracy": 1,
+    "callerCalleeF1": 1,
+    "fallbackAccuracy": 1,
+    "headroomSatisfied": true,
+    "allGatesPassed": false
+  },
+  "fixtureResults": [
+    {
+      "fixtureId": "brain_f1",
+      "subject": "cbm",
+      "retrievalPattern": "MIND_TARGET_PATHS",
+      "targetRank": 5,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "callerPrecision": 1,
+      "callerRecall": 1,
+      "calleePrecision": 1,
+      "calleeRecall": 1
+    },
+    {
+      "fixtureId": "brain_f2",
+      "subject": "cbm",
+      "retrievalPattern": "classifyMindCaptureInbox",
+      "targetRank": 1,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "callerPrecision": 1,
+      "callerRecall": 1,
+      "calleePrecision": 1,
+      "calleeRecall": 1
+    },
+    {
+      "fixtureId": "brain_f3",
+      "subject": "cbm",
+      "retrievalPattern": "workbench-for-brain",
+      "targetRank": 12,
+      "fileCorrect": true,
+      "lineCorrect": null,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "setAccuracy": 1
+    },
+    {
+      "fixtureId": "brain_f4",
+      "subject": "cbm",
+      "retrievalPattern": "loadEvidenceIndex",
+      "targetRank": 1,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false
+    },
+    {
+      "fixtureId": "workbench_f1",
+      "subject": "cbm",
+      "retrievalPattern": "BRAIN_PROFILE_ALLOWED_TOOLS",
+      "targetRank": 2,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "callerPrecision": 1,
+      "callerRecall": 1,
+      "calleePrecision": 1,
+      "calleeRecall": 1,
+      "setAccuracy": 1
+    },
+    {
+      "fixtureId": "workbench_f2",
+      "subject": "cbm",
+      "retrievalPattern": "WORKBENCH_MCP_ALLOWED_",
+      "targetRank": 3,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "setAccuracy": 1
+    },
+    {
+      "fixtureId": "prochat_f1",
+      "subject": "cbm",
+      "retrievalPattern": "RootLayout",
+      "targetRank": 1,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "callerPrecision": 1,
+      "callerRecall": 1,
+      "calleePrecision": 1,
+      "calleeRecall": 1
+    },
+    {
+      "fixtureId": "prochat_f2",
+      "subject": "cbm",
+      "retrievalPattern": "route.ts",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": null,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "setAccuracy": 1
+    },
+    {
+      "fixtureId": "prochat_f3",
+      "subject": "cbm",
+      "retrievalPattern": "Stripe",
+      "targetRank": null,
+      "fileCorrect": false,
+      "lineCorrect": false,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "callerPrecision": 1,
+      "callerRecall": 1,
+      "calleePrecision": 1,
+      "calleeRecall": 1
+    },
+    {
+      "fixtureId": "prochat_f4",
+      "subject": "cbm",
+      "retrievalPattern": "PrismaClient",
+      "targetRank": 3,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "callerPrecision": 1,
+      "callerRecall": 1,
+      "calleePrecision": 1,
+      "calleeRecall": 1
+    },
+    {
+      "fixtureId": "brain_f1",
+      "subject": "exact-source",
+      "retrievalPattern": "MIND_TARGET_PATHS",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false
+    },
+    {
+      "fixtureId": "brain_f2",
+      "subject": "exact-source",
+      "retrievalPattern": "classifyMindCaptureInbox",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false
+    },
+    {
+      "fixtureId": "brain_f3",
+      "subject": "exact-source",
+      "retrievalPattern": "workbench-for-brain",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": null,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "setAccuracy": 1
+    },
+    {
+      "fixtureId": "brain_f4",
+      "subject": "exact-source",
+      "retrievalPattern": "loadEvidenceIndex",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false
+    },
+    {
+      "fixtureId": "workbench_f1",
+      "subject": "exact-source",
+      "retrievalPattern": "BRAIN_PROFILE_ALLOWED_TOOLS",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "setAccuracy": 1
+    },
+    {
+      "fixtureId": "workbench_f2",
+      "subject": "exact-source",
+      "retrievalPattern": "WORKBENCH_MCP_ALLOWED_",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "setAccuracy": 1
+    },
+    {
+      "fixtureId": "prochat_f1",
+      "subject": "exact-source",
+      "retrievalPattern": "RootLayout",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false
+    },
+    {
+      "fixtureId": "prochat_f2",
+      "subject": "exact-source",
+      "retrievalPattern": "route.ts",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": null,
+      "targetIndexed": true,
+      "fallbackRequired": false,
+      "setAccuracy": 1
+    },
+    {
+      "fixtureId": "prochat_f3",
+      "subject": "exact-source",
+      "retrievalPattern": "Stripe",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false
+    },
+    {
+      "fixtureId": "prochat_f4",
+      "subject": "exact-source",
+      "retrievalPattern": "PrismaClient",
+      "targetRank": null,
+      "fileCorrect": true,
+      "lineCorrect": true,
+      "targetIndexed": true,
+      "fallbackRequired": false
+    }
+  ],
+  "subjectMetrics": {
+    "cbm": {
+      "initialIndexingTimeMs": 3650,
+      "incrementalRefreshLatencyMs": 2190,
+      "peakCpuPercent": 541.9354838709677,
+      "peakRssMb": 1606.140625,
+      "indexDiskBytes": 278794240,
+      "serializedPayloadBytes": {
+        "status": "not-applicable",
+        "reason": "CBM uses on-disk index, not serialized payload"
+      },
+      "tokenizer": {
+        "status": "not-applicable",
+        "reason": "CBM uses structural index, not tokenizer-based"
+      },
+      "retrievalOperationCount": 50,
+      "retrievalAccuracy": {
+        "fileAccuracy": 0.9,
+        "lineAccuracy": 0.875,
+        "setAccuracy": 1,
+        "meanReciprocalRank": 0.49444444444444446,
+        "callerCalleeF1": 1
+      }
+    },
+    "exact-source": {
+      "initialIndexingTimeMs": {
+        "status": "not-applicable",
+        "reason": "exact-source uses no pre-built index"
+      },
+      "incrementalRefreshLatencyMs": {
+        "status": "not-applicable",
+        "reason": "exact-source uses no incremental state"
+      },
+      "peakCpuPercent": {
+        "status": "not-applicable",
+        "reason": "exact-source runs in-process with negligible overhead"
+      },
+      "peakRssMb": {
+        "status": "not-applicable",
+        "reason": "exact-source runs in-process with negligible overhead"
+      },
+      "indexDiskBytes": {
+        "status": "not-applicable",
+        "reason": "exact-source uses no disk index"
+      },
+      "serializedPayloadBytes": {
+        "status": "not-applicable",
+        "reason": "exact-source uses no serialized payload"
+      },
+      "tokenizer": {
+        "status": "not-applicable",
+        "reason": "exact-source uses no tokenizer"
+      },
+      "retrievalOperationCount": {
+        "status": "not-applicable",
+        "reason": "exact-source verification is per-fixture, not retrieval-counted"
+      },
+      "retrievalAccuracy": {
+        "fileAccuracy": 1,
+        "lineAccuracy": 1
+      }
+    }
+  },
+  "violations": [],
+  "cleanupStatus": {
+    "removed": true,
+    "runDirectory": "/Users/Office/.brain/benchmark/b8-1/runs/b8-1-v2-canonical-authorization-20260810-final-v1"
+  }
+}
