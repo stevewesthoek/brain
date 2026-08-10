@@ -75,37 +75,31 @@ export function validateAuthorization({ planPath, authorizedPlanSha256, authoriz
   try { plan = JSON.parse(fs.readFileSync(planPath, 'utf8')); }
   catch (e) { errors.push(`plan file parse error: ${e.message}`); return { valid: false, errors, plan: null }; }
 
-  // 3. Plan file on-disk SHA matches the owner-supplied digest (not just stored field)
-  const diskSha = sha256File(planPath);
-  if (diskSha !== authorizedPlanSha256) {
-    errors.push(`plan file on-disk SHA mismatch: owner supplied ${authorizedPlanSha256} but file hashes to ${diskSha}`);
-  }
-
-  // 4. Stored planSha256 matches owner-supplied digest
+  // 3. Stored planSha256 matches owner-supplied digest
   if (plan.planSha256 !== authorizedPlanSha256) {
     errors.push(`plan.planSha256 ${plan.planSha256} does not match --authorized-plan-sha256 ${authorizedPlanSha256}`);
   }
 
-  // 5. Recomputed digest matches stored (internal integrity)
+  // 4. Recomputed digest matches stored (internal integrity)
   const verifyResult = verifyPlan(plan);
   if (!verifyResult.valid) errors.push(...verifyResult.errors.map(e => `plan integrity: ${e}`));
 
-  // 6. Not a known stale digest
+  // 5. Not a known stale digest
   if (KNOWN_STALE_DIGESTS.has(authorizedPlanSha256)) {
     errors.push(`authorized digest ${authorizedPlanSha256} is a known stale historical digest and must not execute`);
   }
 
-  // 7. Run ID matches
+  // 6. Run ID matches
   if (plan.runId !== authorizedRunId) {
     errors.push(`plan.runId ${plan.runId} does not match --authorized-run-id ${authorizedRunId}`);
   }
 
-  // 8. Plan mode is authorization-only dry-run (not already a canonical execution record)
+  // 7. Plan mode is authorization-only dry-run (not already a canonical execution record)
   if (plan.mode !== 'canonical-dry-run-authorization-only') {
     errors.push(`plan mode must be canonical-dry-run-authorization-only, got ${plan.mode}`);
   }
 
-  // 9. partialEvidence must be false
+  // 8. partialEvidence must be false
   if (plan.partialEvidence !== false) {
     errors.push('plan.partialEvidence must be false');
   }

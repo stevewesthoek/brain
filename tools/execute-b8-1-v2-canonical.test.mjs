@@ -95,9 +95,11 @@ test('validateAuthorization: wrong run ID fails closed', (t) => {
 // ── validateAuthorization: stale-digest rejection ────────────────────────────
 
 test('validateAuthorization: stale digest is rejected even if structurally valid', () => {
-  const STALE = 'd828c726920a0ec40b52a39fee23dcf8ebd79cf0b3573d2451634514a39b9a0b';
+  // Use the still-present V2 plan (d95c684c...) which is in KNOWN_STALE_DIGESTS
+  const STALE = 'd95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284';
   assert.ok(KNOWN_STALE_DIGESTS.has(STALE), 'prerequisite: this digest must be in KNOWN_STALE_DIGESTS');
-  const staleResult = validateAuthorization({ planPath: path.join(ROOT, 'operations/reports/b8-1-v2-1-node20-canonical-dry-run-plan-2026-08-10.json'), authorizedPlanSha256: STALE, authorizedRunId: 'b8-1-v2-1-node20-20260810' });
+  const stalePlanPath = path.join(ROOT, 'operations/reports/b8-1-v2-canonical-dry-run-plan-2026-08-10.json');
+  const staleResult = validateAuthorization({ planPath: stalePlanPath, authorizedPlanSha256: STALE, authorizedRunId: 'b8-1-v2-canonical-authorization-20260810-final-v1' });
   assert.equal(staleResult.valid, false);
   assert.ok(staleResult.errors.some(e => e.includes('stale')));
   assert.equal(staleResult.plan, null);
