@@ -1,7 +1,9 @@
 # B8.1 Contract V2 and authorization readiness
 
-**Date:** 2026-08-10  
-**Status:** `B8.1 V2 READY — AWAITING OWNER APPROVAL`  
+**Date:** 2026-08-10
+
+**Status:** `B8.1 V2 READY — AWAITING OWNER APPROVAL`
+
 **Scope:** dry-run authorization package only; no canonical materialization or execution
 
 ## 1. Status
@@ -179,10 +181,12 @@ pushed. The candidate evaluation used only disposable diagnostic state.
 The next authorized action is limited to one materialization and one execution of
 the exact dry-run plan above after the owner provides this exact statement:
 
-> I approve B8.1 Contract V2 benchmark materialization and execution with plan digest  
-> d95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284  
-> for run-id b8-1-v2-canonical-authorization-20260810-final-v1.  
-> Node runtime: v20.20.2 (SHA-256: 38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6).  
-> Provider: codebase-memory-mcp 0.9.0 (SHA-256: d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6), mode full, persistence false, auto-watch false.  
-> Subjects: cbm, exact-source. Graphify excluded.  
-> Full Contract V2 evidence required; partial evidence is not accepted.
+```text
+I approve B8.1 Contract V2 benchmark materialization and execution with plan digest
+d95c684c0aca9355d704b921f2d194f0a70959ff4518c20447645b6601fb4284
+for run-id b8-1-v2-canonical-authorization-20260810-final-v1.
+Node runtime: v20.20.2 (SHA-256: 38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6).
+Provider: codebase-memory-mcp 0.9.0 (SHA-256: d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6), mode full, persistence false, auto-watch false.
+Subjects: cbm, exact-source. Graphify excluded.
+Full Contract V2 evidence required; partial evidence is not accepted.
+```
