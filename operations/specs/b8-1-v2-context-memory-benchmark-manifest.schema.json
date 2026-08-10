@@ -1,0 +1,435 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "b8-1-v2-context-memory-benchmark-manifest",
+  "title": "B8.1 Contract V2 Context-Memory Benchmark Manifest",
+  "description": "Pinned Contract V2 authority for structural coverage, exact-source fallback, resource budgets, isolation, rehearsals, and exhaustive fixture truth.",
+  "type": "object",
+  "required": [
+    "schemaVersion", "contractVersion", "createdAt", "providerContract", "retrievalPolicy", "coveragePolicy",
+    "structuralTruthContract", "acceptancePolicy", "resourceBudget",
+    "rehearsalPolicy", "isolationPolicy", "repositories", "fixtures"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "2.0.0"
+    },
+    "contractVersion": {
+      "type": "string",
+      "const": "B8.1-V2"
+    },
+    "createdAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "ISO date this manifest was created"
+    },
+    "providerContract": {
+      "type": "object",
+      "required": ["subject", "requiredIndexMode", "persistence", "autoWatch", "candidatePolicy", "fallbackSubject"],
+      "additionalProperties": false,
+      "properties": {
+        "subject": { "const": "cbm" },
+        "requiredIndexMode": { "const": "full" },
+        "persistence": { "const": false },
+        "autoWatch": { "const": false },
+        "candidatePolicy": { "const": "latest-stable-plus-newer-official-prerelease" },
+        "fallbackSubject": { "const": "exact-source" }
+      }
+    },
+    "retrievalPolicy": {
+      "type": "object",
+      "required": ["maximumCandidates", "minimumMeanReciprocalRank"],
+      "additionalProperties": false,
+      "properties": {
+        "maximumCandidates": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "minimumMeanReciprocalRank": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+      }
+    },
+    "coveragePolicy": {
+      "type": "object",
+      "required": [
+        "strategy", "eligibleExtensions", "excludedDirectoryNames",
+        "minimumPerRepositoryCoverage", "minimumAggregateCoverage",
+        "unknownCoverageAllowed", "fallbackRequiredForUnindexedFixtures",
+        "minimumFallbackAccuracy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "strategy": { "const": "structural-scope-with-exact-source-fallback" },
+        "eligibleExtensions": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^\\.[a-z0-9]+$" }
+        },
+        "excludedDirectoryNames": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "pattern": "^[^/]+$" }
+        },
+        "minimumPerRepositoryCoverage": { "type": "number", "minimum": 0, "maximum": 1 },
+        "minimumAggregateCoverage": { "type": "number", "minimum": 0, "maximum": 1 },
+        "unknownCoverageAllowed": { "const": false },
+        "fallbackRequiredForUnindexedFixtures": { "const": true },
+        "minimumFallbackAccuracy": { "const": 1 }
+      }
+    },
+    "structuralTruthContract": {
+      "type": "object",
+      "required": [
+        "version", "authority", "includeTests", "excludeGeneratedTrees",
+        "exactSetRequired", "callerRelations", "calleeRelations"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "const": "1.0.0" },
+        "authority": { "const": "exact-pinned-git-source" },
+        "includeTests": { "const": true },
+        "excludeGeneratedTrees": { "const": true },
+        "exactSetRequired": { "const": true },
+        "callerRelations": {
+          "type": "object",
+          "required": ["import-consumers", "call-sites", "no-explicit-caller"],
+          "additionalProperties": false,
+          "properties": {
+            "import-consumers": { "type": "string", "minLength": 1 },
+            "call-sites": { "type": "string", "minLength": 1 },
+            "no-explicit-caller": { "type": "string", "minLength": 1 }
+          }
+        },
+        "calleeRelations": {
+          "type": "object",
+          "required": ["initializer-dependencies", "body-code-targets", "no-callee"],
+          "additionalProperties": false,
+          "properties": {
+            "initializer-dependencies": { "type": "string", "minLength": 1 },
+            "body-code-targets": { "type": "string", "minLength": 1 },
+            "no-callee": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "acceptancePolicy": {
+      "type": "object",
+      "required": [
+        "minimumIndexedFixtureFileAccuracy", "minimumIndexedFixtureLineAccuracy",
+        "minimumSetOutcomeAccuracy", "minimumCallerCalleeF1", "minimumExactSourceAccuracy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "minimumIndexedFixtureFileAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "minimumIndexedFixtureLineAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "minimumSetOutcomeAccuracy": { "const": 1 },
+        "minimumCallerCalleeF1": { "type": "number", "minimum": 0, "maximum": 1 },
+        "minimumExactSourceAccuracy": { "const": 1 }
+      }
+    },
+    "resourceBudget": {
+      "type": "object",
+      "required": ["basis", "coldStart", "steadyState", "capacity"],
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "type": "object",
+          "required": ["hostMemoryBytes", "logicalCpuCount", "minimumStartFreeMemoryPercent", "minimumStartFreeDiskBytes"],
+          "additionalProperties": false,
+          "properties": {
+            "hostMemoryBytes": { "type": "integer", "minimum": 1 },
+            "logicalCpuCount": { "type": "integer", "minimum": 1 },
+            "minimumStartFreeMemoryPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "minimumStartFreeDiskBytes": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "coldStart": {
+          "type": "object",
+          "required": ["maximumIndexingTimeMsPerRepository", "maximumPeakRssMiB", "maximumPeakCpuPercent"],
+          "additionalProperties": false,
+          "properties": {
+            "maximumIndexingTimeMsPerRepository": { "type": "integer", "minimum": 1 },
+            "maximumPeakRssMiB": { "type": "number", "exclusiveMinimum": 0 },
+            "maximumPeakCpuPercent": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "steadyState": {
+          "type": "object",
+          "required": [
+            "maximumIdleRssMiB", "maximumIdleCpuPercent", "maximumRefreshP95Ms",
+            "maximumRefreshMs", "maximumRefreshPeakRssMiB", "maximumRefreshPeakCpuPercent"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "maximumIdleRssMiB": { "type": "number", "exclusiveMinimum": 0 },
+            "maximumIdleCpuPercent": { "type": "number", "minimum": 0 },
+            "maximumRefreshP95Ms": { "type": "integer", "minimum": 1 },
+            "maximumRefreshMs": { "type": "integer", "minimum": 1 },
+            "maximumRefreshPeakRssMiB": { "type": "number", "exclusiveMinimum": 0 },
+            "maximumRefreshPeakCpuPercent": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "capacity": {
+          "type": "object",
+          "required": ["maximumIndexBytesPerRepository", "maximumTotalServiceRssMiB"],
+          "additionalProperties": false,
+          "properties": {
+            "maximumIndexBytesPerRepository": { "type": "integer", "minimum": 1 },
+            "maximumTotalServiceRssMiB": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
+      }
+    },
+    "rehearsalPolicy": {
+      "type": "object",
+      "required": ["minimumIndependentRuns", "requiredPassingRuns", "requiredHeadroomRatio", "reportedStatistics"],
+      "additionalProperties": false,
+      "properties": {
+        "minimumIndependentRuns": { "type": "integer", "minimum": 3 },
+        "requiredPassingRuns": { "type": "integer", "minimum": 1 },
+        "requiredHeadroomRatio": { "type": "number", "minimum": 0, "maximum": 0.5 },
+        "reportedStatistics": {
+          "type": "array", "uniqueItems": true,
+          "items": { "enum": ["minimum", "median", "p95", "maximum"] },
+          "allOf": [
+            { "contains": { "const": "median" } },
+            { "contains": { "const": "p95" } },
+            { "contains": { "const": "maximum" } }
+          ]
+        }
+      }
+    },
+    "isolationPolicy": {
+      "type": "object",
+      "required": ["externalInet", "externalInet6", "unixSocketDefault", "allowedUnixSocketRootTemplate", "requiredSelfTests"],
+      "additionalProperties": false,
+      "properties": {
+        "externalInet": { "const": "deny" },
+        "externalInet6": { "const": "deny" },
+        "unixSocketDefault": { "const": "deny" },
+        "allowedUnixSocketRootTemplate": { "const": "/private/tmp/cbm-daemon-<uid>" },
+        "requiredSelfTests": {
+          "type": "array", "uniqueItems": true, "minItems": 4,
+          "items": {
+            "enum": [
+              "deny-ipv4-loopback-connect", "deny-ipv6-loopback-connect",
+              "allow-declared-unix-socket-connect", "deny-outside-unix-socket-connect"
+            ]
+          }
+        }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["repositoryId", "localPath", "pinnedCommit"],
+        "additionalProperties": false,
+        "properties": {
+          "repositoryId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "localPath": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?![A-Za-z]:[\\\\/]).+",
+            "description": "Portable path to the local checkout, resolved relative to this manifest"
+          },
+          "pinnedCommit": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$",
+            "description": "Exact 40-char hex commit SHA. No symbolic refs (main, HEAD) allowed."
+          },
+          "description": {
+            "type": "string"
+          },
+          "excludedSymlinkPaths": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Digest-bound symlinks omitted from exported benchmark sources because they escape the pinned tree"
+          }
+        }
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "scoringType", "callerCalleeApplicable", "verification"],
+        "additionalProperties": false,
+        "properties": {
+          "fixtureId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "Unique fixture identifier (no duplicates)"
+          },
+          "repositoryId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "pinnedCommit": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "question": {
+            "type": "string",
+            "description": "Exact natural-language question for the retrieval benchmark"
+          },
+          "retrievalPattern": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Question-visible lexical pattern supplied to CBM; it is input, never answer-key data"
+          },
+          "expectedFile": {
+            "type": "string",
+            "description": "Exact relative file path within the exported tree. No 'or equivalent', no approximations."
+          },
+          "expectedSymbol": {
+            "type": "string",
+            "description": "Exact symbol name (function, const, class, export) to find"
+          },
+          "expectedLiteral": {
+            "type": "string",
+            "description": "Exact literal value (string, number) expected at the recorded line"
+          },
+          "expectedLine": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Exact line number at pinned commit"
+          },
+          "expectedCallers": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string" },
+            "description": "Explicit array of caller file paths. Not prose, not 'main function'."
+          },
+          "expectedCallees": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string" },
+            "description": "Explicit array of callee symbols/paths. Not prose."
+          },
+          "expectedFileCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Exact file count for count-based fixtures"
+          },
+          "scoringType": {
+            "type": "string",
+            "enum": ["exact-match", "set-match", "count-match"],
+            "description": "How this fixture is scored"
+          },
+          "callerCalleeApplicable": {
+            "type": "boolean",
+            "description": "Whether caller/callee accuracy applies to this fixture"
+          },
+          "structuralTruth": {
+            "type": "object",
+            "required": ["callerRelation", "calleeRelation"],
+            "additionalProperties": false,
+            "properties": {
+              "callerRelation": { "enum": ["import-consumers", "call-sites", "no-explicit-caller"] },
+              "calleeRelation": { "enum": ["initializer-dependencies", "body-code-targets", "no-callee"] }
+            }
+          },
+          "verification": {
+            "type": "object",
+            "required": ["algorithm"],
+            "additionalProperties": false,
+            "properties": {
+              "algorithm": {
+                "type": "string",
+                "enum": ["line-contains", "file-name-count", "json-pointer-set", "file-exists", "symbol-at-line"]
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path within exported tree"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "contains": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "root": {
+                "type": "string",
+                "description": "Relative root for file counting"
+              },
+              "fileName": {
+                "type": "string",
+                "description": "File name to count"
+              },
+              "expectedCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "jsonPointer": {
+                "type": "string",
+                "pattern": "^/"
+              },
+              "expected": {},
+              "itemProperty": {
+                "type": "string",
+                "minLength": 1,
+                "description": "When the JSON pointer resolves to an array of objects, project each item to this property before set comparison"
+              }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "algorithm": { "const": "line-contains" } } },
+                "then": { "required": ["algorithm", "path", "line", "contains"] }
+              },
+              {
+                "if": { "properties": { "algorithm": { "const": "file-name-count" } } },
+                "then": { "required": ["algorithm", "root", "fileName", "expectedCount"] }
+              },
+              {
+                "if": { "properties": { "algorithm": { "const": "json-pointer-set" } } },
+                "then": { "required": ["algorithm", "path", "jsonPointer", "expected"] }
+              },
+              {
+                "if": { "properties": { "algorithm": { "const": "file-exists" } } },
+                "then": { "required": ["algorithm", "path"] }
+              },
+              {
+                "if": { "properties": { "algorithm": { "const": "symbol-at-line" } } },
+                "then": { "required": ["algorithm", "path", "line", "contains"] }
+              }
+            ]
+          },
+          "notes": {
+            "type": "string"
+          }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "callerCalleeApplicable": { "const": true } }, "required": ["callerCalleeApplicable"] },
+            "then": { "required": ["expectedCallers", "expectedCallees", "structuralTruth"] },
+            "else": {
+              "not": {
+                "anyOf": [
+                  { "required": ["structuralTruth"] },
+                  { "required": ["expectedCallers"] },
+                  { "required": ["expectedCallees"] }
+                ]
+              }
+            }
+          },
+          {
+            "if": { "properties": { "scoringType": { "const": "count-match" } } },
+            "then": { "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "expectedFileCount", "scoringType", "callerCalleeApplicable", "verification"], "not": { "required": ["retrievalPattern"] } }
+          },
+          {
+            "if": { "properties": { "scoringType": { "const": "exact-match" } } },
+            "then": { "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "retrievalPattern", "expectedFile", "scoringType", "callerCalleeApplicable", "verification"] }
+          },
+          {
+            "if": { "properties": { "scoringType": { "const": "set-match" } } },
+            "then": { "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "retrievalPattern", "expectedFile", "scoringType", "callerCalleeApplicable", "verification"] }
+          }
+        ]
+      }
+    }
+  }
+}

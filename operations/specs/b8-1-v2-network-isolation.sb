@@ -1,0 +1,18 @@
+;; B8.1 Contract V2 network-isolation profile.
+;;
+;; All IPv4, IPv6, and Unix-domain socket operations are denied by default.
+;; The only exception is the profile-bound, ownership/mode-validated per-user
+;; CBM coordination root supplied by sandbox-exec as CBM_IPC_ROOT. This permits v0.9.1-rc.1's local
+;; coordination daemon without admitting Internet, loopback TCP, or unrelated
+;; local IPC.
+;;
+;; Usage:
+;;   sandbox-exec -D CBM_IPC_ROOT=/private/tmp/cbm-daemon-$(id -u) \
+;;     -f operations/specs/b8-1-v2-network-isolation.sb <command>
+
+(version 1)
+(allow default)
+(deny network*)
+(allow network-bind (local unix-socket (subpath (param "CBM_IPC_ROOT"))))
+(allow network-inbound (local unix-socket (subpath (param "CBM_IPC_ROOT"))))
+(allow network-outbound (remote unix-socket (subpath (param "CBM_IPC_ROOT"))))

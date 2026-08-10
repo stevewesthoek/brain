@@ -1,0 +1,787 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "b8-1-v2-context-memory-benchmark-evidence",
+  "title": "B8.1 Contract V2 Context-Memory Benchmark Evidence",
+  "description": "Offline-only Contract V2 evidence with explicit structural coverage, lifecycle phases, scoped IPC proof, fallback outcomes, and acceptance gates.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "contractVersion",
+    "runId",
+    "partialEvidence",
+    "selectedSubjects",
+    "excludedSubjects",
+    "pinnedRepositoryCommits",
+    "manifestHash",
+    "preflightReceiptHash",
+    "planSha256",
+    "subjectBinaryIdentity",
+    "networkIsolationProof",
+    "isolationSelfTests",
+    "coverageEvidence",
+    "fallbackProbes",
+    "lifecycleMetrics",
+    "runResults",
+    "acceptanceSummary",
+    "fixtureResults",
+    "violations",
+    "cleanupStatus"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "4.0.0" },
+    "contractVersion": { "const": "B8.1-V2" },
+    "runId": { "type": "string", "pattern": "^b8-1-(?!.*\\.\\.)[a-zA-Z0-9._-]+$" },
+    "runAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$" },
+    "partialEvidence": { "type": "boolean" },
+    "selectedSubjects": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "enum": ["cbm", "exact-source"] }
+    },
+    "excludedSubjects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "enum": ["cbm", "exact-source"] }
+    },
+    "pinnedRepositoryCommits": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["commit", "repositoryId"],
+        "properties": {
+          "repositoryId": { "type": "string", "minLength": 1 },
+          "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "manifestHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "preflightReceiptHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "planSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "subjectBinaryIdentity": {
+      "type": "object",
+      "properties": {
+        "cbm": {
+          "type": "object",
+          "required": ["stablePath", "resolvedPath", "sha256", "version"],
+          "properties": {
+            "stablePath": { "type": "string", "minLength": 1 },
+            "resolvedPath": { "type": "string", "minLength": 1 },
+            "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "version": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "networkIsolationProof": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["required", "status"],
+          "properties": {
+            "required": { "type": "boolean", "const": false },
+            "status": { "type": "string", "const": "not-required" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["required", "status", "adapterIdentity", "runtimeIdentity", "childIdentity", "profilePath", "profileSha256", "controlSucceeded", "sandboxedChildStarted", "sandboxedConnectionDenied", "selfTestPassed"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "status": { "type": "string", "const": "passed" },
+            "adapterIdentity": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "runtimeIdentity": {
+              "type": "object",
+              "required": ["path", "sha256", "version"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "version": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "childIdentity": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "profilePath": { "type": "string", "minLength": 1 },
+            "profileSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "controlSucceeded": { "type": "boolean", "const": true },
+            "sandboxedChildStarted": { "type": "boolean", "const": true },
+            "sandboxedConnectionDenied": { "type": "boolean", "const": true },
+            "selfTestPassed": { "type": "boolean", "const": true },
+            "selfTestDetail": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["required", "status", "adapterIdentity", "runtimeIdentity", "childIdentity", "profileSha256", "controlSucceeded", "sandboxedChildStarted", "sandboxedConnectionDenied", "selfTestPassed"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "status": { "type": "string", "const": "passed" },
+            "adapterIdentity": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "runtimeIdentity": {
+              "type": "object",
+              "required": ["path", "sha256", "version"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "version": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "childIdentity": {
+              "type": "object",
+              "required": ["sha256"],
+              "properties": {
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "profileSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "controlSucceeded": { "type": "boolean", "const": true },
+            "sandboxedChildStarted": { "type": "boolean", "const": true },
+            "sandboxedConnectionDenied": { "type": "boolean", "const": true },
+            "selfTestPassed": { "type": "boolean", "const": true },
+            "selfTestDetail": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "isolationSelfTests": {
+      "type": "object",
+      "required": ["allowedUnixSocketRoot", "allowedUnixSocketRootValidation", "results"],
+      "additionalProperties": false,
+      "properties": {
+        "allowedUnixSocketRoot": { "type": "string", "pattern": "^/private/tmp/cbm-daemon-[0-9]+$" },
+        "allowedUnixSocketRootValidation": {
+          "type": "object",
+          "required": ["ownerUid", "mode", "directory", "symlink"],
+          "additionalProperties": false,
+          "properties": {
+            "ownerUid": { "type": "integer", "minimum": 0 },
+            "mode": { "const": "0700" },
+            "directory": { "const": true },
+            "symlink": { "const": false }
+          }
+        },
+        "results": {
+          "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true,
+          "items": {
+            "type": "object", "required": ["name", "passed"], "additionalProperties": false,
+            "properties": {
+              "name": { "enum": ["deny-ipv4-loopback-connect", "deny-ipv6-loopback-connect", "allow-declared-unix-socket-connect", "deny-outside-unix-socket-connect"] },
+              "passed": { "const": true },
+              "detail": { "type": "string" }
+            }
+          },
+          "allOf": [
+            { "contains": { "type": "object", "properties": { "name": { "const": "deny-ipv4-loopback-connect" } }, "required": ["name"] } },
+            { "contains": { "type": "object", "properties": { "name": { "const": "deny-ipv6-loopback-connect" } }, "required": ["name"] } },
+            { "contains": { "type": "object", "properties": { "name": { "const": "allow-declared-unix-socket-connect" } }, "required": ["name"] } },
+            { "contains": { "type": "object", "properties": { "name": { "const": "deny-outside-unix-socket-connect" } }, "required": ["name"] } }
+          ]
+        }
+      }
+    },
+    "coverageEvidence": {
+      "type": "object", "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["eligibleCount", "indexedCount", "unindexedCount", "unknownCount", "coverageRatio", "unindexedFiles", "fallbackFixtureIds"],
+        "additionalProperties": false,
+        "properties": {
+          "eligibleCount": { "type": "integer", "minimum": 0 },
+          "indexedCount": { "type": "integer", "minimum": 0 },
+          "unindexedCount": { "type": "integer", "minimum": 0 },
+          "unknownCount": { "const": 0 },
+          "coverageRatio": { "type": "number", "minimum": 0, "maximum": 1 },
+          "unindexedFiles": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+          "fallbackFixtureIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    },
+    "fallbackProbes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-z][a-z0-9-]*$": {
+          "type": "object",
+          "required": ["fixtureId", "question", "retrievalPattern", "expectedFile", "exactSourceCandidates", "targetIndexed", "cbmStructuralCredit", "exactSourceSha256", "exactSourcePassed"],
+          "additionalProperties": false,
+          "properties": {
+            "fixtureId": { "type": "string", "minLength": 1 },
+            "question": { "type": "string", "minLength": 1 },
+            "retrievalPattern": { "type": "string", "minLength": 1 },
+            "expectedFile": { "type": "string", "minLength": 1 },
+            "exactSourceCandidates": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+            "targetIndexed": { "const": false },
+            "cbmStructuralCredit": { "const": 0 },
+            "exactSourceSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "exactSourcePassed": { "const": true }
+          }
+        }
+      }
+    },
+    "lifecycleMetrics": {
+      "type": "object", "minProperties": 1,
+      "additionalProperties": {
+        "type": "object", "required": ["coldStart", "steadyState", "indexBytes"], "additionalProperties": false,
+        "properties": {
+          "coldStart": {
+            "type": "object", "required": ["wallMs", "peakRssMiB", "peakCpuPercent"], "additionalProperties": false,
+            "properties": { "wallMs": { "type": "number", "minimum": 0 }, "peakRssMiB": { "type": "number", "minimum": 0 }, "peakCpuPercent": { "type": "number", "minimum": 0 } }
+          },
+          "steadyState": {
+            "type": "object", "required": ["idleRssMiB", "idleCpuPercent", "totalServiceRssMiB", "refreshSamplesMs", "refreshStatistics", "refreshPeakRssMiB", "refreshPeakCpuPercent"], "additionalProperties": false,
+            "properties": {
+              "idleRssMiB": { "type": "number", "minimum": 0 }, "idleCpuPercent": { "type": "number", "minimum": 0 },
+              "totalServiceRssMiB": { "type": "number", "minimum": 0 },
+              "refreshSamplesMs": { "type": "array", "minItems": 5, "items": { "type": "number", "minimum": 0 } },
+              "refreshStatistics": {
+                "type": "object", "required": ["minimum", "median", "p95", "maximum"], "additionalProperties": false,
+                "properties": { "minimum": { "type": "number", "minimum": 0 }, "median": { "type": "number", "minimum": 0 }, "p95": { "type": "number", "minimum": 0 }, "maximum": { "type": "number", "minimum": 0 } }
+              },
+              "refreshPeakRssMiB": { "type": "number", "minimum": 0 }, "refreshPeakCpuPercent": { "type": "number", "minimum": 0 }
+            }
+          },
+          "indexBytes": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "runResults": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": ["repetition", "startCapacity", "repositories", "allGatesPassed"],
+        "additionalProperties": false,
+        "properties": {
+          "repetition": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "startCapacity": {
+            "type": "object",
+            "required": ["freeMemoryPercent", "freeDiskBytes"],
+            "additionalProperties": false,
+            "properties": {
+              "freeMemoryPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+              "freeDiskBytes": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "repositories": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "patternProperties": {
+              "^[a-z][a-z0-9-]*$": {
+                "type": "object",
+                "required": ["coverageRatio", "unknownCount", "fileAccuracy", "lineAccuracy", "meanReciprocalRank", "setOutcomeAccuracy", "callerCalleeF1", "exactSourceAccuracy", "fallbackAccuracy", "coldStart", "steadyState", "indexBytes"],
+                "additionalProperties": false,
+                "properties": {
+                  "coverageRatio": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "unknownCount": { "const": 0 },
+                  "fileAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "lineAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "meanReciprocalRank": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "setOutcomeAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "callerCalleeF1": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "exactSourceAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "fallbackAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "coldStart": {
+                    "type": "object", "required": ["wallMs", "peakRssMiB", "peakCpuPercent"], "additionalProperties": false,
+                    "properties": { "wallMs": { "type": "number", "minimum": 0 }, "peakRssMiB": { "type": "number", "minimum": 0 }, "peakCpuPercent": { "type": "number", "minimum": 0 } }
+                  },
+                  "steadyState": {
+                    "type": "object", "required": ["refreshMs", "refreshPeakRssMiB", "refreshPeakCpuPercent", "idleRssMiB", "idleCpuPercent", "totalServiceRssMiB"], "additionalProperties": false,
+                    "properties": { "refreshMs": { "type": "number", "minimum": 0 }, "refreshPeakRssMiB": { "type": "number", "minimum": 0 }, "refreshPeakCpuPercent": { "type": "number", "minimum": 0 }, "idleRssMiB": { "type": "number", "minimum": 0 }, "idleCpuPercent": { "type": "number", "minimum": 0 }, "totalServiceRssMiB": { "type": "number", "minimum": 0 } }
+                  },
+                  "indexBytes": { "type": "integer", "minimum": 0 }
+                }
+              }
+            }
+          },
+          "allGatesPassed": { "const": true }
+        }
+      }
+    },
+    "acceptanceSummary": {
+      "type": "object", "required": ["passingRuns", "requiredPassingRuns", "meanReciprocalRank", "setOutcomeAccuracy", "callerCalleeF1", "fallbackAccuracy", "headroomSatisfied", "allGatesPassed"], "additionalProperties": false,
+      "properties": {
+        "passingRuns": { "type": "integer", "minimum": 0 }, "requiredPassingRuns": { "type": "integer", "minimum": 5 },
+        "meanReciprocalRank": { "type": "number", "minimum": 0, "maximum": 1 }, "setOutcomeAccuracy": { "const": 1 }, "callerCalleeF1": { "type": "number", "minimum": 0, "maximum": 1 }, "fallbackAccuracy": { "const": 1 },
+        "headroomSatisfied": { "const": true }, "allGatesPassed": { "const": true }
+      }
+    },
+    "fixtureResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fixtureId", "subject", "fileCorrect", "lineCorrect", "targetIndexed", "fallbackRequired"],
+        "properties": {
+          "fixtureId": { "type": "string" },
+          "subject": { "type": "string", "enum": ["cbm", "exact-source"] },
+          "retrievalPattern": { "type": "string", "minLength": 1 },
+          "targetRank": { "type": ["integer", "null"], "minimum": 1, "maximum": 20 },
+          "fileCorrect": { "type": "boolean" },
+          "lineCorrect": { "type": ["boolean", "null"] },
+          "targetIndexed": { "type": "boolean" },
+          "fallbackRequired": { "type": "boolean" },
+          "callerPrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+          "callerRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+          "calleePrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+          "calleeRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+          "setAccuracy": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "offlineMetrics": {
+      "type": "object",
+      "properties": {
+        "serializedPayloadBytes": { "type": "integer", "minimum": 0 },
+        "pinnedTokenizerEstimate": { "type": "integer", "minimum": 0 },
+        "tokenizerName": { "type": "string" },
+        "tokenizerVersion": { "type": "string" },
+        "indexingDurationMs": { "type": "integer", "minimum": 0 },
+        "refreshDurationMs": { "type": "integer", "minimum": 0 },
+        "peakCpuPercent": { "type": "number", "minimum": 0 },
+        "peakMemoryMb": { "type": "number", "minimum": 0 },
+        "diskUsageMb": { "type": "number", "minimum": 0 },
+        "retrievalOperationCount": { "type": "integer", "minimum": 0 },
+        "fileAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "lineAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "setAccuracy": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "subjectMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(cbm|exact-source)$": {
+          "type": "object",
+          "required": ["retrievalAccuracy"],
+          "additionalProperties": false,
+          "properties": {
+            "initialIndexingTimeMs": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "incrementalRefreshLatencyMs": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "peakCpuPercent": {
+              "oneOf": [
+                { "type": "number", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "peakRssMb": {
+              "oneOf": [
+                { "type": "number", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "indexDiskBytes": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "serializedPayloadBytes": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "tokenizer": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["name", "version", "tokenCount"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": { "type": "string", "minLength": 1 },
+                    "version": { "type": "string", "minLength": 1 },
+                    "tokenCount": { "type": "integer", "minimum": 0 }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "retrievalOperationCount": {
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not-applicable"] },
+                    "reason": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "retrievalAccuracy": {
+              "type": "object",
+              "required": ["fileAccuracy", "lineAccuracy"],
+              "additionalProperties": false,
+              "properties": {
+                "fileAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                "lineAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                "setAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+                "meanReciprocalRank": { "type": "number", "minimum": 0, "maximum": 1 },
+                "callerPrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+                "callerRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+                "calleePrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+                "calleeRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+                "callerCalleeF1": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            },
+            "repositoryMetrics": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^[a-z][a-z0-9-]*$": {
+                  "type": "object",
+                  "required": ["initialIndexingTimeMs", "incrementalRefreshLatencyMs", "indexDiskBytes"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "initialIndexingTimeMs": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    },
+                    "incrementalRefreshLatencyMs": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    },
+                    "indexDiskBytes": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    },
+                    "refreshProbeTarget": {
+                      "oneOf": [
+                        {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+\\.(?:ts|tsx|js|mjs|cjs)$"},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "resourceProvenance": {
+              "type": "object",
+              "required": ["method"],
+              "additionalProperties": false,
+              "properties": {
+                "method": { "type": "string", "minLength": 1 },
+                "executable": { "type": ["string", "null"] },
+                "measuredPid": { "type": ["integer", "null"] },
+                "exitCode": { "type": ["integer", "null"] },
+                "durationMs": { "type": ["integer", "null"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string" },
+          "detail": { "type": "string" },
+          "timestamp": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "cleanupStatus": {
+      "type": "object",
+      "required": ["runDirectory", "removed"],
+      "properties": {
+        "runDirectory": { "type": "string", "minLength": 1 },
+        "removed": { "type": "boolean" },
+        "removedAt": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "removed": { "const": true } }, "required": ["removed"] },
+          "then": { "properties": { "removedAt": true }, "required": ["removedAt"] },
+          "else": { "properties": { "removedAt": true }, "not": { "required": ["removedAt"] } }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "excludedSubjects": { "type": "array", "maxItems": 0 } }, "required": ["excludedSubjects"] },
+      "then": { "properties": { "partialEvidence": { "const": false } } },
+      "else": { "properties": { "partialEvidence": { "const": true } } }
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "contains": { "const": "cbm" } },
+            "excludedSubjects": { "type": "array", "not": { "contains": { "const": "cbm" } } }
+          }
+        },
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "not": { "contains": { "const": "cbm" } } },
+            "excludedSubjects": { "type": "array", "contains": { "const": "cbm" } }
+          }
+        }
+      ]
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "contains": { "const": "exact-source" } },
+            "excludedSubjects": { "type": "array", "not": { "contains": { "const": "exact-source" } } }
+          }
+        },
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "not": { "contains": { "const": "exact-source" } } },
+            "excludedSubjects": { "type": "array", "contains": { "const": "exact-source" } }
+          }
+        }
+      ]
+    },
+    {
+      "if": {
+        "properties": {
+          "selectedSubjects": { "type": "array", "contains": { "const": "cbm" } }
+        },
+        "required": ["selectedSubjects"]
+      },
+      "then": {
+        "properties": {
+          "subjectMetrics": {
+            "type": "object",
+            "required": ["cbm"]
+          },
+          "subjectBinaryIdentity": {
+            "type": "object",
+            "properties": { "cbm": true },
+            "required": ["cbm"]
+          },
+          "networkIsolationProof": {
+            "type": "object",
+            "properties": {
+              "required": { "const": true },
+              "status": { "const": "passed" }
+            },
+            "required": ["required", "status"]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "subjectBinaryIdentity": {
+            "type": "object",
+            "properties": { "cbm": false }
+          },
+          "networkIsolationProof": {
+            "type": "object",
+            "const": { "required": false, "status": "not-required" }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "selectedSubjects": { "type": "array", "contains": { "const": "exact-source" } } },
+        "required": ["selectedSubjects"]
+      },
+      "then": {
+        "properties": {
+          "subjectMetrics": {
+            "type": "object",
+            "required": ["exact-source"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "schemaVersion": { "enum": ["3.0.0", "3.1.0", "3.2.0", "4.0.0"] } },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "required": ["subjectMetrics"],
+        "properties": {
+          "offlineMetrics": false,
+          "subjectMetrics": {
+            "type": "object",
+            "minProperties": 1
+          }
+        }
+      },
+      "else": {
+        "if": {
+          "properties": { "schemaVersion": { "const": "2.0.0" } },
+          "required": ["schemaVersion"]
+        },
+        "then": {
+          "required": ["subjectMetrics"],
+          "properties": { "subjectMetrics": true, "offlineMetrics": false }
+        },
+        "else": {
+          "if": {
+            "properties": { "schemaVersion": { "const": "2.1.0" } },
+            "required": ["schemaVersion"]
+          },
+          "then": {
+            "required": ["subjectMetrics"],
+            "properties": {
+              "offlineMetrics": false,
+              "subjectMetrics": {
+                "type": "object",
+                "minProperties": 1
+              }
+            }
+          },
+          "else": {
+            "required": ["offlineMetrics"],
+            "properties": { "offlineMetrics": true, "subjectMetrics": false }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "schemaVersion": { "enum": ["3.1.0", "3.2.0", "4.0.0"] } },
+        "required": ["schemaVersion"]
+      },
+      "then": {
+        "properties": {
+          "subjectMetrics": {
+            "type": "object",
+            "patternProperties": {
+              "^(cbm|exact-source)$": {
+                "type": "object",
+                "properties": {
+                  "repositoryMetrics": {
+                    "type": "object",
+                    "patternProperties": {
+                      "^[a-z][a-z0-9-]*$": {
+                        "type": "object",
+                        "properties": { "refreshProbeTarget": true },
+                        "required": ["refreshProbeTarget"]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
