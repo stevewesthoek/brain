@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-10 (B8.1 Contract V2.1 canonically accepted; B8.2 unblocked)
-**Audited:** 2026-08-10 — B8.1 Contract V2.1 completed canonical run `b8-1-v2-1-validation-fixed-20260810` with 5/5 passing repetitions and all acceptance gates true. Final evidence validates after deterministic cleanup-metadata recovery without a benchmark rerun. Canonical structural coverage is 2625/2646 files (99.2063%) with zero unknown files; CBM file accuracy 0.90, applicable-line accuracy 0.875, MRR 0.4944, set accuracy 1.0, caller/callee F1 1.0; exact-source/fallback accuracy 1.0; lifecycle/resource headroom, isolation, restoration, and cleanup pass. The selected candidate remains installed `codebase-memory-mcp 0.9.0` full mode with exact-source fallback. B8.1 is complete, B8.2 is unblocked, B8.3–B8.6 remain dependency-gated, and P8 is 1/6 accepted.
+**Last verified:** 2026-08-11 (B8.1 accepted; B8.2 formally admitted; B8.3 unblocked)
+**Audited:** 2026-08-11 — B8.1 Contract V2.1 remains canonically accepted. B8.2 is now complete: pinned `codebase-memory-mcp 0.9.0` is `active-local` for Brain only, exact provider provenance and 14-tool inventory validate, authentication is none, Brain cache isolation is explicit, `auto_index=false`, `auto_watch=false`, exact-source fallback remains authoritative, rollback/uninstall dry-run passes without mutation, and MCP runtime-truth reports `b8.2-accepted` with Workbench/Mind scope intact and no bare credentials. No repository index rollout, watcher, or Graphify migration was started. P8 is 2/6 accepted; B8.3 is the next unblocked task.
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -25,17 +25,16 @@ The stabilization program is the highest-priority execution lane. `BS0.1`
 through `BS0.23` are complete (23 tasks), and all runtime priority tasks
 P1–P7 (B1.0–B1.7, B2.1–B2.8, B3.1–B3.4, B4.1–B4.4, B5.1–B5.4, B6.1–B6.3,
 B7.1–B7.7) are complete. All stabilization tasks and runtime priorities P1
-through P7 are complete. P8 now has B8.1 canonically accepted (1/6). B8.2 is
-the active next dependency: formal Codebase Memory admission must reconcile the
-accepted v0.9.0 full-mode benchmark decision with MCP governance before any
-default activation or broader rollout. Preliminary and out-of-sequence
-Codebase Memory experiments, indexes, governance, and design artifacts under
-obsolete B8 numbering do not bypass B8.2–B8.6 acceptance.
+through P7 are complete. P8 now has B8.1 and B8.2 accepted (2/6). B8.3 is
+the active next dependency: define the approved repository inventory and
+incremental freshness behavior while preserving Brain-only cache isolation,
+`auto_watch=false` until explicitly implemented, exact-source authority, and
+resource/failure-receipt gates. Preliminary and out-of-sequence Codebase Memory
+indexes or Graphify artifacts do not bypass B8.3–B8.6 acceptance.
 A full roadmap audit was performed on 2026-08-01; see
 `operations/reports/roadmap-audit-2026-08-01.md`.
-The remaining documented work is B8.2–B8.6: provider admission, incremental
-freshness/inventory, retrieval policy, bounded Graphify migration, and final
-pilot/rollback evidence.
+The remaining documented work is B8.3–B8.6: incremental freshness/inventory,
+retrieval policy, bounded Graphify migration, and final pilot/rollback evidence.
 B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
 That run remains immutable infrastructure evidence only.
 B8.1 v7r / 7.1.0 two-subject contract was materialized and executed on 2026-08-06,
@@ -136,8 +135,7 @@ caller/callee F1 100%. The Contract V2 dry-run package is
 It passed 15/15 preflight checks, rejects partial evidence, and has no authority
 to materialize or execute. Its planned canonical run directory is absent. Evidence:
 `operations/reports/b8-1-v2-contract-and-authorization-readiness-2026-08-10.md`.
-B8.2–B8.6 remain blocked because accepted
-B8.1 evidence is absent. P8 remains 0/6 accepted. Graphify remains excluded.
+That obsolete V2 readiness package is historical only. B8.1 was later canonically accepted and B8.2 formally admitted; current P8 status is 2/6 accepted. Graphify remains excluded until B8.5.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.
 

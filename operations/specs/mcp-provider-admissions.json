@@ -4,7 +4,7 @@
   "admissions": [
     {
       "admissionId": "codebase-memory-mcp-brain",
-      "status": "candidate",
+      "status": "active-local",
       "owner": "brain-runtime",
       "consumer": "brain",
       "provider": {
@@ -63,6 +63,9 @@
         "toolAllowlistNote": "CBM_ALLOWED_TOOLS and CBM_ALLOWED_SUBOPERATIONS are Brain-admission documentation fields only. They are not read by the binary and do not restrict server-side tool dispatch. Brain-level access control is DOCUMENTATION-ONLY as of B8.4R: no client-layer enforcement has been proven or implemented. Write tools (index_repository, delete_project, manage_adr, ingest_traces) are approval-gated in this registry and require per-call Brain-operator confirmation, but this is an admission-policy constraint, not a runtime enforcement boundary.",
         "enforcementStatus": "documentation-only",
         "enforcementNote": "No runtime enforcement of tool allowlist exists at either the CBM binary layer or the MCP client layer. The approval field on write tools is a Brain admission policy that must be enforced by the calling agent (Claude/Codex) honoring this registry before dispatching. If client-layer enforcement is implemented in a future task, update enforcementStatus to 'client-enforced' and cite the implementation evidence.",
+        "fixedEnvironment": {
+          "CBM_CACHE_DIR": "/Users/Office/Library/Caches/brain/codebase-memory-mcp/brain"
+        },
         "tools": [
           { "name": "index_repository", "risk": "write", "approval": "per-call", "allowedSuboperations": [], "note": "Writes SQLite index to CBM_CACHE_DIR only; persistence=false (default) prevents repo-local writes" },
           { "name": "search_code", "risk": "read", "approval": "none", "allowedSuboperations": [] },

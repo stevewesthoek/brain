@@ -86,7 +86,8 @@ function validateAdmissionRegistryCore(registry, errors) {
       const providerEnvironmentPrefix = `${String(provider?.providerId ?? '').replace(/-/g, '_').toUpperCase()}_`;
       for (const [name, value] of Object.entries(scope.fixedEnvironment ?? {})) {
         if (!ENV_NAME.test(name) || typeof value !== 'string' || /[\0\r\n]/.test(value)) errors.push(`${prefix}: invalid fixed environment binding ${name}`);
-        if (!name.startsWith(providerEnvironmentPrefix)) errors.push(`${prefix}: fixedEnvironment binding ${name} must use provider prefix ${providerEnvironmentPrefix}`);
+        const declaredCacheEnvironmentVariable = admission?.cache?.envVariable;
+        if (!name.startsWith(providerEnvironmentPrefix) && name !== declaredCacheEnvironmentVariable) errors.push(`${prefix}: fixedEnvironment binding ${name} must use provider prefix ${providerEnvironmentPrefix} or declared cache env ${declaredCacheEnvironmentVariable ?? '<none>'}`);
         if (/(TOKEN|SECRET|PASSWORD|CREDENTIAL)/.test(name)) errors.push(`${prefix}: fixedEnvironment must not contain secret-bearing binding ${name}`);
         if (name === scope.toolAllowlistEnvironmentVariable || name === scope.suboperationAllowlistEnvironmentVariable) errors.push(`${prefix}: fixedEnvironment must not override admission allowlist bindings`);
       }

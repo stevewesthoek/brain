@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
+import Ajv2020 from 'ajv/dist/2020.js';
 import { validateAdmissionRegistry, loadAdmissionRegistry, DEFAULT_REGISTRY_PATH } from './validate-mcp-provider-admissions.mjs';
 
 function fixture() {
@@ -301,6 +302,40 @@ test('candidate registration is disabled and renders validated fixed non-secret 
   assert.match(rendered, /required = false/);
   assert.match(rendered, /EXAMPLE_MODE = "read-only"/);
   assert.match(rendered, /EXAMPLE_ROOT = "\/opt\/example"/);
+  fs.rmSync(item.root, {recursive: true});
+});
+
+test('canonical admission registry conforms to JSON schema', () => {
+  const schema = JSON.parse(fs.readFileSync(path.resolve('operations/specs/mcp-provider-admission.schema.json'), 'utf8'));
+  const registry = JSON.parse(fs.readFileSync(DEFAULT_REGISTRY_PATH, 'utf8'));
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
+  assert.equal(validate(registry), true, JSON.stringify(validate.errors));
+});
+
+test('canonical CBM admission pins the exact 14-tool inventory and Brain-only cache', () => {
+  const registry = loadAdmissionRegistry(DEFAULT_REGISTRY_PATH);
+  const admission = registry.admissions.find((item) => item.admissionId === 'codebase-memory-mcp-brain');
+  const expectedTools = [
+    'index_repository', 'search_code', 'query_graph', 'trace_path',
+    'get_code_snippet', 'get_graph_schema', 'get_architecture', 'search_graph',
+    'list_projects', 'delete_project', 'index_status', 'detect_changes',
+    'manage_adr', 'ingest_traces',
+  ];
+  assert.deepEqual(admission.scope.tools.map((tool) => tool.name), expectedTools);
+  assert.equal(admission.status, 'active-local');
+  assert.equal(admission.authentication.mode, 'none');
+  assert.equal(admission.scope.fixedEnvironment.CBM_CACHE_DIR, '/Users/Office/Library/Caches/brain/codebase-memory-mcp/brain');
+});
+
+test('declared cache env variable may be used as fixed environment', () => {
+  const item = noneAuthAdmission();
+  const admission = item.registry.admissions[0];
+  admission.cache = { rootTemplate: '~/Library/Caches/example/<repo>', envVariable: 'CBM_CACHE_DIR', perRepoIsolation: true, autoWatchNote: 'disabled explicitly' };
+  admission.scope.fixedEnvironment = { CBM_CACHE_DIR: '/tmp/example-cache' };
+  assert.deepEqual(validateAdmissionRegistry(item.registry), []);
+  admission.scope.fixedEnvironment = { OTHER_CACHE_DIR: '/tmp/example-cache' };
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some((error) => error.includes('must use provider prefix EXAMPLE_ or declared cache env CBM_CACHE_DIR')), `errors: ${errors}`);
   fs.rmSync(item.root, {recursive: true});
 });
 
