@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "B8.4",
+  "principles": {
+    "structuralMemoryRole": "navigation-only",
+    "exactSourceRole": "authority",
+    "graphifyRoleBeforeB8_5": "frozen-non-authoritative-projection",
+    "generatedProjectionRole": "navigation-hint-only"
+  },
+  "intentClasses": {
+    "structuralNavigation": {
+      "intents": ["architecture", "symbol", "route", "caller-callee", "blast-radius"],
+      "preferredOrder": ["cbm-structural-memory", "exact-source-bounded-search"],
+      "cbmRequiresFreshState": true,
+      "exactSourceRequiredBeforeFinalClaim": true
+    },
+    "knownSource": {
+      "intents": ["known-file", "known-symbol", "specific-line", "specific-config"],
+      "preferredOrder": ["exact-source-read"],
+      "cbmOptional": true
+    },
+    "canonicalAuthority": {
+      "intents": ["roadmap", "implementation-plan", "live-status", "decision-log", "security-policy", "provider-admission", "runtime-config"],
+      "preferredOrder": ["exact-source-read"],
+      "cbmMayNavigate": true,
+      "cbmMayAuthorize": false
+    },
+    "generatedProjection": {
+      "intents": ["graphify", "generated-map", "generated-report", "projection"],
+      "preferredOrder": ["projection-for-navigation", "exact-source-read"],
+      "projectionMayAuthorize": false
+    }
+  },
+  "authorityGates": {
+    "beforeRepositoryEdit": ["exact-source-read-current-target"],
+    "beforeSecurityOrPolicyDecision": ["exact-source-read-canonical-authority"],
+    "beforeProviderOrRuntimeClaim": ["exact-source-read-runtime-or-admission-source"],
+    "beforeFinalFactualClaim": ["exact-source-read-supporting-source"],
+    "graphOutputCanAuthorizeWrite": false,
+    "structuralMemoryCanOverrideRoadmap": false,
+    "generatedProjectionCanReplaceSourceVerification": false
+  },
+  "freshnessFallback": {
+    "fresh": "cbm-structural-memory-allowed-for-navigation",
+    "stale": "skip-cbm-authority-and-use-bounded-exact-source",
+    "unavailable": "use-bounded-exact-source",
+    "unknown": "treat-as-stale-and-use-bounded-exact-source"
+  },
+  "broadExploration": {
+    "structuralQueryRequiresNavigationFirst": true,
+    "navigationProvider": "codebase-memory-mcp-brain",
+    "fallback": "bounded-exact-source-search",
+    "blindWholeRepositoryScan": false
+  },
+  "safety": {
+    "noWriteFromGraphEvidenceAlone": true,
+    "noPolicyDecisionFromGraphEvidenceAlone": true,
+    "noRoadmapOverrideFromGraphEvidence": true,
+    "noMindBoundaryChange": true,
+    "noWorkbenchBoundaryChange": true
+  }
+}

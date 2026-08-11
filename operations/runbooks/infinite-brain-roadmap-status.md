@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-11 (B8.1–B8.3 accepted; B8.4 unblocked)
-**Audited:** 2026-08-11 — B8.1 Contract V2.1 remains canonically accepted and B8.2 remains formally admitted. B8.3 is now complete for Brain only: explicit structural inventory/exclusions, deterministic fingerprinting, full-mode explicit refresh, freshness/source/index metadata, stale/provider-drift detection, observable failure receipts, exact-source fallback, and cleanup/resource gates are implemented. Corrected live acceptance passed 5/5 isolated change→refresh→query→restore repetitions; observed maxima were 2300 ms refresh, 313.08 MiB RSS, 161.36% CPU, and 130,056,192 index bytes, all below inherited effective limits. `auto_index=false` and `auto_watch=false` remain enforced; Mind/Workbench/ProChat were not indexed and Graphify remains frozen. P8 is 3/6 accepted; B8.4 is the next unblocked task.
+**Last verified:** 2026-08-11 (B8.1–B8.4 accepted; B8.5 unblocked)
+**Audited:** 2026-08-11 — B8.1–B8.3 remain accepted. B8.4 is now complete: fresh Codebase Memory MCP is the structural navigation layer for architecture/symbol/route/caller-callee/blast-radius work; exact current source is mandatory authority before edits, policy/security decisions, runtime/provider claims, and final factual claims. Stale, unavailable, or unknown CBM falls back to bounded exact-source search/read. `AGENTS.md` and the Graphify context standard now encode this hierarchy; generated projections cannot authorize writes or override roadmap/source authority. Instruction fixtures pass 9/9. Graphify remains frozen until B8.5. P8 is 4/6 accepted; B8.5 is the next unblocked task.
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -25,16 +25,14 @@ The stabilization program is the highest-priority execution lane. `BS0.1`
 through `BS0.23` are complete (23 tasks), and all runtime priority tasks
 P1–P7 (B1.0–B1.7, B2.1–B2.8, B3.1–B3.4, B4.1–B4.4, B5.1–B5.4, B6.1–B6.3,
 B7.1–B7.7) are complete. All stabilization tasks and runtime priorities P1
-through P7 are complete. P8 now has B8.1–B8.3 accepted (3/6). B8.4 is
-the active next dependency: enforce structural-memory navigation while keeping
-exact pinned source authoritative before edits, policy/security decisions, or
-final claims. Stale or unavailable structural memory must fail safely to bounded
-exact-source reads. Graphify remains frozen until B8.5 and no wider repository
-rollout is authorized by B8.4.
+through P7 are complete. P8 now has B8.1–B8.4 accepted (4/6). B8.5 is
+the active next dependency: replace the frozen legacy Graphify nightly/full-scan
+model with bounded event-driven semantic synthesis for explicitly approved
+scopes only. CBM remains structural navigation and exact source remains authority.
 A full roadmap audit was performed on 2026-08-01; see
 `operations/reports/roadmap-audit-2026-08-01.md`.
-The remaining documented work is B8.3–B8.6: incremental freshness/inventory,
-retrieval policy, bounded Graphify migration, and final pilot/rollback evidence.
+The remaining documented work is B8.5–B8.6: bounded Graphify migration and final
+pilot/rollback evidence.
 B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
 That run remains immutable infrastructure evidence only.
 B8.1 v7r / 7.1.0 two-subject contract was materialized and executed on 2026-08-06,

@@ -742,14 +742,14 @@ Context Gateway tasks are unchanged.
 
 ### B8.4 — Define agent retrieval and exact-source-read policy
 
-- **Status:** planned; unblocked by accepted B8.2 and B8.3. Not started in the B8.3 tranche.
+- **Status:** complete (2026-08-11). Fresh CBM is now the structural-navigation layer for architecture/symbol/route/caller-callee/blast-radius work; exact current source is mandatory authority before edits, security/policy decisions, runtime/provider claims, or final factual claims. Stale/unavailable/unknown CBM fails safely to bounded exact-source search/read; generated projections cannot authorize writes or override roadmap/source authority. `AGENTS.md` and the Graphify context standard now encode this hierarchy. Instruction fixtures pass 9/9. Evidence: [B8.4 retrieval policy acceptance](../reports/b8-4-agent-retrieval-policy-acceptance-2026-08-11.md). P8 is 4/6 accepted.
 - **Change:** require agents to use structural memory for architecture, symbol, route, caller/callee, and blast-radius navigation before broad exploration, while requiring exact source reads before edits or authority claims.
 - **Verify:** instruction fixtures distinguish graph navigation, canonical documents, generated projections, and exact source authority; unavailable-service fallback remains ordinary bounded repository reads.
 - **Safety:** graph output cannot authorize writes, override roadmaps, or replace source verification.
 
 ### B8.5 — Convert Graphify to bounded event-driven knowledge synthesis
 
-- **Status:** planned; blocked on B8.1 and B8.4.
+- **Status:** planned; unblocked by accepted B8.1 and B8.4. Graphify remains frozen until the B8.4 closure tranche is validated and committed.
 - **Scope:** selected Brain architecture documents and explicitly approved Mind knowledge scopes only.
 - **Change:** remove unconditional nightly full scans; retain bounded profiles, relevant-change detection, explicit/manual triggers, changed-document-only enrichment, retention limits, and non-authoritative freshness metadata.
 - **Verify:** code-only changes do not invoke an LLM; relevant document changes mark the Graphify projection stale; bounded regeneration excludes secrets, runtime state, generated output, and unapproved Mind content.

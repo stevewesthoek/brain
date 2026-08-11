@@ -18,6 +18,18 @@ Then read, in this order:
 
 Do not scan the whole repo blindly. Use the memory map, then search/read only the relevant files.
 
+## Structural Memory And Exact-Source Authority
+
+For architecture, symbol, route, caller/callee, or blast-radius questions, use the admitted Codebase Memory MCP structural index first **when its B8.3 freshness state is fresh**. Use it to narrow files, symbols, and relationships; it is navigation memory, not authority.
+
+Then read the exact current source before editing, making security/policy decisions, asserting runtime/provider truth, or making a final factual claim. Known-file and known-symbol work may go directly to exact source.
+
+If structural memory is stale, unavailable, or freshness is unknown, skip it and use ordinary bounded repository search/read. Never widen that fallback into a blind whole-repository scan.
+
+Generated projections, including Graphify artifacts, are navigation hints only. They cannot authorize writes, override roadmaps/status/decision logs, or replace exact source verification. Graphify is not the structural default and remains frozen until its bounded B8.5 semantic role is accepted.
+
+Canonical contract: `operations/specs/b8-4-agent-retrieval-policy.json`.
+
 ## Core Mental Model
 
 ```text
