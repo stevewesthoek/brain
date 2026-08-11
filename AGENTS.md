@@ -20,7 +20,7 @@ Do not scan the whole repo blindly. Use the memory map, then search/read only th
 
 ## Structural Memory And Exact-Source Authority
 
-For architecture, symbol, route, caller/callee, or blast-radius questions, use the admitted Codebase Memory MCP structural index first **when its B8.3 freshness state is fresh**. Use it to narrow files, symbols, and relationships; it is navigation memory, not authority.
+For architecture, symbol, route, caller/callee, or blast-radius questions, use the admitted Codebase Memory MCP structural index first **when its B8.3 freshness state is fresh**. Use it to narrow files, symbols, and relationships; it is navigation memory, not authority. Start `search_code` navigation in `files` mode with at most 5 candidates; escalate to compact metadata only when relationships require it, and never request full source from structural memory.
 
 Then read the exact current source before editing, making security/policy decisions, asserting runtime/provider truth, or making a final factual claim. Known-file and known-symbol work may go directly to exact source.
 

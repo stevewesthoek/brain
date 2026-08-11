@@ -69,6 +69,21 @@ test('code-only change never invokes runner or marks projection stale', async ()
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
+test('explicit disablement prevents runner invocation and leaves relevant changes stale', async () => {
+  const root = tempDir();
+  const outputRoot = path.join(root, 'runtime-output');
+  try {
+    prepareRepo(root);
+    const runner = fakeRunner(root);
+    const result = await runSemanticEvent({ repositoryRoot: root, profile, scopeId, changedFiles: [approvedPath], runnerPath: runner, outputRoot, sourceHead: 'f'.repeat(40), disabled: true });
+    assert.equal(result.status, 'disabled');
+    assert.equal(result.runnerInvoked, false);
+    assert.equal(result.state.freshness, 'stale');
+    assert.equal(fs.existsSync(path.join(root, 'runner-invoked')), false);
+    assert.equal(fs.existsSync(path.join(outputRoot, 'staging')), false);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
 test('relevant document without explicit runner marks projection stale', async () => {
   const root = tempDir();
   const outputRoot = path.join(root, 'runtime-output');

@@ -55,7 +55,8 @@ async function main() {
   }
 
   const runnerPath = args.runner ? path.resolve(args.runner) : null;
-  const result = await runSemanticEvent({ repositoryRoot: ROOT, profile, scopeId, changedFiles, runnerPath, outputRoot, sourceHead: currentHead });
+  const disabled = args.disabled === true || process.env[profile.execution.disableEnvironmentVariable] === '1';
+  const result = await runSemanticEvent({ repositoryRoot: ROOT, profile, scopeId, changedFiles, runnerPath, outputRoot, sourceHead: currentHead, disabled });
   console.log(JSON.stringify({ mode, scopeId, changedFiles, status: result.status, runnerInvoked: result.runnerInvoked, receiptPath: result.receiptPath, freshness: result.state?.freshness }, null, 2));
   if (result.status === 'failed') process.exitCode = 2;
 }

@@ -34,7 +34,7 @@ The stabilization program is sequenced as follows:
 | **P5 — Evaluation-first Context Gateway** | Create the evaluation corpus, context-pack schema, deterministic retrieval vertical slices, and adapters only after parity. | Core batch through B3.4 is validated; thin adapters are complete; B5.4 complete (2026-07-31). |
 | **P6 — Controlled-write pilots** | Expand only from fixture-proven, evidence-backed, approval-gated pilots. | B6.1–B6.3 are complete; measured automation remains fixture-only until a later approved run. |
 | **P7 — Scale and 1.0 certification** | Certify capability truth, recovery, performance, documentation, and deletion gates before scale. | B7.1–B7.7 and the independent B1.0a guarded-deployment lane are complete. |
-| **P8 — Context-memory efficiency and freshness** | Make deterministic structural code memory the always-current default across active repositories; retain Graphify only for bounded, event-driven Brain/Mind knowledge synthesis. | Planned post-stabilization phase; no deployment or scheduler change is authorized by this roadmap entry. |
+| **P8 — Context-memory efficiency and freshness** | Make deterministic structural code memory the measured navigation default for explicitly admitted repositories; retain Graphify only for bounded, event-driven semantic synthesis while exact source remains authority. | Complete 2026-08-11: B8.1–B8.6 accepted; Brain is active-local, ProChat pilot passed read-only, wider rollout remains per-repository admission only, and no Mind Graphify semantic scope is approved. |
 
 ### Stabilization principles
 
@@ -174,14 +174,15 @@ Cross-cutting services:
 
 ## Phase P8 runtime deliverables
 
-- one local Codebase Memory MCP service or approved equivalent providing deterministic structural indexes for each active code repository;
-- incremental or file-watch refresh that updates changed code without an LLM and records repository commit/freshness metadata;
-- agent instructions that query structural memory before broad repository exploration while requiring exact source reads before edits;
-- bounded Graphify profiles limited to approved Brain architecture and Mind knowledge scopes;
-- Graphify runs triggered only by relevant document/media changes or explicit architecture work, never by an unconditional nightly full-repository schedule;
-- no local LLM dependency for routine code graph generation or refresh;
-- a benchmark covering indexing latency, CPU/memory load, freshness lag, retrieval quality, token use, and failure fallback on the M1 Pro host;
-- rollback and graceful-degradation rules proving repositories remain usable when either context service is unavailable.
+- one admitted Codebase Memory MCP provider with deterministic, isolated structural indexes for explicitly approved repositories; Brain is active-local and additional repositories require their own admission;
+- explicit-event incremental refresh that updates changed code without an LLM and records repository/source/index freshness metadata;
+- agent instructions that use bounded structural navigation before broad repository exploration while requiring exact current source before edits, policy/security decisions, runtime claims, and final factual claims;
+- bounded Graphify semantic profiles limited to explicitly approved Brain document scopes; no Mind semantic scope is approved by P8;
+- Graphify semantic events triggered only by changed approved documents or explicit scope-bound manual work, never by an unconditional nightly full-repository scan;
+- no local or external model dependency for routine structural code indexing or refresh, and no default semantic model runner;
+- accepted benchmarks covering indexing latency, CPU/memory load, freshness lag, retrieval quality, navigation-context use, rebuild, degradation, and fallback on the M1 Pro host;
+- tested disablement, uninstall, rollback, and graceful-degradation rules proving repositories remain usable when structural or semantic context services are unavailable;
+- blanket automatic global rollout rejected: wider repository use remains opt-in and per-repository admission-bound.
 
 ## Sequencing rules
 

@@ -64,6 +64,7 @@
     "codeOnlyInvokeRunner": false,
     "interpretUnchangedCode": false,
     "manualTriggerRequiresScope": true,
+    "disableEnvironmentVariable": "GRAPHIFY_SEMANTIC_DISABLED",
     "structuralGraphGeneration": "frozen"
   },
   "freshness": {

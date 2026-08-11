@@ -104,10 +104,10 @@
 
   "migrationPath": {
     "historicalPhaseCompleted": "B8.4R-complete (historical-pre-canonical label; obsolete numbering retained for provenance only)",
-    "currentPhase": "canonical-B8.5-accepted",
-    "currentExecutionAuthority": "bounded Brain-only semantic event gate; structural Graphify remains frozen",
-    "canonicalP8Status": "5/6 accepted complete; B8.6 pilot is the only remaining task",
-    "nextTask": "Execute canonical B8.6 pilot/rollback evidence on Brain plus exactly one approved application repository. No structural Graphify reactivation or Mind scope is authorized.",
+    "currentPhase": "canonical-P8-complete",
+    "currentExecutionAuthority": "bounded Brain-only semantic event gate; structural Graphify remains frozen; CBM structural use remains per-repository admission-bound",
+    "canonicalP8Status": "6/6 accepted complete; final verification passed 2026-08-11",
+    "nextTask": "None under the current canonical P8 roadmap. Any wider repository rollout, Mind semantic scope, structural Graphify reactivation, production deployment, or push requires separate explicit authority.",
     "historicalNextTaskAnnotation": "Historical pre-canonical label was: 'B8.5A (Brain-only contract spec) then B8.5 (Workbench adapter implementation)'. Historical B8.5 (Workbench CBM adapter) collides with canonical B8.5 (Convert Graphify to bounded event-driven semantic synthesis). These are different tasks.",
     "globalActivationStatus": "not-active",
     "oneShotExecutions": [

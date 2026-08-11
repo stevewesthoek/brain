@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "B8.6",
+  "architecture": {
+    "structuralProviderAdmission": "codebase-memory-mcp-brain",
+    "structuralProviderVersion": "0.9.0",
+    "structuralMode": "full",
+    "exactSourceAuthority": true,
+    "graphifyRole": "bounded-semantic-non-authoritative",
+    "graphifyStructuralState": "frozen"
+  },
+  "pilotRepositories": [
+    {
+      "repositoryId": "brain",
+      "role": "system",
+      "localPath": ".",
+      "expectedHeadAtPilotStart": "ce2675a3",
+      "projectName": "brain-b8-6-pilot",
+      "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+      "retrievalProbes": [
+        {
+          "probeId": "brain-load-evidence-index",
+          "query": "loadEvidenceIndex",
+          "expectedFile": "tools/validate-deletion-readiness.mjs"
+        },
+        {
+          "probeId": "brain-mind-target-paths",
+          "query": "MIND_TARGET_PATHS",
+          "expectedFile": "projects/brain-core/src/mind-paths.ts"
+        }
+      ]
+    },
+    {
+      "repositoryId": "prochat",
+      "role": "application",
+      "localPath": "/Users/Office/Repos/prochattools/web/prochat",
+      "expectedHeadAtPilotStart": "591f3e87892cd44977573fa6e5a6bdac4adac001",
+      "projectName": "prochat-b8-6-pilot",
+      "refreshProbeTarget": "src/app/layout.tsx",
+      "retrievalProbes": [
+        {
+          "probeId": "prochat-root-layout",
+          "query": "RootLayout",
+          "expectedFile": "src/app/layout.tsx"
+        },
+        {
+          "probeId": "prochat-prisma-client",
+          "query": "PrismaClient",
+          "expectedFile": "src/libs/prisma.ts"
+        },
+        {
+          "probeId": "prochat-stripe-post",
+          "query": "stripe.webhooks.constructEvent",
+          "expectedFile": "src/app/api/webhook/stripe/route.ts"
+        }
+      ]
+    }
+  ],
+  "acceptance": {
+    "minimumStructuralProbeHitRate": 1.0,
+    "minimumExactSourceFallbackHitRate": 1.0,
+    "maximumCbmNavigationEstimatedTokensPerProbe": 1000,
+    "maximumColdIndexWallMs": 27000,
+    "maximumColdIndexPeakRssMiB": 1843.2,
+    "maximumColdIndexPeakCpuPercent": 630,
+    "maximumRefreshWallMs": 6750,
+    "maximumRefreshPeakRssMiB": 691.2,
+    "maximumRefreshPeakCpuPercent": 270,
+    "maximumIndexBytes": 483183820.8,
+    "maximumRebuildWallMs": 27000,
+    "requireSourceHeadUnchanged": true,
+    "requireSourceWorktreeUnchanged": true,
+    "requireGraphifyDisablement": true,
+    "requireRollback": true,
+    "requireNoRepositoryLocalCbmState": true
+  },
+  "measurementOnly": {
+    "navigationOutputEstimatedTokenDelta": true,
+    "navigationToolCallDelta": true,
+    "operatorActions": true
+  },
+  "rolloutDecision": {
+    "globalAutomaticRollout": false,
+    "perRepositoryAdmissionRequired": true,
+    "decisionIfPilotPasses": "approve-architecture-reject-blanket-global-rollout"
+  },
+  "safety": {
+    "sourceRepositoriesReadOnly": true,
+    "pilotCachesDisposable": true,
+    "noMindMutation": true,
+    "noWorkbenchMutation": true,
+    "noPush": true,
+    "noExternalOrLocalModelInvocation": true
+  }
+}

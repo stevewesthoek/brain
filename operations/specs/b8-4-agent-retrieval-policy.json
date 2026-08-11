@@ -49,6 +49,10 @@
   "broadExploration": {
     "structuralQueryRequiresNavigationFirst": true,
     "navigationProvider": "codebase-memory-mcp-brain",
+    "searchCodeInitialMode": "files",
+    "searchCodeInitialLimit": 5,
+    "compactEscalationOnlyWhenRelationshipMetadataNeeded": true,
+    "fullSourceFromStructuralMemory": false,
     "fallback": "bounded-exact-source-search",
     "blindWholeRepositoryScan": false
   },

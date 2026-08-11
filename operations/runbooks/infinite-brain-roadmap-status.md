@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-11 (B8.1–B8.5 accepted; B8.6 unblocked)
-**Audited:** 2026-08-11 — B8.1–B8.4 remain accepted. B8.5 is now complete: structural Graphify remains frozen and unscheduled, while a Brain-only bounded semantic event gate replaces the old unconditional six-phase scheduler path. Only changed approved architecture documents are eligible; code-only/unapproved changes never invoke a runner; Mind scope is unapproved; no default model runtime is configured or required; outputs are non-authoritative; exact source remains authority and CBM remains structural navigation. Semantic fake-runner fixtures pass 11/11, combined B8.5/runtime/scheduler tests pass 65/65, scheduler/profile/runtime-truth/conformance checks pass. P8 is 5/6 accepted; B8.6 is the next unblocked task.
+**Last verified:** 2026-08-11 (P8 complete; B8.1–B8.6 accepted 6/6)
+**Audited:** 2026-08-11 — P8 is complete. B8.6 passed a read-only Brain+ProChat pilot 2/2 with 100% structural probe hits and exact-source fallback, inherited resource/freshness limits, rebuild, degradation, Graphify semantic disablement, uninstall dry-run, rollback, and unchanged pilot source snapshots. An initial full-source CBM pilot exposed excessive navigation output; the accepted retrieval policy now starts with `files` mode and at most 5 candidates, reducing estimated CBM navigation context from 64,343 to 397 tokens (~99.4%) while preserving 100% probe hits. Final verification passed Brain Core/Mind Steward/Mind Context typechecks/tests, live cross-repo contract, Context Gateway corpus/context-pack checks, capability manifest and contract registries, MCP admission/runtime truth, Graphify/scheduler governance, conformance, JSON/security checks, documentation consistency, and diff integrity. Structural Graphify remains frozen; semantic Graphify is Brain-only and non-authoritative; exact source remains authority; wider rollout requires explicit per-repository admission.
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
@@ -21,18 +21,18 @@ The Mind/Brain system is usable as a human-first vault with report-only and narr
 
 ## Current planning priority
 
-The stabilization program is the highest-priority execution lane. `BS0.1`
-through `BS0.23` are complete (23 tasks), and all runtime priority tasks
-P1–P7 (B1.0–B1.7, B2.1–B2.8, B3.1–B3.4, B4.1–B4.4, B5.1–B5.4, B6.1–B6.3,
-B7.1–B7.7) are complete. All stabilization tasks and runtime priorities P1
-through P7 are complete. P8 now has B8.1–B8.5 accepted (5/6). B8.6 is
-the only remaining dependency: pilot the accepted two-layer architecture on
-Brain plus exactly one already-approved normal code repository, measure quality,
-freshness, resources, operational burden, degradation, rebuild, disablement,
-and rollback, then close or reject wider rollout from evidence.
+The stabilization program is complete. `BS0.1` through `BS0.23` are complete
+(23 tasks), and runtime priorities P1–P8 are complete. P8 closed on 2026-08-11
+with B8.1–B8.6 accepted 6/6 after the optimized Brain+ProChat pilot and final
+cross-system verification. No canonical runtime-roadmap task remains pending.
 A full roadmap audit was performed on 2026-08-01; see
-`operations/reports/roadmap-audit-2026-08-01.md`.
-The remaining documented work is B8.6 final pilot/rollback evidence only.
+`operations/reports/roadmap-audit-2026-08-01.md`. P8 closure evidence is recorded
+in `operations/reports/p8-context-memory-closure-2026-08-11.md`.
+
+Remaining required work under the current canonical runtime roadmap: **0**.
+Any new feature, repository rollout, Mind semantic scope, structural Graphify
+reactivation, production deployment, or push requires a separate explicit task
+and applicable owner authorization.
 B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
 That run remains immutable infrastructure evidence only.
 B8.1 v7r / 7.1.0 two-subject contract was materialized and executed on 2026-08-06,
@@ -309,30 +309,23 @@ git diff --check → pass
 3. Capability-truth exposure is now complete through B4.4, but proven continuous automation value remains unproven.
 4. Meaningful time savings and maintenance reduction remain unproven.
 5. Deletion-readiness gate (`node tools/validate-deletion-readiness.mjs`) after contract-reconciliation pass (2026-08-01): 0 SAFE; 2 PARTIAL (router-root, sources-root); 17 BLOCKED. No path has the complete structured proof chain plus explicit human deletion approval and rollback expectations required for SAFE. Both Graphify paths (graphify-operational-output and graphify-compatibility-output) are BLOCKED: the profile catalog governs `runtime/local/graphify/...` output roots and explicitly excludes both `.graphify-out/` and `graphify-out/` from the corpus; a catalog pass for a different root cannot satisfy the `graphify-profile-conformance` prerequisite for either compatibility root; additionally, graphify-transition-governance.json explicitly prohibits deletion of `graphify-out/` until the retention gate is cleared. legacy-task-summary (`live/tasks.md`) is BLOCKED: M1.4 proves retirement and task-authority migration, but retirement is not deletion approval — no Brain artifact records human-approved deletion ownership or rollback expectations. BLOCKED breakdown: 5 missing `approved-folder-cleanup` artifact; 2 Graphify prerequisite-scope-mismatch or governance-prohibited deletion; 2 active deployed n8n consumers; 5 unresolved scoped or Mind authority cases; 1 missing human deletion approval (legacy-task-summary); 1 active consumer (wiki-root); 1 active dependency (wiki-log). PARTIAL is fail-closed for deletion.
-6. All stabilization tasks and runtime priorities P1 through P7 are complete. P8 (context-memory efficiency B8.1–B8.6) remains at the B8.1 gate. Contract V2 and its five-run disposable evidence are ready, but no canonical P8 task is accepted complete and no materialization or execution is authorized without exact owner approval of the fresh V2 digest.
+6. All stabilization tasks and runtime priorities P1 through P8 are complete. P8 (context-memory efficiency B8.1–B8.6) closed on 2026-08-11 with accepted benchmark, provider admission, freshness, retrieval-policy, bounded Graphify semantic, and Brain+ProChat pilot evidence. Wider repository rollout remains per-repository and explicitly authorized only.
 
 ## Next approved work
 
-Select the next executable task only from the canonical plans. Paths below are
-relative to the Brain checkout root:
+There is no remaining executable task under the current canonical runtime roadmap.
+The current authorities remain:
 
 ```text
 ../mind/system/mind-implementation-plan.md
 operations/specs/infinite-brain-runtime-implementation-plan.md
 ```
 
-All stabilization tasks (BS0.1–BS0.23) and P1–P7 runtime priorities are
-complete. B8.1 benchmark evidence is required before approved canonical
-admission or default activation, additional repository rollout, watcher or
-scheduler changes, or canonical Graphify migration. The preliminary candidate
-installation and indexes remain evidence only. Contract V2 is implemented and its
-fresh dry-run-only package awaits exact owner approval. P8 is not an approved
-execution phase; do not materialize or execute the Contract V2 plan without that
-approval.
-
-Do not activate broad Mind writes, continuous execution, new external actions,
-or context-memory services while their prerequisite task and approval boundary
-is incomplete.
+Future work must be introduced through a new or amended canonical task with its
+own evidence and approval boundary. P8 completion does not authorize broad Mind
+writes, continuous execution, new external actions, blanket context-memory
+rollout, Mind Graphify semantic ingestion, structural Graphify reactivation,
+production deployment, or push.
 
 ## Update rule
 

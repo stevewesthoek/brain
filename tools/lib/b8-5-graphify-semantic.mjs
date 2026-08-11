@@ -125,12 +125,23 @@ async function invokeRunner(runnerPath, manifestPath, outputPath, timeoutMs) {
   return { invoked: true, stdout: result.stdout, stderr: result.stderr };
 }
 
-export async function runSemanticEvent({ repositoryRoot, profile, scopeId, changedFiles, runnerPath = null, outputRoot = null, sourceHead = null }) {
+export async function runSemanticEvent({ repositoryRoot, profile, scopeId, changedFiles, runnerPath = null, outputRoot = null, sourceHead = null, disabled = false }) {
   const runId = nowId();
   const resolvedOutputRoot = outputRoot ?? path.join(repositoryRoot, profile.operationalOutputRoot);
   const state = loadSemanticState(resolvedOutputRoot);
   const classification = classifyChanges(changedFiles, profile);
   const receiptBase = { runId, task: 'B8.5', scopeId, sourceHead, changedFiles, classification, generatedOutputAuthority: profile.generatedOutputAuthority, startedAt: new Date().toISOString() };
+
+  if (disabled) {
+    const nextState = classification.relevant.length > 0
+      ? { ...state, freshness: 'stale', lastEvaluatedHead: sourceHead ?? state.lastEvaluatedHead, pendingDocuments: classification.relevant, lastFailure: null }
+      : { ...state, lastEvaluatedHead: sourceHead ?? state.lastEvaluatedHead };
+    writeSemanticState(resolvedOutputRoot, nextState);
+    const receipt = { ...receiptBase, status: 'disabled', runnerInvoked: false, freshnessAfter: nextState.freshness, completedAt: new Date().toISOString() };
+    const receiptPath = writeReceipt(resolvedOutputRoot, receipt);
+    pruneReceipts(resolvedOutputRoot, profile);
+    return { status: 'disabled', runnerInvoked: false, receiptPath, state: nextState };
+  }
 
   if (classification.relevant.length === 0) {
     const nextState = { ...state, lastEvaluatedHead: sourceHead ?? state.lastEvaluatedHead };

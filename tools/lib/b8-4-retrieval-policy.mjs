@@ -73,6 +73,9 @@ export function validatePolicyInvariants(policy) {
   if (policy.authorityGates.generatedProjectionCanReplaceSourceVerification !== false) errors.push('projection-authority');
   if (policy.freshnessFallback.stale !== 'skip-cbm-authority-and-use-bounded-exact-source') errors.push('stale-fallback');
   if (policy.freshnessFallback.unavailable !== 'use-bounded-exact-source') errors.push('unavailable-fallback');
+  if (policy.broadExploration.searchCodeInitialMode !== 'files') errors.push('structural-search-mode');
+  if (policy.broadExploration.searchCodeInitialLimit !== 5) errors.push('structural-search-limit');
+  if (policy.broadExploration.fullSourceFromStructuralMemory !== false) errors.push('structural-full-source');
   if (policy.broadExploration.blindWholeRepositoryScan !== false) errors.push('blind-scan');
   return errors;
 }

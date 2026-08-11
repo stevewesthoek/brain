@@ -33,6 +33,7 @@ if (profile.execution?.repositoryMutation !== 'forbidden') errors.push('reposito
 if (profile.execution?.automaticFullScan !== false) errors.push('automatic full scan must remain false');
 if (profile.execution?.incrementalMode !== 'changed-approved-documents-only') errors.push('changed-document-only mode required');
 if (profile.execution?.runnerMode !== 'explicit-only') errors.push('runner must be explicit-only');
+if (profile.execution?.disableEnvironmentVariable !== 'GRAPHIFY_SEMANTIC_DISABLED') errors.push('named semantic disable environment variable required');
 if (profile.execution?.codeOnlyInvokeRunner !== false) errors.push('code-only runner invocation forbidden');
 if (profile.execution?.interpretUnchangedCode !== false) errors.push('unchanged code interpretation forbidden');
 if (profile.execution?.structuralGraphGeneration !== 'frozen') errors.push('structural Graphify must remain frozen');

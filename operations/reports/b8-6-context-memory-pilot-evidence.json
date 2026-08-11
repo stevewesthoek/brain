@@ -1,0 +1,414 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "B8.6",
+  "generatedAt": "2026-08-11T17:21:31.109Z",
+  "provider": {
+    "path": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+    "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6",
+    "version": "0.9.0",
+    "revision": "b637e3330c96cfe452da623db068c241aaa3ec01"
+  },
+  "pilotRepositories": [
+    {
+      "repositoryId": "brain",
+      "role": "system",
+      "sourcePath": "/Users/Office/Repos/stevewesthoek/brain-next",
+      "before": {
+        "head": "ce2675a3107596279b4501bc84b3e81ac754faff",
+        "status": "M operations/specs/graphify-operational-profile.json\n M tools/graphify-semantic-event.mjs\n M tools/lib/b8-5-graphify-semantic.mjs\n M tools/lib/b8-5-graphify-semantic.test.mjs\n M tools/validate-graphify-operational-profile.mjs\n?? operations/specs/b8-6-context-memory-pilot.json\n?? tools/run-b8-6-context-memory-pilot.mjs\n?? tools/validate-b8-6-context-memory-pilot.mjs\n?? tools/validate-b8-6-context-memory-pilot.test.mjs"
+      },
+      "afterOperations": {
+        "head": "ce2675a3107596279b4501bc84b3e81ac754faff",
+        "status": "M operations/specs/graphify-operational-profile.json\n M tools/graphify-semantic-event.mjs\n M tools/lib/b8-5-graphify-semantic.mjs\n M tools/lib/b8-5-graphify-semantic.test.mjs\n M tools/validate-graphify-operational-profile.mjs\n?? operations/specs/b8-6-context-memory-pilot.json\n?? tools/run-b8-6-context-memory-pilot.mjs\n?? tools/validate-b8-6-context-memory-pilot.mjs\n?? tools/validate-b8-6-context-memory-pilot.test.mjs"
+      },
+      "provider": {
+        "path": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+        "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+      },
+      "coldIndex": {
+        "wallMs": 5700,
+        "peakRssMiB": 1128.015625,
+        "peakCpuPercent": 335.7894736842105,
+        "indexBytes": 135299072
+      },
+      "probes": [
+        {
+          "probeId": "brain-load-evidence-index",
+          "query": "loadEvidenceIndex",
+          "expectedFile": "tools/validate-deletion-readiness.mjs",
+          "cbm": {
+            "hit": true,
+            "files": [
+              "tools/validate-deletion-readiness.mjs",
+              "tools/validate-deletion-readiness.mjs",
+              "operations/reports/b8-1-v2-evidence/b8-1-v2-canonical-evidence-REJECTED.json",
+              "operations/reports/b8-1-v2-evidence/b8-1-v2-canonical-evidence.json",
+              "operations/specs/b8-1-v2-context-memory-benchmark-manifest.json",
+              "operations/specs/b8-6-context-memory-pilot.json",
+              "tools/validate-deletion-readiness.test.mjs"
+            ],
+            "outputBytes": 66394,
+            "rawResultCount": 7
+          },
+          "exact": {
+            "hit": true,
+            "outputBytes": 1335,
+            "matches": 12
+          },
+          "structuralHit": true,
+          "exactSourceHit": true,
+          "navigationToolCalls": {
+            "cbmAssisted": 2,
+            "exactSourceBaseline": 2,
+            "delta": 0
+          },
+          "navigationEstimatedTokens": {
+            "cbmAssisted": 16599,
+            "exactSourceBaseline": 334,
+            "delta": 16265
+          }
+        },
+        {
+          "probeId": "brain-mind-target-paths",
+          "query": "MIND_TARGET_PATHS",
+          "expectedFile": "projects/brain-core/src/mind-paths.ts",
+          "cbm": {
+            "hit": true,
+            "files": [
+              "projects/brain-core/src/adapters/mind-steward-inbox-queue.ts",
+              "projects/brain-core/src/adapters/mind-steward-reviewed-outcome.ts",
+              "projects/brain-core/src/mind-paths.ts",
+              "projects/brain-core/src/adapters/mind-steward-task-write-approval.ts",
+              "projects/brain-core/src/adapters/mind-steward-task-proposal.ts",
+              "operations/reports/failure-routing-switch-2026-07-09.md",
+              "operations/reports/inbox-migration-final-closeout-2026-07-10.md",
+              "operations/reports/mind-inbox-external-workflow-validation-plan-2026-07-09.md",
+              "operations/reports/success-inbox-fallback-retirement-2026-07-09.md",
+              "projects/brain-core/src/adapters/mind-steward-inbox-queue.ts",
+              "projects/brain-core/src/adapters/mind-steward-reviewed-outcome.ts",
+              "projects/brain-core/src/adapters/mind-steward-task-proposal.ts",
+              "operations/reports/b8-1-post-v7y-harness-repair-and-provider-disposition-2026-08-10.md",
+              "operations/reports/b8-1-v2-evidence/b8-1-v2-canonical-evidence-REJECTED.json",
+              "operations/reports/b8-1-v2-evidence/b8-1-v2-canonical-evidence.json",
+              "operations/reports/b8-1-v7v-disposition-2026-08-07.md",
+              "operations/reports/brain-reader-dual-path-compatibility-2026-07-09.md",
+              "projects/brain-core/src/mind-paths.ts",
+              "projects/brain-core/src/mind-paths.ts",
+              "projects/brain-core/src/mind-paths.ts"
+            ],
+            "outputBytes": 127478,
+            "rawResultCount": 20
+          },
+          "exact": {
+            "hit": true,
+            "outputBytes": 8891,
+            "matches": 64
+          },
+          "structuralHit": true,
+          "exactSourceHit": true,
+          "navigationToolCalls": {
+            "cbmAssisted": 2,
+            "exactSourceBaseline": 2,
+            "delta": 0
+          },
+          "navigationEstimatedTokens": {
+            "cbmAssisted": 31870,
+            "exactSourceBaseline": 2223,
+            "delta": 29647
+          }
+        }
+      ],
+      "structuralHitRate": 1,
+      "exactSourceFallbackHitRate": 1,
+      "navigationMeasurement": {
+        "cbmEstimatedTokens": 48469,
+        "exactSourceEstimatedTokens": 2557,
+        "estimatedTokenDelta": 45912,
+        "cbmToolCalls": 4,
+        "exactSourceToolCalls": 4,
+        "toolCallDelta": 0,
+        "note": "Navigation-output proxy only; the final exact-source authority read is identical in both paths and therefore cancels from the delta."
+      },
+      "refresh": {
+        "success": true,
+        "wallMs": 2390,
+        "peakRssMiB": 312.390625,
+        "peakCpuPercent": 150.62761506276146,
+        "markerVisible": true,
+        "restorationVerified": true,
+        "markerAbsentAfterRestoration": true
+      },
+      "rebuild": {
+        "wallMs": 5620,
+        "peakRssMiB": 1575.703125,
+        "peakCpuPercent": 341.8149466192171,
+        "indexBytes": 147947520,
+        "queryable": true
+      },
+      "fallbackPlan": {
+        "intentClass": "structuralNavigation",
+        "steps": [
+          "bounded-exact-source-search",
+          "exact-source-read"
+        ],
+        "fallbackUsed": true,
+        "authority": "exact-source",
+        "fallbackReason": "provider-unavailable"
+      },
+      "rollback": {
+        "pilotRuntimeRemoved": true,
+        "repositoryAvailableAfterRollback": true,
+        "sourceSnapshotAfterRollback": {
+          "head": "ce2675a3107596279b4501bc84b3e81ac754faff",
+          "status": "M operations/specs/graphify-operational-profile.json\n M tools/graphify-semantic-event.mjs\n M tools/lib/b8-5-graphify-semantic.mjs\n M tools/lib/b8-5-graphify-semantic.test.mjs\n M tools/validate-graphify-operational-profile.mjs\n?? operations/specs/b8-6-context-memory-pilot.json\n?? tools/run-b8-6-context-memory-pilot.mjs\n?? tools/validate-b8-6-context-memory-pilot.mjs\n?? tools/validate-b8-6-context-memory-pilot.test.mjs"
+        }
+      },
+      "gates": {
+        "structuralProbeHitRate": true,
+        "exactSourceFallbackHitRate": true,
+        "coldWall": true,
+        "coldRss": true,
+        "coldCpu": true,
+        "initialIndexBytes": true,
+        "refreshLifecycle": true,
+        "refreshWall": true,
+        "refreshRss": true,
+        "refreshCpu": true,
+        "rebuildWall": true,
+        "rebuildIndexBytes": true,
+        "rebuildQueryable": true,
+        "gracefulDegradation": true,
+        "sourceHeadUnchanged": true,
+        "sourceWorktreeUnchanged": true,
+        "repoLocalStateAbsent": true,
+        "rollback": true
+      },
+      "passed": true
+    },
+    {
+      "repositoryId": "prochat",
+      "role": "application",
+      "sourcePath": "/Users/Office/Repos/prochattools/web/prochat",
+      "before": {
+        "head": "591f3e87892cd44977573fa6e5a6bdac4adac001",
+        "status": "M docs/product/agent-mode-progress.md\n M src/app/(marketing)/components/product-pages/PublicProductPage.tsx\n M src/app/(marketing)/components/product-pages/product-pages.css\n?? src/components/public/"
+      },
+      "afterOperations": {
+        "head": "591f3e87892cd44977573fa6e5a6bdac4adac001",
+        "status": "M docs/product/agent-mode-progress.md\n M src/app/(marketing)/components/product-pages/PublicProductPage.tsx\n M src/app/(marketing)/components/product-pages/product-pages.css\n?? src/components/public/"
+      },
+      "provider": {
+        "path": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+        "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+      },
+      "coldIndex": {
+        "wallMs": 830,
+        "peakRssMiB": 258.046875,
+        "peakCpuPercent": 243.3734939759036,
+        "indexBytes": 12746752
+      },
+      "probes": [
+        {
+          "probeId": "prochat-root-layout",
+          "query": "RootLayout",
+          "expectedFile": "src/app/layout.tsx",
+          "cbm": {
+            "hit": true,
+            "files": [
+              "src/app/layout.tsx",
+              "docs/migration/WAVE1_FOUNDATION_BASELINE.md"
+            ],
+            "outputBytes": 15212,
+            "rawResultCount": 2
+          },
+          "exact": {
+            "hit": true,
+            "outputBytes": 156,
+            "matches": 2
+          },
+          "structuralHit": true,
+          "exactSourceHit": true,
+          "navigationToolCalls": {
+            "cbmAssisted": 2,
+            "exactSourceBaseline": 2,
+            "delta": 0
+          },
+          "navigationEstimatedTokens": {
+            "cbmAssisted": 3803,
+            "exactSourceBaseline": 39,
+            "delta": 3764
+          }
+        },
+        {
+          "probeId": "prochat-prisma-client",
+          "query": "PrismaClient",
+          "expectedFile": "src/libs/prisma.ts",
+          "cbm": {
+            "hit": true,
+            "files": [
+              "src/lib/license-storage.ts",
+              "src/app/api/waitlist/route.ts",
+              "src/libs/prisma.ts",
+              "src/libs/prisma.ts",
+              "src/libs/prisma.ts"
+            ],
+            "outputBytes": 2574,
+            "rawResultCount": 5
+          },
+          "exact": {
+            "hit": true,
+            "outputBytes": 366,
+            "matches": 5
+          },
+          "structuralHit": true,
+          "exactSourceHit": true,
+          "navigationToolCalls": {
+            "cbmAssisted": 2,
+            "exactSourceBaseline": 2,
+            "delta": 0
+          },
+          "navigationEstimatedTokens": {
+            "cbmAssisted": 644,
+            "exactSourceBaseline": 92,
+            "delta": 552
+          }
+        },
+        {
+          "probeId": "prochat-stripe-post",
+          "query": "stripe.webhooks.constructEvent",
+          "expectedFile": "src/app/api/webhook/stripe/route.ts",
+          "cbm": {
+            "hit": true,
+            "files": [
+              "src/app/api/webhook/stripe/route.ts",
+              "docs/platform/AUTH_BOUNDARY_AUDIT.md",
+              "instructions/stripe.md"
+            ],
+            "outputBytes": 45707,
+            "rawResultCount": 3
+          },
+          "exact": {
+            "hit": true,
+            "outputBytes": 939,
+            "matches": 7
+          },
+          "structuralHit": true,
+          "exactSourceHit": true,
+          "navigationToolCalls": {
+            "cbmAssisted": 2,
+            "exactSourceBaseline": 2,
+            "delta": 0
+          },
+          "navigationEstimatedTokens": {
+            "cbmAssisted": 11427,
+            "exactSourceBaseline": 235,
+            "delta": 11192
+          }
+        }
+      ],
+      "structuralHitRate": 1,
+      "exactSourceFallbackHitRate": 1,
+      "navigationMeasurement": {
+        "cbmEstimatedTokens": 15874,
+        "exactSourceEstimatedTokens": 366,
+        "estimatedTokenDelta": 15508,
+        "cbmToolCalls": 6,
+        "exactSourceToolCalls": 6,
+        "toolCallDelta": 0,
+        "note": "Navigation-output proxy only; the final exact-source authority read is identical in both paths and therefore cancels from the delta."
+      },
+      "refresh": {
+        "success": true,
+        "wallMs": 210,
+        "peakRssMiB": 117.671875,
+        "peakCpuPercent": 166.66666666666666,
+        "markerVisible": true,
+        "restorationVerified": true,
+        "markerAbsentAfterRestoration": true
+      },
+      "rebuild": {
+        "wallMs": 530,
+        "peakRssMiB": 261.53125,
+        "peakCpuPercent": 383.01886792452825,
+        "indexBytes": 13729792,
+        "queryable": true
+      },
+      "fallbackPlan": {
+        "intentClass": "structuralNavigation",
+        "steps": [
+          "bounded-exact-source-search",
+          "exact-source-read"
+        ],
+        "fallbackUsed": true,
+        "authority": "exact-source",
+        "fallbackReason": "provider-unavailable"
+      },
+      "rollback": {
+        "pilotRuntimeRemoved": true,
+        "repositoryAvailableAfterRollback": true,
+        "sourceSnapshotAfterRollback": {
+          "head": "591f3e87892cd44977573fa6e5a6bdac4adac001",
+          "status": "M docs/product/agent-mode-progress.md\n M src/app/(marketing)/components/product-pages/PublicProductPage.tsx\n M src/app/(marketing)/components/product-pages/product-pages.css\n?? src/components/public/"
+        }
+      },
+      "gates": {
+        "structuralProbeHitRate": true,
+        "exactSourceFallbackHitRate": true,
+        "coldWall": true,
+        "coldRss": true,
+        "coldCpu": true,
+        "initialIndexBytes": true,
+        "refreshLifecycle": true,
+        "refreshWall": true,
+        "refreshRss": true,
+        "refreshCpu": true,
+        "rebuildWall": true,
+        "rebuildIndexBytes": true,
+        "rebuildQueryable": true,
+        "gracefulDegradation": true,
+        "sourceHeadUnchanged": true,
+        "sourceWorktreeUnchanged": true,
+        "repoLocalStateAbsent": true,
+        "rollback": true
+      },
+      "passed": true
+    }
+  ],
+  "graphifyDisablement": {
+    "passed": true,
+    "status": "disabled",
+    "runnerInvoked": false,
+    "freshness": "stale",
+    "cleanup": true
+  },
+  "providerUninstallDryRun": {
+    "passed": true,
+    "output": "codebase-memory-mcp uninstall\n\nClaude Code: removed 0 skill(s)\n  removed MCP config entry\n  removed PreToolUse + SessionStart + SubagentStart hooks\nCodex CLI: removed MCP config entry\n  removed instructions\nGemini CLI: removed MCP config + hooks + instructions\nOpenCode: removed MCP config entry\n  removed instructions\nAider: removed instructions\nCursor: removed MCP config entry\nKiro: removed MCP config entry\n\nFound 2 index(es):\n  /Users/Office/Library/Caches/brain/codebase-memory-mcp/brain/brain.db\n  /Users/Office/Library/Caches/brain/codebase-memory-mcp/brain/_config.db\nDelete these indexes? (y/n): n (auto)\nIndexes kept.\nRemoved /Users/Office/.local/bin/codebase-memory-mcp\n\nUninstall complete.\n(dry-run — no files were modified)\n\n"
+  },
+  "operatorBurden": {
+    "sourceRepositoryConfigurationChanges": 0,
+    "sourceRepositoryMutations": 0,
+    "explicitRefreshEventsExercised": 2,
+    "rebuildsExercised": 2,
+    "graphifyModelInvocations": 0,
+    "graphifyDisableControlsExercised": 1,
+    "uninstallDryRunsExercised": 1,
+    "perRepositoryAdmissionRequiredForWiderRollout": true
+  },
+  "rolloutDecision": "approve-architecture-reject-blanket-global-rollout",
+  "acceptance": {
+    "passed": true,
+    "repositoryPasses": 2,
+    "requiredRepositories": 2,
+    "graphifyDisablement": true,
+    "providerUninstallDryRun": true
+  },
+  "safety": {
+    "sourceRepositoriesReadOnly": true,
+    "pilotCachesRemoved": true,
+    "modelInvocations": 0,
+    "mindMutation": false,
+    "workbenchMutation": false,
+    "push": false
+  }
+}

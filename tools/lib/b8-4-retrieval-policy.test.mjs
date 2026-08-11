@@ -21,6 +21,12 @@ test('policy invariants preserve navigation-only structural memory and exact-sou
   assert.equal(policy.principles.exactSourceRole, 'authority');
 });
 
+test('structural navigation is bounded to five file candidates and never full source', () => {
+  assert.equal(policy.broadExploration.searchCodeInitialMode, 'files');
+  assert.equal(policy.broadExploration.searchCodeInitialLimit, 5);
+  assert.equal(policy.broadExploration.fullSourceFromStructuralMemory, false);
+});
+
 test('fresh architecture query uses CBM navigation then exact source', () => {
   assert.deepEqual(buildRetrievalPlan({ intent: 'architecture', freshness: 'fresh', policy }), {
     intentClass: 'structuralNavigation',
