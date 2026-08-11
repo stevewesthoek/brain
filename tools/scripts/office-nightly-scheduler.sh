@@ -425,26 +425,24 @@ run_mind_compile_loop() {
 }
 
 run_graphify_nightly() {
-  local timeout_seconds="${GRAPHIFY_NIGHTLY_TIMEOUT_SECONDS:-21600}"  # 6 hours
-  local graphify_script="${GRAPHIFY_NIGHTLY_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/graphify-nightly.sh}"
-  local graphify_log="$LOG_DIR/graphify-nightly.log"
+  local timeout_seconds="${GRAPHIFY_SEMANTIC_TIMEOUT_SECONDS:-300}"
+  local event_script="${GRAPHIFY_SEMANTIC_EVENT_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/graphify-semantic-event.mjs}"
+  local graphify_log="$LOG_DIR/graphify-semantic-event.log"
   local command
 
-  if [[ ! -x "$graphify_script" ]]; then
-    log "skipping job=graphify-nightly reason=missing_script path=$graphify_script"
+  if [[ ! -f "$event_script" ]]; then
+    log "skipping job=graphify-nightly reason=missing_semantic_event_gate path=$event_script"
     return 0
   fi
 
-  # Central Graphify path: always run the phased scheduler, never ad-hoc full-repo crawls.
-  # The Graphify scheduler runs phase-major across repos: Phase 1 for every repo,
-  # then Phase 2 for every repo, and so on. The cutoff decides how far the session gets.
-  #   Phase 1 = clean code baseline
-  #   Phase 2 = root README overlay
-  #   Phase 3 = bounded first-level docs overlay
-  #   Phase 4 = focused high-signal docs refinement
-  #   Phase 5 = community naming/readability post-process
-  #   Phase 6 = bounded final validation
-  command="$(printf 'GRAPHIFY_PHASES=%q %q >> %q 2>&1' "${GRAPHIFY_PHASES:-1 2 3 4 5 6}" "$graphify_script" "$graphify_log")"
+  # B8.5: scheduler runs only the bounded semantic event gate. Structural Graphify
+  # remains frozen. Code-only/unapproved changes never invoke a runner. A semantic
+  # runner is optional and must be supplied explicitly through GRAPHIFY_SEMANTIC_RUNNER.
+  if [[ -n "${GRAPHIFY_SEMANTIC_RUNNER:-}" ]]; then
+    command="$(printf 'node %q --mode=scheduler --runner=%q >> %q 2>&1' "$event_script" "$GRAPHIFY_SEMANTIC_RUNNER" "$graphify_log")"
+  else
+    command="$(printf 'node %q --mode=scheduler >> %q 2>&1' "$event_script" "$graphify_log")"
+  fi
   run_job "graphify-nightly" "$timeout_seconds" "$command" "$graphify_log"
 }
 

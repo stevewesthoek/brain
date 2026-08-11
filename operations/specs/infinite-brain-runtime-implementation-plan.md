@@ -749,7 +749,7 @@ Context Gateway tasks are unchanged.
 
 ### B8.5 — Convert Graphify to bounded event-driven knowledge synthesis
 
-- **Status:** planned; unblocked by accepted B8.1 and B8.4. Graphify remains frozen until the B8.4 closure tranche is validated and committed.
+- **Status:** complete (2026-08-11). Legacy structural Graphify remains frozen and unscheduled; the Office scheduler now invokes only the Brain-only bounded semantic event gate. Approved architecture-document changes can mark semantic state stale and regenerate only through an explicit runner; code-only/unapproved changes never invoke a runner. Mind scope is unapproved, exact source remains authority, CBM remains structural navigation, and acceptance used deterministic fake runners only. Evidence: [B8.5 semantic acceptance](../reports/b8-5-graphify-semantic-acceptance-2026-08-11.md). P8 is 5/6 accepted.
 - **Scope:** selected Brain architecture documents and explicitly approved Mind knowledge scopes only.
 - **Change:** remove unconditional nightly full scans; retain bounded profiles, relevant-change detection, explicit/manual triggers, changed-document-only enrichment, retention limits, and non-authoritative freshness metadata.
 - **Verify:** code-only changes do not invoke an LLM; relevant document changes mark the Graphify projection stale; bounded regeneration excludes secrets, runtime state, generated output, and unapproved Mind content.
@@ -757,7 +757,7 @@ Context Gateway tasks are unchanged.
 
 ### B8.6 — Roll out, measure, and retain rollback
 
-- **Status:** planned; blocked on B8.2–B8.5.
+- **Status:** planned; unblocked by accepted B8.2–B8.5. Not started in the B8.5 tranche.
 - **Change:** pilot the two-layer architecture on Brain and one normal code repository, record freshness, resource load, token/tool-call deltas, retrieval quality, and operator burden, then approve or reject wider rollout.
 - **Verify:** success thresholds, graceful degradation, index rebuild, Graphify disablement, and complete uninstall/rollback are tested without affecting repository availability.
 - **Exit:** Codebase Memory is the measured structural default, Graphify is bounded to approved semantic scopes, or the pilot is rolled back with evidence.

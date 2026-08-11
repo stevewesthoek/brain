@@ -720,15 +720,20 @@ export function detectGraphifySchedulerViolation(opts = {}) {
   // Read nested governance structure (real schema under operations/specs/graphify-transition-governance.json)
   const structuralState = governance.states?.structuralCodeIndexing?.state ?? governance.deletionState ?? governance.deletion_state;
   const schedulerGate = governance.states?.structuralCodeIndexing?.schedulerGate ?? null;
+  const semanticState = governance.states?.semanticSynthesis?.state ?? 'unknown';
   const deletionState = governance.states?.deletion?.state ?? governance.deletionState ?? governance.deletion_state;
   const globalActivationStatus = governance.migrationPath?.globalActivationStatus ?? null;
 
   const isFrozen = structuralState && (structuralState.includes('frozen') || structuralState === 'frozen-pending-migration');
   const isDeletionProhibited = deletionState && deletionState !== 'permitted';
 
-  // Determine if scheduler gate is enforced via skip-signal
+  // Determine whether structural Graphify is gated either by the historical
+  // skip signal or by the B8.5 semantic-event-only scheduler replacement.
+  const isSemanticEventGate = schedulerGate
+    ? (schedulerGate.includes('event-driven semantic gate') || schedulerGate.includes('legacy structural graphify-nightly.sh not scheduled'))
+    : false;
   const isJobGated = schedulerGate
-    ? (schedulerGate.includes('skipping') || schedulerGate.includes('bs0-15'))
+    ? (schedulerGate.includes('skipping') || schedulerGate.includes('bs0-15') || isSemanticEventGate)
     : false;
 
   // Determine actual scheduler/process state
@@ -758,10 +763,11 @@ export function detectGraphifySchedulerViolation(opts = {}) {
 
   // Build structured output
   const structuralLabel = isFrozen ? 'frozen' : (structuralState ?? 'unknown');
-  const schedulerGateLabel = graphifyJobGated ? 'skip-enforced' : (schedulerGate ? 'present-not-skip' : 'absent');
+  const schedulerGateLabel = isSemanticEventGate ? 'semantic-event-enforced' : (graphifyJobGated ? 'skip-enforced' : (schedulerGate ? 'present-not-skip' : 'absent'));
 
   const outputParts = [
     `graphify-structural-state=${structuralLabel}`,
+    `graphify-semantic-state=${semanticState}`,
     `graphify-scheduler-gate=${schedulerGateLabel}`,
     `graphify-process=${graphifyProcessObserved}`,
   ];
@@ -786,7 +792,7 @@ function detectGraphifySchedulerActiveFromFiles(knownSchedulerGate = null) {
   // Check scheduler gate from governance first (most authoritative)
   // Plist presence alone never implies graphify is active — only skip-signal absence + process would
   const graphifyJobGated = knownSchedulerGate
-    ? (knownSchedulerGate.includes('skipping') || knownSchedulerGate.includes('bs0-15'))
+    ? (knownSchedulerGate.includes('skipping') || knownSchedulerGate.includes('bs0-15') || knownSchedulerGate.includes('event-driven semantic gate') || knownSchedulerGate.includes('legacy structural graphify-nightly.sh not scheduled'))
     : false; // Without governance gate text, cannot confirm gated; default to false (conservative)
 
   // Check if graphify process is actually running using synchronous pgrep

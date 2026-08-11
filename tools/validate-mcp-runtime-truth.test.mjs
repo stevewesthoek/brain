@@ -796,6 +796,22 @@ test('detectGraphifySchedulerViolation: nested governance frozen-pending-migrati
   assert(result.value.includes('graphify-process=not-observed'), `Expected not-observed: ${result.value}`);
 });
 
+test('detectGraphifySchedulerViolation: B8.5 semantic gate preserves structural freeze', () => {
+  const governance = {
+    states: {
+      structuralCodeIndexing: { state: 'frozen-structural-replaced-by-cbm', schedulerGate: 'tools/scripts/office-nightly-scheduler.sh — event-driven semantic gate only; legacy structural graphify-nightly.sh not scheduled' },
+      semanticSynthesis: { state: 'bounded-event-driven-active' },
+      deletion: { state: 'prohibited-before-retention-gate' },
+    },
+    migrationPath: { globalActivationStatus: 'not-active' },
+  };
+  const result = detectGraphifySchedulerViolation({ fixtureOnly: true, governanceJson: governance, schedulerActive: false });
+  assert.equal(result.level, 'info');
+  assert(result.value.includes('graphify-structural-state=frozen'));
+  assert(result.value.includes('graphify-semantic-state=bounded-event-driven-active'));
+  assert(result.value.includes('graphify-scheduler-gate=semantic-event-enforced'));
+});
+
 test('detectGraphifySchedulerViolation: nested governance frozen + scheduler active → fail', () => {
   const nestedGovernance = {
     states: {
