@@ -735,14 +735,14 @@ Context Gateway tasks are unchanged.
 
 ### B8.3 — Implement incremental freshness and repository inventory
 
-- **Status:** planned; unblocked by accepted B8.2. Not started in the B8.2 tranche.
+- **Status:** complete (2026-08-11). Brain-only inventory, exclusions, deterministic structural fingerprinting, explicit-event full-mode refresh, freshness/source/index metadata, stale/provider-drift detection, observable failure receipts, exact-source fallback, and resource/cleanup gates are implemented. Corrected live acceptance passed 5/5 isolated change→refresh→query→restore repetitions with max refresh 2300 ms, 313.08 MiB RSS, 161.36% CPU, and 130,056,192 index bytes against inherited headroom limits. Automatic watchers/index rollout remain disabled; Mind/Workbench/ProChat are not approved in B8.3. Evidence: [B8.3 freshness acceptance](../reports/b8-3-context-memory-freshness-acceptance-2026-08-11.md), [B8.3 acceptance JSON](../reports/b8-3-context-memory-acceptance.json). P8 is 3/6 accepted.
 - **Change:** define the approved repository inventory, file-watch or incremental refresh behavior, ignored/generated paths, commit/freshness metadata, resource budgets, and failure receipts.
 - **Verify:** a changed source file becomes queryable within the documented freshness budget without an LLM or full reindex; generated/runtime changes remain excluded.
 - **Stop if:** watcher load exceeds host budgets, indexes cross repository boundaries, or stale state is reported as current.
 
 ### B8.4 — Define agent retrieval and exact-source-read policy
 
-- **Status:** planned; blocked on B8.2 and B8.3.
+- **Status:** planned; unblocked by accepted B8.2 and B8.3. Not started in the B8.3 tranche.
 - **Change:** require agents to use structural memory for architecture, symbol, route, caller/callee, and blast-radius navigation before broad exploration, while requiring exact source reads before edits or authority claims.
 - **Verify:** instruction fixtures distinguish graph navigation, canonical documents, generated projections, and exact source authority; unavailable-service fallback remains ordinary bounded repository reads.
 - **Safety:** graph output cannot authorize writes, override roadmaps, or replace source verification.

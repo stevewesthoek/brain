@@ -388,7 +388,10 @@ export function validateEnvironment(env, cacheDir, configDir, homeDir) {
 /**
  * Run CBM index_repository with measurements via process sampler.
  */
-export async function runCbmIndex(cbmExecutable, sourcePath, projectName, cacheDir, configDir, env = {}, sandboxProfile = null, timeout = 120000) {
+export async function runCbmIndex(cbmExecutable, sourcePath, projectName, cacheDir, configDir, env = {}, sandboxProfile = null, timeout = 120000, indexMode = 'fast') {
+  if (!['fast', 'moderate', 'full'].includes(indexMode)) {
+    return { success: false, error: `unsupported index mode: ${indexMode}`, measurementProvenance: null };
+  }
   // Validate environment before running
   const envValidation = validateEnvironment(env, cacheDir, configDir, env.HOME);
   if (!envValidation.valid) {
@@ -398,7 +401,7 @@ export async function runCbmIndex(cbmExecutable, sourcePath, projectName, cacheD
   const indexArgs = [
     'cli', 'index_repository',
     '--repo-path', sourcePath,
-    '--mode', 'fast',
+    '--mode', indexMode,
     '--name', projectName,
     '--persistence', 'false',
   ];
@@ -599,7 +602,7 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
  * }>}
  */
 export async function runIncrementalReindex(opts = {}) {
-  const { cbmExecutable, disposableRepositoryPath, repoId, projectName, refreshProbeTarget, cacheDir, configDir, env, sandboxProfile, timeout = 120000 } = opts;
+  const { cbmExecutable, disposableRepositoryPath, repoId, projectName, refreshProbeTarget, cacheDir, configDir, env, sandboxProfile, timeout = 120000, indexMode = 'fast' } = opts;
 
   let result = {
     success: false,
@@ -704,7 +707,7 @@ export async function runIncrementalReindex(opts = {}) {
 
   try {
     // Step 1: Initial index
-    const initialIndexResult = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout);
+    const initialIndexResult = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout, indexMode);
     if (!initialIndexResult.success) {
       result.reason = `initial index failed: ${initialIndexResult.error}`;
       return result;
@@ -723,7 +726,7 @@ export async function runIncrementalReindex(opts = {}) {
     }
 
     // Step 3: Re-index
-    const reindexResult = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout);
+    const reindexResult = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout, indexMode);
     if (!reindexResult.success) {
       result.reason = `incremental reindex failed: ${reindexResult.error}`;
       return result;
@@ -796,7 +799,7 @@ export async function runIncrementalReindex(opts = {}) {
     }
 
     if (markerLine && result.restorationVerified) {
-      const restorationReindex = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout);
+      const restorationReindex = await runCbmIndex(cbmExecutable, disposableRepositoryPath, projectName, cacheDir, configDir, env, sandboxProfile, timeout, indexMode);
       result.restorationReindexCpuPercent = restorationReindex.cpuPercent ?? null;
       result.restorationReindexPeakRssMb = restorationReindex.peakRssMb ?? null;
       result.restorationReindexProvenance = restorationReindex.measurementProvenance ?? null;

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "B8.3",
+  "providerAdmissionId": "codebase-memory-mcp-brain",
+  "providerContract": {
+    "version": "0.9.0",
+    "indexMode": "full",
+    "persistence": false,
+    "autoIndex": false,
+    "autoWatch": false,
+    "fallbackAuthority": "exact-source"
+  },
+  "repositoryInventory": [
+    {
+      "repositoryId": "brain",
+      "sourceId": "brain-next",
+      "localPath": ".",
+      "projectName": "brain",
+      "enabled": true,
+      "cacheDir": "/Users/Office/Library/Caches/brain/codebase-memory-mcp/brain",
+      "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts"
+    }
+  ],
+  "notApprovedRepositories": [
+    "mind",
+    "workbench",
+    "prochat"
+  ],
+  "structuralScope": {
+    "eligibleExtensions": [
+      ".bash", ".c", ".cc", ".cjs", ".cpp", ".cs", ".go", ".h", ".hpp",
+      ".java", ".js", ".jsx", ".kt", ".kts", ".lua", ".mjs", ".php", ".pl",
+      ".py", ".rb", ".rs", ".sh", ".svelte", ".swift", ".ts", ".tsx", ".vue", ".zsh"
+    ],
+    "excludedDirectoryNames": [
+      ".git", ".graphify-out", ".next", "archive", "archives", "build", "coverage",
+      "dist", "generated", "graphify-out", "node_modules", "runtime", "vendor", "vendors"
+    ],
+    "excludedFilePatterns": [
+      "*.d.ts",
+      "*.generated.*",
+      "*.gen.*"
+    ],
+    "excludeSymlinks": true
+  },
+  "freshnessPolicy": {
+    "triggerMode": "explicit-event",
+    "watcherEnabled": false,
+    "skipRefreshWhenStructuralFingerprintUnchanged": true,
+    "nominalMaximumChangedSourceToQueryableMs": 7500,
+    "nominalMaximumRefreshPeakRssMiB": 768,
+    "nominalMaximumRefreshPeakCpuPercent": 300,
+    "nominalMaximumIndexBytes": 536870912,
+    "requiredHeadroomRatio": 0.1,
+    "minimumIndependentAcceptanceRuns": 5,
+    "requiredPassingRuns": 5
+  },
+  "metadataPolicy": {
+    "stateFileName": "b8-3-freshness-state.json",
+    "failureReceiptDirectoryName": "b8-3-failure-receipts",
+    "requiredSourceIdentityFields": [
+      "headCommit",
+      "structuralFingerprint",
+      "eligibleFileCount"
+    ],
+    "requiredIndexIdentityFields": [
+      "providerSha256",
+      "projectName",
+      "cacheDir",
+      "indexMode",
+      "indexBytes"
+    ],
+    "requiredFreshnessFields": [
+      "lastSuccessfulRefreshAt",
+      "lastSuccessfulSourceIdentity",
+      "lastSuccessfulIndexIdentity",
+      "stale",
+      "lastFailure"
+    ],
+    "failureReceiptsPreservedUntilB8_6": true
+  },
+  "safety": {
+    "repositoryWritesByController": false,
+    "globalClientMutation": false,
+    "automaticRepositoryRollout": false,
+    "graphifyMutation": false,
+    "exactSourceRequiredWhenStaleOrUnavailable": true
+  }
+}

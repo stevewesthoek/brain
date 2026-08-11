@@ -1,0 +1,351 @@
+{
+  "schemaVersion": "1.0.0",
+  "task": "B8.3",
+  "generatedAt": "2026-08-11T11:37:44.672Z",
+  "provider": {
+    "path": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+    "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6",
+    "version": "0.9.0",
+    "revision": "b637e3330c96cfe452da623db068c241aaa3ec01"
+  },
+  "inventory": {
+    "repositoryId": "brain",
+    "sourceId": "brain-next",
+    "localPath": ".",
+    "projectName": "brain",
+    "enabled": true,
+    "cacheDir": "/Users/Office/Library/Caches/brain/codebase-memory-mcp/brain",
+    "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts"
+  },
+  "baseline": {
+    "refreshed": true,
+    "skippedUnchanged": false,
+    "durationMs": 5887,
+    "state": {
+      "lastSuccessfulRefreshAt": "2026-08-11T11:37:32.546Z",
+      "lastSuccessfulSourceIdentity": {
+        "headCommit": "44d7c7613da921641f75d13d0a47b66af7d809ed",
+        "structuralFingerprint": "25e1210e90e47077e183721e4e7be00e881d72bc4165b118c209730ada78e0a0",
+        "eligibleFileCount": 1695
+      },
+      "lastSuccessfulIndexIdentity": {
+        "providerSha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6",
+        "projectName": "brain",
+        "cacheDir": "/Users/Office/Library/Caches/brain/codebase-memory-mcp/brain",
+        "indexMode": "full",
+        "indexBytes": 116895744
+      },
+      "stale": false,
+      "lastFailure": null
+    }
+  },
+  "repetitions": [
+    {
+      "repetition": 1,
+      "result": {
+        "success": false,
+        "reason": "initial index failed: unexpected environment key: CI",
+        "initialIndexWallMs": null,
+        "initialIndexCpuPercent": null,
+        "initialIndexPeakRssMb": null,
+        "initialIndexProvenance": null,
+        "incrementalReindexWallMs": null,
+        "incrementalReindexCpuPercent": null,
+        "incrementalReindexPeakRssMb": null,
+        "incrementalReindexProvenance": null,
+        "markerQueryCpuPercent": null,
+        "markerQueryPeakRssMb": null,
+        "markerQueryProvenance": null,
+        "restorationReindexCpuPercent": null,
+        "restorationReindexPeakRssMb": null,
+        "restorationReindexProvenance": null,
+        "restorationQueryCpuPercent": null,
+        "restorationQueryPeakRssMb": null,
+        "restorationQueryProvenance": null,
+        "cacheBytes": 0,
+        "cacheBytesInitial": 0,
+        "markerVisible": false,
+        "markerAbsentAfterRestoration": false,
+        "restorationVerified": true,
+        "marker": "B8.1-mark-bf32d936-msol5z8a",
+        "targetFilePath": "/private/tmp/b8-3-r1-7lfBUy/source/projects/brain-core/src/mind-paths.ts",
+        "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+        "provenance": {
+          "cacheDir": "/tmp/b8-3-runtime-r1-H6T9eL/cache",
+          "cacheEnvironmentVariable": "CBM_CACHE_DIR",
+          "configDir": "/tmp/b8-3-runtime-r1-H6T9eL/config",
+          "initialTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "initialRepoHash": "84813ce40961b3bd4c7b63a1aab285511c55100a22e78fc0f797a48101b14046",
+          "finalTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "finalRepoHash": "84813ce40961b3bd4c7b63a1aab285511c55100a22e78fc0f797a48101b14046",
+          "targetHashMatches": true,
+          "repoHashMatches": true,
+          "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+          "markerAbsentAfterRestoration": false,
+          "cacheBytesAfterRestoration": 0
+        }
+      },
+      "gates": {
+        "lifecycle": false,
+        "latency": false,
+        "refreshRss": false,
+        "refreshCpu": false,
+        "indexBytes": true
+      },
+      "passed": false
+    },
+    {
+      "repetition": 2,
+      "result": {
+        "success": false,
+        "reason": "initial index failed: unexpected environment key: CI",
+        "initialIndexWallMs": null,
+        "initialIndexCpuPercent": null,
+        "initialIndexPeakRssMb": null,
+        "initialIndexProvenance": null,
+        "incrementalReindexWallMs": null,
+        "incrementalReindexCpuPercent": null,
+        "incrementalReindexPeakRssMb": null,
+        "incrementalReindexProvenance": null,
+        "markerQueryCpuPercent": null,
+        "markerQueryPeakRssMb": null,
+        "markerQueryProvenance": null,
+        "restorationReindexCpuPercent": null,
+        "restorationReindexPeakRssMb": null,
+        "restorationReindexProvenance": null,
+        "restorationQueryCpuPercent": null,
+        "restorationQueryPeakRssMb": null,
+        "restorationQueryProvenance": null,
+        "cacheBytes": 0,
+        "cacheBytesInitial": 0,
+        "markerVisible": false,
+        "markerAbsentAfterRestoration": false,
+        "restorationVerified": true,
+        "marker": "B8.1-mark-d7f01801-msol612t",
+        "targetFilePath": "/private/tmp/b8-3-r2-SCYPGk/source/projects/brain-core/src/mind-paths.ts",
+        "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+        "provenance": {
+          "cacheDir": "/tmp/b8-3-runtime-r2-7EG3jG/cache",
+          "cacheEnvironmentVariable": "CBM_CACHE_DIR",
+          "configDir": "/tmp/b8-3-runtime-r2-7EG3jG/config",
+          "initialTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "initialRepoHash": "08dae766a5376e6983efeb597cfb8b0f243bff16680d274274cce5487c0bd172",
+          "finalTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "finalRepoHash": "08dae766a5376e6983efeb597cfb8b0f243bff16680d274274cce5487c0bd172",
+          "targetHashMatches": true,
+          "repoHashMatches": true,
+          "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+          "markerAbsentAfterRestoration": false,
+          "cacheBytesAfterRestoration": 0
+        }
+      },
+      "gates": {
+        "lifecycle": false,
+        "latency": false,
+        "refreshRss": false,
+        "refreshCpu": false,
+        "indexBytes": true
+      },
+      "passed": false
+    },
+    {
+      "repetition": 3,
+      "result": {
+        "success": false,
+        "reason": "initial index failed: unexpected environment key: CI",
+        "initialIndexWallMs": null,
+        "initialIndexCpuPercent": null,
+        "initialIndexPeakRssMb": null,
+        "initialIndexProvenance": null,
+        "incrementalReindexWallMs": null,
+        "incrementalReindexCpuPercent": null,
+        "incrementalReindexPeakRssMb": null,
+        "incrementalReindexProvenance": null,
+        "markerQueryCpuPercent": null,
+        "markerQueryPeakRssMb": null,
+        "markerQueryProvenance": null,
+        "restorationReindexCpuPercent": null,
+        "restorationReindexPeakRssMb": null,
+        "restorationReindexProvenance": null,
+        "restorationQueryCpuPercent": null,
+        "restorationQueryPeakRssMb": null,
+        "restorationQueryProvenance": null,
+        "cacheBytes": 0,
+        "cacheBytesInitial": 0,
+        "markerVisible": false,
+        "markerAbsentAfterRestoration": false,
+        "restorationVerified": true,
+        "marker": "B8.1-mark-ee44b053-msol62t5",
+        "targetFilePath": "/private/tmp/b8-3-r3-7ysQWi/source/projects/brain-core/src/mind-paths.ts",
+        "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+        "provenance": {
+          "cacheDir": "/tmp/b8-3-runtime-r3-Fkxtt1/cache",
+          "cacheEnvironmentVariable": "CBM_CACHE_DIR",
+          "configDir": "/tmp/b8-3-runtime-r3-Fkxtt1/config",
+          "initialTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "initialRepoHash": "889df0197e1f85f24e9e3ef561c6434383d904131bab6d74b2f80dac2b09c93a",
+          "finalTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "finalRepoHash": "889df0197e1f85f24e9e3ef561c6434383d904131bab6d74b2f80dac2b09c93a",
+          "targetHashMatches": true,
+          "repoHashMatches": true,
+          "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+          "markerAbsentAfterRestoration": false,
+          "cacheBytesAfterRestoration": 0
+        }
+      },
+      "gates": {
+        "lifecycle": false,
+        "latency": false,
+        "refreshRss": false,
+        "refreshCpu": false,
+        "indexBytes": true
+      },
+      "passed": false
+    },
+    {
+      "repetition": 4,
+      "result": {
+        "success": false,
+        "reason": "initial index failed: unexpected environment key: CI",
+        "initialIndexWallMs": null,
+        "initialIndexCpuPercent": null,
+        "initialIndexPeakRssMb": null,
+        "initialIndexProvenance": null,
+        "incrementalReindexWallMs": null,
+        "incrementalReindexCpuPercent": null,
+        "incrementalReindexPeakRssMb": null,
+        "incrementalReindexProvenance": null,
+        "markerQueryCpuPercent": null,
+        "markerQueryPeakRssMb": null,
+        "markerQueryProvenance": null,
+        "restorationReindexCpuPercent": null,
+        "restorationReindexPeakRssMb": null,
+        "restorationReindexProvenance": null,
+        "restorationQueryCpuPercent": null,
+        "restorationQueryPeakRssMb": null,
+        "restorationQueryProvenance": null,
+        "cacheBytes": 0,
+        "cacheBytesInitial": 0,
+        "markerVisible": false,
+        "markerAbsentAfterRestoration": false,
+        "restorationVerified": true,
+        "marker": "B8.1-mark-7e398fa8-msol64m8",
+        "targetFilePath": "/private/tmp/b8-3-r4-Kzwm87/source/projects/brain-core/src/mind-paths.ts",
+        "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+        "provenance": {
+          "cacheDir": "/tmp/b8-3-runtime-r4-QT2oyj/cache",
+          "cacheEnvironmentVariable": "CBM_CACHE_DIR",
+          "configDir": "/tmp/b8-3-runtime-r4-QT2oyj/config",
+          "initialTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "initialRepoHash": "fc53b82aa8e90d4a29fc9150ce872e9086ffde98a5b21374f3aa143e32fd903a",
+          "finalTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "finalRepoHash": "fc53b82aa8e90d4a29fc9150ce872e9086ffde98a5b21374f3aa143e32fd903a",
+          "targetHashMatches": true,
+          "repoHashMatches": true,
+          "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+          "markerAbsentAfterRestoration": false,
+          "cacheBytesAfterRestoration": 0
+        }
+      },
+      "gates": {
+        "lifecycle": false,
+        "latency": false,
+        "refreshRss": false,
+        "refreshCpu": false,
+        "indexBytes": true
+      },
+      "passed": false
+    },
+    {
+      "repetition": 5,
+      "result": {
+        "success": false,
+        "reason": "initial index failed: unexpected environment key: CI",
+        "initialIndexWallMs": null,
+        "initialIndexCpuPercent": null,
+        "initialIndexPeakRssMb": null,
+        "initialIndexProvenance": null,
+        "incrementalReindexWallMs": null,
+        "incrementalReindexCpuPercent": null,
+        "incrementalReindexPeakRssMb": null,
+        "incrementalReindexProvenance": null,
+        "markerQueryCpuPercent": null,
+        "markerQueryPeakRssMb": null,
+        "markerQueryProvenance": null,
+        "restorationReindexCpuPercent": null,
+        "restorationReindexPeakRssMb": null,
+        "restorationReindexProvenance": null,
+        "restorationQueryCpuPercent": null,
+        "restorationQueryPeakRssMb": null,
+        "restorationQueryProvenance": null,
+        "cacheBytes": 0,
+        "cacheBytesInitial": 0,
+        "markerVisible": false,
+        "markerAbsentAfterRestoration": false,
+        "restorationVerified": true,
+        "marker": "B8.1-mark-3a82bed0-msol66do",
+        "targetFilePath": "/private/tmp/b8-3-r5-Fa08fq/source/projects/brain-core/src/mind-paths.ts",
+        "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+        "provenance": {
+          "cacheDir": "/tmp/b8-3-runtime-r5-OqoRU4/cache",
+          "cacheEnvironmentVariable": "CBM_CACHE_DIR",
+          "configDir": "/tmp/b8-3-runtime-r5-OqoRU4/config",
+          "initialTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "initialRepoHash": "3653ed7daadadc2ed3822a74a17cb0d1c3f139023197e93651af65ea2e4119ec",
+          "finalTargetHash": "27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e",
+          "finalRepoHash": "3653ed7daadadc2ed3822a74a17cb0d1c3f139023197e93651af65ea2e4119ec",
+          "targetHashMatches": true,
+          "repoHashMatches": true,
+          "refreshProbeTarget": "projects/brain-core/src/mind-paths.ts",
+          "markerAbsentAfterRestoration": false,
+          "cacheBytesAfterRestoration": 0
+        }
+      },
+      "gates": {
+        "lifecycle": false,
+        "latency": false,
+        "refreshRss": false,
+        "refreshCpu": false,
+        "indexBytes": true
+      },
+      "passed": false
+    }
+  ],
+  "acceptance": {
+    "requiredPassingRuns": 5,
+    "passingRuns": 0,
+    "passed": false,
+    "limits": {
+      "changedSourceToQueryableMs": 6750,
+      "refreshPeakRssMiB": 691.2,
+      "refreshPeakCpuPercent": 270,
+      "indexBytes": 483183820.8
+    },
+    "summaries": {
+      "refreshWallMs": {
+        "min": 0,
+        "median": null,
+        "p95": null,
+        "max": 0
+      },
+      "refreshPeakRssMiB": {
+        "min": 0,
+        "median": null,
+        "p95": null,
+        "max": 0
+      },
+      "refreshPeakCpuPercent": {
+        "min": 0,
+        "median": null,
+        "p95": null,
+        "max": 0
+      },
+      "indexBytes": {
+        "min": 0,
+        "median": 0,
+        "p95": 0,
+        "max": 0
+      }
+    }
+  }
+}

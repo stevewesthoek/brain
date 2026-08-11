@@ -350,6 +350,7 @@ test('runIncrementalReindex: comprehensive fake-CBM success with full provenance
         XDG_CONFIG_HOME: configDir,
       },
       timeout: 10000,
+      indexMode: 'full',
     });
 
     // Verify successful result
@@ -369,6 +370,8 @@ test('runIncrementalReindex: comprehensive fake-CBM success with full provenance
     assert.equal(result.provenance.cacheEnvironmentVariable, 'CBM_CACHE_DIR', 'provider cache binding mismatch');
     assert.equal(result.provenance.configDir, configDir, 'config dir mismatch');
     assert.match(fs.readFileSync(path.join(tmpDir, 'cbm-env.log'), 'utf8'), new RegExp(`^CBM_CACHE_DIR=${cacheDir}$`, 'm'));
+    const argvLog = fs.readFileSync(path.join(tmpDir, 'cbm-argv.log'), 'utf8');
+    assert.ok((argvLog.match(/--mode full/g) ?? []).length >= 3, 'all index stages should use full mode');
 
     // Verify distinct paths
     assert.notEqual(repoDir, cacheDir, 'repo and cache should be distinct');
