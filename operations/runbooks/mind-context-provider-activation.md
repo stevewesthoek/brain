@@ -1,10 +1,11 @@
 # Mind Context Provider Activation
 
-**State:** active-local; activation and disable/restore verification passed
+**State:** repository repin prepared; existing live approval/registration remains on the prior verified pin until Host Activation
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
 **Provider source lock:** `076b9f97030e1c90bc66ffbb61d29456b41ed69f`
-**Mind source lock:** `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (updated 2026-08-09; previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`)
+**Repository candidate Mind source lock:** `c3dcefdd808501a7ead7ffc4671eb5ef3822c268` (prepared 2026-08-13; descendant of `f9aa1cef5d5449dac34db74069427f528d620caf` with only an out-of-scope `inbox/failed/` capture added)
+**Live approval before Host Activation:** `91ae8ce55c6daf67b728ef9b8d841504f24a97c9`; do not claim the candidate pin is active until the canonical checkout, approval, registrations, and health/readback are updated together.
 
 ## Boundary
 
@@ -53,7 +54,7 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
   "providerRevision": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
-  "mindCommit": "91ae8ce55c6daf67b728ef9b8d841504f24a97c9",
+  "mindCommit": "c3dcefdd808501a7ead7ffc4671eb5ef3822c268",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
 ```
@@ -142,7 +143,7 @@ The two registrations are independent and must both be maintained:
 
 | Context | Registration location | Scope |
 |---------|----------------------|-------|
-| Brain-started Claude Code | `brain-next/.mcp.json` (tracked) | project |
+| Brain-started Claude Code | `brain/.mcp.json` (tracked) | project |
 | Mind-started Claude Code | `~/.claude.json` under Mind project key | local |
 
 ### Exact add procedure (Mind-local)
@@ -153,7 +154,7 @@ Run from the Mind cwd:
 cd /Users/Office/Repos/stevewesthoek/mind
 claude mcp add --scope local mind-context \
   /opt/homebrew/Cellar/node/25.9.0_1/bin/node \
-  /Users/Office/Repos/stevewesthoek/brain-next/projects/mind-context/src/provider/server.mjs \
+  /Users/Office/Repos/stevewesthoek/brain/projects/mind-context/src/provider/server.mjs \
   -e MIND_CONTEXT_ALLOWED_TOOLS=mind_context_health,mind_context_resolve,mind_context_explain \
   -e MIND_CONTEXT_ALLOWED_SUBOPERATIONS= \
   -e MIND_CONTEXT_ACTIVATION_APPROVAL_FILE=/Users/Office/.brain/approvals/mind-context-read-only.json \

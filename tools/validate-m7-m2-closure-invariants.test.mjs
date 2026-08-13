@@ -64,8 +64,11 @@ test('M7.1: owner disposition resolved — not required', () => {
   );
 });
 
-test('M7.1: currentExecutionAuthority is none — replay blocked', () => {
-  assert.equal(gov.migrationPath.currentExecutionAuthority, 'none');
+test('M7.1: execution authority is limited to the bounded Brain-only semantic gate', () => {
+  assert.equal(
+    gov.migrationPath.currentExecutionAuthority,
+    'bounded Brain-only semantic event gate; structural Graphify remains frozen; CBM structural use remains per-repository admission-bound'
+  );
 });
 
 test('M7.1: no recurring authority granted', () => {
@@ -90,10 +93,10 @@ test('M2.4: provider revision is 076b9f97 (live approved)', () => {
   );
 });
 
-test('M2.4: Mind pin is 91ae8ce5', () => {
+test('M2.4: repository repin candidate targets current Mind HEAD c3dcefdd', () => {
   assert.equal(
     mcAdmission.scope.fixedEnvironment.MIND_CONTEXT_EXPECTED_HEAD,
-    '91ae8ce55c6daf67b728ef9b8d841504f24a97c9'
+    'c3dcefdd808501a7ead7ffc4671eb5ef3822c268'
   );
 });
 

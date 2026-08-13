@@ -800,3 +800,4 @@ All detected credentials have been categorized. Run `sync-credentials` to check 
 | `YOUTUBE_CLIENT_SECRET_JSON` | `~/.config/youtube/says-the-bible.env` | 2026-06-20 |
 | `YOUTUBE_TOKEN_FILE` | `~/.config/youtube/says-the-bible.env` | 2026-06-20 |
 | `WORKBENCH_ACTION_TOKEN` | `~/.config/workbench/runtime.env` | 2026-07-23 |
+| `WORKBENCH_TRANSPORT` | `~/.config/workbench/transport.env` | 2026-08-07 |
