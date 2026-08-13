@@ -58,10 +58,25 @@ path_bytes() {
   LC_ALL=C printf '%s' "$1" | wc -c | tr -d ' '
 }
 
+resolve_lsof_bin() {
+  local resolved
+  resolved="$(command -v lsof 2>/dev/null || true)"
+  if [ -n "$resolved" ]; then
+    printf '%s\n' "$resolved"
+    return 0
+  fi
+  if [ -x /usr/sbin/lsof ]; then
+    printf '%s\n' /usr/sbin/lsof
+    return 0
+  fi
+  return 1
+}
+
 control_socket_has_owner() {
   local socket_path="$1"
-  command -v lsof >/dev/null 2>&1 || return 2
-  lsof -nU -Fn 2>/dev/null | rg --fixed-strings --line-regexp "n$socket_path" >/dev/null
+  local lsof_bin
+  lsof_bin="$(resolve_lsof_bin)" || return 2
+  "$lsof_bin" -nU -Fn 2>/dev/null | rg --fixed-strings --line-regexp "n$socket_path" >/dev/null
 }
 
 resolve_link_target_abs() {
@@ -93,19 +108,26 @@ normalize_existing_path() {
 managed_entries() {
   printf '%s\t%s\n' \
     "AGENTS.md" "$CONFIGS_DIR/codex/AGENTS.md" \
-    "config.toml" "$CONFIGS_DIR/codex/config.toml" \
     "RTK.md" "$CONFIGS_DIR/codex/RTK.md" \
     "rules/default.rules" "$CONFIGS_DIR/codex/rules/default.rules" \
     "skills/user" "$BRAIN_AI_DIR/skills/active"
 }
 
+generated_entries() {
+  printf '%s\t%s\t%s\n' \
+    "config.toml" "$CONFIGS_DIR/codex/config.toml" "0600"
+}
+
 validate_sources() {
   [ -d "$BRAIN_REPO" ] || die "Brain repo not found: $BRAIN_REPO"
 
-  local relative target
+  local relative target mode
   while IFS=$'\t' read -r relative target; do
     [ -e "$target" ] || die "Managed source is missing for $relative: $target"
   done < <(managed_entries)
+  while IFS=$'\t' read -r relative target mode; do
+    [ -e "$target" ] || die "Generated source is missing for $relative: $target"
+  done < <(generated_entries)
 }
 
 backup_existing_path() {
@@ -187,6 +209,40 @@ ensure_managed_link() {
   run ln -s "$target" "$link"
 }
 
+ensure_generated_copy() {
+  local root="$1"
+  local relative="$2"
+  local source="$3"
+  local mode="$4"
+  local backup_dir="$5"
+  local destination="$root/$relative"
+
+  if [ -f "$destination" ] && [ ! -L "$destination" ] && cmp -s "$destination" "$source"; then
+    run chmod "$mode" "$destination"
+    return 0
+  fi
+
+  backup_existing_path "$destination" "$relative" "$backup_dir"
+  run mkdir -p "$(dirname -- "$destination")"
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    say "[dry-run] Would materialize $source as physical $destination with mode $mode."
+    return 0
+  fi
+
+  local staged
+  staged="$(mktemp "$(dirname -- "$destination")/.$(basename -- "$destination").generated.XXXXXX")"
+  if ! cp "$source" "$staged"; then
+    rm -f "$staged"
+    die "Could not stage generated copy for $destination"
+  fi
+  chmod "$mode" "$staged"
+  if ! mv "$staged" "$destination"; then
+    rm -f "$staged"
+    die "Could not atomically activate generated copy for $destination"
+  fi
+}
+
 install_managed_layout() {
   local root="$1"
   local backup_dir="$2"
@@ -198,6 +254,11 @@ install_managed_layout() {
   while IFS=$'\t' read -r relative target; do
     ensure_managed_link "$root" "$relative" "$target" "$backup_dir"
   done < <(managed_entries)
+
+  local generated_relative generated_target generated_mode
+  while IFS="$(printf '\t')" read -r generated_relative generated_target generated_mode; do
+    ensure_generated_copy "$root" "$generated_relative" "$generated_target" "$generated_mode" "$backup_dir"
+  done < <(generated_entries)
 }
 
 check_managed_layout() {
@@ -242,6 +303,29 @@ check_managed_layout() {
     fi
   done < <(managed_entries)
 
+  local generated_relative generated_target generated_mode generated_file actual_mode
+  while IFS="$(printf '\t')" read -r generated_relative generated_target generated_mode; do
+    generated_file="$CODEX_HOME_DIR/$generated_relative"
+    if [ -L "$generated_file" ] || [ ! -f "$generated_file" ]; then
+      say "[FAIL] Generated config must be a physical file: $generated_file"
+      failures=$((failures + 1))
+      continue
+    fi
+    if ! cmp -s "$generated_file" "$generated_target"; then
+      say "[FAIL] Generated config drifted from Brain source: $generated_file"
+      failures=$((failures + 1))
+      continue
+    fi
+    actual_mode="$(stat -f '%Lp' "$generated_file" 2>/dev/null || true)"
+    local expected_mode="${generated_mode#0}"
+    if [ "$actual_mode" != "$expected_mode" ]; then
+      say "[FAIL] Generated config mode is ${actual_mode:-unknown}; expected $expected_mode: $generated_file"
+      failures=$((failures + 1))
+      continue
+    fi
+    say "[OK] Physical generated config: $generated_file"
+  done < <(generated_entries)
+
   local socket_root="$CODEX_HOME_DIR"
   if [ -d "$CODEX_HOME_DIR" ]; then
     socket_root="$(cd -P -- "$CODEX_HOME_DIR" && pwd)"
@@ -257,7 +341,7 @@ check_managed_layout() {
   fi
 
   if [ -S "$socket_path" ]; then
-    if ! command -v lsof >/dev/null 2>&1; then
+    if ! resolve_lsof_bin >/dev/null 2>&1; then
       say "[FAIL] lsof is required to determine whether the control socket is stale."
       failures=$((failures + 1))
     elif control_socket_has_owner "$socket_path"; then
@@ -382,7 +466,7 @@ repair_layout() {
 
   local control_socket="$CODEX_HOME_DIR/$SOCKET_RELATIVE_PATH"
   if [ -S "$control_socket" ]; then
-    command -v lsof >/dev/null 2>&1 || {
+    resolve_lsof_bin >/dev/null 2>&1 || {
       die "lsof is required to determine whether the control socket is stale."
     }
     if control_socket_has_owner "$control_socket"; then

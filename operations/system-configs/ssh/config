@@ -1,12 +1,18 @@
 # ============================================================
-# Macbook via Thunderbolt
+# MacBook: prefer Thunderbolt when reachable, otherwise use Tailscale
 # ============================================================
-Host MacBook macbook
+# Thunderbolt override for terminal SSH.
+Match host MacBook,macbook exec "/usr/bin/nc -G 1 -z 192.168.2.2 22"
   HostName 192.168.2.2
+  ConnectTimeout 2
+
+Host MacBook macbook
+  HostName 100.70.12.18
   User Steve
   Port 22
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
+  HostKeyAlias macbook-m1
   ServerAliveInterval 30
   ServerAliveCountMax 3
   ConnectTimeout 5
@@ -58,6 +64,12 @@ Host cloudpanel
 # Keep it for consistency with scripts, testing, and shared config habits.
 # Default: Tailscale.
 # Terminal SSH prefers Thunderbolt when 192.168.2.1:22 is reachable.
+# Thunderbolt override for terminal SSH.
+# If 192.168.2.1:22 is reachable, terminal SSH uses Thunderbolt.
+Match host office exec "/usr/bin/nc -G 1 -z 192.168.2.1 22"
+  HostName 192.168.2.1
+  ConnectTimeout 2
+
 Host office
   HostName 100.86.124.66
   User office
@@ -68,12 +80,6 @@ Host office
   ConnectTimeout 5
   ServerAliveInterval 15
   ServerAliveCountMax 2
-
-# Thunderbolt override for terminal SSH.
-# If 192.168.2.1:22 is reachable, terminal SSH uses Thunderbolt.
-Match host office exec "/usr/bin/nc -G 1 -z 192.168.2.1 22"
-  HostName 192.168.2.1
-  ConnectTimeout 2
 
 # ============================================================
 # Global SSH defaults

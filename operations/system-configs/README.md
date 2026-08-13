@@ -2,22 +2,23 @@
 
 ## What this folder is
 
-This folder holds synced tool configuration for Claude Code, Codex, Kiro, Cursor, shell, git, Ghostty, and Starship.
+This folder holds canonical non-secret workstation configuration for Claude Code, Codex, Kiro, Cursor, Gemini, shell, git, SSH, Ghostty, Starship, and related tools.
 
-Most subdirs here are the source behind home-directory symlinks or other runtime
-config paths on this machine. Codex is the managed-runtime-root exception:
-`~/.codex` is real and only selected files inside it point here.
+Configuration ownership is standardized by `operations/specs/workstation-config-ownership.json` and `operations/runbooks/workstation-config-ownership.md`. Every live path must use exactly one mode: `SYMLINK`, `GENERATED-COPY`, `INCLUDE`, or `LOCAL-ONLY`.
+
+Mutable application runtime roots such as `~/.claude`, `~/.cursor`, `~/.gemini`, `~/.kiro`, and `~/.codex` are real local directories. Brain may own selected narrow configuration entries inside them, but sessions, auth, histories, caches, databases, locks, and other runtime state remain local.
 
 ## Runtime path map
 
 | Subdir | Purpose / home path |
 |--------|---------------------|
-| `claude/` | `~/.claude` — Claude Code config, `CLAUDE.md`, skills symlink, MCP templates |
-| `codex/` | Selected `~/.codex` entries — Codex config and managed skill exports; the runtime root itself is local |
-| `kiro/` | `~/.kiro` — Kiro config |
-| `cursor/` | Cursor IDE settings and skill overrides |
-| `shell/` | shell config (`.zshrc` source) |
-| `git/` | `~/.config/git/ignore` |
+| `claude/` | Narrow managed entries inside physical `~/.claude`; Claude runtime/session root remains local |
+| `codex/` | Narrow managed entries inside physical `~/.codex`; `config.toml` is a physical generated copy from Brain |
+| `kiro/` | Narrow managed entries inside physical `~/.kiro`; Kiro runtime root remains local |
+| `cursor/` | Narrow managed entries inside physical `~/.cursor`; Cursor runtime root remains local |
+| `gemini/` | Narrow managed entries inside physical `~/.gemini`; Gemini/Antigravity auth/history/runtime state remains local |
+| `shell/` | Stable shell config sources such as `.zshrc` / `.zprofile`, eligible for narrow symlinks |
+| `git/` | Brain Git config imported from a physical `~/.gitconfig` INCLUDE root; optional local overlay remains local |
 | `ghostty/` | `~/.config/ghostty/config` |
 | `starship/` | `~/.config/starship.toml`; optional Codex-safe companion config `~/.config/starship-codex.toml` documented in `operations/runbooks/codex-starship-compatible-prompt.md` |
 | `mcp/` | standalone MCP server definitions |
@@ -71,14 +72,11 @@ The `--check` command verifies that every active skill is visible at the top-lev
 
 ## Codex managed runtime root
 
-`~/.codex` must be a real, short directory because Codex creates macOS Unix
-sockets below it. The managed entries are `AGENTS.md`, `config.toml`, `RTK.md`,
-`rules/default.rules`, and `skills/user`. Sessions, authentication, databases,
-plugins, caches, Computer Use, system skills, and app-server state stay local.
+`~/.codex` must be a real, short directory because Codex creates macOS Unix sockets below it. This is also required for the MacBook Codex app → Office Mac Remote SSH path: the historical whole-root symlink resolved the control socket to 114 bytes, beyond macOS's 103-byte Unix-socket limit.
 
-Use `operations/scripts/codex-home-managed-root.sh` to check, repair, migrate, or
-roll back the layout. See
-`operations/runbooks/codex-managed-runtime-root.md` for the guarded procedure.
+Managed Codex entries use mixed ownership: `AGENTS.md`, `RTK.md`, `rules/default.rules`, and `skills/user` are narrow symlinks; `config.toml` is a physical mode-0600 `GENERATED-COPY` whose canonical source remains in Brain. Sessions, authentication, databases, plugins, caches, Computer Use, system skills, and app-server state stay local.
+
+Use `operations/scripts/codex-home-managed-root.sh` to check, repair, migrate, or roll back the layout. See `operations/runbooks/codex-managed-runtime-root.md` for the guarded procedure and `operations/runbooks/office-macbook-connectivity.md` for the Remote SSH/network contract.
 
 ## CLI Wrapper Pattern
 

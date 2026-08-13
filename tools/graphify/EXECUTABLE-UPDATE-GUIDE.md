@@ -1,88 +1,75 @@
 # Graphify Executable Update Guide
 
-Graphify uses the stock upstream CLI directly with MTPLX local inference (Qwen 3.6 27B MTP-accelerated).
-No orchestrator, no AI Model Selector, no paid backend.
+**Status:** Current B8.5 compatibility guide
 
-## Fixed configuration
+Graphify no longer has a Brain-managed MTPLX/Ollama execution dependency. Structural generation is frozen, and semantic generation is bounded, event-driven, and explicit-runner only.
 
-| Setting | Value |
-|---------|-------|
-| Backend | `openai` (MTPLX local — no paid API) |
-| Model | `Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed` |
-| Endpoint | `http://127.0.0.1:8000/v1` |
-| Token budget | `4000` |
-| Concurrency | `1` |
-| API timeout | `900` seconds |
+## Supported Surface
 
-No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
+Canonical entrypoint:
 
-## Prerequisites
-
-```bash
-curl http://127.0.0.1:8000/health
-graphify --help
+```text
+tools/graphify-semantic-event.mjs
 ```
 
-MTPLX must be running locally (LaunchAgent `com.office.mtplx`).
+The Office Nightly Scheduler uses scheduler mode. Manual semantic evaluation requires an approved scope and changed files. A model runner is optional and must be supplied explicitly when semantic regeneration is intentionally desired.
 
-## Commands
+## Package Script Compatibility
 
-### Brain
+Legacy script IDs remain stable:
 
 ```bash
 npm run graphify:brain
-```
-
-Equivalent to:
-```bash
-OPENAI_BASE_URL=http://127.0.0.1:8000/v1 OPENAI_API_KEY=none \
-  graphify extract . --backend openai --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed --token-budget 4000 --max-concurrency 1 --api-timeout 900 && \
-OPENAI_BASE_URL=http://127.0.0.1:8000/v1 OPENAI_API_KEY=none \
-  GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only . --backend=openai --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed
-```
-
-### Mind
-
-```bash
 npm run graphify:mind
-```
-
-Equivalent to:
-```bash
-cd ../mind && OPENAI_BASE_URL=http://127.0.0.1:8000/v1 OPENAI_API_KEY=none \
-  graphify extract . --backend openai --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed --token-budget 4000 --max-concurrency 1 --api-timeout 900 && \
-OPENAI_BASE_URL=http://127.0.0.1:8000/v1 OPENAI_API_KEY=none \
-  GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only . --backend=openai --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed
-```
-
-### Callflow exports (after graph.json exists)
-
-```bash
 npm run graphify:brain:callflow
 npm run graphify:mind:callflow
 ```
 
-## Output
+Behavior:
 
+- `graphify:brain` runs the bounded Brain semantic event gate.
+- `graphify:mind` exits fail-closed because Mind Graphify is not approved.
+- both callflow scripts exit fail-closed because structural Graphify remains frozen.
+
+Do not change these IDs merely to rename the policy transition; callers may depend on the stable contract.
+
+## Updating Graphify Dependencies
+
+If the upstream Graphify executable/library is updated in the future:
+
+1. do not re-enable broad structural extraction as part of the upgrade;
+2. do not add an MTPLX/Ollama/default local model dependency;
+3. verify `operations/specs/graphify-operational-profile.json` and transition governance first;
+4. run the B8.5 Graphify test suite;
+5. verify code-only changes do not invoke a semantic runner;
+6. verify Mind remains unapproved;
+7. verify semantic runner invocation remains explicit-only;
+8. verify generated output remains non-authoritative and cannot mutate Brain/Mind.
+
+## Fail-Closed Legacy Entrypoints
+
+`tools/scripts/graphify-nightly.sh` is intentionally retained as a compatibility stub and exits with code 78. It must not start MTPLX/Ollama, scan all repositories, or run structural generation.
+
+The compatibility handlers for Mind and callflow package scripts also exit with code 78.
+
+## Validation
+
+Run the Graphify governance tests referenced by the repository validation workflow, including:
+
+```text
+tools/lib/b8-5-graphify-semantic.test.mjs
+tools/validate-graphify-operational-profile.test.mjs
+tools/validate-graphify-operational-profiles.test.mjs
+operations/tests/graphify-hook-watch-disabled.test.mjs
+tools/run-contained-mind-graphify.test.mjs
 ```
-graphify-out/graph.json                 — queryable graph data
-graphify-out/.graphify_analysis.json    — raw analysis data
-graphify-out/GRAPH_REPORT.md            — cluster/community report
-graphify-out/graph.html                 — interactive visualization, generated when `GRAPHIFY_VIZ_NODE_LIMIT` is high enough
+
+The canonical validator output should report:
+
+```text
+mode=event-driven-semantic-only structural=frozen mind=unapproved
 ```
 
-`graphify-out/` is generated output and must not be committed.
+## Historical Instructions
 
-## Troubleshooting
-
-**"command not found: graphify"** — Install the CLI:
-
-```bash
-uv tool install "graphifyy[ollama]" --force
-```
-
-**"MTPLX unavailable"** — Ensure MTPLX is running:
-```bash
-curl http://127.0.0.1:8000/health
-launchctl load ~/Library/LaunchAgents/com.office.mtplx.plist
-```
+Old instructions mentioning MTPLX, Qwen 3.6, Ollama, localhost model endpoints, or broad `graphify extract`/`cluster-only` workflows are historical. Use Git history and dated reports if those details are needed for archaeology; do not reactivate them operationally.

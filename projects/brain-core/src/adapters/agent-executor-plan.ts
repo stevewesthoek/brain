@@ -105,28 +105,10 @@ function selectExecutorForTask(task: BrainCoreAgentTaskGraphSummary['tasks'][num
 } {
   if (!task) {
     return {
-      executorId: 'local-ollama-m4pro',
-      providerId: 'ollama-m4pro',
-      model: 'qwen2.5:32b',
-      reason: 'No matching task found; defaulting to the primary local executor.',
-    };
-  }
-
-  if (task.capabilityIds.some((id) => id.startsWith('skill.'))) {
-    return {
-      executorId: 'local-ollama-m4pro',
-      providerId: 'ollama-m4pro',
-      model: 'qwen2.5:32b',
-      reason: 'Skill-first task; use the strongest local M4 executor before paid fallbacks.',
-    };
-  }
-
-  if (task.aiTaskType === 'executor_selection' || task.aiTaskType === 'orchestration') {
-    return {
-      executorId: 'codex-cli',
-      providerId: 'codex-cli',
-      model: 'gpt-5.4',
-      reason: 'Orchestration or executor-selection work should prefer Codex CLI after local intent is recorded.',
+      executorId: 'claude-bedrock',
+      providerId: 'claude-bedrock',
+      model: 'bedrock-model-portfolio',
+      reason: 'No matching task found; default to the Bedrock-backed Claude surface.',
     };
   }
 
@@ -134,16 +116,27 @@ function selectExecutorForTask(task: BrainCoreAgentTaskGraphSummary['tasks'][num
     return {
       executorId: 'claude-bedrock',
       providerId: 'claude-bedrock',
-      model: 'claude-sonnet',
-      reason: 'Approval-sensitive coordination is assigned to the paid fallback surface for reliability.',
+      model: 'bedrock-model-portfolio',
+      reason: 'Approval-sensitive coordination uses the primary Bedrock-backed Claude surface.',
+    };
+  }
+
+  if (task.aiTaskType === 'executor_selection' || task.aiTaskType === 'orchestration') {
+    return {
+      executorId: 'claude-bedrock',
+      providerId: 'claude-bedrock',
+      model: 'bedrock-model-portfolio',
+      reason: 'Orchestration and executor-selection work use Bedrock-backed Claude by default.',
     };
   }
 
   return {
-    executorId: 'local-ollama-m1',
-    providerId: 'ollama-m1',
-    model: 'qwen2.5:14b',
-    reason: 'Default to the secondary local node for routine non-sensitive work.',
+    executorId: 'claude-bedrock',
+    providerId: 'claude-bedrock',
+    model: 'bedrock-model-portfolio',
+    reason: task.capabilityIds.some((id) => id.startsWith('skill.'))
+      ? 'Skill-first work uses Bedrock-backed Claude; no Brain-managed always-on local text executor is admitted.'
+      : 'Routine text work uses Bedrock-backed Claude; Codex CLI remains the secondary managed surface.',
   };
 }
 

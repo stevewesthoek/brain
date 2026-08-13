@@ -22,7 +22,8 @@ test('readAgentExecutorPlan returns a derived executor selection plan', () => {
   assert.equal(plan.id, 'agent-executor-plan');
   assert.equal(plan.status, 'read-only');
   assert.equal(plan.stepCount, taskState.stepCount);
-  assert.ok(plan.steps.some((step) => step.executorId === 'local-ollama-m4pro'));
+  assert.ok(plan.steps.some((step) => step.executorId === 'claude-bedrock'));
+  assert.equal(plan.steps.some((step) => step.executorId.startsWith('local-ollama')), false);
 });
 
 test('saveAgentExecutorPlanSnapshot writes and reloads executor selections', () => {

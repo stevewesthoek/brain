@@ -28,7 +28,6 @@ This index preserves existing skill names. It does not rename, delete, or merge 
 | `autoresearch` | Autonomous research workflows | No | research, power | Automated research iteration and optimization |
 | `greploop` | Bounded review-fix-review loop for code quality gates | No | code-orchestrator | Dormant subskill used automatically by `code` when review findings should be fixed until clean; do not add to default active profile |
 | `spark` | Spark email/calendar/contact CLI | No | productivity, power | Mailbox, calendar, contacts, meetings, scheduling; personal-data sensitive, not default-active |
-| `mtplx` | MTPLX Qwen 3.6 27B MTP inference provider management | No | video, power | Dormant; local MTP-accelerated Qwen 3.6 27B memory safety and model management |
 
 ---
 

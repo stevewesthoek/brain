@@ -1,0 +1,297 @@
+{
+  "specVersion": "1.0.0",
+  "effectiveDate": "2026-08-12",
+  "authority": "brain-workstation-config",
+  "purpose": "Keep reproducible non-secret workstation configuration in Git while preserving application-owned runtime/session state, authentication, caches, histories, databases, and machine-local secrets outside Git.",
+  "principles": [
+    "Git stores intentional reproducible non-secret configuration intent.",
+    "Application runtime roots remain real local directories when the application writes sessions, history, caches, auth state, databases, locks, or installation state there.",
+    "Use the narrowest ownership mode that preserves application behavior: SYMLINK, GENERATED-COPY, INCLUDE, or LOCAL-ONLY.",
+    "Whole-directory symlinks are forbidden for mutable IDE and LLM runtime roots.",
+    "Secrets and private key material are never admitted to Git-backed configuration.",
+    "Migration must preserve session memory and be reversible before destructive cleanup.",
+    "Office Mac and Thunderbolt-connected MacBook connectivity is a migration invariant, especially SSH aliases and keys."
+  ],
+  "modes": {
+    "SYMLINK": "Use only for stable non-secret files or narrow directories that applications are expected to read without owning runtime state.",
+    "GENERATED-COPY": "Git is canonical; a physical local file is rendered/copied atomically from the tracked source because the application may rewrite or require local ownership.",
+    "INCLUDE": "Keep the application root config physical and use the application's native include mechanism to import tracked Brain configuration plus an optional local overlay.",
+    "LOCAL-ONLY": "Application-owned runtime/session/auth/cache state stays local and is never symlinked into Brain. Git may document the expected shape but not own the live content."
+  },
+  "migration": {
+    "liveMutationAuthorized": false,
+    "defaultMode": "plan-only",
+    "requiresApplicationShutdownForRootConversion": true,
+    "requiresBackupBeforeMutation": true,
+    "requiresAtomicStaging": true,
+    "requiresPostMigrationApplicationSmokeTest": true,
+    "requiresRollbackReceipt": true,
+    "mustPreserveSessionState": true,
+    "mustPreserveAuthState": true,
+    "mustPreserveRuntimeDatabases": true,
+    "mustPreserveCachesUnlessSeparatelyApproved": true
+  },
+  "crossMachineContinuity": {
+    "officeMacRole": "primary-control-plane-and-repository-host",
+    "macBookRole": "interactive-client-and-secondary-node",
+    "sshAliasesThatMustResolve": ["MacBook", "macbook", "office"],
+    "macBookThunderboltAddress": "192.168.2.2",
+    "officeThunderboltAddress": "192.168.2.1",
+    "officeTailscaleAddress": "100.86.124.66",
+    "macBookTailscaleAddress": "100.70.12.18",
+    "wifiLanAddressesCanonical": false,
+    "routePolicy": {
+      "macBookToOffice": [
+        {
+          "priority": 1,
+          "transport": "thunderbolt",
+          "host": "192.168.2.1",
+          "condition": "use when directly connected and 192.168.2.1:22 is reachable",
+          "sshAlias": "office"
+        },
+        {
+          "priority": 2,
+          "transport": "tailscale",
+          "host": "100.86.124.66",
+          "condition": "stable fallback for home Wi-Fi, mobile/5G, or any other IP underlay; do not depend on DHCP-assigned LAN addresses",
+          "sshAlias": "office"
+        }
+      ],
+      "officeToMacBook": [
+        {
+          "priority": 1,
+          "transport": "thunderbolt",
+          "host": "192.168.2.2",
+          "condition": "use when directly connected over the fixed Thunderbolt link",
+          "sshAlias": "MacBook"
+        },
+        {
+          "priority": 2,
+          "transport": "tailscale",
+          "host": "100.70.12.18",
+          "condition": "stable fallback for home Wi-Fi, mobile/5G, or any other IP underlay; do not depend on DHCP-assigned LAN addresses",
+          "sshAlias": "MacBook"
+        }
+      ]
+    },
+    "codexRemoteSsh": {
+      "client": "MacBook Codex macOS app",
+      "repositoryHost": "Office Mac mini",
+      "remoteRuntimeRoot": "~/.codex",
+      "remoteRuntimeRootMustBePhysical": true,
+      "controlSocketRelativePath": "app-server-control/app-server-control.sock",
+      "maxResolvedSocketPathBytes": 103,
+      "configTomlMode": "GENERATED-COPY",
+      "configTomlSymlinkRequired": false,
+      "mustValidateEndToEndAfterMigration": true
+    },
+    "migrationRequiresSshConfigResolutionCheck": true,
+    "migrationRequiresNonDestructiveSshConnectivityCheck": true,
+    "privateKeysRemainLocalOnly": true,
+    "knownHostsRemainLocalOnly": true
+  },
+  "runtimeRoots": [
+    {
+      "id": "claude-runtime-root",
+      "localPath": "~/.claude",
+      "mode": "LOCAL-ONLY",
+      "gitSecretAllowance": false,
+      "preserveSessionState": true,
+      "reason": "Claude writes sessions, history-like state, logs, jobs, locks, caches, daemon state, backups, and other mutable runtime data under this root."
+    },
+    {
+      "id": "cursor-runtime-root",
+      "localPath": "~/.cursor",
+      "mode": "LOCAL-ONLY",
+      "gitSecretAllowance": false,
+      "preserveSessionState": true,
+      "reason": "Cursor writes project, terminal, MCP, cache, and other mutable IDE runtime state under this root."
+    },
+    {
+      "id": "gemini-runtime-root",
+      "localPath": "~/.gemini",
+      "mode": "LOCAL-ONLY",
+      "gitSecretAllowance": false,
+      "preserveSessionState": true,
+      "reason": "Gemini/Antigravity stores OAuth/account data, history, temporary state, knowledge locks, media, and other runtime state under this root."
+    },
+    {
+      "id": "kiro-runtime-root",
+      "localPath": "~/.kiro",
+      "mode": "LOCAL-ONLY",
+      "gitSecretAllowance": false,
+      "preserveSessionState": true,
+      "reason": "Kiro runtime, extension, power, and machine-local IDE state must remain application-owned."
+    },
+    {
+      "id": "codex-runtime-root",
+      "localPath": "~/.codex",
+      "mode": "LOCAL-ONLY",
+      "gitSecretAllowance": false,
+      "preserveSessionState": true,
+      "reason": "Codex sessions, history, auth, computer-use assets, caches, and runtime state must remain under a short physical local root."
+    }
+  ],
+  "managedEntries": [
+    {
+      "id": "claude-global-instructions",
+      "localPath": "~/.claude/CLAUDE.md",
+      "sourcePath": "operations/system-configs/claude/CLAUDE.md",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "claude-settings",
+      "localPath": "~/.claude/settings.json",
+      "sourcePath": "operations/system-configs/claude/settings.json",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "claude-hooks",
+      "localPath": "~/.claude/hooks",
+      "sourcePath": "operations/system-configs/claude/hooks",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "claude-agents",
+      "localPath": "~/.claude/agents",
+      "sourcePath": "operations/system-configs/claude/agents",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "claude-skills",
+      "localPath": "~/.claude/skills",
+      "sourcePath": "operations/system-configs/claude/skills",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "claude-statusline",
+      "localPath": "~/.claude/statusline-command.sh",
+      "sourcePath": "operations/system-configs/claude/statusline-command.sh",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "cursor-skills",
+      "localPath": "~/.cursor/skills",
+      "sourcePath": "operations/system-configs/cursor/skills",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "gemini-global-instructions",
+      "localPath": "~/.gemini/GEMINI.md",
+      "sourcePath": "operations/system-configs/gemini/GEMINI.md",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "kiro-steering",
+      "localPath": "~/.kiro/steering",
+      "sourcePath": "operations/system-configs/kiro/steering",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "codex-config",
+      "localPath": "~/.codex/config.toml",
+      "sourcePath": "operations/system-configs/codex/config.toml",
+      "mode": "GENERATED-COPY",
+      "fileMode": "0600",
+      "gitSecretAllowance": false,
+      "reason": "Brain remains canonical, but Codex owns a physical mutable config file under its local runtime root."
+    },
+    {
+      "id": "codex-global-instructions",
+      "localPath": "~/.codex/AGENTS.md",
+      "sourcePath": "operations/system-configs/codex/AGENTS.md",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "codex-rtk",
+      "localPath": "~/.codex/RTK.md",
+      "sourcePath": "operations/system-configs/codex/RTK.md",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "codex-rules",
+      "localPath": "~/.codex/rules/default.rules",
+      "sourcePath": "operations/system-configs/codex/rules/default.rules",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "codex-user-skills",
+      "localPath": "~/.codex/skills/user",
+      "sourcePath": "ai/skills/active",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "git-root-config",
+      "localPath": "~/.gitconfig",
+      "sourcePath": "operations/system-configs/git/gitconfig",
+      "mode": "INCLUDE",
+      "localOverlayPath": "~/.gitconfig.local",
+      "gitSecretAllowance": false,
+      "reason": "Keep the root physical so machine-specific identity/credential behavior can overlay tracked Brain configuration without replacing Git-owned intent."
+    },
+    {
+      "id": "ssh-root-config",
+      "localPath": "~/.ssh/config",
+      "sourcePath": "operations/system-configs/ssh/config",
+      "mode": "INCLUDE",
+      "localOverlayPath": "~/.ssh/config.local",
+      "fileMode": "0600",
+      "gitSecretAllowance": false,
+      "reason": "Use native OpenSSH Include so tracked host aliases remain reproducible while keys, known_hosts, and machine-local overrides remain local."
+    },
+    {
+      "id": "shell-zshrc",
+      "localPath": "~/.zshrc",
+      "sourcePath": "operations/system-configs/shell/.zshrc",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "shell-zprofile",
+      "localPath": "~/.zprofile",
+      "sourcePath": "operations/system-configs/shell/.zprofile",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "ghostty-user-config",
+      "localPath": "~/.config/ghostty/config",
+      "sourcePath": "operations/system-configs/ghostty/config",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    },
+    {
+      "id": "starship-config",
+      "localPath": "~/.config/starship.toml",
+      "sourcePath": "operations/system-configs/starship/starship.toml",
+      "mode": "SYMLINK",
+      "gitSecretAllowance": false
+    }
+  ],
+  "forbiddenWholeRootSymlinks": ["~/.claude", "~/.cursor", "~/.gemini", "~/.kiro", "~/.codex"],
+  "localOnlySensitiveState": [
+    "SSH private keys",
+    "SSH known_hosts",
+    "OAuth credentials",
+    "API tokens",
+    "application session databases",
+    "history databases",
+    "runtime caches",
+    "locks",
+    "installation IDs",
+    "machine-specific authentication state"
+  ]
+}

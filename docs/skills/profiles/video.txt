@@ -13,7 +13,6 @@ flux-local
 roop-local
 video-generation-smart-router
 mlx-pipeline-memory-safety
-mtplx
 meta-app-review-copy-facebook-page-posting
 meta-app-shape-empty-me-accounts
 meta-oauth-scope-failure

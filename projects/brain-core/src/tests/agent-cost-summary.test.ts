@@ -4,7 +4,10 @@ import { readAgentCostSummary, saveAgentCostSummarySnapshot } from '../adapters/
 import { evaluateBudgetStatus, saveCostBudgetSummary } from '../adapters/cost-budgets.js';
 import { describeRouteLineItem, selectModelRouteSnapshot } from '../adapters/model-routing-policy.js';
 
-test('selectModelRouteSnapshot prefers the cheapest capable local surface first', () => {
+const bedrock = { id: 'ai.claude-bedrock', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review', 'text/large-context-batch'] };
+const codex = { id: 'ai.codex-cli', enabled: true, priority: 2, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] };
+
+test('selectModelRouteSnapshot prefers Bedrock-backed Claude by default', () => {
   const route = selectModelRouteSnapshot(
     {
       taskId: 't1',
@@ -14,19 +17,17 @@ test('selectModelRouteSnapshot prefers the cheapest capable local surface first'
       contextBreadth: 'medium',
       qualityPriority: 'balanced',
     },
-    [
-      { id: 'ai.ollama-m4pro', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large'] },
-      { id: 'ai.codex-cli', enabled: true, priority: 3, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
-    ],
+    [bedrock, codex],
   );
 
-  assert.equal(route.surface, 'ollama-m4pro');
-  assert.equal(route.providerId, 'ollama-m4pro');
-  assert.equal(route.estimatedCostUsd, 0);
-  assert.ok(route.rationale.length > 0);
+  assert.equal(route.surface, 'claude-bedrock');
+  assert.equal(route.providerId, 'claude-bedrock');
+  assert.equal(route.model, 'bedrock-model-portfolio');
+  assert.ok(route.estimatedCostUsd > 0);
+  assert.match(route.rationale, /default Brain-managed text surface/);
 });
 
-test('describeRouteLineItem preserves route metadata', () => {
+test('describeRouteLineItem preserves Bedrock route metadata', () => {
   const route = selectModelRouteSnapshot(
     {
       taskId: 't2',
@@ -36,10 +37,7 @@ test('describeRouteLineItem preserves route metadata', () => {
       contextBreadth: 'narrow',
       qualityPriority: 'quality',
     },
-    [
-      { id: 'ai.ollama-m4pro', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large'] },
-      { id: 'ai.claude-bedrock', enabled: true, priority: 4, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
-    ],
+    [bedrock, codex],
   );
   const item = describeRouteLineItem(route, {
     taskId: 't2',
@@ -51,14 +49,14 @@ test('describeRouteLineItem preserves route metadata', () => {
   });
 
   assert.equal(item.taskId, 't2');
-  assert.equal(item.surface, route.surface);
+  assert.equal(item.surface, 'claude-bedrock');
   assert.equal(item.routingReason, route.rationale);
 });
 
-test('selectModelRouteSnapshot prefers Bedrock value portfolio before Codex when local is unavailable', () => {
+test('selectModelRouteSnapshot falls back to Codex when Bedrock is unavailable', () => {
   const route = selectModelRouteSnapshot(
     {
-      taskId: 't-bedrock',
+      taskId: 't-codex',
       taskType: 'description_quality_review',
       inputTokens: 12000,
       urgent: true,
@@ -66,81 +64,48 @@ test('selectModelRouteSnapshot prefers Bedrock value portfolio before Codex when
       qualityPriority: 'quality',
     },
     [
-      { id: 'ai.ollama-m4pro', enabled: false, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large'] },
-      { id: 'ai.claude-bedrock', enabled: true, priority: 3, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
-      { id: 'ai.codex-cli', enabled: true, priority: 4, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
+      { ...bedrock, enabled: false },
+      codex,
     ],
   );
 
-  assert.equal(route.surface, 'claude-bedrock');
-  assert.equal(route.model, 'qwen.qwen3-coder-next');
-  assert.match(route.rationale, /Bedrock value portfolio/);
+  assert.equal(route.surface, 'codex-cli');
+  assert.equal(route.model, 'gpt-5.5');
+  assert.match(route.rationale, /secondary managed surface/);
+  assert.equal(route.estimatedCostUsd, 0);
 });
 
-test('selectModelRouteSnapshot uses Nemotron as the general Bedrock value model', () => {
+test('background-image text planning remains Bedrock-first', () => {
   const route = selectModelRouteSnapshot(
     {
-      taskId: 't-nemotron',
-      taskType: 'transcript_summarization',
+      taskId: 't-background',
+      taskType: 'background_image',
       inputTokens: 30000,
       urgent: true,
       contextBreadth: 'wide',
       qualityPriority: 'balanced',
     },
-    [
-      { id: 'ai.ollama-m4pro', enabled: false, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large'] },
-      { id: 'ai.claude-bedrock', enabled: true, priority: 3, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
-      { id: 'ai.codex-cli', enabled: true, priority: 4, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
-    ],
+    [bedrock, codex],
   );
 
   assert.equal(route.surface, 'claude-bedrock');
-  assert.equal(route.model, 'nvidia.nemotron-super-3-120b');
+  assert.equal(route.model, 'bedrock-model-portfolio');
 });
 
 test('budget helpers evaluate status from spend thresholds', () => {
-  assert.equal(
-    evaluateBudgetStatus({
-      spentUsd: 2,
-      warningAtUsd: 3,
-      throttleAtUsd: 4,
-      blockAtUsd: 5,
-    }),
-    'ok',
-  );
-  assert.equal(
-    evaluateBudgetStatus({
-      spentUsd: 3,
-      warningAtUsd: 3,
-      throttleAtUsd: 4,
-      blockAtUsd: 5,
-    }),
-    'warning',
-  );
-  assert.equal(
-    evaluateBudgetStatus({
-      spentUsd: 4,
-      warningAtUsd: 3,
-      throttleAtUsd: 4,
-      blockAtUsd: 5,
-    }),
-    'throttled',
-  );
-  assert.equal(
-    evaluateBudgetStatus({
-      spentUsd: 5,
-      warningAtUsd: 3,
-      throttleAtUsd: 4,
-      blockAtUsd: 5,
-    }),
-    'blocked',
-  );
+  assert.equal(evaluateBudgetStatus({ spentUsd: 2, warningAtUsd: 3, throttleAtUsd: 4, blockAtUsd: 5 }), 'ok');
+  assert.equal(evaluateBudgetStatus({ spentUsd: 3, warningAtUsd: 3, throttleAtUsd: 4, blockAtUsd: 5 }), 'warning');
+  assert.equal(evaluateBudgetStatus({ spentUsd: 4, warningAtUsd: 3, throttleAtUsd: 4, blockAtUsd: 5 }), 'throttled');
+  assert.equal(evaluateBudgetStatus({ spentUsd: 5, warningAtUsd: 3, throttleAtUsd: 4, blockAtUsd: 5 }), 'blocked');
 });
 
-test('agent cost summary can be read and persisted as a snapshot', () => {
+test('agent cost summary preserves compatibility counters with zero local routes', () => {
   const summary = readAgentCostSummary();
   assert.equal(summary.id, 'agent-cost-summary');
   assert.ok(summary.routeHistory.length > 0);
+  assert.equal(summary.localRouteCount, 0);
+  assert.equal(summary.cheapestRouteCount, summary.subscriptionRouteCount);
+  assert.equal(summary.escalatedRouteCount, summary.paidRouteCount);
   assert.ok(saveAgentCostSummarySnapshot(summary));
   assert.ok(saveCostBudgetSummary(summary.budget));
 });

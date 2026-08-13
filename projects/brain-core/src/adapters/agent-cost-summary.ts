@@ -55,9 +55,7 @@ export function readAgentCostSummary(): BrainCoreAgentCostSummary {
     (acc, item) => {
       acc.totalEstimatedUsd += item.estimatedCostUsd;
       acc.perSurface[item.surface] += 1;
-      if (item.surface === 'ollama-m4pro' || item.surface === 'ollama-m1') {
-        acc.localRouteCount += 1;
-      } else if (item.surface === 'codex-cli') {
+      if (item.surface === 'codex-cli') {
         acc.subscriptionRouteCount += 1;
       } else {
         acc.paidRouteCount += 1;
@@ -70,8 +68,6 @@ export function readAgentCostSummary(): BrainCoreAgentCostSummary {
       subscriptionRouteCount: 0,
       paidRouteCount: 0,
       perSurface: {
-        'ollama-m4pro': 0,
-        'ollama-m1': 0,
         'codex-cli': 0,
         'claude-bedrock': 0,
       } as Record<BrainCoreRouteSurface, number>,
@@ -94,8 +90,8 @@ export function readAgentCostSummary(): BrainCoreAgentCostSummary {
     todayEstimatedUsd,
     weekEstimatedUsd,
     monthEstimatedUsd,
-    cheapestRouteCount: routeTotals.perSurface['ollama-m4pro'] + routeTotals.perSurface['ollama-m1'],
-    escalatedRouteCount: routeTotals.perSurface['codex-cli'] + routeTotals.perSurface['claude-bedrock'],
+    cheapestRouteCount: routeTotals.perSurface['codex-cli'],
+    escalatedRouteCount: routeTotals.perSurface['claude-bedrock'],
     localRouteCount: routeTotals.localRouteCount,
     subscriptionRouteCount: routeTotals.subscriptionRouteCount,
     paidRouteCount: routeTotals.paidRouteCount,
@@ -156,10 +152,8 @@ function buildRouteHistory(): BrainCoreAgentCostLineItem[] {
       qualityPriority: task.qualityPriority,
     };
     const selected = selectModelRouteSnapshot(input, [
-      { id: 'ai.ollama-m4pro', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large'] },
-      { id: 'ai.ollama-m1', enabled: true, priority: 2, capabilities: ['text/small', 'text/medium'] },
-      { id: 'ai.codex-cli', enabled: true, priority: 3, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
-      { id: 'ai.claude-bedrock', enabled: true, priority: 4, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review', 'text/large-context-batch'] },
+      { id: 'ai.claude-bedrock', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review', 'text/large-context-batch'] },
+      { id: 'ai.codex-cli', enabled: true, priority: 2, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
     ]);
     return describeRouteLineItem(selected, input);
   });

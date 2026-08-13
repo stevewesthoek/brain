@@ -4,10 +4,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   classifyMindCaptureInbox,
+  converseWithBedrockAws,
   discoverMindFailedCaptures,
   resolveMindCaptureExecutionMode,
+  type MindBedrockExecFile,
+  type MindBedrockRoute,
 } from '../classifier.js';
 
 function createMindFixture(): string {
@@ -22,37 +26,52 @@ function writeCapture(file: string, title: string): void {
   fs.writeFileSync(file, `---\ntype: capture\n---\n\n# ${title}\n\nFixture content.\n`);
 }
 
-function installFixtureModel(t: TestContext): void {
+function installFixtureBedrock(t: TestContext): (route: MindBedrockRoute, prompt: string) => Promise<string> {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (input) => {
+  globalThis.fetch = async (input, init) => {
     const url = String(input);
-    if (url.endsWith('/select')) {
-      return new Response(JSON.stringify({
-        provider_id: 'fixture-local',
-        model: 'fixture-model',
-        base_url: 'http://127.0.0.1:11434',
-        timeout_inference_sec: 5,
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
+    assert.ok(url.endsWith('/select'));
+    const request = JSON.parse(String(init?.body ?? '{}')) as {
+      local_only?: boolean;
+      task_metadata?: {
+        private?: boolean;
+        sensitive?: boolean;
+        allowed_providers?: string[];
+        allowed_models?: string[];
+        fallback_policy?: string;
+      };
+    };
+    assert.equal(request.local_only, undefined);
+    assert.equal(request.task_metadata?.private, true);
+    assert.equal(request.task_metadata?.sensitive, true);
+    assert.deepEqual(request.task_metadata?.allowed_providers, ['claude-bedrock']);
+    assert.deepEqual(request.task_metadata?.allowed_models, ['us.anthropic.claude-sonnet-4-6']);
+    assert.equal(request.task_metadata?.fallback_policy, 'none');
     return new Response(JSON.stringify({
-      choices: [{
-        message: {
-          content: JSON.stringify({
-            title: 'Current',
-            para_type: 'inbox',
-            confidence: 0.8,
-            signal_quality: 0.7,
-            summary: 'Fixture summary.',
-            key_points: ['fixture'],
-            tags: ['fixture'],
-          }),
-        },
-      }],
+      provider_id: 'claude-bedrock',
+      model: 'us.anthropic.claude-sonnet-4-6',
+      base_url: '',
+      timeout_inference_sec: 5,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   };
   t.after(() => {
     globalThis.fetch = originalFetch;
   });
+
+  return async (route, prompt) => {
+    assert.equal(route.provider_id, 'claude-bedrock');
+    assert.equal(route.model, 'us.anthropic.claude-sonnet-4-6');
+    assert.match(prompt, /Classify this Mind capture/);
+    return JSON.stringify({
+      title: 'Current',
+      para_type: 'inbox',
+      confidence: 0.8,
+      signal_quality: 0.7,
+      summary: 'Fixture summary.',
+      key_points: ['fixture'],
+      tags: ['fixture'],
+    });
+  };
 }
 
 test('classifier discovers only inbox/new and ignores retired capture/inbox', async (t) => {
@@ -61,11 +80,12 @@ test('classifier discovers only inbox/new and ignores retired capture/inbox', as
 
   writeCapture(path.join(mindRoot, 'inbox/new/current.md'), 'Current');
   writeCapture(path.join(mindRoot, 'capture/inbox/retired.md'), 'Retired');
-  installFixtureModel(t);
+  const bedrockConverse = installFixtureBedrock(t);
 
   const result = await classifyMindCaptureInbox({
     mindRoot,
     selectorUrl: 'http://selector.invalid',
+    bedrockConverse,
   });
 
   assert.equal(result.ok, true);
@@ -110,7 +130,7 @@ test('classifier returns empty results for missing inbox/new and empty inbox/new
 test('classifier processes one markdown file and excludes README', async (t) => {
   const mindRoot = createMindFixture();
   t.after(() => fs.rmSync(mindRoot, { recursive: true, force: true }));
-  installFixtureModel(t);
+  const bedrockConverse = installFixtureBedrock(t);
 
   const capture = path.join(mindRoot, 'inbox/new/current.md');
   writeCapture(capture, 'Current');
@@ -119,6 +139,7 @@ test('classifier processes one markdown file and excludes README', async (t) => 
   const result = await classifyMindCaptureInbox({
     mindRoot,
     selectorUrl: 'http://selector.invalid',
+    bedrockConverse,
   });
   assert.equal(result.mode, 'dry-run');
   assert.equal(result.processed, 1);
@@ -162,10 +183,152 @@ test('classifier rejects unsafe capture directory and symlink escapes', async (t
   );
 });
 
+test('classifier fails closed if selector returns Codex and never executes Converse', async (t) => {
+  const mindRoot = createMindFixture();
+  t.after(() => fs.rmSync(mindRoot, { recursive: true, force: true }));
+  writeCapture(path.join(mindRoot, 'inbox/new/current.md'), 'Current');
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    provider_id: 'codex-cli',
+    model: 'gpt-5.4-mini',
+    timeout_inference_sec: 5,
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  let converseCalls = 0;
+  const result = await classifyMindCaptureInbox({
+    mindRoot,
+    selectorUrl: 'http://selector.invalid',
+    bedrockConverse: async () => {
+      converseCalls += 1;
+      return '{}';
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.failed, 1);
+  assert.equal(converseCalls, 0);
+  assert.match(result.results[0]?.reason ?? '', /disallowed provider/);
+});
+
+test('classifier fails closed if selector returns an unapproved Bedrock model', async (t) => {
+  const mindRoot = createMindFixture();
+  t.after(() => fs.rmSync(mindRoot, { recursive: true, force: true }));
+  writeCapture(path.join(mindRoot, 'inbox/new/current.md'), 'Current');
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    provider_id: 'claude-bedrock',
+    model: 'us.anthropic.claude-opus-4-1',
+    timeout_inference_sec: 5,
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  let converseCalls = 0;
+  const result = await classifyMindCaptureInbox({
+    mindRoot,
+    selectorUrl: 'http://selector.invalid',
+    bedrockConverse: async () => {
+      converseCalls += 1;
+      return '{}';
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.failed, 1);
+  assert.equal(converseCalls, 0);
+  assert.match(result.results[0]?.reason ?? '', /disallowed model/);
+});
+
+test('Bedrock Converse keeps private Mind content out of argv and removes its private request', async () => {
+  const privateCapture = 'PRIVATE_MIND_CAPTURE_DO_NOT_EXPOSE_IN_ARGV';
+  let requestFile = '';
+  let requestDir = '';
+  const route: MindBedrockRoute = {
+    provider_id: 'claude-bedrock',
+    model: 'us.anthropic.claude-sonnet-4-6',
+    timeout_inference_sec: 5,
+    region: 'us-east-1',
+  };
+  const runExecFile: MindBedrockExecFile = (file, args, options, callback) => {
+    assert.equal(file, 'aws');
+    assert.equal(args.includes('--messages'), false);
+    assert.equal(args.includes('--model-id'), false);
+    assert.equal(args.some((argument) => argument.includes(privateCapture)), false);
+    assert.equal(options.timeout, 5000);
+    assert.equal(options.maxBuffer, 2 * 1024 * 1024);
+
+    const inputIndex = args.indexOf('--cli-input-json');
+    assert.notEqual(inputIndex, -1);
+    const requestUrl = args[inputIndex + 1];
+    assert.ok(requestUrl?.startsWith('file://'));
+    requestFile = fileURLToPath(requestUrl);
+    requestDir = path.dirname(requestFile);
+
+    assert.equal(fs.statSync(requestFile).mode & 0o777, 0o600);
+    const request = JSON.parse(fs.readFileSync(requestFile, 'utf8')) as {
+      modelId?: string;
+      messages?: Array<{ content?: Array<{ text?: string }> }>;
+      inferenceConfig?: { maxTokens?: number; temperature?: number };
+    };
+    assert.equal(request.modelId, route.model);
+    assert.equal(request.messages?.[0]?.content?.[0]?.text, privateCapture);
+    assert.deepEqual(request.inferenceConfig, { maxTokens: 1200, temperature: 0.1 });
+
+    callback(null, JSON.stringify({
+      output: { message: { content: [{ text: 'private-safe-response' }] } },
+    }), '');
+  };
+
+  const response = await converseWithBedrockAws(route, privateCapture, runExecFile);
+
+  assert.equal(response, 'private-safe-response');
+  assert.equal(fs.existsSync(requestFile), false);
+  assert.equal(fs.existsSync(requestDir), false);
+});
+
+test('Bedrock Converse removes its private request after failure or timeout', async () => {
+  const route: MindBedrockRoute = {
+    provider_id: 'claude-bedrock',
+    model: 'us.anthropic.claude-sonnet-4-6',
+    timeout_inference_sec: 1,
+    region: 'us-east-1',
+  };
+
+  for (const failureKind of ['failure', 'timeout'] as const) {
+    let requestFile = '';
+    let requestDir = '';
+    const runExecFile: MindBedrockExecFile = (_file, args, _options, callback) => {
+      const inputIndex = args.indexOf('--cli-input-json');
+      const requestUrl = args[inputIndex + 1];
+      assert.ok(requestUrl?.startsWith('file://'));
+      requestFile = fileURLToPath(requestUrl);
+      requestDir = path.dirname(requestFile);
+
+      const error = new Error(failureKind === 'timeout' ? 'process timed out' : 'process failed');
+      if (failureKind === 'timeout') {
+        Object.assign(error, { killed: true, signal: 'SIGTERM' });
+      }
+      callback(error, '', 'bounded AWS CLI failure');
+    };
+
+    await assert.rejects(
+      converseWithBedrockAws(route, `private-${failureKind}`, runExecFile),
+      /Bedrock Converse failed/,
+    );
+    assert.equal(fs.existsSync(requestFile), false);
+    assert.equal(fs.existsSync(requestDir), false);
+  }
+});
+
 test('classifier disables apply until approval integration is proven', async (t) => {
   const mindRoot = createMindFixture();
   t.after(() => fs.rmSync(mindRoot, { recursive: true, force: true }));
-  installFixtureModel(t);
   writeCapture(path.join(mindRoot, 'inbox/new/current.md'), 'Current');
 
   await assert.rejects(

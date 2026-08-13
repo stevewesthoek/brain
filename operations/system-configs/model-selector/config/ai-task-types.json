@@ -5,35 +5,28 @@
       "typical_input_tokens": 8000,
       "typical_output_tokens": 2000,
       "latency_tolerance": "minutes",
-      "local_viable": true,
-      "min_local_model_params": "7B",
-      "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"]
+      "local_viable": false
     },
     "thumbnail_headline": {
       "capability": "text/small",
       "typical_input_tokens": 500,
       "typical_output_tokens": 20,
       "latency_tolerance": "seconds",
-      "local_viable": true,
-      "min_local_model_params": "3B",
-      "preferred_local_models": ["llama3.1:8b", "gemma4:e4b", "llama3.2:3b"]
+      "local_viable": false
     },
     "seo_keyword_expansion": {
       "capability": "text/small",
       "typical_input_tokens": 300,
       "typical_output_tokens": 200,
       "latency_tolerance": "seconds",
-      "local_viable": true,
-      "min_local_model_params": "3B",
-      "preferred_local_models": ["llama3.1:8b", "gemma4:e4b", "llama3.2:3b"]
+      "local_viable": false
     },
     "transcript_summarization": {
       "capability": "text/large",
       "typical_input_tokens": 30000,
       "typical_output_tokens": 1500,
       "latency_tolerance": "minutes",
-      "local_viable": true,
-      "min_local_model_params": "8B"
+      "local_viable": false
     },
     "subtitle_generation": {
       "capability": "audio/transcribe",
@@ -43,7 +36,7 @@
     "background_image": {
       "capability": "image/generate",
       "latency_tolerance": "minutes",
-      "local_viable": true
+      "local_viable": false
     },
     "description_quality_review": {
       "capability": "text/review",
@@ -57,16 +50,14 @@
       "typical_input_tokens": 12000,
       "typical_output_tokens": 3000,
       "latency_tolerance": "seconds",
-      "local_viable": true,
-      "min_local_model_params": "8B"
+      "local_viable": false
     },
     "design_spec_generation": {
       "capability": "text/medium",
       "typical_input_tokens": 12000,
       "typical_output_tokens": 5000,
       "latency_tolerance": "minutes",
-      "local_viable": true,
-      "min_local_model_params": "8B"
+      "local_viable": false
     },
     "design_review": {
       "capability": "text/review",
@@ -80,9 +71,7 @@
       "typical_input_tokens": 2000,
       "typical_output_tokens": 300,
       "latency_tolerance": "minutes",
-      "local_viable": true,
-      "min_local_model_params": "7B",
-      "preferred_local_model": "qwen2.5vl:7b",
+      "local_viable": false,
       "escalation_rules": {
         "ocr_confidence_threshold": 0.7,
         "escalate_for_frame_types": ["whiteboard", "code_screen", "diagram"],
@@ -94,17 +83,15 @@
       "typical_input_tokens": 40000,
       "typical_output_tokens": 3000,
       "latency_tolerance": "minutes",
-      "local_viable": true,
-      "min_local_model_params": "14B"
+      "local_viable": false
     },
     "fala_conversation_response": {
       "capability": "text/medium",
       "typical_input_tokens": 2500,
       "typical_output_tokens": 600,
       "latency_tolerance": "interactive",
-      "local_viable": true,
+      "local_viable": false,
       "local_required": false,
-      "min_local_model_params": "7B",
       "notes": "Learner-facing tutor chat. Must be low-latency and privacy-safe."
     },
     "fala_prompt_qa": {
@@ -112,10 +99,8 @@
       "typical_input_tokens": 4000,
       "typical_output_tokens": 1000,
       "latency_tolerance": "batch",
-      "local_viable": true,
+      "local_viable": false,
       "local_required": false,
-      "min_local_model_params": "7B",
-      "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"],
       "notes": "Offline prompt and tutor-quality evaluation. Not used in learner runtime by default."
     },
     "fala_content_analysis": {
@@ -123,9 +108,8 @@
       "typical_input_tokens": 8000,
       "typical_output_tokens": 1000,
       "latency_tolerance": "batch",
-      "local_viable": true,
+      "local_viable": false,
       "local_required": false,
-      "min_local_model_params": "7B",
       "notes": "Optional content difficulty, tagging, and comprehension analysis after content workflow activation."
     },
     "fala_curriculum_generation": {
@@ -133,9 +117,8 @@
       "typical_input_tokens": 6000,
       "typical_output_tokens": 2000,
       "latency_tolerance": "batch",
-      "local_viable": true,
+      "local_viable": false,
       "local_required": false,
-      "min_local_model_params": "7B",
       "notes": "Reviewed lesson/curriculum generation. Requires human review before learner activation."
     },
     "mind_capture_classification": {
@@ -143,43 +126,24 @@
       "typical_input_tokens": 8000,
       "typical_output_tokens": 1200,
       "latency_tolerance": "batch",
-      "local_viable": true,
-      "local_required": true,
-      "min_local_model_params": "7B",
-      "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"],
-      "notes": "Mind Steward capture classification. Must be called with local_only=true and must use local OpenAI-compatible providers only."
+      "local_viable": false,
+      "local_required": false,
+      "privacy_policy": "private-bedrock-only",
+      "required_provider": "claude-bedrock",
+      "preferred_model": "us.anthropic.claude-sonnet-4-6",
+      "notes": "Privacy-sensitive Mind Steward classification. Caller must set private=true, sensitive=true, allowed_providers=[claude-bedrock], and allow only the approved Anthropic Bedrock model. If Bedrock is unavailable, fail closed; never fall through to Codex or another provider."
     },
     "mind_project_decomposition": {
       "capability": "text/medium",
       "typical_input_tokens": 6000,
       "typical_output_tokens": 1500,
       "latency_tolerance": "batch",
-      "local_viable": true,
-      "local_required": true,
-      "min_local_model_params": "7B",
-      "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"],
-      "notes": "Mind project decomposition into atomic tasks. Handles private/offline Mind vault content. Must be called with local_only=true."
-    },
-    "codebase_semantic_graph": {
-      "capability": "text/large",
-      "typical_input_tokens": 50000,
-      "typical_output_tokens": 4000,
-      "latency_tolerance": "batch",
-      "local_viable": true,
-      "local_required": true,
-      "min_local_model_params": "14B",
-      "preferred_local_models": ["qwen2.5:32b", "qwen2.5:14b"],
-      "notes": "Graphify semantic codebase graph extraction. Must be called with local_only=true. Large local models are selected only when local memory pressure and load allow a short burst.",
-      "local_resource_policy": {
-        "max_load_per_cpu": 0.75,
-        "large_model_threshold_b": 32,
-        "disallow_large_model_when_other_ollama_model_loaded": true,
-        "min_memory_pressure_free_percent_by_model_size": {
-          "32": 60,
-          "14": 30,
-          "8": 20
-        }
-      }
+      "local_viable": false,
+      "local_required": false,
+      "privacy_policy": "private-bedrock-only",
+      "required_provider": "claude-bedrock",
+      "preferred_model": "us.anthropic.claude-sonnet-4-6",
+      "notes": "Privacy-sensitive Mind project decomposition. Caller must set private=true, sensitive=true, allowed_providers=[claude-bedrock], and allow only the approved Anthropic Bedrock model. If Bedrock is unavailable, fail closed; never fall through to Codex or another provider."
     }
   }
 }

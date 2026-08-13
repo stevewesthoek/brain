@@ -2,48 +2,108 @@
 
 ## Current goal
 
-Generate B8.1 v7u canonical authorization package (Node 20 binding). Supersede noncompliant Node 25 v7t. No materialization or execution.
+Close the 2026-08-12 configuration/local-AI maintenance tranche in the repository only: retire Brain-managed always-on local text inference, align Graphify with the accepted bounded semantic model, make private Mind classification Bedrock-only and fail-closed, and establish safe Git/runtime workstation configuration ownership without mutating live `/Users/Office` HOME configuration.
 
-## Current state — 2026-08-07 ~10:30 UTC (V7U Consistency Recovery)
+**Infinite Brain roadmap is closed and is not the active workstream.** Do not revive B8.1 authorization/materialization from the superseded hand-off.
 
-- Source: `brain-next`, branch `main`, HEAD `d3825520` (synced with origin/main).
-- **Active:** v7u canonical approvable contract (Node 20 binding).
-- v7u plan: `operations/reports/b8-1-canonical-plan-v7u-2026-08-07.json` (11.9 KB).
-- v7u receipt: `operations/reports/b8-1-dry-run-receipt-v7u-2026-08-07.json` (4.2 KB).
-- v7u run ID: `b8-1-canonical-authorization-20260807-final-v7u`.
-- **v7u digest:** `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed` ✓ VERIFIED.
-- **Node runtime:** `/Users/Office/.nvm/versions/node/v20.20.2/bin/node` (SHA-256: `38de4fc456c0c439bac48c727d378f749abb4e31f4116703bb1ee9a746fccbb6`).
-- incremental-reindex SHA256: `438a154b0232a36191683ab503fb6941cd90e37408c6b9dc7764b1db9b36fd98`.
-- sourceStateHash: `sha256:a0af2027907af240ffc93f12ff8fe842a5405e9b0b894055acd9ac9bc64bb643`.
-- Subjects: `cbm`, `exact-source`; Graphify excluded; partial evidence true.
-- Preflight: **executionReady=true**, zero blockers, 21 contained write paths, minimum 2000 MB disk constraint passed.
-- All 13 checks pass (12 pass, 1 excluded-subject per spec).
-- All six focused B8.1 suites: 269/269 pass (executor, process-metrics, cbm-reindex, evidence-validator, preflight/plan, manifest + stale-digest rejection extended).
-- JSON validation, document consistency, MCP admission, Graphify-profile validation, secret scan: all pass.
-- `git diff --check`: pass.
-- B8.1 status: `corrected-contract-awaiting-owner-approval`.
-- P8 progress: 0/6 completed (awaiting B8.1 owner approval).
-- B8.2: Blocked pending v7u owner approval and execution.
+## Current state — 2026-08-13
 
-## Historical versions (superseded)
+- Source: `brain-next`
+- Branch: `maintenance/config-local-ai-20260812`
+- HEAD: `d698161c1f2edc9a74b0f3031eb943ed3004d695` (`fix(brain-core): sync package lock bin entries`)
+- Worktree: intentionally dirty with one maintenance batch; no commit has been created yet.
+- Live Office/MacBook configuration: unchanged by this tranche.
+- Host migration policy: plan-only; `liveMutationAuthorized=false`.
 
-| Version | Node | Digest | Status | Notes |
-|---------|------|--------|--------|-------|
-| v7r | v25.9.0 | `0eec69c1befd7ce...` | failed historical | Executed 2026-08-06; all 10 CBM fixtures failed (output format) |
-| v7s | v25.9.0 | `90ef52be30be8d...` | noncanonical historical | Roadmap/handoff stale; not canonical |
-| v7t | v25.9.0 | `1c0892469683acb...` | runtime-mismatch historical | Node 25 binding; violated Node 20 stop condition; never executed; see `b8-1-v7t-disposition-2026-08-07.md` |
+## Maintenance changes now present
 
-## Changes in this recovery
+### Local text inference retirement
 
-- Preserved v7t as historical disposition: `b8-1-v7t-disposition-2026-08-07.md` (canonical Node 25 output; noncompliant runtime; never materialized).
-- Generated v7u with explicit Node 20.20.2 binary binding.
-- Verified v7u digest exactly matches pre-calculated canonical: `0a2a543df98182b60ab67e88d3e9445e2a922d0ba4fa51dd2738183d1e72b1ed`.
-- Updated `operations/reports/b8-1-benchmark-authorization-package-2026-08-04.md`: v7u sole approvable; v7r/v7s/v7t marked historical; Node 20 binding documented.
-- All validation suites pass; ready for owner approval.
+- Removed canonical Model Selector providers `ollama-m4pro`, `ollama-m1`, and `mtplx-m4pro`.
+- Bedrock-backed Claude is the primary Brain-managed text surface; Codex CLI is secondary.
+- Removed the retired `tools/scripts/qwen` launcher and the obsolete MTPLX/Qwen-Aider custom skills.
+- Deleted tracked `operations/system-configs/launchagents/com.office.mtplx.plist` so Brain no longer declares an always-on MTPLX service.
+- Retired Mind project decomposition remains a fail-closed compatibility no-op and does not regain mutation authority.
 
-## Remaining work
+### Graphify alignment
 
-1. **Do NOT materialize or execute v7u** (awaiting owner approval only).
-2. Owner provides exact approval wording (see authorization package).
-3. After approval: materialize, execute, validate evidence, owner disposition (separate steps).
-4. Post-execution: B8.2 unblocks; P8 tasks become actionable.
+- Structural Graphify generation is frozen.
+- `tools/scripts/graphify-nightly.sh` is now a fail-closed compatibility stub.
+- Scheduler Graphify behavior is the bounded semantic event gate only.
+- No default local or external model runner is configured and no local model server is auto-started.
+- Codebase Memory MCP is the preferred structural navigation layer when fresh; exact current source remains authoritative.
+- Mind is not approved for Graphify semantic ingestion.
+
+### Private Mind classification
+
+- Mind capture classification is pinned to provider `claude-bedrock` and model `us.anthropic.claude-sonnet-4-6`.
+- Selector calls mark the task private/sensitive, allow only that provider/model, and set no fallback.
+- Bedrock CLI requests use a unique temporary JSON request file with mode `0600` so private Mind text is not exposed in process arguments.
+- Temporary request files/directories are removed on success, failure, and timeout.
+- Selector/provider/model drift fails closed before Converse execution.
+
+### Workstation configuration ownership
+
+- Canonical ownership modes are `SYMLINK`, `GENERATED-COPY`, `INCLUDE`, and `LOCAL-ONLY`.
+- Mutable Claude/Cursor/Gemini/Kiro/Codex runtime roots must remain physical local directories.
+- Codex `config.toml` is a physical mode-`0600` generated copy while the short physical `~/.codex` runtime root preserves Remote SSH socket compatibility.
+- Git and SSH root configs migrate toward physical `INCLUDE` roots.
+- Office/MacBook SSH policy is Thunderbolt-first with fixed Tailscale fallback; DHCP Wi-Fi/LAN addresses are noncanonical.
+- OpenSSH first-value-wins ordering is handled by placing each conditional `Match` override before its fallback `Host` block.
+- Canonical aliases: `MacBook`, `macbook`, `office`.
+
+## Latest Codex work reviewed
+
+Codex completed only the two former hard gates without touching live configuration:
+
+1. Reordered and completed `operations/system-configs/ssh/config` so MacBook and Office Thunderbolt `Match` overrides precede their Tailscale fallback `Host` blocks.
+2. Deleted `operations/system-configs/launchagents/com.office.mtplx.plist`.
+
+Codex reported both policy validators and `git diff --check` green after those changes. Its earlier maintenance validation also reported Model Selector 36/36, Graphify 24/24, Scheduler 5/5, retired decomposer 2/2, focused Mind classifier 11/11, local-text-policy tests 4/4, and secret/egress/syntax/JSON checks green. The full Mind suite remained 64/66 because `node_modules/.bin/tsx` is missing locally; dependencies were not installed or symlinked.
+
+## Additional Workbench review/fix — 2026-08-13
+
+Workbench found a malformed final assertion block in `operations/scripts/tests/codex-home-managed-root.test.sh` that the prior shell-syntax summary had not caught. The damaged multiline `grep` assertions were repaired to fixed-string checks without changing test intent.
+
+Independent validation after that repair:
+
+- `npm run test:codex-managed-root` — pass; 23 checks.
+- `npm run validate:workstation-config` — pass.
+- `npm run validate:local-text-policy` — pass.
+- `npm run validate:diff-check` — pass.
+
+## Security review — 2026-08-13
+
+- Broad high-risk scanning produced reviewed false positives from historical documentation, negative secret-leak assertions, Unix-socket fixture code, existing selector HTTP calls, and the intentionally bounded Mind Bedrock `execFile` path.
+- `forbidden_secret_material` scanning is green across all present changed files after excluding only `projects/brain-core/src/tests/routes.test.ts`; that file's scanner hits are pre-existing negative assertions such as `TOKEN=` / `SECRET=` / `PASSWORD=` checks.
+- Exact diff verification shows this maintenance changes `routes.test.ts` only at the model-route assertion near line 330, not at any scanner-reported secret-test line.
+
+## Remaining repository closeout
+
+Final scoped diff/status inspection is clean and no unrelated path entered the batch.
+
+The remaining repository action is a single maintenance commit with no push. Workbench cannot perform that commit because its source write policy rejects staging at least `operations/system-configs/launchagents/com.office.mtplx.plist` with `PATH_NOT_ALLOWED`; the blocked staging attempt was atomic and staged nothing.
+
+Use Codex or another explicitly authorized local Git executor to:
+
+1. verify branch `maintenance/config-local-ai-20260812` and HEAD `d698161c1f2edc9a74b0f3031eb943ed3004d695` before staging;
+2. rerun `npm run test:codex-managed-root`, `npm run validate:workstation-config`, `npm run validate:local-text-policy`, and `npm run validate:diff-check`;
+3. inspect `git status --short` and the scoped diff;
+4. stage only the existing maintenance dirty set, including this hand-off and the Workbench test repair;
+5. commit once with a maintenance-scoped message;
+6. do not push and do not mutate live `/Users/Office` configuration.
+
+## Separate future host migration — not authorized by this repository closeout
+
+Live Office/MacBook migration remains a distinct, receipt-backed execution pass. Do not perform it implicitly.
+
+When explicitly authorized, follow `operations/runbooks/workstation-config-ownership.md` gates in order:
+
+1. read-only baseline, including `ssh -G MacBook`, `ssh -G macbook`, and `ssh -G office`;
+2. application quiescence for the specific runtime root being migrated;
+3. lossless local snapshot and rollback receipt without exposing secrets;
+4. atomic root conversion with only declared narrow links/generated copies/includes;
+5. continuity tests for sessions/auth/settings plus Office↔MacBook SSH and Codex Remote SSH behavior;
+6. rollback immediately on any continuity failure; accept only after all checks pass.
+
+Only after accepted host migration may old repo-side runtime residue or local model caches/apps be reviewed for cleanup, and that cleanup is another explicit step.

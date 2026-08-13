@@ -15,16 +15,22 @@ $CODEX_HOME/app-server-control/app-server-control.sock
 ```
 
 On macOS, that socket path must be at most 103 bytes. A whole-directory
-`~/.codex` symlink can resolve into a much longer repository path. The standard
-Brain layout therefore keeps `~/.codex` as a short, real, machine-local runtime
-directory and symlinks only durable configuration entries into it.
+`~/.codex` symlink can resolve into a much longer repository path. The original
+MacBook→Mac-mini Remote SSH failure was caused by this resolved runtime-root
+length, not by the contents of `config.toml` itself.
+
+The standard Brain layout therefore keeps `~/.codex` as a short, real,
+machine-local runtime directory. Stable durable entries may use narrow
+symlinks, while mutable `config.toml` is materialized as a physical generated
+copy from the tracked Brain source. This preserves the short socket path that
+made Codex Remote SSH work while keeping Brain as the configuration authority.
 
 ## Standard layout
 
 ```text
 ~/.codex/                              real local directory
 ├── AGENTS.md                          -> Brain canonical config
-├── config.toml                        -> Brain canonical config
+├── config.toml                        physical generated copy from Brain canonical config
 ├── RTK.md                             -> Brain canonical config
 ├── rules/                             real local directory
 │   └── default.rules                  -> Brain canonical config
@@ -143,7 +149,9 @@ Confirm, without printing secret contents:
 ```bash
 test -f ~/.codex/auth.json && echo "auth file present"
 test -d ~/.codex/sessions && echo "sessions directory present"
-test -L ~/.codex/config.toml && echo "config link present"
+test -f ~/.codex/config.toml && test ! -L ~/.codex/config.toml && echo "physical generated config present"
+stat -f '%Lp %N' ~/.codex/config.toml
+cmp -s ~/.codex/config.toml /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/config.toml && echo "generated config matches Brain"
 test -L ~/.codex/skills/user && echo "user skills link present"
 codex mcp list
 ```

@@ -1,141 +1,101 @@
 # Graphify Operating Standard
 
-Graphify uses the stock upstream CLI. No Brain wrappers. No AI Model Selector. No paid API.
+**Status:** Active bounded semantic synthesis; structural Graphify frozen
+**Effective:** 2026-08-11
+**Authority:** `operations/specs/graphify-operational-profile.json` and `operations/specs/graphify-transition-governance.json`
 
-## Canonical scheduler
+## Purpose
 
-The canonical scheduler is the **Office Nightly Scheduler**.
+Graphify is a non-authoritative semantic projection layer for a small, explicit Brain documentation corpus. It is not Brain's structural navigation system and it must not become an always-on local-LLM workload.
 
-All recurring automation jobs belong in the Office Nightly Scheduler. Do not create separate LaunchAgents, cron jobs, or standalone schedulers for Graphify.
+Canonical retrieval roles:
 
-Every new recurring automation job must be added to the Office Nightly Scheduler job chain. The Office Nightly Scheduler is the single central scheduler for job ordering, machine-load control, status reporting, and Brain Console visibility.
+1. **Codebase Memory MCP** — bounded structural navigation when fresh.
+2. **Exact current source** — authority before edits, policy/security decisions, runtime/provider claims, or final factual claims.
+3. **Graphify** — optional bounded semantic synthesis for approved Brain architecture documents only.
 
-Graphify is one job inside the Office Nightly Scheduler:
+## Structural Graphify
+
+Structural Graphify generation is frozen. Do not run broad repository extraction, phased code graph generation, nightly full scans, or automatic structural updates.
+
+The legacy path `tools/scripts/graphify-nightly.sh` is retained only as a fail-closed compatibility stub and exits non-zero. It must not contain a default model, MTPLX/Ollama startup logic, or repository-wide scan behavior.
+
+Any future structural reactivation requires a separate explicit owner decision and must not displace CBM or exact-source authority.
+
+## Semantic Graphify
+
+The only supported semantic entrypoint is:
 
 ```text
-Scheduler: Office Nightly Scheduler
-Scheduler script: tools/scripts/office-nightly-scheduler.sh
-Scheduler LaunchAgent: operations/system-configs/launchagents/com.office.nightly-scheduler.plist
-Dashboard: Brain Console
-Job label: Graphify Nightly
-Job id: graphify-nightly
-Job implementation: tools/scripts/graphify-nightly.sh
+tools/graphify-semantic-event.mjs
 ```
 
-ProBot is deprecated and must not be used for scheduler ownership or dashboard wiring.
+The Office Nightly Scheduler invokes it as an event gate:
 
-## Default Graphify operating model
-
-Graphify is an automatic, nightly, phased refinement system for every Git repo under `/Users/Office/Repos`.
-
-The standard is fast-first, then deeper every night:
-
-1. **Pass 1 — fast code/config graph**: skip docs, papers, images, office files, audio/video, and deep mode, but keep community labels so the graph is immediately human-readable. Pass 1 is atomic: it lets `graphify extract` produce `graph.json`, `GRAPH_REPORT.md`, and `graph.html` in one flow instead of running a separate `cluster-only` step that can create graph.json node-count drift.
-2. **Pass 2 — docs/Markdown refinement**: add Markdown/docs while still skipping papers, images, office files, and media.
-3. **Pass 3 — papers/images/office refinement**: add PDFs, images, and office files while still skipping audio/video.
-4. **Pass 4 — deep refinement**: run the broadest/deepest refinement pass.
-
-The Office Nightly Scheduler calls `tools/scripts/graphify-nightly.sh`, and that script iterates phases `1 2 3 4` for existing repos and newly discovered repos. New repos get a fast usable graph first, then progressively richer graphs on later passes. Generated outputs are never committed.
-
-## Fixed backend
-
-| Setting | Value |
-|---------|-------|
-| Backend | `openai` (MTPLX local — no paid API) |
-| Model | `Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed` |
-| Endpoint | `http://127.0.0.1:8000/v1` |
-| Concurrency | `1` |
-| API timeout | `900` seconds |
-| HTML node limit | `30000` |
-| Repo roots | `/Users/Office/Repos` |
-
-No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
-
-## Automatic nightly execution
-
-Install, repair, or inspect the central Office Nightly Scheduler only. Do not install a separate Graphify LaunchAgent.
-
-Verify the central scheduler LaunchAgent:
-
-```bash
-launchctl print gui/$(id -u) | grep -i office.nightly || true
-ls -lah ~/Library/LaunchAgents | grep -i office.nightly || true
-grep -R "office-nightly-scheduler.sh" ~/Library/LaunchAgents /Library/LaunchAgents 2>/dev/null || true
-```
-
-Verify the Graphify job is registered in Brain Console data:
-
-```bash
-grep -R "graphify-nightly" \
-  projects/brain-core/src/adapters \
-  tools/scripts/office-nightly-scheduler.sh \
-  tools/scripts/render-office-scheduler-report.sh
-```
-
-Run the central scheduler manually when needed:
-
-```bash
-cd /Users/Office/Repos/stevewesthoek/brain
+```text
 tools/scripts/office-nightly-scheduler.sh
+  -> node tools/graphify-semantic-event.mjs --mode=scheduler
 ```
 
-Run only the Graphify job manually when debugging:
+When `GRAPHIFY_SEMANTIC_RUNNER` is supplied explicitly, the scheduler may pass that bounded runner to the event gate. Without an explicit runner, the event gate records freshness/receipts but does not invoke a model.
 
-```bash
-cd /Users/Office/Repos/stevewesthoek/brain
-GRAPHIFY_PHASES="1 2 3 4" tools/scripts/graphify-nightly.sh
-```
+Manual regeneration requires:
 
-## Output
+- `--mode=manual`;
+- an approved `--scope`;
+- at least one `--changed-file`;
+- an explicitly supplied bounded `--runner` when semantic model execution is desired.
 
-Every successful pass should leave these usable outputs in the target repo:
+## Scope
+
+The canonical corpus is the explicit allowlist in `operations/specs/graphify-operational-profile.json`.
+
+Current boundaries:
+
+- repository: Brain only;
+- Mind semantic scope: not approved;
+- code-only changes: do not invoke a runner;
+- unapproved document changes: do not invoke a runner;
+- relevant approved document changes: mark semantic freshness stale;
+- repository mutation: forbidden;
+- generated output: non-authoritative;
+- exact source remains authoritative.
+
+## Resource and Model Policy
+
+Graphify has no default local or external text-model runtime.
+
+Brain does not own an always-on Ollama, MTPLX, Qwen, or other local text-LLM service for Graphify. Semantic generation is expected to be infrequent and operator-controlled. A future runner must be explicit, bounded by the operational profile, and independently admitted.
+
+Current caps are defined in `operations/specs/graphify-operational-profile.json`, including maximum documents, bytes, estimated tokens, runtime, and output size.
+
+## Scheduler Contract
+
+The Office Nightly Scheduler is the single recurring Graphify scheduler surface. It may execute only the semantic event gate described above.
+
+The scheduler must never:
+
+- call `tools/scripts/graphify-nightly.sh` as a structural runner;
+- start Ollama, MTPLX, Qwen, or another local text model;
+- scan every repository under `/Users/Office/Repos`;
+- ingest Mind;
+- configure a default model runner;
+- authorize writes from Graphify output.
+
+## Disable and Rollback
+
+Set the configured disable environment variable:
 
 ```text
-graphify-out/graph.json                 — queryable graph data
-graphify-out/.graphify_analysis.json    — raw analysis data
-graphify-out/GRAPH_REPORT.md            — cluster/community report
-graphify-out/graph.html                 — interactive visualization, generated when `GRAPHIFY_VIZ_NODE_LIMIT` is high enough
+GRAPHIFY_SEMANTIC_DISABLED=1
 ```
 
-`graphify-out/` is generated output. Do not commit it.
+A disabled semantic event remains fail-closed: it may record state/receipt information but does not invoke a runner.
 
-## Scan scoping
+The structural legacy runner is already frozen and fail-closed, so rollback does not require restarting a local inference service.
 
-The Graphify job writes a managed `.graphifyignore` in each repo for the active phase. This is intentional. It makes every repo follow the same fast-first/refine-later policy automatically.
+## Consumption Rule
 
-The base exclusions always remove generated output and runtime/build noise:
+Treat Graphify output as a stale-prone semantic hint only. Before any edit or final factual claim, verify against exact current source.
 
-```text
-.git/
-node_modules/
-**/node_modules/
-graphify-out/
-.graphify-out/
-.ai/
-.claude/
-.local/
-.gstack/
-.pytest_cache/
-__pycache__/
-**/__pycache__/
-.next/
-dist/
-build/
-coverage/
-*.tsbuildinfo
-.DS_Store
-**/.DS_Store
-.wrangler/
-**/.wrangler/
-```
-
-## Reliability rules
-
-- Do not actively edit a repo while Graphify is scanning that same repo.
-- Commit or stash work before a clean graph run when possible.
-- The Office Nightly Scheduler is the only scheduler owner.
-- The Graphify job refuses non-local backends (only `openai` with MTPLX or `ollama` allowed).
-- The Graphify job keeps `max-concurrency=1` for local model stability.
-- Passes 1–3 skip labels to finish quickly and reliably.
-- Pass 4 is the only deep/label-oriented refinement pass.
-- The Office Nightly Scheduler controls ordering so local machine load stays bounded.
+See `docs/system/graphify-context-standard.md` and `operations/runbooks/graphify-nightly.md` for operational usage.

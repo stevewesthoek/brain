@@ -11,8 +11,8 @@ test('listAgentAiSurfaceCapabilities maps live selector providers', async () => 
         JSON.stringify({
           providers: [
             {
-              id: 'ollama-m4pro',
-              type: 'openai-compatible',
+              id: 'codex-cli',
+              type: 'cli',
               capabilities: ['text/small', 'text/medium'],
               healthy: true,
               rate_limited: false,
@@ -41,8 +41,8 @@ test('listAgentAiSurfaceCapabilities maps live selector providers', async () => 
 
     assert.equal(result.warning, undefined);
     assert.equal(result.capabilities.length, 1);
-    assert.equal(result.capabilities[0]?.id, 'ai.ollama-m4pro');
-    assert.equal(result.capabilities[0]?.label, 'ollama-m4pro');
+    assert.equal(result.capabilities[0]?.id, 'ai.codex-cli');
+    assert.equal(result.capabilities[0]?.label, 'codex-cli');
     assert.equal(result.capabilities[0]?.enabled, true);
     assert.deepEqual(result.capabilities[0]?.preferredAiTaskTypes, ['text/small', 'text/medium']);
   } finally {
@@ -50,11 +50,11 @@ test('listAgentAiSurfaceCapabilities maps live selector providers', async () => 
   }
 });
 
-test('listAgentAiSurfaceCapabilities falls back when selector is unavailable', async () => {
+test('listAgentAiSurfaceCapabilities fallback never resurrects local text surfaces', async () => {
   const result = await listAgentAiSurfaceCapabilities(100, 'http://127.0.0.1:9');
 
   assert.ok(result.warning?.includes('AI Model Selector unavailable'));
-  assert.equal(result.capabilities.length, 4);
-  assert.equal(result.capabilities[0]?.id, 'ai.ollama-m4pro');
+  assert.deepEqual(result.capabilities.map((capability) => capability.id), ['ai.claude-bedrock', 'ai.codex-cli']);
   assert.equal(result.capabilities[0]?.priority, 1);
+  assert.equal(result.capabilities.some((capability) => capability.id.includes('ollama') || capability.id.includes('mtplx')), false);
 });

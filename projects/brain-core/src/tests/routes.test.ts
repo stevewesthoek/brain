@@ -330,7 +330,8 @@ test('GET /agent-executor-plan returns recorded executor selections', async () =
   assert.equal(body.id, 'agent-executor-plan');
   assert.equal(body.status, 'read-only');
   assert.ok(body.stepCount > 0);
-  assert.ok(body.steps.some((step) => step.executorId === 'local-ollama-m4pro'));
+  assert.ok(body.steps.some((step) => step.executorId === 'claude-bedrock'));
+  assert.equal(body.steps.some((step) => step.executorId.startsWith('local-ollama')), false);
 });
 
 test('GET /agent-approval-gates returns read-only approval gate status', async () => {

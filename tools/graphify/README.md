@@ -1,75 +1,66 @@
 # Graphify Tools
 
-Brain-owned Graphify scripts and docs live here.
+Brain-owned Graphify tooling under this directory follows the accepted B8.5 split:
 
-Graphify uses the stock upstream CLI directly. No Brain wrappers, no AI Model Selector.
+- Codebase Memory MCP provides structural navigation when fresh.
+- Exact current source is authority.
+- Graphify is an optional, non-authoritative semantic projection for an explicit Brain-only document allowlist.
 
-## Fixed configuration
+## Current Entrypoints
 
-| Setting | Value |
-|---------|-------|
-| Backend | `openai` (MTPLX local — no paid API) |
-| Model | `Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed` |
-| Endpoint | `http://127.0.0.1:8000/v1` |
-| Token budget | `4000` |
-| Concurrency | `1` |
-| API timeout | `900` seconds |
+Canonical semantic gate:
 
-No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
-
-## Prerequisites
-
-```bash
-curl http://127.0.0.1:8000/health
-graphify --help
+```text
+tools/graphify-semantic-event.mjs
 ```
 
-MTPLX must be running locally (LaunchAgent `com.office.mtplx`). It serves Qwen 3.6 27B with MTP acceleration.
+The Office Nightly Scheduler invokes:
 
-## Standard commands
-
-```bash
-# Brain knowledge graph, report, and HTML
-npm run graphify:brain
-
-# Mind knowledge graph, report, and HTML
-npm run graphify:mind
-
-# Brain callflow export (requires graph.json)
-npm run graphify:brain:callflow
-
-# Mind callflow export (requires graph.json)
-npm run graphify:mind:callflow
+```text
+node tools/graphify-semantic-event.mjs --mode=scheduler
 ```
 
-The Brain/Mind graph scripts run `graphify extract` and then `graphify cluster-only` with `GRAPHIFY_VIZ_NODE_LIMIT=30000` so the normal graph outputs, report, and HTML are created.
+No model runner is configured by default. An approved bounded runner must be supplied explicitly when semantic regeneration is intentionally requested.
 
-## Output
+Legacy package-script IDs are preserved for compatibility:
 
-All output lands in `graphify-out/` at the repo root:
+- `npm run graphify:brain` → bounded semantic event gate;
+- `npm run graphify:mind` → fail-closed because Mind Graphify is not approved;
+- `npm run graphify:brain:callflow` → fail-closed because structural Graphify is frozen;
+- `npm run graphify:mind:callflow` → fail-closed.
 
+## Retired Behavior
+
+Do not use MTPLX, Ollama, Qwen, broad repository extraction, phased nightly graph generation, or automatic structural regeneration.
+
+`tools/scripts/graphify-nightly.sh` is retained only as a fail-closed compatibility path and exits non-zero by design.
+
+Historical `graphify-out/` or `.graphify-out/` artifacts may remain for history/compatibility but are stale-prone and non-authoritative. Do not regenerate them through the retired workflow.
+
+## Scope
+
+The semantic corpus, limits, receipts, kill switch, and safety boundaries are defined in:
+
+```text
+operations/specs/graphify-operational-profile.json
+operations/specs/graphify-transition-governance.json
+operations/specs/graphify-standard.md
 ```
-graphify-out/graph.json                   — queryable graph data
-graphify-out/.graphify_analysis.json      — raw analysis data
-graphify-out/GRAPH_REPORT.md              — community/report summary from cluster-only
-graphify-out/graph.html                   — interactive visualization, generated when `GRAPHIFY_VIZ_NODE_LIMIT` is high enough
-```
 
-`graphify-out/` is generated output and must not be committed.
+Current hard rules:
 
-## Scan scoping: `.graphifyignore`
+- Brain-only semantic allowlist;
+- no Mind ingestion;
+- no automatic full-repo scans;
+- no default local or cloud model runner;
+- no repository writes from Graphify output;
+- code-only changes do not invoke a semantic runner;
+- exact source must be verified before edits or factual claims.
 
-Graphify reads `.graphifyignore` at the repo root (gitignore syntax). This is the only scan scope control. No Brain wrapper adds extra filtering.
+## Operational References
 
-## Nightly scheduler
+- `operations/runbooks/graphify-nightly.md`
+- `operations/runbooks/graphify-quick-reference.md`
+- `docs/system/graphify-context-standard.md`
 
-`tools/scripts/graphify-nightly.sh` iterates all repos under `~/Repos` during off-hours (before 07:00 Lisbon time):
-
-- If `graphify-out/graph.json` does not exist: runs first graph generation (`graphify extract`) and report/HTML generation (`graphify cluster-only` with `GRAPHIFY_VIZ_NODE_LIMIT=30000`).
-- If it exists: refreshes the graph with the same extract + cluster-only flow.
-- Uses MTPLX with Qwen 3.6 27B (MTP-accelerated) — no paid API, no Bedrock, no Sonnet, no Opus, no Anthropic model IDs, no AI Model Selector.
-- Refuses non-local backends to prevent accidental paid API usage.
-- Logs repo path, model, backend, token budget, max concurrency, API timeout, graph.json presence before run, exit code, and output file presence.
-- Does not commit generated outputs.
-- Fails clearly if MTPLX or graphify is missing.
-- Scheduler stops starting new repos after the cutoff hour but finishes any in-progress repo.
+Any document that instructs operators to start MTPLX/Ollama or run broad Graphify extraction is historical and must not be treated as current procedure.

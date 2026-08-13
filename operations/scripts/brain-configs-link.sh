@@ -1,353 +1,243 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-###############################################################################
-# Brain configs linker
+# Brain workstation configuration bootstrap.
+# Canonical policy: operations/specs/workstation-config-ownership.json
+# Migration runbook: operations/runbooks/workstation-config-ownership.md
 #
-# Centralizes local dev config into:
-#   $BRAIN_REPO/operations/system-configs
-#
-# Symlinks created:
-#   ~/.ssh/config                         -> $CONFIGS_DIR/ssh/config
-#   ~/.gitconfig                          -> $CONFIGS_DIR/git/gitconfig
-#   ~/.zshrc                              -> $CONFIGS_DIR/shell/.zshrc
-#   ~/.zprofile                           -> $CONFIGS_DIR/shell/.zprofile
-#   ~/.config/ghostty/config              -> $CONFIGS_DIR/ghostty/config
-#   ~/Library/Application Support/com.mitchellh.ghostty/config
-#                                        -> $CONFIGS_DIR/ghostty/config
-#   ~/.gemini                             -> $CONFIGS_DIR/gemini
-#   ~/.config/starship.toml               -> $CONFIGS_DIR/starship/starship.toml
-#   ~/.cursor                             -> $CONFIGS_DIR/cursor
-#   ~/.codex                              real local runtime directory
-#     managed files                       -> $CONFIGS_DIR/codex
-#   ~/.claude                             -> $CONFIGS_DIR/claude
-#
-# Usage:
-#   DRY_RUN=1 bash operations/scripts/brain-configs-link.sh    # preview
-#   bash operations/scripts/brain-configs-link.sh              # apply
-#   MIGRATE_CODEX_HOME=1 CONFIRM_CODEX_HOME_MIGRATION=1 \
-#     bash operations/scripts/brain-configs-link.sh             # guarded Codex migration
-###############################################################################
+# This script is intentionally conservative:
+# - mutable IDE/LLM runtime roots must be real local directories;
+# - only narrow approved configuration entries are symlinked;
+# - Codex config.toml is a physical generated copy managed by
+#   codex-home-managed-root.sh;
+# - Git and SSH use physical root configs with native include directives;
+# - existing legacy whole-root symlinks fail closed and require the controlled
+#   migration runbook instead of being rewritten in place.
 
-HOME_DIR="${HOME:-$PWD}"
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT_FROM_SCRIPT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
-
-# Defaults – override with env if needed
-BRAIN_REPO="${BRAIN_REPO:-$REPO_ROOT_FROM_SCRIPT}"
-BRAIN_OPERATIONS_DIR="${BRAIN_OPERATIONS_DIR:-$BRAIN_REPO/operations}"
-CONFIGS_DIR="${CONFIGS_DIR:-$BRAIN_OPERATIONS_DIR/system-configs}"
-BRAIN_AI_DIR="${BRAIN_AI_DIR:-$BRAIN_REPO/ai}"
-
+SCRIPT_REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT="${BRAIN_REPO:-$SCRIPT_REPO_ROOT}"
+CONFIG_DIR="${CONFIGS_DIR:-$ROOT/operations/system-configs}"
+HOME_DIR="${HOME:?HOME must be set}"
 DRY_RUN="${DRY_RUN:-0}"
-
-BACKUP_ROOT="$HOME_DIR/.brain-configs-backups"
-BACKUP_DIR="$BACKUP_ROOT/$(date +%Y%m%d-%H%M%S)"
+BACKUP_DIR="${BRAIN_CONFIG_BACKUP_DIR:-$HOME_DIR/.brain-config-backups/$(date +%Y%m%d-%H%M%S)}"
+MIGRATION_REQUIRED=0
 
 say() {
-  echo "$@" >&2
+  printf '%s\n' "$*" >&2
 }
 
 run() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    printf '[dry-run] %s' "$1" >&2
-    shift || true
+    printf '[dry-run]' >&2
     for arg in "$@"; do
       printf ' %q' "$arg" >&2
     done
     printf '\n' >&2
+    return 0
+  fi
+  "$@"
+}
+
+backup_existing() {
+  local target="$1"
+  local relative="$2"
+  if [ ! -e "$target" ] && [ ! -L "$target" ]; then
+    return 0
+  fi
+  local backup="$BACKUP_DIR/$relative"
+  say "[backup] $target -> $backup"
+  run mkdir -p "$(dirname -- "$backup")"
+  run mv "$target" "$backup"
+}
+
+resolved_link() {
+  local target="$1"
+  [ -L "$target" ] || return 1
+  local raw
+  raw="$(readlink "$target")" || return 1
+  if [[ "$raw" = /* ]]; then
+    printf '%s\n' "$raw"
   else
-    "$@"
+    local dir
+    dir="$(cd -P -- "$(dirname -- "$target")" && pwd)"
+    printf '%s/%s\n' "$dir" "$raw"
   fi
 }
 
-ensure_dir() {
-  local dir="$1"
-  run mkdir -p "$dir"
-}
+ensure_symlink() {
+  local source="$1"
+  local target="$2"
+  local backup_relative="$3"
+  [ -e "$source" ] || { say "[ERROR] missing managed source: $source"; return 1; }
 
-backup_path() {
-  local src="$1"
-
-  [ ! -e "$src" ] && return 0
-
-  ensure_dir "$BACKUP_DIR"
-
-  # Preserve relative layout under $HOME when possible
-  local rel="${src#$HOME_DIR}"
-  local dst
-
-  if [ "$rel" = "$src" ]; then
-    # Not under $HOME – just drop into backup root
-    dst="$BACKUP_DIR/$(basename "$src")"
-  else
-    dst="$BACKUP_DIR$rel"
-    ensure_dir "$(dirname "$dst")"
-  fi
-
-  say "[WARN] Backing up $src -> $dst"
-  run mv "$src" "$dst"
-}
-
-resolve_link_target_abs() {
-  local link="$1"
-  local target
-  target="$(readlink "$link")" || return 1
-
-  local dir
-  dir="$(cd "$(dirname "$link")" 2>/dev/null \
-        && cd "$(dirname "$target")" 2>/dev/null \
-        && pwd)" || return 1
-
-  printf '%s/%s\n' "$dir" "$(basename "$target")"
-}
-
-link_symlink() {
-  local link_path="$1"
-  local target_abs="$2"
-  local label="$3"
-
-  ensure_dir "$CONFIGS_DIR"
-
-  # Normalize absolute target
-  target_abs="$(cd "$(dirname "$target_abs")" 2>/dev/null && pwd)/$(basename "$target_abs")"
-
-  # Existing link?
-  if [ -L "$link_path" ]; then
-    local resolved
-    resolved="$(resolve_link_target_abs "$link_path")" || resolved=""
-
-    if [ "$resolved" = "$target_abs" ]; then
-      # Already correct
+  if [ -L "$target" ]; then
+    local actual
+    actual="$(resolved_link "$target" 2>/dev/null || true)"
+    if [ "$actual" = "$source" ]; then
+      say "[ok] $target -> $source"
       return 0
     fi
+  fi
 
-    say "[WARN] Broken or outdated symlink: $link_path (relinking)"
-    if [ "$DRY_RUN" -eq 0 ]; then
-      run rm -f "$link_path"
+  backup_existing "$target" "$backup_relative"
+  run mkdir -p "$(dirname -- "$target")"
+  run ln -s "$source" "$target"
+  say "[linked] $target -> $source"
+}
+
+mark_migration_required() {
+  say "[migration-required] $1"
+  MIGRATION_REQUIRED=1
+}
+
+preflight_runtime_root() {
+  local root="$1"
+  if [ -L "$root" ]; then
+    mark_migration_required "$root is a legacy whole-root symlink. Preserve sessions/auth/runtime state and follow operations/runbooks/workstation-config-ownership.md."
+  elif [ -e "$root" ] && [ ! -d "$root" ]; then
+    mark_migration_required "$root exists but is not a directory."
+  fi
+}
+
+preflight_include_root() {
+  local file="$1"
+  local marker="$2"
+  if [ -L "$file" ]; then
+    mark_migration_required "$file is a legacy direct config symlink. Convert it with the controlled INCLUDE migration; do not overwrite it in bootstrap."
+  elif [ -e "$file" ] && [ ! -f "$file" ]; then
+    mark_migration_required "$file exists but is not a regular file."
+  elif [ -f "$file" ] && ! grep -Fq "$marker" "$file"; then
+    mark_migration_required "$file is an existing physical config not yet owned by the Brain INCLUDE contract. Preserve it and convert it through the controlled migration instead of overwriting it."
+  fi
+}
+
+# Fail closed before changing anything when legacy roots require state-preserving
+# migration. This protects Claude/Cursor/Gemini/Kiro/Codex sessions and the SSH
+# topology used by the Office Mac and MacBook.
+for runtime_root in \
+  "$HOME_DIR/.claude" \
+  "$HOME_DIR/.cursor" \
+  "$HOME_DIR/.gemini" \
+  "$HOME_DIR/.kiro" \
+  "$HOME_DIR/.codex"; do
+  preflight_runtime_root "$runtime_root"
+done
+preflight_include_root "$HOME_DIR/.gitconfig" "# Managed by Brain workstation config: Git INCLUDE root"
+preflight_include_root "$HOME_DIR/.ssh/config" "# Managed by Brain workstation config: SSH INCLUDE root"
+
+if [ "$MIGRATION_REQUIRED" -ne 0 ]; then
+  say "[STOP] Legacy configuration ownership detected. No changes were made."
+  say "[STOP] Run the controlled, receipt-backed migration documented in:"
+  say "       $ROOT/operations/runbooks/workstation-config-ownership.md"
+  say "[STOP] Office↔MacBook network contract:"
+  say "       $ROOT/operations/runbooks/office-macbook-connectivity.md"
+  exit 2
+fi
+
+# Fresh/newly migrated machines get physical runtime roots first.
+for runtime_root in \
+  "$HOME_DIR/.claude" \
+  "$HOME_DIR/.cursor" \
+  "$HOME_DIR/.gemini" \
+  "$HOME_DIR/.kiro" \
+  "$HOME_DIR/.codex"; do
+  run mkdir -p "$runtime_root"
+done
+
+# Narrow SYMLINK ownership only. Mutable runtime roots stay local.
+ensure_symlink "$CONFIG_DIR/claude/CLAUDE.md" "$HOME_DIR/.claude/CLAUDE.md" "claude/CLAUDE.md"
+ensure_symlink "$CONFIG_DIR/claude/settings.json" "$HOME_DIR/.claude/settings.json" "claude/settings.json"
+ensure_symlink "$CONFIG_DIR/claude/hooks" "$HOME_DIR/.claude/hooks" "claude/hooks"
+ensure_symlink "$CONFIG_DIR/claude/agents" "$HOME_DIR/.claude/agents" "claude/agents"
+ensure_symlink "$CONFIG_DIR/claude/skills" "$HOME_DIR/.claude/skills" "claude/skills"
+ensure_symlink "$CONFIG_DIR/claude/statusline-command.sh" "$HOME_DIR/.claude/statusline-command.sh" "claude/statusline-command.sh"
+
+ensure_symlink "$CONFIG_DIR/cursor/skills" "$HOME_DIR/.cursor/skills" "cursor/skills"
+ensure_symlink "$CONFIG_DIR/gemini/GEMINI.md" "$HOME_DIR/.gemini/GEMINI.md" "gemini/GEMINI.md"
+ensure_symlink "$CONFIG_DIR/kiro/steering" "$HOME_DIR/.kiro/steering" "kiro/steering"
+
+# Stable dotfiles remain eligible for direct narrow symlinks.
+ensure_symlink "$CONFIG_DIR/shell/.zshrc" "$HOME_DIR/.zshrc" "shell/.zshrc"
+ensure_symlink "$CONFIG_DIR/shell/.zprofile" "$HOME_DIR/.zprofile" "shell/.zprofile"
+ensure_symlink "$CONFIG_DIR/ghostty/config" "$HOME_DIR/.config/ghostty/config" "ghostty/config"
+ensure_symlink "$CONFIG_DIR/starship/starship.toml" "$HOME_DIR/.config/starship.toml" "starship/starship.toml"
+
+# Git INCLUDE root. Brain owns reproducible intent; machine-local overlays remain
+# physical and untracked.
+write_git_include_root() {
+  local target="$HOME_DIR/.gitconfig"
+  local managed="$CONFIG_DIR/git/gitconfig"
+  local local_overlay="$HOME_DIR/.gitconfig.local"
+  local staged
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    say "[dry-run] Would materialize physical Git include root at $target"
+    return 0
+  fi
+
+  staged="$(mktemp "$HOME_DIR/.gitconfig.generated.XXXXXX")"
+  {
+    printf '# Managed by Brain workstation config: Git INCLUDE root\n'
+    printf '[include]\n\tpath = %s\n' "$managed"
+    if [ -f "$local_overlay" ]; then
+      printf '[include]\n\tpath = %s\n' "$local_overlay"
     fi
-  elif [ -e "$link_path" ]; then
-    # Real file/dir – back it up then replace
-    say "[WARN] $link_path exists and is not a symlink; backing up before linking ($label)"
-    backup_path "$link_path"
-  fi
-
-  # Ensure parent dir exists
-  ensure_dir "$(dirname "$link_path")"
-
-  # Create symlink (absolute target)
-  run ln -sfn "$target_abs" "$link_path"
+  } > "$staged"
+  chmod 0600 "$staged"
+  mv "$staged" "$target"
+  say "[generated] $target (Git INCLUDE root)"
 }
 
-verify_link() {
-  local link="$1"
-  local expected_abs="$2"
+# SSH INCLUDE root. Private keys and known_hosts remain local-only. The tracked
+# include owns stable Office↔MacBook aliases/routing; DHCP Wi-Fi IPs are not
+# canonical workstation identities.
+write_ssh_include_root() {
+  local ssh_dir="$HOME_DIR/.ssh"
+  local target="$ssh_dir/config"
+  local managed="$CONFIG_DIR/ssh/config"
+  local local_overlay="$ssh_dir/config.local"
+  local staged
 
-  expected_abs="$(cd "$(dirname "$expected_abs")" 2>/dev/null && pwd)/$(basename "$expected_abs")"
-
-  if [ ! -L "$link" ]; then
-    say "[WARN] VERIFY missing symlink: $link"
-    return
+  run mkdir -p "$ssh_dir"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    say "[dry-run] Would materialize physical SSH include root at $target"
+    return 0
   fi
 
-  local resolved
-  resolved="$(resolve_link_target_abs "$link")" || {
-    say "[WARN] VERIFY cannot resolve: $link"
-    return
-  }
-
-  if [ "$resolved" != "$expected_abs" ]; then
-    say "[WARN] VERIFY wrong target: $link -> $resolved (expected $expected_abs)"
-  else
-    say "OK: $link"
-  fi
+  staged="$(mktemp "$ssh_dir/.config.generated.XXXXXX")"
+  {
+    printf '# Managed by Brain workstation config: SSH INCLUDE root\n'
+    printf 'Include %s\n' "$managed"
+    if [ -f "$local_overlay" ]; then
+      printf 'Include %s\n' "$local_overlay"
+    fi
+  } > "$staged"
+  chmod 0600 "$staged"
+  mv "$staged" "$target"
+  say "[generated] $target (SSH INCLUDE root)"
 }
 
-###############################################################################
-# Start
-###############################################################################
+write_git_include_root
+write_ssh_include_root
 
-say "==> Brain repo: $BRAIN_REPO"
-say
-say "==> Configs dir: $CONFIGS_DIR"
-say
-
-if [ ! -d "$BRAIN_REPO" ]; then
-  say "[ERROR] Brain repo not found: $BRAIN_REPO"
-  exit 1
-fi
-
-if [ ! -d "$CONFIGS_DIR" ]; then
-  say "[ERROR] Configs dir not found: $CONFIGS_DIR"
-  exit 1
-fi
-
-ensure_dir "$CONFIGS_DIR"
-ensure_dir "$BACKUP_ROOT"
-run mkdir -p "$BACKUP_DIR"
-
-if [ "$DRY_RUN" -eq 1 ]; then
-  say "[WARN] DRY_RUN enabled: no changes will be made."
-fi
-
-###############################################################################
-# SSH: ~/.ssh/config
-###############################################################################
-say
-say "==> SSH: only ~/.ssh/config (no keys, no known_hosts)"
-ensure_dir "$CONFIGS_DIR/ssh"
-ensure_dir "$HOME_DIR/.ssh"
-link_symlink "$HOME_DIR/.ssh/config" "$CONFIGS_DIR/ssh/config" "ssh/config"
-run chmod 700 "$HOME_DIR/.ssh" || true
-run chmod 600 "$CONFIGS_DIR/ssh/config" || true
-
-###############################################################################
-# Git: ~/.gitconfig
-###############################################################################
-say
-say "==> Git: ~/.gitconfig"
-ensure_dir "$CONFIGS_DIR/git"
-link_symlink "$HOME_DIR/.gitconfig" "$CONFIGS_DIR/git/gitconfig" "git/gitconfig"
-
-###############################################################################
-# Git: ~/.gitconfig-demo
-###############################################################################
-say
-say "==> Git: ~/.gitconfig-demo"
-ensure_dir "$CONFIGS_DIR/git"
-link_symlink "$HOME_DIR/.gitconfig-demo" "$CONFIGS_DIR/git/gitconfig-demo" "git/gitconfig-demo"
-
-###############################################################################
-# Shell: ~/.zshrc and ~/.zprofile
-###############################################################################
-say
-say "==> Shell: .zshrc and .zprofile"
-ensure_dir "$CONFIGS_DIR/shell"
-link_symlink "$HOME_DIR/.zshrc"    "$CONFIGS_DIR/shell/.zshrc"    "shell/.zshrc"
-link_symlink "$HOME_DIR/.zprofile" "$CONFIGS_DIR/shell/.zprofile" "shell/.zprofile"
-
-###############################################################################
-# Ghostty: ~/.config/ghostty/config + App Support config
-###############################################################################
-say
-say "==> Ghostty: ~/.config/ghostty/config"
-ensure_dir "$CONFIGS_DIR/ghostty"
-ensure_dir "$HOME_DIR/.config/ghostty"
-link_symlink "$HOME_DIR/.config/ghostty/config" \
-             "$CONFIGS_DIR/ghostty/config" "ghostty/config"
-
-say "==> Ghostty (macOS app support): ~/Library/Application Support/com.mitchellh.ghostty/config"
-ensure_dir "$HOME_DIR/Library/Application Support/com.mitchellh.ghostty"
-link_symlink "$HOME_DIR/Library/Application Support/com.mitchellh.ghostty/config" \
-             "$CONFIGS_DIR/ghostty/config" "ghostty/config"
-
-###############################################################################
-# Gemini: ~/.gemini (folder)
-###############################################################################
-say
-say "==> Gemini: ~/.gemini (folder)"
-ensure_dir "$CONFIGS_DIR/gemini"
-link_symlink "$HOME_DIR/.gemini" "$CONFIGS_DIR/gemini" "gemini"
-
-###############################################################################
-# Starship: ~/.config/starship.toml
-###############################################################################
-say
-say "==> Starship: ~/.config/starship.toml"
-ensure_dir "$CONFIGS_DIR/starship"
-ensure_dir "$HOME_DIR/.config"
-link_symlink "$HOME_DIR/.config/starship.toml" \
-             "$CONFIGS_DIR/starship/starship.toml" "starship/starship.toml"
-
-###############################################################################
-# Cursor: ~/.cursor (skip ~/.cursor-server)
-###############################################################################
-say
-say "==> Cursor: ~/.cursor (skip ~/.cursor-server)"
-ensure_dir "$CONFIGS_DIR/cursor"
-link_symlink "$HOME_DIR/.cursor" "$CONFIGS_DIR/cursor" "cursor"
-
-###############################################################################
-# AI tool configs: managed ~/.codex + symlinked ~/.claude
-###############################################################################
-say
-say "==> AI tool configs: managed ~/.codex + symlinked ~/.claude. (Gemini excluded.)"
-ensure_dir "$CONFIGS_DIR/codex"
-ensure_dir "$CONFIGS_DIR/claude"
-
-CODEX_HOME_MANAGER="$SCRIPT_DIR/codex-home-managed-root.sh"
-CODEX_SETUP_PENDING=0
-if [ ! -x "$CODEX_HOME_MANAGER" ]; then
-  say "[ERROR] Codex home manager is missing or not executable: $CODEX_HOME_MANAGER"
-  exit 1
-fi
-
-if [ -L "$HOME_DIR/.codex" ]; then
-  if [ "${MIGRATE_CODEX_HOME:-0}" -eq 1 ]; then
-    DRY_RUN="$DRY_RUN" \
-      HOME="$HOME_DIR" \
-      BRAIN_REPO="$BRAIN_REPO" \
-      CODEX_HOME="$HOME_DIR/.codex" \
-      CONFIGS_DIR="$CONFIGS_DIR" \
-      BRAIN_AI_DIR="$BRAIN_AI_DIR" \
-      bash "$CODEX_HOME_MANAGER" migrate
-  else
-    say "[WARN] ~/.codex is still a whole-directory symlink. It was left untouched."
-    say "[WARN] Close Codex/ChatGPT, then run this script with MIGRATE_CODEX_HOME=1 and CONFIRM_CODEX_HOME_MIGRATION=1."
-    CODEX_SETUP_PENDING=1
-  fi
+# Codex must keep a short physical ~/.codex root for the macOS app-server Unix
+# socket used by MacBook→Office Remote SSH. The manager preserves sessions/auth
+# and materializes config.toml as a physical mode-0600 GENERATED-COPY.
+CODEX_MANAGER="$SCRIPT_REPO_ROOT/operations/scripts/codex-home-managed-root.sh"
+if [ "$DRY_RUN" -eq 1 ] && [ ! -d "$HOME_DIR/.codex" ]; then
+  say "[dry-run] Would run Codex managed-root repair after creating physical ~/.codex"
 else
   DRY_RUN="$DRY_RUN" \
-    HOME="$HOME_DIR" \
-    BRAIN_REPO="$BRAIN_REPO" \
+    BRAIN_REPO="$ROOT" \
+    CONFIGS_DIR="$CONFIG_DIR" \
     CODEX_HOME="$HOME_DIR/.codex" \
-    CONFIGS_DIR="$CONFIGS_DIR" \
-    BRAIN_AI_DIR="$BRAIN_AI_DIR" \
-    bash "$CODEX_HOME_MANAGER" repair
+    bash "$CODEX_MANAGER" repair
 fi
 
-link_symlink "$HOME_DIR/.claude" "$CONFIGS_DIR/claude" "claude"
+# Validate canonical repo-owned policy after materialization. Host migration
+# acceptance still requires application/session smoke tests and Office↔MacBook SSH checks.
+node "$SCRIPT_REPO_ROOT/tools/validate-workstation-config-ownership.mjs"
 
-if [ -f "$HOME_DIR/.claude.json" ]; then
-  say "[WARN] Found ~/.claude.json. Skipping by default (might contain secrets)."
-fi
-
-###############################################################################
-# Done + verify
-###############################################################################
-say
-say "==> Done."
-say "Backups (if any) are here:"
-say "  $BACKUP_DIR"
-say
-say "==> Verifying symlinks..."
-
-verify_link "$HOME_DIR/.ssh/config"                                  "$CONFIGS_DIR/ssh/config"
-verify_link "$HOME_DIR/.gitconfig"                                   "$CONFIGS_DIR/git/gitconfig"
-verify_link "$HOME_DIR/.gitconfig-demo"                              "$CONFIGS_DIR/git/gitconfig-demo"
-verify_link "$HOME_DIR/.zshrc"                                       "$CONFIGS_DIR/shell/.zshrc"
-verify_link "$HOME_DIR/.zprofile"                                    "$CONFIGS_DIR/shell/.zprofile"
-verify_link "$HOME_DIR/.config/ghostty/config"                       "$CONFIGS_DIR/ghostty/config"
-verify_link "$HOME_DIR/Library/Application Support/com.mitchellh.ghostty/config" "$CONFIGS_DIR/ghostty/config"
-verify_link "$HOME_DIR/.gemini"                                      "$CONFIGS_DIR/gemini"
-verify_link "$HOME_DIR/.config/starship.toml"                        "$CONFIGS_DIR/starship/starship.toml"
-verify_link "$HOME_DIR/.cursor"                                      "$CONFIGS_DIR/cursor"
-if ! HOME="$HOME_DIR" \
-  BRAIN_REPO="$BRAIN_REPO" \
-  CODEX_HOME="$HOME_DIR/.codex" \
-  CONFIGS_DIR="$CONFIGS_DIR" \
-  BRAIN_AI_DIR="$BRAIN_AI_DIR" \
-  bash "$CODEX_HOME_MANAGER" check; then
-  say "[WARN] VERIFY Codex managed runtime root is not ready."
-  CODEX_SETUP_PENDING=1
-fi
-verify_link "$HOME_DIR/.claude"                                      "$CONFIGS_DIR/claude"
-
-say
-say "Next step:"
-say "  cd \"$BRAIN_REPO\" && git status"
-
-if [ "$CODEX_SETUP_PENDING" -ne 0 ]; then
-  say "[ERROR] Brain config linking finished with an unresolved Codex managed-root requirement."
-  exit 1
-fi
+say "[done] Brain workstation configuration bootstrap completed."
+say "[note] Live session/auth/runtime state remains application-owned and local."
+say "[note] For migrated hosts, complete the runbook acceptance checks before deleting any backup."

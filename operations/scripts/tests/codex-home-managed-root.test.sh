@@ -38,6 +38,39 @@ create_brain_fixture() {
   printf 'fixture skill\n' > "$brain_ai_dir/skills/active/example.md"
 }
 
+create_linker_fixture() {
+  local root="$1"
+  create_brain_fixture "$root"
+  local configs="$root/brain/operations/system-configs"
+  mkdir -p \
+    "$configs/claude/hooks" \
+    "$configs/claude/agents" \
+    "$configs/claude/skills" \
+    "$configs/cursor/skills" \
+    "$configs/gemini" \
+    "$configs/kiro/steering" \
+    "$configs/shell" \
+    "$configs/ghostty" \
+    "$configs/starship" \
+    "$configs/git" \
+    "$configs/ssh"
+  printf 'fixture claude\n' > "$configs/claude/CLAUDE.md"
+  printf '{}\n' > "$configs/claude/settings.json"
+  printf '#!/bin/sh\n' > "$configs/claude/statusline-command.sh"
+  printf 'hook\n' > "$configs/claude/hooks/example"
+  printf 'agent\n' > "$configs/claude/agents/example"
+  printf 'skill\n' > "$configs/claude/skills/example"
+  printf 'cursor skill\n' > "$configs/cursor/skills/example"
+  printf 'fixture gemini\n' > "$configs/gemini/GEMINI.md"
+  printf 'fixture kiro\n' > "$configs/kiro/steering/README.md"
+  printf '# zshrc\n' > "$configs/shell/.zshrc"
+  printf '# zprofile\n' > "$configs/shell/.zprofile"
+  printf 'font-size = 12\n' > "$configs/ghostty/config"
+  printf 'format = "$time"\n' > "$configs/starship/starship.toml"
+  printf '[user]\n\tname = Fixture\n' > "$configs/git/gitconfig"
+  printf 'Host office\n  HostName 100.86.124.66\n' > "$configs/ssh/config"
+}
+
 run_manager() {
   local root="$1"
   shift
@@ -60,6 +93,18 @@ assert_managed_link() {
   [ "$(readlink "$link")" = "$expected" ] || {
     fail "$link points to $(readlink "$link"), expected $expected"
   }
+}
+
+assert_generated_copy() {
+  local file="$1"
+  local source="$2"
+  local expected_mode="${3:-600}"
+  [ -f "$file" ] || fail "Expected generated file: $file"
+  [ ! -L "$file" ] || fail "Generated file must not be a symlink: $file"
+  cmp -s "$file" "$source" || fail "Generated file differs from source: $file"
+  local actual_mode
+  actual_mode="$(stat -f '%Lp' "$file")"
+  [ "$actual_mode" = "$expected_mode" ] || fail "Generated file mode $actual_mode, expected $expected_mode: $file"
 }
 
 ###############################################################################
@@ -246,9 +291,10 @@ for neighbor in \
     fail "ordinary file beside a socket was not preserved: $neighbor"
   }
 done
-assert_managed_link \
+assert_generated_copy \
   "$MIGRATION_ROOT/home/.codex/config.toml" \
-  "$MIGRATION_CONFIGS/codex/config.toml"
+  "$MIGRATION_CONFIGS/codex/config.toml" \
+  "600"
 assert_managed_link \
   "$MIGRATION_ROOT/home/.codex/skills/user" \
   "$MIGRATION_AI/skills/active"
@@ -341,29 +387,36 @@ run_manager "$REPAIR_ROOT" check >/dev/null
 assert_managed_link \
   "$REPAIR_ROOT/home/.codex/AGENTS.md" \
   "$REPAIR_ROOT/brain/operations/system-configs/codex/AGENTS.md"
+assert_generated_copy \
+  "$REPAIR_ROOT/home/.codex/config.toml" \
+  "$REPAIR_ROOT/brain/operations/system-configs/codex/config.toml" \
+  "600"
 
 PRESERVED_FILE_COUNT="$(find "$REPAIR_ROOT/home/.brain-configs-backups" -type f -path '*/replaced-managed-entries/AGENTS.md' | wc -l | tr -d ' ')"
 [ "$PRESERVED_FILE_COUNT" -eq 1 ] || fail "conflicting managed file was not preserved"
 pass "repair creates a fresh managed root and preserves conflicting files"
 
-unlink "$REPAIR_ROOT/home/.codex/config.toml"
 printf 'temporary conflicting config\n' > "$REPAIR_ROOT/home/.codex/config.toml"
+chmod 600 "$REPAIR_ROOT/home/.codex/config.toml"
 if CODEX_HOME_TEST_FORCE_PROCESS_RUNNING=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=0 \
   run_manager "$REPAIR_ROOT" repair >/dev/null 2>&1; then
   fail "repair unexpectedly changed an invalid layout while Codex was running"
 fi
-[ ! -L "$REPAIR_ROOT/home/.codex/config.toml" ] || fail "blocked repair changed the conflicting config"
+[ ! -L "$REPAIR_ROOT/home/.codex/config.toml" ] || fail "blocked repair changed the conflicting config into a symlink"
+grep -q 'temporary conflicting config' "$REPAIR_ROOT/home/.codex/config.toml" || fail "blocked repair rewrote the conflicting config"
 pass "repair refuses changes while a protected Codex process is running"
 
-mv "$REPAIR_ROOT/home/.codex/config.toml" "$REPAIR_ROOT/home/.codex/config.toml.conflict"
-ln -s \
-  "$REPAIR_ROOT/brain/operations/system-configs/codex/config.toml" \
-  "$REPAIR_ROOT/home/.codex/config.toml"
+cp "$REPAIR_ROOT/brain/operations/system-configs/codex/config.toml" "$REPAIR_ROOT/home/.codex/config.toml"
+chmod 600 "$REPAIR_ROOT/home/.codex/config.toml"
 CODEX_HOME_TEST_FORCE_PROCESS_RUNNING=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=0 \
   run_manager "$REPAIR_ROOT" repair >/dev/null
-pass "repair is a no-op when the managed layout already passes"
+assert_generated_copy \
+  "$REPAIR_ROOT/home/.codex/config.toml" \
+  "$REPAIR_ROOT/brain/operations/system-configs/codex/config.toml" \
+  "600"
+pass "repair is a no-op when the managed generated-copy layout already passes"
 
 ###############################################################################
 # Existing nested directory symlinks are materialized without losing contents
@@ -419,7 +472,7 @@ pass "socket validation measures the physical Codex home path"
 ###############################################################################
 
 LINKER_ROOT="$TEST_ROOT/linker"
-create_brain_fixture "$LINKER_ROOT"
+create_linker_fixture "$LINKER_ROOT"
 mkdir -p "$LINKER_ROOT/home"
 HOME="$LINKER_ROOT/home" \
   BRAIN_REPO="$LINKER_ROOT/brain" \
@@ -427,9 +480,25 @@ HOME="$LINKER_ROOT/home" \
   CODEX_HOME_TEST_MODE=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   bash "$BRAIN_LINKER" >/dev/null 2>&1
-[ -d "$LINKER_ROOT/home/.codex" ] && [ ! -L "$LINKER_ROOT/home/.codex" ] || {
-  fail "general Brain linker did not create a real Codex runtime root"
-}
+for runtime_root in .claude .cursor .gemini .kiro .codex; do
+  [ -d "$LINKER_ROOT/home/$runtime_root" ] && [ ! -L "$LINKER_ROOT/home/$runtime_root" ] || {
+    fail "general Brain linker did not create physical runtime root: $runtime_root"
+  }
+done
+assert_managed_link \
+  "$LINKER_ROOT/home/.claude/settings.json" \
+  "$LINKER_ROOT/brain/operations/system-configs/claude/settings.json"
+assert_managed_link \
+  "$LINKER_ROOT/home/.gemini/GEMINI.md" \
+  "$LINKER_ROOT/brain/operations/system-configs/gemini/GEMINI.md"
+assert_generated_copy \
+  "$LINKER_ROOT/home/.codex/config.toml" \
+  "$LINKER_ROOT/brain/operations/system-configs/codex/config.toml" \
+  "600"
+[ -f "$LINKER_ROOT/home/.gitconfig" ] && [ ! -L "$LINKER_ROOT/home/.gitconfig" ] || fail "Git include root is not physical"
+grep -q "$LINKER_ROOT/brain/operations/system-configs/git/gitconfig" "$LINKER_ROOT/home/.gitconfig" || fail "Git include root does not reference Brain config"
+[ -f "$LINKER_ROOT/home/.ssh/config" ] && [ ! -L "$LINKER_ROOT/home/.ssh/config" ] || fail "SSH include root is not physical"
+grep -q "$LINKER_ROOT/brain/operations/system-configs/ssh/config" "$LINKER_ROOT/home/.ssh/config" || fail "SSH include root does not reference Brain config"
 [ ! -e "$LINKER_ROOT/ambient-wrong-codex-home" ] || {
   fail "general Brain linker leaked an ambient CODEX_HOME override into its helper"
 }
@@ -437,7 +506,7 @@ run_manager "$LINKER_ROOT" check >/dev/null
 pass "general Brain linker delegates with its resolved paths and ignores unrelated ambient overrides"
 
 LEGACY_LINKER_ROOT="$TEST_ROOT/legacy-linker"
-create_brain_fixture "$LEGACY_LINKER_ROOT"
+create_linker_fixture "$LEGACY_LINKER_ROOT"
 mkdir -p "$LEGACY_LINKER_ROOT/home"
 ln -s \
   "$LEGACY_LINKER_ROOT/brain/operations/system-configs/codex" \
@@ -453,5 +522,22 @@ fi
   fail "general Brain linker silently migrated the legacy Codex symlink"
 }
 pass "general Brain linker leaves legacy Codex homes untouched and reports the unresolved requirement"
+
+PHYSICAL_CONFIG_ROOT="$TEST_ROOT/physical-config-linker"
+create_linker_fixture "$PHYSICAL_CONFIG_ROOT"
+mkdir -p "$PHYSICAL_CONFIG_ROOT/home/.ssh"
+printf 'user-owned git config\n' > "$PHYSICAL_CONFIG_ROOT/home/.gitconfig"
+printf 'user-owned ssh config\n' > "$PHYSICAL_CONFIG_ROOT/home/.ssh/config"
+if HOME="$PHYSICAL_CONFIG_ROOT/home" \
+  BRAIN_REPO="$PHYSICAL_CONFIG_ROOT/brain" \
+  CODEX_HOME_TEST_MODE=1 \
+  CODEX_HOME_SKIP_PROCESS_CHECK=1 \
+  bash "$BRAIN_LINKER" >/dev/null 2>&1; then
+  fail "general Brain linker overwrote arbitrary physical Git/SSH config instead of requiring migration"
+fi
+grep -Fxq 'user-owned git config' "$PHYSICAL_CONFIG_ROOT/home/.gitconfig" || fail "physical Git config changed despite fail-closed preflight"
+grep -Fxq 'user-owned ssh config' "$PHYSICAL_CONFIG_ROOT/home/.ssh/config" || fail "physical SSH config changed despite fail-closed preflight"
+[ ! -e "$PHYSICAL_CONFIG_ROOT/home/.claude" ] || fail "linker mutated runtime roots after physical include preflight failure"
+pass "general Brain linker preserves arbitrary physical Git/SSH configs and requires controlled INCLUDE migration"
 
 printf 'All Codex managed runtime root tests passed.\n'

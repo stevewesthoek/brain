@@ -1,88 +1,27 @@
-# Qwen 3.6 27B + Aider Setup
+# Qwen + Aider Setup — Retired Reference
 
-Use Qwen 3.6 27B (MTPLX-accelerated) as a local terminal coding agent via Aider.
+**Status:** Retired
+**Retired:** 2026-08-12
 
-## Prerequisites
+The local Qwen/Aider coding path is no longer part of the Brain operating model.
 
-- MTPLX running: `launchctl start gui/$(id -u)/com.office.mtplx` or via LaunchAgent
-- Aider installed: `uv tool install aider-chat`
-- Port 8000 accessible: `curl http://127.0.0.1:8000/health`
+Current policy:
 
-## Quick Start
+- the `tools/scripts/qwen` launcher is removed;
+- the unexported Qwen-Aider custom skill is removed;
+- MTPLX and Ollama text providers are removed from canonical Model Selector truth;
+- no Brain-managed always-on local text model is started for coding or Graphify;
+- Bedrock-backed Claude is the primary managed text surface;
+- Codex CLI is the secondary managed text surface;
+- local model caches/apps are not deleted by this repository-maintenance tranche; host cleanup remains a separately approved step.
 
-**Via repos picker (recommended):**
-```bash
-repos
-# Select: Qwen
-# Select your repo
-```
+Do not reinstall MTPLX, recreate the `qwen` launcher, or configure Aider against the retired localhost MTPLX endpoint from this document.
 
-**Standalone from any repo:**
-```bash
-qwen
-```
+For current routing and Graphify behavior, use:
 
-**Direct command (if needed):**
-```bash
-OPENAI_API_BASE=http://127.0.0.1:8000/v1 OPENAI_API_KEY=mtplx-local aider --model openai/mtplx
-```
+- `operations/system-configs/model-selector/config/ai-providers.json`
+- `projects/brain-core/docs/ai-model-selector-architecture.md`
+- `operations/specs/graphify-standard.md`
+- `operations/runbooks/graphify-nightly.md`
 
-The `qwen` command is available system-wide via `~/.local/bin/qwen` (symlink to `tools/scripts/qwen`).
-
-## How It Works
-
-- **Model:** Qwen 3.6 27B, MTP-accelerated on Apple Silicon (~1.6x faster)
-- **Context:** 262K tokens (long-context work)
-- **Local:** No API costs, no Claude/OpenAI usage
-- **Capabilities:** Read/edit files, run commands, suggest shell commands, git integration
-
-## Commands Inside Aider
-
-```
-/help              Show all commands
-/add <file>        Add file to context
-/drop <file>       Remove file from context
-/git <cmd>         Run git command
-/test              Run tests (if configured)
-/<cmd>             Run shell command
-/exit              Quit
-```
-
-## Configuration
-
-Environment variables (all required):
-- `OPENAI_API_BASE=http://127.0.0.1:8000/v1` — MTPLX endpoint
-- `OPENAI_API_KEY=mtplx-local` — dummy key (ignored for localhost)
-- `--model openai/mtplx` — tells aider to use OpenAI provider
-
-## Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| "Connection refused" | Verify MTPLX is running: `curl http://127.0.0.1:8000/health` |
-| "LLM Provider NOT provided" | Missing model flag or typo in `openai/mtplx` |
-| "Unknown context window" | Normal warning; aider uses safe defaults. Suppress with `--no-show-model-warnings` |
-| Slow first scan | Large repos take time on first scan. Subsequent runs are cached. |
-
-## Performance
-
-- Model load: ~20 seconds (first time)
-- Response time: 2–5 tokens/second (depends on prompt complexity)
-- Context: 262K tokens = full brain repo + extended chat history
-- Cost: $0 (local compute only)
-
-## Comparison to Claude Code
-
-| Feature | Qwen 27B | Claude Code |
-|---------|----------|------------|
-| Cost | Free | Token usage |
-| Speed | ~5 tok/s (MTP) | Depends on model |
-| Context | 262K | 200K (Haiku), 200K (Sonnet) |
-| Local | Yes | No |
-| Best for | Daily coding, refactoring | Complex architecture, high-stakes |
-
-## Related
-
-- Graphify nightly scheduler uses the same MTPLX backend: `tools/scripts/graphify-nightly.sh`
-- MTPLX setup: `operations/runbooks/mtplx-setup.md` (future doc)
-- Aider docs: https://aider.chat/docs/
+Historical details remain available in Git history and dated reports.
