@@ -1028,10 +1028,9 @@ office_preflight() {
   say "[OK] Office→MacBook authentication over both fixed addresses"
   validate_hostkey_alias_inputs macbook-m1 "$MAC_TB" "$MAC_TS" /Users/Office/.ssh/known_hosts
 
-  local source_kb runtime_kb codex_kb brain_kb available_kb required_kb reserve_kb runtime_target
-  source_kb="$(du -sk "$OFFICE_BRAIN" /Users/Office/.codex "$OFFICE_CANDIDATE" | awk '{s += $1} END {print s}')"
+  local source_kb runtime_kb codex_kb available_kb required_kb reserve_kb runtime_target
+  source_kb="$(du -sk /Users/Office/.codex "$OFFICE_CANDIDATE" | awk '{s += $1} END {print s}')"
   codex_kb="$(du -sk /Users/Office/.codex | awk '{print $1}')"
-  brain_kb="$(du -sk "$OFFICE_BRAIN" | awk '{print $1}')"
   runtime_kb=0
   for path in .claude .cursor .gemini .kiro; do
     runtime_target="$(resolve_link "/Users/Office/$path")"
@@ -1042,7 +1041,11 @@ office_preflight() {
   # stage, so rollback never has to remove the live root before rebuilding it.
   # One rejected first attempt is retained for every stable-copy source. Count
   # that worst-case retry space explicitly rather than relying on the reserve.
-  source_kb=$((source_kb + (runtime_kb * 3) + (codex_kb * 2) + brain_kb))
+  # The old canonical Brain needs no duplicate copy: Phase 4 atomically renames
+  # that exact dirty directory into its same-filesystem archive before placing
+  # the staged clean candidate. source_kb already counts one Codex copy, so add
+  # its second verified copy and worst-case rejected retry here.
+  source_kb=$((source_kb + (runtime_kb * 3) + (codex_kb * 2)))
   available_kb="$(df -Pk /Users/Office | awk 'NR == 2 {print $4}')"
   reserve_kb=5242880
   required_kb=$((source_kb + reserve_kb))
@@ -1104,9 +1107,6 @@ EOF
   codex_continuity_manifest \
     "$root/backups/runtime/codex" "$root/codex-continuity-before.tsv" \
     "$OFFICE_BRAIN/operations/system-configs/codex" /Users/Office/.codex
-
-  metadata_line "office-old-canonical-brain" "$OFFICE_BRAIN" "$metadata"
-  stable_copy_tree "$OFFICE_BRAIN" "$root/backups/old-canonical-brain-copy" "old-canonical-brain-backup" "$root/integrity.tsv"
 
   for name in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship claude-registry approval; do
     case "$name" in
@@ -1185,14 +1185,26 @@ office_phase3_convert_roots() {
 
 office_phase4_replace_brain() {
   local root="$OFFICE_RECEIPTS/$RUN_ID" archive="$OFFICE_ARCHIVES/$RUN_ID/brain-before-activation" staged="$root/staging/candidate/brain"
+  local conflict brain_device brain_identity
   phase 4 "Office canonical Brain replacement"
   mkdir -p "$OFFICE_ARCHIVES/$RUN_ID"
   chmod 0700 "$OFFICE_ARCHIVES/$RUN_ID"
+  brain_device="$(stat -f '%d' "$(dirname "$OFFICE_BRAIN")")"
+  [ "$brain_device" = "$(stat -f '%d' "$OFFICE_ARCHIVES/$RUN_ID")" ] || fail "canonical Brain archive is not on the same filesystem; atomic preservation is unavailable"
+  [ "$brain_device" = "$(stat -f '%d' "$staged")" ] || fail "staged canonical Brain is not on the same filesystem; atomic placement is unavailable"
   [ ! -e "$archive" ] || fail "archive destination already exists: $archive"
   printf '%s\n' "$archive" > "$root/archive-path"
   write_phase_state "$root" 4 "CANONICAL_BRAIN_SWITCH_IN_PROGRESS"
+  brain_identity="$(stat -f '%d:%i' "$OFFICE_BRAIN")"
   mv "$OFFICE_BRAIN" "$archive"
+  [ "$(stat -f '%d:%i' "$archive")" = "$brain_identity" ] || fail "old canonical Brain archive identity changed during atomic rename"
+  printf '%s\t%s\t%s\n' "office-old-canonical-brain-archive" "$brain_identity" "atomic-rename-verified" >> "$root/integrity.tsv"
   if ! mv "$staged" "$OFFICE_BRAIN"; then
+    if [ -e "$OFFICE_BRAIN" ] || [ -L "$OFFICE_BRAIN" ]; then
+      conflict="$root/failed/canonical-brain-placement-conflict"
+      move_aside "$OFFICE_BRAIN" "$conflict"
+      say "[PRESERVED] path recreated during canonical placement retained at $conflict"
+    fi
     mv "$archive" "$OFFICE_BRAIN"
     fail "canonical Brain placement failed; old canonical Brain restored"
   fi

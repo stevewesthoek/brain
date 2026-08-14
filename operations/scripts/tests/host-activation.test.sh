@@ -98,6 +98,14 @@ grep -Fq "find . -type f -links +1" "$RUNNER" || fail "tree fidelity does not in
 grep -Fq "/bin/ls -lde" "$RUNNER" || fail "snapshot fidelity does not include ACLs"
 grep -Fq 'source changed during snapshot attempt' "$RUNNER" || fail "unstable source snapshots are not diagnosed distinctly"
 grep -Fq 'source changed during both snapshot attempts' "$RUNNER" || fail "repeated source instability is not fail-closed"
+if grep -Fq 'stable_copy_tree "$OFFICE_BRAIN"' "$RUNNER"; then
+  fail "old dirty canonical Brain is redundantly copied instead of atomically archived"
+fi
+grep -Fq 'mv "$OFFICE_BRAIN" "$archive"' "$RUNNER" || fail "old canonical Brain is not preserved by atomic archive rename"
+grep -Fq "canonical Brain archive is not on the same filesystem" "$RUNNER" || fail "atomic Brain archive lacks a same-filesystem gate"
+grep -Fq "staged canonical Brain is not on the same filesystem" "$RUNNER" || fail "atomic Brain placement lacks a same-filesystem gate"
+grep -Fq "old canonical Brain archive identity changed during atomic rename" "$RUNNER" || fail "atomic Brain archive does not verify directory identity"
+grep -Fq 'canonical-brain-placement-conflict' "$RUNNER" || fail "a path recreated during Brain placement would not be preserved"
 grep -Fq 'destination.unstable-attempt' "$RUNNER" || fail "rejected unstable snapshots are not preserved"
 grep -Fq 'dry-run cannot pass while affected processes or detached helpers remain' "$RUNNER" || fail "dry-run still exits successfully when quiescence is unproven"
 grep -Fq 'This is not a future execution guarantee.' "$RUNNER" || fail "dry-run still overstates what a read-only inspection can prove"
