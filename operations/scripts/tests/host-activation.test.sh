@@ -60,11 +60,20 @@ grep -Fq "trap 'office_abort 130' INT TERM HUP" "$RUNNER" || fail "Office signal
 grep -Fq "trap 'mac_abort 130' INT TERM HUP" "$RUNNER" || fail "MacBook signal rollback guard is missing"
 pass "PASS/ROLLBACK and rescue-session output are explicit"
 
-grep -Fq 'readonly PREFLIGHT_BLOCKED_EXIT=20' "$RUNNER" || fail "dedicated preflight-blocked exit is missing"
+grep -Fq 'readonly NO_MUTATION_EXIT=20' "$RUNNER" || fail "dedicated no-mutation exit is missing"
+grep -Fq 'readonly ROLLBACK_FAILED_EXIT=21' "$RUNNER" || fail "dedicated rollback-failure exit is missing"
 grep -Fq 'Office Phase 0 made no changes; no receipt or rollback is required.' "$RUNNER" || fail "Office no-mutation preflight result is missing"
-grep -Fq 'if [ "$office_rc" -eq "$PREFLIGHT_BLOCKED_EXIT" ]; then' "$RUNNER" || fail "MacBook does not distinguish a preflight block from a rollback failure"
-grep -A4 -F 'if [ "$office_rc" -eq "$PREFLIGHT_BLOCKED_EXIT" ]; then' "$RUNNER" | grep -Fq 'close_rescue' || fail "preflight block does not close its unused rescue connection"
+grep -Fq 'Office Phase 0–2 changed no live paths; partial receipt retained for diagnosis.' "$RUNNER" || fail "Office partial-receipt no-mutation result is missing"
+grep -Fq 'Office run state is pre-mutation but the live SSH config is absent; manual recovery is required' "$RUNNER" || fail "Office rollback does not detect an impossible pre-mutation SSH state"
+grep -Fq 'if [ "$office_rc" -eq "$NO_MUTATION_EXIT" ]; then' "$RUNNER" || fail "MacBook does not distinguish a no-mutation stop from a rollback failure"
+grep -A4 -F 'if [ "$office_rc" -eq "$NO_MUTATION_EXIT" ]; then' "$RUNNER" | grep -Fq 'close_rescue' || fail "no-mutation stop does not close its unused rescue connection"
 grep -Fq 'no live state changed on either host; rescue connection closed.' "$RUNNER" || fail "MacBook no-mutation preflight result is missing"
+grep -Fq 'require_snapshot "$snapshot" any' "$RUNNER" || fail "full snapshot restore does not validate before moving the live path"
+grep -Fq 'Office phase state is unavailable; keep rescue open for manual recovery' "$RUNNER" || fail "missing Office phase state is not fail-closed"
+
+phase6_state_line="$(grep -n -F 'write_phase_state "$LOCAL_RECEIPT" 6 "MACBOOK_CONFIG_ACTIVATION_IN_PROGRESS"' "$RUNNER" | cut -d: -f1)"
+phase6_mutation_line="$(grep -n -F 'write_mac_include_root git' "$RUNNER" | cut -d: -f1)"
+[ -n "$phase6_state_line" ] && [ -n "$phase6_mutation_line" ] && [ "$phase6_state_line" -lt "$phase6_mutation_line" ] || fail "MacBook Phase 6 is not marked in progress before its first mutation"
 
 preflight_run_id="20991231T235959Z-$$"
 set +e
@@ -79,6 +88,6 @@ set -e
 [ "$preflight_rc" -eq 20 ] || fail "receipt-free Office preflight failure returned $preflight_rc instead of 20"
 grep -Fq 'Office Phase 0 made no changes; no receipt or rollback is required.' "$FIXTURE/preflight-blocked.out" || fail "receipt-free Office preflight failure was misreported"
 [ ! -e "/Users/Office/.brain-host-activation/$preflight_run_id" ] || fail "preflight regression test unexpectedly created a receipt"
-pass "Phase 0 blocks are not misreported as rollback failures"
+pass "Phase 0 blocks are not misreported as rollback failures; fixture coverage proves Phase 1–2 classification"
 
 printf 'host activation tests passed\n'

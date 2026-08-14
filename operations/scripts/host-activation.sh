@@ -30,7 +30,8 @@ readonly MAC_TB="192.168.2.2"
 readonly MAC_TS="100.70.12.18"
 readonly OFFICE_USER="office"
 readonly MAC_USER="Steve"
-readonly PREFLIGHT_BLOCKED_EXIT=20
+readonly NO_MUTATION_EXIT=20
+readonly ROLLBACK_FAILED_EXIT=21
 readonly APPROVAL_FILE="/Users/Office/.brain/approvals/mind-context-read-only.json"
 readonly CLAUDE_REGISTRY="/Users/Office/.claude.json"
 
@@ -49,6 +50,12 @@ APPLICATIONS_MAY_BE_RUNNING=0
 say() { printf '%s\n' "$*" >&2; }
 phase() { say; say "=== Phase $1 — $2 ==="; }
 fail() { say "[FAIL] $*"; return 1; }
+
+phase_is_no_mutation() { [ "$1" -lt 3 ]; }
+
+normalize_failure_exit() {
+  if [ "$1" -eq "$NO_MUTATION_EXIT" ]; then printf '1\n'; else printf '%s\n' "$1"; fi
+}
 
 usage() {
   cat >&2 <<'EOF'
@@ -231,9 +238,14 @@ record_host_metadata() {
 # endpoints rather than durable state. BSD tar on macOS preserves modes, ACLs,
 # symlinks, and extended attributes in this archive-stream form.
 copy_tree() {
-  local source="$1" destination="$2"
-  [ -d "$source" ] || fail "copy source is not a directory: $source"
-  [ ! -e "$destination" ] && [ ! -L "$destination" ] || fail "copy destination already exists: $destination"
+  local source="$1" destination="$2" unsupported
+  if [ ! -d "$source" ]; then fail "copy source is not a directory: $source"; return 1; fi
+  if [ -e "$destination" ] || [ -L "$destination" ]; then fail "copy destination already exists: $destination"; return 1; fi
+  unsupported="$(find "$source" ! -type f ! -type d ! -type l ! -type s -print -quit)"
+  if [ -n "$unsupported" ]; then
+    fail "copy source contains an unsupported non-file object"
+    return 1
+  fi
   mkdir -p "$destination"
   (
     cd -- "$source"
@@ -241,17 +253,48 @@ copy_tree() {
   ) | tar -C "$destination" -xpf -
 }
 
-# Content-address every regular file and symlink target plus non-secret
-# ownership/mode/size/mtime/xattr metadata. Sort the private stream and
-# emit only the final SHA-256; no file content or path is recorded in receipts.
+# Content-address every regular file and symlink target plus portable,
+# non-secret metadata. Unprivileged macOS archive extraction cannot preserve a
+# source group the owner is not a member of. The known portable case is a plain
+# 0644 regular file, where group and other access are identical; retain the GID
+# for every other object and mode. Directory inode size/mtime is not content
+# metadata, and com.apple.provenance intentionally changes on copies. All other
+# listed attributes remain verified. Sort the private stream and emit only the
+# final SHA-256; no file content or path is recorded in receipts.
 tree_digest() {
   local root="$1"
   (
+    portable_stat_lines() {
+      local record_type="$1" include_file_metadata="$2" path metadata uid gid mode size mtime portable_gid group_bits other_bits
+      while IFS= read -r -d '' path; do
+        metadata="$(stat -f '%u|%g|%Lp|%z|%m' "$path")" || return 1
+        IFS='|' read -r uid gid mode size mtime <<EOF
+$metadata
+EOF
+        group_bits="${mode: -2:1}"
+        other_bits="${mode: -1}"
+        if [ "$record_type" = F ] && [ "$mode" = 644 ] && [ "$group_bits" = "$other_bits" ]; then portable_gid=-; else portable_gid="$gid"; fi
+        if [ "$include_file_metadata" = yes ]; then
+          printf '%s %s|%s|%s|%s|%s|%s\n' "$record_type" "$path" "$uid" "$portable_gid" "$mode" "$size" "$mtime"
+        else
+          printf '%s %s|%s|%s|%s\n' "$record_type" "$path" "$uid" "$portable_gid" "$mode"
+        fi
+      done
+    }
+
     cd -- "$root"
-    find . -type f -exec shasum -a 256 {} +
-    find . -type l -exec sh -c 'for p do printf "L %s " "$p"; readlink "$p"; done' sh {} +
-    find . ! -type s -exec stat -f 'M %N|%u|%g|%Lp|%z|%m' {} +
-    xattr -lr . 2>/dev/null || true
+    find . -type f -exec shasum -a 256 {} + || exit 1
+    find . -type l -exec sh -c 'for p do printf "L %s " "$p"; readlink "$p" || exit 1; done' sh {} + || exit 1
+    find . -type f -print0 | portable_stat_lines F yes || exit 1
+    find . -type l -print0 | portable_stat_lines S yes || exit 1
+    find . -type d -print0 | portable_stat_lines D no || exit 1
+    find . ! -type s -print0 | while IFS= read -r -d '' p; do
+      xattr -s "$p" 2>/dev/null | while IFS= read -r attribute; do
+        [ "$attribute" = com.apple.provenance ] && continue
+        printf 'X %s|%s|' "$p" "$attribute"
+        xattr -spx "$attribute" "$p" 2>/dev/null || return 1
+      done || return 1
+    done || exit 1
   ) | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
 }
 
@@ -290,6 +333,7 @@ move_aside() {
 
 restore_snapshot() {
   local live="$1" snapshot="$2" failed="$3"
+  require_snapshot "$snapshot" any || return 1
   move_aside "$live" "$failed"
   if [ -e "$snapshot.missing" ]; then
     return 0
@@ -304,6 +348,7 @@ restore_snapshot() {
 
 restore_snapshot_copy() {
   local live="$1" snapshot="$2" failed="$3" staged
+  require_snapshot "$snapshot" file || return 1
   move_aside "$live" "$failed"
   if [ -e "$snapshot.missing" ]; then
     return 0
@@ -321,6 +366,17 @@ restore_snapshot_copy() {
   mv "$staged" "$live"
 }
 
+require_snapshot() {
+  local snapshot="$1" expected_kind="$2"
+  if [ -e "$snapshot.missing" ]; then
+    [ ! -e "$snapshot" ] && [ ! -L "$snapshot" ] || fail "snapshot has both missing and materialized forms: $snapshot"
+    return 0
+  fi
+  if [ -L "$snapshot" ] || [ -f "$snapshot" ]; then return 0; fi
+  if [ "$expected_kind" = any ] && [ -d "$snapshot" ] && [ ! -L "$snapshot" ]; then return 0; fi
+  fail "snapshot is unavailable or has an invalid type: $snapshot"
+}
+
 write_phase_state() {
   local root="$1" number="$2" status="$3"
   printf '%s\t%s\n' "$number" "$status" > "$root/state.tsv.tmp"
@@ -329,7 +385,8 @@ write_phase_state() {
 }
 
 read_phase_number() {
-  awk 'NR == 1 {print $1}' "$1/state.tsv" 2>/dev/null || printf '0'
+  [ -f "$1/state.tsv" ] || return 1
+  awk 'NR == 1 && NF >= 2 {print $1; found=1} END {if (!found) exit 1}' "$1/state.tsv"
 }
 
 receipt_note() {
@@ -420,6 +477,7 @@ office_phase1_backup() {
 - Status: IN PROGRESS
 EOF
   chmod 0600 "$root/receipt.md"
+  write_phase_state "$root" 1 "BACKUP_IN_PROGRESS"
 
   for name in claude cursor gemini kiro; do
     live="/Users/Office/.$name"
@@ -685,23 +743,67 @@ office_connectivity_acceptance() {
 }
 
 office_restore_ssh_only() {
-  local root="$OFFICE_RECEIPTS/$RUN_ID"
+  local root="$OFFICE_RECEIPTS/$RUN_ID" snapshot phase_number expected
   [ -d "$root" ] || return 0
-  restore_snapshot_copy /Users/Office/.ssh/config "$root/backups/paths/ssh-config" "$root/failed/ssh-config-post-failure"
+  snapshot="$root/backups/paths/ssh-config"
+  phase_number="$(read_phase_number "$root")" || fail "Office phase state is unavailable; keep rescue open for manual recovery"
+  case "$phase_number" in ''|*[!0-9]*) fail "invalid Office phase state; keep rescue open for manual recovery" ;; esac
+  if [ "$phase_number" -lt 5 ]; then
+    expected="$OFFICE_BRAIN/operations/system-configs/ssh/config"
+    [ -L /Users/Office/.ssh/config ] && [ "$(resolve_link /Users/Office/.ssh/config)" = "$expected" ] || fail "Office SSH was not scheduled to change but its original symlink is not intact; manual recovery is required"
+    say "[OK] Office SSH remained at the exact pre-migration symlink; no restore was needed."
+    return 0
+  fi
+  require_snapshot "$snapshot" file
+  restore_snapshot_copy /Users/Office/.ssh/config "$snapshot" "$root/failed/ssh-config-post-failure"
   say "[ROLLBACK] Office SSH root config restored from the pre-migration snapshot"
+}
+
+office_prevalidate_rollback() {
+  local root="$1" number="$2" name live expected archive
+  if [ "$number" -ge 7 ]; then
+    require_snapshot "$root/backups/paths/approval" any
+    require_snapshot "$root/backups/paths/claude-registry" any
+  fi
+  if [ "$number" -ge 5 ]; then
+    for name in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship; do
+      require_snapshot "$root/backups/paths/$name" any
+    done
+    [ -d "$root/backups/runtime/codex" ] && [ ! -L "$root/backups/runtime/codex" ] || fail "Office Codex rollback snapshot is unavailable"
+  fi
+  if [ "$number" -ge 4 ]; then
+    [ -f "$root/archive-path" ] || fail "Office canonical Brain archive path is unavailable"
+    archive="$(cat "$root/archive-path")"
+    if [ ! -d "$archive" ]; then
+      [ -d "$OFFICE_BRAIN/.git" ] && [ "$(git -C "$OFFICE_BRAIN" rev-parse HEAD)" = "$OLD_OFFICE_BRAIN_COMMIT" ] || fail "Office canonical Brain rollback archive is unavailable"
+    fi
+  fi
+  if [ "$number" -ge 3 ]; then
+    for name in claude cursor gemini kiro; do
+      live="/Users/Office/.$name"
+      expected="$OFFICE_BRAIN/operations/system-configs/$name"
+      if [ -L "$root/original-paths/$name.symlink" ]; then
+        [ "$(resolve_link "$root/original-paths/$name.symlink")" = "$expected" ] || fail "Office $name original symlink snapshot has an unexpected target"
+      else
+        [ -L "$live" ] && [ "$(resolve_link "$live")" = "$expected" ] || fail "Office $name rollback state is ambiguous; original symlink is unavailable"
+      fi
+    done
+  fi
 }
 
 office_rollback() {
   local root="$OFFICE_RECEIPTS/$RUN_ID" number name archive failed_root
   validate_run_id
   [ -d "$root" ] || fail "Office receipt does not exist: $root"
-  number="$(read_phase_number "$root")"
+  number="$(read_phase_number "$root")" || fail "Office phase state is unavailable; keep rescue open for manual recovery"
   case "$number" in ''|*[!0-9]*) fail "invalid Office phase state" ;; esac
   if [ "$number" -eq 0 ]; then
+    [ -e /Users/Office/.ssh/config ] || [ -L /Users/Office/.ssh/config ] || fail "Office run state is pre-mutation but the live SSH config is absent; manual recovery is required"
     say "[OK] Office run $RUN_ID is already rolled back; no paths changed."
     return 0
   fi
   check_no_forbidden_processes "Office"
+  office_prevalidate_rollback "$root" "$number"
   say "[ROLLBACK] reversing Office run $RUN_ID from completed phase $number"
   mkdir -p "$root/failed/rollback-$(date -u +%Y%m%dT%H%M%SZ)"
   failed_root="$root/failed/rollback-$(date -u +%Y%m%dT%H%M%SZ)"
@@ -743,20 +845,32 @@ office_rollback() {
 }
 
 office_abort() {
-  local rc="$1" rollback_rc=0
+  local rc="$1" rollback_rc=0 phase_number
   trap - ERR INT TERM HUP
   set +e
   if [ ! -d "$OFFICE_RECEIPTS/$RUN_ID" ]; then
     say "PRECHECK BLOCKED — Office Phase 0 made no changes; no receipt or rollback is required."
-    exit "$PREFLIGHT_BLOCKED_EXIT"
+    exit "$NO_MUTATION_EXIT"
   fi
-  if [ -d "$OFFICE_RECEIPTS/$RUN_ID" ] && [ "$(read_phase_number "$OFFICE_RECEIPTS/$RUN_ID")" -ge 3 ]; then
+  if ! phase_number="$(read_phase_number "$OFFICE_RECEIPTS/$RUN_ID")"; then
+    say "[STOP] Office phase state is unavailable; keep rescue open for manual recovery"
+    exit "$ROLLBACK_FAILED_EXIT"
+  fi
+  case "$phase_number" in ''|*[!0-9]*) say "[STOP] invalid Office phase state; keep rescue open"; exit "$ROLLBACK_FAILED_EXIT" ;; esac
+  if phase_is_no_mutation "$phase_number"; then
+    say "PRE-MUTATION BLOCKED — Office Phase 0–2 changed no live paths; partial receipt retained for diagnosis."
+    exit "$NO_MUTATION_EXIT"
+  fi
+  if [ "$phase_number" -ge 3 ]; then
     (set -e; office_rollback) || rollback_rc=$?
   fi
   if [ "$rollback_rc" -ne 0 ]; then
     say "[STOP] Office rollback could not complete safely; keep rescue open and use the receipt after quiescing affected processes."
+    say "ROLLBACK REQUIRED/ATTEMPTED after Office interruption or failure (exit $rc; rollback $rollback_rc)"
+    exit "$ROLLBACK_FAILED_EXIT"
   fi
   say "ROLLBACK REQUIRED/ATTEMPTED after Office interruption or failure (exit $rc; rollback $rollback_rc)"
+  rc="$(normalize_failure_exit "$rc")"
   exit "$rc"
 }
 
@@ -849,6 +963,7 @@ mac_snapshot_paths() {
 - Status: IN PROGRESS
 EOF
   chmod 0600 "$root/receipt.md"
+  write_phase_state "$root" 1 "MACBOOK_BACKUP_IN_PROGRESS"
   record_host_metadata "macbook-before" /Users/Steve "$root/metadata-before.tsv"
   for label in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship claude-CLAUDE claude-settings claude-hooks claude-agents claude-skills claude-statusline cursor-skills gemini-GEMINI kiro-steering; do
     case "$label" in
@@ -913,6 +1028,7 @@ mac_phase6_activate() {
   phase 6 "MacBook narrow configuration activation"
   mac_snapshot_paths
   check_no_forbidden_processes "MacBook"
+  write_phase_state "$LOCAL_RECEIPT" 6 "MACBOOK_CONFIG_ACTIVATION_IN_PROGRESS"
   write_mac_include_root git
   write_mac_include_root ssh
   ensure_hostkey_alias office-m4 "$OFFICE_TB" "$OFFICE_TS" /Users/Steve/.ssh/known_hosts
@@ -945,12 +1061,24 @@ mac_phase6_activate() {
 mac_rollback() {
   local root="$MAC_RECEIPTS/$RUN_ID" label live phase_number failed="$MAC_RECEIPTS/$RUN_ID/failed/rollback-$(date -u +%Y%m%dT%H%M%SZ)"
   [ -d "$root" ] || return 0
-  phase_number="$(read_phase_number "$root")"
+  phase_number="$(read_phase_number "$root")" || fail "MacBook phase state is unavailable; keep rescue open for manual recovery"
+  case "$phase_number" in ''|*[!0-9]*) fail "invalid MacBook phase state; keep rescue open for manual recovery" ;; esac
   if [ "$phase_number" = 0 ]; then
     say "[OK] MacBook run $RUN_ID is already rolled back; no paths changed."
     return 0
   fi
+  if [ "$phase_number" -lt 6 ]; then
+    write_phase_state "$root" 0 "ROLLED_BACK"
+    say "[OK] MacBook backup phase changed no live paths; no MacBook restore was needed."
+    return 0
+  fi
   check_no_forbidden_processes "MacBook"
+  for label in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship claude-CLAUDE claude-settings claude-hooks claude-agents claude-skills claude-statusline cursor-skills gemini-GEMINI kiro-steering; do
+    require_snapshot "$root/backups/paths/$label" any
+  done
+  if [ ! -d "$root/backups/runtime/codex" ] || [ -L "$root/backups/runtime/codex" ]; then
+    [ -e "$root/backups/runtime/codex.missing" ] || fail "MacBook Codex rollback snapshot is unavailable"
+  fi
   mkdir -p "$failed"
   for label in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship claude-CLAUDE claude-settings claude-hooks claude-agents claude-skills claude-statusline cursor-skills gemini-GEMINI kiro-steering; do
     case "$label" in
@@ -971,9 +1099,7 @@ mac_rollback() {
       gemini-GEMINI) live=/Users/Steve/.gemini/GEMINI.md ;;
       kiro-steering) live=/Users/Steve/.kiro/steering ;;
     esac
-    if [ -e "$root/backups/paths/$label" ] || [ -L "$root/backups/paths/$label" ] || [ -e "$root/backups/paths/$label.missing" ]; then
-      restore_snapshot "$live" "$root/backups/paths/$label" "$failed/$label"
-    fi
+    restore_snapshot "$live" "$root/backups/paths/$label" "$failed/$label"
   done
   if [ -d "$root/backups/runtime/codex" ]; then
     move_aside /Users/Steve/.codex "$failed/codex-after-activation"
@@ -1088,7 +1214,7 @@ mac_execute() {
   trap 'mac_abort $?' ERR
   trap 'mac_abort 130' INT TERM HUP
   stream_office_worker office-apply || office_rc=$?
-  if [ "$office_rc" -eq "$PREFLIGHT_BLOCKED_EXIT" ]; then
+  if [ "$office_rc" -eq "$NO_MUTATION_EXIT" ]; then
     trap - ERR INT TERM HUP
     close_rescue
     say "PRECHECK BLOCKED — no live state changed on either host; rescue connection closed."
@@ -1164,7 +1290,7 @@ office_finalize() {
 
 fixture_test() {
   [ "${HOST_ACTIVATION_TEST_MODE:-0}" = 1 ] || fail "fixture mode is test-only"
-  local root="$1" root_parent source live receipt digest_before
+  local root="$1" root_parent source live receipt digest_before primary_group alternate_group
   root_parent="$(cd -P -- "$(dirname -- "$root")" && pwd)"
   root="$root_parent/$(basename -- "$root")"
   case "$root" in /private/tmp/host-activation-test.*) ;; *) fail "fixture root must be a dedicated host-activation-test directory under /private/tmp" ;; esac
@@ -1206,6 +1332,62 @@ fixture_test() {
   printf 'changed-again\n' > "$root/ssh-rollback/live"
   restore_snapshot "$root/ssh-rollback/live" "$root/ssh-rollback/snapshot" "$root/ssh-rollback/failed-full-rollback"
   [ "$(cat "$root/ssh-rollback/live")" = original-ssh-config ] || fail "full rollback could not reuse the SSH snapshot"
+
+  mkdir -p "$root/missing-snapshot"
+  printf 'live-must-remain\n' > "$root/missing-snapshot/live"
+  if restore_snapshot_copy "$root/missing-snapshot/live" "$root/missing-snapshot/not-created" "$root/missing-snapshot/failed-live" 2>/dev/null; then
+    fail "copy restore accepted a missing snapshot"
+  fi
+  [ "$(cat "$root/missing-snapshot/live")" = live-must-remain ] || fail "missing snapshot moved or changed the live path"
+  [ ! -e "$root/missing-snapshot/failed-live" ] || fail "missing snapshot preserved the live path in the failure area"
+  if restore_snapshot "$root/missing-snapshot/live" "$root/missing-snapshot/not-created" "$root/missing-snapshot/failed-full-live" 2>/dev/null; then
+    fail "full restore accepted a missing snapshot"
+  fi
+  [ "$(cat "$root/missing-snapshot/live")" = live-must-remain ] || fail "missing full snapshot moved or changed the live path"
+
+  mkdir -p "$root/unsupported/source"
+  mkfifo "$root/unsupported/source/fifo"
+  if copy_tree "$root/unsupported/source" "$root/unsupported/copy" 2>/dev/null; then
+    fail "copy accepted an unsupported FIFO"
+  fi
+  [ ! -e "$root/unsupported/copy" ] || fail "unsupported-object rejection created a partial copy"
+  unlink "$root/unsupported/source/fifo"
+
+  mkdir -p "$root/portable-digest/source" "$root/portable-digest/copy"
+  printf 'portable-content\n' > "$root/portable-digest/source/state"
+  cp -p "$root/portable-digest/source/state" "$root/portable-digest/copy/state"
+  xattr -w com.brain.host-activation-test stable "$root/portable-digest/source/state"
+  xattr -w com.brain.host-activation-test stable "$root/portable-digest/copy/state"
+  primary_group="$(id -g)"
+  alternate_group="$(id -G | tr ' ' '\n' | awk -v primary="$primary_group" '$0 != primary {print; exit}')"
+  if [ -n "$alternate_group" ]; then
+    chgrp "$primary_group" "$root/portable-digest/source/state"
+    chgrp "$alternate_group" "$root/portable-digest/copy/state"
+  fi
+  touch -t 202001010000 "$root/portable-digest/source"
+  touch -t 202101010000 "$root/portable-digest/copy"
+  [ "$(tree_digest "$root/portable-digest/source")" = "$(tree_digest "$root/portable-digest/copy")" ] || fail "portable digest rejected equivalent copied state"
+  if [ -n "$alternate_group" ]; then
+    chmod 0640 "$root/portable-digest/source/state" "$root/portable-digest/copy/state"
+    [ "$(tree_digest "$root/portable-digest/source")" != "$(tree_digest "$root/portable-digest/copy")" ] || fail "portable digest ignored a security-relevant group change"
+    chmod 0644 "$root/portable-digest/source/state" "$root/portable-digest/copy/state"
+    chgrp "$primary_group" "$root/portable-digest/source" "$root/portable-digest/copy"
+    chgrp "$alternate_group" "$root/portable-digest/copy"
+    chmod 2755 "$root/portable-digest/source" "$root/portable-digest/copy"
+    [ "$(tree_digest "$root/portable-digest/source")" != "$(tree_digest "$root/portable-digest/copy")" ] || fail "portable digest ignored a setgid-directory group change"
+    chgrp "$primary_group" "$root/portable-digest/copy"
+    chmod 0755 "$root/portable-digest/source" "$root/portable-digest/copy"
+  fi
+  xattr -w com.brain.host-activation-test changed "$root/portable-digest/copy/state"
+  [ "$(tree_digest "$root/portable-digest/source")" != "$(tree_digest "$root/portable-digest/copy")" ] || fail "portable digest ignored a meaningful xattr change"
+  stat() { return 1; }
+  if tree_digest "$root/portable-digest/source" >/dev/null 2>&1; then
+    fail "portable digest accepted an incomplete metadata stream"
+  fi
+  unset -f stat
+  phase_is_no_mutation 0 && phase_is_no_mutation 1 && phase_is_no_mutation 2 || fail "Phase 0–2 no-mutation classification failed"
+  if phase_is_no_mutation 3; then fail "Phase 3 was incorrectly classified as no-mutation"; fi
+  [ "$(normalize_failure_exit "$NO_MUTATION_EXIT")" = 1 ] || fail "reserved no-mutation exit escaped a mutation failure"
   say "fixture rollback tests passed"
 }
 
