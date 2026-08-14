@@ -11,6 +11,15 @@ function normalizeHomePath(value) {
   return String(value ?? '').replace(/\/$/, '');
 }
 
+function hostBlock(source, alias) {
+  const lines = source.split('\n');
+  const start = lines.findIndex((line) => line === `Host ${alias}`);
+  if (start < 0) return '';
+  let end = start + 1;
+  while (end < lines.length && !/^(?:Host|Match)\s/.test(lines[end])) end += 1;
+  return lines.slice(start, end).join('\n');
+}
+
 export function validateWorkstationConfigOwnership(spec, { repoRoot } = {}) {
   assert(spec && typeof spec === 'object', 'spec must be an object');
   assert(spec.specVersion, 'specVersion is required');
@@ -77,7 +86,7 @@ export function validateWorkstationConfigOwnership(spec, { repoRoot } = {}) {
 
   const continuity = spec.crossMachineContinuity ?? {};
   const aliases = new Set(continuity.sshAliasesThatMustResolve ?? []);
-  for (const alias of ['MacBook', 'macbook', 'office']) {
+  for (const alias of ['MacBook', 'macbook', 'office', 'office-repos-tb', 'office-repos-lan', 'office-repos-ts']) {
     assert(aliases.has(alias), `crossMachineContinuity missing SSH alias ${alias}`);
   }
   assert(continuity.macBookThunderboltAddress === '192.168.2.2', 'MacBook Thunderbolt address must remain 192.168.2.2');
@@ -94,6 +103,21 @@ export function validateWorkstationConfigOwnership(spec, { repoRoot } = {}) {
   assert(officeToMacBook[0]?.transport === 'thunderbolt' && officeToMacBook[0]?.host === '192.168.2.2', 'Office→MacBook priority 1 must remain Thunderbolt');
   assert(officeToMacBook[1]?.transport === 'tailscale' && officeToMacBook[1]?.host === '100.70.12.18', 'Office→MacBook priority 2 must remain Tailscale');
   const codexRemote = continuity.codexRemoteSsh ?? {};
+  const fixedRouteAliases = codexRemote.fixedRouteAliases ?? [];
+  const expectedFixedRoutes = [
+    { alias: 'office-repos-tb', transport: 'thunderbolt', host: '192.168.2.1' },
+    { alias: 'office-repos-lan', transport: 'mdns-lan', host: 'office.local' },
+    { alias: 'office-repos-ts', transport: 'tailscale', host: '100.86.124.66' },
+  ];
+  assert(fixedRouteAliases.length === expectedFixedRoutes.length, 'Codex Remote SSH must declare exactly three fixed Office route aliases');
+  for (const expected of expectedFixedRoutes) {
+    const route = fixedRouteAliases.find((entry) => entry.alias === expected.alias);
+    assert(route, `Codex Remote SSH fixed route is missing ${expected.alias}`);
+    assert(
+      route.transport === expected.transport && route.host === expected.host,
+      `Codex Remote SSH fixed route ${expected.alias} must remain ${expected.transport} ${expected.host}`,
+    );
+  }
   assert(codexRemote.remoteRuntimeRoot === '~/.codex', 'Codex Remote SSH runtime root must remain ~/.codex');
   assert(codexRemote.remoteRuntimeRootMustBePhysical === true, 'Codex Remote SSH requires a physical remote runtime root');
   assert(codexRemote.maxResolvedSocketPathBytes === 103, 'Codex Remote SSH socket path limit must remain 103 bytes');
@@ -126,6 +150,16 @@ export function validateWorkstationConfigOwnership(spec, { repoRoot } = {}) {
         && sshSource.includes('  HostName 192.168.2.1'),
       'tracked SSH config must override office to fixed Thunderbolt 192.168.2.1 when reachable',
     );
+    for (const route of expectedFixedRoutes) {
+      const block = hostBlock(sshSource, route.alias);
+      assert(block, `tracked SSH config is missing Codex Remote SSH alias ${route.alias}`);
+      assert(
+        block.includes(`  HostName ${route.host}`),
+        `tracked SSH config alias ${route.alias} must target ${route.host}`,
+      );
+      assert(block.includes('  User office'), `tracked SSH config alias ${route.alias} must use the Office account`);
+      assert(block.includes('  HostKeyAlias office-m4'), `tracked SSH config alias ${route.alias} must retain HostKeyAlias office-m4`);
+    }
     assert(!sshSource.includes('192.168.100.'), 'tracked SSH config must not embed DHCP home-LAN addresses');
   }
 

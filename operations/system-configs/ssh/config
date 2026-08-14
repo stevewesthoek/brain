@@ -81,6 +81,41 @@ Host office
   ServerAliveInterval 15
   ServerAliveCountMax 2
 
+# Fixed Office routes used by Codex and other applications that do not
+# evaluate the dynamic Match exec override reliably.
+Host office-repos-tb
+  HostName 192.168.2.1
+  User office
+  Port 22
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  HostKeyAlias office-m4
+  ConnectTimeout 2
+  ServerAliveInterval 15
+  ServerAliveCountMax 2
+
+Host office-repos-lan
+  HostName office.local
+  User office
+  Port 22
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  HostKeyAlias office-m4
+  ConnectTimeout 5
+  ServerAliveInterval 15
+  ServerAliveCountMax 2
+
+Host office-repos-ts
+  HostName 100.86.124.66
+  User office
+  Port 22
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  HostKeyAlias office-m4
+  ConnectTimeout 8
+  ServerAliveInterval 15
+  ServerAliveCountMax 2
+
 # ============================================================
 # Global SSH defaults
 # ============================================================

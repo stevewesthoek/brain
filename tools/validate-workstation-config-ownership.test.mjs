@@ -49,6 +49,18 @@ test('SSH root must use native INCLUDE and preserve Thunderbolt aliases', () => 
   assert.throws(() => validateWorkstationConfigOwnership(aliasSpec), /missing SSH alias MacBook/);
 });
 
+test('Codex Remote SSH preserves all three application-facing Office aliases', () => {
+  const aliasSpec = clone();
+  aliasSpec.crossMachineContinuity.sshAliasesThatMustResolve =
+    aliasSpec.crossMachineContinuity.sshAliasesThatMustResolve.filter((alias) => alias !== 'office-repos-lan');
+  assert.throws(() => validateWorkstationConfigOwnership(aliasSpec), /missing SSH alias office-repos-lan/);
+
+  const routeSpec = clone();
+  routeSpec.crossMachineContinuity.codexRemoteSsh.fixedRouteAliases
+    .find((entry) => entry.alias === 'office-repos-ts').host = '192.168.100.20';
+  assert.throws(() => validateWorkstationConfigOwnership(routeSpec), /office-repos-ts must remain tailscale 100.86.124.66/);
+});
+
 test('canonical migration is plan-only and must preserve sessions/auth', () => {
   const spec = clone();
   spec.migration.liveMutationAuthorized = true;

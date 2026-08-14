@@ -34,7 +34,14 @@
   "crossMachineContinuity": {
     "officeMacRole": "primary-control-plane-and-repository-host",
     "macBookRole": "interactive-client-and-secondary-node",
-    "sshAliasesThatMustResolve": ["MacBook", "macbook", "office"],
+    "sshAliasesThatMustResolve": [
+      "MacBook",
+      "macbook",
+      "office",
+      "office-repos-tb",
+      "office-repos-lan",
+      "office-repos-ts"
+    ],
     "macBookThunderboltAddress": "192.168.2.2",
     "officeThunderboltAddress": "192.168.2.1",
     "officeTailscaleAddress": "100.86.124.66",
@@ -77,6 +84,26 @@
     "codexRemoteSsh": {
       "client": "MacBook Codex macOS app",
       "repositoryHost": "Office Mac mini",
+      "fixedRouteAliases": [
+        {
+          "alias": "office-repos-tb",
+          "displayName": "Office Thunderbolt",
+          "transport": "thunderbolt",
+          "host": "192.168.2.1"
+        },
+        {
+          "alias": "office-repos-lan",
+          "displayName": "Office LAN",
+          "transport": "mdns-lan",
+          "host": "office.local"
+        },
+        {
+          "alias": "office-repos-ts",
+          "displayName": "Office Tailscale",
+          "transport": "tailscale",
+          "host": "100.86.124.66"
+        }
+      ],
       "remoteRuntimeRoot": "~/.codex",
       "remoteRuntimeRootMustBePhysical": true,
       "controlSocketRelativePath": "app-server-control/app-server-control.sock",

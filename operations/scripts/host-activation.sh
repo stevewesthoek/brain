@@ -1632,7 +1632,7 @@ office_dry_run() {
 }
 
 mac_preflight() {
-  local execution="$1" path available_kb backup_kb required_kb path_kb
+  local execution="$1" path host tracked_ssh available_kb backup_kb required_kb path_kb
   phase 0 "MacBook preflight"
   for path in awk chmod cmp cp df du find git grep kill mkdir mktemp mv node pgrep ps sed shasum sleep sqlite3 ssh-keygen ssh-keyscan stat tar unlink xattr; do require_command "$path"; done
   [ -x /usr/bin/nc ] || fail "required command is unavailable: /usr/bin/nc"
@@ -1652,6 +1652,13 @@ mac_preflight() {
   ssh_explicit "$OFFICE_USER" "$OFFICE_TS" "$OFFICE_TS" /Users/Steve/.ssh/id_ed25519 /usr/bin/true >/dev/null
   say "[OK] MacBook→Office authentication over both fixed addresses"
   validate_hostkey_alias_inputs office-m4 "$OFFICE_TB" "$OFFICE_TS" /Users/Steve/.ssh/known_hosts
+  tracked_ssh="$MAC_BRAIN/operations/system-configs/ssh/config"
+  for host in office-repos-tb office-repos-lan office-repos-ts; do
+    /usr/bin/ssh -F "$tracked_ssh" -o BatchMode=yes -o ConnectTimeout=8 -o StrictHostKeyChecking=yes -o UpdateHostKeys=no "$host" /usr/bin/true >/dev/null
+    /usr/bin/ssh -G -F "$tracked_ssh" "$host" 2>/dev/null | grep -Eq '^hostkeyalias office-m4$' ||
+      fail "$host alias lost HostKeyAlias office-m4"
+  done
+  say "[OK] MacBook Codex Remote SSH aliases authenticate over Thunderbolt, LAN, and Tailscale"
   backup_kb=0
   for path in \
     /Users/Steve/.codex /Users/Steve/.gitconfig /Users/Steve/.ssh/config /Users/Steve/.ssh/known_hosts \
@@ -1964,14 +1971,20 @@ stream_office_rollback() {
 }
 
 fresh_connectivity() {
+  local host
   phase 8 "fresh bidirectional connectivity acceptance"
   ssh_explicit "$OFFICE_USER" "$OFFICE_TB" office-m4 /Users/Steve/.ssh/id_ed25519 /usr/bin/true >/dev/null
   ssh_explicit "$OFFICE_USER" "$OFFICE_TS" office-m4 /Users/Steve/.ssh/id_ed25519 /usr/bin/true >/dev/null
   /usr/bin/ssh -o BatchMode=yes -o ConnectTimeout=7 -o UpdateHostKeys=no office /usr/bin/true >/dev/null
   ssh -G office 2>/dev/null | grep -Eq '^hostkeyalias office-m4$' || fail "office alias lost HostKeyAlias"
+  for host in office-repos-tb office-repos-lan office-repos-ts; do
+    /usr/bin/ssh -o BatchMode=yes -o ConnectTimeout=8 -o StrictHostKeyChecking=yes -o UpdateHostKeys=no "$host" /usr/bin/true >/dev/null
+    /usr/bin/ssh -G "$host" 2>/dev/null | grep -Eq '^hostkeyalias office-m4$' ||
+      fail "$host alias lost HostKeyAlias office-m4"
+  done
   stream_office_worker office-connectivity
-  receipt_note "$LOCAL_RECEIPT" "- MacBook→Office: Thunderbolt PASS; Tailscale PASS; office alias PASS"
-  say "[OK] fresh SSH passed both fixed routes in both directions and all aliases"
+  receipt_note "$LOCAL_RECEIPT" "- MacBook→Office: Thunderbolt PASS; LAN PASS; Tailscale PASS; office and Codex fixed aliases PASS"
+  say "[OK] fresh SSH passed both fixed routes in both directions and all terminal/Codex aliases"
 }
 
 prompt_acceptance() {
