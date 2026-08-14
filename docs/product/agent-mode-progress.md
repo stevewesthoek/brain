@@ -31,8 +31,15 @@ handoff.
   no default model.
 - The retired Mind decomposer remains a fail-closed compatibility stub.
 - Mind's unrelated `.obsidian/**` and `kanban.md` working changes were preserved.
-- The dirty Video Orchestrator feature worktree was preserved and is not part of
-  this maintenance closeout.
+- The dirty Video Orchestrator feature worktree was preserved, restored as a
+  healthy `feature/video-orchestrator` Git worktree at its original path, and is
+  not part of this maintenance closeout.
+- Obsolete clean maintenance worktree directories `brain-next` and
+  `brain-host-activation` were verified empty of modified/untracked work and
+  removed after their commits were confirmed in `main`.
+- Herdr `0.8.0` remains application-local; one obsolete
+  `ui.agent_panel_scope` key was backed up and removed, and `herdr config check`
+  now reports `config: ok`.
 
 ## Activation evidence and remaining retention gate
 
@@ -47,15 +54,18 @@ The final activation run ID is `20260814T155610Z-26638`.
   fabricated phase-10 PASS.
 
 Operational behavior is working, but the formal rollback-retention gate is not
-closed. Retain the final Office and MacBook receipt directories and the old dirty
-canonical Brain archive until:
+closed. The Video Orchestrator archive dependency has been cleared by the
+verified worktree rescue. Retain the final Office and MacBook receipt directories
+and the old dirty canonical Brain archive until:
 
 1. manual Codex/Remote SSH acceptance is explicitly recorded;
-2. matching final receipt closure is documented honestly;
+2. matching final receipt closure is documented honestly; and
 3. the setup survives one normal reboot plus a representative application
-   update, or 14 days elapse after formal acceptance, whichever is later; and
-4. the active dirty Video Orchestrator worktree no longer depends on archive Git
-   metadata.
+   update, or 14 days elapse after formal acceptance, whichever is later.
+
+For the 2026-08-14 acceptance window, the calendar component is no earlier than
+2026-08-28. Do not delete the final rollback set before the observation and
+acceptance conditions above are also satisfied.
 
 Failed pre-mutation and rolled-back run copies are not part of this final
 rollback set and may be removed after their exact paths and sizes are recorded.

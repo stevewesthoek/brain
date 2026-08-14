@@ -120,7 +120,43 @@ Mind dirt.
 
 ## Git publication and branch cleanup
 
-Publication and cleanup results are recorded here only after the corresponding
-non-force Git operations and final clean-status checks complete. Active feature
-work is not maintenance and must not be merged or deleted as part of this
-closeout.
+Canonical Brain is on `main` and was published through maintenance closeout
+commit `78aa75ee`. The later Herdr troubleshooting note is committed locally on
+`main` as `ed70c414` and remains to be pushed with this final closeout update.
+All activation/integration commits checked during cleanup are ancestors of
+`main`.
+
+The orphaned Video Orchestrator workspace was recovered before archive cleanup:
+
+- `feature/video-orchestrator` was restored from the retained pre-activation Git
+  metadata at `ed884b9e4b0c824f0251599091eea956c9ddb839`;
+- a healthy rescue worktree was created and compared with the orphaned workspace;
+- Git-visible state matched and a checksum-based rsync comparison reported no
+  file differences;
+- the healthy worktree now lives again at
+  `/Users/Office/Repos/stevewesthoek/brain-video-orchestrator`;
+- its existing modified and untracked feature work remains intentionally dirty
+  and must not be treated as maintenance residue.
+
+The obsolete `brain-next` and `brain-host-activation` directories were each
+verified through the retained archive worktree metadata to contain no modified
+or untracked work, then removed. Their maintenance commits were already present
+in `main`.
+
+Herdr is outside the Brain-managed ownership surface. Herdr `0.8.0` reported one
+stale application-local key, `ui.agent_panel_scope`; that single obsolete key
+was removed after backing up the local config. `herdr config check` now reports
+`config: ok`. The upgrade/remediation rule is documented in
+`operations/runbooks/host-activation.md`.
+
+The final rollback material is intentionally retained:
+
+- pre-activation dirty Brain archive: approximately 9.6 GiB;
+- Office activation receipt/backups: approximately 6.3 GiB.
+
+Do not delete that final rollback set before the documented retention gate is
+satisfied. Given the 2026-08-14 acceptance window, the calendar component is no
+earlier than 2026-08-28, and the required reboot/representative-application-
+update observation and honest acceptance evidence must also be satisfied.
+Active feature work is not maintenance and must never be merged or deleted as
+part of this closeout.
