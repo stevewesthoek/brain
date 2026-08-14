@@ -60,4 +60,25 @@ grep -Fq "trap 'office_abort 130' INT TERM HUP" "$RUNNER" || fail "Office signal
 grep -Fq "trap 'mac_abort 130' INT TERM HUP" "$RUNNER" || fail "MacBook signal rollback guard is missing"
 pass "PASS/ROLLBACK and rescue-session output are explicit"
 
+grep -Fq 'readonly PREFLIGHT_BLOCKED_EXIT=20' "$RUNNER" || fail "dedicated preflight-blocked exit is missing"
+grep -Fq 'Office Phase 0 made no changes; no receipt or rollback is required.' "$RUNNER" || fail "Office no-mutation preflight result is missing"
+grep -Fq 'if [ "$office_rc" -eq "$PREFLIGHT_BLOCKED_EXIT" ]; then' "$RUNNER" || fail "MacBook does not distinguish a preflight block from a rollback failure"
+grep -A4 -F 'if [ "$office_rc" -eq "$PREFLIGHT_BLOCKED_EXIT" ]; then' "$RUNNER" | grep -Fq 'close_rescue' || fail "preflight block does not close its unused rescue connection"
+grep -Fq 'no live state changed on either host; rescue connection closed.' "$RUNNER" || fail "MacBook no-mutation preflight result is missing"
+
+preflight_run_id="20991231T235959Z-$$"
+set +e
+(
+  set -- help
+  source "$RUNNER"
+  RUN_ID="$preflight_run_id"
+  office_abort 1
+) >"$FIXTURE/preflight-blocked.out" 2>&1
+preflight_rc=$?
+set -e
+[ "$preflight_rc" -eq 20 ] || fail "receipt-free Office preflight failure returned $preflight_rc instead of 20"
+grep -Fq 'Office Phase 0 made no changes; no receipt or rollback is required.' "$FIXTURE/preflight-blocked.out" || fail "receipt-free Office preflight failure was misreported"
+[ ! -e "/Users/Office/.brain-host-activation/$preflight_run_id" ] || fail "preflight regression test unexpectedly created a receipt"
+pass "Phase 0 blocks are not misreported as rollback failures"
+
 printf 'host activation tests passed\n'

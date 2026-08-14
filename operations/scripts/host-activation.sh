@@ -30,6 +30,7 @@ readonly MAC_TB="192.168.2.2"
 readonly MAC_TS="100.70.12.18"
 readonly OFFICE_USER="office"
 readonly MAC_USER="Steve"
+readonly PREFLIGHT_BLOCKED_EXIT=20
 readonly APPROVAL_FILE="/Users/Office/.brain/approvals/mind-context-read-only.json"
 readonly CLAUDE_REGISTRY="/Users/Office/.claude.json"
 
@@ -745,6 +746,10 @@ office_abort() {
   local rc="$1" rollback_rc=0
   trap - ERR INT TERM HUP
   set +e
+  if [ ! -d "$OFFICE_RECEIPTS/$RUN_ID" ]; then
+    say "PRECHECK BLOCKED — Office Phase 0 made no changes; no receipt or rollback is required."
+    exit "$PREFLIGHT_BLOCKED_EXIT"
+  fi
   if [ -d "$OFFICE_RECEIPTS/$RUN_ID" ] && [ "$(read_phase_number "$OFFICE_RECEIPTS/$RUN_ID")" -ge 3 ]; then
     (set -e; office_rollback) || rollback_rc=$?
   fi
@@ -1074,7 +1079,7 @@ mac_abort() {
 }
 
 mac_execute() {
-  local answer
+  local answer office_rc=0
   validate_commit_arg
   RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
   LOCAL_RECEIPT="$MAC_RECEIPTS/$RUN_ID"
@@ -1082,7 +1087,16 @@ mac_execute() {
   open_rescue
   trap 'mac_abort $?' ERR
   trap 'mac_abort 130' INT TERM HUP
-  stream_office_worker office-apply
+  stream_office_worker office-apply || office_rc=$?
+  if [ "$office_rc" -eq "$PREFLIGHT_BLOCKED_EXIT" ]; then
+    trap - ERR INT TERM HUP
+    close_rescue
+    say "PRECHECK BLOCKED — no live state changed on either host; rescue connection closed."
+    exit 1
+  fi
+  if [ "$office_rc" -ne 0 ]; then
+    mac_abort "$office_rc"
+  fi
   mac_phase6_activate
   fresh_connectivity
   if ! prompt_acceptance; then
