@@ -34,7 +34,8 @@ Templates must never contain real tokens, API keys, or cookies.
 ## Symlink pattern
 - Codex:
   - `~/.codex` is a real local runtime directory
-  - `~/.codex/config.toml -> /path/to/brain/operations/system-configs/codex/config.toml`
+  - `~/.codex/config.toml` is a physical mode-`0600` generated copy of the
+    portable Brain baseline, with the current account home rendered locally
   - Repo root `.codex -> ~/.codex` (local-only, ignored in each repo)
 - Antigravity:
   - `~/Library/Application Support/Antigravity/User/mcp.json`

@@ -214,7 +214,7 @@ else
     echo "Troubleshooting:"
     echo "  • Check $STITCH_README for setup instructions"
     echo "  • Verify gcloud ADC: gcloud auth application-default login"
-    echo "  • Check symlinks: ls -la ~/.claude.json ~/.codex/config.toml"
+    echo "  • Check managed paths: ls -la ~/.claude.json ~/.codex/config.toml"
     echo "  • Restart IDEs and check their MCP settings"
     echo ""
     exit 1

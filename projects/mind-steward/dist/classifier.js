@@ -1,7 +1,13 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 const TASK_TYPE = 'mind_capture_classification';
 const DEFAULT_SELECTOR_URL = 'http://127.0.0.1:4890';
+const APPROVED_BEDROCK_PROVIDER = 'claude-bedrock';
+const APPROVED_BEDROCK_MODEL = 'us.anthropic.claude-sonnet-4-6';
+const DEFAULT_BEDROCK_REGION = 'us-east-1';
 export async function classifyMindCaptureInbox(input) {
     const mode = resolveMindCaptureExecutionMode(input);
     if (mode === 'apply') {
@@ -25,8 +31,8 @@ export async function classifyMindCaptureInbox(input) {
                 results.push({ file: relativePath, status: 'skipped', reason: 'already classified' });
                 continue;
             }
-            const route = await selectLocalModel(selectorUrl, estimateTokens(content));
-            const classification = await classifyWithLocalModel(route, content, parsed);
+            const route = await selectMindBedrockModel(selectorUrl, estimateTokens(content));
+            const classification = await classifyWithBedrock(route, content, parsed, input.bedrockConverse ?? converseWithBedrockAws);
             classified += 1;
             results.push({ file: relativePath, status: 'classified', classification });
         }
@@ -93,7 +99,7 @@ function listCaptureFiles(inboxDir) {
         return file;
     });
 }
-async function selectLocalModel(selectorUrl, inputTokenCount) {
+async function selectMindBedrockModel(selectorUrl, inputTokenCount) {
     const response = await fetch(`${selectorUrl.replace(/\/$/, '')}/select`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -101,7 +107,15 @@ async function selectLocalModel(selectorUrl, inputTokenCount) {
             task_type: TASK_TYPE,
             input_token_count: inputTokenCount,
             urgent: true,
-            local_only: true,
+            task_metadata: {
+                sensitive: true,
+                private: true,
+                allowed_providers: [APPROVED_BEDROCK_PROVIDER],
+                allowed_models: [APPROVED_BEDROCK_MODEL],
+                preferred_providers: [APPROVED_BEDROCK_PROVIDER],
+                preferred_models: [APPROVED_BEDROCK_MODEL],
+                fallback_policy: 'none',
+            },
         }),
     });
     const body = await response.json();
@@ -109,43 +123,88 @@ async function selectLocalModel(selectorUrl, inputTokenCount) {
         throw new Error(`selector failed: ${response.status} ${body.error ?? JSON.stringify(body)}`);
     }
     if (body.deferred) {
-        throw new Error('selector deferred local classification');
+        throw new Error('selector deferred private Mind classification');
     }
-    if (!body.provider_id || !body.model || !body.base_url) {
-        throw new Error(`selector did not return a local OpenAI-compatible route: ${JSON.stringify(body)}`);
+    if (body.provider_id !== APPROVED_BEDROCK_PROVIDER) {
+        throw new Error(`selector returned disallowed provider for private Mind classification: ${body.provider_id ?? 'missing'}`);
+    }
+    if (body.model !== APPROVED_BEDROCK_MODEL) {
+        throw new Error(`selector returned disallowed model for private Mind classification: ${body.model ?? 'missing'}`);
     }
     return {
-        provider_id: body.provider_id,
-        model: body.model,
-        base_url: body.base_url,
+        provider_id: APPROVED_BEDROCK_PROVIDER,
+        model: APPROVED_BEDROCK_MODEL,
         timeout_inference_sec: body.timeout_inference_sec ?? 180,
+        region: process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? DEFAULT_BEDROCK_REGION,
     };
 }
-async function classifyWithLocalModel(route, content, parsed) {
-    const response = await fetch(`${route.base_url.replace(/\/$/, '')}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(route.timeout_inference_sec * 1000),
-        body: JSON.stringify({
-            model: route.model,
-            temperature: 0.1,
-            messages: [
-                {
-                    role: 'user',
-                    content: buildClassificationPrompt(content, parsed),
-                },
-            ],
-        }),
-    });
-    const body = await response.json();
-    if (!response.ok) {
-        throw new Error(`local model failed: ${response.status} ${JSON.stringify(body.error ?? body)}`);
-    }
-    const message = body.choices?.[0]?.message?.content;
-    if (!message) {
-        throw new Error('local model returned no message content');
+async function classifyWithBedrock(route, content, parsed, converse) {
+    const message = await converse(route, buildClassificationPrompt(content, parsed));
+    if (!message.trim()) {
+        throw new Error('Bedrock returned no message content');
     }
     return normalizeClassification(parseJsonObject(message));
+}
+const execBedrockAws = (file, args, options, callback) => {
+    execFile(file, args, options, callback);
+};
+export async function converseWithBedrockAws(route, prompt, runExecFile = execBedrockAws) {
+    const requestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mind-steward-bedrock-'));
+    const requestFile = path.join(requestDir, 'converse-request.json');
+    try {
+        fs.writeFileSync(requestFile, `${JSON.stringify({
+            modelId: route.model,
+            messages: [{ role: 'user', content: [{ text: prompt }] }],
+            inferenceConfig: { maxTokens: 1200, temperature: 0.1 },
+        })}\n`, {
+            encoding: 'utf8',
+            mode: 0o600,
+            flag: 'wx',
+        });
+        fs.chmodSync(requestFile, 0o600);
+        const args = [
+            'bedrock-runtime',
+            'converse',
+            '--region', route.region,
+            '--cli-input-json', pathToFileURL(requestFile).href,
+            '--output', 'json',
+        ];
+        const stdout = await new Promise((resolve, reject) => {
+            runExecFile('aws', args, {
+                encoding: 'utf8',
+                timeout: route.timeout_inference_sec * 1000,
+                maxBuffer: 2 * 1024 * 1024,
+                windowsHide: true,
+            }, (error, out, stderr) => {
+                if (error) {
+                    const detail = String(stderr || out || error.message).trim().slice(0, 2000);
+                    reject(new Error(`Bedrock Converse failed: ${detail || error.message}`));
+                    return;
+                }
+                resolve(out);
+            });
+        });
+        let body;
+        try {
+            body = JSON.parse(stdout);
+        }
+        catch {
+            throw new Error('Bedrock Converse returned invalid JSON');
+        }
+        const text = body.output?.message?.content?.find((item) => typeof item.text === 'string')?.text;
+        if (!text) {
+            throw new Error('Bedrock Converse returned no text content');
+        }
+        return text;
+    }
+    finally {
+        try {
+            fs.rmSync(requestFile, { force: true });
+        }
+        finally {
+            fs.rmSync(requestDir, { recursive: true, force: true });
+        }
+    }
 }
 function buildClassificationPrompt(content, parsed) {
     const title = parsed.frontmatter.title || firstHeading(parsed.body) || 'Untitled capture';

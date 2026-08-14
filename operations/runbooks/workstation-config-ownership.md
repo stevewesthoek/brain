@@ -252,12 +252,17 @@ Git must not store:
 
 ## Current Migration Status
 
-As of 2026-08-12:
+As of 2026-08-14, the receipt-backed Office/MacBook activation has run:
 
-- the ownership contract is defined in Brain;
-- repository validation is required;
-- new bootstrap behavior is being updated to stop creating unsafe whole-root links;
-- live Office/MacBook symlinks have **not** been migrated by this maintenance tranche;
-- application sessions, histories, memories, auth state, caches and runtime databases remain untouched;
-- model caches/apps remain untouched;
-- host migration requires a separately authorized, receipt-backed execution pass.
+- mutable application roots are physical and runtime state remains local;
+- only declared narrow entries use symlink/include/generated-copy ownership;
+- Codex `config.toml` is a physical mode-`0600` host-rendered copy, not a symlink;
+- Office repository SSH uses Thunderbolt first and Tailscale fallback only;
+- application sessions, histories, auth, caches, and runtime databases were
+  preserved rather than moved into Git;
+- model caches/apps were not deleted by activation;
+- the final rollback set remains retained because the formal phase-10 and
+  reboot/update-or-14-day observation gates are not yet closed.
+
+See `docs/product/agent-mode-progress.md` and
+`operations/reports/host-activation-closeout-2026-08-14.md` for current evidence.

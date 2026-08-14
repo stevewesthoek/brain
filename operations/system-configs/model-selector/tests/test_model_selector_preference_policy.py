@@ -282,6 +282,34 @@ class TestPreferencePolicy(unittest.TestCase):
                 ),
             )
 
+    def test_none_raises_when_exact_preferred_provider_is_unavailable(self):
+        """none permits exactly one declared provider and never widens fallback."""
+        selector = core.ModelSelector()
+        selector._check_health = lambda provider: provider["id"] != "codex-cli"
+        selector._provider_models["ollama-local"] = ["qwen2.5:14b"]
+
+        with self.assertRaises(core.NoProviderAvailable):
+            selector.select(
+                "text_task",
+                input_token_count=1000,
+                urgent=True,
+                task_metadata=core.TaskMetadata(
+                    preferred_providers=["codex-cli"],
+                    fallback_policy="none",
+                ),
+            )
+
+    def test_unknown_fallback_policy_is_rejected(self):
+        selector = core.ModelSelector()
+
+        with self.assertRaisesRegex(ValueError, "Unknown fallback_policy"):
+            selector.select(
+                "text_task",
+                input_token_count=1000,
+                urgent=True,
+                task_metadata=core.TaskMetadata(fallback_policy="silent-widening"),
+            )
+
     def test_external_provider_disallowed_overrides_preferred(self):
         """Hard constraint external_provider_disallowed prevents external preference."""
         selector = core.ModelSelector()

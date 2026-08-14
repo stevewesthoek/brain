@@ -33,6 +33,71 @@ for (const taskId of ['mind_capture_classification', 'mind_project_decomposition
 
 assert(!Object.prototype.hasOwnProperty.call(tasks, 'codebase_semantic_graph'), 'obsolete codebase_semantic_graph selector task must remain absent');
 
+const activeVideoAnalyzer = fs.readFileSync(path.join(ROOT, 'projects/brain-core/services/video-analyzer/analyze.py'), 'utf8').toLowerCase();
+for (const forbiddenPattern of ['local_only', 'ollama', '/chat/completions', '127.0.0.1:11434', '127.0.0.1:11435']) {
+  assert(!activeVideoAnalyzer.includes(forbiddenPattern), `active video analyzer contains retired local text pattern: ${forbiddenPattern}`);
+}
+assert(activeVideoAnalyzer.includes('claude-bedrock'), 'active video analyzer must support the Bedrock-primary text route');
+assert(activeVideoAnalyzer.includes('codex-cli'), 'active video analyzer must support the Codex-secondary text route');
+assert(activeVideoAnalyzer.includes('"fallback_policy": "ordered_strict"'), 'active video analyzer must not widen beyond Bedrock and Codex');
+assert(activeVideoAnalyzer.includes('previous_failures'), 'active video analyzer must retry only through selector-declared failures');
+assert(activeVideoAnalyzer.includes('report-failure'), 'active video analyzer must report failed managed execution');
+assert(activeVideoAnalyzer.includes("'inbox' / 'new'"), 'active video analyzer must write only to canonical Mind inbox/new');
+assert(!activeVideoAnalyzer.includes("'capture' / 'inbox'"), 'active video analyzer must not recreate the retired Mind capture/inbox path');
+
+const managedTextExecutor = fs.readFileSync(path.join(ROOT, 'projects/brain-core/src/adapters/managed-text-executor.ts'), 'utf8').toLowerCase();
+for (const requiredPattern of ['claude-bedrock', 'codex-cli', 'previousfailures', 'ordered_strict', 'reportaifailure', 'reportaisuccess', 'executemanagedprovider']) {
+  assert(managedTextExecutor.includes(requiredPattern), `managed TypeScript text executor is missing safety contract: ${requiredPattern}`);
+}
+assert(!managedTextExecutor.includes('/chat/completions'), 'managed TypeScript text executor must not assume an Ollama/OpenAI-compatible endpoint');
+
+const managedProviderExecutor = fs.readFileSync(path.join(ROOT, 'projects/brain-core/src/adapters/managed-provider-executor.mjs'), 'utf8').toLowerCase();
+for (const requiredPattern of ['--cli-input-json', '0o600', 'pathToFileURL'.toLowerCase(), "cwd: privatedir", 'rmSync'.toLowerCase()]) {
+  assert(managedProviderExecutor.includes(requiredPattern), `managed provider executor is missing privacy contract: ${requiredPattern}`);
+}
+const managedCommandRunner = fs.readFileSync(path.join(ROOT, 'projects/brain-core/src/adapters/managed-command-runner.mjs'), 'utf8').toLowerCase();
+for (const requiredPattern of ['sigterm', 'sigkill', "child.on('close'", "child.stdin.on('error'", 'maxoutputbytes']) {
+  assert(managedCommandRunner.includes(requiredPattern), `managed command runner is missing termination contract: ${requiredPattern}`);
+}
+
+for (const relativePath of [
+  'projects/brain-core/src/adapters/video-orchestrator-metadata-generator.ts',
+  'projects/brain-core/src/adapters/agent-orchestrator-executor.ts',
+]) {
+  const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8').toLowerCase();
+  assert(source.includes('executemanagedtext'), `${relativePath} must use the managed TypeScript text executor`);
+  for (const forbiddenPattern of ['/chat/completions', 'local-fallback', 'stub-local']) {
+    assert(!source.includes(forbiddenPattern), `${relativePath} contains retired or false-success text behavior: ${forbiddenPattern}`);
+  }
+}
+
+const mindClassifierDist = fs.readFileSync(path.join(ROOT, 'projects/mind-steward/dist/classifier.js'), 'utf8').toLowerCase();
+for (const forbiddenPattern of ['selectlocalmodel', 'classifywithlocalmodel', 'local_only', '/chat/completions']) {
+  assert(!mindClassifierDist.includes(forbiddenPattern), `tracked Mind Steward dist contains retired local classifier pattern: ${forbiddenPattern}`);
+}
+assert(mindClassifierDist.includes('bedrock-runtime'), 'tracked Mind Steward dist must execute the private Bedrock route');
+
+const mindPreflight = fs.readFileSync(path.join(ROOT, 'tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh'), 'utf8').toLowerCase();
+for (const forbiddenPattern of ['assumed-local-preflight', 'qwen2.5:14b', 'external_provider_disallowed=true', 'offline=true']) {
+  assert(!mindPreflight.includes(forbiddenPattern), `Mind classifier preflight contains retired local route pattern: ${forbiddenPattern}`);
+}
+assert(mindPreflight.includes('not-probed-report-only'), 'Mind classifier preflight must remain non-inferencing');
+assert(mindPreflight.includes("'fallbackpolicy': 'none'"), 'Mind classifier preflight must report no fallback');
+
+for (const relativePath of [
+  'operations/integrations/save-to-mind/SYSTEM_PROMPT.md',
+  'operations/integrations/save-to-mind/openapi.json',
+  'operations/integrations/save-to-mind/README.md',
+  'operations/runbooks/mind-steward.md',
+  'operations/runbooks/n8n-mind-inbox.md',
+  'tools/scripts/mind-steward-inbox-dry-run-report.sh',
+]) {
+  const source = fs.readFileSync(path.join(ROOT, relativePath), 'utf8').toLowerCase();
+  assert(!source.includes('capture/inbox'), `${relativePath} still advertises retired capture/inbox`);
+  assert(!source.includes('nightly local'), `${relativePath} still advertises nightly local classification`);
+  assert(!source.includes('nightly mind steward run classifies'), `${relativePath} still advertises scheduled classification`);
+}
+
 const routeType = fs.readFileSync(path.join(ROOT, 'projects/brain-core/src/types/api.ts'), 'utf8');
 assert(!routeType.includes("'ollama-m4pro'"), 'Brain Core route type must not expose ollama-m4pro');
 assert(!routeType.includes("'ollama-m1'"), 'Brain Core route type must not expose ollama-m1');

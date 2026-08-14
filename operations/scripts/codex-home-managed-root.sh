@@ -118,6 +118,109 @@ generated_entries() {
     "config.toml" "$CONFIGS_DIR/codex/config.toml" "0600"
 }
 
+render_generated_source() {
+  local source="$1"
+  # The repository baseline uses the canonical Office home as its portable
+  # placeholder. Materialize it for the current account instead of copying
+  # another host's absolute paths into this machine's Codex configuration.
+  sed "s#/Users/Office#$HOME_DIR#g" "$source"
+}
+
+generated_copy_contains_managed_source() {
+  local destination="$1"
+  local source="$2"
+  python3 - "$destination" <(render_generated_source "$source") <<'PY'
+import sys
+import tomllib
+
+def contains(actual, managed, path=()):
+    if isinstance(managed, dict):
+        return isinstance(actual, dict) and all(
+            key in actual and (
+                (not path and key == 'desktop')
+                or contains(actual[key], value, path + (key,))
+            )
+            for key, value in managed.items()
+        )
+    return actual == managed
+
+try:
+    with open(sys.argv[1], 'rb') as handle:
+        actual = tomllib.load(handle)
+    with open(sys.argv[2], 'rb') as handle:
+        managed = tomllib.load(handle)
+except (OSError, tomllib.TOMLDecodeError):
+    raise SystemExit(1)
+raise SystemExit(0 if contains(actual, managed) else 1)
+PY
+}
+
+preserve_app_local_toml_sections() {
+  local current="$1"
+  local staged="$2"
+  [ -f "$current" ] && [ ! -L "$current" ] || return 0
+  python3 - "$current" "$staged" <<'PY'
+import re
+import sys
+import tomllib
+from pathlib import Path
+
+current_path = Path(sys.argv[1])
+staged_path = Path(sys.argv[2])
+header = re.compile(r'^\[([^\[\]]+)\]\s*$')
+
+def sections(text):
+    lines = text.splitlines(keepends=True)
+    found = []
+    start = None
+    name = None
+    for index, line in enumerate(lines):
+        match = header.match(line.strip())
+        if not match:
+            continue
+        if start is not None:
+            found.append((name, ''.join(lines[start:index])))
+        start = index
+        name = match.group(1)
+    if start is not None:
+        found.append((name, ''.join(lines[start:])))
+    return found
+
+current_text = current_path.read_text(encoding='utf-8')
+staged_text = staged_path.read_text(encoding='utf-8')
+current_data = tomllib.loads(current_text)
+staged_data = tomllib.loads(staged_text)
+
+def is_desktop_section(name):
+    return name == 'desktop' or name.startswith('desktop.')
+
+current_desktop = (
+    [block for name, block in sections(current_text) if is_desktop_section(name)]
+    if current_data.get('desktop') != staged_data.get('desktop')
+    else []
+)
+if current_desktop:
+    for name, block in sections(staged_text):
+        if is_desktop_section(name):
+            staged_text = staged_text.replace(block, '', 1)
+    staged_text = staged_text.rstrip() + '\n\n# Preserved app-local desktop state; not Git-owned.\n' + '\n'.join(
+        block.rstrip() for block in current_desktop
+    ) + '\n'
+staged_names = {name for name, _ in sections(staged_text)}
+preserved = [
+    block for name, block in sections(current_text)
+    if (name.startswith('marketplaces.') or name == 'tui.model_availability_nux')
+    and name not in staged_names
+]
+if preserved:
+    staged_text = staged_text.rstrip() + '\n\n# Preserved app-local upgrade state; not Git-owned.\n' + '\n'.join(
+        block.rstrip() for block in preserved
+    ) + '\n'
+tomllib.loads(staged_text)
+staged_path.write_text(staged_text, encoding='utf-8')
+PY
+}
+
 validate_sources() {
   [ -d "$BRAIN_REPO" ] || die "Brain repo not found: $BRAIN_REPO"
 
@@ -217,28 +320,36 @@ ensure_generated_copy() {
   local backup_dir="$5"
   local destination="$root/$relative"
 
-  if [ -f "$destination" ] && [ ! -L "$destination" ] && cmp -s "$destination" "$source"; then
+  if [ -f "$destination" ] && [ ! -L "$destination" ] && generated_copy_contains_managed_source "$destination" "$source"; then
     run chmod "$mode" "$destination"
     return 0
   fi
-
-  backup_existing_path "$destination" "$relative" "$backup_dir"
-  run mkdir -p "$(dirname -- "$destination")"
 
   if [ "$DRY_RUN" -eq 1 ]; then
     say "[dry-run] Would materialize $source as physical $destination with mode $mode."
     return 0
   fi
 
+  run mkdir -p "$(dirname -- "$destination")"
   local staged
   staged="$(mktemp "$(dirname -- "$destination")/.$(basename -- "$destination").generated.XXXXXX")"
-  if ! cp "$source" "$staged"; then
+  if ! render_generated_source "$source" > "$staged"; then
     rm -f "$staged"
     die "Could not stage generated copy for $destination"
   fi
+  if ! preserve_app_local_toml_sections "$destination" "$staged"; then
+    rm -f "$staged"
+    die "Could not preserve approved app-local TOML sections for $destination"
+  fi
   chmod "$mode" "$staged"
+  backup_existing_path "$destination" "$relative" "$backup_dir"
   if ! mv "$staged" "$destination"; then
     rm -f "$staged"
+    if [ -e "$backup_dir/$relative" ] || [ -L "$backup_dir/$relative" ]; then
+      mv "$backup_dir/$relative" "$destination" || {
+        die "Could not activate generated config or restore its preserved original: $destination"
+      }
+    fi
     die "Could not atomically activate generated copy for $destination"
   fi
 }
@@ -364,8 +475,8 @@ check_managed_layout() {
       failures=$((failures + 1))
       continue
     fi
-    if ! cmp -s "$generated_file" "$generated_target"; then
-      say "[FAIL] Generated config drifted from Brain source: $generated_file"
+    if ! generated_copy_contains_managed_source "$generated_file" "$generated_target"; then
+      say "[FAIL] Generated config is missing or changed a Brain-owned value: $generated_file"
       failures=$((failures + 1))
       continue
     fi

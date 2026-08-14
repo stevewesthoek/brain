@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Save to Mind API",
-    "version": "1.0.0",
-    "description": "Save conversations and ideas to the Mind capture inbox. Classification is handled later by local Mind Steward automation."
+    "version": "1.1.0",
+    "description": "Save conversations and ideas to Mind inbox/new. Classification is a separate operator-invoked private Bedrock action; it is not scheduled."
   },
   "servers": [
     {
@@ -15,7 +15,7 @@
       "post": {
         "operationId": "saveToMind",
         "summary": "Save a conversation or idea to Mind",
-        "description": "Creates a Markdown capture in mind/capture/inbox and queues it for nightly local Mind Steward classification.",
+        "description": "Creates a new Markdown capture in mind/inbox/new without running or scheduling classification.",
         "requestBody": {
           "required": true,
           "content": {
@@ -60,7 +60,7 @@
         },
         "responses": {
           "200": {
-            "description": "Capture saved and queued for classification.",
+            "description": "Capture saved; no classifier execution is implied.",
             "content": {
               "application/json": {
                 "schema": {
@@ -76,7 +76,7 @@
                     },
                     "queued_for_classification": {
                       "type": "boolean",
-                      "description": "Whether Mind Steward should classify the capture during the nightly local run."
+                      "description": "Whether the capture is eligible for a separately invoked operator classification. This does not mean classification is scheduled."
                     },
                     "classifier": {
                       "type": "string",

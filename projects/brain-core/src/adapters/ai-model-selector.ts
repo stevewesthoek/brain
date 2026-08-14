@@ -1,16 +1,7 @@
 // AI Model Selector client — TypeScript adapter for localhost:4890
 //
-// Usage:
-//   import { selectAI, reportAIFailure, TASK_TYPES } from '../adapters/ai-model-selector.js';
-//
-//   const routing = await selectAI(TASK_TYPES.METADATA_GENERATION, { inputTokens: 8000 });
-//   const client = new OpenAI({ baseURL: routing.baseUrl, apiKey: routing.apiKey ?? 'local' });
-//   try {
-//     const result = await client.chat.completions.create({ model: routing.model, ... });
-//   } catch (err) {
-//     await reportAIFailure(routing.providerId, 'error', String(err));
-//     throw err;
-//   }
+// Active text consumers use managed-text-executor.ts. This lower-level client
+// performs selection and outcome reporting only; it never executes a provider.
 
 const SELECTOR_URL = process.env.AI_SELECTOR_URL ?? 'http://localhost:4890';
 
@@ -33,6 +24,7 @@ export interface AISelection {
   apiKey: string | null;
   reason: string;
   costEstimate: number;
+  timeoutInferenceSec: number;
 }
 
 export interface SelectorHealth {
@@ -58,9 +50,10 @@ export async function selectAI(
     urgent?: boolean;
     previousFailures?: string[];
     timeoutMs?: number;
+    taskMetadata?: Record<string, unknown>;
   } = {},
 ): Promise<AISelection> {
-  const { inputTokens = 0, urgent = false, previousFailures = [], timeoutMs = 5000 } = options;
+  const { inputTokens = 0, urgent = false, previousFailures = [], timeoutMs = 5000, taskMetadata } = options;
 
   let resp: Response;
   try {
@@ -72,6 +65,7 @@ export async function selectAI(
         input_token_count: inputTokens,
         urgent,
         previous_failures: previousFailures,
+        ...(taskMetadata ? { task_metadata: taskMetadata } : {}),
       }),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -96,6 +90,7 @@ export async function selectAI(
     api_key: string | null;
     reason: string;
     cost_estimate: number;
+    timeout_inference_sec?: number;
   };
 
   return {
@@ -105,6 +100,7 @@ export async function selectAI(
     apiKey: data.api_key,
     reason: data.reason,
     costEstimate: data.cost_estimate,
+    timeoutInferenceSec: data.timeout_inference_sec ?? 300,
   };
 }
 

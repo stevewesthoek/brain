@@ -141,7 +141,7 @@ npx -y @_davideast/stitch-mcp doctor
 Stitch templates:      ~/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/
 Master MCP registry:   ~/Repos/stevewesthoek/brain/operations/system-configs/mcp/MASTER-MCP-SETUP.md
 Claude Code config:    ~/.claude.json
-Codex config:          ~/.codex/config.toml  (symlink → brain)
+Codex config:          ~/.codex/config.toml  (physical generated copy from brain)
 Antigravity config:    ~/Library/Application Support/Antigravity/User/mcp.json  (symlink)
 gcloud ADC:            ~/.stitch-mcp/  (managed by stitch init)
 Verification script:   ~/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/verify-stitch-all-ides.sh

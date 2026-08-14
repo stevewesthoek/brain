@@ -39,7 +39,7 @@ Legacy paths such as `capture/inbox/`, `capture/failed/`, `router/`, and `mind/r
 
 - Dry-run/report-only behavior is the default.
 - Reports and previews are non-authoritative until reviewed.
-- Local model selection occurs only when the classifier is explicitly invoked by a caller.
+- Private Bedrock selection occurs only when the classifier is explicitly invoked by a caller; it is pinned to `claude-bedrock` / `us.anthropic.claude-sonnet-4-6` with no fallback.
 - Repository files and package code do not establish that a scheduler or workflow is actively deployed.
 - Retention does not authorize nightly execution, scheduling, watchers, production writes, or continuous automation.
 - Durable changes require a separate approved apply path; authority must not be inferred from a preview or report.
@@ -50,7 +50,7 @@ Legacy paths such as `capture/inbox/`, `capture/failed/`, `router/`, and `mind/r
 
 Mind Steward remains separate from Brain Core. It has no package import dependency on Brain Core. The packages share canonical path and policy resolution through the Brain-owned registry, while retaining distinct responsibilities:
 
-- Mind Steward: local classifier, dry-run reports, preview presentation, wiki health, maintenance-preview queues, and CLI presentation.
+- Mind Steward: bounded private classifier, dry-run reports, preview presentation, wiki health, maintenance-preview queues, and CLI presentation.
 - Brain Core: API and adapter surfaces, proposal and approval adapters, scheduler views, and contained write boundaries.
 
 Future migration or retirement requires separate Brain-owned evidence and approval. This README does not authorize either outcome.

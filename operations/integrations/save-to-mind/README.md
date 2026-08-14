@@ -7,11 +7,12 @@ Save to Mind is a ChatGPT Custom GPT action that captures conversations and idea
 ```text
 ChatGPT Custom GPT
 -> POST https://n8n.prochat.tools/webhook/mind-inbox
--> n8n commits Markdown to stevewesthoek/mind capture/inbox/
--> nightly local Mind Steward run classifies the capture with local AI
+-> n8n commits Markdown to stevewesthoek/mind inbox/new/
+-> optional operator-run Mind Steward classification uses private Bedrock
 ```
 
-Save to Mind saves immediately. Classification is nightly only.
+Save to Mind saves immediately. Classification is not scheduled; the nightly
+scheduler emits report-only artifacts.
 
 ## Custom GPT Setup
 
@@ -56,18 +57,30 @@ auth: none
 
 ```text
 Repository: stevewesthoek/mind
-Folder:     capture/inbox/
+Folder:     inbox/new/
 ```
 
-## Local Classification
+## Private Classification
 
-Mind Steward classifies captures on this computer through the AI Model Selector:
+Mind Steward requests one exact private route through the AI Model Selector:
 
 ```json
 {
   "task_type": "mind_capture_classification",
-  "local_only": true
+  "task_metadata": {
+    "private": true,
+    "sensitive": true,
+    "allowed_providers": ["claude-bedrock"],
+    "allowed_models": ["us.anthropic.claude-sonnet-4-6"],
+    "preferred_providers": ["claude-bedrock"],
+    "preferred_models": ["us.anthropic.claude-sonnet-4-6"],
+    "fallback_policy": "none"
+  }
 }
 ```
 
-No hosted LLM provider is used for automatic capture classification.
+The private capture is sent only to the approved Anthropic model through the
+existing AWS Bedrock account. The request content is placed in an owner-only
+temporary JSON file, never in process arguments, and is deleted in `finally`.
+If this exact route is unavailable, classification fails closed; Codex and all
+other providers are forbidden fallbacks.

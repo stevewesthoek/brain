@@ -45,6 +45,14 @@ ALLOWED_PROVIDER_TYPES = {
     "whisper-remote",
 }
 
+ALLOWED_FALLBACK_POLICIES = {
+    "selector_default",
+    "ordered",
+    "ordered_then_selector_default",
+    "ordered_strict",
+    "none",
+}
+
 
 @dataclass
 class TaskMetadata:
@@ -920,6 +928,12 @@ class ModelSelector:
         if task_metadata is None:
             task_metadata = TaskMetadata()
 
+        fallback_policy = task_metadata.fallback_policy or "selector_default"
+        if fallback_policy not in ALLOWED_FALLBACK_POLICIES:
+            raise ValueError(f"Unknown fallback_policy={fallback_policy!r}")
+        if fallback_policy == "none" and not task_metadata.preferred_providers:
+            raise ValueError("fallback_policy='none' requires an explicit preferred provider")
+
         if task_type not in self._task_types:
             raise ValueError(f"Unknown task_type={task_type!r}. Known: {list(self._task_types)}")
 
@@ -969,9 +983,10 @@ class ModelSelector:
             pref_order = {pid: i for i, pid in enumerate(task_metadata.preferred_providers)}
             eligible.sort(key=lambda p: pref_order.get(p["id"], len(task_metadata.preferred_providers)))
 
-        # Apply ordered_strict filter if requested (restrict to preferred providers only)
-        fallback_policy = task_metadata.fallback_policy or "selector_default"
-        if fallback_policy == "ordered_strict" and task_metadata.preferred_providers:
+        # Strict modes never widen beyond the caller's declared provider route.
+        if fallback_policy == "none":
+            eligible = [p for p in eligible if p["id"] == task_metadata.preferred_providers[0]]
+        elif fallback_policy == "ordered_strict" and task_metadata.preferred_providers:
             pref_set = set(task_metadata.preferred_providers)
             eligible = [p for p in eligible if p["id"] in pref_set]
 

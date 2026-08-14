@@ -24,28 +24,36 @@ POST https://n8n.prochat.tools/webhook/mind-inbox
 The capture lands in:
 
 ```text
-mind/capture/inbox/
+mind/inbox/new/
 ```
 
 Save to Mind saves the capture immediately. It does not classify the capture immediately.
 
-## Nightly Processing
+## Nightly Reporting
 
-Mind Steward processes captures during the nightly local scheduler run:
+The active nightly scheduler is report-only for Mind:
 
 ```text
-n8n writes capture to GitHub capture/inbox/
--> local scheduler syncs missing inbox captures
--> Mind Steward classifies captures with local AI
--> compile loop appends review suggestions to wiki/log.md
+n8n writes captures to GitHub inbox/new/
+-> local scheduler writes a Mind Steward dry-run report in Brain runtime state
+-> compile loop runs report-only and writes no Mind files
 ```
 
-Automatic classification uses the AI Model Selector with:
+Classification is an explicit operator action. Its default mode is dry-run and
+apply remains disabled pending approval integration. When invoked, it uses:
 
 ```json
 {
   "task_type": "mind_capture_classification",
-  "local_only": true
+  "task_metadata": {
+    "private": true,
+    "sensitive": true,
+    "allowed_providers": ["claude-bedrock"],
+    "allowed_models": ["us.anthropic.claude-sonnet-4-6"],
+    "preferred_providers": ["claude-bedrock"],
+    "preferred_models": ["us.anthropic.claude-sonnet-4-6"],
+    "fallback_policy": "none"
+  }
 }
 ```
 
@@ -54,7 +62,7 @@ Automatic classification uses the AI Model Selector with:
 Review:
 
 ```text
-mind/capture/inbox/
+mind/inbox/new/
 mind/wiki/log.md
 ```
 
@@ -72,7 +80,7 @@ Keep raw captures intact unless you intentionally discard them.
 
 ## Working Rules
 
-- Use `capture/inbox/` for new unsorted captures.
+- Use `inbox/new/` for new unsorted captures.
 - Use `live/` for active work.
 - Use `wiki/` for compiled durable knowledge.
 - Use `sources/` for raw research, source notes, transcripts, and evidence.
@@ -83,8 +91,9 @@ Keep raw captures intact unless you intentionally discard them.
 ## Manual Commands
 
 ```bash
-bash /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-sync-inbox.sh
+node /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-sync-inbox.mjs --source-root /path/to/verified/source --mind-root /Users/Office/Repos/stevewesthoek/mind --mode dry-run
 bash /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-classify-captures.sh
 ```
 
-These commands are available for verification and maintenance. The normal operating mode is nightly processing.
+These commands are available for verification and maintenance. They do not
+authorize apply mode or an automatic classification schedule.

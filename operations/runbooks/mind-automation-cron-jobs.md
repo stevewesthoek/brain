@@ -16,39 +16,47 @@ The scheduler runs on this computer after the nightly cutoff. Mind jobs are part
 
 | Job | Script | Purpose | Writes to Mind |
 |---|---|---|---|
-| Mind Steward inbox sync | `tools/scripts/mind-steward-sync-inbox.sh` | Fetch `origin/main` and copy missing `capture/inbox/*.md` files into the local vault | yes, only missing inbox captures |
-| Mind Steward classification | `tools/scripts/mind-steward-classify-captures.sh` | Classify inbox captures through AI Model Selector with `local_only: true` | yes, classification metadata in captures |
-| Mind compile loop | `tools/scripts/mind-compile-loop.sh` | Append review suggestions to `wiki/log.md` | yes, append-only suggestions |
+| Mind Steward inbox sync | `tools/scripts/mind-steward-sync-inbox.mjs` | Operator-only sync; defaults to dry-run and copies only missing `inbox/new/*.md` in explicitly approved apply mode | no in default mode |
+| Mind Steward classification | `tools/scripts/mind-steward-classify-captures.sh` | Operator-only private Bedrock classifier; defaults to dry-run and apply is disabled | no |
+| Mind compile loop | `tools/scripts/mind-compile-loop.sh --mode=report-only` | Emit review suggestions to scheduler output | no |
 | Mind Steward dry-run report | `tools/scripts/mind-steward-dry-run-report.sh` | Write Brain runtime report for maintenance findings | no Mind writes |
 
 ## Nightly Order
 
 ```text
 mind-steward-dry-run-report
--> memory-context-refresh
--> mind-steward-sync-inbox
--> mind-steward-classify-captures
--> mind-compile-loop
+-> local-apps-report
+-> mind-compile-loop --mode=report-only
 ```
 
-## Local AI Requirement
+Unsafe sync, classification, and memory-refresh scheduler jobs remain quiesced.
+
+## Private AI Requirement
 
 Automatic capture classification must use:
 
 ```json
 {
   "task_type": "mind_capture_classification",
-  "local_only": true
+  "task_metadata": {
+    "private": true,
+    "sensitive": true,
+    "allowed_providers": ["claude-bedrock"],
+    "allowed_models": ["us.anthropic.claude-sonnet-4-6"],
+    "preferred_providers": ["claude-bedrock"],
+    "preferred_models": ["us.anthropic.claude-sonnet-4-6"],
+    "fallback_policy": "none"
+  }
 }
 ```
 
-The selected provider must be a local OpenAI-compatible endpoint such as Ollama.
+The classifier fails closed if the exact approved Bedrock route is unavailable.
 
 ## Manual Verification
 
 ```bash
 curl -fsS http://127.0.0.1:4890/health
-bash /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-sync-inbox.sh
+node /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-sync-inbox.mjs --source-root /path/to/verified/source --mind-root /Users/Office/Repos/stevewesthoek/mind --mode dry-run
 bash /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-classify-captures.sh
 ```
 
@@ -66,7 +74,7 @@ Scheduler logs:
 
 ## Safety
 
-- Do not install per-minute Mind classification jobs.
-- Do not call hosted LLMs for automatic Mind capture classification.
+- Do not install per-minute or nightly Mind classification jobs.
+- Do not allow Codex or any other fallback for private Mind classification.
 - Do not overwrite local inbox files during sync.
 - Do not store secrets or runtime logs in Mind.

@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import type {
   AgentOrchestratorPlan,
   AgentOrchestratorTask,
@@ -9,7 +8,8 @@ import type {
   AgentOrchestratorExecuteResult,
 } from '../types/api.js';
 import { updatePlan } from './agent-orchestrator-planner.js';
-import { selectAI, TASK_TYPES } from './ai-model-selector.js';
+import { TASK_TYPES } from './ai-model-selector.js';
+import { executeManagedText } from './managed-text-executor.js';
 
 const DEFAULT_APPROVALS_DIR = path.resolve(
   process.cwd(),
@@ -142,65 +142,20 @@ async function executeSelectorRoutedChatTask(
   task: AgentOrchestratorTask,
   requestedProvider: 'gemini' | 'claude',
 ): Promise<unknown> {
-  try {
-    const routing = await selectAI(TASK_TYPES.DESCRIPTION_QUALITY_REVIEW, {
-      inputTokens: Math.max(1, (task.prompt ?? '').length),
-      timeoutMs: 5000,
-      urgent: requestedProvider === 'claude',
-    });
-
-    const response = await fetch(`${routing.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(routing.apiKey ? { Authorization: `Bearer ${routing.apiKey}` } : {}),
-      },
-      body: JSON.stringify({
-        model: routing.model,
-        messages: [
-          {
-            role: 'user',
-            content: task.prompt ?? task.description,
-          },
-        ],
-        temperature: 0.2,
-      }),
-      signal: AbortSignal.timeout(30_000),
-    });
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      throw new Error(`Gemini selector request failed: ${response.status} ${body}`.trim());
-    }
-
-    const data = await response.json() as {
-      choices?: Array<{ message?: { content?: string } }>;
-      output_text?: string;
-    };
-
-    return {
-      provider: requestedProvider,
-      status: 'success',
-      taskId: task.id,
-      providerId: routing.providerId,
-      model: routing.model,
-      result: data.output_text ?? data.choices?.[0]?.message?.content ?? '',
-      completedAt: new Date().toISOString(),
-    };
-  } catch (error) {
-    return {
-      provider: requestedProvider,
-      status: 'success',
-      taskId: task.id,
-      providerId: 'local-fallback',
-      model: 'stub-local',
-      result: task.prompt ?? task.description,
-      fallback: true,
-      note: `${requestedProvider} executor could not reach the selector-routed chat surface; returned local fallback result.`,
-      error: error instanceof Error ? error.message : String(error),
-      completedAt: new Date().toISOString(),
-    };
-  }
+  const managed = await executeManagedText(
+    TASK_TYPES.DESCRIPTION_QUALITY_REVIEW,
+    task.prompt ?? task.description,
+    { urgent: requestedProvider === 'claude' },
+  );
+  return {
+    provider: requestedProvider,
+    status: 'success',
+    taskId: task.id,
+    providerId: managed.providerId,
+    model: managed.model,
+    result: managed.text,
+    completedAt: new Date().toISOString(),
+  };
 }
 
 async function executeGeminiTask(task: AgentOrchestratorTask): Promise<unknown> {
@@ -211,47 +166,21 @@ async function executeClaudeTask(task: AgentOrchestratorTask): Promise<unknown> 
   return executeSelectorRoutedChatTask(task, 'claude');
 }
 
-function executeCodexTask(task: AgentOrchestratorTask): unknown {
-  try {
-    const result = spawnSync('codex', [
-      '--approval-mode',
-      'full-auto',
-      '--model',
-      process.env.CODEX_MODEL ?? 'gpt-5.4',
-      task.prompt ?? task.description,
-    ], {
-      encoding: 'utf8',
-      timeout: 30_000,
-      env: { ...process.env, FORCE_COLOR: '0' },
-    });
-
-    if (result.error) {
-      throw result.error;
-    }
-    if (result.status !== 0) {
-      throw new Error(result.stderr.trim() || `Codex exited with status ${result.status}`);
-    }
-
-    return {
-      provider: 'codex',
-      status: 'success',
-      taskId: task.id,
-      model: process.env.CODEX_MODEL ?? 'gpt-5.4',
-      result: result.stdout.trim(),
-      completedAt: new Date().toISOString(),
-    };
-  } catch (error) {
-    return {
-      provider: 'codex',
-      status: 'success',
-      taskId: task.id,
-      model: process.env.CODEX_MODEL ?? 'gpt-5.4',
-      result: task.prompt ?? task.description,
-      fallback: true,
-      error: error instanceof Error ? error.message : String(error),
-      completedAt: new Date().toISOString(),
-    };
-  }
+async function executeCodexTask(task: AgentOrchestratorTask): Promise<unknown> {
+  const managed = await executeManagedText(
+    TASK_TYPES.DESCRIPTION_QUALITY_REVIEW,
+    task.prompt ?? task.description,
+    { preferredProviders: ['codex-cli'] },
+  );
+  return {
+    provider: 'codex',
+    status: 'success',
+    taskId: task.id,
+    providerId: managed.providerId,
+    model: managed.model,
+    result: managed.text,
+    completedAt: new Date().toISOString(),
+  };
 }
 
 function executeBashTask(task: AgentOrchestratorTask): unknown {

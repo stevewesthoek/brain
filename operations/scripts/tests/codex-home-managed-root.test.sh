@@ -32,7 +32,7 @@ create_brain_fixture() {
     "$configs_dir/codex/rules" \
     "$brain_ai_dir/skills/active"
   printf 'fixture agents\n' > "$configs_dir/codex/AGENTS.md"
-  printf 'fixture config\n' > "$configs_dir/codex/config.toml"
+  printf '[shell_environment_policy.set]\nCODEX_HOME = "/Users/Office/.codex"\n\n[desktop]\nconversationDetailMode = "managed-default"\n\n[desktop.appearanceLightChromeTheme]\nfixtureAccent = "managed-default"\n' > "$configs_dir/codex/config.toml"
   printf 'fixture rtk\n' > "$configs_dir/codex/RTK.md"
   printf 'fixture rules\n' > "$configs_dir/codex/rules/default.rules"
   printf 'fixture skill\n' > "$brain_ai_dir/skills/active/example.md"
@@ -99,12 +99,24 @@ assert_generated_copy() {
   local file="$1"
   local source="$2"
   local expected_mode="${3:-600}"
+  local expected_home="${file%/.codex/config.toml}"
   [ -f "$file" ] || fail "Expected generated file: $file"
   [ ! -L "$file" ] || fail "Generated file must not be a symlink: $file"
-  cmp -s "$file" "$source" || fail "Generated file differs from source: $file"
+  cmp -s "$file" <(sed "s#/Users/Office#$expected_home#g" "$source") || fail "Generated file differs from rendered source: $file"
   local actual_mode
   actual_mode="$(stat -f '%Lp' "$file")"
   [ "$actual_mode" = "$expected_mode" ] || fail "Generated file mode $actual_mode, expected $expected_mode: $file"
+}
+
+assert_portable_generated_copy() {
+  local file="$1"
+  local expected_home="$2"
+  [ -f "$file" ] || fail "Expected generated file: $file"
+  [ ! -L "$file" ] || fail "Generated file must not be a symlink: $file"
+  grep -Fq "$expected_home/.codex" "$file" || fail "Generated config did not render the target home: $file"
+  if [ "$expected_home" != "/Users/Office" ]; then
+    ! grep -Fq '/Users/Office' "$file" || fail "Generated config retained the Office home on another host: $file"
+  fi
 }
 
 ###############################################################################
@@ -403,6 +415,33 @@ assert_generated_copy \
   "$REPAIR_ROOT/home/.codex/config.toml" \
   "$REPAIR_ROOT/brain/operations/system-configs/codex/config.toml" \
   "600"
+assert_portable_generated_copy \
+  "$REPAIR_ROOT/home/.codex/config.toml" \
+  "$REPAIR_ROOT/home"
+pass "generated Codex config renders absolute home paths for the target host"
+
+printf '\n[app_upgrade_state]\nversion = "fixture-upgrade"\n' >> "$REPAIR_ROOT/home/.codex/config.toml"
+printf '\n[marketplaces.fixture-runtime]\nsource_type = "local"\nsource = "%s"\n' "$REPAIR_ROOT/home/.codex/.tmp/fixture-marketplace" >> "$REPAIR_ROOT/home/.codex/config.toml"
+sed -i '' 's/conversationDetailMode = "managed-default"/conversationDetailMode = "app-local"/' "$REPAIR_ROOT/home/.codex/config.toml"
+sed -i '' 's/fixtureAccent = "managed-default"/fixtureAccent = "app-local-nested"/' "$REPAIR_ROOT/home/.codex/config.toml"
+run_manager "$REPAIR_ROOT" check >/dev/null
+grep -Fq 'fixture-upgrade' "$REPAIR_ROOT/home/.codex/config.toml" || fail "check removed app-derived upgrade state"
+pass "check accepts app-derived additions and desktop overrides while enforcing the managed subset"
+
+sed -i '' "s#$REPAIR_ROOT/home/.codex#$REPAIR_ROOT/wrong-codex#" "$REPAIR_ROOT/home/.codex/config.toml"
+if run_manager "$REPAIR_ROOT" check >/dev/null 2>&1; then
+  fail "check accepted a changed Brain-owned generated config value"
+fi
+run_manager "$REPAIR_ROOT" repair >/dev/null
+run_manager "$REPAIR_ROOT" check >/dev/null
+[ "$(stat -f '%Lp' "$REPAIR_ROOT/home/.codex/config.toml")" = "600" ] || fail "repaired generated config lost mode 0600"
+assert_portable_generated_copy "$REPAIR_ROOT/home/.codex/config.toml" "$REPAIR_ROOT/home"
+grep -Fq '[marketplaces.fixture-runtime]' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped approved app-local marketplace registration"
+grep -Fq 'conversationDetailMode = "app-local"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped an app-local desktop override"
+grep -Fq 'fixtureAccent = "app-local-nested"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped a nested app-local desktop override"
+UPGRADE_BACKUP_COUNT="$(find "$REPAIR_ROOT/home/.brain-configs-backups" -type f -path '*/replaced-managed-entries/config.toml' | wc -l | tr -d ' ')"
+[ "$UPGRADE_BACKUP_COUNT" -ge 1 ] || fail "repair did not preserve the complete prior generated config"
+pass "repair rejects changed managed values and preserves prior config plus app-local desktop and marketplace state"
 
 PRESERVED_FILE_COUNT="$(find "$REPAIR_ROOT/home/.brain-configs-backups" -type f -path '*/replaced-managed-entries/AGENTS.md' | wc -l | tr -d ' ')"
 [ "$PRESERVED_FILE_COUNT" -eq 1 ] || fail "conflicting managed file was not preserved"
@@ -419,7 +458,9 @@ fi
 grep -q 'temporary conflicting config' "$REPAIR_ROOT/home/.codex/config.toml" || fail "blocked repair rewrote the conflicting config"
 pass "repair refuses changes while a protected Codex process is running"
 
-cp "$REPAIR_ROOT/brain/operations/system-configs/codex/config.toml" "$REPAIR_ROOT/home/.codex/config.toml"
+sed "s#/Users/Office#$REPAIR_ROOT/home#g" \
+  "$REPAIR_ROOT/brain/operations/system-configs/codex/config.toml" \
+  > "$REPAIR_ROOT/home/.codex/config.toml"
 chmod 600 "$REPAIR_ROOT/home/.codex/config.toml"
 CODEX_HOME_TEST_FORCE_PROCESS_RUNNING=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=0 \

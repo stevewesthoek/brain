@@ -46,7 +46,7 @@ resolve_inbox_dir() {
     printf '%s\n' "${mind_root}/inbox/new"
     return 0
   fi
-  # No fallback to capture/inbox; retired after Batch 8W cleanup (2026-07-09)
+  # No legacy inbox fallback; retired after Batch 8W cleanup (2026-07-09).
   printf '%s\n' "unavailable"
   return 1
 }
@@ -81,7 +81,7 @@ if [[ ! -d "$MIND_ROOT" ]]; then
   EXIT_CODE=1
 elif [[ ! -d "$INBOX_DIR" ]]; then
   STATUS="failed"
-  MESSAGE="Mind inbox directory not found (tried inbox/new and capture/inbox) at $MIND_ROOT"
+  MESSAGE="Mind inbox directory not found at $MIND_ROOT/inbox/new"
   EXIT_CODE=1
 else
   while IFS= read -r file_path; do
@@ -198,7 +198,7 @@ JSON
   fi
 
   printf '\n## Safety\n\n'
-  printf 'This scheduler report only inspects the Mind inbox (preferring inbox/new, falling back to capture/inbox) and writes to Brain runtime/local/mind-steward/. It does not classify, move, delete, rename, rewrite, or queue Mind files.\n'
+  printf 'This scheduler report only inspects Mind inbox/new and writes to Brain runtime/local/mind-steward/. It does not classify, move, delete, rename, rewrite, or queue Mind files.\n'
 } > "$MD_OUTPUT"
 
 chmod 600 "$JSON_OUTPUT" "$MD_OUTPUT"

@@ -1,4 +1,5 @@
-import { selectAI, TASK_TYPES } from './ai-model-selector.js';
+import { TASK_TYPES } from './ai-model-selector.js';
+import { executeManagedText } from './managed-text-executor.js';
 
 export interface VideoOrchestratorMetadataInput {
   projectId: string;
@@ -142,34 +143,8 @@ export async function generateVideoOrchestratorMetadata(
   ].filter(Boolean).join('\n');
 
   try {
-    const selection = await selectAI(TASK_TYPES.METADATA_GENERATION, {
-      inputTokens: Math.max(1, prompt.length),
-      timeoutMs: 5000,
-    });
-
-    const response = await fetch(`${selection.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(selection.apiKey ? { Authorization: `Bearer ${selection.apiKey}` } : {}),
-      },
-      body: JSON.stringify({
-        model: selection.model,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.2,
-      }),
-      signal: AbortSignal.timeout(30_000),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Metadata generation failed: ${response.status}`);
-    }
-
-    const data = await response.json() as {
-      output_text?: string;
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const raw = data.output_text ?? data.choices?.[0]?.message?.content ?? '';
+    const managed = await executeManagedText(TASK_TYPES.METADATA_GENERATION, prompt);
+    const raw = managed.text;
 
     let parsed: ParsedLLMMetadata | null = null;
     try {
@@ -179,13 +154,7 @@ export async function generateVideoOrchestratorMetadata(
     }
 
     if (!parsed?.youtubeTitle || !parsed?.youtubeDescription) {
-      const fallback = buildFallback(input);
-      return {
-        ...fallback,
-        source: 'ai',
-        provider: selection.providerId,
-        model: selection.model,
-      };
+      return buildFallback(input);
     }
 
     const youtubeTitle = parsed.youtubeTitle;
@@ -262,8 +231,8 @@ export async function generateVideoOrchestratorMetadata(
       hashtags,
       platforms,
       source: 'ai',
-      provider: selection.providerId,
-      model: selection.model,
+      provider: managed.providerId,
+      model: managed.model,
     };
   } catch {
     return buildFallback(input);

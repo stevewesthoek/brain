@@ -35,7 +35,7 @@ Service endpoint: `http://127.0.0.1:4890` (override with `AI_SELECTOR_URL` env v
 | `disallowed_providers` | string[] | Blacklist: exclude these provider IDs |
 | `allowed_models` | string[] | Whitelist: restrict to these model IDs only |
 | `disallowed_models` | string[] | Blacklist: exclude these model IDs |
-| `fallback_policy` | string | `"selector_default"` (default), `"ordered"`, `"ordered_then_selector_default"`, `"ordered_strict"` |
+| `fallback_policy` | string | `"selector_default"` (default), `"ordered"`, `"ordered_then_selector_default"`, `"ordered_strict"`, `"none"` |
 | `selection_policy` | string | Optional named policy label (informational, reserved for future routing) |
 | `offline` | boolean | Only local/LAN providers allowed |
 | `external_provider_disallowed` | boolean | Same as offline for external provider filtering |
@@ -50,6 +50,7 @@ Service endpoint: `http://127.0.0.1:4890` (override with `AI_SELECTOR_URL` env v
 | `ordered` | Try `preferred_providers` + `preferred_models` first; fall back to selector ranking if none viable. |
 | `ordered_then_selector_default` | Explicit alias for `ordered`. Recommended for high-quality automation. |
 | `ordered_strict` | Try preferred only. If none viable, return 503 (NoProviderAvailable). No fallback. |
+| `none` | Use only the first explicitly preferred provider. If it is unavailable, return 503. Unknown policy names are rejected. |
 
 ### Hard constraints (cannot be overridden by preferences)
 
@@ -169,7 +170,10 @@ When using `preferred_models`, always use the **Model ID** column, not the model
 
 1. Do not implement provider or model fallback inside the consumer. Use `fallback_policy` instead.
 2. Do not hardcode `--backend ollama` or any provider-specific flag in caller scripts.
-3. Pass selector response fields (`provider_id`, `model`, `base_url`, `api_key`) into the downstream tool.
+3. Execute only the selected provider type: Bedrock through a private request
+   file and Codex through stdin/private output. `base_url`/`api_key` apply only
+   to an explicitly admitted HTTP provider; active text consumers must not
+   assume an OpenAI-compatible endpoint.
 4. Always call `/report-success` or `/report-failure` after execution completes.
 5. Do not set `local_only=true` unless the task genuinely requires private/offline routing.
 6. Identify yourself via a `caller` or `service` label in log output, not in the HTTP request.
@@ -204,14 +208,22 @@ When using `preferred_models`, always use the **Model ID** column, not the model
 }
 ```
 
-### Private/local-only task
+### Private Bedrock-only task
 
 ```json
 {
   "task_type": "mind_capture_classification",
   "input_token_count": 500,
   "urgent": true,
-  "local_only": true
+  "task_metadata": {
+    "private": true,
+    "sensitive": true,
+    "allowed_providers": ["claude-bedrock"],
+    "allowed_models": ["us.anthropic.claude-sonnet-4-6"],
+    "preferred_providers": ["claude-bedrock"],
+    "preferred_models": ["us.anthropic.claude-sonnet-4-6"],
+    "fallback_policy": "none"
+  }
 }
 ```
 

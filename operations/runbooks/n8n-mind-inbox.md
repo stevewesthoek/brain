@@ -41,7 +41,9 @@ Status:        active
 }
 ```
 
-`source`, `title`, and `content` are the meaningful fields. `type_hint` is stored as source context for later local classification.
+`source`, `title`, and `content` are the meaningful fields. `type_hint` is stored
+as source context for a separately invoked private Bedrock classification; it
+does not schedule classification.
 
 ## Response
 
@@ -66,34 +68,45 @@ n8n:
 
 n8n does not call an LLM for Mind capture classification.
 
-## Local Classification Schedule
+## Private Classification Schedule
 
-Mind Steward classifies captures during the nightly local scheduler run. Save to Mind does not trigger immediate classification.
+Save to Mind does not trigger classification. The active local scheduler is
+report-only; classification is an explicit operator action whose apply mode
+remains disabled pending approval integration.
 
 Nightly flow:
 
 ```text
 n8n writes successful captures to GitHub inbox/new/
--> mind-steward-sync-inbox.sh copies missing inbox captures into the local Mind checkout
--> mind-steward-classify-captures.sh classifies captures locally
--> mind-compile-loop.sh appends review suggestions to wiki/log.md
+-> optional operator-run sync can copy missing inbox captures
+-> optional operator-run classifier can preview private Bedrock classification
+-> nightly compile loop runs report-only
 ```
 
 The sync step copies only missing `inbox/new/*.md` files and does not overwrite local files. Failed processing remains isolated under `inbox/failed/` for review.
 
-## Local AI Contract
+## Private AI Contract
 
-Mind Steward requests a local model through the AI Model Selector:
+Mind Steward requests one exact provider/model route through the AI Model Selector:
 
 ```json
 {
   "task_type": "mind_capture_classification",
-  "local_only": true,
-  "urgent": true
+  "urgent": true,
+  "task_metadata": {
+    "private": true,
+    "sensitive": true,
+    "allowed_providers": ["claude-bedrock"],
+    "allowed_models": ["us.anthropic.claude-sonnet-4-6"],
+    "preferred_providers": ["claude-bedrock"],
+    "preferred_models": ["us.anthropic.claude-sonnet-4-6"],
+    "fallback_policy": "none"
+  }
 }
 ```
 
-The selected provider must be a local OpenAI-compatible endpoint such as Ollama.
+The selected route must match exactly. If Bedrock is unavailable, classification
+fails closed and does not fall through to Codex or another provider.
 
 ## Capture Note Format
 
@@ -110,7 +123,6 @@ signal_quality: 0
 title: "Capture title"
 created: "2026-06-03T12:00:00.000Z"
 mind_steward_status: queued
-mind_steward_local_only: true
 mind_steward_task_type: mind_capture_classification
 ---
 
@@ -123,20 +135,19 @@ mind_steward_task_type: mind_capture_classification
 Raw capture content.
 ```
 
-Mind Steward adds classification metadata during the nightly local run:
+Mind Steward adds classification metadata during the nightly run:
 
 ```yaml
 mind_steward_classified: true
 mind_steward_classified_at: "2026-06-03T12:05:00.000Z"
-mind_steward_provider: ollama-m4pro
-mind_steward_model: qwen2.5:14b
-mind_steward_local_only: true
+mind_steward_provider: claude-bedrock
+mind_steward_model: us.anthropic.claude-sonnet-4-6
 ```
 
 ## Scripts
 
 ```text
-brain/tools/scripts/mind-steward-sync-inbox.sh
+brain/tools/scripts/mind-steward-sync-inbox.mjs
 brain/tools/scripts/mind-steward-classify-captures.sh
 brain/tools/scripts/office-nightly-scheduler.sh
 ```
@@ -145,7 +156,7 @@ brain/tools/scripts/office-nightly-scheduler.sh
 
 ```bash
 curl -fsS http://127.0.0.1:4890/health
-bash /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-sync-inbox.sh
+node /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-sync-inbox.mjs --source-root /path/to/verified/source --mind-root /Users/Office/Repos/stevewesthoek/mind --mode dry-run
 bash /Users/Office/Repos/stevewesthoek/brain/tools/scripts/mind-steward-classify-captures.sh
 ```
 

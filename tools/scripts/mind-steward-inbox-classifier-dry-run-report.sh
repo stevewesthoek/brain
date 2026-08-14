@@ -17,7 +17,6 @@ import importlib.util
 import json
 import os
 import sys
-import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -216,144 +215,67 @@ try:
                     if selector_config_dir_override and not selector_config_dir.exists():
                         raise FileNotFoundError(f'Selector config dir does not exist: {selector_config_dir}')
 
-                    temp_selector_root = Path(tempfile.mkdtemp(prefix='mind-steward-selector-'))
-                    try:
-                        selector_module.CONFIG_DIR = selector_config_dir
-                        selector_module.PROVIDERS_PATH = selector_config_dir / 'ai-providers.json'
-                        selector_module.TASK_TYPES_PATH = selector_config_dir / 'ai-task-types.json'
-                        selector_module.SELECTOR_CONFIG_PATH = selector_config_dir / 'ai-selector-config.json'
-                        selector_module.BEDROCK_MODELS_PATH = selector_config_dir / 'ai-bedrock-models.json'
-                        selector_module.STATE_DIR = temp_selector_root / 'state'
-                        selector_module.LOG_DIR = temp_selector_root / 'logs'
-                        selector_module.RATE_LIMITS_PATH = selector_module.STATE_DIR / 'rate-limits.json'
-                        selector_module.CB_STATE_PATH = selector_module.STATE_DIR / 'circuit-breakers.json'
-                        selector_module.BEDROCK_ACCESS_PATH = selector_module.STATE_DIR / 'bedrock-model-access.json'
-                        selector_module.BEDROCK_OUTCOMES_PATH = selector_module.STATE_DIR / 'bedrock-model-outcomes.json'
-                        selector_module.AUDIT_LOG_PATH = selector_module.LOG_DIR / 'ai-selections.jsonl'
+                    providers = json.loads((selector_config_dir / 'ai-providers.json').read_text(encoding='utf-8')).get('providers', [])
+                    tasks = json.loads((selector_config_dir / 'ai-task-types.json').read_text(encoding='utf-8')).get('task_types', {})
+                    bedrock_models = json.loads((selector_config_dir / 'ai-bedrock-models.json').read_text(encoding='utf-8')).get('models', [])
+                    task = tasks.get(selector_task_type) or {}
+                    provider = next((item for item in providers if item.get('id') == 'claude-bedrock'), None)
+                    model = next((item for item in bedrock_models if item.get('model_id') == 'us.anthropic.claude-sonnet-4-6'), None)
 
-                        selector = selector_module.ModelSelector()
-                        selector_provider_count = len(getattr(selector, '_providers', []))
-                        selector_task_type_count = len(getattr(selector, '_task_types', {}))
-                        selector_health_mode = 'assumed-local-preflight'
-                        original_check_health = selector._check_health
+                    policy_errors = []
+                    if provider is None or provider.get('type') != 'bedrock':
+                        policy_errors.append('claude-bedrock provider is missing or not Bedrock')
+                    if model is None or not model.get('enabled', True):
+                        policy_errors.append('approved Claude Sonnet 4.6 Bedrock model is missing or disabled')
+                    if task.get('privacy_policy') != 'private-bedrock-only':
+                        policy_errors.append('task privacy_policy is not private-bedrock-only')
+                    if task.get('required_provider') != 'claude-bedrock':
+                        policy_errors.append('task required_provider is not claude-bedrock')
+                    if task.get('preferred_model') != 'us.anthropic.claude-sonnet-4-6':
+                        policy_errors.append('task preferred_model is not Claude Sonnet 4.6')
 
-                        def preflight_check_health(provider: dict) -> bool:
-                            if provider.get('type') == 'openai-compatible':
-                                provider_id = str(provider.get('id', 'unknown'))
-                                preferred_models = [
-                                    str(model)
-                                    for model in provider.get('preferred_models', []) or provider.get('models', [])
-                                ]
-                                selector._provider_models[provider_id] = preferred_models or ['qwen2.5:14b']
-                                return True
-                            return bool(original_check_health(provider))
-
-                        selector._check_health = preflight_check_health  # type: ignore[method-assign]
-                        selector_health_snapshot: list[dict] = []
-                        for provider in selector._providers[:3]:
-                            provider_id = str(provider.get('id', 'unknown'))
-                            try:
-                                healthy = bool(selector._check_health(provider))
-                            except Exception as err:  # pragma: no cover - defensive runtime guard
-                                selector_health_snapshot.append({
-                                    'providerId': provider_id,
-                                    'healthy': False,
-                                    'error': str(err)[:240],
-                                    'models': list(selector._provider_models.get(provider_id, [])),
-                                })
-                            else:
-                                selector_health_snapshot.append({
-                                    'providerId': provider_id,
-                                    'healthy': healthy,
-                                    'models': list(selector._provider_models.get(provider_id, [])),
-                                })
-                        input_tokens = sum(len(item.get('preview', '')) for item in sampled_files)
-                        input_tokens = max(1, input_tokens // 4) if sampled_files else 0
-                        task_metadata = selector_module.TaskMetadata(
-                            private=True,
-                            offline=True,
-                            external_provider_disallowed=True,
+                    input_tokens = sum(len(item.get('preview', '')) for item in sampled_files)
+                    input_tokens = max(1, input_tokens // 4) if sampled_files else 0
+                    selector_report = {
+                        'status': 'policy-validated',
+                        'providerId': 'claude-bedrock',
+                        'model': 'us.anthropic.claude-sonnet-4-6',
+                        'baseUrl': '',
+                        'reason': 'exact private Bedrock-only route validated without provider probing or inference',
+                        'taskType': selector_task_type,
+                        'inputTokens': input_tokens,
+                        'providerCount': len(providers),
+                        'taskTypeCount': len(tasks),
+                        'healthMode': 'not-probed-report-only',
+                        'health': [],
+                        'taskMetadata': {
+                            'private': True,
+                            'sensitive': True,
+                            'allowedProviders': ['claude-bedrock'],
+                            'allowedModels': ['us.anthropic.claude-sonnet-4-6'],
+                            'preferredProviders': ['claude-bedrock'],
+                            'preferredModels': ['us.anthropic.claude-sonnet-4-6'],
+                            'fallbackPolicy': 'none',
+                        },
+                    }
+                    if policy_errors:
+                        report = make_blocked(
+                            'Mind Steward private Bedrock policy validation failed.',
+                            errors + policy_errors,
+                            inbox_total,
+                            sampled_files,
+                            skipped_files,
+                            selector_report,
                         )
-
-                        try:
-                            selected = selector.select(
-                                selector_task_type,
-                                input_token_count=input_tokens,
-                                urgent=True,
-                                previous_failures=[],
-                                task_metadata=task_metadata,
-                            )
-                        except selector_module.NoProviderAvailable as err:
-                            report = make_blocked(
-                                str(err),
-                                errors + ['selector-no-provider-available'],
-                                inbox_total,
-                                sampled_files,
-                                skipped_files,
-                                {
-                                    'providerCount': selector_provider_count,
-                                    'taskTypeCount': selector_task_type_count,
-                                    'healthMode': selector_health_mode,
-                                    'health': selector_health_snapshot,
-                                },
-                            )
-                        except Exception as err:  # pragma: no cover - defensive runtime guard
-                            report = make_blocked(
-                                f'Selector execution failed: {err}',
-                                errors + [str(err)[:240]],
-                                inbox_total,
-                                sampled_files,
-                                skipped_files,
-                                {
-                                    'providerCount': selector_provider_count,
-                                    'taskTypeCount': selector_task_type_count,
-                                    'healthMode': selector_health_mode,
-                                    'health': selector_health_snapshot,
-                                },
-                            )
-                        else:
-                            if isinstance(selected, dict):
-                                report = make_blocked(
-                                    'Selector deferred the inbox classifier preflight instead of selecting a provider.',
-                                    errors + ['selector-deferred'],
-                                    inbox_total,
-                                    sampled_files,
-                                    skipped_files,
-                                )
-                            else:
-                                selector_report = {
-                                    'status': 'selected',
-                                    'providerId': selected.provider_id,
-                                    'model': selected.model,
-                                    'baseUrl': selected.base_url,
-                                    'reason': selected.reason,
-                                    'taskType': selected.task_type or selector_task_type,
-                                    'inputTokens': selected.input_tokens,
-                                    'providerCount': selector_provider_count,
-                                    'taskTypeCount': selector_task_type_count,
-                                    'healthMode': selector_health_mode,
-                                    'health': selector_health_snapshot,
-                                    'taskMetadata': {
-                                        'private': True,
-                                        'offline': True,
-                                        'externalProviderDisallowed': True,
-                                    },
-                                }
-                                report = make_ok(
-                                    'Mind Steward inbox classifier selector preflight completed in report-only mode.',
-                                    selector_report,
-                                    inbox_total,
-                                    sampled_files,
-                                    skipped_files,
-                                    input_tokens,
-                                )
-                    finally:
-                        try:
-                            import shutil
-
-                            shutil.rmtree(temp_selector_root, ignore_errors=True)
-                        except Exception:
-                            pass
+                    else:
+                        report = make_ok(
+                            'Mind Steward private Bedrock policy validated in report-only mode; no model was contacted.',
+                            selector_report,
+                            inbox_total,
+                            sampled_files,
+                            skipped_files,
+                            input_tokens,
+                        )
                 except Exception as err:
                     report = make_blocked(
                         f'Selector setup failed: {err}',

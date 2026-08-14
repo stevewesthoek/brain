@@ -53,7 +53,8 @@ global Codex config. Global registration requires a separate explicit admission.
 
 ### 4. Register a truly global provider in Codex only when admitted
 ```bash
-# Add to ~/.codex/config.toml (symlinked from operations/system-configs/codex/config.toml)
+# Add the durable setting to operations/system-configs/codex/config.toml, then
+# regenerate the physical ~/.codex/config.toml with codex-home-managed-root.sh
 [mcp_servers.<server>]
 command = "..."
 args = [...]
@@ -209,7 +210,7 @@ Key principles:
 | IDE | Config File | Format | Symlink Support |
 |-----|------------|--------|---|
 | Claude Code | `~/.claude.json` | JSON | No (manual merge) |
-| Codex | `~/.codex/config.toml` | TOML | Yes (symlink from brain) |
+| Codex | `~/.codex/config.toml` | TOML | Generated physical copy; not a symlink |
 | Kiro | `~/.kiro/settings.json` | JSON | No (manual merge) |
 | Cursor | `~/.cursor/settings.json` | JSON | No (manual merge) |
 | Antigravity | `~/Library/Application Support/Antigravity/User/mcp.json` | JSON | Yes (central ignored file) |

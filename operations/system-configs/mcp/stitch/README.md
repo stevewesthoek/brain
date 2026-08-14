@@ -11,7 +11,7 @@ Runtime auth state must stay in your home directory and must not be committed to
 | Tool | Status | Config | Setup |
 |------|--------|--------|-------|
 | **Claude Code** | ✅ Active | `~/.claude.json` | Manual merge or run setup script |
-| **Codex** | ✅ Active | `~/.codex/config.toml` | Automatic (symlinked from brain) |
+| **Codex** | ✅ Active | `~/.codex/config.toml` | Automatic physical generated copy from Brain |
 | **Kiro** | ✅ Active | `~/.kiro/settings.json` | Automatic via setup script |
 | **Cursor** | ✅ Active | `~/.cursor/settings.json` | Automatic via setup script |
 | **Antigravity** | ✅ Active | `~/Library/Application Support/Antigravity/User/mcp.json` | Automatic via setup script (symlink) |
@@ -165,7 +165,8 @@ gcloud auth print-access-token
 
 ### Step 6: Codex (Already Active ✅)
 
-Codex config is already set up in `~/.codex/config.toml` (symlinked from `operations/system-configs/codex/config.toml`).
+Codex config is already set up in `~/.codex/config.toml` as a physical
+mode-`0600` generated copy of `operations/system-configs/codex/config.toml`.
 
 Verify:
 ```bash

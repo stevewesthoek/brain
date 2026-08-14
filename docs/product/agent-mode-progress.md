@@ -1,72 +1,87 @@
 # Agent Mode Progress
 
-## Current goal
+## Authoritative maintenance handoff — 2026-08-14
 
-Finish Host Activation blocker remediation for the closed Brain + Mind workstation project. This is closeout maintenance only: preserve the completed configuration/local-AI tranche, integrate the remaining release ancestry, establish verified Office/MacBook prerequisites, and prepare the repository-side Mind Context repin.
+The configuration/local-AI and two-host activation tranche is maintenance only.
+Infinite Brain remains closed; do not reopen roadmap or feature work from this
+handoff.
 
-**Infinite Brain remains closed.** Do not start a new roadmap or broaden this work into feature development.
+## Implemented state
 
-## Current state — 2026-08-13
+- Office and MacBook canonical Brain checkouts contain the same activation line.
+- Office application runtime roots are physical, machine-local directories;
+  intentional narrow configuration entries are Git-managed.
+- Codex keeps a physical `~/.codex` runtime root. Durable entries are symlinked;
+  `config.toml` is an owner-only generated copy with the current account home
+  rendered locally.
+- Codex auth, sessions, thread index, databases, plugins, caches, and Computer
+  Use bundles remain local-only.
+- Office connectivity has exactly two repository routes: Thunderbolt preferred
+  (`office-repos-tb`) and Tailscale fallback (`office-repos-ts`). The obsolete
+  Office LAN route was removed from Git and MacBook Codex connection state.
+- Brain-managed MTPLX/Ollama always-on text routes are retired. Bedrock is the
+  primary managed text route and Codex CLI the secondary route.
+- Private Mind classification is pinned to `claude-bedrock` and
+  `us.anthropic.claude-sonnet-4-6`, with private/sensitive flags and no fallback.
+- The private Mind request uses a unique mode-`0600` temporary request file;
+  capture text is not present in process arguments and cleanup runs in `finally`.
+- The active video analyzer uses Bedrock-primary/Codex-secondary routing and no
+  local OpenAI-compatible text endpoint.
+- Structural Graphify execution is retired. The bounded semantic event gate has
+  no default model.
+- The retired Mind decomposer remains a fail-closed compatibility stub.
+- Mind's unrelated `.obsidian/**` and `kanban.md` working changes were preserved.
+- The dirty Video Orchestrator feature worktree was preserved and is not part of
+  this maintenance closeout.
 
-- Completed maintenance source: `maintenance/config-local-ai-20260812` at `40a879a2e4f75405059b8edc381a1fd96bae05a8`.
-- Integration worktree: `/Users/Office/Repos/stevewesthoek/brain-host-activation`.
-- Integration branch: `maintenance/host-activation-integration-20260813`.
-- Ancestry-preserving merge baseline: `726b4f054f6bf1e7a503adaf4e27995441610d44`.
-- Final integration HEAD: the clean closeout commit containing this handoff; use `git rev-parse HEAD` in this worktree as the authoritative hash.
-- Canonical Office checkout `/Users/Office/Repos/stevewesthoek/brain`: unchanged and still intentionally dirty on `release/brain-stabilization-v1`.
-- Mind checkout: unchanged by this task. Its committed HEAD advanced concurrently to `c3dcefdd808501a7ead7ffc4671eb5ef3822c268`, adding only `inbox/failed/2026-08-13-quick-capture.md` outside the admitted provider scopes; its working changes remain only `.obsidian/**` and `kanban.md`.
-- Live Office/MacBook runtime-root migration: not performed.
+## Activation evidence and remaining retention gate
 
-## Completed repository maintenance
+The final activation run ID is `20260814T155610Z-26638`.
 
-Commit `40a879a2e4f75405059b8edc381a1fd96bae05a8` completed the 2026-08-12/13 maintenance tranche:
+- Office receipt state is `8 OFFICE_CONNECTIVITY_PASS`.
+- MacBook receipt state is `6 MACBOOK_CONFIG_ACTIVE`.
+- The original MacBook application acceptance recorded Codex/Remote SSH as
+  failed or declined.
+- A later bounded follow-up repaired Codex Remote SSH to the two-route model and
+  verified both SSH aliases, but it did not rewrite the original receipt as a
+  fabricated phase-10 PASS.
 
-- retired Brain-managed MTPLX/Ollama always-on local text routes and obsolete Qwen/MTPLX launcher material;
-- made Bedrock-backed Claude primary and Codex secondary for managed text routing;
-- kept private Mind classification pinned to `claude-bedrock` / `us.anthropic.claude-sonnet-4-6`, private and sensitive, with no fallback;
-- moved private Bedrock requests into unique mode-`0600` temporary JSON files removed in `finally`;
-- retired structural Graphify execution while preserving the bounded semantic event gate;
-- retained the retired Mind decomposer as a fail-closed compatibility stub;
-- established runtime-safe workstation ownership policy and tooling;
-- hardened the physical Codex runtime root/generated-copy design;
-- added Thunderbolt-first, fixed-Tailscale-fallback SSH repository policy;
-- deleted the Brain-managed MTPLX LaunchAgent declaration;
-- repaired and passed the 23-check Codex managed-root regression suite.
+Operational behavior is working, but the formal rollback-retention gate is not
+closed. Retain the final Office and MacBook receipt directories and the old dirty
+canonical Brain archive until:
 
-## Host Activation integration
+1. manual Codex/Remote SSH acceptance is explicitly recorded;
+2. matching final receipt closure is documented honestly;
+3. the setup survives one normal reboot plus a representative application
+   update, or 14 days elapse after formal acceptance, whichever is later; and
+4. the active dirty Video Orchestrator worktree no longer depends on archive Git
+   metadata.
 
-The integration branch preserves release ancestry through a normal merge. Release-only B8.1 evidence and implementation files were retained where unique; add/add conflicts were resolved in favor of the newer maintenance/P8 versions already present on the maintenance line.
+Failed pre-mutation and rolled-back run copies are not part of this final
+rollback set and may be removed after their exact paths and sizes are recorded.
 
-Portable current canonical configuration was reconciled without copying application runtime state:
+## Restore model
 
-- Claude keeps intentional model selection `opus`.
-- Codex keeps current supported model, ChatGPT application/node-repl integration, Computer Use support, required plugins, notification, trusted executable paths, and portable preferences.
-- Generated marketplace refresh timestamps, temporary marketplace state, caches, and ephemeral project history were not imported.
-- The credentials index receives only the non-secret Workbench transport location metadata.
-- The ProChat media-storage provisioning/verification tooling is retained as reproducible repository infrastructure.
+Git restores intentional, reproducible, non-secret configuration. A rebuilt Mac
+still requires normal sign-in or an encrypted external backup for SSH private
+keys, AWS credentials, application auth, Codex/Claude sessions, local databases,
+and other `LOCAL-ONLY` state. Those items must never be reconstructed from Git.
 
-## Brain–Mind bridge preparation
+Use:
 
-Repository templates, project registration, admission truth, tests, and activation documentation now prepare for:
+- `operations/runbooks/workstation-config-ownership.md`
+- `operations/runbooks/codex-managed-runtime-root.md`
+- `operations/runbooks/host-activation.md`
+- `operations/scripts/brain-configs-link.sh`
+- `operations/scripts/codex-home-managed-root.sh`
 
-- current Mind HEAD `c3dcefdd808501a7ead7ffc4671eb5ef3822c268`;
-- provider source under `/Users/Office/Repos/stevewesthoek/brain`, never `brain-next`;
-- read-only `health`, `resolve`, and `explain` tools only;
-- no mutation path and no automatic fallback.
+Application upgrades may change local generated/runtime state. Never replace a
+whole runtime root with a symlink and never copy app-build hashes, marketplace
+timestamps, caches, auth, or sessions into Git. Promote only reviewed durable
+settings into the portable baseline.
 
-The live owner-only approval and live Claude/Codex MCP registrations remain on their previous state. They must be repinned only after the integration candidate becomes canonical `/brain`; the provider is expected to fail closed until source, approval, and registrations agree.
+## Resume rule
 
-## Remaining live gates
-
-No live root migration is authorized by this handoff. A separately authorized Host Activation pass must still:
-
-1. close Claude, Cursor, Gemini, Kiro, Codex/ChatGPT, Ghostty, and any other process using the roots being migrated;
-2. preserve lossless owner-only snapshots and a rollback receipt;
-3. replace the canonical `/brain` checkout only through the approved archival/cutover procedure;
-4. migrate application runtime roots and Git/SSH ownership one bounded root at a time;
-5. repin the live Mind approval and MCP client registrations only after canonical source cutover;
-6. run fresh Save-to-Mind readback/acceptance without invoking a write webhook;
-7. prove sessions, auth, settings, SSH, Remote SSH sockets, and bridge health before acceptance;
-8. roll back immediately on any continuity failure.
-
-Do not push the integration branch or perform any migration implicitly.
+Before any further backup or worktree deletion, inspect current Git status,
+receipt state, active worktrees, and the closeout report. Do not delete the final
+rollback set or the Video Orchestrator worktree merely to reclaim space.

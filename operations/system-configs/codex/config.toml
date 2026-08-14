@@ -29,13 +29,11 @@ NODE_REPL_NODE_MODULE_DIRS = "/Applications/ChatGPT.app/Contents/Resources/cua_n
 NODE_REPL_NODE_PATH = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node"
 NODE_REPL_TRUSTED_CODE_PATHS = "/Users/Office/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
 CODEX_HOME = "/Users/Office/.codex"
-NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "8e86beb821b9afc846211798e0113bd4b9e79312dfcd135eb447bdb154f64071"
 BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
 NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
 NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = "Control desktop apps on macOS through Computer Use."
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.803.61601"
 SKY_CUA_SERVICE_PATH = "/Users/Office/.codex/computer-use/Codex Computer Use.app"
 CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex"
 
@@ -169,20 +167,6 @@ trust_level = "trusted"
 [projects."/Users/Office/Repos/vendors/nexu-io/open-design"]
 trust_level = "trusted"
 
-[tui.model_availability_nux]
-"gpt-5.5" = 4
-
-[marketplaces.openai-bundled]
-last_updated = "2026-06-23T12:47:57Z"
-source_type = "local"
-# Bundled marketplace cache is machine state, not repository configuration.
-source = "/Users/Office/.codex/.tmp/bundled-marketplaces/openai-bundled"
-
-[marketplaces.openai-primary-runtime]
-last_updated = "2026-06-23T12:54:25Z"
-source_type = "local"
-source = "/Users/Office/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
-
 [desktop]
 appearanceLightCodeThemeId = "codex"
 followUpQueueMode = "queue"
@@ -229,5 +213,4 @@ skill = "#ad7bf9"
 
 [shell_environment_policy.set]
 BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
-NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "8e86beb821b9afc846211798e0113bd4b9e79312dfcd135eb447bdb154f64071"
 NODE_REPL_TRUSTED_CODE_PATHS = "/Users/Office/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"

@@ -267,6 +267,7 @@ test('Bedrock Converse keeps private Mind content out of argv and removes its pr
     assert.notEqual(inputIndex, -1);
     const requestUrl = args[inputIndex + 1];
     assert.ok(requestUrl?.startsWith('file://'));
+    if (!requestUrl) throw new Error('missing private Bedrock request URL');
     requestFile = fileURLToPath(requestUrl);
     requestDir = path.dirname(requestFile);
 
@@ -307,6 +308,7 @@ test('Bedrock Converse removes its private request after failure or timeout', as
       const inputIndex = args.indexOf('--cli-input-json');
       const requestUrl = args[inputIndex + 1];
       assert.ok(requestUrl?.startsWith('file://'));
+      if (!requestUrl) throw new Error('missing private Bedrock request URL');
       requestFile = fileURLToPath(requestUrl);
       requestDir = path.dirname(requestFile);
 

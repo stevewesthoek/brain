@@ -35,7 +35,7 @@ Created **centralized, standardized, modularized** Stitch MCP setup for all IDEs
 | IDE | MCP Server | Config Location | Status |
 |-----|-----------|-----------------|--------|
 | **Claude Code** | Stitch ✅ | `~/.claude.json` | Active (verified) |
-| **Codex** | Stitch ✅ | `~/.codex/config.toml` | Active (verified, symlinked from brain) |
+| **Codex** | Stitch ✅ | `~/.codex/config.toml` | Active (physical generated copy from Brain) |
 | **Kiro** | Stitch ✅ | `~/.kiro/settings.json` | Automated setup (via setup script) |
 | **Cursor** | Stitch ✅ | `~/.cursor/settings.json` | Automated setup (via setup script) |
 | **Antigravity** | Stitch ✅ | `~/Library/Application Support/Antigravity/User/mcp.json` | Active (centralized + symlinked) |
@@ -105,9 +105,10 @@ Uses **direct HTTP** with token headers
 }
 ```
 
-### 3. Symlink Pattern (Centralization)
+### 3. Managed Copy Pattern (Centralization)
 
-- **Codex:** Keep `~/.codex` real; symlink `~/.codex/config.toml` → `brain/operations/system-configs/codex/config.toml`
+- **Codex:** Keep `~/.codex` real; render a physical mode-`0600`
+  `~/.codex/config.toml` from `brain/operations/system-configs/codex/config.toml`
 - **Antigravity:** Symlink MCP config from centralized ignored file
   - Tracked: `brain/operations/system-configs/antigravity/mcp.template.json`
   - Runtime (ignored): `brain/operations/system-configs/antigravity/User/mcp.json`
