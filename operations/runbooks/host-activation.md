@@ -168,6 +168,104 @@ application, then run `operations/scripts/brain-configs-link.sh`; it backs up a
 conflicting narrow entry before restoring the declared link or generated copy.
 The host-activation transaction and its two-host migration are not involved.
 
+Brain checkouts and maintenance updates are safe only at the canonical paths
+used by each host:
+
+```text
+Office:  /Users/Office/Repos/stevewesthoek/brain
+MacBook: /Users/Steve/Repos/stevewesthoek/brain
+```
+
+Managed links point to those stable paths, not to a feature worktree or a
+specific commit. A normal fast-forward, merge, or checkout at the canonical
+path therefore updates configuration content without moving application-owned
+runtime state. Never repoint live configuration at `brain-next`,
+`brain-host-activation`, a Claude agent worktree, `/Volumes/Office`, or another
+temporary checkout. After a Brain maintenance update, run:
+
+```bash
+npm run validate:workstation-config
+npm run validate:local-text-policy
+bash operations/scripts/codex-home-managed-root.sh check
+```
+
+If a managed entry was replaced by an application installer, close that
+application and run a dry-run followed by the narrow linker. Do not rerun the
+legacy host activation.
+
+## Fresh macOS reinstall or replacement host
+
+Git reconstructs intentional **non-secret configuration**; it does not and must
+not reconstruct authentication, sessions, histories, private SSH keys, or
+other `LOCAL-ONLY` state. A reinstall is recoverable through two independent
+layers:
+
+1. clone the reviewed Brain history at the canonical host path;
+2. restore desired `LOCAL-ONLY` data from an encrypted host backup such as Time
+   Machine, or let each application create a fresh physical runtime root and
+   sign in again;
+3. restore private SSH keys through the owner's credential recovery process,
+   never from Git;
+4. validate the ownership contract;
+5. preview and apply only the normal bootstrap:
+
+   ```bash
+   DRY_RUN=1 bash operations/scripts/brain-configs-link.sh
+   bash operations/scripts/brain-configs-link.sh
+   ```
+
+6. verify Codex managed-root state, application sign-in/session continuity, and
+   both fixed SSH routes before accepting the rebuilt host.
+
+On a genuinely fresh host, the bootstrap creates physical runtime directories
+before attaching narrow managed entries. On a restored host with a legacy
+whole-root symlink or an unclassified existing Git/SSH root, it fails closed and
+requires a receipt-backed migration instead of overwriting data. This keeps the
+same recovery contract valid across macOS reinstalls and replacement hardware.
+
+## Backup retention and closeout
+
+Disk cleanup is a separate transaction. `PASS — HOST ACTIVATION COMPLETE` is
+necessary but not by itself permission to bulk-delete every historical copy.
+Before pruning anything, independently verify all of the following:
+
+- Office and MacBook receipts for the same run ID both contain state
+  `10 PASS`;
+- both canonical Brain repositories contain the accepted commit and have no
+  maintenance-unrelated worktree changes;
+- Office and MacBook runtime roots are physical and every declared managed
+  entry passes the ownership validator;
+- direct Thunderbolt, direct Tailscale, and `office`/`MacBook`/`macbook` aliases
+  work with strict host-key checking;
+- application acceptance, Codex thread continuity, and the read-only Mind
+  bridge passed;
+- the successful rollback set has survived at least one normal reboot and one
+  representative application update or a fourteen-day observation window,
+  whichever is later.
+
+Retention rules:
+
+- keep the final successful run's Office and MacBook receipts, integrity
+  manifests, and rollback material through the observation window;
+- failed-run copies may be removed only after the final successful rollback set
+  has been independently verified; select exact run IDs and never use a broad
+  wildcard;
+- never delete the archived dirty pre-activation Brain checkout until its Git
+  diff and untracked-file inventory have been reviewed, intentional source or
+  documentation changes have been salvaged, and a recoverable Git bundle or
+  equivalent archive exists;
+- local-model/Ollama/MTPLX backups are a separate local-AI retention decision;
+  host activation success does not authorize their deletion;
+- record exact removed paths, pre-removal sizes, retained recovery paths, and
+  reclaimed space in the closeout report.
+
+Only after the accepted activation commit is reachable from the canonical
+remote branch may the temporary integration branch or worktree be removed.
+Verify ancestry first, push without force, and remove worktrees/branches by
+their exact names. Do not clean unrelated Claude agent worktrees, the active
+Video Orchestrator worktree, Mind dirt, or the preserved old Brain checkout as
+part of host-activation housekeeping.
+
 ## Read-only preview
 
 From a plain MacBook Terminal, with the final packet present and clean on both

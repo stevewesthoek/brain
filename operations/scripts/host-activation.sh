@@ -132,11 +132,19 @@ resolve_link() {
   [ -L "$link" ] || return 1
   raw="$(readlink "$link")"
   if [[ "$raw" = /* ]]; then
-    parent="$(cd -P -- "$(dirname -- "$raw")" && pwd)"
-    printf '%s/%s\n' "$parent" "$(basename -- "$raw")"
+    if parent="$(cd -P -- "$(dirname -- "$raw")" 2>/dev/null && pwd)"; then
+      printf '%s/%s\n' "$parent" "$(basename -- "$raw")"
+    else
+      node -e 'const path = require("node:path"); process.stdout.write(`${path.resolve(process.argv[1])}\n`);' "$raw"
+    fi
   else
-    parent="$(cd -P -- "$(dirname -- "$link")/$(dirname -- "$raw")" && pwd)"
-    printf '%s/%s\n' "$parent" "$(basename -- "$raw")"
+    parent="$(cd -P -- "$(dirname -- "$link")" && pwd)"
+    if parent="$(cd -P -- "$parent/$(dirname -- "$raw")" 2>/dev/null && pwd)"; then
+      printf '%s/%s\n' "$parent" "$(basename -- "$raw")"
+    else
+      parent="$(cd -P -- "$(dirname -- "$link")" && pwd)"
+      node -e 'const path = require("node:path"); process.stdout.write(`${path.resolve(process.argv[1], process.argv[2])}\n`);' "$parent" "$raw"
+    fi
   fi
 }
 
@@ -2199,6 +2207,20 @@ fixture_test() {
   move_aside "$live" "$receipt/failed/app-physical"
   mv "$receipt/original-paths/app.symlink" "$live"
   [ -L "$live" ] && [ "$(resolve_link "$live")" = "$(cd -P -- "$source" && pwd)" ] || fail "fixture rollback did not restore the original symlink"
+
+  mkdir -p "$root/broken-link/receipt/failed"
+  printf 'managed-shell-config\n' > "$root/broken-link/managed"
+  ln -s /Volumes/Office/Repos/stevewesthoek/brain/operations/system-configs/shell/.zshrc \
+    "$root/broken-link/live"
+  [ "$(resolve_link "$root/broken-link/live")" = "/Volumes/Office/Repos/stevewesthoek/brain/operations/system-configs/shell/.zshrc" ] ||
+    fail "broken absolute symlink could not be resolved lexically"
+  LOCAL_RECEIPT="$root/broken-link/receipt"
+  ensure_link "$root/broken-link/managed" "$root/broken-link/live" broken-legacy-link
+  [ -L "$root/broken-link/live" ] &&
+    [ "$(resolve_link "$root/broken-link/live")" = "$root/broken-link/managed" ] ||
+    fail "broken legacy symlink was not replaced by the managed target"
+  [ -L "$root/broken-link/receipt/failed/replaced-broken-legacy-link" ] ||
+    fail "broken legacy symlink was not preserved for rollback"
 
   mkdir -p "$root/failure/source" "$root/failure/receipt/original-paths"
   printf 'keep-me\n' > "$root/failure/source/state"
