@@ -112,7 +112,9 @@ office_commit_line="$(grep -n -F 'stream_office_worker office-commit' "$RUNNER" 
   [ "$activate_prompt_line" -lt "$office_commit_line" ] || fail "two-host preparation does not precede the explicit mutation boundary"
 grep -Fq 'office-apply is disabled' "$RUNNER" || fail "legacy one-host mutation worker can bypass two-host preparation"
 grep -Fq 'PREPARED_AND_ROLLBACK_READY' "$RUNNER" || fail "Office prepared state is not explicit"
-grep -Fq 'still has another interactive shell' "$RUNNER" || fail "quiescence does not cover unrelated interactive shells"
+if grep -Fq 'still has another interactive shell' "$RUNNER"; then
+  fail "an idle or launcher shell is still treated as an application writer"
+fi
 grep -Fq 'validate_hostkey_alias_inputs macbook-m1' "$RUNNER" || fail "Office preflight does not validate HostKeyAlias inputs before mutation"
 grep -Fq 'validate_hostkey_alias_inputs office-m4' "$RUNNER" || fail "MacBook preflight does not validate HostKeyAlias inputs before mutation"
 grep -Fq 'validate_json_object_file "$CLAUDE_REGISTRY"' "$RUNNER" || fail "Office preflight does not parse the Claude registry before mutation"

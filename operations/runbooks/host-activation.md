@@ -133,8 +133,7 @@ On **Office**, close:
 - Cursor;
 - Gemini and Antigravity;
 - Kiro;
-- Ghostty;
-- interactive shells except the dedicated SSH/migration connections.
+- Ghostty.
 
 On **MacBook**, close:
 
@@ -144,11 +143,30 @@ On **MacBook**, close:
 - Cursor;
 - Gemini and Antigravity;
 - Kiro;
-- Ghostty;
-- interactive shells except the single plain Terminal used to launch migration.
+- Ghostty.
 
 Do not proceed merely because windows are hidden. The runner independently
 checks affected processes and fails before backup/mutation if they remain.
+Idle shells are not application-runtime writers and do not block activation.
+Do not use another shell to change Brain or managed runtime paths while the
+migration is running; stable snapshot checks fail closed if source data changes.
+
+## After activation and application upgrades
+
+This runner is a one-time legacy-root conversion tool. Do not rerun host
+activation merely because Codex, Ghostty, Claude, Cursor, Gemini, or Kiro is
+upgraded.
+
+After activation, every application runtime root is a normal physical local
+directory. Applications may upgrade and write session, authentication, cache,
+database, and runtime files there without writing into Git. Brain owns only the
+narrow entries declared by `operations/specs/workstation-config-ownership.json`.
+
+If an application upgrade replaces one of those narrow links or generated
+files, the application data remains local and intact. Close only that
+application, then run `operations/scripts/brain-configs-link.sh`; it backs up a
+conflicting narrow entry before restoring the declared link or generated copy.
+The host-activation transaction and its two-host migration are not involved.
 
 ## Read-only preview
 
