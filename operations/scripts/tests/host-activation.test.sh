@@ -12,12 +12,19 @@ pass() { printf 'ok - %s\n' "$*"; }
 bash -n "$RUNNER"
 pass "runner has valid Bash syntax"
 
+while IFS= read -r readonly_name; do
+  if grep -Eq "^[[:space:]]*${readonly_name}=" "$RUNNER"; then
+    fail "readonly constant $readonly_name is reused as a temporary environment assignment"
+  fi
+done < <(sed -nE 's/^readonly ([A-Z_][A-Z_0-9]*)=.*/\1/p' "$RUNNER")
+pass "readonly constants are not reused as temporary command environments"
+
 /bin/bash -s -- help < "$RUNNER" >"$FIXTURE/stdin.out" 2>&1
 grep -Fq 'host-activation.sh dry-run' "$FIXTURE/stdin.out" || fail "stdin worker mode could not load the runner"
 pass "runner loads safely through bash stdin worker mode"
 
-HOST_ACTIVATION_TEST_MODE=1 bash "$RUNNER" __fixture-test "$FIXTURE"
-pass "physical-root activation and rollback preserve fixture state"
+HOST_ACTIVATION_TEST_MODE=1 /bin/bash -s -- __fixture-test "$FIXTURE" < "$RUNNER"
+pass "streamed worker mode preserves fixture state and exercises Phase 7 registration"
 
 if bash "$RUNNER" dry-run --expected-commit not-a-commit >"$FIXTURE/invalid.out" 2>&1; then
   fail "malformed packet commit was accepted"

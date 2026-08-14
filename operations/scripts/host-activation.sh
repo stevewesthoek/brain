@@ -1317,29 +1317,40 @@ EOF
 }
 
 update_claude_mind_registration() {
-  [ -f "$CLAUDE_REGISTRY" ] || fail "Claude registry is missing: $CLAUDE_REGISTRY"
-  CLAUDE_REGISTRY="$CLAUDE_REGISTRY" OFFICE_BRAIN="$OFFICE_BRAIN" OFFICE_MIND="$OFFICE_MIND" \
-  MIND_COMMIT="$MIND_COMMIT" PROVIDER_REVISION="$PROVIDER_REVISION" node --input-type=module - <<'NODE'
+  local registry="${1:-$CLAUDE_REGISTRY}"
+  local office_brain="${2:-$OFFICE_BRAIN}"
+  local office_mind="${3:-$OFFICE_MIND}"
+  local mind_commit="${4:-$MIND_COMMIT}"
+  local provider_revision="${5:-$PROVIDER_REVISION}"
+
+  [ -f "$registry" ] || fail "Claude registry is missing: $registry"
+  HOST_ACTIVATION_CLAUDE_REGISTRY="$registry" \
+  HOST_ACTIVATION_OFFICE_BRAIN="$office_brain" \
+  HOST_ACTIVATION_OFFICE_MIND="$office_mind" \
+  HOST_ACTIVATION_MIND_COMMIT="$mind_commit" \
+  HOST_ACTIVATION_PROVIDER_REVISION="$provider_revision" \
+  node --input-type=module - <<'NODE'
 import fs from 'node:fs';
-const file = process.env.CLAUDE_REGISTRY;
+const file = process.env.HOST_ACTIVATION_CLAUDE_REGISTRY;
+const mindRoot = process.env.HOST_ACTIVATION_OFFICE_MIND;
 const data = JSON.parse(fs.readFileSync(file, 'utf8'));
 data.projects ??= {};
-data.projects[process.env.OFFICE_MIND] ??= {};
-data.projects[process.env.OFFICE_MIND].mcpServers ??= {};
-data.projects[process.env.OFFICE_MIND].mcpServers['mind-context'] = {
+data.projects[mindRoot] ??= {};
+data.projects[mindRoot].mcpServers ??= {};
+data.projects[mindRoot].mcpServers['mind-context'] = {
   type: 'stdio',
   command: process.execPath,
-  args: [`${process.env.OFFICE_BRAIN}/projects/mind-context/src/provider/server.mjs`],
+  args: [`${process.env.HOST_ACTIVATION_OFFICE_BRAIN}/projects/mind-context/src/provider/server.mjs`],
   env: {
     MIND_CONTEXT_ALLOWED_TOOLS: 'mind_context_health,mind_context_resolve,mind_context_explain',
     MIND_CONTEXT_ALLOWED_SUBOPERATIONS: '',
     MIND_CONTEXT_ACTIVATION_APPROVAL_FILE: '/Users/Office/.brain/approvals/mind-context-read-only.json',
     MIND_CONTEXT_ALLOWED_SCOPES: 'faith,knowledge,organizations,people,projects,resources,system,tasks,wiki',
-    MIND_CONTEXT_EXPECTED_HEAD: process.env.MIND_COMMIT,
+    MIND_CONTEXT_EXPECTED_HEAD: process.env.HOST_ACTIVATION_MIND_COMMIT,
     MIND_CONTEXT_PREPARATION_APPROVAL_FILE: '/Users/Office/.brain/approvals/mind-context-preparation.json',
     MIND_CONTEXT_PREPARATION_MODE: '0',
-    MIND_CONTEXT_PROVIDER_REVISION: process.env.PROVIDER_REVISION,
-    MIND_CONTEXT_ROOT: process.env.OFFICE_MIND,
+    MIND_CONTEXT_PROVIDER_REVISION: process.env.HOST_ACTIVATION_PROVIDER_REVISION,
+    MIND_CONTEXT_ROOT: mindRoot,
   },
 };
 const staged = `${file}.host-activation-${process.pid}`;
@@ -1350,16 +1361,22 @@ NODE
 }
 
 verify_bridge() {
+  local office_brain="${1:-$OFFICE_BRAIN}"
+  local office_mind="${2:-$OFFICE_MIND}"
+  local approval_file="${3:-$APPROVAL_FILE}"
+  local mind_commit="${4:-$MIND_COMMIT}"
+  local provider_revision="${5:-$PROVIDER_REVISION}"
+
   MIND_CONTEXT_ALLOWED_TOOLS=mind_context_health,mind_context_resolve,mind_context_explain \
   MIND_CONTEXT_ALLOWED_SUBOPERATIONS= \
-  MIND_CONTEXT_ACTIVATION_APPROVAL_FILE="$APPROVAL_FILE" \
+  MIND_CONTEXT_ACTIVATION_APPROVAL_FILE="$approval_file" \
   MIND_CONTEXT_ALLOWED_SCOPES=faith,knowledge,organizations,people,projects,resources,system,tasks,wiki \
-  MIND_CONTEXT_EXPECTED_HEAD="$MIND_COMMIT" \
+  MIND_CONTEXT_EXPECTED_HEAD="$mind_commit" \
   MIND_CONTEXT_PREPARATION_APPROVAL_FILE=/Users/Office/.brain/approvals/mind-context-preparation.json \
   MIND_CONTEXT_PREPARATION_MODE=0 \
-  MIND_CONTEXT_PROVIDER_REVISION="$PROVIDER_REVISION" \
-  MIND_CONTEXT_ROOT="$OFFICE_MIND" \
-  PROVIDER_RUNTIME="$OFFICE_BRAIN/projects/mind-context/src/provider/runtime.mjs" \
+  MIND_CONTEXT_PROVIDER_REVISION="$provider_revision" \
+  MIND_CONTEXT_ROOT="$office_mind" \
+  PROVIDER_RUNTIME="$office_brain/projects/mind-context/src/provider/runtime.mjs" \
   node --input-type=module - <<'NODE'
 const runtime = await import(`file://${process.env.PROVIDER_RUNTIME}`);
 const config = runtime.loadProviderConfig(process.env);
@@ -2504,6 +2521,32 @@ fixture_test() {
   if validate_json_object_file "$root/array-registry.json" "fixture registry" >/dev/null 2>&1; then
     fail "JSON-object preflight accepted a non-object registry"
   fi
+
+  printf '{"projects":{}}\n' > "$root/claude-registration.json"
+  chmod 0600 "$root/claude-registration.json"
+  update_claude_mind_registration \
+    "$root/claude-registration.json" \
+    "/fixture/brain" \
+    "/fixture/mind" \
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
+    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  HOST_ACTIVATION_FIXTURE_REGISTRY="$root/claude-registration.json" node --input-type=module - <<'NODE'
+import fs from 'node:fs';
+const data = JSON.parse(fs.readFileSync(process.env.HOST_ACTIVATION_FIXTURE_REGISTRY, 'utf8'));
+const server = data.projects?.['/fixture/mind']?.mcpServers?.['mind-context'];
+if (!server) throw new Error('fixture Claude registration is missing');
+if (server.args?.[0] !== '/fixture/brain/projects/mind-context/src/provider/server.mjs') {
+  throw new Error('fixture Claude provider path is incorrect');
+}
+if (server.env?.MIND_CONTEXT_ROOT !== '/fixture/mind') throw new Error('fixture Mind root is incorrect');
+if (server.env?.MIND_CONTEXT_EXPECTED_HEAD !== 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa') {
+  throw new Error('fixture Mind commit is incorrect');
+}
+if (server.env?.MIND_CONTEXT_PROVIDER_REVISION !== 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb') {
+  throw new Error('fixture provider revision is incorrect');
+}
+NODE
+  [ "$(stat -f '%Lp' "$root/claude-registration.json")" = 600 ] || fail "fixture Claude registry lost mode 0600"
 
   phase_is_no_mutation 0 && phase_is_no_mutation 1 && phase_is_no_mutation 2 || fail "Phase 0–2 no-mutation classification failed"
   if phase_is_no_mutation 3; then fail "Phase 3 was incorrectly classified as no-mutation"; fi
