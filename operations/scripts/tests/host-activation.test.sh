@@ -134,10 +134,11 @@ grep -Fq 'activate_prepared_restore_tree' "$RUNNER" || fail "rollback does not u
 pass "Codex rollback replacements exist and verify before either live root is moved"
 
 grep -Fq 'session/history continuity mismatch; do not reopen Codex' "$RUNNER" || fail "Codex continuity failure does not prohibit application reopen"
-grep -Fq 'probe_codex_database /Users/Office/.codex "Office Codex"' "$RUNNER" || fail "Office preflight does not verify Codex SQLite readiness"
-grep -Fq 'probe_codex_database /Users/Steve/.codex "MacBook Codex"' "$RUNNER" || fail "MacBook preflight does not verify Codex SQLite readiness"
+grep -Fq '/Users/Office/.codex "Office Codex"' "$RUNNER" || fail "Office preflight does not verify Codex SQLite readiness"
+grep -Fq '/Users/Steve/.codex "MacBook Codex"' "$RUNNER" || fail "MacBook preflight does not verify Codex SQLite readiness"
 ! grep -Eq 'sqlite3[[:space:]]+-readonly' "$RUNNER" || fail "live-incompatible SQLite readonly mode remains in the activation runner"
 grep -Fq 'private SQLite probe changed its source database family' "$RUNNER" || fail "WAL-mode SQLite source immutability regression coverage is missing"
+grep -Fq 'indexed thread rollout files are present inside the protected runtime tree' "$RUNNER" || fail "Codex continuity does not bind indexed threads to protected rollout files"
 grep -Fq 'session/auth/history continuity mismatch; do not reopen the application' "$RUNNER" || fail "non-Codex runtime continuity failure does not prohibit application reopen"
 for application in claude cursor gemini kiro; do
   grep -Fq 'for name in claude cursor gemini kiro' "$RUNNER" || fail "$application runtime continuity loop is missing"

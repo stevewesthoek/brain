@@ -610,7 +610,7 @@ codex_sqlite_normalized_dump() {
 }
 
 probe_codex_database() {
-  local root="$1" label="$2" result
+  local root="$1" label="$2" legacy_root="$3" final_root="$4" result
   [ -d "$root" ] && [ ! -L "$root" ] || { fail "$label root is not a physical directory"; return 1; }
   if [ ! -e "$root/state_5.sqlite" ]; then
     say "[OK] $label has no state database to verify"
@@ -619,7 +619,57 @@ probe_codex_database() {
   result="$(codex_sqlite_query "$root" 'PRAGMA integrity_check;' "$label")" || return 1
   [ "$result" = ok ] || { fail "$label database failed integrity validation"; return 1; }
   codex_sqlite_query "$root" "SELECT COUNT(*) FROM sqlite_master;" "$label" >/dev/null || return 1
+  validate_codex_thread_rollout_files "$root" "$legacy_root" "$final_root" "$label" || return 1
   say "[OK] $label database is stable, readable, and internally consistent"
+}
+
+validate_codex_thread_rollout_files() {
+  local root="$1" legacy_root="$2" final_root="$3" label="$4"
+  local has_threads has_rollout total rollouts rollout_file relative
+  local processed=0 missing=0 outside=0
+  [ -f "$root/state_5.sqlite" ] || return 0
+  has_threads="$(codex_sqlite_query "$root" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='threads';" "$label")" || return 1
+  case "$has_threads" in ''|*[!0-9]*) fail "$label thread-table check returned an invalid count"; return 1 ;; esac
+  if [ "$has_threads" -eq 0 ]; then
+    say "[OK] $label has no indexed thread table to validate"
+    return 0
+  fi
+  has_rollout="$(codex_sqlite_query "$root" "SELECT COUNT(*) FROM pragma_table_info('threads') WHERE name='rollout_path';" "$label")" || return 1
+  [ "$has_rollout" = 1 ] || { fail "$label thread index has no unique rollout_path column"; return 1; }
+  total="$(codex_sqlite_query "$root" 'SELECT COUNT(*) FROM threads;' "$label")" || return 1
+  case "$total" in ''|*[!0-9]*) fail "$label thread index returned an invalid count"; return 1 ;; esac
+  if [ "$total" -eq 0 ]; then
+    say "[OK] $label thread index is empty and has no rollout files to validate"
+    return 0
+  fi
+  rollouts="$(codex_sqlite_query "$root" 'SELECT rollout_path FROM threads ORDER BY id;' "$label")" || return 1
+  while IFS= read -r rollout_file; do
+    processed=$((processed + 1))
+    case "$rollout_file" in
+      "$legacy_root"/*) relative="${rollout_file#"$legacy_root"/}" ;;
+      "$final_root"/*) relative="${rollout_file#"$final_root"/}" ;;
+      *) outside=$((outside + 1)); continue ;;
+    esac
+    case "/$relative/" in
+      *"/../"*) outside=$((outside + 1)); continue ;;
+    esac
+    if [ ! -f "$root/$relative" ] || [ -L "$root/$relative" ]; then
+      missing=$((missing + 1))
+    fi
+  done <<< "$rollouts"
+  [ "$processed" -eq "$total" ] || {
+    fail "$label could not safely enumerate every indexed thread rollout path"
+    return 1
+  }
+  [ "$outside" -eq 0 ] || {
+    fail "$label has $outside indexed thread rollout path(s) outside the approved legacy/final runtime roots"
+    return 1
+  }
+  [ "$missing" -eq 0 ] || {
+    fail "$label has $missing indexed thread rollout file(s) missing from the protected runtime tree"
+    return 1
+  }
+  say "[OK] $label all $total indexed thread rollout files are present inside the protected runtime tree"
 }
 
 # Hash all Codex application-owned durable data while allowing only the exact
@@ -633,7 +683,11 @@ codex_continuity_manifest() {
   [ -d "$root" ] && [ ! -L "$root" ] || fail "Codex continuity root is not a physical directory: $root"
   if [ -f "$db" ]; then
     require_command sqlite3
-    [ "$(codex_sqlite_query "$root" 'PRAGMA integrity_check;' "Codex continuity")" = ok ] || fail "Codex continuity database failed integrity validation: $db"
+    [ "$(codex_sqlite_query "$root" 'PRAGMA integrity_check;' "Codex continuity")" = ok ] || {
+      fail "Codex continuity database failed integrity validation: $db"
+      return 1
+    }
+    validate_codex_thread_rollout_files "$root" "$legacy_root" "$final_root" "Codex continuity" || return 1
   fi
   digest="$({
     (
@@ -996,13 +1050,17 @@ office_preflight() {
   if [ "$execution" = "execute" ]; then
     quiesce_orphan_application_helpers "Office"
     check_no_forbidden_processes "Office"
-    probe_codex_database /Users/Office/.codex "Office Codex"
+    probe_codex_database \
+      /Users/Office/.codex "Office Codex" \
+      "$OFFICE_BRAIN/operations/system-configs/codex" /Users/Office/.codex
   else
     check_no_forbidden_processes "Office" || {
       fail "Office dry-run cannot pass while affected processes or detached helpers remain; execute may gracefully TERM only adopted helper processes"
       return 1
     }
-    probe_codex_database /Users/Office/.codex "Office Codex"
+    probe_codex_database \
+      /Users/Office/.codex "Office Codex" \
+      "$OFFICE_BRAIN/operations/system-configs/codex" /Users/Office/.codex
   fi
 }
 
@@ -1578,13 +1636,17 @@ mac_preflight() {
   if [ "$execution" = "execute" ]; then
     quiesce_orphan_application_helpers "MacBook"
     check_no_forbidden_processes "MacBook"
-    [ ! -d /Users/Steve/.codex ] || probe_codex_database /Users/Steve/.codex "MacBook Codex"
+    [ ! -d /Users/Steve/.codex ] || probe_codex_database \
+      /Users/Steve/.codex "MacBook Codex" \
+      "$MAC_BRAIN/operations/system-configs/codex" /Users/Steve/.codex
   else
     check_no_forbidden_processes "MacBook" || {
       fail "MacBook dry-run cannot pass while affected processes or detached helpers remain; execute may gracefully TERM only adopted helper processes"
       return 1
     }
-    [ ! -d /Users/Steve/.codex ] || probe_codex_database /Users/Steve/.codex "MacBook Codex"
+    [ ! -d /Users/Steve/.codex ] || probe_codex_database \
+      /Users/Steve/.codex "MacBook Codex" \
+      "$MAC_BRAIN/operations/system-configs/codex" /Users/Steve/.codex
   fi
 }
 
@@ -2285,12 +2347,31 @@ fixture_test() {
   sqlite3 "$root/continuity/after/state_5.sqlite" \
     "PRAGMA journal_mode=WAL; CREATE TABLE threads(id TEXT PRIMARY KEY, rollout_path TEXT NOT NULL, title TEXT NOT NULL); INSERT INTO threads VALUES('fixture-thread','/final/codex/sessions/thread.jsonl','fixture');" >/dev/null
   before_db_digest="$(codex_sqlite_set_digest "$root/continuity/before")"
-  probe_codex_database "$root/continuity/before" "fixture Codex" >/dev/null
+  probe_codex_database \
+    "$root/continuity/before" "fixture Codex" /legacy/codex /final/codex >/dev/null
   [ "$before_db_digest" = "$(codex_sqlite_set_digest "$root/continuity/before")" ] || fail "private SQLite probe changed its source database family"
   codex_continuity_manifest \
     "$root/continuity/before" "$root/continuity/before.tsv" /legacy/codex /final/codex
   assert_codex_continuity \
     "$root/continuity/before.tsv" "$root/continuity/after" /legacy/codex /final/codex "fixture"
+  sqlite3 "$root/continuity/after/state_5.sqlite" \
+    "UPDATE threads SET rollout_path='/outside/codex/sessions/thread.jsonl';" >/dev/null
+  if probe_codex_database \
+    "$root/continuity/after" "fixture Codex preflight" /legacy/codex /final/codex 2>/dev/null; then
+    fail "Codex preflight accepted an indexed thread outside the protected runtime roots"
+  fi
+  if codex_continuity_manifest \
+    "$root/continuity/after" "$root/continuity/outside.tsv" /legacy/codex /final/codex 2>/dev/null; then
+    fail "Codex continuity accepted an indexed thread outside the protected runtime roots"
+  fi
+  sqlite3 "$root/continuity/after/state_5.sqlite" \
+    "UPDATE threads SET rollout_path='/final/codex/sessions/missing.jsonl';" >/dev/null
+  if codex_continuity_manifest \
+    "$root/continuity/after" "$root/continuity/missing.tsv" /legacy/codex /final/codex 2>/dev/null; then
+    fail "Codex continuity accepted a missing indexed thread rollout file"
+  fi
+  sqlite3 "$root/continuity/after/state_5.sqlite" \
+    "UPDATE threads SET rollout_path='/final/codex/sessions/thread.jsonl';" >/dev/null
   printf 'lost-context\n' >> "$root/continuity/after/sessions/thread.jsonl"
   if assert_codex_continuity \
     "$root/continuity/before.tsv" "$root/continuity/after" /legacy/codex /final/codex "fixture-corrupt" 2>/dev/null; then
