@@ -356,12 +356,28 @@ copy_tree() {
 
 # Content-address every regular file and symlink target plus portable,
 # non-secret metadata. Unprivileged macOS archive extraction cannot preserve a
-# source group the owner is not a member of. The known portable case is a plain
-# 0644 regular file, where group and other access are identical; retain the GID
-# for every other object and mode. Directory inode size/mtime is not content
-# metadata, and com.apple.provenance intentionally changes on copies. All other
-# listed attributes remain verified. Sort the private stream and emit only the
-# final SHA-256; no file content or path is recorded in receipts.
+# source group the owner is not a member of. A GID is therefore portable only
+# when it affects access: retain it whenever group and other permissions differ
+# or setgid is present; otherwise normalize it. Directory inode size/mtime is
+# not content metadata, and com.apple.provenance intentionally changes on
+# copies. All other listed attributes remain verified. Sort the private stream
+# and emit only the final SHA-256; no file content or path is recorded in
+# receipts.
+normalize_portable_gid() {
+  local gid_field="$1" mode_field="$2"
+  awk -F '|' -v gid_field="$gid_field" -v mode_field="$mode_field" '
+    BEGIN { OFS="|" }
+    {
+      mode=$mode_field
+      group_digit=substr(mode, length(mode)-1, 1)
+      other_digit=substr(mode, length(mode), 1)
+      special=(length(mode) > 3 ? substr(mode, length(mode)-3, 1) : "0")
+      if (group_digit == other_digit && special !~ /[2367]/) $gid_field="-"
+      print
+    }
+  '
+}
+
 tree_digest() {
   local root="$1"
   (
@@ -383,11 +399,14 @@ tree_digest() {
         }
         END { emit() }
       ' || exit 1
-    find . -type f -exec stat -f '%u|%g|%Lp|%z|%m|%N' {} + |
-      awk -F '|' '{path=$6; for(i=7;i<=NF;i++) path=path "|" $i; gid=($3 == "644" ? "-" : $2); print "F " path "|" $1 "|" gid "|" $3 "|" $4 "|" $5}' || exit 1
-    find . -type l -exec stat -f '%u|%g|%Lp|%z|%m|%N' {} + |
+    find . -type f -exec stat -f '%u|%g|%Mp%Lp|%z|%m|%N' {} + |
+      normalize_portable_gid 2 3 |
+      awk -F '|' '{path=$6; for(i=7;i<=NF;i++) path=path "|" $i; print "F " path "|" $1 "|" $2 "|" $3 "|" $4 "|" $5}' || exit 1
+    find . -type l -exec stat -f '%u|%g|%Mp%Lp|%z|%m|%N' {} + |
+      normalize_portable_gid 2 3 |
       awk -F '|' '{path=$6; for(i=7;i<=NF;i++) path=path "|" $i; print "S " path "|" $1 "|" $2 "|" $3 "|" $4 "|" $5}' || exit 1
-    find . -type d -exec stat -f '%u|%g|%Lp|%N' {} + |
+    find . -type d -exec stat -f '%u|%g|%Mp%Lp|%N' {} + |
+      normalize_portable_gid 2 3 |
       awk -F '|' '{path=$4; for(i=5;i<=NF;i++) path=path "|" $i; print "D " path "|" $1 "|" $2 "|" $3}' || exit 1
     # Batch ACL reads. Invoking ls once per runtime file makes large Claude and
     # Codex roots take hours; BSD ls emits each ACL entry directly after its
@@ -422,7 +441,8 @@ path_digest() {
       {
         printf 'F|'
         shasum -a 256 "$path" | awk '{print $1}'
-        stat -f 'M|%u|%g|%Lp|%z|%m' "$path"
+        stat -f 'M|%u|%g|%Mp%Lp|%z|%m' "$path" |
+          normalize_portable_gid 3 4
         acl="$(/bin/ls -lde "$path" | sed -n '2,$p')" || return 1
         if [ -n "$acl" ]; then
           printf 'A|'
@@ -438,7 +458,8 @@ path_digest() {
     symlink)
       {
         printf 'L|%s\n' "$(readlink "$path")"
-        stat -f 'M|%u|%g|%Lp|%z|%m' "$path"
+        stat -f 'M|%u|%g|%Mp%Lp|%z|%m' "$path" |
+          normalize_portable_gid 3 4
       } | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
       ;;
     *) fail "unsupported snapshot path type: $path"; return 1 ;;
@@ -735,7 +756,7 @@ runtime_find() {
     case "$selection" in
       files) find . \( "${managed[@]}" \) -prune -o -type f -exec shasum -a 256 {} + ;;
       links) find . \( "${managed[@]}" \) -prune -o -type l -exec sh -c 'for p do printf "L %s|" "$p"; readlink "$p" || exit 1; done' sh {} + ;;
-      metadata) find . \( "${managed[@]}" \) -prune -o ! -type s -exec stat -f '%HT|%u|%g|%Lp|%N' {} + ;;
+      metadata) find . \( "${managed[@]}" \) -prune -o ! -type s -exec stat -f '%HT|%u|%g|%Mp%Lp|%N' {} + ;;
       count) find . \( "${managed[@]}" \) -prune -o ! -type s -print ;;
       *) fail "unknown runtime continuity selection: $selection"; return 1 ;;
     esac
@@ -752,7 +773,8 @@ runtime_continuity_manifest() {
     runtime_find "$root" "$application" files
     runtime_find "$root" "$application" links
     runtime_find "$root" "$application" metadata |
-      awk -F '|' 'BEGIN{OFS="|"} {gid=$3; if ($1 == "Regular File" && $4 == "644") gid="-"; print "M",$1,$2,gid,$4,$5}'
+      normalize_portable_gid 3 4 |
+      awk -F '|' 'BEGIN{OFS="|"} {print "M",$1,$2,$3,$4,$5}'
   } | LC_ALL=C sort | shasum -a 256 | awk '{print $1}')" || return 1
   count="$(runtime_find "$root" "$application" count | wc -l | tr -d ' ')"
   printf 'digest\t%s\nentries\t%s\n' "$digest" "$count" > "$output"
@@ -2214,6 +2236,10 @@ fixture_test() {
     chmod 0644 "$root/portable-digest/source/state" "$root/portable-digest/copy/state"
     chgrp "$primary_group" "$root/portable-digest/source" "$root/portable-digest/copy"
     chgrp "$alternate_group" "$root/portable-digest/copy"
+    chmod 0755 "$root/portable-digest/source" "$root/portable-digest/copy"
+    [ "$(tree_digest "$root/portable-digest/source")" = "$(tree_digest "$root/portable-digest/copy")" ] || fail "portable digest rejected an access-equivalent directory group change"
+    chmod 0750 "$root/portable-digest/source" "$root/portable-digest/copy"
+    [ "$(tree_digest "$root/portable-digest/source")" != "$(tree_digest "$root/portable-digest/copy")" ] || fail "portable digest ignored a security-relevant directory group change"
     chmod 2755 "$root/portable-digest/source" "$root/portable-digest/copy"
     [ "$(tree_digest "$root/portable-digest/source")" != "$(tree_digest "$root/portable-digest/copy")" ] || fail "portable digest ignored a setgid-directory group change"
     chgrp "$primary_group" "$root/portable-digest/copy"
@@ -2233,6 +2259,16 @@ fixture_test() {
   stable_copy_tree "$root/stable-copy/source" "$root/stable-copy/destination" \
     "fixture-stable-copy" "$root/stable-copy/integrity.tsv"
   [ "$(tree_digest "$root/stable-copy/source")" = "$(tree_digest "$root/stable-copy/destination")" ] || fail "stable snapshot fixture changed content"
+  if [ -n "$alternate_group" ]; then
+    mkdir -p "$root/stable-group-copy/source/runtime"
+    printf 'group-portable-state\n' > "$root/stable-group-copy/source/runtime/state"
+    chmod 0755 "$root/stable-group-copy/source/runtime"
+    chgrp "$alternate_group" "$root/stable-group-copy/source/runtime"
+    stable_copy_tree "$root/stable-group-copy/source" "$root/stable-group-copy/destination" \
+      "fixture-portable-group-copy" "$root/stable-group-copy/integrity.tsv"
+    [ "$(stat -f '%g' "$root/stable-group-copy/source/runtime")" != "$(stat -f '%g' "$root/stable-group-copy/destination/runtime")" ] || fail "portable-group fixture did not reproduce archive GID normalization"
+    [ "$(tree_digest "$root/stable-group-copy/source")" = "$(tree_digest "$root/stable-group-copy/destination")" ] || fail "stable snapshot rejected an access-equivalent copied directory group"
+  fi
 
   mkdir -p "$root/stable-path"
   printf 'narrow-config\n' > "$root/stable-path/source"
