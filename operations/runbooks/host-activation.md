@@ -168,6 +168,13 @@ application, then run `operations/scripts/brain-configs-link.sh`; it backs up a
 conflicting narrow entry before restoring the declared link or generated copy.
 The host-activation transaction and its two-host migration are not involved.
 
+Herdr is not part of the Brain-managed ownership surface. Its live
+`~/.config/herdr/config.toml` remains application-local. If Herdr reports
+`unknown config key ui.agent_panel_scope` after an application upgrade, back up
+the local config, remove only the obsolete `agent_panel_scope` assignment, run
+`herdr config check`, and reload/restart Herdr. Do not rerun host activation or
+change Brain-managed symlinks for this warning.
+
 Brain checkouts and maintenance updates are safe only at the canonical paths
 used by each host:
 
