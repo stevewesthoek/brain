@@ -143,7 +143,7 @@ resolve_link() {
 check_no_forbidden_processes() {
   local label="$1" found=0 name pid parent tty command allowed=" "
   for name in \
-    ChatGPT ChatGPTHelper Codex codex codex-app-server codex-code-mode-host app-server \
+    ChatGPT Codex codex codex-app-server codex-code-mode-host app-server \
     SkyComputerUseClient SkyComputerUseService Claude claude Cursor cursor Gemini gemini \
     Antigravity antigravity Kiro kiro Ghostty node-repl node_repl bare-modifier-monitor; do
     if pgrep -x "$name" >/dev/null 2>&1; then
@@ -182,12 +182,15 @@ check_no_forbidden_processes() {
 }
 
 # A normally quit desktop app can leave detached helpers behind. These exact
-# helper processes are safe to ask to terminate only after launchd has adopted
-# them (PPID 1); children of a still-running application are never signaled.
-# TERM is the only signal used. Failure to exit remains a hard preflight block.
+# helpers are known to touch migration-owned runtime state and are safe to ask
+# to terminate only after launchd has adopted them (PPID 1); children of a
+# still-running application are never signaled. ChatGPTHelper is deliberately
+# excluded: it holds no migration-owned files and may persist independently of
+# the ChatGPT UI. TERM is the only signal used. Failure to exit remains a hard
+# preflight block.
 quiesce_orphan_application_helpers() {
   local label="$1" name pid parent attempt remaining signaled=0
-  for name in ChatGPTHelper SkyComputerUseClient SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
+  for name in SkyComputerUseClient SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
     while IFS= read -r pid; do
       case "$pid" in ''|*[!0-9]*) continue ;; esac
       parent="$(ps -p "$pid" -o ppid= 2>/dev/null | tr -d ' ')"
@@ -203,7 +206,7 @@ quiesce_orphan_application_helpers() {
   [ "$signaled" -eq 1 ] || return 0
   for attempt in 1 2 3 4 5; do
     remaining=0
-    for name in ChatGPTHelper SkyComputerUseClient SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
+    for name in SkyComputerUseClient SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
       while IFS= read -r pid; do
         case "$pid" in ''|*[!0-9]*) continue ;; esac
         parent="$(ps -p "$pid" -o ppid= 2>/dev/null | tr -d ' ')"
@@ -2272,7 +2275,7 @@ fixture_test() {
 
   orphan_alive=1
   pgrep() {
-    if [ "${2:-}" = ChatGPTHelper ] && [ "$orphan_alive" -eq 1 ]; then printf '4242\n'; else return 1; fi
+    if [ "${2:-}" = SkyComputerUseService ] && [ "$orphan_alive" -eq 1 ]; then printf '4242\n'; else return 1; fi
   }
   ps() { printf '1\n'; }
   kill() {
@@ -2283,6 +2286,15 @@ fixture_test() {
   quiesce_orphan_application_helpers "fixture" >/dev/null
   [ "$orphan_alive" -eq 0 ] || fail "detached application helper was not asked to exit gracefully"
   unset -f pgrep ps kill sleep
+
+  pgrep() {
+    [ "${2:-}" != ChatGPTHelper ] || fail "unrelated ChatGPT UI helper was queried for termination"
+    return 1
+  }
+  ps() { printf '1\n'; }
+  kill() { fail "unrelated ChatGPT UI helper was signaled"; }
+  quiesce_orphan_application_helpers "fixture" >/dev/null
+  unset -f pgrep ps kill
 
   pgrep() { return 1; }
   ps() {

@@ -113,7 +113,10 @@ office_commit_line="$(grep -n -F 'stream_office_worker office-commit' "$RUNNER" 
 grep -Fq 'office-apply is disabled' "$RUNNER" || fail "legacy one-host mutation worker can bypass two-host preparation"
 grep -Fq 'PREPARED_AND_ROLLBACK_READY' "$RUNNER" || fail "Office prepared state is not explicit"
 grep -Fq 'still has another interactive shell' "$RUNNER" || fail "quiescence does not cover unrelated interactive shells"
-for helper in ChatGPTHelper SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
+if grep -Fq 'ChatGPT ChatGPTHelper' "$RUNNER" || grep -Fq 'for name in ChatGPTHelper' "$RUNNER"; then
+  fail "unrelated persistent ChatGPT UI helper is still classified as a migration writer"
+fi
+for helper in SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
   grep -Fq "$helper" "$RUNNER" || fail "quiescence does not cover current helper process $helper"
 done
 grep -Fq 'kill -TERM "$pid"' "$RUNNER" || fail "detached helpers are not limited to graceful TERM"
