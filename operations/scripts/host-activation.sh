@@ -217,12 +217,14 @@ ssh_explicit() {
 
 trusted_ed25519_key() {
   local host="$1" known_hosts="$2"
-  ssh-keygen -F "$host" -f "$known_hosts" 2>/dev/null | awk '$2 == "ssh-ed25519" {print $2 " " $3; exit}'
+  { ssh-keygen -F "$host" -f "$known_hosts" 2>/dev/null || true; } |
+    awk '$2 == "ssh-ed25519" {print $2 " " $3; exit}'
 }
 
 scanned_ed25519_key() {
   local host="$1"
-  ssh-keyscan -T 5 -t ed25519 "$host" 2>/dev/null | awk '$2 == "ssh-ed25519" {print $2 " " $3; exit}'
+  { ssh-keyscan -T 5 -t ed25519 "$host" 2>/dev/null || true; } |
+    awk '$2 == "ssh-ed25519" {print $2 " " $3; exit}'
 }
 
 validate_hostkey_alias_inputs() {
@@ -2400,6 +2402,10 @@ fixture_test() {
   # scan could see its own process-substitution Bash and block the launcher.
   check_no_forbidden_processes "fixture" >/dev/null
   unset -f pgrep ps
+
+  : > "$root/known-hosts-absence-fixture"
+  [ -z "$(trusted_ed25519_key absent-alias "$root/known-hosts-absence-fixture")" ] ||
+    fail "missing HostKeyAlias lookup did not return empty output"
 
   trusted_ed25519_key() {
     case "$1" in
