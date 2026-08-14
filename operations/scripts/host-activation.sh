@@ -247,18 +247,54 @@ scanned_ed25519_key() {
   ssh-keyscan -T 5 -t ed25519 "$host" 2>/dev/null | awk '$2 == "ssh-ed25519" {print $2 " " $3; exit}'
 }
 
-ensure_hostkey_alias() {
-  local alias="$1" address_one="$2" address_two="$3" known_hosts="$4" trusted_one trusted_two scanned_one scanned_two alias_key staged
-  [ -f "$known_hosts" ] || fail "known_hosts is missing: $known_hosts"
+validate_hostkey_alias_inputs() {
+  local alias="$1" address_one="$2" address_two="$3" known_hosts="$4" trusted_one trusted_two scanned_one scanned_two alias_key
+  [ -f "$known_hosts" ] || { fail "known_hosts is missing: $known_hosts"; return 1; }
   trusted_one="$(trusted_ed25519_key "$address_one" "$known_hosts")"
   trusted_two="$(trusted_ed25519_key "$address_two" "$known_hosts")"
   scanned_one="$(scanned_ed25519_key "$address_one")"
   scanned_two="$(scanned_ed25519_key "$address_two")"
-  [ -n "$trusted_one" ] && [ "$trusted_one" = "$trusted_two" ] || fail "fixed-address trusted ED25519 keys disagree or are missing for $alias"
-  [ "$trusted_one" = "$scanned_one" ] && [ "$trusted_one" = "$scanned_two" ] || fail "live ED25519 key does not match both already-trusted fixed addresses for $alias"
+  [ -n "$trusted_one" ] && [ "$trusted_one" = "$trusted_two" ] || {
+    fail "fixed-address trusted ED25519 keys disagree or are missing for $alias"
+    return 1
+  }
+  [ "$trusted_one" = "$scanned_one" ] && [ "$trusted_one" = "$scanned_two" ] || {
+    fail "live ED25519 key does not match both already-trusted fixed addresses for $alias"
+    return 1
+  }
   alias_key="$(trusted_ed25519_key "$alias" "$known_hosts")"
   if [ -n "$alias_key" ]; then
-    [ "$alias_key" = "$trusted_one" ] || fail "existing HostKeyAlias entry has an unexpected ED25519 key: $alias"
+    [ "$alias_key" = "$trusted_one" ] || {
+      fail "existing HostKeyAlias entry has an unexpected ED25519 key: $alias"
+      return 1
+    }
+  fi
+  say "[OK] fixed-address and existing HostKeyAlias keys agree for $alias"
+}
+
+validate_json_object_file() {
+  local file="$1" label="$2"
+  [ -f "$file" ] && [ ! -L "$file" ] || {
+    fail "$label must be a physical JSON file: $file"
+    return 1
+  }
+  JSON_FILE="$file" node -e '
+    const fs = require("node:fs");
+    const value = JSON.parse(fs.readFileSync(process.env.JSON_FILE, "utf8"));
+    if (value === null || Array.isArray(value) || typeof value !== "object") process.exit(1);
+  ' >/dev/null 2>&1 || {
+    fail "$label is not a valid JSON object"
+    return 1
+  }
+  say "[OK] $label is a valid physical JSON object"
+}
+
+ensure_hostkey_alias() {
+  local alias="$1" address_one="$2" address_two="$3" known_hosts="$4" trusted_one alias_key staged
+  validate_hostkey_alias_inputs "$alias" "$address_one" "$address_two" "$known_hosts" || return 1
+  trusted_one="$(trusted_ed25519_key "$address_one" "$known_hosts")"
+  alias_key="$(trusted_ed25519_key "$alias" "$known_hosts")"
+  if [ -n "$alias_key" ]; then
     say "[OK] trusted HostKeyAlias already present: $alias"
     return 0
   fi
@@ -927,12 +963,14 @@ office_preflight() {
   [ -f "$OFFICE_CANDIDATE/operations/scripts/brain-configs-link.sh" ] || fail "Brain config linker is missing"
   [ -f "$OFFICE_CANDIDATE/operations/scripts/codex-home-managed-root.sh" ] || fail "Codex check/repair manager is missing"
   [ -f "$OFFICE_CANDIDATE/projects/mind-context/src/provider/runtime.mjs" ] || fail "Mind provider runtime is missing"
+  validate_json_object_file "$CLAUDE_REGISTRY" "Office Claude registry"
 
   check_port "$MAC_TB" || fail "Office cannot reach MacBook Thunderbolt SSH"
   check_port "$MAC_TS" || fail "Office cannot reach MacBook Tailscale SSH"
   ssh_explicit "$MAC_USER" "$MAC_TB" "$MAC_TB" /Users/Office/.ssh/id_ed25519 /usr/bin/true >/dev/null
   ssh_explicit "$MAC_USER" "$MAC_TS" "$MAC_TS" /Users/Office/.ssh/id_ed25519 /usr/bin/true >/dev/null
   say "[OK] Office→MacBook authentication over both fixed addresses"
+  validate_hostkey_alias_inputs macbook-m1 "$MAC_TB" "$MAC_TS" /Users/Office/.ssh/known_hosts
 
   local source_kb runtime_kb codex_kb brain_kb available_kb required_kb reserve_kb runtime_target
   source_kb="$(du -sk "$OFFICE_BRAIN" /Users/Office/.codex "$OFFICE_CANDIDATE" | awk '{s += $1} END {print s}')"
@@ -1513,6 +1551,7 @@ mac_preflight() {
   ssh_explicit "$OFFICE_USER" "$OFFICE_TB" "$OFFICE_TB" /Users/Steve/.ssh/id_ed25519 /usr/bin/true >/dev/null
   ssh_explicit "$OFFICE_USER" "$OFFICE_TS" "$OFFICE_TS" /Users/Steve/.ssh/id_ed25519 /usr/bin/true >/dev/null
   say "[OK] MacBook→Office authentication over both fixed addresses"
+  validate_hostkey_alias_inputs office-m4 "$OFFICE_TB" "$OFFICE_TS" /Users/Steve/.ssh/known_hosts
   backup_kb=0
   for path in \
     /Users/Steve/.codex /Users/Steve/.gitconfig /Users/Steve/.ssh/config /Users/Steve/.ssh/known_hosts \
@@ -2308,6 +2347,46 @@ fixture_test() {
   }
   check_no_forbidden_processes "fixture" >/dev/null
   unset -f pgrep ps
+
+  trusted_ed25519_key() {
+    case "$1" in
+      fixed-one|fixed-two|scan-wrong|expected-alias) printf 'ssh-ed25519 fixture-key\n' ;;
+      fixed-mismatch|wrong-alias) printf 'ssh-ed25519 wrong-key\n' ;;
+    esac
+  }
+  scanned_ed25519_key() {
+    case "$1" in
+      fixed-one|fixed-two) printf 'ssh-ed25519 fixture-key\n' ;;
+      fixed-mismatch|scan-wrong) printf 'ssh-ed25519 wrong-key\n' ;;
+    esac
+  }
+  : > "$root/known-hosts-fixture"
+  validate_hostkey_alias_inputs expected-alias fixed-one fixed-two "$root/known-hosts-fixture" >/dev/null
+  validate_hostkey_alias_inputs absent-alias fixed-one fixed-two "$root/known-hosts-fixture" >/dev/null
+  if validate_hostkey_alias_inputs wrong-alias fixed-one fixed-two "$root/known-hosts-fixture" >/dev/null 2>&1; then
+    fail "HostKeyAlias preflight accepted a mismatched existing alias key"
+  fi
+  if validate_hostkey_alias_inputs absent-alias fixed-one fixed-mismatch "$root/known-hosts-fixture" >/dev/null 2>&1; then
+    fail "HostKeyAlias preflight accepted disagreeing trusted fixed-address keys"
+  fi
+  if validate_hostkey_alias_inputs absent-alias fixed-one scan-wrong "$root/known-hosts-fixture" >/dev/null 2>&1; then
+    fail "HostKeyAlias preflight accepted a live key that differs from the trusted key"
+  fi
+  if validate_hostkey_alias_inputs absent-alias fixed-one fixed-two "$root/missing-known-hosts" >/dev/null 2>&1; then
+    fail "HostKeyAlias preflight accepted a missing known_hosts file"
+  fi
+  unset -f trusted_ed25519_key scanned_ed25519_key
+
+  printf '{}\n' > "$root/valid-registry.json"
+  printf 'not-json\n' > "$root/invalid-registry.json"
+  printf '[]\n' > "$root/array-registry.json"
+  validate_json_object_file "$root/valid-registry.json" "fixture registry" >/dev/null
+  if validate_json_object_file "$root/invalid-registry.json" "fixture registry" >/dev/null 2>&1; then
+    fail "JSON-object preflight accepted malformed registry state"
+  fi
+  if validate_json_object_file "$root/array-registry.json" "fixture registry" >/dev/null 2>&1; then
+    fail "JSON-object preflight accepted a non-object registry"
+  fi
 
   phase_is_no_mutation 0 && phase_is_no_mutation 1 && phase_is_no_mutation 2 || fail "Phase 0–2 no-mutation classification failed"
   if phase_is_no_mutation 3; then fail "Phase 3 was incorrectly classified as no-mutation"; fi

@@ -310,6 +310,18 @@ CONFIGS_DIR="$MIGRATION_CONFIGS" BRAIN_AI_DIR="$MIGRATION_AI" run_manager "$MIGR
 CONFIGS_DIR="$MIGRATION_CONFIGS" BRAIN_AI_DIR="$MIGRATION_AI" run_manager "$MIGRATION_ROOT" repair >/dev/null
 pass "migration preserves runtime state, installs links, validates, and remains idempotent"
 
+MIGRATED_STATE_DB="$MIGRATION_ROOT/home/.codex/state_5.sqlite"
+sqlite3 "$MIGRATED_STATE_DB" 'PRAGMA journal_mode=WAL; PRAGMA wal_checkpoint(TRUNCATE);' >/dev/null
+[ ! -e "$MIGRATED_STATE_DB-wal" ] || unlink "$MIGRATED_STATE_DB-wal"
+[ ! -e "$MIGRATED_STATE_DB-shm" ] || unlink "$MIGRATED_STATE_DB-shm"
+if sqlite3 -readonly "$MIGRATED_STATE_DB" 'PRAGMA integrity_check;' >/dev/null 2>&1; then
+  fail "WAL fixture did not reproduce the direct read-only SQLITE_CANTOPEN state"
+fi
+CONFIGS_DIR="$MIGRATION_CONFIGS" BRAIN_AI_DIR="$MIGRATION_AI" run_manager "$MIGRATION_ROOT" check >/dev/null
+[ ! -e "$MIGRATED_STATE_DB-wal" ] || fail "managed-root check created a WAL file beside the live fixture database"
+[ ! -e "$MIGRATED_STATE_DB-shm" ] || fail "managed-root check created shared memory beside the live fixture database"
+pass "check validates a sidecar-free WAL database through an exact private snapshot"
+
 sqlite3 "$MIGRATION_ROOT/home/.codex/state_5.sqlite" "
 UPDATE threads
 SET rollout_path = '$LEGACY_CODEX_PHYSICAL/$LEGACY_ROLLOUT_RELATIVE'

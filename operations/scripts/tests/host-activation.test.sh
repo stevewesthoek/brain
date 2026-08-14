@@ -113,6 +113,9 @@ office_commit_line="$(grep -n -F 'stream_office_worker office-commit' "$RUNNER" 
 grep -Fq 'office-apply is disabled' "$RUNNER" || fail "legacy one-host mutation worker can bypass two-host preparation"
 grep -Fq 'PREPARED_AND_ROLLBACK_READY' "$RUNNER" || fail "Office prepared state is not explicit"
 grep -Fq 'still has another interactive shell' "$RUNNER" || fail "quiescence does not cover unrelated interactive shells"
+grep -Fq 'validate_hostkey_alias_inputs macbook-m1' "$RUNNER" || fail "Office preflight does not validate HostKeyAlias inputs before mutation"
+grep -Fq 'validate_hostkey_alias_inputs office-m4' "$RUNNER" || fail "MacBook preflight does not validate HostKeyAlias inputs before mutation"
+grep -Fq 'validate_json_object_file "$CLAUDE_REGISTRY"' "$RUNNER" || fail "Office preflight does not parse the Claude registry before mutation"
 if grep -Fq 'ChatGPT ChatGPTHelper' "$RUNNER" || grep -Fq 'for name in ChatGPTHelper' "$RUNNER"; then
   fail "unrelated persistent ChatGPT UI helper is still classified as a migration writer"
 fi

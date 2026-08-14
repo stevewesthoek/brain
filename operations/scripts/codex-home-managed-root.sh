@@ -261,6 +261,59 @@ install_managed_layout() {
   done < <(generated_entries)
 }
 
+# SQLite WAL-mode databases may require writable shared-memory setup even for
+# `sqlite3 -readonly`. A cleanly stopped Codex database can therefore fail with
+# SQLITE_CANTOPEN when its -wal/-shm files are absent. Never let validation
+# create sidecars beside the live database: copy the complete database family
+# into an owner-only scratch directory, prove the source was stable and the
+# copy exact, and run the read-only validation query against that private copy.
+sqlite_component_set_digest() {
+  local root="$1" suffix path
+  for suffix in '' -wal -shm -journal; do
+    path="$root/state_5.sqlite$suffix"
+    if [ -L "$path" ]; then
+      say "[FAIL] Codex SQLite component must not be a symlink: $path"
+      return 1
+    elif [ -f "$path" ]; then
+      printf '%s\t' "state_5.sqlite$suffix"
+      shasum -a 256 "$path" | awk '{print $1}'
+    elif [ -e "$path" ]; then
+      say "[FAIL] Codex SQLite component has an unsupported type: $path"
+      return 1
+    else
+      printf '%s\tmissing\n' "state_5.sqlite$suffix"
+    fi
+  done
+}
+
+sqlite_private_query() {
+  local root="$1" query="$2" scratch before after copied suffix source rc=0
+  [ -f "$root/state_5.sqlite" ] && [ ! -L "$root/state_5.sqlite" ] || return 1
+  scratch="$(mktemp -d /tmp/codex-managed-root-sqlite.XXXXXX)" || return 1
+  chmod 0700 "$scratch" || rc=1
+  before="$(sqlite_component_set_digest "$root")" || rc=1
+  if [ "$rc" -eq 0 ]; then
+    for suffix in '' -wal -shm -journal; do
+      source="$root/state_5.sqlite$suffix"
+      [ ! -f "$source" ] || cp -p "$source" "$scratch/state_5.sqlite$suffix" || { rc=1; break; }
+    done
+  fi
+  after="$(sqlite_component_set_digest "$root")" || rc=1
+  copied="$(sqlite_component_set_digest "$scratch")" || rc=1
+  if [ "$rc" -eq 0 ] && { [ "$before" != "$after" ] || [ "$after" != "$copied" ]; }; then
+    rc=1
+  fi
+  if [ "$rc" -eq 0 ]; then
+    chmod u+rw "$scratch"/state_5.sqlite* 2>/dev/null || true
+    sqlite3 "$scratch/state_5.sqlite" "$query" > "$scratch/query.out" 2> "$scratch/query.err" || rc=1
+  fi
+  if [ "$rc" -eq 0 ]; then
+    cat "$scratch/query.out" || rc=1
+  fi
+  find "$scratch" -depth -delete >/dev/null 2>&1 || rc=1
+  [ "$rc" -eq 0 ]
+}
+
 check_managed_layout() {
   local failures=0
 
@@ -359,19 +412,19 @@ check_managed_layout() {
       failures=$((failures + 1))
     else
       local integrity threads_table rollout_column legacy_root legacy_sql legacy_count
-      integrity="$(sqlite3 -readonly "$state_db" 'PRAGMA integrity_check;' 2>/dev/null || true)"
+      integrity="$(sqlite_private_query "$CODEX_HOME_DIR" 'PRAGMA integrity_check;' 2>/dev/null || true)"
       if [ "$integrity" != "ok" ]; then
         say "[FAIL] $state_db failed integrity validation."
         failures=$((failures + 1))
       else
-        threads_table="$(sqlite3 -readonly "$state_db" \
+        threads_table="$(sqlite_private_query "$CODEX_HOME_DIR" \
           "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='threads';")"
-        rollout_column="$(sqlite3 -readonly "$state_db" \
+        rollout_column="$(sqlite_private_query "$CODEX_HOME_DIR" \
           "SELECT COUNT(*) FROM pragma_table_info('threads') WHERE name='rollout_path';")"
         if [ "$threads_table" -eq 1 ] && [ "$rollout_column" -eq 1 ]; then
           legacy_root="$(normalize_existing_path "$CONFIGS_DIR/codex")" || legacy_root=""
           legacy_sql="$(sql_quote_literal "$legacy_root")"
-          legacy_count="$(sqlite3 -readonly "$state_db" \
+          legacy_count="$(sqlite_private_query "$CODEX_HOME_DIR" \
             "SELECT COUNT(*) FROM threads
              WHERE substr(rollout_path, 1, length(${legacy_sql}) + 1) = ${legacy_sql} || '/';")"
           if [ "$legacy_count" -eq 0 ]; then
