@@ -356,22 +356,25 @@ copy_tree() {
 
 # Content-address every regular file and symlink target plus portable,
 # non-secret metadata. Unprivileged macOS archive extraction cannot preserve a
-# source group the owner is not a member of. A GID is therefore portable only
-# when it affects access: retain it whenever group and other permissions differ
-# or setgid is present; otherwise normalize it. Directory inode size/mtime is
-# not content metadata, and com.apple.provenance intentionally changes on
-# copies. All other listed attributes remain verified. Sort the private stream
-# and emit only the final SHA-256; no file content or path is recorded in
-# receipts.
-normalize_portable_gid() {
-  local gid_field="$1" mode_field="$2"
-  awk -F '|' -v gid_field="$gid_field" -v mode_field="$mode_field" '
+# source UID/GID when extracting as an unprivileged user. Root and the invoking
+# UID are portable equivalents unless setuid is present; any foreign non-root
+# UID remains exact. A GID is portable only when it cannot affect access:
+# retain it whenever group and other permissions differ or setgid is present.
+# Directory inode size/mtime is not content metadata, and com.apple.provenance
+# intentionally changes on copies. All other listed attributes remain
+# verified. Sort the private stream and emit only the final SHA-256; no file
+# content or path is recorded in receipts.
+normalize_portable_identity() {
+  local uid_field="$1" gid_field="$2" mode_field="$3" current_uid
+  current_uid="$(id -u)"
+  awk -F '|' -v uid_field="$uid_field" -v gid_field="$gid_field" -v mode_field="$mode_field" -v current_uid="$current_uid" '
     BEGIN { OFS="|" }
     {
       mode=$mode_field
       group_digit=substr(mode, length(mode)-1, 1)
       other_digit=substr(mode, length(mode), 1)
       special=(length(mode) > 3 ? substr(mode, length(mode)-3, 1) : "0")
+      if (($uid_field == 0 || $uid_field == current_uid) && special !~ /[4567]/) $uid_field="-"
       if (group_digit == other_digit && special !~ /[2367]/) $gid_field="-"
       print
     }
@@ -400,13 +403,13 @@ tree_digest() {
         END { emit() }
       ' || exit 1
     find . -type f -exec stat -f '%u|%g|%Mp%Lp|%z|%m|%N' {} + |
-      normalize_portable_gid 2 3 |
+      normalize_portable_identity 1 2 3 |
       awk -F '|' '{path=$6; for(i=7;i<=NF;i++) path=path "|" $i; print "F " path "|" $1 "|" $2 "|" $3 "|" $4 "|" $5}' || exit 1
     find . -type l -exec stat -f '%u|%g|%Mp%Lp|%z|%m|%N' {} + |
-      normalize_portable_gid 2 3 |
+      normalize_portable_identity 1 2 3 |
       awk -F '|' '{path=$6; for(i=7;i<=NF;i++) path=path "|" $i; print "S " path "|" $1 "|" $2 "|" $3 "|" $4 "|" $5}' || exit 1
     find . -type d -exec stat -f '%u|%g|%Mp%Lp|%N' {} + |
-      normalize_portable_gid 2 3 |
+      normalize_portable_identity 1 2 3 |
       awk -F '|' '{path=$4; for(i=5;i<=NF;i++) path=path "|" $i; print "D " path "|" $1 "|" $2 "|" $3}' || exit 1
     # Batch ACL reads. Invoking ls once per runtime file makes large Claude and
     # Codex roots take hours; BSD ls emits each ACL entry directly after its
@@ -442,7 +445,7 @@ path_digest() {
         printf 'F|'
         shasum -a 256 "$path" | awk '{print $1}'
         stat -f 'M|%u|%g|%Mp%Lp|%z|%m' "$path" |
-          normalize_portable_gid 3 4
+          normalize_portable_identity 2 3 4
         acl="$(/bin/ls -lde "$path" | sed -n '2,$p')" || return 1
         if [ -n "$acl" ]; then
           printf 'A|'
@@ -459,7 +462,7 @@ path_digest() {
       {
         printf 'L|%s\n' "$(readlink "$path")"
         stat -f 'M|%u|%g|%Mp%Lp|%z|%m' "$path" |
-          normalize_portable_gid 3 4
+          normalize_portable_identity 2 3 4
       } | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
       ;;
     *) fail "unsupported snapshot path type: $path"; return 1 ;;
@@ -773,7 +776,7 @@ runtime_continuity_manifest() {
     runtime_find "$root" "$application" files
     runtime_find "$root" "$application" links
     runtime_find "$root" "$application" metadata |
-      normalize_portable_gid 3 4 |
+      normalize_portable_identity 2 3 4 |
       awk -F '|' 'BEGIN{OFS="|"} {print "M",$1,$2,$3,$4,$5}'
   } | LC_ALL=C sort | shasum -a 256 | awk '{print $1}')" || return 1
   count="$(runtime_find "$root" "$application" count | wc -l | tr -d ' ')"
@@ -2135,6 +2138,7 @@ office_post_change_metadata() {
 fixture_test() {
   [ "${HOST_ACTIVATION_TEST_MODE:-0}" = 1 ] || fail "fixture mode is test-only"
   local root="$1" root_parent source live receipt digest_before before_db_digest primary_group alternate_group orphan_alive
+  local normalized_root normalized_user
   root_parent="$(cd -P -- "$(dirname -- "$root")" && pwd)"
   root="$root_parent/$(basename -- "$root")"
   case "$root" in /private/tmp/host-activation-test.*) ;; *) fail "fixture root must be a dedicated host-activation-test directory under /private/tmp" ;; esac
@@ -2235,6 +2239,12 @@ fixture_test() {
   xattr -w com.brain.host-activation-test stable "$root/portable-digest/copy/state"
   primary_group="$(id -g)"
   alternate_group="$(id -G | tr ' ' '\n' | awk -v primary="$primary_group" '$0 != primary {print; exit}')"
+  normalized_root="$(printf '0|%s|0644|fixture\n' "$primary_group" | normalize_portable_identity 1 2 3)"
+  normalized_user="$(printf '%s|%s|0644|fixture\n' "$(id -u)" "$primary_group" | normalize_portable_identity 1 2 3)"
+  [ "$normalized_root" = "$normalized_user" ] || fail "portable identity rejected ordinary root-to-user archive ownership normalization"
+  normalized_root="$(printf '0|%s|4755|fixture\n' "$primary_group" | normalize_portable_identity 1 2 3)"
+  normalized_user="$(printf '%s|%s|4755|fixture\n' "$(id -u)" "$primary_group" | normalize_portable_identity 1 2 3)"
+  [ "$normalized_root" != "$normalized_user" ] || fail "portable identity ignored a security-relevant setuid owner change"
   if [ -n "$alternate_group" ]; then
     chgrp "$primary_group" "$root/portable-digest/source/state"
     chgrp "$alternate_group" "$root/portable-digest/copy/state"
