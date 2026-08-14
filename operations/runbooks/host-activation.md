@@ -235,8 +235,9 @@ Before pruning anything, independently verify all of the following:
   maintenance-unrelated worktree changes;
 - Office and MacBook runtime roots are physical and every declared managed
   entry passes the ownership validator;
-- direct Thunderbolt, direct Tailscale, and `office`/`MacBook`/`macbook` aliases
-  work with strict host-key checking;
+- direct Thunderbolt, direct Tailscale, `office`/`MacBook`/`macbook`, and the
+  two Codex profiles `office-repos-tb`/`office-repos-ts` work with strict
+  host-key checking; no separate LAN/mDNS Codex profile exists;
 - application acceptance, Codex thread continuity, and the read-only Mind
   bridge passed;
 - the successful rollback set has survived at least one normal reboot and one

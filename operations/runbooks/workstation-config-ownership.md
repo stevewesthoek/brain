@@ -121,7 +121,7 @@ Office -> MacBook
 
 Home Wi-Fi, mobile/5G, and other networks are treated as underlays for Tailscale rather than separate canonical SSH identities. This avoids DHCP churn while preserving one stable remote identity per machine.
 
-The tracked SSH config carries `MacBook` / `macbook` for the direct MacBook route and `office` for the Office host. Migration is not accepted unless aliases still resolve, fixed Thunderbolt and Tailscale routes remain correct, and non-destructive SSH connectivity works after the change.
+The tracked SSH config carries `MacBook` / `macbook` for the MacBook and `office` for the Office host. The Codex Mac app has exactly two fixed Office profiles: `office-repos-tb` for Thunderbolt and `office-repos-ts` for Tailscale. A separate LAN/mDNS profile is intentionally forbidden: home Wi-Fi and mobile/5G both use the same Tailscale profile. Migration is not accepted unless these aliases resolve, fixed Thunderbolt and Tailscale routes remain correct, and non-destructive SSH connectivity works after the change.
 
 Private keys stay local. The migration must never move, copy into Git, rewrite, or print private key material.
 

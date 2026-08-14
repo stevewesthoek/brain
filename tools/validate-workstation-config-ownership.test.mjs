@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -49,16 +50,40 @@ test('SSH root must use native INCLUDE and preserve Thunderbolt aliases', () => 
   assert.throws(() => validateWorkstationConfigOwnership(aliasSpec), /missing SSH alias MacBook/);
 });
 
-test('Codex Remote SSH preserves all three application-facing Office aliases', () => {
+test('Codex Remote SSH preserves both application-facing Office aliases', () => {
   const aliasSpec = clone();
   aliasSpec.crossMachineContinuity.sshAliasesThatMustResolve =
-    aliasSpec.crossMachineContinuity.sshAliasesThatMustResolve.filter((alias) => alias !== 'office-repos-lan');
-  assert.throws(() => validateWorkstationConfigOwnership(aliasSpec), /missing SSH alias office-repos-lan/);
+    aliasSpec.crossMachineContinuity.sshAliasesThatMustResolve.filter((alias) => alias !== 'office-repos-tb');
+  assert.throws(() => validateWorkstationConfigOwnership(aliasSpec), /missing SSH alias office-repos-tb/);
 
   const routeSpec = clone();
   routeSpec.crossMachineContinuity.codexRemoteSsh.fixedRouteAliases
     .find((entry) => entry.alias === 'office-repos-ts').host = '192.168.100.20';
   assert.throws(() => validateWorkstationConfigOwnership(routeSpec), /office-repos-ts must remain tailscale 100.86.124.66/);
+});
+
+test('tracked SSH config rejects the retired Office LAN profile', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'workstation-config-lan-'));
+  try {
+    for (const entry of SPEC.managedEntries) {
+      if (entry.id === 'ssh-root-config') continue;
+      const destination = path.join(tempRoot, entry.sourcePath);
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.symlinkSync(path.join(ROOT, entry.sourcePath), destination);
+    }
+    fs.mkdirSync(path.join(tempRoot, 'operations/system-configs/ssh'), { recursive: true });
+    const source = fs.readFileSync(path.join(ROOT, 'operations/system-configs/ssh/config'), 'utf8');
+    fs.writeFileSync(
+      path.join(tempRoot, 'operations/system-configs/ssh/config'),
+      `${source}\nHost office-repos-lan\n  HostName office.local\n`,
+    );
+    assert.throws(
+      () => validateWorkstationConfigOwnership(clone(), { repoRoot: tempRoot }),
+      /must not restore the retired office-repos-lan alias/,
+    );
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('canonical migration is plan-only and must preserve sessions/auth', () => {

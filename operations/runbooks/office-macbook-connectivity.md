@@ -30,6 +30,15 @@ DHCP-assigned Wi-Fi/LAN addresses are intentionally noncanonical. Home Wi-Fi, mo
 
 The canonical `office` SSH identity should preserve this behavior. Tailscale is the stable fallback on home Wi-Fi, mobile/5G, or another internet underlay.
 
+Codex exposes exactly two fixed application profiles:
+
+- `office-repos-tb` (`Office Thunderbolt`) for the direct cable;
+- `office-repos-ts` (`Office Tailscale`) for every non-Thunderbolt path.
+
+There is no separate Office LAN profile. Home Wi-Fi is an underlay for the
+Tailscale profile, not a third SSH route. Do not recreate an mDNS, `.local`, or
+DHCP-address profile for Codex.
+
 ### Office → MacBook
 
 1. **Thunderbolt** `192.168.2.2` when directly connected.
@@ -101,6 +110,8 @@ Required resolution checks:
 
 ```text
 ssh -G office
+ssh -G office-repos-tb
+ssh -G office-repos-ts
 ssh -G MacBook
 ssh -G macbook
 ```
@@ -155,6 +166,7 @@ A new Office/MacBook installation should be considered correctly configured only
 - both fixed Tailscale identities are documented and reachable where expected;
 - Thunderbolt fixed addresses are configured for direct operation;
 - Wi-Fi DHCP addresses are not embedded in Brain config;
+- the only Codex Office profiles are `office-repos-tb` and `office-repos-ts`;
 - SSH aliases resolve correctly;
 - Codex Remote SSH uses a short physical Office `~/.codex` runtime root;
 - sessions/auth/runtime state remain application-owned and local.

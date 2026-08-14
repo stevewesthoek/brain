@@ -1653,12 +1653,12 @@ mac_preflight() {
   say "[OK] MacBook→Office authentication over both fixed addresses"
   validate_hostkey_alias_inputs office-m4 "$OFFICE_TB" "$OFFICE_TS" /Users/Steve/.ssh/known_hosts
   tracked_ssh="$MAC_BRAIN/operations/system-configs/ssh/config"
-  for host in office-repos-tb office-repos-lan office-repos-ts; do
+  for host in office-repos-tb office-repos-ts; do
     /usr/bin/ssh -F "$tracked_ssh" -o BatchMode=yes -o ConnectTimeout=8 -o StrictHostKeyChecking=yes -o UpdateHostKeys=no "$host" /usr/bin/true >/dev/null
     /usr/bin/ssh -G -F "$tracked_ssh" "$host" 2>/dev/null | grep -Eq '^hostkeyalias office-m4$' ||
       fail "$host alias lost HostKeyAlias office-m4"
   done
-  say "[OK] MacBook Codex Remote SSH aliases authenticate over Thunderbolt, LAN, and Tailscale"
+  say "[OK] MacBook Codex Remote SSH aliases authenticate over Thunderbolt and Tailscale"
   backup_kb=0
   for path in \
     /Users/Steve/.codex /Users/Steve/.gitconfig /Users/Steve/.ssh/config /Users/Steve/.ssh/known_hosts \
@@ -1977,13 +1977,13 @@ fresh_connectivity() {
   ssh_explicit "$OFFICE_USER" "$OFFICE_TS" office-m4 /Users/Steve/.ssh/id_ed25519 /usr/bin/true >/dev/null
   /usr/bin/ssh -o BatchMode=yes -o ConnectTimeout=7 -o UpdateHostKeys=no office /usr/bin/true >/dev/null
   ssh -G office 2>/dev/null | grep -Eq '^hostkeyalias office-m4$' || fail "office alias lost HostKeyAlias"
-  for host in office-repos-tb office-repos-lan office-repos-ts; do
+  for host in office-repos-tb office-repos-ts; do
     /usr/bin/ssh -o BatchMode=yes -o ConnectTimeout=8 -o StrictHostKeyChecking=yes -o UpdateHostKeys=no "$host" /usr/bin/true >/dev/null
     /usr/bin/ssh -G "$host" 2>/dev/null | grep -Eq '^hostkeyalias office-m4$' ||
       fail "$host alias lost HostKeyAlias office-m4"
   done
   stream_office_worker office-connectivity
-  receipt_note "$LOCAL_RECEIPT" "- MacBook→Office: Thunderbolt PASS; LAN PASS; Tailscale PASS; office and Codex fixed aliases PASS"
+  receipt_note "$LOCAL_RECEIPT" "- MacBook→Office: Thunderbolt PASS; Tailscale PASS; office and Codex fixed aliases PASS"
   say "[OK] fresh SSH passed both fixed routes in both directions and all terminal/Codex aliases"
 }
 

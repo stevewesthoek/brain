@@ -132,9 +132,9 @@ if grep -Fq 'still has another interactive shell' "$RUNNER"; then
 fi
 grep -Fq 'validate_hostkey_alias_inputs macbook-m1' "$RUNNER" || fail "Office preflight does not validate HostKeyAlias inputs before mutation"
 grep -Fq 'validate_hostkey_alias_inputs office-m4' "$RUNNER" || fail "MacBook preflight does not validate HostKeyAlias inputs before mutation"
-[ "$(grep -Fc 'for host in office-repos-tb office-repos-lan office-repos-ts' "$RUNNER")" -eq 2 ] || fail "MacBook preflight and Phase 8 do not both cover the Codex Remote SSH aliases"
+[ "$(grep -Fc 'for host in office-repos-tb office-repos-ts' "$RUNNER")" -eq 2 ] || fail "MacBook preflight and Phase 8 do not both cover the Codex Remote SSH aliases"
 grep -Fq 'ssh -F "$tracked_ssh"' "$RUNNER" || fail "MacBook preflight does not exercise the packet SSH config directly"
-grep -Fq 'MacBook Codex Remote SSH aliases authenticate over Thunderbolt, LAN, and Tailscale' "$RUNNER" || fail "Codex Remote SSH preflight result is missing"
+grep -Fq 'MacBook Codex Remote SSH aliases authenticate over Thunderbolt and Tailscale' "$RUNNER" || fail "Codex Remote SSH preflight result is missing"
 grep -Fq 'validate_json_object_file "$CLAUDE_REGISTRY"' "$RUNNER" || fail "Office preflight does not parse the Claude registry before mutation"
 if grep -Fq 'ChatGPT ChatGPTHelper' "$RUNNER" || grep -Fq 'for name in ChatGPTHelper' "$RUNNER"; then
   fail "unrelated persistent ChatGPT UI helper is still classified as a migration writer"

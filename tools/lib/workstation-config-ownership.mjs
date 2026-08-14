@@ -86,7 +86,7 @@ export function validateWorkstationConfigOwnership(spec, { repoRoot } = {}) {
 
   const continuity = spec.crossMachineContinuity ?? {};
   const aliases = new Set(continuity.sshAliasesThatMustResolve ?? []);
-  for (const alias of ['MacBook', 'macbook', 'office', 'office-repos-tb', 'office-repos-lan', 'office-repos-ts']) {
+  for (const alias of ['MacBook', 'macbook', 'office', 'office-repos-tb', 'office-repos-ts']) {
     assert(aliases.has(alias), `crossMachineContinuity missing SSH alias ${alias}`);
   }
   assert(continuity.macBookThunderboltAddress === '192.168.2.2', 'MacBook Thunderbolt address must remain 192.168.2.2');
@@ -106,10 +106,9 @@ export function validateWorkstationConfigOwnership(spec, { repoRoot } = {}) {
   const fixedRouteAliases = codexRemote.fixedRouteAliases ?? [];
   const expectedFixedRoutes = [
     { alias: 'office-repos-tb', transport: 'thunderbolt', host: '192.168.2.1' },
-    { alias: 'office-repos-lan', transport: 'mdns-lan', host: 'office.local' },
     { alias: 'office-repos-ts', transport: 'tailscale', host: '100.86.124.66' },
   ];
-  assert(fixedRouteAliases.length === expectedFixedRoutes.length, 'Codex Remote SSH must declare exactly three fixed Office route aliases');
+  assert(fixedRouteAliases.length === expectedFixedRoutes.length, 'Codex Remote SSH must declare exactly two fixed Office route aliases');
   for (const expected of expectedFixedRoutes) {
     const route = fixedRouteAliases.find((entry) => entry.alias === expected.alias);
     assert(route, `Codex Remote SSH fixed route is missing ${expected.alias}`);
@@ -160,6 +159,8 @@ export function validateWorkstationConfigOwnership(spec, { repoRoot } = {}) {
       assert(block.includes('  User office'), `tracked SSH config alias ${route.alias} must use the Office account`);
       assert(block.includes('  HostKeyAlias office-m4'), `tracked SSH config alias ${route.alias} must retain HostKeyAlias office-m4`);
     }
+    assert(!hostBlock(sshSource, 'office-repos-lan'), 'tracked SSH config must not restore the retired office-repos-lan alias');
+    assert(!sshSource.includes('HostName office.local'), 'tracked SSH config must not restore an Office mDNS route');
     assert(!sshSource.includes('192.168.100.'), 'tracked SSH config must not embed DHCP home-LAN addresses');
   }
 

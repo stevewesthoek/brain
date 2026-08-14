@@ -94,17 +94,6 @@ Host office-repos-tb
   ServerAliveInterval 15
   ServerAliveCountMax 2
 
-Host office-repos-lan
-  HostName office.local
-  User office
-  Port 22
-  IdentityFile ~/.ssh/id_ed25519
-  IdentitiesOnly yes
-  HostKeyAlias office-m4
-  ConnectTimeout 5
-  ServerAliveInterval 15
-  ServerAliveCountMax 2
-
 Host office-repos-ts
   HostName 100.86.124.66
   User office
