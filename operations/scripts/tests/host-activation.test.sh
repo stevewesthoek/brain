@@ -90,4 +90,54 @@ grep -Fq 'Office Phase 0 made no changes; no receipt or rollback is required.' "
 [ ! -e "/Users/Office/.brain-host-activation/$preflight_run_id" ] || fail "preflight regression test unexpectedly created a receipt"
 pass "Phase 0 blocks are not misreported as rollback failures; fixture coverage proves Phase 1–2 classification"
 
+grep -Fq 'stable_copy_tree /Users/Office/.codex' "$RUNNER" || fail "Office Codex backup does not require a stable source snapshot"
+grep -Fq 'stable_copy_tree /Users/Steve/.codex' "$RUNNER" || fail "MacBook Codex backup does not require a stable source snapshot"
+grep -Fq 'stable_copy_path_snapshot "$live" "$root/backups/paths/$name"' "$RUNNER" || fail "Office narrow backups are not stable and verified"
+grep -Fq 'stable_copy_path_snapshot "$live" "$root/backups/paths/$label"' "$RUNNER" || fail "MacBook narrow backups are not stable and verified"
+grep -Fq "find . -type f -links +1" "$RUNNER" || fail "tree fidelity does not include hard-link topology"
+grep -Fq "/bin/ls -lde" "$RUNNER" || fail "snapshot fidelity does not include ACLs"
+grep -Fq 'source changed during snapshot attempt' "$RUNNER" || fail "unstable source snapshots are not diagnosed distinctly"
+grep -Fq 'source changed during both snapshot attempts' "$RUNNER" || fail "repeated source instability is not fail-closed"
+grep -Fq 'destination.unstable-attempt' "$RUNNER" || fail "rejected unstable snapshots are not preserved"
+grep -Fq 'dry-run cannot pass while affected processes or detached helpers remain' "$RUNNER" || fail "dry-run still exits successfully when quiescence is unproven"
+grep -Fq 'This is not a future execution guarantee.' "$RUNNER" || fail "dry-run still overstates what a read-only inspection can prove"
+pass "stable snapshots distinguish live writers from copy failures and retain every rejected attempt"
+
+office_prepare_line="$(grep -n -F 'stream_office_worker office-prepare' "$RUNNER" | cut -d: -f1)"
+mac_prepare_line="$(grep -n -F '  mac_snapshot_paths' "$RUNNER" | tail -1 | cut -d: -f1)"
+activate_prompt_line="$(grep -n -F "printf 'Type ACTIVATE" "$RUNNER" | cut -d: -f1)"
+office_commit_line="$(grep -n -F 'stream_office_worker office-commit' "$RUNNER" | cut -d: -f1)"
+[ "$office_prepare_line" -lt "$mac_prepare_line" ] && \
+  [ "$mac_prepare_line" -lt "$activate_prompt_line" ] && \
+  [ "$activate_prompt_line" -lt "$office_commit_line" ] || fail "two-host preparation does not precede the explicit mutation boundary"
+grep -Fq 'office-apply is disabled' "$RUNNER" || fail "legacy one-host mutation worker can bypass two-host preparation"
+grep -Fq 'PREPARED_AND_ROLLBACK_READY' "$RUNNER" || fail "Office prepared state is not explicit"
+grep -Fq 'still has another interactive shell' "$RUNNER" || fail "quiescence does not cover unrelated interactive shells"
+for helper in ChatGPTHelper SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
+  grep -Fq "$helper" "$RUNNER" || fail "quiescence does not cover current helper process $helper"
+done
+grep -Fq 'kill -TERM "$pid"' "$RUNNER" || fail "detached helpers are not limited to graceful TERM"
+grep -Fq 'no force signal was used' "$RUNNER" || fail "helper quiescence does not fail closed without force"
+pass "both hosts become rollback-ready before the owner can authorize the first mutation"
+
+grep -Fq 'office-codex-rollback-stage' "$RUNNER" || fail "Office Codex rollback tree is not prepared before mutation"
+grep -Fq 'macbook-codex-rollback-stage' "$RUNNER" || fail "MacBook Codex rollback tree is not prepared before mutation"
+grep -Fq 'activate_prepared_restore_tree' "$RUNNER" || fail "rollback does not use a preverified atomic restore tree"
+! grep -A3 -F 'move_aside /Users/Office/.codex' "$RUNNER" | grep -Fq 'copy_tree' || fail "Office rollback can remove live Codex before rebuilding it"
+! grep -A3 -F 'move_aside /Users/Steve/.codex' "$RUNNER" | grep -Fq 'copy_tree' || fail "MacBook rollback can remove live Codex before rebuilding it"
+pass "Codex rollback replacements exist and verify before either live root is moved"
+
+grep -Fq 'session/history continuity mismatch; do not reopen Codex' "$RUNNER" || fail "Codex continuity failure does not prohibit application reopen"
+grep -Fq 'probe_codex_database /Users/Office/.codex "Office Codex"' "$RUNNER" || fail "Office preflight does not verify Codex SQLite readiness"
+grep -Fq 'probe_codex_database /Users/Steve/.codex "MacBook Codex"' "$RUNNER" || fail "MacBook preflight does not verify Codex SQLite readiness"
+! grep -Eq 'sqlite3[[:space:]]+-readonly' "$RUNNER" || fail "live-incompatible SQLite readonly mode remains in the activation runner"
+grep -Fq 'private SQLite probe changed its source database family' "$RUNNER" || fail "WAL-mode SQLite source immutability regression coverage is missing"
+grep -Fq 'session/auth/history continuity mismatch; do not reopen the application' "$RUNNER" || fail "non-Codex runtime continuity failure does not prohibit application reopen"
+for application in claude cursor gemini kiro; do
+  grep -Fq 'for name in claude cursor gemini kiro' "$RUNNER" || fail "$application runtime continuity loop is missing"
+done
+grep -Fq 'Codex conversation files and its logical thread index have already passed' "$RUNNER" || fail "manual acceptance is not gated on deterministic Codex continuity"
+grep -Fq 'office-post-change-metadata' "$RUNNER" || fail "Office post-change metadata is not captured before application acceptance"
+pass "all application-owned session/auth/history plus Codex logical thread state are checked before reopen"
+
 printf 'host activation tests passed\n'

@@ -141,19 +141,79 @@ resolve_link() {
 }
 
 check_no_forbidden_processes() {
-  local label="$1" found=0 name
-  for name in ChatGPT Codex codex codex-app-server app-server SkyComputerUseClient Claude claude Cursor cursor Gemini gemini Antigravity antigravity Kiro kiro Ghostty node-repl; do
+  local label="$1" found=0 name pid parent tty command allowed=" "
+  for name in \
+    ChatGPT ChatGPTHelper Codex codex codex-app-server codex-code-mode-host app-server \
+    SkyComputerUseClient SkyComputerUseService Claude claude Cursor cursor Gemini gemini \
+    Antigravity antigravity Kiro kiro Ghostty node-repl node_repl bare-modifier-monitor; do
     if pgrep -x "$name" >/dev/null 2>&1; then
       say "[BLOCKED] $label still has an affected process named $name"
       found=1
     fi
   done
-  if pgrep -f '/(Codex|ChatGPT|Claude|Cursor|Gemini|Antigravity|Kiro|Ghostty)\.app/|codex[^ ]*.*app-server|SkyComputerUseClient|node[^ ]*.*repl' >/dev/null 2>&1; then
+  if pgrep -f '/(Codex|ChatGPT|Claude|Cursor|Gemini|Antigravity|Kiro|Ghostty)( \([^/]+\))?\.app/|/Applications/ChatGPT\.app/|codex[^ ]*.*(app-server|code-mode-host)|SkyComputerUse(Client|Service)|node[_-]?repl|bare-modifier-monitor' >/dev/null 2>&1; then
     say "[BLOCKED] $label still has an affected application/background process"
     found=1
   fi
+  # Allow only this migration process and its launch/SSH ancestors. Any other
+  # interactive shell can keep runtime files or repo working directories open
+  # and violates the quiescent-host contract.
+  pid=$$
+  while [ "$pid" -gt 1 ] 2>/dev/null; do
+    allowed="$allowed$pid "
+    parent="$(ps -p "$pid" -o ppid= 2>/dev/null | tr -d ' ')"
+    case "$parent" in ''|*[!0-9]*) break ;; esac
+    pid="$parent"
+  done
+  while read -r pid tty command; do
+    [ -n "$pid" ] || continue
+    case "$tty" in '?'|'??'|'-') continue ;; esac
+    command="${command##*/}"
+    command="${command#-}"
+    case "$command" in bash|zsh|fish|sh) ;;
+      *) continue ;;
+    esac
+    case "$allowed" in *" $pid "*) continue ;; esac
+    say "[BLOCKED] $label still has another interactive shell on $tty (pid $pid)"
+    found=1
+  done < <(ps -axo pid=,tty=,comm=)
   [ "$found" -eq 0 ] || return 1
   say "[OK] $label affected applications are quiescent"
+}
+
+# A normally quit desktop app can leave detached helpers behind. These exact
+# helper processes are safe to ask to terminate only after launchd has adopted
+# them (PPID 1); children of a still-running application are never signaled.
+# TERM is the only signal used. Failure to exit remains a hard preflight block.
+quiesce_orphan_application_helpers() {
+  local label="$1" name pid parent attempt remaining signaled=0
+  for name in ChatGPTHelper SkyComputerUseClient SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
+    while IFS= read -r pid; do
+      case "$pid" in ''|*[!0-9]*) continue ;; esac
+      parent="$(ps -p "$pid" -o ppid= 2>/dev/null | tr -d ' ')"
+      [ "$parent" = 1 ] || continue
+      say "[QUIESCE] requesting graceful exit from detached $label helper $name"
+      if ! kill -TERM "$pid"; then
+        kill -0 "$pid" 2>/dev/null || continue
+        return 1
+      fi
+      signaled=1
+    done < <(pgrep -x "$name" 2>/dev/null || true)
+  done
+  [ "$signaled" -eq 1 ] || return 0
+  for attempt in 1 2 3 4 5; do
+    remaining=0
+    for name in ChatGPTHelper SkyComputerUseClient SkyComputerUseService codex-code-mode-host node_repl bare-modifier-monitor; do
+      while IFS= read -r pid; do
+        case "$pid" in ''|*[!0-9]*) continue ;; esac
+        parent="$(ps -p "$pid" -o ppid= 2>/dev/null | tr -d ' ')"
+        [ "$parent" != 1 ] || remaining=1
+      done < <(pgrep -x "$name" 2>/dev/null || true)
+    done
+    [ "$remaining" -eq 1 ] || { say "[OK] detached $label helpers exited cleanly"; return 0; }
+    sleep 1
+  done
+  fail "detached $label application helper did not exit after TERM; no force signal was used"
 }
 
 check_port() {
@@ -258,6 +318,16 @@ copy_tree() {
     fail "copy source contains an unsupported non-file object"
     return 1
   fi
+  if [ "${HOST_ACTIVATION_TEST_MODE:-0}" = 1 ] && [ "${HOST_ACTIVATION_TEST_COPY_FAILURE:-0}" = 1 ]; then
+    case "$source" in
+      /private/tmp/host-activation-test.*)
+        mkdir -p "$destination"
+        printf 'simulated-partial-copy\n' > "$destination/partial"
+        return 1
+        ;;
+      *) fail "test copy-failure hook refused a non-fixture path"; return 1 ;;
+    esac
+  fi
   mkdir -p "$destination"
   (
     cd -- "$source"
@@ -276,38 +346,94 @@ copy_tree() {
 tree_digest() {
   local root="$1"
   (
-    portable_stat_lines() {
-      local record_type="$1" include_file_metadata="$2" path metadata uid gid mode size mtime portable_gid group_bits other_bits
-      while IFS= read -r -d '' path; do
-        metadata="$(stat -f '%u|%g|%Lp|%z|%m' "$path")" || return 1
-        IFS='|' read -r uid gid mode size mtime <<EOF
-$metadata
-EOF
-        group_bits="${mode: -2:1}"
-        other_bits="${mode: -1}"
-        if [ "$record_type" = F ] && [ "$mode" = 644 ] && [ "$group_bits" = "$other_bits" ]; then portable_gid=-; else portable_gid="$gid"; fi
-        if [ "$include_file_metadata" = yes ]; then
-          printf '%s %s|%s|%s|%s|%s|%s\n' "$record_type" "$path" "$uid" "$portable_gid" "$mode" "$size" "$mtime"
-        else
-          printf '%s %s|%s|%s|%s\n' "$record_type" "$path" "$uid" "$portable_gid" "$mode"
-        fi
-      done
-    }
-
     cd -- "$root"
     find . -type f -exec shasum -a 256 {} + || exit 1
     find . -type l -exec sh -c 'for p do printf "L %s " "$p"; readlink "$p" || exit 1; done' sh {} + || exit 1
-    find . -type f -print0 | portable_stat_lines F yes || exit 1
-    find . -type l -print0 | portable_stat_lines S yes || exit 1
-    find . -type d -print0 | portable_stat_lines D no || exit 1
-    find . ! -type s -print0 | while IFS= read -r -d '' p; do
-      xattr -s "$p" 2>/dev/null | while IFS= read -r attribute; do
-        [ "$attribute" = com.apple.provenance ] && continue
-        printf 'X %s|%s|' "$p" "$attribute"
-        xattr -spx "$attribute" "$p" 2>/dev/null || return 1
-      done || return 1
-    done || exit 1
+    find . -type f -links +1 -exec stat -f '%d|%i|%N' {} + |
+      LC_ALL=C sort -t '|' -k1,1 -k2,2n -k3,3 |
+      awk -F '|' '
+        function emit() { if (count > 1) print "H " members }
+        {
+          key=$1 "|" $2
+          path=$3
+          for (i=4; i<=NF; i++) path=path "|" $i
+          if (NR > 1 && key != previous) { emit(); members=""; count=0 }
+          members=(count == 0 ? path : members "|" path)
+          count++
+          previous=key
+        }
+        END { emit() }
+      ' || exit 1
+    find . -type f -exec stat -f '%u|%g|%Lp|%z|%m|%N' {} + |
+      awk -F '|' '{path=$6; for(i=7;i<=NF;i++) path=path "|" $i; gid=($3 == "644" ? "-" : $2); print "F " path "|" $1 "|" gid "|" $3 "|" $4 "|" $5}' || exit 1
+    find . -type l -exec stat -f '%u|%g|%Lp|%z|%m|%N' {} + |
+      awk -F '|' '{path=$6; for(i=7;i<=NF;i++) path=path "|" $i; print "S " path "|" $1 "|" $2 "|" $3 "|" $4 "|" $5}' || exit 1
+    find . -type d -exec stat -f '%u|%g|%Lp|%N' {} + |
+      awk -F '|' '{path=$4; for(i=5;i<=NF;i++) path=path "|" $i; print "D " path "|" $1 "|" $2 "|" $3}' || exit 1
+    # Batch ACL reads. Invoking ls once per runtime file makes large Claude and
+    # Codex roots take hours; BSD ls emits each ACL entry directly after its
+    # fixed-field -T path row, so attach it to that path in one streaming pass.
+    find . ! -type s -exec /bin/ls -ldeT {} + |
+      LC_ALL=C awk '
+        /^[[:space:]]*[0-9]+:/ { print "A " current "|" $0; next }
+        {
+          current=$10
+          for (i=11; i<=NF && $i != "->"; i++) current=current " " $i
+        }
+      ' || exit 1
+    find . ! -type s -exec xattr -lxs {} + 2>/dev/null |
+      awk '
+        /^[^[:space:]].*: [^:]+:$/ {
+          keep=($0 !~ /: com\.apple\.provenance:$/)
+          if (keep) print "X " $0
+          next
+        }
+        keep { print }
+      ' || exit 1
   ) | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
+}
+
+path_digest() {
+  local path="$1" kind attribute acl
+  kind="$(path_kind "$path")"
+  case "$kind" in
+    missing) printf 'missing\n' ;;
+    directory) tree_digest "$path" ;;
+    file)
+      {
+        printf 'F|'
+        shasum -a 256 "$path" | awk '{print $1}'
+        stat -f 'M|%u|%g|%Lp|%z|%m' "$path"
+        acl="$(/bin/ls -lde "$path" | sed -n '2,$p')" || return 1
+        if [ -n "$acl" ]; then
+          printf 'A|'
+          printf '%s' "$acl" | shasum -a 256 | awk '{print $1}'
+        fi
+        xattr -s "$path" 2>/dev/null | while IFS= read -r attribute; do
+          [ "$attribute" = com.apple.provenance ] && continue
+          printf 'X|%s|' "$attribute"
+          xattr -spx "$attribute" "$path" 2>/dev/null || return 1
+        done || return 1
+      } | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
+      ;;
+    symlink)
+      {
+        printf 'L|%s\n' "$(readlink "$path")"
+        stat -f 'M|%u|%g|%Lp|%z|%m' "$path"
+      } | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
+      ;;
+    *) fail "unsupported snapshot path type: $path"; return 1 ;;
+  esac
+}
+
+snapshot_path_digest() {
+  local snapshot="$1"
+  if [ -e "$snapshot.missing" ]; then
+    [ ! -e "$snapshot" ] && [ ! -L "$snapshot" ] || { fail "snapshot has both missing and materialized forms: $snapshot"; return 1; }
+    printf 'missing\n'
+  else
+    path_digest "$snapshot"
+  fi
 }
 
 verify_tree_copy() {
@@ -317,6 +443,302 @@ verify_tree_copy() {
   [ "$source_digest" = "$destination_digest" ] || fail "$label content digest mismatch"
   printf '%s\t%s\t%s\n' "$label" "$source_digest" "verified" >> "$receipt"
   say "[OK] verified $label (SHA-256 $source_digest)"
+}
+
+# Capture a source only when it remains byte/metadata-identical for the whole
+# operation. A plain copy-then-compare can report a destination mismatch but
+# cannot distinguish a bad copy from a writer changing the source mid-copy.
+# Keep every rejected attempt for diagnosis; never delete or overwrite it.
+stable_copy_tree() {
+  local source="$1" destination="$2" label="$3" receipt="$4"
+  local attempt before after copied rejected
+  for attempt in 1 2; do
+    before="$(tree_digest "$source")" || return 1
+    if ! copy_tree "$source" "$destination"; then
+      if [ -e "$destination" ] || [ -L "$destination" ]; then
+        rejected="$destination.copy-failure-attempt-$attempt"
+        mv "$destination" "$rejected"
+        fail "$label copy failed; partial attempt preserved at $rejected"
+      fi
+      return 1
+    fi
+    if [ "${HOST_ACTIVATION_TEST_MODE:-0}" = 1 ] && [ "${HOST_ACTIVATION_TEST_MUTATE_SOURCE:-0}" = 1 ]; then
+      case "$source" in
+        /private/tmp/host-activation-test.*) printf 'simulated-writer\n' >> "$source/state" ;;
+        *) fail "test source-mutation hook refused a non-fixture path"; return 1 ;;
+      esac
+    fi
+    after="$(tree_digest "$source")" || return 1
+    copied="$(tree_digest "$destination")" || return 1
+    if [ "$before" = "$after" ] && [ "$after" = "$copied" ]; then
+      printf '%s\t%s\t%s\n' "$label" "$copied" "stable-source-verified" >> "$receipt"
+      say "[OK] verified stable $label (SHA-256 $copied)"
+      return 0
+    fi
+    rejected="$destination.unstable-attempt-$attempt"
+    mv "$destination" "$rejected"
+    if [ "$before" != "$after" ]; then
+      say "[RETRY] $label source changed during snapshot attempt $attempt; rejected copy preserved at $rejected"
+    else
+      fail "$label copy fidelity mismatch; rejected copy preserved at $rejected"
+      return 1
+    fi
+  done
+  fail "$label source changed during both snapshot attempts; close every writer and retry with the retained receipt"
+}
+
+verify_stable_tree_against_snapshot() {
+  local source="$1" snapshot="$2" label="$3" receipt="$4" before after saved
+  before="$(tree_digest "$source")" || return 1
+  saved="$(tree_digest "$snapshot")" || return 1
+  after="$(tree_digest "$source")" || return 1
+  [ "$before" = "$after" ] || { fail "$label source changed during the readiness gate"; return 1; }
+  [ "$after" = "$saved" ] || { fail "$label no longer matches its verified snapshot"; return 1; }
+  printf '%s\t%s\t%s\n' "$label" "$saved" "stable-readiness-verified" >> "$receipt"
+  say "[OK] verified stable $label (SHA-256 $saved)"
+}
+
+# Query a Codex SQLite database without ever opening the live or retained copy.
+# A WAL-mode database with no current -wal/-shm files can fail under
+# SQLite's direct read-only mode because it still wants shared-memory setup. Copy the
+# complete database family to an owner-only scratch directory, prove the source
+# stayed stable and the copy is exact, then allow SQLite to create any ephemeral
+# sidecars only in that disposable scratch directory.
+codex_sqlite_set_digest() {
+  local root="$1" suffix path
+  for suffix in '' -wal -shm -journal; do
+    path="$root/state_5.sqlite$suffix"
+    if [ -L "$path" ]; then
+      fail "Codex SQLite component must not be a symlink: $path"
+      return 1
+    elif [ -f "$path" ]; then
+      printf '%s\t' "state_5.sqlite$suffix"
+      shasum -a 256 "$path" | awk '{print $1}'
+    elif [ -e "$path" ]; then
+      fail "Codex SQLite component has an unsupported type: $path"
+      return 1
+    else
+      printf '%s\tmissing\n' "state_5.sqlite$suffix"
+    fi
+  done
+}
+
+codex_sqlite_query() {
+  local root="$1" query="$2" label="$3" setup_query="${4:-}" db="$root/state_5.sqlite"
+  local scratch before after copied suffix source destination rc=0
+  [ -f "$db" ] && [ ! -L "$db" ] || { fail "$label database is not a regular physical file"; return 1; }
+  scratch="$(mktemp -d "/tmp/brain-host-activation-sqlite.XXXXXX")" || return 1
+  chmod 0700 "$scratch" || rc=1
+  before="$(codex_sqlite_set_digest "$root")" || rc=1
+  if [ "$rc" -eq 0 ]; then
+    for suffix in '' -wal -shm -journal; do
+      source="$root/state_5.sqlite$suffix"
+      destination="$scratch/state_5.sqlite$suffix"
+      [ ! -f "$source" ] || cp -p "$source" "$destination" || { rc=1; break; }
+    done
+  fi
+  after="$(codex_sqlite_set_digest "$root")" || rc=1
+  copied="$(codex_sqlite_set_digest "$scratch")" || rc=1
+  if [ "$rc" -eq 0 ] && { [ "$before" != "$after" ] || [ "$after" != "$copied" ]; }; then
+    rc=1
+  fi
+  if [ "$rc" -eq 0 ]; then
+    chmod u+rw "$scratch"/state_5.sqlite* 2>/dev/null || true
+    if [ -n "$setup_query" ]; then
+      sqlite3 "$scratch/state_5.sqlite" "$setup_query" "$query" > "$scratch/query.out" 2> "$scratch/query.err" || rc=1
+    else
+      sqlite3 "$scratch/state_5.sqlite" "$query" > "$scratch/query.out" 2> "$scratch/query.err" || rc=1
+    fi
+  fi
+  if [ "$rc" -eq 0 ]; then
+    cat "$scratch/query.out" || rc=1
+  fi
+  find "$scratch" -depth -delete >/dev/null 2>&1 || rc=1
+  if [ "$rc" -ne 0 ]; then
+    fail "$label could not produce a stable private SQLite verification copy"
+    return 1
+  fi
+}
+
+codex_sqlite_normalized_dump() {
+  local root="$1" legacy_root="$2" final_root="$3" label="$4" has_threads setup_query=""
+  case "$legacy_root$final_root" in *"'"*|*$'\n'*) fail "$label root cannot be represented safely in SQLite normalization"; return 1 ;; esac
+  has_threads="$(codex_sqlite_query "$root" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='threads';" "$label")" || return 1
+  if [ "$has_threads" -eq 1 ]; then
+    setup_query="UPDATE threads SET rollout_path = replace(replace(rollout_path, '$legacy_root', '__CODEX_RUNTIME_ROOT__'), '$final_root', '__CODEX_RUNTIME_ROOT__');"
+  fi
+  codex_sqlite_query "$root" '.dump' "$label" "$setup_query"
+}
+
+probe_codex_database() {
+  local root="$1" label="$2" result
+  [ -d "$root" ] && [ ! -L "$root" ] || { fail "$label root is not a physical directory"; return 1; }
+  if [ ! -e "$root/state_5.sqlite" ]; then
+    say "[OK] $label has no state database to verify"
+    return 0
+  fi
+  result="$(codex_sqlite_query "$root" 'PRAGMA integrity_check;' "$label")" || return 1
+  [ "$result" = ok ] || { fail "$label database failed integrity validation"; return 1; }
+  codex_sqlite_query "$root" "SELECT COUNT(*) FROM sqlite_master;" "$label" >/dev/null || return 1
+  say "[OK] $label database is stable, readable, and internally consistent"
+}
+
+# Hash all Codex application-owned durable data while allowing only the exact
+# managed entries and the physical SQLite representation to differ. The SQLite
+# database is compared as a logical dump with the legacy/final root prefixes
+# normalized, so a rollout_path-only repair cannot hide any changed thread row.
+# Only the aggregate digest and non-secret counts are written to the receipt.
+codex_continuity_manifest() {
+  local root="$1" output="$2" legacy_root="$3" final_root="$4"
+  local digest file_count session_count thread_count db="$root/state_5.sqlite"
+  [ -d "$root" ] && [ ! -L "$root" ] || fail "Codex continuity root is not a physical directory: $root"
+  if [ -f "$db" ]; then
+    require_command sqlite3
+    [ "$(codex_sqlite_query "$root" 'PRAGMA integrity_check;' "Codex continuity")" = ok ] || fail "Codex continuity database failed integrity validation: $db"
+  fi
+  digest="$({
+    (
+      cd -- "$root"
+      find . \
+        \( -path './AGENTS.md' -o -path './RTK.md' -o -path './config.toml' -o \
+           -path './rules/default.rules' -o -path './skills/user' -o \
+           -path './state_5.sqlite' -o -path './state_5.sqlite-wal' -o -path './state_5.sqlite-shm' \) -prune -o \
+        -type f -exec shasum -a 256 {} +
+      find . \
+        \( -path './AGENTS.md' -o -path './RTK.md' -o -path './config.toml' -o \
+           -path './rules/default.rules' -o -path './skills/user' \) -prune -o \
+        -type l -exec sh -c 'for p do printf "L %s " "$p"; readlink "$p" || exit 1; done' sh {} +
+    )
+    if [ -f "$db" ]; then
+      codex_sqlite_normalized_dump "$root" "$legacy_root" "$final_root" "Codex continuity" |
+        sed 's/^/DB /'
+    fi
+  } | LC_ALL=C sort | shasum -a 256 | awk '{print $1}')" || return 1
+  file_count="$(
+    cd -- "$root"
+    find . \
+      \( -path './AGENTS.md' -o -path './RTK.md' -o -path './config.toml' -o \
+         -path './rules/default.rules' -o -path './skills/user' -o \
+         -path './state_5.sqlite' -o -path './state_5.sqlite-wal' -o -path './state_5.sqlite-shm' \) -prune -o \
+      -type f -print | wc -l | tr -d ' '
+  )"
+  session_count="$(find "$root" -type f \
+    \( -path "$root/sessions/*" -o -path "$root/archived_sessions/*" \) |
+    wc -l | tr -d ' ')"
+  thread_count=0
+  if [ -f "$db" ] && [ "$(codex_sqlite_query "$root" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='threads';" "Codex continuity")" -eq 1 ]; then
+    thread_count="$(codex_sqlite_query "$root" 'SELECT COUNT(*) FROM threads;' "Codex continuity")"
+  fi
+  printf 'digest\t%s\nfiles\t%s\nsession_files\t%s\nthreads\t%s\n' "$digest" "$file_count" "$session_count" "$thread_count" > "$output"
+  chmod 0600 "$output"
+}
+
+assert_codex_continuity() {
+  local before="$1" root="$2" legacy_root="$3" final_root="$4" label="$5" after
+  after="$(mktemp "$(dirname -- "$before")/.codex-continuity-after.XXXXXX")"
+  codex_continuity_manifest "$root" "$after" "$legacy_root" "$final_root"
+  if ! cmp -s "$before" "$after"; then
+    fail "$label session/history continuity mismatch; do not reopen Codex and use the retained rollback snapshot"
+    return 1
+  fi
+  mv "$after" "$before.after-verified"
+  say "[OK] $label Codex session/history continuity verified before application reopen"
+}
+
+runtime_find() {
+  local root="$1" application="$2" selection="$3"
+  local -a managed
+  case "$application" in
+    claude)
+      managed=( -path ./CLAUDE.md -o -path ./settings.json -o -path ./hooks -o -path './hooks/*' -o -path ./agents -o -path './agents/*' -o -path ./skills -o -path './skills/*' -o -path ./statusline-command.sh )
+      ;;
+    cursor) managed=( -path ./skills -o -path './skills/*' ) ;;
+    gemini) managed=( -path ./GEMINI.md ) ;;
+    kiro) managed=( -path ./steering -o -path './steering/*' ) ;;
+    *) fail "unknown runtime continuity application: $application"; return 1 ;;
+  esac
+  (
+    cd -- "$root"
+    case "$selection" in
+      files) find . \( "${managed[@]}" \) -prune -o -type f -exec shasum -a 256 {} + ;;
+      links) find . \( "${managed[@]}" \) -prune -o -type l -exec sh -c 'for p do printf "L %s|" "$p"; readlink "$p" || exit 1; done' sh {} + ;;
+      metadata) find . \( "${managed[@]}" \) -prune -o ! -type s -exec stat -f '%HT|%u|%g|%Lp|%N' {} + ;;
+      count) find . \( "${managed[@]}" \) -prune -o ! -type s -print ;;
+      *) fail "unknown runtime continuity selection: $selection"; return 1 ;;
+    esac
+  )
+}
+
+# Application roots are permitted to change only at their declared managed
+# entries. Everything else—including sessions, auth, history, caches, and
+# private runtime state—must retain content, link targets, ownership, and mode.
+runtime_continuity_manifest() {
+  local root="$1" application="$2" output="$3" digest count
+  [ -d "$root" ] && [ ! -L "$root" ] || fail "$application continuity root is not a physical directory: $root"
+  digest="$({
+    runtime_find "$root" "$application" files
+    runtime_find "$root" "$application" links
+    runtime_find "$root" "$application" metadata |
+      awk -F '|' 'BEGIN{OFS="|"} {gid=$3; if ($1 == "Regular File" && $4 == "644") gid="-"; print "M",$1,$2,gid,$4,$5}'
+  } | LC_ALL=C sort | shasum -a 256 | awk '{print $1}')" || return 1
+  count="$(runtime_find "$root" "$application" count | wc -l | tr -d ' ')"
+  printf 'digest\t%s\nentries\t%s\n' "$digest" "$count" > "$output"
+  chmod 0600 "$output"
+}
+
+assert_runtime_continuity() {
+  local before="$1" root="$2" application="$3" label="$4" after
+  after="$(mktemp "$(dirname -- "$before")/.${application}-continuity-after.XXXXXX")"
+  runtime_continuity_manifest "$root" "$application" "$after"
+  if ! cmp -s "$before" "$after"; then
+    fail "$label $application session/auth/history continuity mismatch; do not reopen the application"
+    return 1
+  fi
+  mv "$after" "$before.after-verified"
+  say "[OK] $label $application session/auth/history continuity verified before application reopen"
+}
+
+# Build and verify a complete restore tree while the live path is still intact.
+# Rollback later needs only an atomic same-filesystem switch; it never removes
+# the live root before a verified replacement exists.
+prepare_tree_restore_stage() {
+  local snapshot="$1" stage="$2" label="$3" receipt="$4"
+  copy_tree "$snapshot" "$stage"
+  verify_tree_copy "$snapshot" "$stage" "$label" "$receipt"
+}
+
+trees_match() {
+  local first="$1" second="$2" first_digest second_digest
+  [ -d "$first" ] && [ ! -L "$first" ] && [ -d "$second" ] && [ ! -L "$second" ] || return 1
+  first_digest="$(tree_digest "$first")" || return 1
+  second_digest="$(tree_digest "$second")" || return 1
+  [ "$first_digest" = "$second_digest" ]
+}
+
+ensure_tree_restore_stage() {
+  local snapshot="$1" stage="$2" label="$3" receipt="$4" rejected
+  if trees_match "$snapshot" "$stage"; then
+    say "[OK] $label is already prepared and verified"
+    return 0
+  fi
+  if [ -e "$stage" ] || [ -L "$stage" ]; then
+    rejected="$stage.rejected-${RUN_ID:-fixture}-$$-$RANDOM"
+    mv "$stage" "$rejected"
+    say "[PRESERVED] unusable $label retained at $rejected"
+  fi
+  prepare_tree_restore_stage "$snapshot" "$stage" "$label" "$receipt"
+}
+
+activate_prepared_restore_tree() {
+  local live="$1" snapshot="$2" stage="$3" failed="$4" label="$5" receipt="$6"
+  [ -d "$stage" ] && [ ! -L "$stage" ] || fail "$label prepared restore tree is unavailable: $stage"
+  verify_tree_copy "$snapshot" "$stage" "$label-pre-switch" "$receipt"
+  move_aside "$live" "$failed"
+  if ! mv "$stage" "$live"; then
+    mv "$failed" "$live" || fail "$label switch and immediate live-root restoration both failed; preserved paths require manual recovery"
+    fail "$label atomic restore switch failed; original live root restored"
+  fi
+  verify_tree_copy "$snapshot" "$live" "$label-restored" "$receipt"
 }
 
 copy_path_snapshot() {
@@ -334,6 +756,50 @@ copy_path_snapshot() {
   fi
 }
 
+stable_copy_path_snapshot() {
+  local source="$1" destination="$2" label="$3" receipt="$4"
+  local attempt before after copied rejected
+  for attempt in 1 2; do
+    before="$(path_digest "$source")" || return 1
+    if ! copy_path_snapshot "$source" "$destination"; then
+      rejected="$destination.copy-failure-attempt-$attempt"
+      if [ -e "$destination" ] || [ -L "$destination" ]; then
+        mv "$destination" "$rejected"
+      elif [ -e "$destination.missing" ]; then
+        mv "$destination.missing" "$rejected.missing"
+      fi
+      fail "$label snapshot copy failed; partial attempt retained"
+      return 1
+    fi
+    if [ "${HOST_ACTIVATION_TEST_MODE:-0}" = 1 ] && [ "${HOST_ACTIVATION_TEST_MUTATE_PATH_SOURCE:-0}" = 1 ]; then
+      case "$source" in
+        /private/tmp/host-activation-test.*) printf 'simulated-path-writer\n' >> "$source" ;;
+        *) fail "test path-mutation hook refused a non-fixture path"; return 1 ;;
+      esac
+    fi
+    after="$(path_digest "$source")" || return 1
+    copied="$(snapshot_path_digest "$destination")" || return 1
+    if [ "$before" = "$after" ] && [ "$after" = "$copied" ]; then
+      printf '%s\t%s\t%s\n' "$label" "$copied" "stable-path-verified" >> "$receipt"
+      say "[OK] verified stable $label (snapshot fingerprint $copied)"
+      return 0
+    fi
+    rejected="$destination.unstable-attempt-$attempt"
+    if [ -e "$destination" ] || [ -L "$destination" ]; then
+      mv "$destination" "$rejected"
+    elif [ -e "$destination.missing" ]; then
+      mv "$destination.missing" "$rejected.missing"
+    fi
+    if [ "$before" != "$after" ]; then
+      say "[RETRY] $label changed during snapshot attempt $attempt; rejected snapshot retained"
+    else
+      fail "$label snapshot fidelity mismatch; rejected snapshot retained"
+      return 1
+    fi
+  done
+  fail "$label changed during both snapshot attempts; close every writer and retry with the retained receipt"
+}
+
 move_aside() {
   local path="$1" destination="$2"
   if [ -e "$path" ] || [ -L "$path" ]; then
@@ -344,38 +810,35 @@ move_aside() {
 }
 
 restore_snapshot() {
-  local live="$1" snapshot="$2" failed="$3"
-  require_snapshot "$snapshot" any || return 1
-  move_aside "$live" "$failed"
-  if [ -e "$snapshot.missing" ]; then
-    return 0
-  fi
-  if [ -L "$snapshot" ] || [ -f "$snapshot" ]; then
-    mkdir -p "$(dirname -- "$live")"
-    mv "$snapshot" "$live"
-  elif [ -d "$snapshot" ]; then
-    mv "$snapshot" "$live"
-  fi
-}
-
-restore_snapshot_copy() {
   local live="$1" snapshot="$2" failed="$3" staged
-  require_snapshot "$snapshot" file || return 1
-  move_aside "$live" "$failed"
+  require_snapshot "$snapshot" any || return 1
   if [ -e "$snapshot.missing" ]; then
+    move_aside "$live" "$failed"
     return 0
   fi
   mkdir -p "$(dirname -- "$live")"
-  staged="$(mktemp "$(dirname -- "$live")/.$(basename -- "$live").restore.XXXXXX")"
+  staged="$(dirname -- "$live")/.$(basename -- "$live").restore-${RUN_ID:-fixture}-$$-$RANDOM"
+  [ ! -e "$staged" ] && [ ! -L "$staged" ] || fail "restore stage unexpectedly exists: $staged"
   if [ -L "$snapshot" ]; then
-    unlink "$staged"
     cp -pP "$snapshot" "$staged"
   elif [ -f "$snapshot" ]; then
     cp -p "$snapshot" "$staged"
-  else
-    fail "copy-restore snapshot is unavailable: $snapshot"
+  elif [ -d "$snapshot" ]; then
+    copy_tree "$snapshot" "$staged"
   fi
-  mv "$staged" "$live"
+  [ "$(path_digest "$snapshot")" = "$(path_digest "$staged")" ] || fail "restore stage verification failed: $snapshot"
+  move_aside "$live" "$failed"
+  if ! mv "$staged" "$live"; then
+    mv "$failed" "$live" || fail "snapshot activation and immediate restoration both failed: $live"
+    fail "snapshot activation failed; original live path restored: $live"
+  fi
+  verify_path_matches_snapshot "$live" "$snapshot" "restored snapshot $live" || return 1
+}
+
+restore_snapshot_copy() {
+  local live="$1" snapshot="$2" failed="$3"
+  require_snapshot "$snapshot" file || return 1
+  restore_snapshot "$live" "$snapshot" "$failed"
 }
 
 require_snapshot() {
@@ -387,6 +850,28 @@ require_snapshot() {
   if [ -L "$snapshot" ] || [ -f "$snapshot" ]; then return 0; fi
   if [ "$expected_kind" = any ] && [ -d "$snapshot" ] && [ ! -L "$snapshot" ]; then return 0; fi
   fail "snapshot is unavailable or has an invalid type: $snapshot"
+}
+
+verify_path_matches_snapshot() {
+  local live="$1" snapshot="$2" label="$3" live_stat snapshot_stat
+  require_snapshot "$snapshot" any || return 1
+  if [ -e "$snapshot.missing" ]; then
+    [ ! -e "$live" ] && [ ! -L "$live" ] || { fail "$label appeared after preparation"; return 1; }
+  elif [ -L "$snapshot" ]; then
+    [ -L "$live" ] && [ "$(readlink "$live")" = "$(readlink "$snapshot")" ] || { fail "$label symlink changed after preparation"; return 1; }
+  elif [ -f "$snapshot" ]; then
+    [ -f "$live" ] && [ ! -L "$live" ] && cmp -s "$snapshot" "$live" || { fail "$label file changed after preparation"; return 1; }
+    snapshot_stat="$(stat -f '%u|%g|%Lp' "$snapshot")"
+    live_stat="$(stat -f '%u|%g|%Lp' "$live")"
+    [ "$snapshot_stat" = "$live_stat" ] || { fail "$label ownership or mode changed after preparation"; return 1; }
+  elif [ -d "$snapshot" ]; then
+    trees_match "$snapshot" "$live" || { fail "$label directory changed after preparation"; return 1; }
+  fi
+  [ "$(path_digest "$live")" = "$(snapshot_path_digest "$snapshot")" ] || {
+    fail "$label content, link target, ownership, mode, time, ACL, or xattr changed after preparation"
+    return 1
+  }
+  say "[OK] $label still matches its pre-mutation snapshot"
 }
 
 write_phase_state() {
@@ -410,7 +895,7 @@ receipt_note() {
 office_preflight() {
   local execution="$1" old_head mind_dirty path expected
   phase 0 "Office preflight"
-  for expected in awk chmod cp df du find git grep mkdir mktemp mv node pgrep sed shasum ssh-keygen ssh-keyscan stat tar unlink xattr; do require_command "$expected"; done
+  for expected in awk chmod cmp cp df du find git grep kill mkdir mktemp mv node pgrep ps sed shasum sleep sqlite3 ssh-keygen ssh-keyscan stat tar unlink xattr; do require_command "$expected"; done
   [ -x /usr/bin/nc ] || fail "required command is unavailable: /usr/bin/nc"
   [ -x /usr/bin/ssh ] || fail "required command is unavailable: /usr/bin/ssh"
   [ "$(id -un)" = "Office" ] || fail "Office worker must run as Office"
@@ -446,15 +931,21 @@ office_preflight() {
   ssh_explicit "$MAC_USER" "$MAC_TS" "$MAC_TS" /Users/Office/.ssh/id_ed25519 /usr/bin/true >/dev/null
   say "[OK] Office→MacBook authentication over both fixed addresses"
 
-  local source_kb runtime_kb available_kb required_kb reserve_kb runtime_target
+  local source_kb runtime_kb codex_kb brain_kb available_kb required_kb reserve_kb runtime_target
   source_kb="$(du -sk "$OFFICE_BRAIN" /Users/Office/.codex "$OFFICE_CANDIDATE" | awk '{s += $1} END {print s}')"
+  codex_kb="$(du -sk /Users/Office/.codex | awk '{print $1}')"
+  brain_kb="$(du -sk "$OFFICE_BRAIN" | awk '{print $1}')"
   runtime_kb=0
   for path in .claude .cursor .gemini .kiro; do
     runtime_target="$(resolve_link "/Users/Office/$path")"
     runtime_kb=$((runtime_kb + $(du -sk "$runtime_target" | awk '{print $1}')))
   done
   # Each legacy runtime target is copied once to backup and once to staging.
-  source_kb=$((source_kb + (runtime_kb * 2)))
+  # Codex is copied once to backup and once more to a preverified rollback
+  # stage, so rollback never has to remove the live root before rebuilding it.
+  # One rejected first attempt is retained for every stable-copy source. Count
+  # that worst-case retry space explicitly rather than relying on the reserve.
+  source_kb=$((source_kb + (runtime_kb * 3) + (codex_kb * 2) + brain_kb))
   available_kb="$(df -Pk /Users/Office | awk 'NR == 2 {print $4}')"
   reserve_kb=5242880
   required_kb=$((source_kb + reserve_kb))
@@ -462,9 +953,15 @@ office_preflight() {
   say "[OK] Office free-space gate: ${available_kb}KB available; ${required_kb}KB required"
 
   if [ "$execution" = "execute" ]; then
+    quiesce_orphan_application_helpers "Office"
     check_no_forbidden_processes "Office"
+    probe_codex_database /Users/Office/.codex "Office Codex"
   else
-    check_no_forbidden_processes "Office" || say "[PLAN] Close the reported Office processes before execute; dry-run remains read-only."
+    check_no_forbidden_processes "Office" || {
+      fail "Office dry-run cannot pass while affected processes or detached helpers remain; execute may gracefully TERM only adopted helper processes"
+      return 1
+    }
+    probe_codex_database /Users/Office/.codex "Office Codex"
   fi
 }
 
@@ -497,17 +994,18 @@ EOF
     backup="$root/backups/runtime/$name"
     label="office-$name-runtime"
     metadata_line "$label" "$live" "$metadata"
-    copy_tree "$source" "$backup"
-    verify_tree_copy "$source" "$backup" "$label-backup" "$root/integrity.tsv"
+    stable_copy_tree "$source" "$backup" "$label-backup" "$root/integrity.tsv"
+    runtime_continuity_manifest "$backup" "$name" "$root/$name-continuity-before.tsv"
   done
 
   metadata_line "office-codex-runtime" /Users/Office/.codex "$metadata"
-  copy_tree /Users/Office/.codex "$root/backups/runtime/codex"
-  verify_tree_copy /Users/Office/.codex "$root/backups/runtime/codex" "office-codex-backup" "$root/integrity.tsv"
+  stable_copy_tree /Users/Office/.codex "$root/backups/runtime/codex" "office-codex-backup" "$root/integrity.tsv"
+  codex_continuity_manifest \
+    "$root/backups/runtime/codex" "$root/codex-continuity-before.tsv" \
+    "$OFFICE_BRAIN/operations/system-configs/codex" /Users/Office/.codex
 
   metadata_line "office-old-canonical-brain" "$OFFICE_BRAIN" "$metadata"
-  copy_tree "$OFFICE_BRAIN" "$root/backups/old-canonical-brain-copy"
-  verify_tree_copy "$OFFICE_BRAIN" "$root/backups/old-canonical-brain-copy" "old-canonical-brain-backup" "$root/integrity.tsv"
+  stable_copy_tree "$OFFICE_BRAIN" "$root/backups/old-canonical-brain-copy" "old-canonical-brain-backup" "$root/integrity.tsv"
 
   for name in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship claude-registry approval; do
     case "$name" in
@@ -522,7 +1020,7 @@ EOF
       approval) live="$APPROVAL_FILE" ;;
     esac
     metadata_line "office-$name" "$live" "$metadata"
-    copy_path_snapshot "$live" "$root/backups/paths/$name"
+    stable_copy_path_snapshot "$live" "$root/backups/paths/$name" "office-$name-backup" "$root/integrity.tsv"
   done
 
   git clone --no-local --single-branch --branch "$PACKET_BRANCH" "$OFFICE_CANDIDATE" "$root/staging/candidate/brain"
@@ -538,7 +1036,19 @@ office_phase2_stage_roots() {
     copy_tree "$root/backups/runtime/$name" "$root/staging/runtime/$name"
     verify_tree_copy "$root/backups/runtime/$name" "$root/staging/runtime/$name" "office-$name-stage" "$root/integrity.tsv"
   done
-  write_phase_state "$root" 2 "RUNTIME_STAGING_VERIFIED"
+  mkdir -p "$root/staging/rollback"
+  ensure_tree_restore_stage \
+    "$root/backups/runtime/codex" "$root/staging/rollback/codex" \
+    "office-codex-rollback-stage" "$root/integrity.tsv"
+  # Re-prove that every mutable source still equals its verified backup. This
+  # is the final readiness gate immediately before the remote worker returns
+  # control to the MacBook for its own preparation.
+  for name in claude cursor gemini kiro; do
+    verify_stable_tree_against_snapshot "$(resolve_link "/Users/Office/.$name")" "$root/backups/runtime/$name" "office-$name-readiness" "$root/integrity.tsv"
+  done
+  verify_stable_tree_against_snapshot /Users/Office/.codex "$root/backups/runtime/codex" "office-codex-readiness" "$root/integrity.tsv"
+  write_phase_state "$root" 2 "PREPARED_AND_ROLLBACK_READY"
+  say "[OK] Office preparation is complete; no live path has changed"
 }
 
 activate_runtime_root() {
@@ -561,6 +1071,7 @@ activate_runtime_root() {
 office_phase3_convert_roots() {
   local root="$OFFICE_RECEIPTS/$RUN_ID" name
   phase 3 "Office atomic root conversion"
+  quiesce_orphan_application_helpers "Office"
   check_no_forbidden_processes "Office"
   write_phase_state "$root" 3 "RUNTIME_ROOT_CONVERSION_IN_PROGRESS"
   for name in claude cursor gemini kiro; do
@@ -625,9 +1136,21 @@ write_include_root() {
 }
 
 office_phase5_activate_configs() {
-  local root="$OFFICE_RECEIPTS/$RUN_ID"
+  local root="$OFFICE_RECEIPTS/$RUN_ID" name live
   phase 5 "Office narrow configuration activation"
   check_no_forbidden_processes "Office"
+  for name in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship; do
+    case "$name" in
+      gitconfig) live=/Users/Office/.gitconfig ;;
+      ssh-config) live=/Users/Office/.ssh/config ;;
+      known-hosts) live=/Users/Office/.ssh/known_hosts ;;
+      zshrc) live=/Users/Office/.zshrc ;;
+      zprofile) live=/Users/Office/.zprofile ;;
+      ghostty) live=/Users/Office/.config/ghostty/config ;;
+      starship) live=/Users/Office/.config/starship.toml ;;
+    esac
+    verify_path_matches_snapshot "$live" "$root/backups/paths/$name" "Office $name"
+  done
   write_phase_state "$root" 5 "OFFICE_CONFIG_ACTIVATION_IN_PROGRESS"
   write_include_root git
   write_include_root ssh
@@ -637,6 +1160,14 @@ office_phase5_activate_configs() {
     bash "$OFFICE_BRAIN/operations/scripts/brain-configs-link.sh"
   BRAIN_REPO="$OFFICE_BRAIN" CODEX_HOME=/Users/Office/.codex \
     bash "$OFFICE_BRAIN/operations/scripts/codex-home-managed-root.sh" check
+  for name in claude cursor gemini kiro; do
+    assert_runtime_continuity \
+      "$root/$name-continuity-before.tsv" "/Users/Office/.$name" "$name" "Office"
+  done
+  assert_codex_continuity \
+    "$root/codex-continuity-before.tsv" /Users/Office/.codex \
+    "$OFFICE_BRAIN/operations/system-configs/codex" /Users/Office/.codex \
+    "Office"
   node "$OFFICE_BRAIN/tools/validate-workstation-config-ownership.mjs"
   if find /Users/Office/.claude /Users/Office/.cursor /Users/Office/.gemini /Users/Office/.kiro /Users/Office/.codex \
     -type l -exec readlink {} \; 2>/dev/null | grep -Eq 'brain-next|brain-host-activation|/Volumes/Office'; then
@@ -732,6 +1263,8 @@ office_phase7_activate_bridge() {
   local root="$OFFICE_RECEIPTS/$RUN_ID"
   phase 7 "Brain–Mind bridge activation"
   [ "$(git -C "$OFFICE_MIND" rev-parse HEAD)" = "$MIND_COMMIT" ] || fail "Mind HEAD changed before approval repin"
+  verify_path_matches_snapshot "$APPROVAL_FILE" "$root/backups/paths/approval" "Office bridge approval"
+  verify_path_matches_snapshot "$CLAUDE_REGISTRY" "$root/backups/paths/claude-registry" "Office Claude registry"
   write_phase_state "$root" 7 "BRIDGE_ACTIVATION_IN_PROGRESS"
   write_approval_file
   update_claude_mind_registration
@@ -782,6 +1315,11 @@ office_prevalidate_rollback() {
       require_snapshot "$root/backups/paths/$name" any
     done
     [ -d "$root/backups/runtime/codex" ] && [ ! -L "$root/backups/runtime/codex" ] || fail "Office Codex rollback snapshot is unavailable"
+    if ! trees_match "$root/backups/runtime/codex" /Users/Office/.codex; then
+      ensure_tree_restore_stage "$root/backups/runtime/codex" "$root/staging/rollback/codex" "office-codex-rollback-prevalidation" "$root/integrity.tsv"
+    else
+      say "[OK] Office Codex is already restored to its verified snapshot"
+    fi
   fi
   if [ "$number" -ge 4 ]; then
     [ -f "$root/archive-path" ] || fail "Office canonical Brain archive path is unavailable"
@@ -814,11 +1352,11 @@ office_rollback() {
     say "[OK] Office run $RUN_ID is already rolled back; no paths changed."
     return 0
   fi
+  quiesce_orphan_application_helpers "Office"
   check_no_forbidden_processes "Office"
   office_prevalidate_rollback "$root" "$number"
   say "[ROLLBACK] reversing Office run $RUN_ID from completed phase $number"
-  mkdir -p "$root/failed/rollback-$(date -u +%Y%m%dT%H%M%SZ)"
-  failed_root="$root/failed/rollback-$(date -u +%Y%m%dT%H%M%SZ)"
+  failed_root="$root/failed/rollback-$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
   mkdir -p "$failed_root"
 
   if [ "$number" -ge 7 ]; then
@@ -833,8 +1371,15 @@ office_rollback() {
     restore_snapshot /Users/Office/.zprofile "$root/backups/paths/zprofile" "$failed_root/zprofile"
     restore_snapshot /Users/Office/.config/ghostty/config "$root/backups/paths/ghostty" "$failed_root/ghostty"
     restore_snapshot /Users/Office/.config/starship.toml "$root/backups/paths/starship" "$failed_root/starship"
-    move_aside /Users/Office/.codex "$failed_root/codex-after-activation"
-    copy_tree "$root/backups/runtime/codex" /Users/Office/.codex
+    if ! trees_match "$root/backups/runtime/codex" /Users/Office/.codex; then
+      activate_prepared_restore_tree \
+        /Users/Office/.codex "$root/backups/runtime/codex" "$root/staging/rollback/codex" \
+        "$failed_root/codex-after-activation" "office-codex-rollback" "$root/integrity.tsv"
+    fi
+    assert_codex_continuity \
+      "$root/codex-continuity-before.tsv" /Users/Office/.codex \
+      "$OFFICE_BRAIN/operations/system-configs/codex" /Users/Office/.codex \
+      "Office rollback"
   fi
   if [ "$number" -ge 4 ]; then
     archive="$(cat "$root/archive-path")"
@@ -849,6 +1394,11 @@ office_rollback() {
         move_aside "/Users/Office/.$name" "$failed_root/$name-physical"
         mv "$root/original-paths/$name.symlink" "/Users/Office/.$name"
       fi
+    done
+    for name in claude cursor gemini kiro; do
+      assert_runtime_continuity \
+        "$root/$name-continuity-before.tsv" "$(resolve_link "/Users/Office/.$name")" "$name" \
+        "Office rollback"
     done
   fi
   write_phase_state "$root" 0 "ROLLED_BACK"
@@ -886,7 +1436,7 @@ office_abort() {
   exit "$rc"
 }
 
-office_apply() {
+office_prepare() {
   local root="$OFFICE_RECEIPTS/$RUN_ID"
   validate_commit_arg
   validate_run_id
@@ -895,12 +1445,35 @@ office_apply() {
   office_preflight execute
   office_phase1_backup
   office_phase2_stage_roots
+  trap - ERR INT TERM HUP
+  say "[READY] Office backups, stages, continuity baseline, and rollback tree are verified; no live path changed."
+}
+
+office_commit() {
+  local root="$OFFICE_RECEIPTS/$RUN_ID" name phase_number
+  validate_commit_arg
+  validate_run_id
+  trap 'office_abort $?' ERR
+  trap 'office_abort 130' INT TERM HUP
+  [ -d "$root" ] || fail "Office prepared receipt does not exist: $root"
+  phase_number="$(read_phase_number "$root")" || fail "Office prepared phase state is unavailable"
+  [ "$phase_number" -eq 2 ] || fail "Office is not at the exact prepared pre-mutation state: $phase_number"
+  office_preflight execute
+  for name in claude cursor gemini kiro; do
+    verify_stable_tree_against_snapshot "$(resolve_link "/Users/Office/.$name")" "$root/backups/runtime/$name" "office-$name-commit-gate" "$root/integrity.tsv"
+  done
+  verify_stable_tree_against_snapshot /Users/Office/.codex "$root/backups/runtime/codex" "office-codex-commit-gate" "$root/integrity.tsv"
+  verify_tree_copy "$root/backups/runtime/codex" "$root/staging/rollback/codex" "office-codex-rollback-commit-gate" "$root/integrity.tsv"
   office_phase3_convert_roots
   office_phase4_replace_brain
   office_phase5_activate_configs
   office_phase7_activate_bridge
   trap - ERR INT TERM HUP
   say "[OK] Office phases 0–5 and 7 complete; rescue connection must remain open through fresh connectivity acceptance."
+}
+
+office_apply() {
+  fail "office-apply is disabled; start top-level execute on the MacBook so both hosts are prepared before mutation"
 }
 
 office_dry_run() {
@@ -913,13 +1486,14 @@ office_dry_run() {
   phase 5 "would activate only declared narrow ownership entries"
   phase 7 "would repin approval, canonical registration, and verify read-only bridge"
   phase 8 "would verify fresh fixed-address and alias connectivity"
-  say "DRY-RUN PASS — Office topology inspected; no mutation attempted."
+  say "READ-ONLY DRY-RUN INSPECTION PASS — Office topology is currently eligible; no receipt, copy, stage, or live mutation was attempted."
+  say "[BOUNDARY] Mutable runtime data can change after any read-only inspection. Execute independently requires stable before/copy/after digests and complete rollback preparation before ACTIVATE."
 }
 
 mac_preflight() {
   local execution="$1" path available_kb backup_kb required_kb path_kb
   phase 0 "MacBook preflight"
-  for path in awk chmod cp df du find git grep mkdir mktemp mv node pgrep sed shasum ssh-keygen ssh-keyscan stat tar unlink xattr; do require_command "$path"; done
+  for path in awk chmod cmp cp df du find git grep kill mkdir mktemp mv node pgrep ps sed shasum sleep sqlite3 ssh-keygen ssh-keyscan stat tar unlink xattr; do require_command "$path"; done
   [ -x /usr/bin/nc ] || fail "required command is unavailable: /usr/bin/nc"
   [ -x /usr/bin/ssh ] || fail "required command is unavailable: /usr/bin/ssh"
   [ "$(id -un)" = "Steve" ] || fail "top-level runner must be started by Steve on the MacBook"
@@ -950,21 +1524,36 @@ mac_preflight() {
     fi
   done
   available_kb="$(df -Pk /Users/Steve | awk 'NR == 2 {print $4}')"
+  # Codex needs both an immutable backup and a preverified same-filesystem
+  # rollback tree. Other narrow snapshots are single copies.
+  if [ -d /Users/Steve/.codex ]; then
+    path_kb="$(du -sk /Users/Steve/.codex | awk '{print $1}')"
+    # The first unstable attempt is preserved before a single retry.
+    backup_kb=$((backup_kb + (path_kb * 2)))
+  fi
   required_kb=$((backup_kb + 1048576))
   [ "$available_kb" -ge "$required_kb" ] || fail "MacBook free space is insufficient"
   if [ "$execution" = "execute" ]; then
+    quiesce_orphan_application_helpers "MacBook"
     check_no_forbidden_processes "MacBook"
+    [ ! -d /Users/Steve/.codex ] || probe_codex_database /Users/Steve/.codex "MacBook Codex"
   else
-    check_no_forbidden_processes "MacBook" || say "[PLAN] Close the reported MacBook processes before execute; dry-run remains read-only."
+    check_no_forbidden_processes "MacBook" || {
+      fail "MacBook dry-run cannot pass while affected processes or detached helpers remain; execute may gracefully TERM only adopted helper processes"
+      return 1
+    }
+    [ ! -d /Users/Steve/.codex ] || probe_codex_database /Users/Steve/.codex "MacBook Codex"
   fi
 }
 
 mac_snapshot_paths() {
   local root="$LOCAL_RECEIPT" label live
+  quiesce_orphan_application_helpers "MacBook"
+  check_no_forbidden_processes "MacBook"
   umask 077
   [ ! -e "$root" ] || fail "MacBook receipt already exists: $root"
-  mkdir -p "$root/backups/paths" "$root/backups/runtime" "$root/failed"
-  chmod 0700 "$root" "$root/backups" "$root/failed"
+  mkdir -p "$root/backups/paths" "$root/backups/runtime" "$root/staging/rollback" "$root/failed"
+  chmod 0700 "$root" "$root/backups" "$root/staging" "$root/failed"
   cat > "$root/receipt.md" <<EOF
 # MacBook Host Activation Receipt
 
@@ -996,11 +1585,23 @@ EOF
       gemini-GEMINI) live=/Users/Steve/.gemini/GEMINI.md ;;
       kiro-steering) live=/Users/Steve/.kiro/steering ;;
     esac
-    copy_path_snapshot "$live" "$root/backups/paths/$label"
+    stable_copy_path_snapshot "$live" "$root/backups/paths/$label" "macbook-$label-backup" "$root/integrity.tsv"
+  done
+  for label in claude cursor gemini kiro; do
+    if [ -d "/Users/Steve/.$label" ] && [ ! -L "/Users/Steve/.$label" ]; then
+      runtime_continuity_manifest "/Users/Steve/.$label" "$label" "$root/$label-continuity-before.tsv"
+    else
+      : > "$root/$label-continuity-before.tsv.missing"
+    fi
   done
   if [ -d /Users/Steve/.codex ]; then
-    copy_tree /Users/Steve/.codex "$root/backups/runtime/codex"
-    verify_tree_copy /Users/Steve/.codex "$root/backups/runtime/codex" "macbook-codex-backup" "$root/integrity.tsv"
+    stable_copy_tree /Users/Steve/.codex "$root/backups/runtime/codex" "macbook-codex-backup" "$root/integrity.tsv"
+    codex_continuity_manifest \
+      "$root/backups/runtime/codex" "$root/codex-continuity-before.tsv" \
+      "$MAC_BRAIN/operations/system-configs/codex" /Users/Steve/.codex
+    ensure_tree_restore_stage \
+      "$root/backups/runtime/codex" "$root/staging/rollback/codex" \
+      "macbook-codex-rollback-stage" "$root/integrity.tsv"
   else
     : > "$root/backups/runtime/codex.missing"
   fi
@@ -1036,10 +1637,46 @@ write_mac_include_root() {
 }
 
 mac_phase6_activate() {
-  local c="$MAC_BRAIN/operations/system-configs"
+  local c="$MAC_BRAIN/operations/system-configs" phase_number label live name
   phase 6 "MacBook narrow configuration activation"
-  mac_snapshot_paths
+  phase_number="$(read_phase_number "$LOCAL_RECEIPT")" || fail "MacBook prepared phase state is unavailable"
+  [ "$phase_number" -eq 1 ] || fail "MacBook is not at the exact prepared pre-mutation state: $phase_number"
+  quiesce_orphan_application_helpers "MacBook"
   check_no_forbidden_processes "MacBook"
+  if [ -d /Users/Steve/.codex ]; then
+    verify_stable_tree_against_snapshot /Users/Steve/.codex "$LOCAL_RECEIPT/backups/runtime/codex" "macbook-codex-commit-gate" "$LOCAL_RECEIPT/integrity.tsv"
+    verify_tree_copy "$LOCAL_RECEIPT/backups/runtime/codex" "$LOCAL_RECEIPT/staging/rollback/codex" "macbook-codex-rollback-commit-gate" "$LOCAL_RECEIPT/integrity.tsv"
+  fi
+  for label in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship claude-CLAUDE claude-settings claude-hooks claude-agents claude-skills claude-statusline cursor-skills gemini-GEMINI kiro-steering; do
+    case "$label" in
+      gitconfig) live=/Users/Steve/.gitconfig ;;
+      ssh-config) live=/Users/Steve/.ssh/config ;;
+      known-hosts) live=/Users/Steve/.ssh/known_hosts ;;
+      zshrc) live=/Users/Steve/.zshrc ;;
+      zprofile) live=/Users/Steve/.zprofile ;;
+      ghostty) live=/Users/Steve/.config/ghostty/config ;;
+      starship) live=/Users/Steve/.config/starship.toml ;;
+      claude-CLAUDE) live=/Users/Steve/.claude/CLAUDE.md ;;
+      claude-settings) live=/Users/Steve/.claude/settings.json ;;
+      claude-hooks) live=/Users/Steve/.claude/hooks ;;
+      claude-agents) live=/Users/Steve/.claude/agents ;;
+      claude-skills) live=/Users/Steve/.claude/skills ;;
+      claude-statusline) live=/Users/Steve/.claude/statusline-command.sh ;;
+      cursor-skills) live=/Users/Steve/.cursor/skills ;;
+      gemini-GEMINI) live=/Users/Steve/.gemini/GEMINI.md ;;
+      kiro-steering) live=/Users/Steve/.kiro/steering ;;
+    esac
+    verify_path_matches_snapshot "$live" "$LOCAL_RECEIPT/backups/paths/$label" "MacBook $label"
+  done
+  for name in claude cursor gemini kiro; do
+    if [ -f "$LOCAL_RECEIPT/$name-continuity-before.tsv" ]; then
+      assert_runtime_continuity \
+        "$LOCAL_RECEIPT/$name-continuity-before.tsv" "/Users/Steve/.$name" "$name" \
+        "MacBook commit gate"
+    else
+      [ ! -e "/Users/Steve/.$name" ] && [ ! -L "/Users/Steve/.$name" ] || fail "MacBook $name root appeared after preparation"
+    fi
+  done
   write_phase_state "$LOCAL_RECEIPT" 6 "MACBOOK_CONFIG_ACTIVATION_IN_PROGRESS"
   write_mac_include_root git
   write_mac_include_root ssh
@@ -1059,9 +1696,21 @@ mac_phase6_activate() {
   [ ! -d /Users/Steve/.cursor ] || ensure_link "$c/cursor/skills" /Users/Steve/.cursor/skills cursor-skills
   [ ! -d /Users/Steve/.gemini ] || ensure_link "$c/gemini/GEMINI.md" /Users/Steve/.gemini/GEMINI.md gemini-GEMINI
   [ ! -d /Users/Steve/.kiro ] || ensure_link "$c/kiro/steering" /Users/Steve/.kiro/steering kiro-steering
+  for name in claude cursor gemini kiro; do
+    if [ -f "$LOCAL_RECEIPT/$name-continuity-before.tsv" ]; then
+      assert_runtime_continuity \
+        "$LOCAL_RECEIPT/$name-continuity-before.tsv" "/Users/Steve/.$name" "$name" "MacBook"
+    else
+      [ ! -e "/Users/Steve/.$name" ] && [ ! -L "/Users/Steve/.$name" ] || fail "MacBook $name root appeared after preparation"
+    fi
+  done
   if [ -d /Users/Steve/.codex ]; then
     BRAIN_REPO="$MAC_BRAIN" CODEX_HOME=/Users/Steve/.codex bash "$MAC_BRAIN/operations/scripts/codex-home-managed-root.sh" repair
     BRAIN_REPO="$MAC_BRAIN" CODEX_HOME=/Users/Steve/.codex bash "$MAC_BRAIN/operations/scripts/codex-home-managed-root.sh" check
+    assert_codex_continuity \
+      "$LOCAL_RECEIPT/codex-continuity-before.tsv" /Users/Steve/.codex \
+      "$MAC_BRAIN/operations/system-configs/codex" /Users/Steve/.codex \
+      "MacBook"
   fi
   if find /Users/Steve/.claude /Users/Steve/.cursor /Users/Steve/.gemini /Users/Steve/.kiro /Users/Steve/.codex /Users/Steve/.config \
     -type l -exec readlink {} \; 2>/dev/null | grep -Eq '/Volumes/Office|brain-next|brain-host-activation'; then
@@ -1071,7 +1720,7 @@ mac_phase6_activate() {
 }
 
 mac_rollback() {
-  local root="$MAC_RECEIPTS/$RUN_ID" label live phase_number failed="$MAC_RECEIPTS/$RUN_ID/failed/rollback-$(date -u +%Y%m%dT%H%M%SZ)"
+  local root="$MAC_RECEIPTS/$RUN_ID" label live phase_number failed="$MAC_RECEIPTS/$RUN_ID/failed/rollback-$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
   [ -d "$root" ] || return 0
   phase_number="$(read_phase_number "$root")" || fail "MacBook phase state is unavailable; keep rescue open for manual recovery"
   case "$phase_number" in ''|*[!0-9]*) fail "invalid MacBook phase state; keep rescue open for manual recovery" ;; esac
@@ -1084,12 +1733,20 @@ mac_rollback() {
     say "[OK] MacBook backup phase changed no live paths; no MacBook restore was needed."
     return 0
   fi
+  quiesce_orphan_application_helpers "MacBook"
   check_no_forbidden_processes "MacBook"
   for label in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship claude-CLAUDE claude-settings claude-hooks claude-agents claude-skills claude-statusline cursor-skills gemini-GEMINI kiro-steering; do
     require_snapshot "$root/backups/paths/$label" any
   done
   if [ ! -d "$root/backups/runtime/codex" ] || [ -L "$root/backups/runtime/codex" ]; then
     [ -e "$root/backups/runtime/codex.missing" ] || fail "MacBook Codex rollback snapshot is unavailable"
+  fi
+  if [ -d "$root/backups/runtime/codex" ]; then
+    if ! trees_match "$root/backups/runtime/codex" /Users/Steve/.codex; then
+      ensure_tree_restore_stage "$root/backups/runtime/codex" "$root/staging/rollback/codex" "macbook-codex-rollback-prevalidation" "$root/integrity.tsv"
+    else
+      say "[OK] MacBook Codex is already restored to its verified snapshot"
+    fi
   fi
   mkdir -p "$failed"
   for label in gitconfig ssh-config known-hosts zshrc zprofile ghostty starship claude-CLAUDE claude-settings claude-hooks claude-agents claude-skills claude-statusline cursor-skills gemini-GEMINI kiro-steering; do
@@ -1114,11 +1771,25 @@ mac_rollback() {
     restore_snapshot "$live" "$root/backups/paths/$label" "$failed/$label"
   done
   if [ -d "$root/backups/runtime/codex" ]; then
-    move_aside /Users/Steve/.codex "$failed/codex-after-activation"
-    copy_tree "$root/backups/runtime/codex" /Users/Steve/.codex
+    if ! trees_match "$root/backups/runtime/codex" /Users/Steve/.codex; then
+      activate_prepared_restore_tree \
+        /Users/Steve/.codex "$root/backups/runtime/codex" "$root/staging/rollback/codex" \
+        "$failed/codex-after-activation" "macbook-codex-rollback" "$root/integrity.tsv"
+    fi
+    assert_codex_continuity \
+      "$root/codex-continuity-before.tsv" /Users/Steve/.codex \
+      "$MAC_BRAIN/operations/system-configs/codex" /Users/Steve/.codex \
+      "MacBook rollback"
   elif [ -e "$root/backups/runtime/codex.missing" ]; then
     move_aside /Users/Steve/.codex "$failed/codex-created-by-activation"
   fi
+  for label in claude cursor gemini kiro; do
+    if [ -f "$root/$label-continuity-before.tsv" ]; then
+      assert_runtime_continuity \
+        "$root/$label-continuity-before.tsv" "/Users/Steve/.$label" "$label" \
+        "MacBook rollback"
+    fi
+  done
   write_phase_state "$root" 0 "ROLLED_BACK"
   say "ROLLBACK COMPLETE — MacBook originals restored; failed/new artifacts preserved at $failed"
 }
@@ -1164,6 +1835,8 @@ prompt_acceptance() {
   cat >&2 <<'EOF'
 Reopen one item at a time. Confirm launch, existing auth/session/history,
 settings, managed instructions/skills, and MCP/provider behavior where relevant.
+Codex conversation files and its logical thread index have already passed the
+deterministic continuity gate; do not continue if an application looks empty.
 Type PASS only after each item is verified.
 EOF
   for item in "Claude" "Cursor" "Gemini / Antigravity" "Kiro" "Codex / ChatGPT (including Remote SSH)" "shell" "Ghostty"; do
@@ -1225,7 +1898,7 @@ mac_execute() {
   open_rescue
   trap 'mac_abort $?' ERR
   trap 'mac_abort 130' INT TERM HUP
-  stream_office_worker office-apply || office_rc=$?
+  stream_office_worker office-prepare || office_rc=$?
   if [ "$office_rc" -eq "$NO_MUTATION_EXIT" ]; then
     trap - ERR INT TERM HUP
     close_rescue
@@ -1235,20 +1908,47 @@ mac_execute() {
   if [ "$office_rc" -ne 0 ]; then
     mac_abort "$office_rc"
   fi
+  mac_snapshot_paths
+  phase 2 "two-host mutation readiness"
+  say "[READY] Office and MacBook backups, Codex continuity baselines, and preverified rollback trees are complete."
+  say "[READY] No live configuration or runtime path has changed on either host."
+  printf 'Type ACTIVATE to cross the first live mutation boundary, or anything else to stop safely: ' >&2
+  IFS= read -r answer
+  if [ "$answer" != ACTIVATE ]; then
+    trap - ERR INT TERM HUP
+    receipt_note "$LOCAL_RECEIPT" "- Activation declined after complete preparation; no live path changed"
+    close_rescue
+    say "STOPPED SAFELY — preparation receipts and verified backups were retained; no live path changed."
+    exit 1
+  fi
+  office_rc=0
+  stream_office_worker office-commit || office_rc=$?
+  if [ "$office_rc" -eq "$NO_MUTATION_EXIT" ]; then
+    trap - ERR INT TERM HUP
+    close_rescue
+    say "PRE-MUTATION BLOCKED — both hosts remain unchanged; verified preparation receipts were retained."
+    exit 1
+  fi
+  if [ "$office_rc" -ne 0 ]; then
+    mac_abort "$office_rc"
+  fi
   mac_phase6_activate
   fresh_connectivity
+  # Capture recursive topology evidence while every affected application is
+  # still closed. Finalization after Phase 9 must never scan volatile runtimes.
+  record_host_metadata "macbook-after" /Users/Steve "$LOCAL_RECEIPT/metadata-after.tsv"
+  stream_office_worker office-post-change-metadata
   if ! prompt_acceptance; then
     say "Close the reopened affected applications, then type ROLLBACK to restore the pre-migration state."
     IFS= read -r answer
     [ "$answer" = "ROLLBACK" ] || fail "application acceptance failed; rescue left open for manual rollback"
     mac_rollback
     stream_office_rollback
+    close_rescue
     trap - ERR INT TERM HUP
     fail "application acceptance failed; rollback completed"
   fi
-  trap - ERR INT TERM HUP
   phase 10 "final receipt"
-  record_host_metadata "macbook-after" /Users/Steve "$LOCAL_RECEIPT/metadata-after.tsv"
   write_phase_state "$LOCAL_RECEIPT" 10 "PASS"
   receipt_note "$LOCAL_RECEIPT" "- Completed UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   receipt_note "$LOCAL_RECEIPT" "- Final canonical Brain: $EXPECTED_COMMIT"
@@ -1257,6 +1957,7 @@ mac_execute() {
   receipt_note "$LOCAL_RECEIPT" "- Backups intentionally retained; cleanup and model/app deletion remain deferred"
   rescue_remote /bin/bash -s -- office-finalize --run-id "$RUN_ID" --expected-commit "$EXPECTED_COMMIT" < "$SELF"
   close_rescue
+  trap - ERR INT TERM HUP
   say "PASS — HOST ACTIVATION COMPLETE"
   say "MacBook receipt: $LOCAL_RECEIPT/receipt.md"
   say "Office receipt: $OFFICE_RECEIPTS/$RUN_ID/receipt.md"
@@ -1270,13 +1971,15 @@ mac_dry_run() {
   phase 8 "would hold rescue SSH and require fresh direct/fallback/alias acceptance"
   phase 9 "would require one-at-a-time manual application PASS responses"
   phase 10 "would emit owner-only non-secret receipts and retain every backup"
-  say "DRY-RUN PASS — current two-host topology inspected; no mutation attempted."
+  say "READ-ONLY DRY-RUN INSPECTION PASS — current two-host topology inspected; no mutation attempted."
+  say "[BOUNDARY] This is not a future execution guarantee. Execute performs the full two-host preparation, then stops for explicit ACTIVATE before its first live change."
 }
 
 mac_top_level_rollback() {
   validate_run_id
   LOCAL_RECEIPT="$MAC_RECEIPTS/$RUN_ID"
   [ "$(id -un)" = "Steve" ] || fail "rollback must be started by Steve on the MacBook"
+  quiesce_orphan_application_helpers "MacBook"
   check_no_forbidden_processes "MacBook"
   check_port "$OFFICE_TB" || fail "MacBook cannot reach Office Thunderbolt SSH for rollback"
   ssh_explicit "$OFFICE_USER" "$OFFICE_TB" "$OFFICE_TB" /Users/Steve/.ssh/id_ed25519 /usr/bin/true >/dev/null
@@ -1292,7 +1995,6 @@ office_finalize() {
   validate_run_id
   repo_exact_clean "$OFFICE_BRAIN" "final Office canonical Brain"
   [ "$(git -C "$OFFICE_MIND" rev-parse HEAD)" = "$MIND_COMMIT" ] || fail "final Mind HEAD changed"
-  record_host_metadata "office-after" /Users/Office "$root/metadata-after.tsv"
   write_phase_state "$root" 10 "PASS"
   receipt_note "$root" "- Completed UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   receipt_note "$root" "- Final canonical Brain: $EXPECTED_COMMIT"
@@ -1300,9 +2002,21 @@ office_finalize() {
   receipt_note "$root" "- Backups/archive intentionally retained; cleanup deferred"
 }
 
+office_post_change_metadata() {
+  local root="$OFFICE_RECEIPTS/$RUN_ID" phase_number
+  validate_commit_arg
+  validate_run_id
+  phase_number="$(read_phase_number "$root")" || fail "Office phase state is unavailable before post-change metadata"
+  [ "$phase_number" -ge 7 ] || fail "Office is not ready for post-change metadata: $phase_number"
+  quiesce_orphan_application_helpers "Office"
+  check_no_forbidden_processes "Office"
+  record_host_metadata "office-after" /Users/Office "$root/metadata-after.tsv"
+  receipt_note "$root" "- Deterministic Codex continuity and post-change topology captured before application reopen"
+}
+
 fixture_test() {
   [ "${HOST_ACTIVATION_TEST_MODE:-0}" = 1 ] || fail "fixture mode is test-only"
-  local root="$1" root_parent source live receipt digest_before primary_group alternate_group
+  local root="$1" root_parent source live receipt digest_before before_db_digest primary_group alternate_group orphan_alive
   root_parent="$(cd -P -- "$(dirname -- "$root")" && pwd)"
   root="$root_parent/$(basename -- "$root")"
   case "$root" in /private/tmp/host-activation-test.*) ;; *) fail "fixture root must be a dedicated host-activation-test directory under /private/tmp" ;; esac
@@ -1315,6 +2029,8 @@ fixture_test() {
   xattr -w com.brain.host-activation-test fixture-xattr "$source/session.db"
   mkdir -p "$source/history"
   printf 'history-state\n' > "$source/history/entry"
+  ln "$source/history/entry" "$source/history/hardlink-entry"
+  chmod +a "user:$(id -un) allow read" "$source/history/entry"
   mkdir -p "$source/ipc"
   /usr/bin/ruby -rsocket -e 'server = UNIXServer.new(ARGV.fetch(0)); server.close' "$source/ipc/ipc.sock"
   [ -S "$source/ipc/ipc.sock" ] || fail "fixture Unix socket was not created"
@@ -1376,6 +2092,16 @@ fixture_test() {
   fi
   [ "$(cat "$root/missing-snapshot/live")" = live-must-remain ] || fail "missing full snapshot moved or changed the live path"
 
+  mkdir -p "$root/path-commit-gate"
+  printf 'prepared-config\n' > "$root/path-commit-gate/snapshot"
+  cp -p "$root/path-commit-gate/snapshot" "$root/path-commit-gate/live"
+  verify_path_matches_snapshot "$root/path-commit-gate/live" "$root/path-commit-gate/snapshot" "fixture path"
+  printf 'late-writer\n' > "$root/path-commit-gate/live"
+  if verify_path_matches_snapshot "$root/path-commit-gate/live" "$root/path-commit-gate/snapshot" "fixture changed path" 2>/dev/null; then
+    fail "pre-mutation path gate accepted a late config writer"
+  fi
+  [ "$(cat "$root/path-commit-gate/snapshot")" = prepared-config ] || fail "pre-mutation path gate changed its snapshot"
+
   mkdir -p "$root/unsupported/source"
   mkfifo "$root/unsupported/source/fifo"
   if copy_tree "$root/unsupported/source" "$root/unsupported/copy" 2>/dev/null; then
@@ -1411,11 +2137,166 @@ fixture_test() {
   fi
   xattr -w com.brain.host-activation-test changed "$root/portable-digest/copy/state"
   [ "$(tree_digest "$root/portable-digest/source")" != "$(tree_digest "$root/portable-digest/copy")" ] || fail "portable digest ignored a meaningful xattr change"
-  stat() { return 1; }
-  if tree_digest "$root/portable-digest/source" >/dev/null 2>&1; then
+  mkdir -p "$root/portable-digest/failing-bin"
+  printf '#!/bin/sh\nexit 1\n' > "$root/portable-digest/failing-bin/stat"
+  chmod 0700 "$root/portable-digest/failing-bin/stat"
+  if PATH="$root/portable-digest/failing-bin:$PATH" tree_digest "$root/portable-digest/source" >/dev/null 2>&1; then
     fail "portable digest accepted an incomplete metadata stream"
   fi
-  unset -f stat
+
+  mkdir -p "$root/stable-copy/source"
+  printf 'stable-state\n' > "$root/stable-copy/source/state"
+  stable_copy_tree "$root/stable-copy/source" "$root/stable-copy/destination" \
+    "fixture-stable-copy" "$root/stable-copy/integrity.tsv"
+  [ "$(tree_digest "$root/stable-copy/source")" = "$(tree_digest "$root/stable-copy/destination")" ] || fail "stable snapshot fixture changed content"
+
+  mkdir -p "$root/stable-path"
+  printf 'narrow-config\n' > "$root/stable-path/source"
+  chmod 0600 "$root/stable-path/source"
+  chmod +a "user:$(id -un) allow read" "$root/stable-path/source"
+  xattr -w com.brain.host-activation-test narrow-xattr "$root/stable-path/source"
+  stable_copy_path_snapshot "$root/stable-path/source" "$root/stable-path/snapshot" \
+    "fixture-stable-path" "$root/stable-path/integrity.tsv"
+  [ "$(path_digest "$root/stable-path/source")" = "$(snapshot_path_digest "$root/stable-path/snapshot")" ] || fail "narrow snapshot lost content or metadata"
+  ln -s relative-target "$root/stable-path/source-link"
+  stable_copy_path_snapshot "$root/stable-path/source-link" "$root/stable-path/snapshot-link" \
+    "fixture-stable-symlink" "$root/stable-path/integrity.tsv"
+  [ "$(path_digest "$root/stable-path/source-link")" = "$(snapshot_path_digest "$root/stable-path/snapshot-link")" ] || fail "narrow symlink snapshot lost target or metadata"
+  stable_copy_path_snapshot "$root/stable-path/missing" "$root/stable-path/snapshot-missing" \
+    "fixture-stable-missing" "$root/stable-path/integrity.tsv"
+  [ "$(snapshot_path_digest "$root/stable-path/snapshot-missing")" = missing ] || fail "missing-path snapshot is ambiguous"
+
+  mkdir -p "$root/unstable-path"
+  printf 'narrow-writer\n' > "$root/unstable-path/source"
+  if HOST_ACTIVATION_TEST_MUTATE_PATH_SOURCE=1 stable_copy_path_snapshot \
+    "$root/unstable-path/source" "$root/unstable-path/snapshot" \
+    "fixture-unstable-path" "$root/unstable-path/integrity.tsv" 2>/dev/null; then
+    fail "narrow snapshot accepted a path that changed during both attempts"
+  fi
+  [ -e "$root/unstable-path/snapshot.unstable-attempt-1" ] && \
+    [ -e "$root/unstable-path/snapshot.unstable-attempt-2" ] || fail "unstable narrow snapshots were not retained"
+
+  mkdir -p "$root/unstable-copy/source"
+  printf 'writer-state\n' > "$root/unstable-copy/source/state"
+  if HOST_ACTIVATION_TEST_MUTATE_SOURCE=1 stable_copy_tree \
+    "$root/unstable-copy/source" "$root/unstable-copy/destination" \
+    "fixture-unstable-copy" "$root/unstable-copy/integrity.tsv" 2>/dev/null; then
+    fail "stable snapshot accepted a source that changed during both attempts"
+  fi
+  [ ! -e "$root/unstable-copy/destination" ] || fail "unstable snapshot left a destination that could be mistaken for verified"
+  [ -d "$root/unstable-copy/destination.unstable-attempt-1" ] && \
+    [ -d "$root/unstable-copy/destination.unstable-attempt-2" ] || fail "unstable snapshot attempts were not preserved"
+
+  mkdir -p "$root/copy-failure/source"
+  printf 'source-survives\n' > "$root/copy-failure/source/state"
+  if HOST_ACTIVATION_TEST_COPY_FAILURE=1 stable_copy_tree \
+    "$root/copy-failure/source" "$root/copy-failure/destination" \
+    "fixture-copy-failure" "$root/copy-failure/integrity.tsv" 2>/dev/null; then
+    fail "stable snapshot accepted a partial copy failure"
+  fi
+  [ ! -e "$root/copy-failure/destination" ] || fail "partial copy remained at the verified destination path"
+  [ -f "$root/copy-failure/destination.copy-failure-attempt-1/partial" ] || fail "partial copy failure was not preserved for diagnosis"
+  [ "$(cat "$root/copy-failure/source/state")" = source-survives ] || fail "copy failure changed its source"
+
+  mkdir -p "$root/prepared-restore/snapshot" "$root/prepared-restore/live"
+  printf 'original-session\n' > "$root/prepared-restore/snapshot/session"
+  printf 'changed-session\n' > "$root/prepared-restore/live/session"
+  prepare_tree_restore_stage \
+    "$root/prepared-restore/snapshot" "$root/prepared-restore/stage" \
+    "fixture-rollback-stage" "$root/prepared-restore/integrity.tsv"
+  activate_prepared_restore_tree \
+    "$root/prepared-restore/live" "$root/prepared-restore/snapshot" "$root/prepared-restore/stage" \
+    "$root/prepared-restore/failed-live" "fixture-rollback" "$root/prepared-restore/integrity.tsv"
+  [ "$(cat "$root/prepared-restore/live/session")" = original-session ] || fail "prepared atomic restore did not restore original state"
+  [ "$(cat "$root/prepared-restore/failed-live/session")" = changed-session ] || fail "prepared atomic restore did not preserve failed state"
+  [ "$(cat "$root/prepared-restore/snapshot/session")" = original-session ] || fail "prepared atomic restore consumed its immutable snapshot"
+
+  mkdir -p "$root/hardlinks/source"
+  printf 'shared-inode\n' > "$root/hardlinks/source/one"
+  ln "$root/hardlinks/source/one" "$root/hardlinks/source/two"
+  copy_tree "$root/hardlinks/source" "$root/hardlinks/copy"
+  verify_tree_copy "$root/hardlinks/source" "$root/hardlinks/copy" "fixture-hardlinks" "$root/hardlinks/integrity.tsv"
+  [ "$(stat -f '%i' "$root/hardlinks/copy/one")" = "$(stat -f '%i' "$root/hardlinks/copy/two")" ] || fail "copy did not preserve hard-link topology"
+  cp -p "$root/hardlinks/copy/two" "$root/hardlinks/copy/replacement"
+  mv "$root/hardlinks/copy/replacement" "$root/hardlinks/copy/two"
+  [ "$(tree_digest "$root/hardlinks/source")" != "$(tree_digest "$root/hardlinks/copy")" ] || fail "tree digest ignored broken hard-link topology"
+
+  mkdir -p "$root/rebuild-restore/snapshot" "$root/rebuild-restore/live"
+  printf 'rollback-original\n' > "$root/rebuild-restore/snapshot/session"
+  printf 'live-remains\n' > "$root/rebuild-restore/live/session"
+  prepare_tree_restore_stage \
+    "$root/rebuild-restore/snapshot" "$root/rebuild-restore/stage" \
+    "fixture-rebuild-stage" "$root/rebuild-restore/integrity.tsv"
+  printf 'corrupt-stage\n' > "$root/rebuild-restore/stage/session"
+  ensure_tree_restore_stage \
+    "$root/rebuild-restore/snapshot" "$root/rebuild-restore/stage" \
+    "fixture-rebuild-stage" "$root/rebuild-restore/integrity.tsv"
+  trees_match "$root/rebuild-restore/snapshot" "$root/rebuild-restore/stage" || fail "corrupt restore stage was not safely rebuilt"
+  [ "$(cat "$root/rebuild-restore/live/session")" = live-remains ] || fail "restore-stage rebuild touched the live root"
+  find "$root/rebuild-restore" -maxdepth 1 -type d -name 'stage.rejected-*' | grep -q . || fail "corrupt restore stage was not preserved"
+
+  mkdir -p "$root/continuity/before/sessions" "$root/continuity/after/sessions"
+  printf 'conversation\n' > "$root/continuity/before/sessions/thread.jsonl"
+  cp -p "$root/continuity/before/sessions/thread.jsonl" "$root/continuity/after/sessions/thread.jsonl"
+  sqlite3 "$root/continuity/before/state_5.sqlite" \
+    "PRAGMA journal_mode=WAL; CREATE TABLE threads(id TEXT PRIMARY KEY, rollout_path TEXT NOT NULL, title TEXT NOT NULL); INSERT INTO threads VALUES('fixture-thread','/legacy/codex/sessions/thread.jsonl','fixture');" >/dev/null
+  sqlite3 "$root/continuity/after/state_5.sqlite" \
+    "PRAGMA journal_mode=WAL; CREATE TABLE threads(id TEXT PRIMARY KEY, rollout_path TEXT NOT NULL, title TEXT NOT NULL); INSERT INTO threads VALUES('fixture-thread','/final/codex/sessions/thread.jsonl','fixture');" >/dev/null
+  before_db_digest="$(codex_sqlite_set_digest "$root/continuity/before")"
+  probe_codex_database "$root/continuity/before" "fixture Codex" >/dev/null
+  [ "$before_db_digest" = "$(codex_sqlite_set_digest "$root/continuity/before")" ] || fail "private SQLite probe changed its source database family"
+  codex_continuity_manifest \
+    "$root/continuity/before" "$root/continuity/before.tsv" /legacy/codex /final/codex
+  assert_codex_continuity \
+    "$root/continuity/before.tsv" "$root/continuity/after" /legacy/codex /final/codex "fixture"
+  printf 'lost-context\n' >> "$root/continuity/after/sessions/thread.jsonl"
+  if assert_codex_continuity \
+    "$root/continuity/before.tsv" "$root/continuity/after" /legacy/codex /final/codex "fixture-corrupt" 2>/dev/null; then
+    fail "Codex continuity gate accepted changed conversation content"
+  fi
+
+  mkdir -p "$root/runtime-continuity/before/sessions" "$root/runtime-continuity/after/sessions"
+  printf 'private-history\n' > "$root/runtime-continuity/before/sessions/history.jsonl"
+  cp -p "$root/runtime-continuity/before/sessions/history.jsonl" "$root/runtime-continuity/after/sessions/history.jsonl"
+  printf 'old-managed-settings\n' > "$root/runtime-continuity/before/settings.json"
+  printf 'new-managed-settings\n' > "$root/runtime-continuity/after/settings.json"
+  runtime_continuity_manifest \
+    "$root/runtime-continuity/before" claude "$root/runtime-continuity/before.tsv"
+  assert_runtime_continuity \
+    "$root/runtime-continuity/before.tsv" "$root/runtime-continuity/after" claude "fixture"
+  printf 'lost-private-history\n' >> "$root/runtime-continuity/after/sessions/history.jsonl"
+  if assert_runtime_continuity \
+    "$root/runtime-continuity/before.tsv" "$root/runtime-continuity/after" claude "fixture-corrupt" 2>/dev/null; then
+    fail "runtime continuity gate accepted changed private history"
+  fi
+
+  orphan_alive=1
+  pgrep() {
+    if [ "${2:-}" = ChatGPTHelper ] && [ "$orphan_alive" -eq 1 ]; then printf '4242\n'; else return 1; fi
+  }
+  ps() { printf '1\n'; }
+  kill() {
+    [ "${1:-}" = -TERM ] && [ "${2:-}" = 4242 ] || return 1
+    orphan_alive=0
+  }
+  sleep() { :; }
+  quiesce_orphan_application_helpers "fixture" >/dev/null
+  [ "$orphan_alive" -eq 0 ] || fail "detached application helper was not asked to exit gracefully"
+  unset -f pgrep ps kill sleep
+
+  pgrep() { return 1; }
+  ps() {
+    if [ "${1:-}" = -p ]; then printf '1\n'; else printf '999\tttys999\t/bin/zsh\n'; fi
+  }
+  if check_no_forbidden_processes "fixture" 2>/dev/null; then
+    fail "quiescence gate accepted an unrelated interactive shell"
+  fi
+  ps() {
+    if [ "${1:-}" = -p ]; then printf '1\n'; else printf '%s\tttys001\t/bin/bash\n' "$$"; fi
+  }
+  check_no_forbidden_processes "fixture" >/dev/null
+  unset -f pgrep ps
+
   phase_is_no_mutation 0 && phase_is_no_mutation 1 && phase_is_no_mutation 2 || fail "Phase 0–2 no-mutation classification failed"
   if phase_is_no_mutation 3; then fail "Phase 3 was incorrectly classified as no-mutation"; fi
   [ "$(normalize_failure_exit "$NO_MUTATION_EXIT")" = 1 ] || fail "reserved no-mutation exit escaped a mutation failure"
@@ -1429,10 +2310,13 @@ case "$ACTION" in
   rollback) mac_top_level_rollback ;;
   office-dry-run) office_dry_run ;;
   office-apply) office_apply ;;
+  office-prepare) office_prepare ;;
+  office-commit) office_commit ;;
   office-rollback) office_rollback ;;
   office-restore-ssh) validate_run_id; office_restore_ssh_only ;;
   office-connectivity) validate_run_id; office_connectivity_acceptance ;;
   office-finalize) office_finalize ;;
+  office-post-change-metadata) office_post_change_metadata ;;
   __fixture-test)
     [ -n "$TEST_FIXTURE_ROOT" ] || fail "fixture root required"
     fixture_test "$TEST_FIXTURE_ROOT"
