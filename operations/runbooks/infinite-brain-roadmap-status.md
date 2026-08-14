@@ -4,7 +4,7 @@
 **Last verified:** 2026-08-11 (P8 complete; B8.1–B8.6 accepted 6/6)
 **Audited:** 2026-08-11 — P8 is complete. B8.6 passed a read-only Brain+ProChat pilot 2/2 with 100% structural probe hits and exact-source fallback, inherited resource/freshness limits, rebuild, degradation, Graphify semantic disablement, uninstall dry-run, rollback, and unchanged pilot source snapshots. An initial full-source CBM pilot exposed excessive navigation output; the accepted retrieval policy now starts with `files` mode and at most 5 candidates, reducing estimated CBM navigation context from 64,343 to 397 tokens (~99.4%) while preserving 100% probe hits. Final verification passed Brain Core/Mind Steward/Mind Context typechecks/tests, live cross-repo contract, Context Gateway corpus/context-pack checks, capability manifest and contract registries, MCP admission/runtime truth, Graphify/scheduler governance, conformance, JSON/security checks, documentation consistency, and diff integrity. Structural Graphify remains frozen; semantic Graphify is Brain-only and non-authoritative; exact source remains authority; wider rollout requires explicit per-repository admission.
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
-**Host Activation repin candidate:** repository configuration now expects Mind HEAD `c3dcefdd808501a7ead7ffc4671eb5ef3822c268` and canonical provider paths under `/Users/Office/Repos/stevewesthoek/brain`. This direct descendant of the originally reviewed `f9aa1cef5d5449dac34db74069427f528d620caf` adds only an `inbox/failed/` capture outside all admitted provider scopes. The live owner-only approval and client registrations remain unchanged and must be repinned only after this candidate becomes canonical; until then, the live provider is expected to fail closed on source-revision mismatch.
+**Host Activation canonical expectation:** repository configuration expects Mind HEAD `c3dcefdd808501a7ead7ffc4671eb5ef3822c268` and canonical provider paths under `/Users/Office/Repos/stevewesthoek/brain`. This direct descendant of the originally reviewed `f9aa1cef5d5449dac34db74069427f528d620caf` adds only an `inbox/failed/` capture outside all admitted provider scopes. Repository configuration alone does not prove current owner-only approval, client registration, or provider health; those live claims require explicit runtime verification and must fail closed on source-revision mismatch.
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
@@ -134,7 +134,7 @@ caller/callee F1 100%. The Contract V2 dry-run package is
 It passed 15/15 preflight checks, rejects partial evidence, and has no authority
 to materialize or execute. Its planned canonical run directory is absent. Evidence:
 `operations/reports/b8-1-v2-contract-and-authorization-readiness-2026-08-10.md`.
-That obsolete V2 readiness package is historical only. B8.1 was later canonically accepted and B8.2 formally admitted; current P8 status is 2/6 accepted. Graphify remains excluded until B8.5.
+That obsolete V2 readiness package is historical only. B8.1 was later canonically accepted and B8.2 formally admitted; P8 subsequently closed 6/6 on 2026-08-11 through B8.6. Structural Graphify remains frozen; bounded Brain-only semantic Graphify was accepted at B8.5 and remains non-authoritative.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.
 
@@ -159,9 +159,11 @@ task IDs; existing B2 Context Gateway tasks are unchanged.
   `87ce34385277ce5bcbfd45266dbe2d925a536933`. Its gitignored entrypoint is
   admitted through committed reproducible-build provenance, and the
   Brain-project Codex registration exposes only the three admitted tools with
-  `n8n_workflow_migration` as the sole command suboperation. Mind Context remains
-  separately `active-local`, project-scoped, read-only, and healthy at Mind pin
-  `91ae8ce55c6daf67b728ef9b8d841504f24a97c9`.
+  `n8n_workflow_migration` as the sole command suboperation. At that historical
+  checkpoint, Mind Context was separately `active-local`, project-scoped,
+  read-only, and healthy at Mind pin
+  `91ae8ce55c6daf67b728ef9b8d841504f24a97c9`; current repository expectation is
+  the later canonical Mind pin recorded at the top of this runbook.
 - `B5.4 — Controlled write pilot` completed 2026-07-31 after Mind M5.1–M5.3
   resolved. Three repeatability runs passed; all rejection and rollback gates
   passed; no repository mutation occurred.
@@ -171,13 +173,13 @@ task IDs; existing B2 Context Gateway tasks are unchanged.
 - B1.0e is superseded by completed B1.0f and B1.0a. B1.6 and B1.7 are complete
   with dated evidence; B1.7's Mind-side verification was read-only and required
   no Mind implementation change.
-- P8 context-memory efficiency and freshness is planned only. A Codebase
-  Memory MCP candidate binary is installed (`~/.local/bin/codebase-memory-mcp`
-  v0.9.0, SHA-256 d9fbdd7d, admission status: candidate); no approved default
-  activation, rollout, or scheduler change exists. The one owner-ratified
-  contained Mind Graphify snapshot is accepted only as the M7.1 baseline;
-  future execution authority remains `none`, and it does not authorize P8
-  migration, scheduling, or deletion of the compatibility `graphify-out/` path.
+- P8 context-memory efficiency and freshness is complete. `codebase-memory-mcp`
+  v0.9.0 is admitted `active-local` for Brain only with isolated indexes,
+  `auto_index=false`, `auto_watch=false`, bounded structural navigation, and
+  mandatory exact-source verification before edits or final factual claims.
+  Wider repository rollout remains explicit and per-repository only. Structural
+  Graphify remains frozen; bounded semantic Graphify is Brain-only and
+  non-authoritative, and no Mind semantic Graphify scope is approved.
 - Mind `M1.3` is complete (2026-07-31).
 - Mind `M1.4` is complete (2026-07-31): kanban.md retained as sole human task
   authority; tasks.md retired and non-authoritative.
