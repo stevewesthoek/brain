@@ -209,7 +209,7 @@ ensure_hostkey_alias() {
 }
 
 metadata_line() {
-  local label="$1" path="$2" receipt="$3" kind target="-" mode="-" uid="-" gid="-" bytes=0 files=0 xattrs=0
+  local label="$1" path="$2" receipt="$3" kind target="-" mode="-" uid="-" gid="-" bytes=0 files=0 xattrs=0 entry
   kind="$(path_kind "$path")"
   if [ "$kind" != "missing" ]; then
     mode="$(stat -f '%Lp' "$path" 2>/dev/null || printf '?')"
@@ -218,7 +218,19 @@ metadata_line() {
     bytes="$(du -sk "$path" 2>/dev/null | awk '{print $1 * 1024}' || printf '0')"
     files="$(find -L "$path" -type f 2>/dev/null | wc -l | tr -d ' ')"
     if command -v xattr >/dev/null 2>&1; then
-      xattrs="$(xattr -r "$path" 2>/dev/null | wc -l | tr -d ' ')"
+      # Unix sockets are process-owned endpoints, not persistent state. macOS
+      # xattr -r exits nonzero when it encounters one, so enumerate the same
+      # persistent object set that copy_tree/tree_digest verify.
+      if ! xattrs="$(
+        find "$path" ! -type s -print0 |
+        while IFS= read -r -d '' entry; do
+          xattr -s "$entry" 2>/dev/null || exit 1
+        done |
+        wc -l | tr -d ' '
+      )"; then
+        fail "metadata xattr scan failed: $path"
+        return 1
+      fi
     fi
   fi
   if [ "$kind" = "symlink" ]; then target="$(readlink "$path")"; fi
@@ -1303,8 +1315,27 @@ fixture_test() {
   xattr -w com.brain.host-activation-test fixture-xattr "$source/session.db"
   mkdir -p "$source/history"
   printf 'history-state\n' > "$source/history/entry"
+  mkdir -p "$source/ipc"
+  /usr/bin/ruby -rsocket -e 'server = UNIXServer.new(ARGV.fetch(0)); server.close' "$source/ipc/ipc.sock"
+  [ -S "$source/ipc/ipc.sock" ] || fail "fixture Unix socket was not created"
+  metadata_line "fixture-runtime-with-socket" "$source" "$root/metadata.tsv"
+  grep -Fq 'fixture-runtime-with-socket' "$root/metadata.tsv" || fail "metadata omitted the runtime containing a Unix socket"
+  [ -S "$source/ipc/ipc.sock" ] || fail "metadata inspection changed the fixture Unix socket"
+  xattr() { return 1; }
+  if metadata_line "fixture-xattr-read-failure" "$source" "$root/metadata-failure.tsv" 2>/dev/null; then
+    fail "metadata accepted an incomplete xattr scan"
+  fi
+  unset -f xattr
+  [ ! -s "$root/metadata-failure.tsv" ] || fail "failed metadata inspection wrote a partial row"
+  find() { return 1; }
+  if metadata_line "fixture-find-failure" "$source" "$root/metadata-find-failure.tsv" 2>/dev/null; then
+    fail "metadata accepted an incomplete object enumeration"
+  fi
+  unset -f find
+  [ ! -s "$root/metadata-find-failure.tsv" ] || fail "failed object enumeration wrote a partial metadata row"
   ln -s "$source" "$live"
   copy_tree "$source" "$receipt/staging/runtime/app"
+  [ ! -e "$receipt/staging/runtime/app/ipc/ipc.sock" ] || fail "runtime copy retained a process-owned Unix socket"
   digest_before="$(tree_digest "$source")"
   mv "$live" "$receipt/original-paths/app.symlink"
   mv "$receipt/staging/runtime/app" "$live"
