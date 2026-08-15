@@ -34,6 +34,18 @@ Remaining required work under the current canonical runtime roadmap: **0**.
 Any new feature, repository rollout, Mind semantic scope, structural Graphify
 reactivation, production deployment, or push requires a separate explicit task
 and applicable owner authorization.
+
+A separate post-closure **Context & Learning Runtime (CLR)** architecture program
+was owner-approved on 2026-08-15. CLR0 is documentation/specification only; no
+conversation ingestion, automatic learning promotion, broad Mind write, new
+runtime service, provider activation, or schedule is authorized. See:
+
+- `operations/specs/infinite-brain-context-learning-runtime-architecture.md`
+- `operations/specs/infinite-brain-context-learning-runtime-roadmap.md`
+- `operations/specs/infinite-brain-context-learning-runtime-implementation-plan.md`
+- Mind authority: `system/infinite-brain-context-learning-charter.md`
+
+CLR1-CLR8 remain unstarted and require separate owner authorization.
 B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
 That run remains immutable infrastructure evidence only.
 B8.1 v7r / 7.1.0 two-subject contract was materialized and executed on 2026-08-06,
