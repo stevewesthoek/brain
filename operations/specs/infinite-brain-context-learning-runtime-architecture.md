@@ -83,6 +83,18 @@ small bootstrap envelope
 | `docs/product/prochat-os-cli-plan.md` | Packaging/CLI direction for installable product surfaces. |
 | `docs/product/prochat-os-managed-plan.md` | Single-tenant managed deployment direction. |
 
+## Optional accelerators and integration boundaries
+
+CLR must remain useful when third-party or optional acceleration modules are unavailable.
+
+- **Exact source + canonical Mind/Brain Markdown** are the baseline authority and retrieval fallback.
+- **Codebase Memory MCP (CBM)** is an admitted Brain-only optional structural-navigation accelerator when fresh. It may identify symbols, routes, caller/callee relationships, and blast radius, but exact current source remains authority. CLR must consume CBM behind a provider interface and must not require it for correctness, portability, or customer installs.
+- **Graphify** is an optional non-authoritative semantic/relationship projection and future visualization adapter. Structural Graphify remains frozen; current bounded Brain semantic Graphify does not authorize Mind ingestion. CLR may later project its own approved atom/relation model into Graphify-compatible visualizations, but Graphify must never become the canonical relation store or a runtime dependency.
+- **Workbench** is an optional guarded local-repository bridge and a supported CLR consumer/adapter. Its currently admitted MCP scope exposes bounded repository status/context and guarded operations; it does **not** currently provide passive ChatGPT conversation-history export. CLR5 may add a Workbench/ChatGPT evidence adapter only through a supported export/event/capture surface. In the opposite direction, Workbench sessions should consume the same Context Broker, Brain skills/capabilities, and admitted MCP surfaces as other clients where the host integration permits it.
+- Any future vector database, graph database, embedding service, hosted memory vendor, or IDE-native memory system is an adapter. Replacing or disabling it must not change canonical Mind/Brain truth.
+
+This modular boundary is a product requirement: third-party accelerators may improve latency, navigation, visualization, or recall quality, but they must remain replaceable and independently upgradeable.
+
 ## 1. Authority layers
 
 ### 1.1 Canonical layers
@@ -424,11 +436,15 @@ reason
 transaction_id              optional
 ```
 
-### 8.2 Steve's Decision Center
+### 8.2 Steve's Decision Center and master portal
 
-Preferred adapter: a dedicated **Decision Center** inside Brain Console in Obsidian.
+Steve's preferred and already-decided primary human cockpit is **Obsidian**. The Decision Center should therefore live inside the Obsidian Brain Console plugin/cockpit, not require a second standalone browser portal.
 
-The view should show:
+`Brain Core` is the headless localhost API/control/safety boundary underneath that cockpit. It is not itself a human UI.
+
+The standalone Next.js `projects/brain-console` web application on port `4881` is not required for CLR and must not become a second primary portal. Until a separate consolidation decision is executed, treat it as an optional/legacy diagnostics or specialist surface; do not add CLR-only human workflows there. CLR3 must explicitly reconcile/freeze overlapping portal responsibilities before adding Decision Center UI work.
+
+The Obsidian view should show:
 
 - pending count and priority;
 - one compact decision card at a time;

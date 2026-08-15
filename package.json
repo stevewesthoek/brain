@@ -26,6 +26,9 @@
     "ibr:insights:dry-run": "node tools/infinite-brain/insight-generation-dry-run.mjs",
     "ibr:proposals:dry-run": "node tools/infinite-brain/proposal-generation-dry-run.mjs",
     "ibr:pipeline:dry-run": "node tools/infinite-brain/run-report-only-pipeline.mjs",
+    "validate:context-learning-contracts": "node tools/validate-context-learning-contracts.mjs",
+    "test:context-learning": "node --test tools/context-learning/context-learning-contracts.test.mjs",
+    "clr1:memory-inventory": "node tools/context-learning/inventory-shared-memory.mjs",
     "infinite-brain:conformance": "node tools/scripts/validate-infinite-brain-conformance.mjs",
     "infinite-brain:cross-repo-contract": "node tools/scripts/validate-cross-repo-contract.mjs"
   },

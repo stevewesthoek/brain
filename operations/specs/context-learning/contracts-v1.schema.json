@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/context-learning/contracts-v1.schema.json",
+  "title": "Infinite Brain Context & Learning Runtime Contracts v1",
+  "type": "object",
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "owner": {
+      "enum": ["mind", "brain", "evidence", "derived", "ephemeral"]
+    },
+    "privacyClass": {
+      "enum": ["public", "internal", "sensitive", "restricted"]
+    },
+    "freshnessClass": {
+      "enum": ["stable", "changing", "volatile", "unknown"]
+    },
+    "freshnessState": {
+      "enum": ["fresh", "review_due", "stale", "superseded", "contradicted", "unknown"]
+    },
+    "knowledgeAtom": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "atomId",
+        "kind",
+        "canonicalOwner",
+        "summary",
+        "authority",
+        "observedAt",
+        "validFrom",
+        "lastConfirmedAt",
+        "freshnessClass",
+        "sensitivity",
+        "sourceEvidenceRefs",
+        "supersedes",
+        "supersededBy",
+        "contradicts",
+        "relatedTo",
+        "tags",
+        "contentHash"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "atomId": { "type": "string", "pattern": "^atom-[a-z0-9][a-z0-9._-]*$" },
+        "kind": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "canonicalOwner": { "$ref": "#/$defs/owner" },
+        "canonicalRef": { "type": ["string", "null"] },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "authority": { "enum": ["human", "verified-source", "approved-operational", "evidence", "derived"] },
+        "observedAt": { "$ref": "#/$defs/timestamp" },
+        "validFrom": { "$ref": "#/$defs/timestamp" },
+        "validTo": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+        "lastConfirmedAt": { "$ref": "#/$defs/timestamp" },
+        "reviewAfter": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+        "freshnessClass": { "$ref": "#/$defs/freshnessClass" },
+        "sensitivity": { "$ref": "#/$defs/privacyClass" },
+        "sourceEvidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "supersedes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "supersededBy": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "contradicts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "relatedTo": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "contentHash": { "$ref": "#/$defs/sha256" },
+        "transactionId": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "relation": {
+      "type": "object",
+      "required": ["schemaVersion", "relationId", "fromAtomId", "toAtomId", "type", "strength", "evidenceRefs", "lastConfirmedAt", "contentHash"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "relationId": { "type": "string", "pattern": "^rel-[a-z0-9][a-z0-9._-]*$" },
+        "fromAtomId": { "type": "string", "pattern": "^atom-" },
+        "toAtomId": { "type": "string", "pattern": "^atom-" },
+        "type": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "evidenceRefs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "lastConfirmedAt": { "$ref": "#/$defs/timestamp" },
+        "contentHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "evidenceEvent": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "eventId",
+        "sourceAdapter",
+        "sourceSessionId",
+        "actor",
+        "hostId",
+        "observedAt",
+        "contentHash",
+        "contentRef",
+        "privacyClass",
+        "processingWatermark"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "eventId": { "type": "string", "pattern": "^evt-[a-z0-9][a-z0-9._-]*$" },
+        "sourceAdapter": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "sourceSessionId": { "type": "string", "minLength": 1 },
+        "sourceMessageId": { "type": ["string", "null"] },
+        "hostId": { "type": "string", "minLength": 1 },
+        "workspace": { "type": ["string", "null"] },
+        "actor": { "enum": ["human", "assistant", "tool", "system"] },
+        "observedAt": { "$ref": "#/$defs/timestamp" },
+        "contentHash": { "$ref": "#/$defs/sha256" },
+        "contentRef": { "type": "string", "minLength": 1 },
+        "privacyClass": { "$ref": "#/$defs/privacyClass" },
+        "processingWatermark": { "type": "string", "minLength": 1 },
+        "transactionContext": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "decisionItem": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "decisionId",
+        "proposalIds",
+        "category",
+        "title",
+        "whyNow",
+        "recommendedAction",
+        "alternatives",
+        "consequenceOfDelay",
+        "priority",
+        "risk",
+        "evidenceRefs",
+        "canonicalTargets",
+        "status",
+        "createdAt"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "decisionId": { "type": "string", "pattern": "^decision-[a-z0-9][a-z0-9._-]*$" },
+        "proposalIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "category": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "whyNow": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "recommendedAction": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "alternatives": { "type": "array", "items": { "type": "string", "maxLength": 2000 } },
+        "consequenceOfDelay": { "type": "string", "maxLength": 2000 },
+        "priority": { "enum": ["low", "normal", "high", "critical"] },
+        "risk": { "enum": ["low", "medium", "high", "critical"] },
+        "freshnessDeadline": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+        "evidenceRefs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "canonicalTargets": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "status": { "enum": ["pending", "approved", "rejected", "deferred", "superseded"] },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "decidedBy": { "type": ["string", "null"] },
+        "decidedAt": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+        "reason": { "type": ["string", "null"] },
+        "transactionId": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "learningTransaction": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "transactionId",
+        "proposalIds",
+        "expectedMindRevision",
+        "expectedBrainRevision",
+        "plannedOperations",
+        "approvalRefs",
+        "validationPlan",
+        "state",
+        "createdAt"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "transactionId": { "type": "string", "pattern": "^clr-tx-[a-z0-9][a-z0-9._-]*$" },
+        "proposalIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "expectedMindRevision": { "type": "string", "minLength": 7 },
+        "expectedBrainRevision": { "type": "string", "minLength": 7 },
+        "plannedOperations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["repository", "operation", "target"],
+            "properties": {
+              "repository": { "enum": ["mind", "brain"] },
+              "operation": { "enum": ["create", "patch", "replace", "invalidate", "relate"] },
+              "target": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "approvalRefs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "validationPlan": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "resultingMindRevision": { "type": ["string", "null"] },
+        "resultingBrainRevision": { "type": ["string", "null"] },
+        "receiptHash": { "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "state": { "enum": ["proposed", "approved", "prepared", "mind-applied", "brain-applied", "validated", "complete", "blocked", "partial", "compensating", "rolled-back", "failed"] },
+        "createdAt": { "$ref": "#/$defs/timestamp" },
+        "completedAt": { "anyOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
+    "contextPack": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "packId",
+        "queryId",
+        "generatedAt",
+        "mindRevision",
+        "brainRevision",
+        "cacheState",
+        "items",
+        "relations",
+        "conflicts",
+        "unknowns",
+        "excluded",
+        "budget"
+      ],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "packId": { "type": "string", "pattern": "^clr-pack-[a-z0-9][a-z0-9._-]*$" },
+        "queryId": { "type": "string", "minLength": 1 },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "mindRevision": { "type": "string", "minLength": 1 },
+        "brainRevision": { "type": "string", "minLength": 1 },
+        "cacheState": {
+          "type": "object",
+          "required": ["status", "ageSeconds"],
+          "properties": {
+            "status": { "enum": ["live", "fresh-cache", "stale-cache", "unavailable"] },
+            "ageSeconds": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["atomId", "summary", "citation", "authority", "freshness"],
+            "properties": {
+              "atomId": { "type": "string" },
+              "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+              "citation": { "type": "string", "minLength": 1 },
+              "authority": { "type": "string", "minLength": 1 },
+              "freshness": { "$ref": "#/$defs/freshnessState" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "relations": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "conflicts": { "type": "array", "items": { "type": "string" } },
+        "unknowns": { "type": "array", "items": { "type": "string" } },
+        "excluded": { "type": "array", "items": { "type": "string" } },
+        "budget": {
+          "type": "object",
+          "required": ["maxItems", "maxTokens", "usedItems", "usedTokens"],
+          "properties": {
+            "maxItems": { "type": "integer", "minimum": 1, "maximum": 50 },
+            "maxTokens": { "type": "integer", "minimum": 1, "maximum": 8000 },
+            "usedItems": { "type": "integer", "minimum": 0 },
+            "usedTokens": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "retentionStorageClass": {
+      "type": "object",
+      "required": ["classId", "canonical", "rebuildable", "retentionMode", "compactionStrategy", "boundedGrowthRequired"],
+      "properties": {
+        "classId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "canonical": { "type": "boolean" },
+        "rebuildable": { "type": "boolean" },
+        "retentionMode": { "enum": ["source-owned", "referenced", "until-resolved", "durable", "ttl", "lru", "rebuild", "compacted-receipt"] },
+        "compactionStrategy": { "enum": ["none", "source-policy", "dedupe", "supersession", "ttl", "lru", "receipt", "rebuild"] },
+        "boundedGrowthRequired": { "type": "boolean" },
+        "maxBytes": { "type": "integer", "minimum": 1 },
+        "maxItems": { "type": "integer", "minimum": 1 },
+        "ttlHours": { "type": "number", "exclusiveMinimum": 0 },
+        "notes": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "canonical": { "const": false } }, "required": ["canonical"] },
+          "then": {
+            "properties": {
+              "boundedGrowthRequired": { "const": true },
+              "retentionMode": { "enum": ["source-owned", "referenced", "until-resolved", "ttl", "lru", "rebuild", "compacted-receipt"] },
+              "compactionStrategy": { "enum": ["source-policy", "dedupe", "supersession", "ttl", "lru", "receipt", "rebuild"] }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "retentionProfile": {
+      "type": "object",
+      "required": ["schemaVersion", "profileId", "storageClasses"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "profileId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "storageClasses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/retentionStorageClass" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorityRegistry": {
+      "type": "object",
+      "required": ["schemaVersion", "registryId", "entries"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "registryId": { "const": "clr-authority-registry" },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["kind", "owner", "canonical", "description"],
+            "properties": {
+              "kind": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+              "owner": { "$ref": "#/$defs/owner" },
+              "canonical": { "type": "boolean" },
+              "description": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

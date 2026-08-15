@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Roadmap
 
-**Status:** proposed post-closure architecture program; no runtime activation authorized
+**Status:** CLR0 and CLR1 accepted; CLR2-CLR8 not authorized; no conversation ingestion or learning promotion active
 **Version:** 0.1
 **Date:** 2026-08-15
 **Architecture:** `operations/specs/infinite-brain-context-learning-runtime-architecture.md`
@@ -17,8 +17,9 @@ Current state:
 ```text
 P1-P8 Infinite Brain runtime roadmap: CLOSED
 Mind implementation plan: CLOSED
-CLR0 architecture/specification: ACTIVE
-CLR1-CLR8 runtime implementation: NOT AUTHORIZED YET
+CLR0 architecture/specification: COMPLETE
+CLR1 authority/freshness/storage/schema foundation: COMPLETE
+CLR2-CLR8 runtime implementation: NOT AUTHORIZED
 ```
 
 No roadmap status in this document is live runtime truth. Future live status must have a separate Brain-owned status surface after implementation begins.
@@ -44,7 +45,7 @@ The result must be installable and configurable for personal, dual-host, busines
 
 ## CLR0 — Architecture and contract closure
 
-**Status:** active specification phase.
+**Status:** complete and accepted 2026-08-15.
 
 ### Objective
 
@@ -71,7 +72,9 @@ CLR0 exits only when:
 
 ## CLR1 — Authority, freshness, storage, and schema foundation
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-08-15.
+
+**Acceptance evidence:** `operations/reports/clr1-authority-freshness-storage-acceptance-2026-08-15.md`
 
 ### Objective
 
@@ -93,6 +96,9 @@ Implement only the versioned schemas, validators, and report-only inventory need
 No ingestion or writes. Schemas validate fixtures, current sources can be classified without ambiguity, and an existing-memory migration report is reviewable without content loss.
 
 ## CLR2 — Universal Context Broker and live alignment
+
+**Provider rule:** exact-source/canonical Mind+Brain retrieval is the correctness baseline. CBM, Graphify, Workbench, embeddings, or future retrieval providers remain optional adapters and must degrade visibly to bounded exact-source behavior.
+
 
 **Status:** not authorized.
 
@@ -124,6 +130,7 @@ Give the human one logical place for unresolved durable decisions while keeping 
 
 ### Required outcomes
 
+- reconcile the existing UI directions first: Obsidian remains the single primary human cockpit; Brain Core remains the headless API/control boundary; the standalone `projects/brain-console` web app on port `4881` is optional/legacy for CLR and receives no Decision Center-only feature work;
 - extend existing Infinite Brain proposal approval store/API rather than create a second queue;
 - pending/approved/rejected/deferred/superseded decision lifecycle;
 - compact evidence and recommendation packets;

@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Implementation Plan
 
-**Status:** proposed implementation handoff; CLR0 specification only is authorized
+**Status:** CLR0 and CLR1 complete; CLR2-CLR8 not authorized
 **Version:** 0.1
 **Date:** 2026-08-15
 **Roadmap:** `operations/specs/infinite-brain-context-learning-runtime-roadmap.md`
@@ -55,47 +55,52 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ## CLR1 — Authority, freshness, storage, and schemas
 
-**Authorization:** not authorized.
+**Authorization:** owner-authorized and complete 2026-08-15.
+**Acceptance:** `operations/reports/clr1-authority-freshness-storage-acceptance-2026-08-15.md`
 
 ### CLR1.1 — Versioned core schema package
 
-- **Purpose:** Define JSON/TypeScript schemas for knowledge atoms, relations, evidence events, decision items, transactions, context packs, and retention profiles.
-- **Likely scope:** a new Brain-owned schema module under `projects/brain-core/src/` or a reusable package boundary selected during implementation; fixtures under tests.
-- **Must reuse:** current `mind-context` pack/provenance semantics where compatible.
-- **Validation:** schema fixtures for valid/invalid authority, freshness, supersession, privacy, and transaction states.
-- **Stop:** do not create runtime databases or migrate live memory.
+- **Status:** complete.
+- **Implementation:** `operations/specs/context-learning/contracts-v1.schema.json`.
+- **Outcome:** versioned definitions exist for knowledge atoms, relations, evidence events, decision items, logical learning transactions, context packs, retention profiles, and authority registry records.
+- **Validation:** JSON syntax passed; representative valid/invalid schema fixtures are covered by `npm run test:context-learning`.
+- **Boundary preserved:** no runtime database or conversation ingestion was created.
 
 ### CLR1.2 — Canonical-authority registry
 
-- **Purpose:** Machine-readable mapping of content classes to Mind, Brain, evidence, derived, or ephemeral ownership.
-- **Outcome:** validators reject a candidate that would create a parallel authority store.
-- **Must include:** strategy/preferences/identity → Mind; skills/runbooks/rules/config/capability → Brain; transcripts → evidence; hot memory/index/cache → derived.
-- **Validation:** cross-repo contract fixture tests.
+- **Status:** complete.
+- **Implementation:** `operations/specs/context-learning/authority-registry.v1.json` plus deterministic checks in `tools/context-learning/context-learning-core.mjs`.
+- **Outcome:** Mind owns canonical human meaning; Brain owns canonical machine capability/operational learning; transcripts/runtime observations are evidence; hot memory/indexes/graph projections are derived; context/bootstrap/handoff state is ephemeral.
+- **Validation:** wrong Mind/Brain ownership is rejected by focused tests.
 
 ### CLR1.3 — Freshness and supersession evaluator
 
-- **Purpose:** Deterministically compute `fresh`, `review_due`, `stale`, `superseded`, `contradicted`, or `unknown` from schema metadata.
-- **Boundary:** no model calls.
-- **Validation:** time-bound fixtures, contradictory evidence fixtures, stable/volatile classes.
+- **Status:** complete.
+- **Implementation:** `evaluateFreshness()` in `tools/context-learning/context-learning-core.mjs`.
+- **Outcome:** deterministic `fresh`, `review_due`, `stale`, `superseded`, `contradicted`, and `unknown` states with no model calls.
+- **Validation:** six-state fixture coverage in `npm run test:context-learning`.
 
 ### CLR1.4 — Existing shared-memory inventory
 
-- **Purpose:** Produce a report-only inventory of `~/.brain/memory/` entries classified as Mind candidate, Brain candidate, continuity, duplicate/superseded, or unresolved.
-- **Privacy:** do not print private full text in reports; use paths/hashes/bounded summaries.
-- **Boundary:** no move, delete, rewrite, or promotion.
-- **Validation:** deterministic repeatability and zero live writes.
+- **Status:** complete, report-only.
+- **Implementation:** `tools/context-learning/inventory-shared-memory.mjs`; command `npm run clr1:memory-inventory`.
+- **Privacy:** output is aggregate-only; it excludes filenames, private memory text, fact values, and transcript content.
+- **Observed live inventory:** 9 files / 17,492 bytes; 12 active facts; 6 files classified as migration-planning Mind candidates; no entry was promoted.
+- **Validation:** two live runs produced identical inventory digest `a65e17614876b932672e7bfdb7b41b7d12f7bde94f70b1fa2cb6d3a33e6ee261`, identical source fingerprint, `writesAttempted: 0`, and `mutated: false`.
 
 ### CLR1.5 — Retention/compaction policy schema
 
-- **Purpose:** Make every runtime storage class declare TTL/retention, compaction, rebuildability, and deletion authority.
-- **Outcome:** no new runtime store can be introduced without a bounded-growth policy.
-- **Validation:** reject "retain forever" derived caches unless explicitly justified/approved.
+- **Status:** complete.
+- **Implementation:** `operations/specs/context-learning/retention-profile.personal-local.v1.json` plus `validateRetentionInvariants()`.
+- **Outcome:** every non-canonical storage class is bounded by source policy, lifecycle, size/item cap, TTL/LRU, or rebuild semantics; derived storage cannot silently become durable forever.
+- **Validation:** unsafe unbounded derived storage is rejected by focused tests.
 
 ### CLR1 exit gate
 
-- All schemas/versioning are stable enough for consumers.
-- Shared-memory migration can be planned without data loss.
-- No real evidence ingestion or canonical write has happened.
+- **PASS:** schema/authority/freshness/storage contracts are versioned and validated.
+- **PASS:** shared-memory migration can be planned from aggregate inventory without content loss or live mutation.
+- **PASS:** no real conversation evidence was ingested and no canonical Mind/Brain learning write occurred.
+- **STOP:** CLR2 remains `not authorized` and must not begin without a separate owner instruction.
 
 ---
 
@@ -131,6 +136,13 @@ A task marked `not authorized` is design backlog only and must not be executed f
 - **Purpose:** Explain included/excluded items, freshness decisions, authority, and relation paths.
 - **Validation:** every context item has a citation/provenance explanation.
 
+### CLR2.6 — Optional retrieval-provider adapters
+
+- **Purpose:** Define one provider interface for structural/semantic acceleration while keeping exact source plus canonical Mind/Brain retrieval as the correctness baseline.
+- **Initial adapters:** admitted Brain-only Codebase Memory MCP for fresh structural navigation; bounded Brain semantic Graphify for optional non-authoritative synthesis/visualization; future providers only behind the same interface.
+- **Boundary:** CBM/Graphify/vector/graph services must never become canonical stores or required dependencies. Provider failure degrades visibly to bounded exact-source retrieval.
+- **Validation:** identical authority outcomes with accelerators disabled; freshness and fallback tests.
+
 ### CLR2 exit gate
 
 - Context quality improves without default token bloat.
@@ -142,6 +154,14 @@ A task marked `not authorized` is design backlog only and must not be executed f
 ## CLR3 — Decision Core and human Decision Center
 
 **Authorization:** not authorized.
+
+### CLR3.0 — Portal consolidation decision execution
+
+- **Purpose:** Reconcile implementation with the existing Obsidian-first decision before adding CLR UI.
+- **Direction:** Obsidian remains the single primary human cockpit; Brain Core remains the headless API/control/safety boundary; `projects/brain-console` on port `4881` is not required for CLR and receives no Decision Center-only features.
+- **Work:** inventory overlapping Obsidian-plugin vs 4881 surfaces, freeze/deprecate or retain only justified specialist diagnostics, and update canonical docs so one primary portal is unambiguous.
+- **Boundary:** do not delete the web app merely because it is not primary; any removal requires a separate evidence-backed cleanup task.
+- **Validation:** one canonical portal contract, no duplicate Decision Center implementation, offline behavior documented.
 
 ### CLR3.1 — Extend existing proposal-approval store schema
 
@@ -261,10 +281,11 @@ A task marked `not authorized` is design backlog only and must not be executed f
 - **Purpose:** Determine supported transcript/event surfaces.
 - **Stop:** if no stable supported source exists, document unsupported/best-effort instead of scraping private internals.
 
-### CLR5.6 — Workbench/ChatGPT adapter contract
+### CLR5.6 — Workbench/ChatGPT two-way adapter contract
 
-- **Purpose:** Define ingestion through future supported export/event/capture surfaces.
-- **Stop:** do not claim passive access that the host does not expose.
+- **Context-consumer direction:** Workbench sessions should use the universal Context Broker for fresh Mind-first/Brain-second orientation and should discover admitted Brain skills/MCP capabilities through the same bounded contracts as other consumers where the host integration supports them.
+- **Evidence-source direction:** Define ChatGPT/Workbench conversation ingestion only through supported export/event/capture surfaces. The currently admitted Workbench MCP is a guarded local repository/action bridge, not a passive ChatGPT-history exporter.
+- **Stop:** do not claim passive access that the host does not expose; do not scrape hosted/private application internals.
 
 ### CLR5.7 — Evidence coverage/health report
 
@@ -408,7 +429,11 @@ For each supported client verify:
 
 ### CLR8.6 — Workbench adapter
 
-- Define the same broker/context contract for Workbench sessions; do not rely on hidden access to hosted conversation history.
+- Define the same automatic bootstrap and Context Broker contract for Workbench sessions.
+- Verify Workbench can consume fresh Mind/Brain context through its admitted local source bridge without broad context dumps.
+- Verify admitted local Brain skills/capabilities and MCP servers can be surfaced through explicit Workbench/consumer contracts where supported, rather than copied into hosted chat context.
+- Keep local repository execution guarded by Workbench's source lock, bounded reads, validation, confirmation, and Git policies.
+- Do not rely on hidden access to hosted conversation history; evidence ingestion remains separately gated by CLR5.6 supported interfaces.
 
 ### CLR8.7 — End-to-end Steve dual-host pilot
 

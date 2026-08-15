@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "1.0.0",
+  "profileId": "personal-local",
+  "storageClasses": [
+    {
+      "classId": "source-owned-conversation",
+      "canonical": false,
+      "rebuildable": false,
+      "retentionMode": "source-owned",
+      "compactionStrategy": "source-policy",
+      "boundedGrowthRequired": true,
+      "notes": "CLR does not duplicate complete source conversations by default. Retention remains with the source client/export policy."
+    },
+    {
+      "classId": "evidence-ledger",
+      "canonical": false,
+      "rebuildable": true,
+      "retentionMode": "referenced",
+      "compactionStrategy": "dedupe",
+      "boundedGrowthRequired": true,
+      "maxBytes": 536870912,
+      "notes": "Content-addressed metadata and bounded excerpts only. Duplicate events collapse by source identity and content hash."
+    },
+    {
+      "classId": "learning-candidate-queue",
+      "canonical": false,
+      "rebuildable": true,
+      "retentionMode": "until-resolved",
+      "compactionStrategy": "receipt",
+      "boundedGrowthRequired": true,
+      "maxItems": 10000,
+      "notes": "Resolved/rejected/superseded candidates compact to small receipts instead of remaining hot."
+    },
+    {
+      "classId": "decision-runtime-queue",
+      "canonical": false,
+      "rebuildable": true,
+      "retentionMode": "until-resolved",
+      "compactionStrategy": "receipt",
+      "boundedGrowthRequired": true,
+      "maxItems": 5000,
+      "notes": "Pending items stay visible; terminal decisions compact into canonical Brain audit/transaction receipts."
+    },
+    {
+      "classId": "decision-transaction-receipts",
+      "canonical": true,
+      "rebuildable": false,
+      "retentionMode": "durable",
+      "compactionStrategy": "none",
+      "boundedGrowthRequired": false,
+      "notes": "Small durable Brain audit evidence; bulky intermediates are not retained here."
+    },
+    {
+      "classId": "mind-canonical-content",
+      "canonical": true,
+      "rebuildable": false,
+      "retentionMode": "durable",
+      "compactionStrategy": "none",
+      "boundedGrowthRequired": false,
+      "notes": "Human-readable canonical Mind content follows Mind/Git/history policy, not cache policy."
+    },
+    {
+      "classId": "brain-canonical-content",
+      "canonical": true,
+      "rebuildable": false,
+      "retentionMode": "durable",
+      "compactionStrategy": "none",
+      "boundedGrowthRequired": false,
+      "notes": "Canonical Brain skills/runbooks/rules/configuration follow repository policy and normal review/pruning."
+    },
+    {
+      "classId": "relation-index",
+      "canonical": false,
+      "rebuildable": true,
+      "retentionMode": "rebuild",
+      "compactionStrategy": "rebuild",
+      "boundedGrowthRequired": true,
+      "maxBytes": 536870912,
+      "notes": "Derived atom/edge index. Rebuild from canonical sources and completed receipts instead of treating the database as irreplaceable."
+    },
+    {
+      "classId": "optional-semantic-index",
+      "canonical": false,
+      "rebuildable": true,
+      "retentionMode": "lru",
+      "compactionStrategy": "lru",
+      "boundedGrowthRequired": true,
+      "maxBytes": 1073741824,
+      "notes": "Optional embeddings/semantic accelerator only; not required for correctness."
+    },
+    {
+      "classId": "context-pack-cache",
+      "canonical": false,
+      "rebuildable": true,
+      "retentionMode": "ttl",
+      "compactionStrategy": "ttl",
+      "boundedGrowthRequired": true,
+      "maxBytes": 134217728,
+      "ttlHours": 24,
+      "notes": "Ephemeral context packs expire quickly and always carry source revisions/freshness."
+    },
+    {
+      "classId": "session-bootstrap-cache",
+      "canonical": false,
+      "rebuildable": true,
+      "retentionMode": "ttl",
+      "compactionStrategy": "ttl",
+      "boundedGrowthRequired": true,
+      "maxBytes": 33554432,
+      "ttlHours": 24,
+      "notes": "Tiny bootstrap envelopes are regenerated from current canonical state."
+    },
+    {
+      "classId": "graph-visualization-projection",
+      "canonical": false,
+      "rebuildable": true,
+      "retentionMode": "rebuild",
+      "compactionStrategy": "rebuild",
+      "boundedGrowthRequired": true,
+      "maxBytes": 536870912,
+      "notes": "Optional Graphify or equivalent visualization output. Generated projection only."
+    }
+  ]
+}
