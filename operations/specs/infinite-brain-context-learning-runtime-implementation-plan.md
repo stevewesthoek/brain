@@ -108,9 +108,11 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 **Authorization:** not authorized.
 
+**Cross-repo entry gate:** before CLR2 implementation begins, the Workbench private roadmap must record its queued source-agnostic context/capability federation release. Do not mutate the Workbench roadmap while its current `v1.3.6-beta` live acceptance run is active or its source HEAD/evidence could be invalidated. The intended Workbench order is: finish `v1.3.6-beta` acceptance → complete queued `v1.3.7-beta` context compaction → implement source-agnostic context/capability federation → then broaden cross-device/managed expansion.
+
 ### CLR2.1 — Extract transport-neutral context-core interfaces
 
-- **Purpose:** Define `health`, `bootstrap`, `resolve`, `explain`, `align`, `decisions_status`, `learn_status` interfaces.
+- **Purpose:** Define `health`, `bootstrap`, `resolve`, `explain`, `align`, `capabilities_list`, `capabilities_inspect`, `decisions_status`, `learn_status` interfaces.
 - **Reuse:** `projects/mind-context/` discovery/resolve/explain logic and Brain capability discovery.
 - **Boundary:** no new provider registration yet.
 
@@ -142,6 +144,14 @@ A task marked `not authorized` is design backlog only and must not be executed f
 - **Initial adapters:** admitted Brain-only Codebase Memory MCP for fresh structural navigation; bounded Brain semantic Graphify for optional non-authoritative synthesis/visualization; future providers only behind the same interface.
 - **Boundary:** CBM/Graphify/vector/graph services must never become canonical stores or required dependencies. Provider failure degrades visibly to bounded exact-source retrieval.
 - **Validation:** identical authority outcomes with accelerators disabled; freshness and fallback tests.
+
+### CLR2.7 — Source-agnostic capability catalog
+
+- **Purpose:** Define compact versioned discovery descriptors for skills, orchestrators, runbooks, named CLIs, MCP servers/tools, validators, local apps, and future providers.
+- **Provider model:** Brain is one provider implementation for Steve; Workbench and other consumers must use the neutral catalog/provider contract rather than Brain paths or Steve-specific taxonomy.
+- **Progressive loading:** list/inspect returns compact metadata first; full skill/orchestrator/runbook instructions are resolved only when task relevance and policy justify them.
+- **Boundary:** CLR2 discovers and explains capabilities only. It does not execute CLIs, MCP tools, orchestrators, or local apps and does not widen any Workbench/consumer grant.
+- **Validation:** alternate non-Brain provider fixture, duplicate capability IDs, stale provider revision, unavailable provider, and provider-disabled fallback tests.
 
 ### CLR2 exit gate
 
@@ -210,11 +220,13 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 **Authorization:** not authorized.
 
-### CLR4.1 — Deployment profile schema
+### CLR4.1 — Deployment and provider profile schema
 
 - **Profiles:** personal-local, personal-dual-host, business-single-tenant, managed-single-tenant.
-- **Fields:** Brain/Mind discovery, broker endpoint/transport, cache policy, host identity, adapter enablement, privacy/provider policy.
-- **Boundary:** no Steve-specific path in public schema defaults.
+- **Fields:** context providers, capability providers, broker endpoint/transport, cache policy, host identity, adapter enablement, privacy/provider policy.
+- **Reference profile:** Steve maps Mind to the canonical human-context provider and Brain to canonical capability/context providers; this mapping is installation configuration, not generic Workbench/CLR product logic.
+- **Portability fixture:** at least one alternate provider profile must use different repository names/taxonomy and still satisfy the same context/capability contracts.
+- **Boundary:** no Steve-specific path, identity, Brain/Mind repository name, or Office/MacBook topology in public schema defaults.
 
 ### CLR4.2 — Host-neutral path/config discovery
 
@@ -246,7 +258,8 @@ A task marked `not authorized` is design backlog only and must not be executed f
 ### CLR4 exit gate
 
 - Local and dual-host fixtures use the same broker API.
-- Core remains Obsidian/macOS/vendor-neutral.
+- A non-Steve alternate provider fixture proves the same context/capability contracts work without Brain/Mind path or taxonomy assumptions.
+- Core remains Obsidian/macOS/vendor/source-neutral.
 - Upgrade/backup/export boundaries are explicit before ingestion.
 
 ---
@@ -427,12 +440,15 @@ For each supported client verify:
 
 - Use supported IDE rule/MCP/startup mechanisms; label best-effort where a deterministic first-turn hook is unavailable.
 
-### CLR8.6 — Workbench adapter
+### CLR8.6 — Workbench context-and-capability federation adapter
 
 - Define the same automatic bootstrap and Context Broker contract for Workbench sessions.
 - Verify Workbench can consume fresh Mind/Brain context through its admitted local source bridge without broad context dumps.
-- Verify admitted local Brain skills/capabilities and MCP servers can be surfaced through explicit Workbench/consumer contracts where supported, rather than copied into hosted chat context.
-- Keep local repository execution guarded by Workbench's source lock, bounded reads, validation, confirmation, and Git policies.
+- Verify Brain-provided skills, orchestrators, runbooks, named CLI capabilities, validators, and admitted MCP servers/tools can be discovered through the neutral capability catalog and progressively resolved only when relevant.
+- Workbench must consume versioned provider descriptors through a generic adapter contract; it must not hardcode Brain paths, Mind taxonomy, Steve identity, Office/MacBook topology, or repo-specific capability semantics into product core.
+- Prove portability with a second fixture using a non-Brain context/capability provider profile.
+- Capability discovery must not bypass Workbench execution policy: local actions remain guarded by source lock, grants, confirmation, allowlisted commands/MCP scope, validation, and Git policy.
+- Keep hosted chat payloads lean: capability bodies remain local and are fetched only when selected instead of being copied wholesale into every Workbench conversation.
 - Do not rely on hidden access to hosted conversation history; evidence ingestion remains separately gated by CLR5.6 supported interfaces.
 
 ### CLR8.7 — End-to-end Steve dual-host pilot

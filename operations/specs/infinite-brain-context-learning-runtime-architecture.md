@@ -90,7 +90,7 @@ CLR must remain useful when third-party or optional acceleration modules are una
 - **Exact source + canonical Mind/Brain Markdown** are the baseline authority and retrieval fallback.
 - **Codebase Memory MCP (CBM)** is an admitted Brain-only optional structural-navigation accelerator when fresh. It may identify symbols, routes, caller/callee relationships, and blast radius, but exact current source remains authority. CLR must consume CBM behind a provider interface and must not require it for correctness, portability, or customer installs.
 - **Graphify** is an optional non-authoritative semantic/relationship projection and future visualization adapter. Structural Graphify remains frozen; current bounded Brain semantic Graphify does not authorize Mind ingestion. CLR may later project its own approved atom/relation model into Graphify-compatible visualizations, but Graphify must never become the canonical relation store or a runtime dependency.
-- **Workbench** is an optional guarded local-repository bridge and a supported CLR consumer/adapter. Its currently admitted MCP scope exposes bounded repository status/context and guarded operations; it does **not** currently provide passive ChatGPT conversation-history export. CLR5 may add a Workbench/ChatGPT evidence adapter only through a supported export/event/capture surface. In the opposite direction, Workbench sessions should consume the same Context Broker, Brain skills/capabilities, and admitted MCP surfaces as other clients where the host integration permits it.
+- **Workbench** is an optional guarded local-repository bridge and a supported CLR **context-and-capability consumer**. Its currently admitted MCP scope exposes bounded repository status/context and guarded operations; it does **not** currently provide passive ChatGPT conversation-history export. CLR5 may add a Workbench/ChatGPT evidence adapter only through a supported export/event/capture surface. In the opposite direction, Workbench sessions should be able to discover and use the same bounded Mind context plus Brain-provided skills, orchestrators, named CLI capabilities, MCP servers/tools, runbooks, and execution capabilities as other approved clients. That integration must use versioned provider/catalog contracts rather than Brain-specific path knowledge inside Workbench. Steve's Brain/Mind setup is one installation profile; other Workbench users may attach different context and capability providers that implement the same contracts.
 - Any future vector database, graph database, embedding service, hosted memory vendor, or IDE-native memory system is an adapter. Replacing or disabling it must not change canonical Mind/Brain truth.
 
 This modular boundary is a product requirement: third-party accelerators may improve latency, navigation, visualization, or recall quality, but they must remain replaceable and independently upgradeable.
@@ -526,6 +526,8 @@ prochat context health
 prochat context bootstrap
 prochat context resolve <query>
 prochat context explain <pack-id>
+prochat capabilities list
+prochat capabilities inspect <capability-id>
 prochat decisions list
 prochat learn status
 ```
@@ -563,6 +565,45 @@ cache state
 ```
 
 Progressive retrieval should stream/return small groups when the client supports it. Consumers may request more only when justified by the task.
+
+### 10.3 Capability discovery and provider federation
+
+Context and capabilities are separate contracts. A consumer may need fresh Mind/Brain context without any execution authority, or it may need to discover an applicable Brain capability without loading that capability's full instructions until selected.
+
+The broker therefore exposes a **source-agnostic capability catalog**. Provider types may include:
+
+```text
+skill
+orchestrator
+runbook
+named_cli
+mcp_server
+mcp_tool
+validator
+local_app
+future_provider
+```
+
+A provider advertises compact versioned descriptors such as:
+
+```text
+provider_id
+provider_kind
+capability_id
+summary
+source_revision
+input/output schema references
+required context scopes
+risk/confirmation class
+execution transport reference
+freshness/health
+```
+
+The catalog is discovery metadata, not an authority bypass. Actual execution remains owned by the consuming runtime's policy boundary (for Workbench: source lock, grants, confirmation, allowlisted commands/MCP scope, validation, and Git discipline).
+
+Steve's Brain repository is one provider implementation that can publish skills, orchestrators, named CLI manifests, runbooks, and admitted MCP capability descriptors. Workbench must not encode Brain paths, Mind taxonomy, Steve identity, or Office/MacBook topology into its generic core. Other users may attach Git repositories, knowledge folders, enterprise catalogs, or other provider implementations that satisfy the same versioned contract.
+
+Capability descriptors are retrieved progressively. Listing a skill or orchestrator must not inject its complete body into every chat; full instructions are resolved only after task relevance and policy permit it.
 
 ## 11. Cross-host runtime
 
@@ -646,6 +687,7 @@ Design APIs so these can later become packages without forcing an immediate mono
 context-core          schemas, authority, freshness, context packs
 relation-index        atoms/edges/search/compaction
 context-broker        bootstrap/resolve/explain/align
+capability-catalog     source-agnostic skills/orchestrators/runbooks/CLI/MCP discovery
 conversation-adapters source discovery/normalization/watermarks
 learning-engine       candidate extraction/classification
  decision-core         queue, approvals, notifications, receipts

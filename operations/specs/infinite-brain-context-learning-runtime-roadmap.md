@@ -97,7 +97,7 @@ No ingestion or writes. Schemas validate fixtures, current sources can be classi
 
 ## CLR2 — Universal Context Broker and live alignment
 
-**Provider rule:** exact-source/canonical Mind+Brain retrieval is the correctness baseline. CBM, Graphify, Workbench, embeddings, or future retrieval providers remain optional adapters and must degrade visibly to bounded exact-source behavior.
+**Provider rule:** exact-source/canonical Mind+Brain retrieval is the correctness baseline. CBM, Graphify, embeddings, or future retrieval providers remain optional adapters and must degrade visibly to bounded exact-source behavior. Workbench is a consumer/bridge, not a canonical retrieval provider; its integration must use the same source-agnostic context and capability contracts as any other client.
 
 
 **Status:** not authorized.
@@ -108,7 +108,8 @@ Turn existing Context Gateway and Brain capability discovery into one bounded, t
 
 ### Required outcomes
 
-- `health`, `bootstrap`, `resolve`, `explain`, `align`, `decisions_status`, `learn_status` contracts;
+- `health`, `bootstrap`, `resolve`, `explain`, `align`, `capabilities_list`, `capabilities_inspect`, `decisions_status`, `learn_status` contracts;
+- source-agnostic capability catalog for skills, orchestrators, runbooks, named CLIs, MCP servers/tools, validators, and future providers; discovery only in CLR2, with execution still owned by each consumer's existing policy boundary;
 - 300-800 token target bootstrap envelope with configurable hard ceiling;
 - Mind-first then Brain-second resolution ordering;
 - freshness/conflict/unknown signals in every relevant pack;
@@ -156,6 +157,8 @@ Make the broker and decision contracts location-neutral and installable before c
 ### Required outcomes
 
 - host-neutral configuration/discovery;
+- versioned source/provider manifests so context and capability providers are install/configuration concerns rather than hardcoded application logic;
+- Steve's Brain/Mind pair as one reference provider profile, with fixtures for alternate context/capability sources that do not use Steve's taxonomy or paths;
 - Office local authority-host profile;
 - MacBook client profile using local Brain clone plus authoritative remote Mind/context access;
 - Thunderbolt/Tailscale transport hidden behind deployment configuration;
@@ -275,6 +278,8 @@ Make the system seamless across supported tools, measure actual value/cost, and 
 - clearly labeled best-effort behavior where only persistent instructions exist;
 - proactive alignment/freshness feedback;
 - Brain skill discovery without loading all skills;
+- source-agnostic capability discovery for skills, orchestrators, runbooks, named CLIs, MCP servers/tools, and validators, with Steve's Brain as one provider profile rather than a Workbench hard dependency;
+- Workbench conformance proving it can consume both bounded Mind/Brain context and admitted Brain capabilities through generic provider contracts, while other installations can substitute different context/capability sources;
 - Decision Center pending awareness;
 - measured pilot metrics for precision, stale incidents, token overhead, latency, disk growth, decision backlog, notification noise, and recurrence of learned failures;
 - productization/upgrade/backup/export certification for at least personal-local and single-tenant profiles.
