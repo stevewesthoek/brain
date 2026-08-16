@@ -19,7 +19,9 @@ import { readAgentConsoleSummary } from '../adapters/agent-console-summary.js';
 import { readAgentCostSummary } from '../adapters/agent-cost-summary.js';
 import { readOpsAiCosts, readOpsAiUsageWindows, readOpsSystemMetrics } from '../adapters/ops-dashboard.js';
 import { getInfiniteBrainStatus } from '../adapters/infinite-brain-status.js';
-import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval, readInfiniteBrainProposalReport, findInfiniteBrainProposal } from '../adapters/infinite-brain-proposal-approval-store.js';
+import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval, readInfiniteBrainProposalReport, findInfiniteBrainProposal, recordInfiniteBrainProposalDecision, type InfiniteBrainProposalDecision } from '../adapters/infinite-brain-proposal-approval-store.js';
+import { readInfiniteBrainDecisionQueue } from '../adapters/infinite-brain-decision-core.js';
+import { pollInfiniteBrainDecisionNotifications } from '../adapters/infinite-brain-decision-notifications.js';
 import { generateApplicationPlan, writeApplicationPlan, readApplicationPlan, readApplicationPlanSummary } from '../adapters/infinite-brain-proposal-application-planner.js';
 import { generateExecutionReadinessReport, writeExecutionReadinessReport, readExecutionReadinessReport, readExecutionReadinessSummary } from '../adapters/infinite-brain-proposal-execution-readiness.js';
 import { generateExecutorDryRunReport, writeExecutorDryRunReport, readExecutorDryRunReport, readExecutorDryRunSummary } from '../adapters/infinite-brain-proposal-executor-dry-run.js';
@@ -545,6 +547,10 @@ export async function routeRequest(
     }
     case '/infinite-brain/proposals/approvals':
       sendJson(response, 200, summarizeInfiniteBrainProposalApprovals());
+      return;
+    case '/infinite-brain/decisions':
+    case '/api/infinite-brain/decisions':
+      sendJson(response, 200, readInfiniteBrainDecisionQueue());
       return;
     case '/post-orchestrator/status':
       sendJson(response, 200, readPostOrchestratorStatus());
@@ -3776,6 +3782,112 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       confirmation: (body.confirmation as string) ?? '',
     });
     sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  // ── CLR3 Decision Core: Notification Poll ─────────────────────────────────
+  if (url.pathname === '/api/infinite-brain/decisions/notifications/poll') {
+    const queue = readInfiniteBrainDecisionQueue();
+    const result = pollInfiniteBrainDecisionNotifications(queue);
+    sendJson(response, result.ok ? 200 : 500, {
+      ok: result.ok,
+      code: result.ok ? 'decision_notifications_polled' : 'decision_notification_state_write_failed',
+      notifications: result.notifications,
+      pendingCount: result.pendingCount,
+      statePath: result.statePath,
+      safety: {
+        decisionStoreMutated: false,
+        sensitiveSourceTextIncluded: false,
+        executionBlocked: true,
+      },
+    });
+    return;
+  }
+
+  // ── CLR3 Decision Core: Human Decision Action ──────────────────────────────
+  const decisionPathMatch = url.pathname.match(/^\/api\/infinite-brain\/decisions\/([^/]+)$/);
+  if (decisionPathMatch) {
+    const proposalId = decodeURIComponent(decisionPathMatch[1] ?? '');
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, { ok: false, code: 'invalid_body', message: 'Request body must be valid JSON.' });
+      return;
+    }
+
+    const decision = typeof body.decision === 'string' ? body.decision : '';
+    const decidedBy = typeof body.decidedBy === 'string' ? body.decidedBy.trim() : '';
+    const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
+    const expectedProposalHash = typeof body.proposalHash === 'string' ? body.proposalHash : '';
+    const deferUntil = typeof body.deferUntil === 'string' ? body.deferUntil : undefined;
+
+    if (!proposalId || !decidedBy || !expectedProposalHash) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'missing_fields',
+        message: 'proposalId path, proposalHash, and decidedBy are required.',
+      });
+      return;
+    }
+    if (!['approved', 'rejected', 'needs-review', 'deferred'].includes(decision)) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_decision',
+        message: 'decision must be one of: approved, rejected, needs-review, deferred',
+      });
+      return;
+    }
+    if (decision === 'deferred') {
+      const deferTime = deferUntil ? Date.parse(deferUntil) : Number.NaN;
+      if (!Number.isFinite(deferTime) || deferTime <= Date.now()) {
+        sendJson(response, 400, {
+          ok: false,
+          code: 'invalid_defer_until',
+          message: 'deferUntil must be a future ISO-8601 timestamp for deferred decisions.',
+        });
+        return;
+      }
+    }
+
+    const proposal = findInfiniteBrainProposal(proposalId);
+    if (!proposal) {
+      sendJson(response, 404, { ok: false, code: 'proposal_not_found', proposalId });
+      return;
+    }
+
+    const result = recordInfiniteBrainProposalDecision({
+      proposal,
+      decision: decision as InfiniteBrainProposalDecision,
+      decidedBy,
+      expectedProposalHash,
+      ...(reason ? { reason } : {}),
+      ...(deferUntil ? { deferUntil } : {}),
+    });
+    if (result.code === 'stale_proposal_hash') {
+      sendJson(response, 409, {
+        ok: false,
+        code: result.code,
+        proposalId,
+        currentProposalHash: result.currentProposalHash,
+        message: 'The proposal changed after the Decision Center loaded it. Refresh and review the current proposal before deciding.',
+      });
+      return;
+    }
+    if (!result.ok) {
+      sendJson(response, 500, { ok: false, code: result.code, proposalId });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      code: result.code,
+      record: result.record,
+      queue: readInfiniteBrainDecisionQueue(),
+      safety: {
+        applied: false,
+        executionBlocked: true,
+        writesToMind: false,
+      },
+    });
     return;
   }
 

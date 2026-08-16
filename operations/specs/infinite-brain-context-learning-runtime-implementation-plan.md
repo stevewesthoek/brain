@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Implementation Plan
 
-**Status:** CLR0-CLR2 complete; CLR3-CLR8 not authorized
+**Status:** CLR0-CLR3 complete; CLR4-CLR8 not authorized
 **Version:** 0.1
 **Date:** 2026-08-15
 **Roadmap:** `operations/specs/infinite-brain-context-learning-runtime-roadmap.md`
@@ -167,7 +167,10 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ## CLR3 — Decision Core and human Decision Center
 
-**Authorization:** not authorized.
+**Authorization:** owner-authorized and complete 2026-08-16.
+**Acceptance:** `operations/reports/clr3-decision-core-portal-acceptance-2026-08-16.md`
+
+**Implementation evidence:** one versioned proposal-approval ledger, one Decision Core projection, stale-safe/idempotent Brain Core decision routes, separate bounded notification cursor state, corrected Obsidian-first portal contract, and the thin `projects/brain-console-obsidian/` Decision Center source package. Live Mind plugin installation was not performed.
 
 ### CLR3.0 — Portal consolidation decision execution
 
@@ -214,9 +217,12 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ### CLR3 exit gate
 
-- All unresolved program decisions are discoverable in one logical queue.
-- Steve can operate the queue from one Brain Console Decision Center.
-- Notification volume is measured and bounded.
+- **PASS:** unresolved Infinite Brain proposals are discoverable through one logical Decision Core queue backed by the existing proposal/approval model.
+- **PASS:** the Obsidian Brain Console source package exposes one Decision Center against Brain Core; no duplicate Decision Center exists on port `4881`.
+- **PASS:** stale proposal hashes fail closed, repeated identical decisions are idempotent, and approved records still do not apply canonical changes.
+- **PASS:** high-priority/zero-to-pending attention and daily digest behavior are deduplicated; default notification payloads exclude sensitive source text.
+- **BOUNDARY:** live installation into Mind is not performed or claimed.
+- **STOP:** CLR4 remains not authorized.
 
 ---
 

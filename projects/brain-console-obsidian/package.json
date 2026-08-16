@@ -1,0 +1,10 @@
+{
+  "name": "brain-console-obsidian",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Thin Obsidian cockpit adapter over Brain Core; CLR3 Decision Center source package.",
+  "scripts": {
+    "check": "node --check main.js && node --check decision-center-core.cjs && node --test decision-center-core.test.mjs",
+    "test": "node --test decision-center-core.test.mjs"
+  }
+}

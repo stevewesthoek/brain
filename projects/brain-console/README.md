@@ -1,17 +1,19 @@
 # Brain Console
 
-**Status:** Phase 1 implemented and build-validated  
-**Role:** single leading local operations dashboard for Brain  
+**Status:** Phase 1 implemented and build-validated; retained specialist surface
+**Role:** optional browser diagnostics/operations surface; **not** the primary human cockpit
 **Port:** `4881`  
 **Data source:** Brain Core API only
 
-Brain Console is the fourth and final dashboard direction for the `brain` repo.
+The canonical primary human cockpit is the **Obsidian Brain Console plugin**. Brain Core remains the shared headless API/control/safety boundary beneath both surfaces.
 
 ```text
-Brain Console → Brain Core API → runtime/job/config sources
+Obsidian Brain Console (primary cockpit) ─┐
+                                         ├─→ Brain Core API → runtime/job/config sources
+Port-4881 Brain Console (optional) ──────┘
 ```
 
-Legacy dashboards are reference-only.
+CLR Decision Center work belongs only in the Obsidian cockpit. Do not add a second Decision Center to this web app. This project remains available for justified specialist browser diagnostics and operational surfaces until a separate evidence-backed cleanup/decommission decision is approved.
 
 ## Run
 

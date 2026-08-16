@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Roadmap
 
-**Status:** CLR0-CLR2 accepted; CLR3-CLR8 not authorized; no conversation ingestion or learning promotion active
+**Status:** CLR0-CLR3 accepted; CLR4-CLR8 not authorized; no conversation ingestion or learning promotion active
 **Version:** 0.1
 **Date:** 2026-08-15
 **Architecture:** `operations/specs/infinite-brain-context-learning-runtime-architecture.md`
@@ -20,7 +20,8 @@ Mind implementation plan: CLOSED
 CLR0 architecture/specification: COMPLETE
 CLR1 authority/freshness/storage/schema foundation: COMPLETE
 CLR2 universal context broker/live alignment: COMPLETE
-CLR3-CLR8 runtime implementation: NOT AUTHORIZED
+CLR3 decision core/portal/notifications: COMPLETE
+CLR4-CLR8 runtime implementation: NOT AUTHORIZED
 ```
 
 No roadmap status in this document is live runtime truth. Future live status must have a separate Brain-owned status surface after implementation begins.
@@ -125,7 +126,9 @@ Representative prompts demonstrate that context quality improves without default
 
 ## CLR3 — Decision Core, Obsidian Decision Center, and notifications
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-08-16 as a repository implementation; live Obsidian installation remains unclaimed.
+
+**Acceptance evidence:** `operations/reports/clr3-decision-core-portal-acceptance-2026-08-16.md`
 
 ### Objective
 

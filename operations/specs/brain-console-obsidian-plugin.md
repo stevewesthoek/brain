@@ -2,13 +2,15 @@
 
 ## Purpose
 
-Render Brain Core status inside Obsidian without copying runtime state into Markdown notes.
+Provide the **single primary human cockpit** for Brain + Mind inside Obsidian while keeping Brain Core as the headless API/control/safety boundary. Runtime and Decision Core state remain behind Brain Core instead of being copied into Markdown notes.
+
+The standalone port-`4881` Brain Console is an optional specialist diagnostics/operations surface. It is not a second primary portal and must not receive a duplicate CLR Decision Center.
 
 ## Status
 
-Code was not written into the live `mind/.obsidian` folder in this slice. The standalone plugin project under `projects/brain-console-obsidian/` is now validated locally, but it remains outside the live Mind vault until explicit installation approval.
+CLR3 recreates the Brain-owned standalone plugin source under `projects/brain-console-obsidian/` as a thin dependency-free Brain Core client and adds the Decision Center source implementation.
 
-The plugin is buildable, packageable, and still intentionally separated from the live vault. Remaining Mind `.obsidian` plugin state stays local/uncommitted.
+Code is **not** written into the live `mind/.obsidian` folder in CLR3. The source package remains outside the live Mind vault until a separate explicit installation/activation task. Existing Mind `.obsidian` plugin state stays protected and uncommitted.
 
 ## Source of truth
 
@@ -81,6 +83,16 @@ POST /approvals/:id/approve
 POST /approvals/:id/reject
 ```
 
+CLR3 Decision Center endpoints:
+
+```text
+GET  /api/infinite-brain/decisions
+POST /api/infinite-brain/decisions/:proposalId
+POST /api/infinite-brain/decisions/notifications/poll
+```
+
+The Decision Center reads one logical queue projected from the existing Infinite Brain proposal report plus proposal-approval ledger. It must not create another decision store. Decision actions carry the rendered proposal hash; Brain Core rejects stale hashes and keeps proposal application/execution blocked.
+
 The approval endpoints must show that responses contain `executed: false` until executable actions are separately approved and audited.
 
 ## Plugin safety rules
@@ -91,53 +103,55 @@ The approval endpoints must show that responses contain `executed: false` until 
 - The plugin must continue rendering an offline/empty state when Brain Core is unavailable.
 - The plugin must not call approval POST endpoints automatically.
 - The plugin must not add executable actions until persistent audit storage and explicit approval UX are complete.
-- The plugin must remain manual-refresh by default.
+- Context, runtime, and capability data remain manual-refresh by default.
+- CLR3 permits one bounded exception: aggregate Decision Center attention polling may run at a low fixed frequency while Obsidian is open; it must not fetch or surface sensitive proposal/source text in notifications.
 - The plugin must render capabilities and runtime reports as read-only summaries.
 
-## Recommended implementation shape
+## Implemented adapter shape
 
-Create a standalone plugin project outside the live vault first, then install/link it into the vault manually after validation.
-
-Suggested future path if write policy allows:
+Keep the standalone plugin project outside the live vault, validate it there, then install/link reviewed files into the vault only through a separately authorized activation task.
 
 ```text
 projects/brain-console-obsidian/
 ```
 
-Suggested files:
+CLR3 source files:
 
 ```text
-package-lock.json
 package.json
 manifest.json
-main.ts
+main.js
+decision-center-core.cjs
+decision-center-core.test.mjs
 styles.css
 README.md
-src/client.ts
-src/settings.ts
-src/view.ts
-tsconfig.json
 ```
 
 Minimum implementation:
 
-- settings tab for Brain Core base URL
-- ribbon command: `Open Brain Console`
-- view type: `brain-console-view`
-- polling disabled by default or low-frequency manual refresh
-- manual refresh button
-- offline state when `/status` fails
-- no persisted runtime cache in notes
-- package/build output under `projects/brain-console-obsidian/release/` for manual install only
+- settings tab for configurable Brain Core base URL and local audit label;
+- ribbon command: `Open Brain Console`;
+- view type: `brain-console-view`;
+- manual Decision Core refresh;
+- five-minute bounded aggregate decision-attention polling, independently toggleable;
+- persistent status-bar pending count while Obsidian is running;
+- offline state when Brain Core is unavailable;
+- stale-proposal-hash rejection rendered as refresh-and-review guidance;
+- no persisted runtime or decision cache in Mind notes;
+- no Brain Core/business logic duplicated in the plugin.
 
 ## Validation checklist
 
 Before installing into `mind/.obsidian/plugins/`:
 
-- TypeScript build passes.
-- Plugin renders offline state when Brain Core is stopped.
-- Plugin renders status/session/repo/scheduler/video/approval widgets when Brain Core is running.
-- No secrets are stored in plugin settings.
-- No runtime logs are written to Mind.
-- No approval POST endpoint is called without a manual user click.
-- `projects/brain-console-obsidian/release/` contains only reviewed install files.
+- dependency-free JavaScript syntax and Decision Center core tests pass;
+- one-primary-portal contract validation passes;
+- plugin renders an offline state when Brain Core is unavailable;
+- plugin renders the Decision Core queue and pending-count status from Brain Core when available;
+- stale proposal hashes are rejected and require refresh/review;
+- repeated identical decisions are idempotent;
+- notification dedupe/noise and sensitive-payload tests pass;
+- no secrets are stored in plugin settings;
+- no runtime logs or generated decision state are written to Mind;
+- no decision POST endpoint is called without a manual user click;
+- only reviewed source/install files are copied or linked into the live vault during a separately authorized activation task.

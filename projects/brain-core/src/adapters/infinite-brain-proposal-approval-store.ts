@@ -1,13 +1,17 @@
 /**
- * Infinite Brain Proposal Approval Store
- * Records approval decisions for Infinite Brain proposals
- * Report-only phase: records decisions but does not apply proposals
+ * Infinite Brain Proposal Approval Store / CLR Decision Core ledger
+ *
+ * One logical queue: proposal state is derived from proposals-latest.json plus the
+ * current decision records in proposal-approvals.json. Decision history is kept in
+ * the same store; no second decision authority is introduced.
+ *
+ * Safety: decisions remain records only. They never apply proposals or write Mind.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import crypto from 'node:crypto';
+import { computeProposalHash, evaluateDecisionWriteGuard } from './infinite-brain-decision-runtime.mjs';
 
 const DEFAULT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-approvals.json';
 const PROPOSALS_REPORT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposals-latest.json';
@@ -15,10 +19,12 @@ const PROPOSALS_REPORT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposals-l
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BRAIN_ROOT = path.resolve(MODULE_DIR, '..', '..', '..', '..');
 
+export type InfiniteBrainProposalDecision = 'approved' | 'rejected' | 'needs-review' | 'deferred';
+
 export interface InfiniteBrainProposalApprovalRecord {
   proposalId: string;
   category: string;
-  decision: 'approved' | 'rejected' | 'needs-review';
+  decision: InfiniteBrainProposalDecision;
   decidedAt: string;
   decidedBy: string;
   reason: string | undefined;
@@ -27,6 +33,7 @@ export interface InfiniteBrainProposalApprovalRecord {
   writesToMindIfApproved: boolean;
   executionBlocked: true;
   applied: false;
+  deferUntil?: string | undefined;
 }
 
 export interface InfiniteBrainProposalApprovalSummary {
@@ -36,6 +43,8 @@ export interface InfiniteBrainProposalApprovalSummary {
   approved: number;
   rejected: number;
   needsReview: number;
+  deferred: number;
+  historyEvents: number;
   applied: number;
   executionBlocked: true;
   latestDecisionAt: string | undefined;
@@ -54,19 +63,28 @@ export interface InfiniteBrainProposalReport {
   proposals?: InfiniteBrainProposalRecord[];
 }
 
+interface InfiniteBrainProposalDecisionStore {
+  schemaVersion: '1.0.0';
+  records: InfiniteBrainProposalApprovalRecord[];
+  history?: InfiniteBrainProposalApprovalRecord[];
+}
+
+export interface InfiniteBrainProposalDecisionResult {
+  ok: boolean;
+  code: 'decision_recorded' | 'decision_idempotent' | 'stale_proposal_hash' | 'write_failed';
+  currentProposalHash: string;
+  record?: InfiniteBrainProposalApprovalRecord;
+}
+
 function getDefaultStorePath(): string {
   const envPath = process.env.IBR_PROPOSAL_APPROVALS_PATH;
-  if (envPath) {
-    return path.isAbsolute(envPath) ? envPath : path.resolve(BRAIN_ROOT, envPath);
-  }
+  if (envPath) return path.isAbsolute(envPath) ? envPath : path.resolve(BRAIN_ROOT, envPath);
   return path.resolve(BRAIN_ROOT, DEFAULT_RELATIVE_PATH);
 }
 
 function getProposalsReportPath(): string {
   const envPath = process.env.IBR_PROPOSALS_REPORT_PATH;
-  if (envPath) {
-    return path.isAbsolute(envPath) ? envPath : path.resolve(BRAIN_ROOT, envPath);
-  }
+  if (envPath) return path.isAbsolute(envPath) ? envPath : path.resolve(BRAIN_ROOT, envPath);
   return path.resolve(BRAIN_ROOT, PROPOSALS_REPORT_RELATIVE_PATH);
 }
 
@@ -81,19 +99,26 @@ function readJsonSafely<T>(filePath: string): T | null {
 function writeJsonSafely(filePath: string, data: unknown): boolean {
   try {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`);
+    const tmpPath = `${filePath}.tmp-${process.pid}`;
+    fs.writeFileSync(tmpPath, `${JSON.stringify(data, null, 2)}\n`, { mode: 0o600 });
+    fs.renameSync(tmpPath, filePath);
     return true;
   } catch {
     return false;
   }
 }
 
-function computeProposalHash(proposalId: string, proposalContent: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(`${proposalId}:${proposalContent}`)
-    .digest('hex')
-    .substring(0, 16);
+function readDecisionStore(): InfiniteBrainProposalDecisionStore {
+  const data = readJsonSafely<Partial<InfiniteBrainProposalDecisionStore>>(getDefaultStorePath());
+  return {
+    schemaVersion: '1.0.0',
+    records: Array.isArray(data?.records) ? data.records : [],
+    history: Array.isArray(data?.history) ? data.history : [],
+  };
+}
+
+export function computeInfiniteBrainProposalHash(proposal: InfiniteBrainProposalRecord): string {
+  return computeProposalHash(proposal);
 }
 
 export function readInfiniteBrainProposalReport(): InfiniteBrainProposalReport | null {
@@ -101,114 +126,128 @@ export function readInfiniteBrainProposalReport(): InfiniteBrainProposalReport |
 }
 
 export function findInfiniteBrainProposal(proposalId: string): InfiniteBrainProposalRecord | undefined {
-  const report = readInfiniteBrainProposalReport();
-  return report?.proposals?.find((proposal) => proposal.proposalId === proposalId);
+  return readInfiniteBrainProposalReport()?.proposals?.find((proposal) => proposal.proposalId === proposalId);
 }
 
-/**
- * Read all approval records
- */
 export function readInfiniteBrainProposalApprovals(): InfiniteBrainProposalApprovalRecord[] {
-  const filePath = getDefaultStorePath();
-  const data = readJsonSafely<{ records: InfiniteBrainProposalApprovalRecord[] }>(filePath);
-  return Array.isArray(data?.records) ? data.records : [];
+  return readDecisionStore().records;
 }
 
-/**
- * Write/append an approval record
- */
+export function readInfiniteBrainProposalDecisionHistory(): InfiniteBrainProposalApprovalRecord[] {
+  return readDecisionStore().history ?? [];
+}
+
+/** Legacy-compatible writer used by older report-only callers. */
 export function writeInfiniteBrainProposalApproval(record: InfiniteBrainProposalApprovalRecord): boolean {
-  // Validate safety constraints
-  if (record.executionBlocked !== true) {
-    return false;
-  }
-  if (record.applied !== false) {
-    return false;
-  }
+  if (record.executionBlocked !== true || record.applied !== false) return false;
 
-  const filePath = getDefaultStorePath();
-  const existing = readInfiniteBrainProposalApprovals();
-
-  // Check if we already have a decision for this proposal
-  const existingIndex = existing.findIndex((r) => r.proposalId === record.proposalId);
-  if (existingIndex >= 0) {
-    // Update existing record (preserve history by overwriting same proposal)
-    existing[existingIndex] = record;
-  } else {
-    // Add new record
-    existing.push(record);
-  }
-
-  return writeJsonSafely(filePath, { records: existing });
+  const store = readDecisionStore();
+  const existingIndex = store.records.findIndex((candidate) => candidate.proposalId === record.proposalId);
+  if (existingIndex >= 0) store.records[existingIndex] = record;
+  else store.records.push(record);
+  store.history = [...(store.history ?? []), record];
+  return writeJsonSafely(getDefaultStorePath(), store);
 }
 
-/**
- * List all approval records
- */
+export function recordInfiniteBrainProposalDecision(input: {
+  proposal: InfiniteBrainProposalRecord;
+  decision: InfiniteBrainProposalDecision;
+  decidedBy: string;
+  reason?: string;
+  expectedProposalHash: string;
+  deferUntil?: string;
+  now?: Date;
+}): InfiniteBrainProposalDecisionResult {
+  const record = createInfiniteBrainProposalApprovalRecord(
+    input.proposal,
+    input.decision,
+    input.decidedBy,
+    input.reason,
+    input.deferUntil,
+    input.now,
+  );
+  const store = readDecisionStore();
+  const existingIndex = store.records.findIndex((candidate) => candidate.proposalId === record.proposalId);
+  const existing = existingIndex >= 0 ? store.records[existingIndex] : undefined;
+  const guard = evaluateDecisionWriteGuard({
+    proposal: input.proposal,
+    expectedProposalHash: input.expectedProposalHash,
+    existingRecord: existing,
+    nextRecord: record,
+  }) as {
+    ok: boolean;
+    code: 'stale_proposal_hash' | 'decision_idempotent' | 'decision_recorded';
+    currentProposalHash: string;
+  };
+  const { currentProposalHash } = guard;
+
+  if (guard.code === 'stale_proposal_hash') {
+    return { ok: false, code: guard.code, currentProposalHash };
+  }
+  if (guard.code === 'decision_idempotent') {
+    return { ok: true, code: guard.code, currentProposalHash, record: existing };
+  }
+
+  if (existingIndex >= 0) store.records[existingIndex] = record;
+  else store.records.push(record);
+  store.history = [...(store.history ?? []), record];
+
+  if (!writeJsonSafely(getDefaultStorePath(), store)) {
+    return { ok: false, code: 'write_failed', currentProposalHash };
+  }
+  return { ok: true, code: 'decision_recorded', currentProposalHash, record };
+}
+
 export function listInfiniteBrainProposalApprovals(): InfiniteBrainProposalApprovalRecord[] {
   return readInfiniteBrainProposalApprovals();
 }
 
-/**
- * Summarize approval records
- */
 export function summarizeInfiniteBrainProposalApprovals(): InfiniteBrainProposalApprovalSummary {
-  const filePath = getDefaultStorePath();
   const records = readInfiniteBrainProposalApprovals();
-
-  const approved = records.filter((r) => r.decision === 'approved').length;
-  const rejected = records.filter((r) => r.decision === 'rejected').length;
-  const needsReview = records.filter((r) => r.decision === 'needs-review').length;
-
-  // All records should have applied: false and executionBlocked: true
-  const appliedCount = records.filter((r) => r.applied).length;
-
-  // Find latest decision
-  const latestDecision = records.length > 0 ? records[records.length - 1]?.decidedAt : undefined;
-
+  const history = readInfiniteBrainProposalDecisionHistory();
   return {
     available: records.length > 0,
-    path: path.relative(BRAIN_ROOT, filePath) || DEFAULT_RELATIVE_PATH,
+    path: path.relative(BRAIN_ROOT, getDefaultStorePath()) || DEFAULT_RELATIVE_PATH,
     totalDecisions: records.length,
-    approved,
-    rejected,
-    needsReview,
-    applied: appliedCount,
+    approved: records.filter((record) => record.decision === 'approved').length,
+    rejected: records.filter((record) => record.decision === 'rejected').length,
+    needsReview: records.filter((record) => record.decision === 'needs-review').length,
+    deferred: records.filter((record) => record.decision === 'deferred').length,
+    historyEvents: history.length,
+    applied: records.filter((record) => record.applied).length,
     executionBlocked: true,
-    latestDecisionAt: latestDecision,
+    latestDecisionAt: history.length > 0
+      ? history[history.length - 1]?.decidedAt
+      : records[records.length - 1]?.decidedAt,
   };
 }
 
-/**
- * Find approval record by proposal ID
- */
 export function findInfiniteBrainProposalApproval(
-  proposalId: string
+  proposalId: string,
 ): InfiniteBrainProposalApprovalRecord | undefined {
-  const records = readInfiniteBrainProposalApprovals();
-  return records.find((r) => r.proposalId === proposalId);
+  return readInfiniteBrainProposalApprovals().find((record) => record.proposalId === proposalId);
 }
 
-/**
- * Create an approval record from a proposal ID and decision
- */
 export function createInfiniteBrainProposalApprovalRecord(
   proposal: InfiniteBrainProposalRecord,
-  decision: 'approved' | 'rejected' | 'needs-review',
+  decision: InfiniteBrainProposalDecision,
   decidedBy: string,
-  reason?: string
+  reason?: string,
+  deferUntil?: string,
+  now: Date = new Date(),
 ): InfiniteBrainProposalApprovalRecord {
   return {
     proposalId: proposal.proposalId,
     category: proposal.category,
     decision,
-    decidedAt: new Date().toISOString(),
+    decidedAt: now.toISOString(),
     decidedBy,
     reason,
     sourceReport: 'proposals-latest.json',
-    proposalHash: computeProposalHash(proposal.proposalId, JSON.stringify(proposal)),
+    proposalHash: computeInfiniteBrainProposalHash(proposal),
     writesToMindIfApproved: proposal.writesToMindIfApproved === true,
     executionBlocked: true,
     applied: false,
+    ...(deferUntil ? { deferUntil } : {}),
   };
 }
