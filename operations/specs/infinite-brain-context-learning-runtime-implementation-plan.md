@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Implementation Plan
 
-**Status:** CLR0-CLR3 complete; CLR4-CLR8 not authorized
+**Status:** CLR0-CLR4 complete; CLR5-CLR8 not authorized
 **Version:** 0.1
 **Date:** 2026-08-15
 **Roadmap:** `operations/specs/infinite-brain-context-learning-runtime-roadmap.md`
@@ -228,7 +228,10 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ## CLR4 — Cross-host runtime and packaging foundation
 
-**Authorization:** not authorized.
+**Authorization:** owner-authorized and complete 2026-08-16.
+**Acceptance:** `operations/reports/clr4-cross-host-packaging-acceptance-2026-08-16.md`
+
+**Implementation evidence:** versioned deployment/provider profile schema; four portable profile fixtures; deterministic transport selection, last-known-good cache, fail-closed authority/decision policy, read-only doctor output, lifecycle plan/receipt contracts, safe export/backup exclusions, focused validator/tests, and zero live activation.
 
 ### CLR4.1 — Deployment and provider profile schema
 
@@ -267,10 +270,13 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ### CLR4 exit gate
 
-- Local and dual-host fixtures use the same broker API.
-- A non-Steve alternate provider fixture proves the same context/capability contracts work without Brain/Mind path or taxonomy assumptions.
-- Core remains Obsidian/macOS/vendor/source-neutral.
-- Upgrade/backup/export boundaries are explicit before ingestion.
+- **PASS:** local, dual-host, business-single-tenant, and managed-single-tenant profiles use one deployment/provider contract surface.
+- **PASS:** a non-Steve alternate provider fixture proves the same context/capability and runtime policy contracts work without Brain/Mind path or taxonomy assumptions.
+- **PASS:** transport, cache, doctor, and lifecycle runtime helpers are source/OS/UI/vendor-neutral; Steve topology exists only in the reference fixture.
+- **PASS:** last-known-good cache age/revision and fail-closed current human-authority/decision-state rules are deterministic.
+- **PASS:** install/update/export/backup/rollback boundaries are dry-run, receipt-required, rollback-aware, and zero-write in CLR4.
+- **PASS:** safe export/backup excludes secrets, raw private evidence, derived indexes, caches, and runtime sessions by default.
+- **STOP:** CLR5 remains not authorized; no conversation ingestion begins from CLR4 acceptance.
 
 ---
 

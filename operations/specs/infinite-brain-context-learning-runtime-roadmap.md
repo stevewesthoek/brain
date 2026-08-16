@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Roadmap
 
-**Status:** CLR0-CLR3 accepted; CLR4-CLR8 not authorized; no conversation ingestion or learning promotion active
+**Status:** CLR0-CLR4 accepted; CLR5-CLR8 not authorized; no conversation ingestion or learning promotion active
 **Version:** 0.1
 **Date:** 2026-08-15
 **Architecture:** `operations/specs/infinite-brain-context-learning-runtime-architecture.md`
@@ -21,7 +21,8 @@ CLR0 architecture/specification: COMPLETE
 CLR1 authority/freshness/storage/schema foundation: COMPLETE
 CLR2 universal context broker/live alignment: COMPLETE
 CLR3 decision core/portal/notifications: COMPLETE
-CLR4-CLR8 runtime implementation: NOT AUTHORIZED
+CLR4 cross-host runtime/packaging foundation: COMPLETE
+CLR5-CLR8 runtime implementation: NOT AUTHORIZED
 ```
 
 No roadmap status in this document is live runtime truth. Future live status must have a separate Brain-owned status surface after implementation begins.
@@ -153,7 +154,9 @@ Steve can process all program decisions from one Decision Center. Notification n
 
 ## CLR4 — Cross-host runtime and packaging foundation
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-08-16 as a repository implementation; no deployment profile, transport, cache, provider, package mutation, or live client activation is claimed.
+
+**Acceptance evidence:** `operations/reports/clr4-cross-host-packaging-acceptance-2026-08-16.md`
 
 ### Objective
 

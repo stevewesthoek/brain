@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Architecture
 
-**Status:** accepted architecture; CLR0-CLR3 complete; no live consumer/runtime activation beyond validated CLR3 repository surfaces is claimed
+**Status:** accepted architecture; CLR0-CLR4 complete; no live consumer/runtime activation beyond validated repository surfaces is claimed
 **Version:** 0.1
 **Date:** 2026-08-15
 **Human authority:** `/Users/Office/Repos/stevewesthoek/mind/system/infinite-brain-context-learning-charter.md`

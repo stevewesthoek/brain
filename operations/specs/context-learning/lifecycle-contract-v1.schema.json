@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/context-learning/lifecycle-contract-v1.schema.json",
+  "title": "CLR Package Lifecycle Plan and Receipt v1",
+  "type": "object",
+  "$defs": {
+    "operation": {
+      "enum": ["install", "update", "export", "backup", "rollback"]
+    },
+    "excludedClass": {
+      "enum": ["secrets", "raw_private_evidence", "derived_indexes", "caches", "runtime_sessions"]
+    },
+    "plan": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "profileId", "dryRun", "receiptRef", "rollbackRef", "excludeClasses", "mutationAuthorized"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "profileId": { "type": "string", "minLength": 1 },
+        "dryRun": { "const": true },
+        "receiptRef": { "type": "string", "minLength": 1 },
+        "rollbackRef": { "type": "string", "minLength": 1 },
+        "excludeClasses": { "type": "array", "items": { "$ref": "#/$defs/excludedClass" }, "uniqueItems": true },
+        "mutationAuthorized": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "receipt": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "profileId", "mode", "status", "createdAt", "writesPerformed", "planHash", "rollbackRef"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "profileId": { "type": "string", "minLength": 1 },
+        "mode": { "const": "dry-run" },
+        "status": { "enum": ["validated", "blocked"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "writesPerformed": { "const": false },
+        "planHash": { "type": "string", "minLength": 8 },
+        "rollbackRef": { "type": "string", "minLength": 1 },
+        "blockedReason": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["plan", "receipt"],
+  "properties": {
+    "plan": { "$ref": "#/$defs/plan" },
+    "receipt": { "$ref": "#/$defs/receipt" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.0.0",
+  "profiles": [
+    {
+      "schemaVersion": "1.0.0",
+      "profileId": "generic-personal-local",
+      "profileKind": "personal-local",
+      "installationId": "installation-local-1",
+      "tenantMode": "single-tenant",
+      "hosts": [{"hostId":"primary","role":"combined","platform":"portable-desktop","transports":[{"transportId":"local","adapterRef":"transport.local","priority":1,"enabled":true,"configRef":null}]}],
+      "providers": [{"providerId":"human-context","providerKind":"document-context","role":"human_authority","adapterRef":"provider.context.documents","authoritative":true,"requiredForFreshAuthority":true},{"providerId":"capability-catalog","providerKind":"local-catalog","role":"capability_catalog","adapterRef":"provider.capabilities.local","authoritative":false,"requiredForFreshAuthority":false}],
+      "broker": {"transport":"stdio","endpointRef":"broker.local"},
+      "cachePolicy": {"enabled":true,"maxAgeSeconds":3600,"requireSourceRevision":true,"failClosedScopes":["human_authority","decision_state","canonical_write"]},
+      "privacyPolicy": {"rawPrivateEvidenceInGit":false,"privateSemanticProviderPolicy":"disabled"},
+      "consumerAdapters": ["generic-mcp"],
+      "lifecyclePolicy": {"operations":["install","update","export","backup","rollback"],"dryRunDefault":true,"receiptRequired":true,"rollbackMetadataRequired":true,"safeExportExcludes":["secrets","raw_private_evidence","derived_indexes","caches","runtime_sessions"]}
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "profileId": "steve-personal-dual-host-reference",
+      "profileKind": "personal-dual-host",
+      "installationId": "steve-reference-installation",
+      "tenantMode": "single-tenant",
+      "hosts": [{"hostId":"office","role":"authority","platform":"macos","transports":[{"transportId":"thunderbolt","adapterRef":"transport.ssh","priority":1,"enabled":true,"configRef":"office-repos-tb"},{"transportId":"tailscale","adapterRef":"transport.ssh","priority":2,"enabled":true,"configRef":"office-repos-ts"}]},{"hostId":"macbook","role":"consumer","platform":"macos","transports":[{"transportId":"local","adapterRef":"transport.local","priority":1,"enabled":true,"configRef":null}]}],
+      "providers": [{"providerId":"mind","providerKind":"git-markdown-context","role":"human_authority","adapterRef":"provider.context.git-markdown","authoritative":true,"requiredForFreshAuthority":true},{"providerId":"brain","providerKind":"git-capability-context","role":"machine_capability","adapterRef":"provider.context.git-capability","authoritative":true,"requiredForFreshAuthority":false},{"providerId":"brain-capabilities","providerKind":"capability-catalog","role":"capability_catalog","adapterRef":"provider.capabilities.brain","authoritative":false,"requiredForFreshAuthority":false}],
+      "broker": {"transport":"ssh-forward","endpointRef":"office"},
+      "cachePolicy": {"enabled":true,"maxAgeSeconds":1800,"requireSourceRevision":true,"failClosedScopes":["human_authority","decision_state","canonical_write"]},
+      "privacyPolicy": {"rawPrivateEvidenceInGit":false,"privateSemanticProviderPolicy":"approved-private-only"},
+      "consumerAdapters": ["claude","codex","workbench","generic-mcp"],
+      "lifecyclePolicy": {"operations":["install","update","export","backup","rollback"],"dryRunDefault":true,"receiptRequired":true,"rollbackMetadataRequired":true,"safeExportExcludes":["secrets","raw_private_evidence","derived_indexes","caches","runtime_sessions"]},
+      "referenceMetadata": {"referenceOnly":true,"authorityTransportAlias":"office","transportPolicy":"Thunderbolt preferred; Tailscale fallback"}
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "profileId": "atlas-business-single-tenant",
+      "profileKind": "business-single-tenant",
+      "installationId": "atlas-tenant-7",
+      "tenantMode": "single-tenant",
+      "hosts": [{"hostId":"knowledge-node","role":"authority","platform":"linux","transports":[{"transportId":"private-network","adapterRef":"transport.https","priority":1,"enabled":true,"configRef":"private-service-discovery"}]},{"hostId":"worker-node","role":"consumer","platform":"linux","transports":[{"transportId":"private-network","adapterRef":"transport.https","priority":1,"enabled":true,"configRef":"private-service-discovery"}]}],
+      "providers": [{"providerId":"atlas-context","providerKind":"document-service","role":"human_authority","adapterRef":"provider.context.http","authoritative":true,"requiredForFreshAuthority":true},{"providerId":"automation-library","providerKind":"capability-service","role":"capability_catalog","adapterRef":"provider.capabilities.http","authoritative":false,"requiredForFreshAuthority":false}],
+      "broker": {"transport":"https","endpointRef":"service-discovery:context-broker"},
+      "cachePolicy": {"enabled":true,"maxAgeSeconds":900,"requireSourceRevision":true,"failClosedScopes":["human_authority","decision_state","canonical_write"]},
+      "privacyPolicy": {"rawPrivateEvidenceInGit":false,"privateSemanticProviderPolicy":"approved-private-only"},
+      "consumerAdapters": ["generic-mcp","terminal"],
+      "lifecyclePolicy": {"operations":["install","update","export","backup","rollback"],"dryRunDefault":true,"receiptRequired":true,"rollbackMetadataRequired":true,"safeExportExcludes":["secrets","raw_private_evidence","derived_indexes","caches","runtime_sessions"]}
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "profileId": "generic-managed-single-tenant",
+      "profileKind": "managed-single-tenant",
+      "installationId": "managed-installation-1",
+      "tenantMode": "single-tenant",
+      "hosts": [{"hostId":"managed-runtime","role":"managed","platform":"portable-server","transports":[{"transportId":"service","adapterRef":"transport.https","priority":1,"enabled":true,"configRef":"managed-endpoint"}]}],
+      "providers": [{"providerId":"customer-authority","providerKind":"managed-context","role":"human_authority","adapterRef":"provider.context.managed","authoritative":true,"requiredForFreshAuthority":true},{"providerId":"customer-capabilities","providerKind":"managed-capability-catalog","role":"capability_catalog","adapterRef":"provider.capabilities.managed","authoritative":false,"requiredForFreshAuthority":false}],
+      "broker": {"transport":"https","endpointRef":"managed-broker"},
+      "cachePolicy": {"enabled":true,"maxAgeSeconds":600,"requireSourceRevision":true,"failClosedScopes":["human_authority","decision_state","canonical_write"]},
+      "privacyPolicy": {"rawPrivateEvidenceInGit":false,"privateSemanticProviderPolicy":"approved-private-only"},
+      "consumerAdapters": ["generic-mcp"],
+      "lifecyclePolicy": {"operations":["install","update","export","backup","rollback"],"dryRunDefault":true,"receiptRequired":true,"rollbackMetadataRequired":true,"safeExportExcludes":["secrets","raw_private_evidence","derived_indexes","caches","runtime_sessions"]}
+    }
+  ]
+}

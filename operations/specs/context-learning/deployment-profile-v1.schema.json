@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/context-learning/deployment-profile-v1.schema.json",
+  "title": "CLR Deployment and Provider Profile v1",
+  "type": "object",
+  "$defs": {
+    "profileKind": { "enum": ["personal-local", "personal-dual-host", "business-single-tenant", "managed-single-tenant"] },
+    "providerBinding": {
+      "type": "object",
+      "required": ["providerId", "providerKind", "role", "adapterRef", "authoritative"],
+      "properties": {
+        "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "providerKind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "role": { "enum": ["human_authority", "machine_capability", "supplemental", "capability_catalog"] },
+        "adapterRef": { "type": "string", "minLength": 1 },
+        "authoritative": { "type": "boolean" },
+        "requiredForFreshAuthority": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "transportCandidate": {
+      "type": "object",
+      "required": ["transportId", "adapterRef", "priority", "enabled"],
+      "properties": {
+        "transportId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "adapterRef": { "type": "string", "minLength": 1 },
+        "priority": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "enabled": { "type": "boolean" },
+        "configRef": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "cachePolicy": {
+      "type": "object",
+      "required": ["enabled", "maxAgeSeconds", "requireSourceRevision", "failClosedScopes"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "maxAgeSeconds": { "type": "integer", "minimum": 0, "maximum": 604800 },
+        "requireSourceRevision": { "type": "boolean" },
+        "failClosedScopes": { "type": "array", "items": { "enum": ["human_authority", "decision_state", "canonical_write"] }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "lifecyclePolicy": {
+      "type": "object",
+      "required": ["operations", "dryRunDefault", "receiptRequired", "rollbackMetadataRequired", "safeExportExcludes"],
+      "properties": {
+        "operations": { "type": "array", "items": { "enum": ["install", "update", "export", "backup", "rollback"] }, "uniqueItems": true },
+        "dryRunDefault": { "const": true },
+        "receiptRequired": { "const": true },
+        "rollbackMetadataRequired": { "const": true },
+        "safeExportExcludes": { "type": "array", "items": { "enum": ["secrets", "raw_private_evidence", "derived_indexes", "caches", "runtime_sessions"] }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["schemaVersion", "profileId", "profileKind", "installationId", "tenantMode", "hosts", "providers", "broker", "cachePolicy", "privacyPolicy", "consumerAdapters", "lifecyclePolicy"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "profileId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+    "profileKind": { "$ref": "#/$defs/profileKind" },
+    "installationId": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "tenantMode": { "const": "single-tenant" },
+    "hosts": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["hostId", "role", "platform", "transports"], "properties": { "hostId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" }, "role": { "enum": ["authority", "consumer", "combined", "managed"] }, "platform": { "type": "string", "minLength": 1 }, "transports": { "type": "array", "items": { "$ref": "#/$defs/transportCandidate" } } }, "additionalProperties": false } },
+    "providers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/providerBinding" } },
+    "broker": { "type": "object", "required": ["transport", "endpointRef"], "properties": { "transport": { "enum": ["stdio", "http", "https", "ssh-forward", "local-socket", "provider-defined"] }, "endpointRef": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+    "cachePolicy": { "$ref": "#/$defs/cachePolicy" },
+    "privacyPolicy": { "type": "object", "required": ["rawPrivateEvidenceInGit", "privateSemanticProviderPolicy"], "properties": { "rawPrivateEvidenceInGit": { "const": false }, "privateSemanticProviderPolicy": { "enum": ["disabled", "approved-private-only"] } }, "additionalProperties": false },
+    "consumerAdapters": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "lifecyclePolicy": { "$ref": "#/$defs/lifecyclePolicy" },
+    "referenceMetadata": { "type": "object" }
+  },
+  "additionalProperties": false
+}

@@ -1,7 +1,7 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-16 (P8 complete; CLR0–CLR3 accepted repository state)
+**Last verified:** 2026-08-16 (P8 complete; CLR0–CLR4 accepted repository state)
 **Audited:** 2026-08-11 — P8 is complete. B8.6 passed a read-only Brain+ProChat pilot 2/2 with 100% structural probe hits and exact-source fallback, inherited resource/freshness limits, rebuild, degradation, Graphify semantic disablement, uninstall dry-run, rollback, and unchanged pilot source snapshots. An initial full-source CBM pilot exposed excessive navigation output; the accepted retrieval policy now starts with `files` mode and at most 5 candidates, reducing estimated CBM navigation context from 64,343 to 397 tokens (~99.4%) while preserving 100% probe hits. Final verification passed Brain Core/Mind Steward/Mind Context typechecks/tests, live cross-repo contract, Context Gateway corpus/context-pack checks, capability manifest and contract registries, MCP admission/runtime truth, Graphify/scheduler governance, conformance, JSON/security checks, documentation consistency, and diff integrity. Structural Graphify remains frozen; semantic Graphify is Brain-only and non-authoritative; exact source remains authority; wider rollout requires explicit per-repository admission.
 **Mind provider verified:** 2026-08-09 — revision `076b9f97030e1c90bc66ffbb61d29456b41ed69f`; approved, registered; expected and source Mind HEAD `91ae8ce55c6daf67b728ef9b8d841504f24a97c9` (previous: `abf2e4711f80bcd85d142d14584f1694765ca86c`); `healthy=true`, `headMatchesExpected=true`, `worktreeMatchesCommit=true`, `workingChangesInScope=0`, `readOnly=true`, `mutationPathExposed=false`, `automaticFallback=false`; three tools and nine scopes preserved. Evidence: `operations/reports/mind-context-repin-2026-08-09.md`.
 **Host Activation canonical expectation:** repository configuration expects Mind HEAD `c3dcefdd808501a7ead7ffc4671eb5ef3822c268` and canonical provider paths under `/Users/Office/Repos/stevewesthoek/brain`. This direct descendant of the originally reviewed `f9aa1cef5d5449dac34db74069427f528d620caf` adds only an `inbox/failed/` capture outside all admitted provider scopes. Repository configuration alone does not prove current owner-only approval, client registration, or provider health; those live claims require explicit runtime verification and must fail closed on source-revision mismatch.
@@ -38,11 +38,13 @@ and applicable owner authorization.
 A separate post-closure **Context & Learning Runtime (CLR)** architecture program
 was owner-approved on 2026-08-15. CLR0 architecture/specification, CLR1
 authority/freshness/storage/schema foundation, CLR2 universal Context Broker /
-live-alignment repository implementation, and CLR3 Decision Core / Obsidian-first
-portal / bounded notification repository implementation are complete and accepted.
+live-alignment repository implementation, CLR3 Decision Core / Obsidian-first
+portal / bounded notifications, and CLR4 cross-host runtime / packaging foundation
+are complete and accepted as repository implementations.
 No conversation ingestion, automatic learning promotion, broad Mind write, new
-always-on runtime service, provider activation, consumer auto-bootstrap, or CLR4+
+always-on runtime service, provider activation, consumer auto-bootstrap, or CLR5+
 schedule is authorized. The CLR3 Obsidian source package is not installed into Mind.
+CLR4 does not activate deployment profiles, transports, caches, providers, or package mutations.
 See:
 
 - `operations/specs/infinite-brain-context-learning-runtime-architecture.md`
@@ -51,9 +53,10 @@ See:
 - `operations/reports/clr1-authority-freshness-storage-acceptance-2026-08-15.md`
 - `operations/reports/clr2-context-broker-live-alignment-acceptance-2026-08-15.md`
 - `operations/reports/clr3-decision-core-portal-acceptance-2026-08-16.md`
+- `operations/reports/clr4-cross-host-packaging-acceptance-2026-08-16.md`
 - Mind authority: `system/infinite-brain-context-learning-charter.md`
 
-CLR4-CLR8 remain unstarted and require separate owner authorization.
+CLR5-CLR8 remain unstarted and require separate owner authorization.
 B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
 That run remains immutable infrastructure evidence only.
 B8.1 v7r / 7.1.0 two-subject contract was materialized and executed on 2026-08-06,

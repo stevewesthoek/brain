@@ -32,6 +32,8 @@
     "validate:context-learning-broker": "node tools/validate-context-learning-broker.mjs",
     "test:context-broker": "node --test tools/context-learning/context-broker.test.mjs",
     "validate:clr3-portal-contracts": "node tools/validate-clr3-portal-contracts.mjs",
+    "validate:context-learning-deployment": "node tools/validate-context-learning-deployment.mjs",
+    "test:context-learning-deployment": "node --test tools/context-learning/deployment-runtime.test.mjs",
     "infinite-brain:conformance": "node tools/scripts/validate-infinite-brain-conformance.mjs",
     "infinite-brain:cross-repo-contract": "node tools/scripts/validate-cross-repo-contract.mjs"
   },
