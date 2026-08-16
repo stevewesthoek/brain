@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "1.0.0",
+  "referenceProfile": {
+    "contextProviders": [
+      {
+        "providerId": "mind-reference",
+        "providerKind": "git-markdown-context",
+        "contextRole": "human_authority",
+        "sourceRevision": "mind-fixture-rev-1",
+        "health": "healthy",
+        "freshness": "fresh",
+        "summary": "Current human strategy and preference context.",
+        "authoritative": true
+      },
+      {
+        "providerId": "brain-reference",
+        "providerKind": "git-markdown-context",
+        "contextRole": "machine_capability",
+        "sourceRevision": "brain-fixture-rev-1",
+        "health": "healthy",
+        "freshness": "fresh",
+        "summary": "Current operating rules, capabilities, and runbooks.",
+        "authoritative": true
+      }
+    ],
+    "retrievalProviders": [
+      {
+        "providerId": "structural-navigation-reference",
+        "providerKind": "retrieval_accelerator",
+        "mode": "structural",
+        "sourceRevision": "structural-rev-1",
+        "health": "healthy",
+        "freshness": "fresh",
+        "authoritative": false,
+        "optional": true
+      },
+      {
+        "providerId": "semantic-relations-reference",
+        "providerKind": "retrieval_accelerator",
+        "mode": "semantic",
+        "sourceRevision": "semantic-rev-1",
+        "health": "healthy",
+        "freshness": "fresh",
+        "authoritative": false,
+        "optional": true
+      }
+    ],
+    "capabilityProviders": [
+      {
+        "providerId": "brain-capability-reference",
+        "providerKind": "capability_catalog",
+        "sourceRevision": "brain-fixture-rev-1",
+        "health": "healthy",
+        "freshness": "fresh"
+      }
+    ]
+  },
+  "alternateProfile": {
+    "contextProviders": [
+      {
+        "providerId": "atlas-human-context",
+        "providerKind": "document-service",
+        "contextRole": "human_authority",
+        "sourceRevision": "atlas-2026-08-15",
+        "health": "healthy",
+        "freshness": "fresh",
+        "summary": "Approved customer priorities and operating principles.",
+        "authoritative": true
+      },
+      {
+        "providerId": "ops-knowledge-service",
+        "providerKind": "knowledge-api",
+        "contextRole": "machine_capability",
+        "sourceRevision": "ops-42",
+        "health": "healthy",
+        "freshness": "fresh",
+        "summary": "Customer procedures and machine-operating knowledge.",
+        "authoritative": true
+      }
+    ],
+    "retrievalProviders": [
+      {
+        "providerId": "relation-search-service",
+        "providerKind": "retrieval_accelerator",
+        "mode": "hybrid",
+        "sourceRevision": "relation-7",
+        "health": "healthy",
+        "freshness": "fresh",
+        "authoritative": false,
+        "optional": true
+      }
+    ],
+    "capabilityProviders": [
+      {
+        "providerId": "customer-automation-catalog",
+        "providerKind": "capability_catalog",
+        "sourceRevision": "catalog-9",
+        "health": "healthy",
+        "freshness": "fresh"
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Architecture
 
-**Status:** proposed architecture; no runtime activation authorized
+**Status:** accepted architecture; CLR0-CLR2 complete; no live consumer/runtime activation authorized
 **Version:** 0.1
 **Date:** 2026-08-15
 **Human authority:** `/Users/Office/Repos/stevewesthoek/mind/system/infinite-brain-context-learning-charter.md`

@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Roadmap
 
-**Status:** CLR0 and CLR1 accepted; CLR2-CLR8 not authorized; no conversation ingestion or learning promotion active
+**Status:** CLR0-CLR2 accepted; CLR3-CLR8 not authorized; no conversation ingestion or learning promotion active
 **Version:** 0.1
 **Date:** 2026-08-15
 **Architecture:** `operations/specs/infinite-brain-context-learning-runtime-architecture.md`
@@ -19,7 +19,8 @@ P1-P8 Infinite Brain runtime roadmap: CLOSED
 Mind implementation plan: CLOSED
 CLR0 architecture/specification: COMPLETE
 CLR1 authority/freshness/storage/schema foundation: COMPLETE
-CLR2-CLR8 runtime implementation: NOT AUTHORIZED
+CLR2 universal context broker/live alignment: COMPLETE
+CLR3-CLR8 runtime implementation: NOT AUTHORIZED
 ```
 
 No roadmap status in this document is live runtime truth. Future live status must have a separate Brain-owned status surface after implementation begins.
@@ -99,8 +100,9 @@ No ingestion or writes. Schemas validate fixtures, current sources can be classi
 
 **Provider rule:** exact-source/canonical Mind+Brain retrieval is the correctness baseline. CBM, Graphify, embeddings, or future retrieval providers remain optional adapters and must degrade visibly to bounded exact-source behavior. Workbench is a consumer/bridge, not a canonical retrieval provider; its integration must use the same source-agnostic context and capability contracts as any other client.
 
+**Status:** complete and accepted 2026-08-15 as a read-only repository implementation; live consumer activation remains unclaimed.
 
-**Status:** not authorized.
+**Acceptance evidence:** `operations/reports/clr2-context-broker-live-alignment-acceptance-2026-08-15.md`
 
 ### Objective
 

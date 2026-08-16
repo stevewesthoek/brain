@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/context-learning/broker-contracts-v1.schema.json",
+  "title": "Infinite Brain Context & Learning Runtime Broker Contracts v1",
+  "type": "object",
+  "$defs": {
+    "timestamp": { "type": "string", "format": "date-time" },
+    "freshnessState": { "enum": ["fresh", "review_due", "stale", "superseded", "contradicted", "unknown"] },
+    "providerHealth": { "enum": ["healthy", "degraded", "unavailable", "disabled"] },
+    "contextRole": { "enum": ["human_authority", "machine_capability", "supplemental"] },
+    "alignmentSignal": { "enum": ["aligned", "potentially_conflicting", "conflicting", "strategy_stale", "insufficient_context"] },
+    "brokerOperation": {
+      "enum": ["health", "bootstrap", "resolve", "explain", "align", "capabilities_list", "capabilities_inspect", "decisions_status", "learn_status"]
+    },
+    "contextProviderDescriptor": {
+      "type": "object",
+      "required": ["schemaVersion", "providerId", "providerKind", "contextRole", "sourceRevision", "health", "freshness", "summary", "authoritative"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "providerKind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "contextRole": { "$ref": "#/$defs/contextRole" },
+        "sourceRevision": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "health": { "$ref": "#/$defs/providerHealth" },
+        "freshness": { "$ref": "#/$defs/freshnessState" },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "authoritative": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "retrievalProviderDescriptor": {
+      "type": "object",
+      "required": ["schemaVersion", "providerId", "providerKind", "mode", "sourceRevision", "health", "freshness", "authoritative", "optional"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "providerKind": { "const": "retrieval_accelerator" },
+        "mode": { "enum": ["structural", "semantic", "hybrid"] },
+        "sourceRevision": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "health": { "$ref": "#/$defs/providerHealth" },
+        "freshness": { "$ref": "#/$defs/freshnessState" },
+        "authoritative": { "const": false },
+        "optional": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "capabilityDescriptor": {
+      "type": "object",
+      "required": ["schemaVersion", "providerId", "providerKind", "capabilityId", "capabilityKind", "summary", "sourceRevision", "requiredContextScopes", "riskClass", "confirmationClass", "transportRef", "health", "freshness"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "providerKind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "capabilityId": { "type": "string", "pattern": "^[a-z][a-z0-9._:-]*$" },
+        "capabilityKind": { "enum": ["skill", "orchestrator", "runbook", "named_cli", "validator", "mcp_server", "mcp_tool", "local_app", "future"] },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "sourceRevision": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "inputSchemaRef": { "type": ["string", "null"] },
+        "outputSchemaRef": { "type": ["string", "null"] },
+        "requiredContextScopes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "riskClass": { "enum": ["read-only", "low", "medium", "high", "critical"] },
+        "confirmationClass": { "enum": ["none", "policy", "user", "admin"] },
+        "transportRef": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "health": { "$ref": "#/$defs/providerHealth" },
+        "freshness": { "$ref": "#/$defs/freshnessState" },
+        "instructionsRef": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "contextItem": {
+      "type": "object",
+      "required": ["providerId", "contextRole", "itemId", "summary", "citation", "authority", "freshness", "tokenEstimate"],
+      "properties": {
+        "providerId": { "type": "string" },
+        "contextRole": { "$ref": "#/$defs/contextRole" },
+        "itemId": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "citation": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "minLength": 1 },
+        "freshness": { "$ref": "#/$defs/freshnessState" },
+        "tokenEstimate": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "brokerRequest": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "arguments"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "$ref": "#/$defs/brokerOperation" },
+        "arguments": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "healthResponse": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "generatedAt", "readOnly", "executionExposed", "operations", "contextProviders", "retrievalProviders", "capabilityProviders"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "health" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "readOnly": { "const": true },
+        "executionExposed": { "const": false },
+        "operations": { "type": "array", "items": { "$ref": "#/$defs/brokerOperation" }, "uniqueItems": true },
+        "contextProviders": { "type": "array", "items": { "$ref": "#/$defs/contextProviderDescriptor" } },
+        "retrievalProviders": { "type": "array", "items": { "$ref": "#/$defs/retrievalProviderDescriptor" } },
+        "capabilityProviders": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": false
+    },
+    "bootstrapEnvelope": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "generatedAt", "layers", "decisionStatus", "learnStatus", "budget", "instructions"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "bootstrap" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["providerId", "contextRole", "sourceRevision", "health", "freshness", "summary"],
+            "properties": {
+              "providerId": { "type": "string" },
+              "contextRole": { "$ref": "#/$defs/contextRole" },
+              "sourceRevision": { "type": "string" },
+              "health": { "$ref": "#/$defs/providerHealth" },
+              "freshness": { "$ref": "#/$defs/freshnessState" },
+              "summary": { "type": "string", "maxLength": 500 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "decisionStatus": { "type": "object" },
+        "learnStatus": { "type": "object" },
+        "budget": {
+          "type": "object",
+          "required": ["maxTokens", "usedTokens"],
+          "properties": {
+            "maxTokens": { "type": "integer", "minimum": 1, "maximum": 800 },
+            "usedTokens": { "type": "integer", "minimum": 1, "maximum": 800 }
+          },
+          "additionalProperties": false
+        },
+        "instructions": { "type": "array", "items": { "type": "string" }, "maxItems": 8 }
+      },
+      "additionalProperties": false
+    },
+    "contextPack": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "packId", "generatedAt", "query", "items", "navigationHints", "conflicts", "unknowns", "excluded", "providerFallbacks", "budget", "freshness"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "resolve" },
+        "packId": { "type": "string", "pattern": "^clr-pack-" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "query": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/contextItem" } },
+        "navigationHints": { "type": "array", "items": { "type": "object" } },
+        "conflicts": { "type": "array", "items": { "type": "object" } },
+        "unknowns": { "type": "array", "items": { "type": "string" } },
+        "excluded": { "type": "array", "items": { "type": "object" } },
+        "providerFallbacks": { "type": "array", "items": { "type": "object" } },
+        "budget": {
+          "type": "object",
+          "required": ["maxItems", "maxTokens", "usedItems", "usedTokens"],
+          "properties": {
+            "maxItems": { "type": "integer", "minimum": 1, "maximum": 20 },
+            "maxTokens": { "type": "integer", "minimum": 1, "maximum": 4000 },
+            "usedItems": { "type": "integer", "minimum": 0, "maximum": 20 },
+            "usedTokens": { "type": "integer", "minimum": 0, "maximum": 4000 }
+          },
+          "additionalProperties": false
+        },
+        "freshness": { "$ref": "#/$defs/freshnessState" }
+      },
+      "additionalProperties": false
+    },
+    "explainResponse": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "packId", "generatedAt", "included", "excluded", "providerFallbacks", "conflicts", "unknowns", "navigationHints"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "explain" },
+        "packId": { "type": "string", "pattern": "^clr-pack-" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "included": { "type": "array", "items": { "type": "object" } },
+        "excluded": { "type": "array", "items": { "type": "object" } },
+        "providerFallbacks": { "type": "array", "items": { "type": "object" } },
+        "conflicts": { "type": "array", "items": { "type": "object" } },
+        "unknowns": { "type": "array", "items": { "type": "string" } },
+        "navigationHints": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": false
+    },
+    "decisionStatusResponse": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "available", "pendingCount", "sourceRevision"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "decisions_status" },
+        "available": { "type": "boolean" },
+        "pendingCount": { "type": ["integer", "null"], "minimum": 0 },
+        "sourceRevision": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "learnStatusResponse": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "available", "state", "sourceRevision"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "learn_status" },
+        "available": { "type": "boolean" },
+        "state": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "sourceRevision": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "alignmentEvidence": {
+      "type": "object",
+      "required": ["providerId", "relation", "strength", "citation", "freshness", "summary"],
+      "properties": {
+        "providerId": { "type": "string" },
+        "relation": { "enum": ["aligns", "conflicts", "stale", "uncertain"] },
+        "strength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "citation": { "type": "string", "minLength": 1 },
+        "freshness": { "$ref": "#/$defs/freshnessState" },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      },
+      "additionalProperties": false
+    },
+    "alignmentResult": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "generatedAt", "signal", "evidence", "citations"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "align" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "signal": { "$ref": "#/$defs/alignmentSignal" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/alignmentEvidence" } },
+        "citations": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "capabilityListResponse": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "generatedAt", "capabilities", "providerFallbacks", "truncated"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "capabilities_list" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "capabilities": { "type": "array", "items": { "$ref": "#/$defs/capabilityDescriptor" } },
+        "providerFallbacks": { "type": "array", "items": { "type": "object" } },
+        "truncated": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "capabilityInspectResponse": {
+      "type": "object",
+      "required": ["schemaVersion", "operation", "generatedAt", "capability", "instructionsIncluded", "executionExposed"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "operation": { "const": "capabilities_inspect" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "capability": { "$ref": "#/$defs/capabilityDescriptor" },
+        "instructionsIncluded": { "type": "boolean" },
+        "instructions": { "type": ["string", "null"], "maxLength": 20000 },
+        "executionExposed": { "const": false }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -29,6 +29,8 @@
     "validate:context-learning-contracts": "node tools/validate-context-learning-contracts.mjs",
     "test:context-learning": "node --test tools/context-learning/context-learning-contracts.test.mjs",
     "clr1:memory-inventory": "node tools/context-learning/inventory-shared-memory.mjs",
+    "validate:context-learning-broker": "node tools/validate-context-learning-broker.mjs",
+    "test:context-broker": "node --test tools/context-learning/context-broker.test.mjs",
     "infinite-brain:conformance": "node tools/scripts/validate-infinite-brain-conformance.mjs",
     "infinite-brain:cross-repo-contract": "node tools/scripts/validate-cross-repo-contract.mjs"
   },

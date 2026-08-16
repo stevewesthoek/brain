@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Implementation Plan
 
-**Status:** CLR0 and CLR1 complete; CLR2-CLR8 not authorized
+**Status:** CLR0-CLR2 complete; CLR3-CLR8 not authorized
 **Version:** 0.1
 **Date:** 2026-08-15
 **Roadmap:** `operations/specs/infinite-brain-context-learning-runtime-roadmap.md`
@@ -106,9 +106,12 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ## CLR2 — Universal Context Broker and live alignment
 
-**Authorization:** not authorized.
+**Authorization:** owner-authorized and complete 2026-08-15.
+**Acceptance:** `operations/reports/clr2-context-broker-live-alignment-acceptance-2026-08-15.md`
 
-**Cross-repo entry gate:** before CLR2 implementation begins, the Workbench private roadmap must record its queued source-agnostic context/capability federation release. Do not mutate the Workbench roadmap while its current `v1.3.6-beta` live acceptance run is active or its source HEAD/evidence could be invalidated. The intended Workbench order is: finish `v1.3.6-beta` acceptance → complete queued `v1.3.7-beta` context compaction → implement source-agnostic context/capability federation → then broaden cross-device/managed expansion.
+**Cross-repo entry gate:** satisfied before implementation. Workbench-private recorded queued `v1.3.8-beta — Source-Agnostic Context & Capability Federation` after `v1.3.7-beta` context compaction and before cross-device/managed expansion. CLR2 did not modify or implement Workbench-private.
+
+**Implementation evidence:** `operations/specs/context-learning/broker-contracts-v1.schema.json`, `tools/context-learning/context-broker.mjs`, `operations/fixtures/context-learning-broker-fixtures-v1.json`, `tools/validate-context-learning-broker.mjs`, and `tools/context-learning/context-broker.test.mjs`. CLR2.1-CLR2.7 are complete as read-only repository contracts/core behavior; no live client/provider activation is claimed.
 
 ### CLR2.1 — Extract transport-neutral context-core interfaces
 
@@ -155,9 +158,10 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ### CLR2 exit gate
 
-- Context quality improves without default token bloat.
-- The broker can detect strategy conflicts without treating strategy as immutable.
-- All responses distinguish repository expectation from live runtime verification.
+- **PASS:** bounded bootstrap/context budgets and progressive loading prevent default context/capability dumps in focused fixtures.
+- **PASS:** all five alignment states are surfaced from cited structured human-authority evidence without mutating strategy.
+- **PASS:** responses and acceptance evidence distinguish verified repository implementation from unactivated live consumer/runtime state.
+- **STOP:** CLR3 remains not authorized and no Decision Center/portal implementation begins from CLR2 acceptance.
 
 ---
 
