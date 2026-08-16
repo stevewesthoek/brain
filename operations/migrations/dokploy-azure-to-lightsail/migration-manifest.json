@@ -1,0 +1,789 @@
+{
+  "manifest_version": "1.0",
+  "generated": "2026-08-15T14:50:00Z",
+  "source": {
+    "provider": "azure",
+    "subscription": "PROCHAT-APPS",
+    "resource_group": "RG-APPS-DOKPLOY",
+    "region": "spaincentral",
+    "vm": {
+      "name": "vm-dokploy",
+      "sku": "Standard_D4as_v5",
+      "vcpu": 4,
+      "ram_gb": 16,
+      "os": "Ubuntu 24.04.3 LTS",
+      "hostname": "dokploy",
+      "admin_user": "master",
+      "public_ip": "68.221.139.108",
+      "private_ip": "172.16.0.4",
+      "tailscale_ip": "100.83.38.48"
+    },
+    "disks": {
+      "os": {
+        "name": "dokploy-os-disk-restored-20260519-142517",
+        "sku": "Premium_LRS",
+        "size_gb": 30,
+        "used_gb": 24,
+        "mount": "/",
+        "device": "/dev/sda1"
+      },
+      "data": {
+        "name": "data-dokploy-standard-from-snapshot",
+        "sku": "Standard_LRS",
+        "size_gb": 256,
+        "used_gb": 38,
+        "mount": "/mnt/data-dokploy",
+        "device": "/dev/sdb",
+        "bind_mounts": [
+          "/mnt/data-dokploy/containerd -> /var/lib/containerd",
+          "/mnt/data-dokploy/dokploy/applications -> /etc/dokploy/applications"
+        ]
+      }
+    },
+    "backup": {
+      "vault": "cloudpanel-dokploy-vault",
+      "policy": "EnhancedPolicy-CloudPanel-Dokploy",
+      "latest_recovery_point": "2026-08-15T02:08:09.816492+00:00"
+    }
+  },
+  "target": {
+    "provider": "aws_lightsail",
+    "region": "eu-west-2",
+    "region_name": "London",
+    "region_status": "VERIFIED — fully operational, no RegionSetupInProgressException",
+    "region_verified_date": "2026-08-16",
+    "region_decision": "Changed from eu-south-2 (Spain) to eu-west-2 (London) on 2026-08-16. eu-south-2 remained stuck in Enabling across 2026-08-15 and 2026-08-16 with no resolution timeline. eu-west-2 is already used successfully by another Lightsail server in this account.",
+    "bundle_id": "xlarge_3_0",
+    "blueprint_id": "ubuntu_24_04",
+    "blueprint_verified": {
+      "blueprintId": "ubuntu_24_04",
+      "name": "Ubuntu",
+      "version": "24.04 LTS",
+      "versionCode": "1",
+      "isActive": true,
+      "platform": "LINUX_UNIX",
+      "type": "os",
+      "group": "ubuntu_24",
+      "minPower": 0
+    },
+    "bundle_verified": {
+      "bundleId": "xlarge_3_0",
+      "name": "Xlarge",
+      "instanceType": "xlarge",
+      "cpuCount": 4,
+      "ramSizeInGb": 16.0,
+      "diskSizeInGb": 320,
+      "transferPerMonthInGb": 6144,
+      "price": 84.0,
+      "isActive": true,
+      "publicIpv4AddressCount": 1,
+      "supportedPlatforms": ["LINUX_UNIX"]
+    },
+    "historical_original_target": {
+      "region": "eu-south-2",
+      "region_name": "Spain",
+      "status": "NOT USED — stuck in Enabling; replaced by eu-west-2"
+    },
+    "firewall": {
+      "ssh_22": "your-IP/32 only",
+      "port_80": "BLOCKED — not needed, Cloudflare Tunnel delivers HTTP-01",
+      "port_443": "BLOCKED — not needed, Cloudflare Tunnel delivers HTTPS"
+    },
+    "provisioning_status": "COMPLETE — Phase 2A validated 2026-08-16",
+    "instance": {
+      "name": "dokploy-aws",
+      "arn": "arn:aws:lightsail:eu-west-2:909439522876:Instance/74bf0f48-d8bd-46d0-8e01-394126716235",
+      "availability_zone": "eu-west-2a",
+      "state": "running",
+      "static_ip_name": "dokploy-aws-ip",
+      "static_ip": "18.135.240.168",
+      "ssh_user": "ubuntu",
+      "os_verified": "Ubuntu 24.04.4 LTS",
+      "arch_verified": "x86_64",
+      "docker_version": "29.2.0",
+      "containerd_version": "2.2.3",
+      "docker_data_root": "/mnt/data-dokploy/docker",
+      "storage_driver": "overlayfs",
+      "auto_snapshot_enabled": true,
+      "auto_snapshot_schedule": "03:00 UTC daily",
+      "auto_snapshot_enabled_date": "2026-08-16",
+      "tailscale_ip": "100.71.47.24",
+      "tailscale_ipv6": "fd7a:115c:a1e0::6136:2f19",
+      "tailscale_hostname": "dokploy-aws",
+      "tailscale_fqdn": "dokploy-aws.tail3c0f0a.ts.net",
+      "tailscale_stable_id": "nbJkzZcDD211CNTRL",
+      "tailscale_accept_routes": true,
+      "tailscale_version": "1.102.2"
+    },
+    "phase1_validation": {
+      "date": "2026-08-16",
+      "cold_reboot_test": "ALL 10 GATES PASS",
+      "single_disk_verified": true,
+      "smoke_container": "hello-world ran and cleaned up from /mnt/data-dokploy/docker",
+      "bind_mounts_survive_reboot": true,
+      "no_var_lib_docker": true,
+      "journal_errors": 0
+    },
+    "phase2a_validation": {
+      "date": "2026-08-16",
+      "auto_snapshot_enabled": true,
+      "platform_services": {
+        "dokploy": "1/1 — dokploy/dokploy:latest (sha256:72c082d0)",
+        "dokploy-postgres": "1/1 — postgres:16",
+        "dokploy-redis": "1/1 — redis:7",
+        "dokploy-traefik": "1/1 — traefik:v3.6.7"
+      },
+      "traefik_config": "providers.swarm (v3 syntax, NOT deprecated docker.swarmMode)",
+      "post_dokploy_reboot_test": "ALL 10 GATES PASS",
+      "manual_snapshot": "dokploy-aws-pre-production-baseline-20260816",
+      "manual_snapshot_created": "2026-08-16T10:33:24+01:00",
+      "manual_snapshot_status": "available",
+      "production_credentials_present": false,
+      "env_files_found": 0
+    },
+    "phase3a_validation": {
+      "date": "2026-08-16",
+      "source_capture_timestamp": "2026-08-16T10:00-10:15Z",
+      "azure_drift_detected": false,
+      "azure_containers_running": 42,
+      "azure_cloudflared_active": true,
+      "databases_captured": 16,
+      "databases_all_exit_0": true,
+      "databases_pg_restore_verified": true,
+      "n8n_dump_note": "PG17 format validated by PGDMP header (PG16 pg_restore cannot list PG17 dumps)",
+      "staging_path": "/var/lib/dokploy-migration-staging/",
+      "staging_total_size_mb": 411,
+      "non_db_items_captured": 12,
+      "credentials_activated": false,
+      "production_tunnel_absent": true,
+      "production_apps_started": false,
+      "transfer_method": "az vm run-command invoke → docker exec pg_dump | ssh (streaming, no Azure disk writes)",
+      "transfer_infrastructure_cleaned": true,
+      "side_effect_audit": {
+        "n8n_active_workflows": 6,
+        "n8n_workflows": ["STB - Facebook Autopublish", "Save to Mind", "StatusLink - Callback to Broker Push", "Video Orchestrator — Post Dispatcher", "calendar-manage-fixed", "calendar-read-stable"],
+        "services_must_remain_stopped": ["n8n", "apps-internal-free-resend", "StatusLink", "OpenFund", "Umami", "Ory Kratos", "fala", "app-override-online-interface"],
+        "external_dependencies": ["Supabase (100.71.31.88:5433 via Tailscale)"]
+      }
+    },
+    "phase3c2_validation": {
+      "date": "2026-08-16",
+      "vault_legal_stopped": true,
+      "production_app_tasks_running": 0,
+      "lingering_shell_resolved": true,
+      "lingering_shell_detail": "Orphaned PID 46355 — Phase 3C1 Dokploy API investigation bash, killed cleanly",
+      "images_pulled": "21/24 by exact digest; 3 Tier-3/Error apps unavailable in registry (non-blocking)",
+      "image_digest_validation": "PASS",
+      "buildflow_latest_drift": "NOTED — :latest tag updated in registry since manifest; non-blocking",
+      "locally_built_source_present": true,
+      "locally_built_count": 4,
+      "compose_definitions_valid": "17/17",
+      "application_env_configs": "24/24 HAS_ENV",
+      "static_validation": "PASS",
+      "databases_healthy": "16/16",
+      "table_counts_match_phase3b": true,
+      "writes_to_azure": false,
+      "writes_to_supabase": false,
+      "aws_supabase_connections": 0,
+      "tailscale_route_ready": true,
+      "cloudflared_installed": true,
+      "cloudflared_version": "2026.8.2",
+      "cloudflared_service_masked": true,
+      "cloudflare_production_connector_active_aws": false,
+      "dns_changed": false,
+      "cutover_service_matrix_ready": true,
+      "no_dual_writer_gate_documented": true,
+      "supabase_writers_count": 14,
+      "manual_cutover_boundary_documented": true,
+      "rollback_classes_documented": true,
+      "snapshot_name": "dokploy-aws-pre-cutover-ready-20260816",
+      "snapshot_state": "available",
+      "azure_unmodified": true,
+      "supabase_unmodified": true,
+      "aws_pre_cutover_ready": true
+    },
+    "phase3c0_validation": {
+      "date": "2026-08-16",
+      "tailscale_joined": true,
+      "tailscale_ip": "100.71.47.24",
+      "tailscale_accept_routes": true,
+      "tailscale_connection_type": "DERP relay (Paris)",
+      "supabase_tcp_connectivity": true,
+      "supabase_select1_pass": true,
+      "supabase_endpoint": "10.0.2.4:5433",
+      "supabase_update_required": false,
+      "reverse_connectivity_required": false,
+      "ghcr_pull_pass": true,
+      "ghcr_digest_match": true,
+      "shadow_suppression_manifest_complete": true,
+      "all_azure_authoritative_values_true": true,
+      "production_apps_started": false,
+      "cloudflare_tunnel_absent": true,
+      "azure_containers_running": 42,
+      "azure_unmodified": true,
+      "ready_for_phase_3c": true
+    }
+  },
+  "docker": {
+    "version": "29.2.0",
+    "api_version": "1.53",
+    "go_version": "go1.25.6",
+    "storage_driver": "overlayfs",
+    "data_root": "/mnt/data-dokploy/docker",
+    "swarm": {
+      "mode": "single-node",
+      "node_id": "zmf1bm1eo3jb6go0u4egc4tbk",
+      "hostname": "dokploy"
+    },
+    "daemon_config": {
+      "data-root": "/mnt/data-dokploy/docker"
+    }
+  },
+  "platform": {
+    "dokploy": {
+      "image": "dokploy/dokploy:latest",
+      "digest": "sha256:72c082d05447f05c2452e1b29c5c664102290ea605e15a0f0dab2731be1ba7df",
+      "created": "2026-05-29T09:05:00.655249497Z",
+      "mounts": [
+        "/mnt/data-dokploy:/mnt/dokploy",
+        "/var/run/docker.sock:/var/run/docker.sock"
+      ]
+    },
+    "traefik": {
+      "image": "traefik:v3.6.7",
+      "digest": "sha256:a9890c898f379c1905ee5b28342f6b408dc863f08db2dab20e46c267d1ff463a",
+      "config": "/etc/dokploy/traefik/traefik.yml",
+      "mounts": [
+        "/etc/dokploy/traefik:/etc/dokploy/traefik",
+        "/var/run/docker.sock:/var/run/docker.sock"
+      ],
+      "entrypoints": {
+        "web": ":80",
+        "websecure": ":443"
+      },
+      "cert_resolver": "letsencrypt",
+      "acme_email": "info@prochat.tools"
+    },
+    "postgres": {
+      "image": "postgres:16",
+      "digest": "sha256:5a65324fe84dc41709ff914e90b07f3e2f577073ed27bf917d4873aca0c9ec51",
+      "user": "dokploy",
+      "db": "dokploy",
+      "size_mb": 12
+    },
+    "redis": {
+      "image": "redis:7",
+      "digest": "sha256:ba125ee995db4c9cf937bb5a771722f443ac96176c7aa5cd03711485ab77c852"
+    }
+  },
+  "services": {
+    "system": [
+      {
+        "name": "cloudflared",
+        "type": "systemd",
+        "description": "Cloudflare Tunnel - all public HTTP/HTTPS ingress",
+        "config_path": "/etc/systemd/system/cloudflared.service",
+        "note": "Token-based tunnel, same token works on new server"
+      },
+      {
+        "name": "tailscaled",
+        "type": "systemd",
+        "description": "Tailscale mesh network",
+        "tailscale_ip": "100.83.38.48",
+        "note": "Required for Umami -> Supabase (10.0.2.4 via subnet route)"
+      },
+      {
+        "name": "newrelic-infra",
+        "type": "systemd",
+        "version": "1.73.0",
+        "config_path": "/etc/newrelic-infra.yml",
+        "display_name": "dokploy"
+      }
+    ],
+    "containers": [
+      {
+        "name": "dokploy.1",
+        "image": "dokploy/dokploy:latest",
+        "digest": "sha256:72c082d05447f05c2452e1b29c5c664102290ea605e15a0f0dab2731be1ba7df",
+        "type": "swarm_service",
+        "ports": ["3000/tcp"],
+        "mounts": ["bind:/mnt/data-dokploy:/mnt/dokploy", "bind:/var/run/docker.sock:/var/run/docker.sock"]
+      },
+      {
+        "name": "dokploy-traefik.1",
+        "image": "traefik:v3.6.7",
+        "digest": "sha256:a9890c898f379c1905ee5b28342f6b408dc863f08db2dab20e46c267d1ff463a",
+        "type": "swarm_service",
+        "ports": ["0.0.0.0:80->80/tcp", "0.0.0.0:443->443/tcp", "0.0.0.0:8080->8080/tcp"],
+        "mounts": ["bind:/etc/dokploy/traefik:/etc/dokploy/traefik", "bind:/var/run/docker.sock:/var/run/docker.sock"]
+      },
+      {
+        "name": "dokploy-postgres.1",
+        "image": "postgres:16",
+        "digest": "sha256:5a65324fe84dc41709ff914e90b07f3e2f577073ed27bf917d4873aca0c9ec51",
+        "type": "swarm_service",
+        "user": "dokploy",
+        "db": "dokploy",
+        "size_mb": 12,
+        "volume": "dokploy-postgres:/var/lib/postgresql/data"
+      },
+      {
+        "name": "dokploy-redis.1",
+        "image": "redis:7",
+        "digest": "sha256:ba125ee995db4c9cf937bb5a771722f443ac96176c7aa5cd03711485ab77c852",
+        "type": "swarm_service",
+        "volume": "dokploy-redis:/data"
+      },
+      {
+        "name": "ory-kratos",
+        "image": "oryd/kratos:v1.3.1",
+        "digest": "sha256:fe2428f103a6240c064b6ea77d3088610865c55fcebccb30355857eccdc25b4b",
+        "type": "standalone",
+        "ports": ["0.0.0.0:4433-4434->4433-4434/tcp"],
+        "volumes": [
+          "ory-config:/etc/config/kratos",
+          "aaf2c24d...:/home/ory",
+          "37664a90...:/var/lib/sqlite"
+        ],
+        "note": "SQLite database empty"
+      },
+      {
+        "name": "apps-internal-n8n-cvjx2s-n8n-1",
+        "image": "n8nio/n8n:2.4.7",
+        "digest": "sha256:b9c6ff711128fe2c422fb51ada978040ba3cc5c1fe8934af2d3f4cc5dc47069d",
+        "type": "compose",
+        "compose_project": "apps-internal-n8n-cvjx2s",
+        "volume": "apps-internal-n8n-cvjx2s_n8n_data:/home/node/.n8n",
+        "note": "CRITICAL: N8N_ENCRYPTION_KEY must be preserved"
+      },
+      {
+        "name": "apps-internal-n8n-cvjx2s-postgres-1",
+        "image": "postgres:17-alpine",
+        "digest": "sha256:bb377b7239d2774ac8cc76f481596ce96c5a6b5e9d141f6d0a0ee371a6e7c0f2",
+        "type": "compose",
+        "compose_project": "apps-internal-n8n-cvjx2s",
+        "user": "lyla_gislason",
+        "db": "n8n",
+        "size_mb": 13,
+        "volume": "apps-internal-n8n-cvjx2s_postgres_data:/var/lib/postgresql/data"
+      },
+      {
+        "name": "ops-umami-sqswbj-umami-1",
+        "image": "ghcr.io/umami-software/umami:3.0.3",
+        "digest": "sha256:28f263fe06f79ebffa5a6a6e9bd33b7a278e9342a88e0bdac812416c9f9e4361",
+        "type": "compose",
+        "compose_project": "ops-umami-sqswbj",
+        "note": "DB is EXTERNAL on Supabase (10.0.2.4:5433 via Tailscale subnet route). No local DB to migrate."
+      },
+      {
+        "name": "fala-container",
+        "image": "fala:latest",
+        "digest": "sha256:33fe5265f11cb0d6f63134196610f7d10736ebc4a7172e63a17753f9c5ee17fc",
+        "type": "standalone",
+        "ports": ["3050/tcp"],
+        "locally_built": true
+      },
+      {
+        "name": "web-public-viadieden-kttqn4.1",
+        "image": "ghcr.io/prochattools/via-di-eden:f2d0650e20f88527fffe1a895844bb1c2da563ed",
+        "digest": "sha256:0802b04041e810c6e36e4b1066fd751bb834717ac17f3f1f84e7c35ddfb73725",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "web-public-prochat-avejzq.1",
+        "image": "ghcr.io/prochattools/prochat:latest",
+        "digest": "sha256:1b7e6028a89ba98cec519eeb4936b77bce957d8abc4a07c0579e186cd13386f6",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "web-public-jpv-bootcamp-l66egq.1",
+        "image": "ghcr.io/prochattools/jpv-bootcamp:latest",
+        "digest": "sha256:3b771f5725270156b7d885a9d394a31199f824eac87d1b7af246d36525a7d747",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "apps-saas-open-fund-vdymfu.1",
+        "image": "ghcr.io/yeshuaacademy/finance:latest",
+        "digest": "sha256:4c494b281b9f26301803ff5fd1dd7e356f899db31fee24f61d4c5f6c7dd9997f",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "clients-jpv-bootcamp-app-tp9xrk.1",
+        "image": "ghcr.io/prochattools/jpv-bootcamp:9c045fa5a5c327014c20fe9377f7d5368b550573",
+        "digest": "sha256:2f2481eb409e3b194142984f3ba254b60df50aeb9c42cfd62a4c0b69ddc843a1",
+        "type": "swarm_service",
+        "mounts": ["volume:jpv-bootcamp-preview-media:/app/public/media", "bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "web-yeshua-academy-ariw56.1",
+        "image": "ghcr.io/yeshuaacademy/yeshuaacademy:latest",
+        "digest": "sha256:b10fdabe8f0b231f7d36430dd31017fbdcff7f7dd9a0f09c48677fbc4fb7abd9",
+        "type": "swarm_service"
+      },
+      {
+        "name": "web-public-jccp-holdings-pvtist.1",
+        "image": "ghcr.io/prochattools/jccp-holdings:latest",
+        "digest": "sha256:f93e3913653146de7c9e49b14cc953cdc8449a601d4b909d4d70519b154ac654",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "web-says-the-bible-ing7sx.1",
+        "image": "ghcr.io/prochattools/says-the-bible:latest",
+        "digest": "sha256:0d5fbd05a8a07e0f47f126d215816da6889d367c1bf3e02cbb7025cf93432493",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "demo-vault-legal-api-drzgfx.1",
+        "image": "ghcr.io/prochattools/vault-legal-backend:latest",
+        "digest": "sha256:d44b712a1d7e716415a8e9343b4340bf881a84853573db1fbd2ec9b152fd1a4f",
+        "type": "swarm_service"
+      },
+      {
+        "name": "demo-vault-legal-wtpg0l.1",
+        "image": "ghcr.io/prochattools/vault-legal-frontend:latest",
+        "digest": "sha256:db7d4f8c9c4bd3915dfbb34380d894d25eab515166ed615b213febf990d56ee9",
+        "type": "swarm_service"
+      },
+      {
+        "name": "app-transmit-online-hard-drive-of1m9k.1",
+        "image": "ghcr.io/stevewesthoek/buildflow:latest",
+        "digest": "sha256:4a657686731be6aa3912a9c8417b3de75261b017f324ff6d1d05175a749964d4",
+        "type": "swarm_service",
+        "volume": "buildflow-data-staging:/var/lib/buildflow"
+      },
+      {
+        "name": "app-index-haptic-port-m88k9z.1",
+        "image": "ghcr.io/stevewesthoek/buildflow:latest",
+        "digest": "sha256:4a657686731be6aa3912a9c8417b3de75261b017f324ff6d1d05175a749964d4",
+        "type": "swarm_service"
+      },
+      {
+        "name": "saas-proofly-ixcmnz.1",
+        "image": "ghcr.io/prochattools/proofly:latest",
+        "digest": "sha256:89fa1acdd184f754ae14d81f6cd9a8b3f5151b9d33e2eeee7f48d5a8ec5a31ee",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "web-cedula-b1gepj.1",
+        "image": "ghcr.io/prochattools/cedula:latest",
+        "digest": "sha256:e20d0c97450956aa34e73f8a161a4f662e810620cd1561200671dafad52ed96a",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "web-public-olivetoorganizing-zwthea.1",
+        "image": "ghcr.io/prochattools/oliveto-organizing:latest",
+        "digest": "sha256:c2e22a5629b06a5acace780ad949ca0a551d7efb787840327351f1748a47cc81",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "apps-saas-status-link-dw1c6j.1",
+        "image": "ghcr.io/prochattools/statuslink:latest",
+        "digest": "sha256:c798a2824762e7c28ddf4835886a54433c004f454c49929e30dbfb5b5c8b320b",
+        "type": "swarm_service",
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "apps-internal-free-resend-izqnvr.1",
+        "image": "apps-internal-free-resend-izqnvr:latest",
+        "digest": "sha256:130a9220bf9ca501a779e47e1a2675fa649acb51581d0b091e64880c6e5f80e0",
+        "type": "swarm_service",
+        "locally_built": true,
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      },
+      {
+        "name": "app-override-online-interface-1wzjpb.1",
+        "image": "app-override-online-interface-1wzjpb:latest",
+        "digest": "sha256:fa2297dc399a39ea4775c89f6e162ac70ebfd46a9ca12b7fc5d478d6f61ca762",
+        "type": "swarm_service",
+        "locally_built": true
+      },
+      {
+        "name": "web-public-prochat-accountant-zrekal.1",
+        "image": "web-public-prochat-accountant-zrekal:latest",
+        "digest": "sha256:98a2ef541b4187629e6a46f9f0c51b345615109fea1012ecc0b085a8eb3a49b1",
+        "type": "swarm_service",
+        "locally_built": true,
+        "mounts": ["bind:/var/backups/pgdump:/var/backups/pgdump"]
+      }
+    ],
+    "postgres_databases": [
+      {
+        "container": "dokploy-postgres.1",
+        "image": "postgres:16",
+        "digest": "sha256:5a65324fe84dc41709ff914e90b07f3e2f577073ed27bf917d4873aca0c9ec51",
+        "user": "dokploy",
+        "db": "dokploy",
+        "size_mb": 12,
+        "volume": "dokploy-postgres"
+      },
+      {
+        "container": "apps-internal-n8n-cvjx2s-postgres-1",
+        "image": "postgres:17-alpine",
+        "digest": "sha256:bb377b7239d2774ac8cc76f481596ce96c5a6b5e9d141f6d0a0ee371a6e7c0f2",
+        "user": "lyla_gislason",
+        "db": "n8n",
+        "size_mb": 13,
+        "volume": "apps-internal-n8n-cvjx2s_postgres_data"
+      },
+      {
+        "container": "compose-input-open-source-bandwidth-droye2-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "jpvbootcamp",
+        "volume": "compose-input-open-source-bandwidth-droye2_data"
+      },
+      {
+        "container": "compose-synthesize-bluetooth-panel-tg5mhy-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_saaskit",
+        "volume": "compose-synthesize-bluetooth-panel-tg5mhy_data"
+      },
+      {
+        "container": "compose-copy-redundant-capacitor-zc4esw-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_prokit",
+        "volume": "compose-copy-redundant-capacitor-zc4esw_data"
+      },
+      {
+        "container": "compose-generate-mobile-microchip-tksvis-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "openfund",
+        "volume": "compose-generate-mobile-microchip-tksvis_data"
+      },
+      {
+        "container": "compose-quantify-1080p-system-tp1q5f-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_saaskitstudio",
+        "volume": "compose-quantify-1080p-system-tp1q5f_data"
+      },
+      {
+        "container": "compose-copy-cross-platform-bus-wojn3n-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_prokitstudio",
+        "volume": "compose-copy-cross-platform-bus-wojn3n_data"
+      },
+      {
+        "container": "compose-reboot-cross-platform-driver-6l6dun-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_resend",
+        "volume": "compose-reboot-cross-platform-driver-6l6dun_data"
+      },
+      {
+        "container": "compose-connect-wireless-application-d1n939-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_viadieden",
+        "volume": "compose-connect-wireless-application-d1n939_data"
+      },
+      {
+        "container": "compose-copy-auxiliary-protocol-3gfh3x-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_statuslink",
+        "volume": "compose-copy-auxiliary-protocol-3gfh3x_data"
+      },
+      {
+        "container": "compose-navigate-optical-monitor-vi714i-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_olivetoorganizing",
+        "volume": "compose-navigate-optical-monitor-vi714i_data"
+      },
+      {
+        "container": "compose-hack-open-source-driver-mmchh4-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_jpvbootcamp",
+        "volume": "compose-hack-open-source-driver-mmchh4_data"
+      },
+      {
+        "container": "compose-generate-wireless-bandwidth-v7bvut-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_cedula",
+        "volume": "compose-generate-wireless-bandwidth-v7bvut_data"
+      },
+      {
+        "container": "compose-bypass-optical-alarm-tb4ukd-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_prochat",
+        "volume": "compose-bypass-optical-alarm-tb4ukd_data"
+      },
+      {
+        "container": "compose-copy-open-source-interface-fkhqrw-postgres-1",
+        "image": "postgres:15",
+        "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+        "user": "postgres",
+        "db": "tenant_saysthebible",
+        "volume": "compose-copy-open-source-interface-fkhqrw_data"
+      }
+    ],
+    "compose_postgres_shared": {
+      "image": "postgres:15",
+      "digest": "sha256:c635fa3e3b7421a659d34abdfd6d492f679cbe8149e261a501237b55c5a94212",
+      "count": 14,
+      "note": "All 14 app Postgres containers use same image/digest. Each has separate volume."
+    }
+  },
+  "networks": [
+    {"name": "dokploy-network", "driver": "overlay", "scope": "swarm"},
+    {"name": "ingress", "driver": "overlay", "scope": "swarm"},
+    {"name": "docker_gwbridge", "driver": "bridge", "scope": "local"},
+    {"name": "apps-internal-n8n-cvjx2s_default", "driver": "bridge", "scope": "local"},
+    {"name": "ops-umami-sqswbj", "driver": "bridge", "scope": "local"},
+    {"name": "compose-bypass-optical-alarm-tb4ukd_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-connect-wireless-application-d1n939_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-copy-auxiliary-protocol-3gfh3x_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-copy-cross-platform-bus-wojn3n_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-copy-open-source-interface-fkhqrw_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-copy-redundant-capacitor-zc4esw_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-generate-mobile-microchip-tksvis_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-generate-wireless-bandwidth-v7bvut_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-hack-open-source-driver-mmchh4_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-index-haptic-firewall-rlwj48_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-input-open-source-bandwidth-droye2_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-navigate-optical-monitor-vi714i_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-quantify-1080p-system-tp1q5f_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-reboot-cross-platform-driver-6l6dun_default", "driver": "bridge", "scope": "local"},
+    {"name": "compose-synthesize-bluetooth-panel-tg5mhy_default", "driver": "bridge", "scope": "local"}
+  ],
+  "environment_files": [
+    "/etc/dokploy/compose/apps-internal-n8n-cvjx2s/code/.env",
+    "/etc/dokploy/compose/compose-bypass-optical-alarm-tb4ukd/code/.env",
+    "/etc/dokploy/compose/compose-connect-wireless-application-d1n939/code/.env",
+    "/etc/dokploy/compose/compose-copy-auxiliary-protocol-3gfh3x/code/.env",
+    "/etc/dokploy/compose/compose-copy-cross-platform-bus-wojn3n/code/.env",
+    "/etc/dokploy/compose/compose-copy-open-source-interface-fkhqrw/code/.env",
+    "/etc/dokploy/compose/compose-copy-redundant-capacitor-zc4esw/code/.env",
+    "/etc/dokploy/compose/compose-generate-mobile-microchip-tksvis/code/.env",
+    "/etc/dokploy/compose/compose-generate-wireless-bandwidth-v7bvut/code/.env",
+    "/etc/dokploy/compose/compose-hack-open-source-driver-mmchh4/code/.env",
+    "/etc/dokploy/compose/compose-index-haptic-firewall-rlwj48/code/.env",
+    "/etc/dokploy/compose/compose-input-open-source-bandwidth-droye2/code/.env",
+    "/etc/dokploy/compose/compose-navigate-optical-monitor-vi714i/code/.env",
+    "/etc/dokploy/compose/compose-quantify-1080p-system-tp1q5f/code/.env",
+    "/etc/dokploy/compose/compose-reboot-cross-platform-driver-6l6dun/code/.env",
+    "/etc/dokploy/compose/compose-synthesize-bluetooth-panel-tg5mhy/code/.env",
+    "/etc/dokploy/compose/ops-umami-sqswbj/code/.env",
+    "/etc/dokploy/applications/app-override-online-interface-1wzjpb/code/.env",
+    "/etc/dokploy/applications/web-cedula-b1gepj/code/.env",
+    "/etc/dokploy/applications/web-public-jccp-holdings-pvtist/code/.env",
+    "/etc/dokploy/applications/web-public-jpv-bootcamp-l66egq/code/.env",
+    "/etc/dokploy/applications/web-public-olivetoorganizing-zwthea/code/.env",
+    "/etc/dokploy/applications/web-public-prochat-avejzq/code/.env",
+    "/etc/dokploy/applications/web-public-viadieden-kttqn4/code/.env",
+    "/etc/dokploy/applications/web-says-the-bible-ing7sx/code/.env"
+  ],
+  "persistent_bind_mounts": {
+    "/var/backups/pgdump": "Shared pgdump backup directory (3.9 MB), mounted into 12+ app containers",
+    "/mnt/data-dokploy": "Mounted into Dokploy container as /mnt/dokploy",
+    "/etc/dokploy/traefik": "Traefik config + ACME certs",
+    "/var/run/docker.sock": "Docker socket (Dokploy + Traefik)"
+  },
+  "locally_built_images": [
+    {
+      "name": "apps-internal-free-resend-izqnvr:latest",
+      "digest": "sha256:130a9220bf9ca501a779e47e1a2675fa649acb51581d0b091e64880c6e5f80e0",
+      "size": "2.08 GB",
+      "source": "/etc/dokploy/applications/apps-internal-free-resend-izqnvr/code/"
+    },
+    {
+      "name": "app-override-online-interface-1wzjpb:latest",
+      "digest": "sha256:fa2297dc399a39ea4775c89f6e162ac70ebfd46a9ca12b7fc5d478d6f61ca762",
+      "size": "288 MB",
+      "source": "/etc/dokploy/applications/app-override-online-interface-1wzjpb/code/"
+    },
+    {
+      "name": "web-public-prochat-accountant-zrekal:latest",
+      "digest": "sha256:98a2ef541b4187629e6a46f9f0c51b345615109fea1012ecc0b085a8eb3a49b1",
+      "size": "3.14 GB",
+      "source": "/etc/dokploy/applications/web-public-prochat-accountant-zrekal/code/"
+    },
+    {
+      "name": "fala:latest",
+      "digest": "sha256:33fe5265f11cb0d6f63134196610f7d10736ebc4a7172e63a17753f9c5ee17fc",
+      "size": "288 MB",
+      "source": "standalone container, likely /etc/dokploy/applications/ or manual build"
+    }
+  ],
+  "external_dependencies": {
+    "cloudflare_tunnel": "Token-based. Routes all public HTTP(S) traffic. No DNS change needed.",
+    "tailscale": "Mesh network. Supabase (100.71.31.88) exposes 10.0.2.0/24 subnet route. Umami uses 10.0.2.4:5433.",
+    "ghcr": "GitHub Container Registry. Source for most production images.",
+    "supabase_external": "Self-hosted Supabase at Hetzner (100.71.31.88). Hosts Umami analytics DB. NOT on this VM."
+  },
+  "phase3c4_validation": {
+    "audit_date": "2026-08-16",
+    "supabase_read_only_verified": true,
+    "aws_supabase_connections": 0,
+    "aws_app_containers_running": 0,
+    "local_db_drift_vs_manifests": "NONE — all 14 tenant DBs match Phase 3A manifests exactly",
+    "cloudflared_status": "masked",
+    "all_suppressions_active": true,
+    "workload_summary": {
+      "applications_total": 24,
+      "applications_canonical_active": 18,
+      "applications_canonical_inactive": 3,
+      "applications_known_broken_source_parity": 4,
+      "compose_total": 17,
+      "schedules_total": 1,
+      "schedules_disabled": 1
+    },
+    "supabase_inventory": {
+      "logical_databases": 24,
+      "anomaly_finance_backslash": true,
+      "anomaly_finance_shadow": true,
+      "legacy_db_tenant_prokit": true,
+      "legacy_db_tenant_saaskit": true,
+      "schemas_in_postgres_db": 64,
+      "orphaned_schemas": ["tenant_boilerplate", "tenant_prochattools", "tenant_rebuildwp", "financialfreedom_schema", "maybe_schema"]
+    },
+    "hygiene_issues": [
+      "H1: Orphaned application dir /etc/dokploy/applications/compose-index-haptic-firewall-rlwj48",
+      "H2: Orphaned firecrawl compose config (not in DB, not running)",
+      "H3: Duplicate compose name jpvbootcamp (two different compose projects)",
+      "H4: Duplicate domain record jccpholdings.com",
+      "H5: Orphaned domain record finance.yeshua.academy"
+    ],
+    "jpv_bootcamp_drift": {
+      "active_development": true,
+      "supabase_connections_from_azure": 7,
+      "staging_schema_present": true,
+      "staging_schema_name": "jpvbootcamp_staging",
+      "aws_latest_digest": "sha256:3b771f5725270156b7d885a9d394a31199f824eac87d1b7af246d36525a7d747",
+      "final_sync_required": true
+    },
+    "final_sync_design": "operations/migrations/dokploy-azure-to-lightsail/phase-3c4-hygiene-audit-and-final-sync-design.md",
+    "post_cutover_hygiene": "operations/migrations/dokploy-azure-to-lightsail/post-cutover-hygiene-roadmap.md",
+    "cutover_readiness": "UNCHANGED — AWS remains production-ready shadow state from Phase 3C3"
+  }
+}
