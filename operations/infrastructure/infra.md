@@ -6,6 +6,13 @@ Purpose:
 - Give Claude and Codex one canonical reference for cloud accounts, servers, access paths, hosted platforms, and recovery-critical details.
 - Capture what is verified live versus what is only historical or still incomplete.
 
+**Roadmap direction:** this document remains the human infrastructure entry page. The planned machine-readable unification, live health/freshness model, credential-reference health, backup/restore health, safety policy, and unified Brain Core/CLI/MCP/Obsidian interface are defined by the Infrastructure Knowledge & Health Plane (IKHP):
+- `operations/specs/infrastructure-knowledge-health-plane-architecture.md`
+- `operations/specs/infrastructure-knowledge-health-plane-roadmap.md`
+- `operations/specs/infrastructure-knowledge-health-plane-implementation-plan.md`
+
+IKHP is a roadmap program only at present; no new monitoring or infrastructure mutation is activated by these documents.
+
 Verification status:
 - Last verified live on 2026-05-19 from the `Office` Mac mini.
 - Sources used: `az`, `aws sts`, SSH, Dokploy API, Cloudflare API, Docker Swarm inspection, local SSH config, local skill/runbook docs.

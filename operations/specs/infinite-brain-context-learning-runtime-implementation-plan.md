@@ -284,6 +284,17 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 **Authorization:** not authorized.
 
+**Cross-program prerequisite:** IKHP owns canonical infrastructure topology, configuration ownership, credential-reference metadata, backup policy, and live infrastructure health. Before CLR5 implementation starts, evidence classification must explicitly route infrastructure-related conversation material to IKHP-targeted non-canonical evidence/candidates. Conversation text must never become a parallel server/network/config/credential/backup truth store, and raw secret values remain prohibited from persistence.
+
+### CLR5.0 — Infrastructure evidence authority handoff
+
+- **Purpose:** Add infrastructure-aware event classification before any transcript adapter is activated.
+- **Required target classes:** `ikhp_catalog_candidate`, `ikhp_relation_candidate`, `ikhp_credential_metadata_candidate`, `ikhp_backup_policy_candidate`, `ikhp_incident_evidence`, `ikhp_unknown_infrastructure_claim`.
+- **Boundary:** these are evidence/candidate pointers only; no IKHP canonical catalog or live-health mutation from CLR5.
+- **Secret rule:** detect/redact secret-bearing values before ledger persistence; retain only provider/resource/credential-reference metadata allowed by IKHP contracts.
+- **Freshness rule:** conversation statements about current host/tunnel/backup/OAuth health are evidence only and must be verified against IKHP provider/runtime state before being treated as current.
+- **Validation:** infrastructure examples route deterministically; no raw secrets; no direct infrastructure Markdown mutation; no duplicate truth store.
+
 ### CLR5.1 — Evidence ledger
 
 - **Purpose:** Local private ledger for normalized event metadata, relations to source, watermarks, processing status, and hashes.
@@ -324,6 +335,9 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 - Repeated runs create no duplicate events.
 - No raw private conversations enter Git.
+- Infrastructure conversation evidence is classified as non-canonical IKHP-targeted evidence/candidates; it does not create server/network/config/credential/backup truth outside IKHP.
+- Current infrastructure health claims from conversations require IKHP/provider verification before being treated as current.
+- Secret-bearing values are redacted before evidence persistence.
 - Adapter failure never blocks normal LLM use.
 - Storage growth remains bounded.
 

@@ -184,6 +184,14 @@ The same broker contract works in local and dual-host fixtures with no `/Users/O
 
 **Status:** not authorized.
 
+**Cross-program infrastructure gate:** Infrastructure Knowledge & Health Plane (IKHP) is now the canonical Brain program for server/network/application/tunnel/backup/credential-reference topology and live infrastructure health. Before CLR5 implementation begins, its event-classification contracts must route infrastructure-related conversation content as non-canonical evidence/candidates targeting IKHP contracts. CLR5 must not create a parallel infrastructure truth store, persist raw secret values, or treat conversation statements about current infrastructure health as authoritative live state.
+
+See:
+
+- `operations/specs/infrastructure-knowledge-health-plane-architecture.md`
+- `operations/specs/infrastructure-knowledge-health-plane-roadmap.md`
+- `operations/specs/infrastructure-knowledge-health-plane-implementation-plan.md`
+
 ### Objective
 
 Incrementally discover and normalize conversation evidence without creating canonical memory.

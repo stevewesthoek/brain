@@ -57,6 +57,14 @@ See:
 - Mind authority: `system/infinite-brain-context-learning-charter.md`
 
 CLR5-CLR8 remain unstarted and require separate owner authorization.
+
+A sibling **Infrastructure Knowledge & Health Plane (IKHP)** program was admitted on 2026-08-16 after repository inventory and current infrastructure-architecture review. IKHP0 architecture/inventory/roadmap admission is complete; IKHP1-IKHP6 are not authorized. IKHP owns canonical machine-readable infrastructure topology, credential-reference metadata, backup/health/safety policy, and normalized live infrastructure health. CLR5 conversation evidence must target IKHP as non-canonical evidence/candidates rather than creating parallel infrastructure truth. See:
+
+- `operations/specs/infrastructure-knowledge-health-plane-architecture.md`
+- `operations/specs/infrastructure-knowledge-health-plane-roadmap.md`
+- `operations/specs/infrastructure-knowledge-health-plane-implementation-plan.md`
+- `operations/reports/infrastructure-knowledge-health-plane-analysis-2026-08-16.md`
+
 B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
 That run remains immutable infrastructure evidence only.
 B8.1 v7r / 7.1.0 two-subject contract was materialized and executed on 2026-08-06,

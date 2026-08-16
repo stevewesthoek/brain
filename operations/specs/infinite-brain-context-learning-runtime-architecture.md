@@ -121,11 +121,12 @@ Owns:
 - runbooks and operational lessons;
 - deterministic rules/hooks/tests/validators;
 - tool/provider/runtime configuration;
+- canonical non-secret infrastructure topology, resource relations, configuration ownership, backup policy, credential-reference metadata, and infrastructure safety policy through IKHP;
 - approved operational decision records and receipts.
 
 ### 1.2 Non-canonical layers
 
-**Evidence layer** — raw transcripts/logs/events and source references. Observation only.
+**Evidence layer** — raw transcripts/logs/events, infrastructure provider observations/telemetry, and source references. Observation only. Current infrastructure health is normalized through IKHP runtime state with timestamps/freshness; it does not supersede canonical topology/configuration ownership without an explicit reconciliation path.
 
 **Learning proposal layer** — model/deterministic suggestions awaiting classification/review.
 
