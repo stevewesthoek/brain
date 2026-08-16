@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0",
+  "catalogId": "steve-infrastructure-reference",
+  "entrypoint": true,
+  "files": {
+    "assets": "operations/infrastructure/catalog/assets.v1.json",
+    "relations": "operations/infrastructure/catalog/relations.v1.json",
+    "serviceBindings": "operations/infrastructure/catalog/service-bindings.v1.json",
+    "credentialReferences": "operations/infrastructure/catalog/access-references.v1.json",
+    "backupPolicies": "operations/infrastructure/catalog/backup-policies.v1.json",
+    "healthPolicies": "operations/infrastructure/catalog/health-policies.v1.json",
+    "safetyPolicies": "operations/infrastructure/catalog/safety-policies.v1.json"
+  },
+  "mappingReportRef": "operations/reports/ikhp1-infrastructure-source-mapping-2026-08-16.md",
+  "provenance": {
+    "sourceRef": "operations/specs/infrastructure-knowledge-health-plane-implementation-plan.md",
+    "classification": "AUTHORITATIVE-CONFIG",
+    "verifiedAt": "2026-08-16T19:00:00Z",
+    "freshnessDeadline": "2026-09-16T19:00:00Z",
+    "owner": "brain/infrastructure",
+    "evidenceRefs": [
+      "operations/specs/infrastructure-knowledge-health-plane-architecture.md",
+      "operations/reports/infrastructure-knowledge-health-plane-analysis-2026-08-16.md"
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 # Infrastructure Knowledge & Health Plane — Implementation Plan
 
 **Namespace:** IKHP
-**Status:** IKHP0 complete; IKHP1-IKHP6 not authorized
+**Status:** IKHP0-IKHP1 complete; IKHP2-IKHP6 not authorized
 **Owner:** Brain
 **Primary entry point:** Brain Core / Context Broker
 **Primary human UI:** Obsidian Brain Console
@@ -38,6 +38,11 @@ Inventory findings:
 
 ## IKHP1 — Canonical catalog contracts and migration
 
+**Status:** owner-authorized and complete 2026-08-16 as a repository implementation.
+**Acceptance:** `operations/reports/ikhp1-infrastructure-catalog-acceptance-2026-08-16.md`
+**Mapping evidence:** `operations/reports/ikhp1-infrastructure-source-mapping-2026-08-16.md`
+**Boundary:** no live provider polling, credential verification, infrastructure mutation, CLR5 implementation, or IKHP2 activation.
+
 ### IKHP1.1 — Catalog schema bundle
 
 Create:
@@ -47,7 +52,7 @@ operations/infrastructure/catalog/manifest.v1.json
 operations/infrastructure/catalog/assets.v1.json
 operations/infrastructure/catalog/relations.v1.json
 operations/infrastructure/catalog/service-bindings.v1.json
-operations/infrastructure/catalog/credential-references.v1.json
+operations/infrastructure/catalog/access-references.v1.json
 operations/infrastructure/catalog/backup-policies.v1.json
 operations/infrastructure/catalog/health-policies.v1.json
 operations/infrastructure/catalog/safety-policies.v1.json
@@ -152,14 +157,16 @@ Add one non-Steve fixture proving generic resource/relation/credential-reference
 
 ### IKHP1 validation
 
-- JSON Schema validation;
-- duplicate ID tests;
-- relation target integrity;
-- provenance/freshness required;
-- no raw credential value patterns;
-- Steve-specific constants absent from public schemas;
-- alternate fixture portability;
-- migration coverage report for existing infrastructure sources.
+- **PASS:** JSON Schema/catalog validation through `npm run validate:infrastructure-catalog`.
+- **PASS:** duplicate resource IDs and competing canonical owners fail closed.
+- **PASS:** unresolved relation targets and contradictory duplicate topology facts fail closed.
+- **PASS:** provenance and freshness chronology are required; stale provenance is surfaced as warnings rather than silently refreshed.
+- **PASS:** raw access-bearing fields and unsafe inline secret-store references are rejected; exact IKHP1 paths also require repository `forbidden_secret_material` scan before commit.
+- **PASS:** public schema and alternate fixture are source/vendor/UI neutral and cover all 16 resource classes plus all 11 relation classes.
+- **PASS:** alternate fixture portability validated.
+- **PASS:** source mapping report covers all 11 required existing infrastructure source families.
+- **PASS:** focused integrity/conflict suite `npm run test:infrastructure-catalog` passes 8/8.
+- **STOP:** IKHP2 remains not authorized; live health/provider normalization is not part of IKHP1 acceptance.
 
 ## IKHP2 — Live health/provider adapters
 
@@ -493,4 +500,4 @@ Before CLR5 conversation evidence ingestion begins:
 4. Infrastructure health/provider observations remain IKHP runtime state, not conversation memory.
 5. CLR5 must not create a parallel server/network/credential/backup truth store.
 
-This gate is architectural now; IKHP1 implementation still requires separate owner authorization.
+IKHP1 now provides the canonical catalog/relationship foundation for this gate. CLR5 remains not authorized, and IKHP2 live health/provider normalization still requires separate owner authorization.

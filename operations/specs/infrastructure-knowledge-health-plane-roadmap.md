@@ -1,7 +1,7 @@
 # Infrastructure Knowledge & Health Plane — Roadmap
 
 **Namespace:** IKHP
-**Status:** IKHP0 architecture/inventory complete; IKHP1-IKHP6 not authorized
+**Status:** IKHP0-IKHP1 complete; IKHP2-IKHP6 not authorized
 **Owner:** Brain
 **Primary human surface:** Obsidian Brain Console
 **Program relationship:** sibling Brain program to CLR. CLR consumes IKHP context/health through Brain Core/Context Broker; IKHP does not ingest conversations.
@@ -64,7 +64,9 @@ Exit gate:
 
 ## IKHP1 — Canonical infrastructure catalog and relationship contracts
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-08-16 as a repository implementation; no live provider polling, health normalization, credential verification, infrastructure mutation, or IKHP2 activation is claimed.
+
+**Acceptance evidence:** `operations/reports/ikhp1-infrastructure-catalog-acceptance-2026-08-16.md`
 
 Create versioned machine-readable contracts under `operations/infrastructure/catalog/` for:
 

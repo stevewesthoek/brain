@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0",
+  "healthPolicies": [
+    {
+      "healthPolicyId": "health_policy:dokploy-aws-host",
+      "resourceId": "host:dokploy-aws",
+      "freshnessSeconds": 300,
+      "unknownIsHealthy": false,
+      "conditions": [
+        {"conditionCode":"host_not_reporting","severity":"high","thresholdRef":"policy:host-reporting"},
+        {"conditionCode":"disk_capacity_warning","severity":"medium","thresholdRef":"policy:disk-warning"},
+        {"conditionCode":"disk_capacity_critical","severity":"critical","thresholdRef":"policy:disk-critical"}
+      ],
+      "provenance": {"sourceRef":"operations/specs/infrastructure-knowledge-health-plane-architecture.md#5-freshness-and-health-model","classification":"AUTHORITATIVE-CONFIG","verifiedAt":"2026-08-16T17:13:29Z","freshnessDeadline":"2026-09-16T17:13:29Z","owner":"brain/infrastructure","evidenceRefs":["projects/brain-core/src/adapters/infra-new-relic.ts"]}
+    },
+    {
+      "healthPolicyId": "health_policy:production-tunnel",
+      "resourceId": "tunnel:cloudflare-production",
+      "freshnessSeconds": 300,
+      "unknownIsHealthy": false,
+      "conditions": [
+        {"conditionCode":"tunnel_connector_missing","severity":"critical","thresholdRef":"policy:single-production-connector"},
+        {"conditionCode":"tunnel_connector_conflict","severity":"critical","thresholdRef":"policy:single-production-connector"}
+      ],
+      "provenance": {"sourceRef":"operations/architecture/prochat-infrastructure-architecture.md#gate-1-public-traffic-gate-cloudflare-tunnel","classification":"AUTHORITATIVE-CONFIG","verifiedAt":"2026-08-16T00:00:00Z","freshnessDeadline":"2026-08-23T00:00:00Z","owner":"brain/infrastructure","evidenceRefs":["projects/brain-core/src/adapters/infra-cloudflare-tunnels.ts"]}
+    },
+    {
+      "healthPolicyId": "health_policy:n8n-backup",
+      "resourceId": "backup_job:n8n-backup",
+      "freshnessSeconds": 90000,
+      "unknownIsHealthy": false,
+      "conditions": [
+        {"conditionCode":"backup_failed","severity":"high","thresholdRef":"policy:job-result"},
+        {"conditionCode":"backup_stale","severity":"high","thresholdRef":"policy:backup-age"},
+        {"conditionCode":"restore_verification_overdue","severity":"medium","thresholdRef":"policy:restore-verification"}
+      ],
+      "provenance": {"sourceRef":"operations/specs/infrastructure-knowledge-health-plane-architecture.md#4-provider-strategy","classification":"AUTHORITATIVE-CONFIG","verifiedAt":"2026-08-16T17:13:29Z","freshnessDeadline":"2026-09-16T17:13:29Z","owner":"brain/infrastructure","evidenceRefs":["operations/infrastructure/scheduler-inventory.md"]}
+    },
+    {
+      "healthPolicyId": "health_policy:newrelic-query-access",
+      "resourceId": "credential_reference:newrelic-query",
+      "freshnessSeconds": 86400,
+      "unknownIsHealthy": false,
+      "conditions": [
+        {"conditionCode":"credential_probe_failed","severity":"high","thresholdRef":"policy:credential-verification"},
+        {"conditionCode":"credential_expiring","severity":"medium","thresholdRef":"policy:credential-expiry"}
+      ],
+      "provenance": {"sourceRef":"operations/specs/infrastructure-knowledge-health-plane-architecture.md#5-freshness-and-health-model","classification":"AUTHORITATIVE-CONFIG","verifiedAt":"2026-08-16T17:13:29Z","freshnessDeadline":"2026-09-16T17:13:29Z","owner":"brain/accounts","evidenceRefs":["operations/accounts/credentials-index.md#new-relic"]}
+    }
+  ]
+}

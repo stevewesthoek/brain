@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.prochat.local/ikhp/infrastructure-catalog-v1.schema.json",
+  "title": "Infrastructure Knowledge & Health Plane Catalog v1",
+  "type": "object",
+  "$defs": {
+    "schemaVersion": { "const": "1.0.0" },
+    "catalogVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "resourceId": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+    "provenanceClass": { "enum": ["OBSERVED-VERIFIED", "DERIVED-VERIFIED", "AUTHORITATIVE-CONFIG", "USER-PROPOSED", "UNKNOWN"] },
+    "resourceClass": { "enum": ["host", "application", "service", "database", "storage", "backup_system", "backup_job", "network", "tunnel", "domain", "dns_record", "provider_account", "credential_reference", "scheduler", "monitor", "control_plane"] },
+    "relationClass": { "enum": ["runs_on", "depends_on", "connects_to", "routes_to", "monitored_by", "backed_up_by", "authenticates_with", "configured_by", "owned_by", "replaced_by", "fails_over_to"] },
+    "lifecycleState": { "enum": ["active", "planned", "migrating", "inactive", "retired", "unknown"] },
+    "severity": { "enum": ["info", "low", "medium", "high", "critical"] },
+    "sourceEvidence": {
+      "type": "object",
+      "required": ["sourceRef", "classification", "verifiedAt", "freshnessDeadline", "owner"],
+      "properties": {
+        "sourceRef": { "type": "string", "minLength": 1 },
+        "classification": { "$ref": "#/$defs/provenanceClass" },
+        "verifiedAt": { "type": "string", "format": "date-time" },
+        "freshnessDeadline": { "type": "string", "format": "date-time" },
+        "owner": { "type": "string", "minLength": 1 },
+        "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "resource": {
+      "type": "object",
+      "required": ["resourceId", "resourceClass", "name", "lifecycleState", "owner", "provenance"],
+      "properties": {
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "resourceClass": { "$ref": "#/$defs/resourceClass" },
+        "name": { "type": "string", "minLength": 1 },
+        "lifecycleState": { "$ref": "#/$defs/lifecycleState" },
+        "owner": { "type": "string", "minLength": 1 },
+        "canonicalOwnerRef": { "type": ["string", "null"] },
+        "providerEntityRef": { "type": ["string", "null"] },
+        "addresses": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "attributes": { "type": "object" },
+        "provenance": { "$ref": "#/$defs/sourceEvidence" }
+      },
+      "additionalProperties": false
+    },
+    "relation": {
+      "type": "object",
+      "required": ["relationId", "relationClass", "sourceId", "targetId", "state", "provenance"],
+      "properties": {
+        "relationId": { "type": "string", "pattern": "^relation:[a-z0-9][a-z0-9._-]*$" },
+        "relationClass": { "$ref": "#/$defs/relationClass" },
+        "sourceId": { "$ref": "#/$defs/resourceId" },
+        "targetId": { "$ref": "#/$defs/resourceId" },
+        "state": { "enum": ["active", "planned", "historical", "unknown"] },
+        "attributes": { "type": "object" },
+        "provenance": { "$ref": "#/$defs/sourceEvidence" }
+      },
+      "additionalProperties": false
+    },
+    "serviceBinding": {
+      "type": "object",
+      "required": ["bindingId", "serviceId", "resourceId", "bindingKind", "configSourceRef", "provenance"],
+      "properties": {
+        "bindingId": { "type": "string", "pattern": "^binding:[a-z0-9][a-z0-9._-]*$" },
+        "serviceId": { "$ref": "#/$defs/resourceId" },
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "bindingKind": { "enum": ["endpoint", "runtime", "configuration", "data", "monitoring", "authentication", "backup"] },
+        "endpointRef": { "type": ["string", "null"] },
+        "configSourceRef": { "type": "string", "minLength": 1 },
+        "provenance": { "$ref": "#/$defs/sourceEvidence" }
+      },
+      "additionalProperties": false
+    },
+    "credentialReference": {
+      "type": "object",
+      "required": ["credentialRefId", "providerRef", "purpose", "secretStoreAdapter", "secretStoreRef", "variableNames", "expiryKnown", "lastVerifiedAt", "verificationAdapterRef", "regenerationRunbookRef", "provenance"],
+      "properties": {
+        "credentialRefId": { "type": "string", "pattern": "^credential_reference:[a-z0-9][a-z0-9._-]*$" },
+        "providerRef": { "$ref": "#/$defs/resourceId" },
+        "purpose": { "type": "string", "minLength": 1 },
+        "secretStoreAdapter": { "type": "string", "minLength": 1 },
+        "secretStoreRef": { "type": "string", "minLength": 1 },
+        "variableNames": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }, "uniqueItems": true },
+        "scopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "expiryKnown": { "type": "boolean" },
+        "expiresAt": { "type": ["string", "null"] },
+        "rotateBeforeDays": { "type": ["integer", "null"], "minimum": 0, "maximum": 3650 },
+        "lastVerifiedAt": { "type": "string", "format": "date-time" },
+        "verificationAdapterRef": { "type": "string", "minLength": 1 },
+        "regenerationRunbookRef": { "type": "string", "minLength": 1 },
+        "provenance": { "$ref": "#/$defs/sourceEvidence" }
+      },
+      "additionalProperties": false
+    },
+    "backupPolicy": {
+      "type": "object",
+      "required": ["backupPolicyId", "resourceId", "backupSystemId", "backupJobId", "cadence", "retentionRef", "destinationRef", "restoreVerificationCadenceDays", "recoveryClass", "provenance"],
+      "properties": {
+        "backupPolicyId": { "type": "string", "pattern": "^backup_policy:[a-z0-9][a-z0-9._-]*$" },
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "backupSystemId": { "$ref": "#/$defs/resourceId" },
+        "backupJobId": { "$ref": "#/$defs/resourceId" },
+        "cadence": { "type": "string", "minLength": 1 },
+        "retentionRef": { "type": "string", "minLength": 1 },
+        "destinationRef": { "type": "string", "minLength": 1 },
+        "restoreVerificationCadenceDays": { "type": ["integer", "null"], "minimum": 1, "maximum": 3650 },
+        "recoveryClass": { "enum": ["required", "important", "best_effort", "unknown"] },
+        "provenance": { "$ref": "#/$defs/sourceEvidence" }
+      },
+      "additionalProperties": false
+    },
+    "healthCondition": {
+      "type": "object",
+      "required": ["conditionCode", "severity"],
+      "properties": {
+        "conditionCode": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "thresholdRef": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "healthPolicy": {
+      "type": "object",
+      "required": ["healthPolicyId", "resourceId", "freshnessSeconds", "unknownIsHealthy", "conditions", "provenance"],
+      "properties": {
+        "healthPolicyId": { "type": "string", "pattern": "^health_policy:[a-z0-9][a-z0-9._-]*$" },
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "freshnessSeconds": { "type": "integer", "minimum": 1, "maximum": 31536000 },
+        "unknownIsHealthy": { "const": false },
+        "conditions": { "type": "array", "items": { "$ref": "#/$defs/healthCondition" }, "uniqueItems": true },
+        "provenance": { "$ref": "#/$defs/sourceEvidence" }
+      },
+      "additionalProperties": false
+    },
+    "safetyPolicy": {
+      "type": "object",
+      "required": ["safetyPolicyId", "resourceId", "safetyClass", "allowedOperations", "requiredEvidence", "deleteRequiresOwnerApproval", "provenance"],
+      "properties": {
+        "safetyPolicyId": { "type": "string", "pattern": "^safety_policy:[a-z0-9][a-z0-9._-]*$" },
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "safetyClass": { "enum": ["read_only", "low_risk_reversible", "availability_impacting", "auth_sensitive", "data_sensitive", "destructive"] },
+        "allowedOperations": { "type": "array", "items": { "enum": ["inspect", "diagnose", "plan", "propose", "mutate", "delete", "restore"] }, "uniqueItems": true },
+        "requiredEvidence": { "type": "array", "items": { "enum": ["expected_revision", "dependency_graph", "current_health", "backup_evidence", "dry_run", "config_validation", "owner_approval", "rollback_plan", "post_change_health"] }, "uniqueItems": true },
+        "deleteRequiresOwnerApproval": { "type": "boolean" },
+        "provenance": { "$ref": "#/$defs/sourceEvidence" }
+      },
+      "additionalProperties": false
+    },
+    "assetCatalog": { "type": "object", "required": ["schemaVersion", "catalogVersion", "resources"], "properties": { "schemaVersion": { "$ref": "#/$defs/schemaVersion" }, "catalogVersion": { "$ref": "#/$defs/catalogVersion" }, "resources": { "type": "array", "items": { "$ref": "#/$defs/resource" } } }, "additionalProperties": false },
+    "relationCatalog": { "type": "object", "required": ["schemaVersion", "catalogVersion", "relations"], "properties": { "schemaVersion": { "$ref": "#/$defs/schemaVersion" }, "catalogVersion": { "$ref": "#/$defs/catalogVersion" }, "relations": { "type": "array", "items": { "$ref": "#/$defs/relation" } } }, "additionalProperties": false },
+    "serviceBindingCatalog": { "type": "object", "required": ["schemaVersion", "catalogVersion", "serviceBindings"], "properties": { "schemaVersion": { "$ref": "#/$defs/schemaVersion" }, "catalogVersion": { "$ref": "#/$defs/catalogVersion" }, "serviceBindings": { "type": "array", "items": { "$ref": "#/$defs/serviceBinding" } } }, "additionalProperties": false },
+    "credentialReferenceCatalog": { "type": "object", "required": ["schemaVersion", "catalogVersion", "credentialReferences"], "properties": { "schemaVersion": { "$ref": "#/$defs/schemaVersion" }, "catalogVersion": { "$ref": "#/$defs/catalogVersion" }, "credentialReferences": { "type": "array", "items": { "$ref": "#/$defs/credentialReference" } } }, "additionalProperties": false },
+    "backupPolicyCatalog": { "type": "object", "required": ["schemaVersion", "catalogVersion", "backupPolicies"], "properties": { "schemaVersion": { "$ref": "#/$defs/schemaVersion" }, "catalogVersion": { "$ref": "#/$defs/catalogVersion" }, "backupPolicies": { "type": "array", "items": { "$ref": "#/$defs/backupPolicy" } } }, "additionalProperties": false },
+    "healthPolicyCatalog": { "type": "object", "required": ["schemaVersion", "catalogVersion", "healthPolicies"], "properties": { "schemaVersion": { "$ref": "#/$defs/schemaVersion" }, "catalogVersion": { "$ref": "#/$defs/catalogVersion" }, "healthPolicies": { "type": "array", "items": { "$ref": "#/$defs/healthPolicy" } } }, "additionalProperties": false },
+    "safetyPolicyCatalog": { "type": "object", "required": ["schemaVersion", "catalogVersion", "safetyPolicies"], "properties": { "schemaVersion": { "$ref": "#/$defs/schemaVersion" }, "catalogVersion": { "$ref": "#/$defs/catalogVersion" }, "safetyPolicies": { "type": "array", "items": { "$ref": "#/$defs/safetyPolicy" } } }, "additionalProperties": false },
+    "manifest": {
+      "type": "object",
+      "required": ["schemaVersion", "catalogVersion", "catalogId", "entrypoint", "files", "mappingReportRef", "provenance"],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/schemaVersion" },
+        "catalogVersion": { "$ref": "#/$defs/catalogVersion" },
+        "catalogId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "entrypoint": { "const": true },
+        "files": { "type": "object", "required": ["assets", "relations", "serviceBindings", "credentialReferences", "backupPolicies", "healthPolicies", "safetyPolicies"], "properties": { "assets": { "type": "string", "minLength": 1 }, "relations": { "type": "string", "minLength": 1 }, "serviceBindings": { "type": "string", "minLength": 1 }, "credentialReferences": { "type": "string", "minLength": 1 }, "backupPolicies": { "type": "string", "minLength": 1 }, "healthPolicies": { "type": "string", "minLength": 1 }, "safetyPolicies": { "type": "string", "minLength": 1 } }, "additionalProperties": false },
+        "mappingReportRef": { "type": "string", "minLength": 1 },
+        "provenance": { "$ref": "#/$defs/sourceEvidence" }
+      },
+      "additionalProperties": false
+    },
+    "catalogBundle": { "type": "object", "required": ["schemaVersion", "catalogVersion", "resources", "relations", "serviceBindings", "credentialReferences", "backupPolicies", "healthPolicies", "safetyPolicies"], "properties": { "schemaVersion": { "$ref": "#/$defs/schemaVersion" }, "catalogVersion": { "$ref": "#/$defs/catalogVersion" }, "resources": { "type": "array", "items": { "$ref": "#/$defs/resource" } }, "relations": { "type": "array", "items": { "$ref": "#/$defs/relation" } }, "serviceBindings": { "type": "array", "items": { "$ref": "#/$defs/serviceBinding" } }, "credentialReferences": { "type": "array", "items": { "$ref": "#/$defs/credentialReference" } }, "backupPolicies": { "type": "array", "items": { "$ref": "#/$defs/backupPolicy" } }, "healthPolicies": { "type": "array", "items": { "$ref": "#/$defs/healthPolicy" } }, "safetyPolicies": { "type": "array", "items": { "$ref": "#/$defs/safetyPolicy" } } }, "additionalProperties": false }
+  },
+  "required": ["manifest"],
+  "properties": { "manifest": { "$ref": "#/$defs/manifest" } },
+  "additionalProperties": false
+}

@@ -34,6 +34,8 @@
     "validate:clr3-portal-contracts": "node tools/validate-clr3-portal-contracts.mjs",
     "validate:context-learning-deployment": "node tools/validate-context-learning-deployment.mjs",
     "test:context-learning-deployment": "node --test tools/context-learning/deployment-runtime.test.mjs",
+    "validate:infrastructure-catalog": "node tools/validate-infrastructure-catalog.mjs",
+    "test:infrastructure-catalog": "node --test tools/infrastructure-catalog/catalog-core.test.mjs",
     "infinite-brain:conformance": "node tools/scripts/validate-infinite-brain-conformance.mjs",
     "infinite-brain:cross-repo-contract": "node tools/scripts/validate-cross-repo-contract.mjs"
   },

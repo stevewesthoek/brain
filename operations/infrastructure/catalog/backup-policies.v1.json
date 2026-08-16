@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0",
+  "backupPolicies": [
+    {
+      "backupPolicyId": "backup_policy:n8n-office",
+      "resourceId": "service:n8n-office",
+      "backupSystemId": "backup_system:office-nightly-maintenance",
+      "backupJobId": "backup_job:n8n-backup",
+      "cadence": "nightly maintenance lane after heavy jobs",
+      "retentionRef": "unknown:retention-not-normalized-in-ikhp1",
+      "destinationRef": "unknown:destination-not-normalized-in-ikhp1",
+      "restoreVerificationCadenceDays": null,
+      "recoveryClass": "unknown",
+      "provenance": {
+        "sourceRef": "operations/infrastructure/scheduler-inventory.md",
+        "classification": "AUTHORITATIVE-CONFIG",
+        "verifiedAt": "2026-04-04T09:01:00Z",
+        "freshnessDeadline": "2026-05-04T09:01:00Z",
+        "owner": "brain/infrastructure",
+        "evidenceRefs": ["operations/specs/infinite-brain-recovery-inventory.json"]
+      }
+    }
+  ]
+}
