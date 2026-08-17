@@ -3,7 +3,7 @@
 ```
 Status:                         CANONICAL
 Repository:                     brain
-Last verified:                  2026-08-16
+Last verified:                  2026-08-17
 Phase 3C6 corrections applied:  2026-08-16
 Phase 3C7 corrections applied:  2026-08-16 (evidence-provenance audit; schema counts, SSH model,
                                              tailnet topology, DB owners, app→DB map)
@@ -27,10 +27,13 @@ Phase 3C11 corrections applied: 2026-08-16 (final factual wording cleanup; Secti
                                              tenant_prokit/saaskit evidence notes, retired-resource
                                              claim, ADR-004 historical rationale downgraded,
                                              ADR-007 staging-schema unsupported claim removed)
+Phase 3F applied:               2026-08-17 (post-cutover authority handoff; production runtime
+                                             updated to AWS, Azure reclassified as quiesced rollback
+                                             source, invariants updated to reflect live state)
 Evidence register:              operations/architecture/prochat-infrastructure-evidence-register.md
-Current production runtime:     Azure Dokploy (vm-dokploy, Spain Central)
-Target runtime:                 AWS Lightsail dokploy-aws (eu-west-2, London)
-Production cutover authorized:  NO
+Current production runtime:     AWS Lightsail dokploy-aws (eu-west-2, London)
+Previous production runtime:    Azure Dokploy (vm-dokploy, Spain Central) — quiesced rollback source
+Production cutover completed:   2026-08-17 (~28 min downtime, 16/16 DB restores, Class B rollback)
 ```
 
 ---
@@ -40,26 +43,27 @@ Production cutover authorized:  NO
 ## ═══════════════════════════════════════════════════════
 
 ```
-BEFORE MANUAL CUTOVER APPROVAL:
+POST-CUTOVER STATE (completed 2026-08-17):
 
-  Azure Dokploy:        AUTHORITATIVE + IMMUTABLE
-  Supabase:             AUTHORITATIVE + IMMUTABLE
-  AWS:                  SHADOW / DISPOSABLE COPY
+  AWS Lightsail:        AUTHORITATIVE PRODUCTION RUNTIME
+  Supabase:             AUTHORITATIVE (same server, reached from AWS via Tailscale)
+  Azure Dokploy:        QUIESCED ROLLBACK SOURCE — powered on, writers stopped,
+                        cloudflared stopped, intact for Class B reconciliation
 
-  AWS production application writers:   0 (ABSOLUTE)
-  AWS cloudflared:                      MASKED (ABSOLUTE)
-  Azure mutations:                      PROHIBITED (ABSOLUTE)
-  Supabase mutations:                   PROHIBITED (ABSOLUTE)
+  AWS production application writers:   ACTIVE (22 Swarm services at 1/1)
+  AWS cloudflared:                      ACTIVE (tunnel to Cloudflare edge)
+  Azure application writers:            STOPPED (all Supabase-writing services at 0/0)
+  Azure cloudflared:                    STOPPED (inactive)
   Dual Supabase writers:                PROHIBITED (ABSOLUTE)
-  Cutover without explicit approval:    PROHIBITED (ABSOLUTE)
+  Azure modifications:                  PROHIBITED until explicit decommission approval
+  Rollback class:                       B (production writes accepted on AWS)
 ```
 
-These rules are not advisory. They are enforced by design:
-- AWS has no active Swarm service tasks for application workloads
-- AWS cloudflared is masked at systemd level + TCP 80/443 blocked at Lightsail firewall
-- Both controls must be reversed independently and deliberately
-- NO-DUAL-WRITER safety does NOT depend on Cloudflare state — AWS workloads
-  can write to Supabase via Tailscale even if cloudflared remains masked
+These rules are not advisory:
+- Azure remains powered on as rollback evidence/source only
+- NO-DUAL-WRITER is enforced: all 13 Supabase-writing services run exclusively on AWS
+- Azure writer services remain at 0/0 replicas
+- Any rollback to Azure requires Class B reconciliation (write diff analysis)
 
 ---
 
