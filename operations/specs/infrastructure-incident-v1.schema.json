@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.prochat.local/ikhp/infrastructure-incident-v1.schema.json",
+  "title": "Infrastructure Incident v1",
+  "type": "object",
+  "$defs": {
+    "resourceId": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+    "conditionCode": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+    "severity": { "enum": ["critical", "high", "medium", "low", "unknown"] },
+    "status": { "enum": ["open", "recovered", "suppressed"] },
+    "transition": { "enum": ["opened", "continued", "recovered", "reopened", "acknowledged", "suppressed"] },
+    "freshness": { "enum": ["fresh", "stale", "unknown"] },
+    "policyAuthority": { "enum": ["authoritative", "unknown"] },
+    "providerRef": {
+      "type": "object",
+      "required": ["providerId", "sourceEntityId"],
+      "properties": {
+        "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "sourceEntityId": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "acknowledgement": {
+      "type": ["object", "null"],
+      "required": ["acknowledgedAt", "acknowledgedBy", "expiresAt"],
+      "properties": {
+        "acknowledgedAt": { "type": "string", "format": "date-time" },
+        "acknowledgedBy": { "type": "string", "minLength": 1 },
+        "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "recoveryEvidence": {
+      "type": ["object", "null"],
+      "required": ["recoveredAt", "evidenceObservationId"],
+      "properties": {
+        "recoveredAt": { "type": "string", "format": "date-time" },
+        "evidenceObservationId": { "type": "string", "pattern": "^observation:[a-z0-9._:-]+$" }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source", "readOnly", "authority"],
+      "properties": {
+        "source": { "const": "ikhp3-incident-projector" },
+        "readOnly": { "const": true },
+        "authority": { "const": "derived-runtime" }
+      },
+      "additionalProperties": false
+    },
+    "incident": {
+      "type": "object",
+      "required": ["schemaVersion", "incidentId", "fingerprint", "resourceId", "conditionCode", "severity", "healthPolicyId", "policyCatalogVersion", "policyAuthority", "openedAt", "lastObservedAt", "observationCount", "occurrenceCount", "status", "lastTransition", "freshness", "providerRefs", "affectedResourceIds", "recoveryEvidence", "acknowledgement", "provenance"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "incidentId": { "type": "string", "pattern": "^incident:[a-f0-9]{16,64}$" },
+        "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{16,64}$" },
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "conditionCode": { "$ref": "#/$defs/conditionCode" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "healthPolicyId": { "type": ["string", "null"], "pattern": "^health_policy:[a-z0-9][a-z0-9._-]*$" },
+        "policyCatalogVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "policyAuthority": { "$ref": "#/$defs/policyAuthority" },
+        "openedAt": { "type": "string", "format": "date-time" },
+        "lastObservedAt": { "type": "string", "format": "date-time" },
+        "observationCount": { "type": "integer", "minimum": 1 },
+        "occurrenceCount": { "type": "integer", "minimum": 1 },
+        "status": { "$ref": "#/$defs/status" },
+        "lastTransition": { "$ref": "#/$defs/transition" },
+        "freshness": { "$ref": "#/$defs/freshness" },
+        "providerRefs": { "type": "array", "items": { "$ref": "#/$defs/providerRef" }, "uniqueItems": true },
+        "affectedResourceIds": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "$ref": "#/$defs/resourceId" }, "uniqueItems": true },
+        "recoveryEvidence": { "$ref": "#/$defs/recoveryEvidence" },
+        "acknowledgement": { "$ref": "#/$defs/acknowledgement" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "policyAuthority": { "const": "authoritative" } }, "required": ["policyAuthority"] },
+          "then": { "properties": { "healthPolicyId": { "type": "string", "pattern": "^health_policy:[a-z0-9][a-z0-9._-]*$" }, "severity": { "enum": ["critical", "high", "medium", "low"] } } }
+        },
+        {
+          "if": { "properties": { "policyAuthority": { "const": "unknown" } }, "required": ["policyAuthority"] },
+          "then": { "properties": { "healthPolicyId": { "type": "null" }, "severity": { "const": "unknown" } } }
+        },
+        {
+          "if": { "properties": { "status": { "const": "recovered" } }, "required": ["status"] },
+          "then": { "properties": { "recoveryEvidence": { "type": "object" } } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "notificationSafeFields": {
+      "type": "object",
+      "required": ["incidentId", "resourceId", "conditionCode", "severity", "transition", "occurredAt"],
+      "properties": {
+        "incidentId": { "type": "string", "pattern": "^incident:[a-f0-9]{16,64}$" },
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "conditionCode": { "$ref": "#/$defs/conditionCode" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "transition": { "$ref": "#/$defs/transition" },
+        "openIncidentCount": { "type": "integer", "minimum": 0 },
+        "occurredAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["incident"],
+  "properties": { "incident": { "$ref": "#/$defs/incident" } },
+  "additionalProperties": false
+}

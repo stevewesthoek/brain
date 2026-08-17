@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "1.0.0",
+  "policyCatalogVersion": "1.0.0",
+  "fingerprintContract": {
+    "algorithm": "sha256",
+    "orderedInputs": ["resourceId", "conditionCode", "healthPolicyId", "policyCatalogVersion"],
+    "unknownPolicyHealthPolicyId": "unknown"
+  },
+  "scenarios": [
+    {
+      "scenarioId": "authoritative-critical-open",
+      "previousIncident": null,
+      "observation": {
+        "observationId": "observation:fixture.disk-critical.1",
+        "resourceId": "host:dokploy-aws",
+        "providerId": "telemetry-fixture",
+        "observedAt": "2026-08-17T12:00:00Z",
+        "freshness": "fresh",
+        "conditionCodes": ["disk_capacity_critical"],
+        "sourceEntityId": "fixture-host-a"
+      },
+      "expected": { "healthPolicyId": "health_policy:dokploy-aws-host", "severity": "critical", "policyAuthority": "authoritative", "status": "open", "transition": "opened", "affectedResourceIds": ["host:dokploy-aws"] }
+    },
+    {
+      "scenarioId": "authoritative-high-open",
+      "previousIncident": null,
+      "observation": {
+        "observationId": "observation:fixture.host-reporting.1",
+        "resourceId": "host:dokploy-aws",
+        "providerId": "telemetry-fixture",
+        "observedAt": "2026-08-17T12:01:00Z",
+        "freshness": "fresh",
+        "conditionCodes": ["host_not_reporting"],
+        "sourceEntityId": "fixture-host-a"
+      },
+      "expected": { "healthPolicyId": "health_policy:dokploy-aws-host", "severity": "high", "policyAuthority": "authoritative", "status": "open", "transition": "opened", "affectedResourceIds": ["host:dokploy-aws"] }
+    },
+    {
+      "scenarioId": "repeated-condition-continues",
+      "previousIncidentRef": "authoritative-critical-open",
+      "observation": {
+        "observationId": "observation:fixture.disk-critical.2",
+        "resourceId": "host:dokploy-aws",
+        "providerId": "telemetry-fixture",
+        "observedAt": "2026-08-17T12:05:00Z",
+        "freshness": "fresh",
+        "conditionCodes": ["disk_capacity_critical"],
+        "sourceEntityId": "fixture-host-a"
+      },
+      "expected": { "status": "open", "transition": "continued", "observationCountDelta": 1 }
+    },
+    {
+      "scenarioId": "fresh-clean-recovers",
+      "previousIncidentRef": "authoritative-critical-open",
+      "observation": {
+        "observationId": "observation:fixture.disk-clean.1",
+        "resourceId": "host:dokploy-aws",
+        "providerId": "telemetry-fixture",
+        "observedAt": "2026-08-17T12:10:00Z",
+        "freshness": "fresh",
+        "conditionCodes": [],
+        "sourceEntityId": "fixture-host-a"
+      },
+      "expected": { "status": "recovered", "transition": "recovered", "recoveryEvidenceObservationId": "observation:fixture.disk-clean.1" }
+    },
+    {
+      "scenarioId": "stale-does-not-recover",
+      "previousIncidentRef": "authoritative-critical-open",
+      "observation": {
+        "observationId": "observation:fixture.disk-stale.1",
+        "resourceId": "host:dokploy-aws",
+        "providerId": "telemetry-fixture",
+        "observedAt": "2026-08-17T11:00:00Z",
+        "freshness": "stale",
+        "conditionCodes": [],
+        "sourceEntityId": "fixture-host-a"
+      },
+      "expected": { "status": "open", "freshness": "stale", "mustNotTransitionTo": "recovered" }
+    },
+    {
+      "scenarioId": "unknown-policy-fails-closed",
+      "previousIncident": null,
+      "observation": {
+        "observationId": "observation:fixture.unknown-condition.1",
+        "resourceId": "service:portable-example",
+        "providerId": "alternate-provider",
+        "observedAt": "2026-08-17T12:15:00Z",
+        "freshness": "fresh",
+        "conditionCodes": ["portable_condition_unknown_to_policy"],
+        "sourceEntityId": "portable-service-1"
+      },
+      "expected": { "healthPolicyId": null, "severity": "unknown", "policyAuthority": "unknown", "status": "open", "transition": "opened", "affectedResourceIds": ["service:portable-example"] }
+    },
+    {
+      "scenarioId": "recovered-reopens",
+      "previousIncidentState": { "status": "recovered", "occurrenceCount": 1 },
+      "observation": {
+        "observationId": "observation:fixture.disk-critical.3",
+        "resourceId": "host:dokploy-aws",
+        "providerId": "telemetry-fixture",
+        "observedAt": "2026-08-17T13:00:00Z",
+        "freshness": "fresh",
+        "conditionCodes": ["disk_capacity_critical"],
+        "sourceEntityId": "fixture-host-a"
+      },
+      "expected": { "status": "open", "transition": "reopened", "occurrenceCount": 2 }
+    },
+    {
+      "scenarioId": "acknowledgement-does-not-change-health",
+      "previousIncidentRef": "authoritative-high-open",
+      "acknowledgement": {
+        "acknowledgedAt": "2026-08-17T12:20:00Z",
+        "acknowledgedBy": "fixture-operator",
+        "expiresAt": "2026-08-17T14:20:00Z"
+      },
+      "expected": { "status": "open", "transition": "acknowledged", "attentionSuppressedWhileAcknowledged": true }
+    }
+  ],
+  "notificationSafeExample": {
+    "incidentId": "incident:0123456789abcdef",
+    "resourceId": "host:dokploy-aws",
+    "conditionCode": "disk_capacity_critical",
+    "severity": "critical",
+    "transition": "opened",
+    "openIncidentCount": 1,
+    "occurredAt": "2026-08-17T12:00:00Z"
+  }
+}

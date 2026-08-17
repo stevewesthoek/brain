@@ -1,7 +1,7 @@
 # Infrastructure Knowledge & Health Plane — Roadmap
 
 **Namespace:** IKHP
-**Status:** IKHP0-IKHP2 complete; IKHP3-IKHP6 not authorized
+**Status:** IKHP0-IKHP3 complete; IKHP4-IKHP6 not authorized
 **Owner:** Brain
 **Primary human surface:** Obsidian Brain Console
 **Program relationship:** sibling Brain program to CLR. CLR consumes IKHP context/health through Brain Core/Context Broker; IKHP does not ingest conversations.
@@ -127,7 +127,11 @@ Exit gate:
 
 ## IKHP3 — Freshness, incidents, notifications, and recovery state
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-08-17 as a repository implementation.
+
+**Acceptance evidence:** `operations/reports/ikhp3-incidents-attention-acceptance-2026-08-17.md`
+
+**Boundary:** no continuous scheduling, live provider polling, live notification delivery, API/CLI/MCP/Obsidian incident surface, Decision Core proposal creation, remediation, infrastructure mutation, CLR5 implementation, or IKHP4 activation.
 
 Implement normalized incident types such as:
 

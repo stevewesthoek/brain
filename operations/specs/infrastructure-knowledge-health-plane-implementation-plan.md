@@ -1,7 +1,7 @@
 # Infrastructure Knowledge & Health Plane — Implementation Plan
 
 **Namespace:** IKHP
-**Status:** IKHP0-IKHP2 complete; IKHP3-IKHP6 not authorized
+**Status:** IKHP0-IKHP3 complete; IKHP4-IKHP6 not authorized
 **Owner:** Brain
 **Primary entry point:** Brain Core / Context Broker
 **Primary human UI:** Obsidian Brain Console
@@ -296,6 +296,10 @@ No raw tokens in output.
 - **STOP:** IKHP3 remains not authorized; incidents/notifications and remediation are not part of IKHP2 acceptance.
 
 ## IKHP3 — Incidents and attention
+
+**Status:** owner-authorized and complete 2026-08-17 as a repository implementation.
+**Acceptance:** `operations/reports/ikhp3-incidents-attention-acceptance-2026-08-17.md`
+**Boundary:** IKHP3 provides deterministic derived incident/attention contracts and bounded local runtime state only. No continuous scheduling, live notification delivery, API/CLI/MCP/Obsidian incident surface, automatic Decision Core proposals, remediation, infrastructure mutation, CLR5 implementation, or IKHP4 activation is included.
 
 ### IKHP3.1 — Incident contract
 
