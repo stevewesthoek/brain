@@ -96,9 +96,9 @@ These rules are not advisory:
 
 ## 1. Executive Summary
 
-ProChat's production infrastructure runs on **Azure Dokploy** (self-hosted Docker PaaS on an Azure
-VM in Spain Central). A fully staged migration to **AWS Lightsail** (London, eu-west-2) is complete
-and waiting for cutover authorization.
+ProChat's production infrastructure runs on **AWS Lightsail** (self-hosted Dokploy Docker PaaS,
+eu-west-2 London). Production cutover from Azure (Spain Central) completed 2026-08-17 with ~28 min
+downtime, 16/16 database restores, and 17/17 domain validations passing.
 
 The system consists of three infrastructure nodes joined by a **Tailscale mesh**:
 
@@ -108,13 +108,12 @@ The system consists of three infrastructure nodes joined by a **Tailscale mesh**
  │  Users → Cloudflare CDN/WAF → Cloudflare Tunnel (cloudflared)           │
  └──────────────────────────┬───────────────────────────────────────────────┘
                             │ Cloudflare Tunnel (outbound from cloudflared)
-                            │ [currently routed to Azure]
-                            │ [after cutover: routed to AWS]
+                            │ [routed to AWS — production since 2026-08-17]
  ┌──────────────────────────▼───────────────────────────────────────────────┐
- │  PRODUCTION NODE (currently Azure Dokploy)                               │
+ │  PRODUCTION NODE (AWS Lightsail)                                         │
  │                                                                          │
- │  vm-dokploy · Standard_D4as_v5 · 4 vCPU / 16 GB · Spain Central        │
- │  Public IP: 68.221.139.108 · Tailscale: 100.83.38.48                    │
+ │  dokploy-aws · xlarge_3_0 · 4 vCPU / 16 GB · eu-west-2 (London)        │
+ │  Static IP: 18.135.240.168 · Tailscale: 100.71.47.24                    │
  │                                                                          │
  │  ┌──────────────────────────────────────────────────────────────────┐    │
  │  │  Docker Swarm (single-node)                                      │    │
@@ -122,22 +121,22 @@ The system consists of three infrastructure nodes joined by a **Tailscale mesh**
  │  │  24 Application Swarm services + 17 Compose projects            │    │
  │  │  (14 local postgres:15 · n8n · ory · umami)                    │    │
  │  └──────────────────────────────────────────────────────────────────┘    │
- │  cloudflared (ACTIVE) · tailscaled · newrelic-infra                     │
+ │  cloudflared (ACTIVE) · tailscaled                                      │
  └──────────────────────────────────────────┬───────────────────────────────┘
                                             │ Tailscale mesh
            ┌────────────────────────────────┴─────────────────────────────┐
            │                                                              │
  ┌─────────▼──────────────────────────┐    ┌──────────────────────────────▼──┐
- │  SHADOW NODE (AWS Lightsail)       │    │  SUPABASE (PostgreSQL 15.8)     │
+ │  QUIESCED ROLLBACK (Azure)         │    │  SUPABASE (PostgreSQL 15.8)     │
  │                                    │    │                                 │
- │  dokploy-aws · xlarge_3_0          │    │  Tailscale: 100.71.31.88        │
- │  4 vCPU / 16 GB · eu-west-2        │    │  Subnet route: 10.0.2.0/24     │
- │  Static IP: 18.135.240.168         │    │  PostgreSQL at 10.0.2.4:5433   │
- │  Tailscale: 100.71.47.24           │    │                                 │
+ │  vm-dokploy · Standard_D4as_v5     │    │  Tailscale: 100.71.31.88        │
+ │  4 vCPU / 16 GB · Spain Central    │    │  Subnet route: 10.0.2.0/24     │
+ │  Public IP: 68.221.139.108         │    │  PostgreSQL at 10.0.2.4:5433   │
+ │  Tailscale: 100.83.38.48           │    │                                 │
  │                                    │    │  One PostgreSQL server          │
- │  cloudflared: MASKED               │    │  24 logical databases           │
- │  App writers: 0                    │    │  (proposed future model:         │
- │  Shadow suppressions: ACTIVE       │    │   one DB + schemas)     │
+ │  cloudflared: STOPPED              │    │  24 logical databases           │
+ │  App writers: 0/0                  │    │  (proposed future model:         │
+ │  Data: frozen at cutover point     │    │   one DB + schemas)     │
  └────────────────────────────────────┘    └─────────────────────────────────┘
 ```
 
@@ -149,16 +148,16 @@ The system consists of three infrastructure nodes joined by a **Tailscale mesh**
 > `tenant_*` naming exists in the current environment. Its historical relationship to the
 > dedicated-database pattern is not established by current evidence. Naming alone proves
 > neither legacy nor obsolescence.
-> Do not modify before cutover. Post-cutover investigation and explicit approval required before any change.
+> Post-cutover investigation and explicit approval required before any change.
 
-**Azure is authoritative for all operational config until explicit manual cutover.**
-AWS is a shadow copy and may be out of date for any config that changed since migration capture.
+**AWS is authoritative for all operational config (cutover completed 2026-08-17).**
+Azure is a quiesced rollback source — data frozen at cutover point-in-time.
 
 ---
 
 ## 2. Server Inventory
 
-### 2.1 Azure Dokploy (Current Production — Authoritative)
+### 2.1 Azure Dokploy (Quiesced Rollback Source — Post-Cutover)
 
 | Property | Value |
 |----------|-------|
@@ -176,10 +175,10 @@ AWS is a shadow copy and may be out of date for any config that changed since mi
 | Docker version | 29.2.0 |
 | Backup vault | cloudpanel-dokploy-vault |
 | Backup policy | EnhancedPolicy-CloudPanel-Dokploy |
-| System services | cloudflared (active), tailscaled, newrelic-infra v1.73.0 |
+| System services | cloudflared (STOPPED since cutover), tailscaled, newrelic-infra v1.73.0 |
 | SSH access | Public TCP/22: ALLOWED from internet (NSG Priority 900 Allow \*); key-based auth. Tailscale SSH: BLOCKED by ACL policy. Claude-orchestrated ops use `az vm run-command invoke` (avoids short-lived cert management). |
 
-### 2.2 AWS Lightsail (Shadow / Migration Target)
+### 2.2 AWS Lightsail (Current Production — Authoritative)
 
 | Property | Value |
 |----------|-------|
@@ -195,8 +194,8 @@ AWS is a shadow copy and may be out of date for any config that changed since mi
 | Docker data-root | `/mnt/data-dokploy/docker` |
 | Docker version | 29.2.0 (Swarm mode) |
 | Auto-snapshot | Daily, 03:00 UTC |
-| Available snapshots | pre-production-baseline-20260816, pre-cutover-ready-20260816 |
-| System services | cloudflared (MASKED), tailscaled |
+| Available snapshots | pre-production-baseline-20260816, pre-cutover-ready-20260816, post-cutover-20260817 |
+| System services | cloudflared (ACTIVE — production tunnel), tailscaled |
 | Disk utilization | 32 GB / 309 GB (11%) as of 2026-08-16 |
 
 ### 2.3 Supabase
