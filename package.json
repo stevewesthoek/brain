@@ -36,6 +36,8 @@
     "test:context-learning-deployment": "node --test tools/context-learning/deployment-runtime.test.mjs",
     "validate:infrastructure-catalog": "node tools/validate-infrastructure-catalog.mjs",
     "test:infrastructure-catalog": "node --test tools/infrastructure-catalog/catalog-core.test.mjs",
+    "validate:infrastructure-health": "node tools/validate-infrastructure-health.mjs",
+    "test:infrastructure-health": "node --test projects/brain-core/src/tests/infrastructure-observation-runtime.test.mjs",
     "infinite-brain:conformance": "node tools/scripts/validate-infinite-brain-conformance.mjs",
     "infinite-brain:cross-repo-contract": "node tools/scripts/validate-cross-repo-contract.mjs"
   },

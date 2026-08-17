@@ -1,7 +1,7 @@
 # Infrastructure Knowledge & Health Plane — Roadmap
 
 **Namespace:** IKHP
-**Status:** IKHP0-IKHP1 complete; IKHP2-IKHP6 not authorized
+**Status:** IKHP0-IKHP2 complete; IKHP3-IKHP6 not authorized
 **Owner:** Brain
 **Primary human surface:** Obsidian Brain Console
 **Program relationship:** sibling Brain program to CLR. CLR consumes IKHP context/health through Brain Core/Context Broker; IKHP does not ingest conversations.
@@ -96,7 +96,9 @@ Exit gate:
 
 ## IKHP2 — Live health observation and provider normalization
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-08-17 as a repository implementation; deterministic read-only normalization and bounded runtime persistence are implemented, but continuous scheduling, live provider reachability, credential validity, incident generation, remediation, and IKHP3 activation are not claimed.
+
+**Acceptance evidence:** `operations/reports/ikhp2-live-health-normalization-acceptance-2026-08-16.md`
 
 Normalize read-only health from existing providers into bounded runtime state.
 

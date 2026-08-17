@@ -8,6 +8,10 @@ export interface InfraNewRelicHost {
   alertSeverity: string | null;
   online: boolean | null;
   lastSeenAt: string | null;
+  cpuPercent: number | null;
+  memoryPercent: number | null;
+  diskUsedPercent: number | null;
+  processCount: number | null;
 }
 
 export interface InfraNewRelicSynthetic {
@@ -21,10 +25,18 @@ export interface InfraNewRelicSynthetic {
   lastError: string | null;
 }
 
+export interface InfraNewRelicApmEntity {
+  name: string;
+  reporting: boolean;
+  alertSeverity: string | null;
+}
+
 export interface InfraNewRelicStatus {
   status: 'ok' | 'not-configured' | 'error';
   hosts: InfraNewRelicHost[];
   synthetics: InfraNewRelicSynthetic[];
+  apm: InfraNewRelicApmEntity[];
+  issues: { open: number; critical: number };
   error?: string;
 }
 
@@ -38,6 +50,8 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
       status: 'not-configured',
       hosts: [],
       synthetics: [],
+      apm: [],
+      issues: { open: 0, critical: 0 },
       error: 'New Relic credentials not configured. Set NEW_RELIC_USER_API_KEY and NEW_RELIC_ACCOUNT_ID in the process env or ~/.config/newrelic/.env.',
     };
   }
@@ -50,8 +64,17 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
       synthetics: entitySearch(query: "accountId = ${accountId} AND domain = 'SYNTH' AND type = 'MONITOR'") {
         results { entities { name reporting alertSeverity ... on SyntheticMonitorEntityOutline { monitorId } } }
       }
+      apm: entitySearch(query: "accountId = ${accountId} AND domain = 'APM'") {
+        results { entities { name reporting alertSeverity } }
+      }
       account(id: ${accountId}) {
-        hostSamples: nrql(query: "SELECT latest(timestamp) FROM SystemSample FACET hostname SINCE 15 minutes ago LIMIT 100") {
+        hostSamples: nrql(query: "SELECT latest(timestamp), latest(cpuPercent), latest(memoryUsedPercent) FROM SystemSample FACET hostname SINCE 15 minutes ago LIMIT 100") {
+          results
+        }
+        storageSamples: nrql(query: "SELECT max(diskUsedPercent) FROM StorageSample FACET hostname SINCE 15 minutes ago LIMIT 100") {
+          results
+        }
+        processSamples: nrql(query: "SELECT uniqueCount(processId) FROM ProcessSample FACET hostname SINCE 15 minutes ago LIMIT 100") {
           results
         }
         syntheticChecks: nrql(query: "SELECT latest(result), latest(error), latest(timestamp) FROM SyntheticCheck FACET monitorName SINCE 1 day ago LIMIT 100") {
@@ -77,7 +100,7 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
     }
 
     if (!rawResponse.ok) {
-      return { status: 'error', hosts: [], synthetics: [], error: `New Relic API returned ${rawResponse.status}` };
+      return { status: 'error', hosts: [], synthetics: [], apm: [], issues: { open: 0, critical: 0 }, error: `New Relic API returned ${rawResponse.status}` };
     }
 
     const data = (await rawResponse.json()) as {
@@ -85,20 +108,29 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
         actor?: {
           hosts?: { results?: { entities?: Array<{ name?: string; reporting?: boolean; alertSeverity?: string }> } };
           synthetics?: { results?: { entities?: Array<{ name?: string; reporting?: boolean; alertSeverity?: string; monitorId?: string }> } };
+          apm?: { results?: { entities?: Array<{ name?: string; reporting?: boolean; alertSeverity?: string }> } };
           account?: {
-            hostSamples?: { results?: Array<{ facet?: string; hostname?: string; 'latest.timestamp'?: number }> };
-            syntheticChecks?: { results?: Array<{ facet?: string; monitorName?: string; 'latest.result'?: string; 'latest.error'?: string; 'latest.timestamp'?: number }> };
+            hostSamples?: { results?: Array<{ facet?: string; 'latest.timestamp'?: number; 'latest.cpuPercent'?: number; 'latest.memoryUsedPercent'?: number }> };
+            storageSamples?: { results?: Array<{ facet?: string; 'max.diskUsedPercent'?: number }> };
+            processSamples?: { results?: Array<{ facet?: string; 'uniqueCount.processId'?: number }> };
+            syntheticChecks?: { results?: Array<{ facet?: string; 'latest.result'?: string; 'latest.error'?: string; 'latest.timestamp'?: number }> };
           };
         };
       };
     };
 
     const hostSamples = data.data?.actor?.account?.hostSamples?.results ?? [];
+    const storageSamples = data.data?.actor?.account?.storageSamples?.results ?? [];
+    const processSamples = data.data?.actor?.account?.processSamples?.results ?? [];
     const syntheticChecks = data.data?.actor?.account?.syntheticChecks?.results ?? [];
-    const hostLastSeen = new Map(
-      hostSamples
-        .filter((sample): sample is { facet: string; 'latest.timestamp': number } => Boolean(sample.facet) && typeof sample['latest.timestamp'] === 'number')
-        .map((sample) => [sample.facet, sample['latest.timestamp']]),
+    const hostMetrics = new Map(
+      hostSamples.filter((sample) => Boolean(sample.facet)).map((sample) => [sample.facet as string, sample]),
+    );
+    const storageMetrics = new Map(
+      storageSamples.filter((sample) => Boolean(sample.facet)).map((sample) => [sample.facet as string, sample]),
+    );
+    const processMetrics = new Map(
+      processSamples.filter((sample) => Boolean(sample.facet)).map((sample) => [sample.facet as string, sample]),
     );
     const syntheticLatest = new Map(
       syntheticChecks
@@ -107,7 +139,10 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
     );
 
     const hosts: InfraNewRelicHost[] = (data.data?.actor?.hosts?.results?.entities ?? []).map((e) => {
-      const lastSeen = e.name ? hostLastSeen.get(e.name) : undefined;
+      const metrics = e.name ? hostMetrics.get(e.name) : undefined;
+      const storage = e.name ? storageMetrics.get(e.name) : undefined;
+      const processes = e.name ? processMetrics.get(e.name) : undefined;
+      const lastSeen = metrics?.['latest.timestamp'];
       const online = typeof lastSeen === 'number' ? true : e.reporting ?? false ? true : null;
       return {
         name: e.name ?? 'unknown',
@@ -115,6 +150,10 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
         alertSeverity: e.alertSeverity ?? null,
         online,
         lastSeenAt: typeof lastSeen === 'number' ? new Date(lastSeen).toISOString() : null,
+        cpuPercent: typeof metrics?.['latest.cpuPercent'] === 'number' ? metrics['latest.cpuPercent'] : null,
+        memoryPercent: typeof metrics?.['latest.memoryUsedPercent'] === 'number' ? metrics['latest.memoryUsedPercent'] : null,
+        diskUsedPercent: typeof storage?.['max.diskUsedPercent'] === 'number' ? storage['max.diskUsedPercent'] : null,
+        processCount: typeof processes?.['uniqueCount.processId'] === 'number' ? processes['uniqueCount.processId'] : null,
       };
     });
 
@@ -134,9 +173,23 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
       };
     });
 
-    return { status: 'ok', hosts, synthetics };
+    const apm: InfraNewRelicApmEntity[] = (data.data?.actor?.apm?.results?.entities ?? []).map((entity) => ({
+      name: entity.name ?? 'unknown',
+      reporting: entity.reporting ?? false,
+      alertSeverity: entity.alertSeverity ?? null,
+    }));
+    const alerting = [...hosts, ...synthetics, ...apm].filter((entity) => {
+      const severity = String(entity.alertSeverity ?? '').toLowerCase();
+      return severity !== '' && severity !== 'not_alerting';
+    });
+    const issues = {
+      open: alerting.length,
+      critical: alerting.filter((entity) => String(entity.alertSeverity ?? '').toLowerCase() === 'critical').length,
+    };
+
+    return { status: 'ok', hosts, synthetics, apm, issues };
   } catch (err) {
-    return { status: 'error', hosts: [], synthetics: [], error: err instanceof Error ? err.message : String(err) };
+    return { status: 'error', hosts: [], synthetics: [], apm: [], issues: { open: 0, critical: 0 }, error: err instanceof Error ? err.message : String(err) };
   }
 }
 

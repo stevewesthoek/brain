@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "observedAt": "2026-08-16T20:00:00Z",
+  "newrelic": {
+    "status": "ok",
+    "hosts": [
+      {"name":"dokploy-aws","reporting":true,"alertSeverity":null,"online":true,"lastSeenAt":"2026-08-16T19:59:30Z","cpuPercent":27.5,"memoryPercent":61.2,"diskUsedPercent":72.3,"processCount":18},
+      {"name":"supabase","reporting":false,"alertSeverity":"CRITICAL","online":false,"lastSeenAt":"2026-08-16T19:50:00Z","cpuPercent":null,"memoryPercent":null,"diskUsedPercent":91.4,"processCount":null}
+    ],
+    "synthetics":[{"name":"prochat.tools","reporting":true,"alertSeverity":null,"monitorId":"synthetic-1","online":true,"lastCheckAt":"2026-08-16T19:59:00Z","lastResult":"SUCCESS","lastError":null}],
+    "apm":[{"name":"prochat-api","reporting":true,"alertSeverity":null}],
+    "issues":{"open":1,"critical":0}
+  },
+  "cloudflare": {
+    "status":"ok",
+    "tunnels":[{"id":"tunnel-1","name":"production","status":"healthy","connectionCount":1,"hostnames":[{"hostname":"prochat.tools","service":"http://origin","online":true}]}]
+  },
+  "cloudflareDomains": {
+    "status":"ok",
+    "domains":[{"name":"prochat.tools","status":"active","createdAt":"2025-01-01T00:00:00Z","expiresAt":"2027-01-01T00:00:00Z","daysUntilExpiry":138,"dnsRecords":[{"name":"prochat.tools","type":"CNAME","content":"tunnel-target.example.test","proxied":true}]}]
+  },
+  "tailscale": {
+    "status":"ok",
+    "devices":[
+      {"name":"Office","addresses":["100.86.124.66"],"online":true,"lastSeenAt":"2026-08-16T19:59:50Z","routeState":"none","connectivity":"direct","sshReachable":true},
+      {"name":"Supabase","addresses":["100.71.31.88"],"online":false,"lastSeenAt":"2026-08-16T19:40:00Z","routeState":"none","connectivity":"unknown","sshReachable":false}
+    ]
+  },
+  "dokploy": {
+    "status":"ok",
+    "apps":[{"project":"ProChat","environment":"production","name":"web","status":"running"},{"project":"Unknown","environment":"production","name":"worker","status":"error"}],
+    "compose":[],
+    "totalApps":2,
+    "totalCompose":0,
+    "appsByStatus":{"running":1,"error":1},
+    "composeByStatus":{}
+  },
+  "scheduler": {
+    "status":"ok",
+    "jobs":[{"key":"n8n-backup","label":"n8n Backup","planned":true,"executed":true,"status":"success","exitCode":0,"durationSeconds":42,"lastRunAt":"2026-08-16T03:20:00Z","nextRunAt":"2026-08-17T03:00:00Z","errorMessage":null}],
+    "report":{"available":true,"path":"runtime/local/office-scheduler/latest-run.md","summary":"ok","generatedAt":"2026-08-16T03:30:00Z","failureCount":0}
+  },
+  "accessHealth": [
+    {"resourceId":"credential_reference:newrelic-query","configured":true,"connected":true,"expiresAt":null,"expiryKnown":false,"rotationDueAt":null,"lastVerifiedAt":"2026-08-16T20:00:00Z","scopeSummary":["telemetry-query"],"verificationStatus":"verified"},
+    {"resourceId":"credential_reference:cloudflare-provisioner","configured":true,"connected":false,"expiresAt":null,"expiryKnown":false,"rotationDueAt":null,"lastVerifiedAt":"2026-08-16T20:00:00Z","scopeSummary":["provider-api"],"verificationStatus":"failed"},
+    {"resourceId":"credential_reference:dokploy-management","configured":true,"connected":true,"expiresAt":null,"expiryKnown":false,"rotationDueAt":null,"lastVerifiedAt":"2026-08-16T20:00:00Z","scopeSummary":["management-api"],"verificationStatus":"verified"},
+    {"resourceId":"credential_reference:oauth-example","configured":true,"connected":true,"expiresAt":"2026-08-20T20:00:00Z","expiryKnown":true,"rotationDueAt":"2026-08-19T20:00:00Z","lastVerifiedAt":"2026-08-16T20:00:00Z","scopeSummary":["example.read"],"verificationStatus":"verified"}
+  ]
+}

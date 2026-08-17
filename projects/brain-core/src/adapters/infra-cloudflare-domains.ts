@@ -8,6 +8,7 @@ export interface InfraCloudfareDomain {
   createdAt: string;
   expiresAt: string | null;
   daysUntilExpiry: number | null;
+  dnsRecords: Array<{ name: string; type: string; content: string; proxied: boolean | null }>;
 }
 
 export interface InfraCloudflareDomainsStatus {
@@ -60,7 +61,7 @@ export async function getInfraCloudfareDomains(): Promise<InfraCloudflareDomains
 
   try {
     const authHeaders = { Authorization: `Bearer ${creds.token}` };
-    const zonesResp = await fetchJson<{ result?: Array<{ name: string; status: string; created_on: string }> }>(
+    const zonesResp = await fetchJson<{ result?: Array<{ id: string; name: string; status: string; created_on: string }> }>(
       'https://api.cloudflare.com/client/v4/zones?per_page=100',
       authHeaders,
     );
@@ -87,7 +88,21 @@ export async function getInfraCloudfareDomains(): Promise<InfraCloudflareDomains
           ? Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000)
           : null;
 
-        return { name: zone.name, status: zone.status, createdAt: zone.created_on, expiresAt, daysUntilExpiry };
+        let dnsRecords: InfraCloudfareDomain['dnsRecords'] = [];
+        try {
+          const dnsResp = await fetchJson<{ result?: Array<{ name: string; type: string; content: string; proxied?: boolean }> }>(
+            `https://api.cloudflare.com/client/v4/zones/${zone.id}/dns_records?per_page=100`,
+            authHeaders,
+          );
+          dnsRecords = (dnsResp.result ?? []).map((record) => ({
+            name: record.name,
+            type: record.type,
+            content: record.content,
+            proxied: typeof record.proxied === 'boolean' ? record.proxied : null,
+          }));
+        } catch { /* best-effort: domain state remains usable even if DNS list is unavailable */ }
+
+        return { name: zone.name, status: zone.status, createdAt: zone.created_on, expiresAt, daysUntilExpiry, dnsRecords };
       }),
     );
 

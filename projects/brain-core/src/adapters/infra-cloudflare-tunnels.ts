@@ -12,6 +12,7 @@ export interface InfraTunnel {
   id: string;
   name: string;
   status: string;
+  connectionCount: number;
   hostnames: InfraTunnelHostname[];
 }
 
@@ -163,6 +164,7 @@ export async function getInfraCloudflareTunnels(): Promise<InfraCloudflareTunnel
         id: tunnelId,
         name: tunnelName,
         status: tunnel.status ?? 'unknown',
+        connectionCount: tunnel.connections?.length ?? 0,
         hostnames: hostnamesWithReachability,
       });
     }

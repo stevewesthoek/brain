@@ -1,7 +1,7 @@
 # Infrastructure Knowledge & Health Plane — Implementation Plan
 
 **Namespace:** IKHP
-**Status:** IKHP0-IKHP1 complete; IKHP2-IKHP6 not authorized
+**Status:** IKHP0-IKHP2 complete; IKHP3-IKHP6 not authorized
 **Owner:** Brain
 **Primary entry point:** Brain Core / Context Broker
 **Primary human UI:** Obsidian Brain Console
@@ -170,6 +170,10 @@ Add one non-Steve fixture proving generic resource/relation/credential-reference
 
 ## IKHP2 — Live health/provider adapters
 
+**Status:** owner-authorized and complete 2026-08-17 as a repository implementation.
+**Acceptance:** `operations/reports/ikhp2-live-health-normalization-acceptance-2026-08-16.md`
+**Boundary:** no continuous scheduler, incident/notification engine, automatic remediation, provider mutation, credential rotation, backup mutation, CLR5 implementation, or IKHP3 activation.
+
 ### IKHP2.1 — Normalized health observation contract
 
 Create versioned observation model:
@@ -190,10 +194,9 @@ Runtime target:
 
 ```text
 runtime/local/infrastructure/health-state.json
-runtime/local/infrastructure/provider-observations.jsonl
 ```
 
-Bound retention/compaction; no Git runtime state.
+IKHP2 intentionally uses one bounded atomic snapshot rather than duplicating provider time-series/event history locally. Retention is count- and age-bounded; no Git runtime state is written.
 
 ### IKHP2.2 — New Relic normalization
 
@@ -278,12 +281,19 @@ No raw tokens in output.
 
 ### IKHP2 validation
 
-- provider disabled/unavailable fallback;
-- unknown/stale propagation;
-- resource mapping integrity;
-- no secret leakage;
-- deterministic fixture tests;
-- no provider writes/network mutation.
+- **PASS:** deterministic validator maps all 16 configured provider bindings to 16 normalized observations across 13 IKHP1 resources.
+- **PASS:** provider unavailable/error fallback produces `unknown`/`stale`, never false healthy.
+- **PASS:** exact freshness boundaries are tested; stale healthy observations are downgraded.
+- **PASS:** IKHP1 resource-target integrity is enforced for every provider binding and observation.
+- **PASS:** access/OAuth normalization exposes metadata only; raw credential values are absent.
+- **PASS:** New Relic host metrics, disk, process/APM/synthetic/alert summaries; Cloudflare tunnel/domain/DNS; Tailscale; Dokploy; backup; and access-health fixtures are deterministic.
+- **PASS:** Cloudflare DNS drift remains explicit `unknown` when canonical expected DNS content is unavailable rather than being treated as healthy.
+- **PASS:** Tailscale uses named `status --json` execution with no shell; SSH evidence is bounded TCP/22 reachability only.
+- **PASS:** runtime persistence is atomic, mode `0600`, count-bounded, age-bounded, and stored under `runtime/local/infrastructure/` only when explicitly invoked.
+- **PASS:** focused runtime/provider suite `npm run test:infrastructure-health` passes 10/10.
+- **PASS:** `npm run validate:infrastructure-health` passes.
+- **LIMITATION:** Brain Core `npm run typecheck` cannot run in this checkout because `tsc` is not installed. No dependency installation was attempted.
+- **STOP:** IKHP3 remains not authorized; incidents/notifications and remediation are not part of IKHP2 acceptance.
 
 ## IKHP3 — Incidents and attention
 
