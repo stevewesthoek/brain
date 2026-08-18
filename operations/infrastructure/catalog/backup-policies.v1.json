@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "backupPolicies": [
     {
       "backupPolicyId": "backup_policy:n8n-office",
@@ -20,6 +20,42 @@
         "owner": "brain/infrastructure",
         "evidenceRefs": ["operations/specs/infinite-brain-recovery-inventory.json"]
       }
+    },
+    {
+      "backupPolicyId": "backup_policy:dokploy-aws",
+      "resourceId": "host:dokploy-aws",
+      "backupSystemId": "backup_system:dokploy-aws-recovery",
+      "backupJobId": "backup_job:dokploy-aws-recovery",
+      "cadence": "unknown: ongoing cadence not verified after cutover",
+      "retentionRef": "unknown: post-cutover retention not verified",
+      "destinationRef": "reference://aws-dokploy-recovery-evidence",
+      "restoreVerificationCadenceDays": null,
+      "recoveryClass": "unknown",
+      "provenance": {"sourceRef":"operations/reports/infrastructure-estate-reconciliation-2026-08-17.md","classification":"UNKNOWN","verifiedAt":"2026-08-18T01:25:00Z","freshnessDeadline":"2026-08-25T01:25:00Z","owner":"brain/infrastructure","evidenceRefs":["operations/migrations/dokploy-azure-to-lightsail/azure-to-aws-dokploy-migration-lessons-learned-2026-08-17.md"]}
+    },
+    {
+      "backupPolicyId": "backup_policy:supabase",
+      "resourceId": "host:supabase",
+      "backupSystemId": "backup_system:supabase-recovery",
+      "backupJobId": "backup_job:supabase-recovery",
+      "cadence": "unknown: authoritative-data backup cadence not verified",
+      "retentionRef": "unknown: Supabase retention not verified",
+      "destinationRef": "reference://supabase-recovery-evidence",
+      "restoreVerificationCadenceDays": null,
+      "recoveryClass": "unknown",
+      "provenance": {"sourceRef":"operations/reports/infrastructure-estate-reconciliation-2026-08-17.md","classification":"UNKNOWN","verifiedAt":"2026-08-18T01:25:00Z","freshnessDeadline":"2026-08-25T01:25:00Z","owner":"brain/infrastructure","evidenceRefs":[]}
+    },
+    {
+      "backupPolicyId": "backup_policy:cloudpanel-aws",
+      "resourceId": "host:cloudpanel-aws",
+      "backupSystemId": "backup_system:cloudpanel-aws-recovery",
+      "backupJobId": "backup_job:cloudpanel-aws-recovery",
+      "cadence": "unknown: CloudPanel backup cadence not verified",
+      "retentionRef": "unknown: CloudPanel retention not verified",
+      "destinationRef": "reference://cloudpanel-aws-recovery-evidence",
+      "restoreVerificationCadenceDays": null,
+      "recoveryClass": "unknown",
+      "provenance": {"sourceRef":"operations/reports/infrastructure-estate-reconciliation-2026-08-17.md","classification":"UNKNOWN","verifiedAt":"2026-08-18T01:25:00Z","freshnessDeadline":"2026-08-25T01:25:00Z","owner":"brain/infrastructure","evidenceRefs":["operations/infrastructure/infra.md"]}
     }
   ]
 }

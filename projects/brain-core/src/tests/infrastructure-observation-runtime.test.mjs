@@ -48,7 +48,7 @@ test('freshness boundary is exact and stale healthy observations cannot remain h
 
 test('New Relic maps every configured resource and surfaces disk/reporting failures plus missing entities', () => {
   const observations = normalizeNewRelic(fixtures.newrelic, bindings, { now });
-  assert.equal(observations.length, 3);
+  assert.equal(observations.length, 2);
 
   const aws = observations.find((entry) => entry.resourceId === 'host:dokploy-aws');
   assert.equal(aws.status, 'healthy');
@@ -64,14 +64,11 @@ test('New Relic maps every configured resource and surfaces disk/reporting failu
   assert.ok(supabase.conditionCodes.includes('host_not_reporting'));
   assert.ok(supabase.conditionCodes.includes('disk_capacity_critical'));
 
-  const azure = observations.find((entry) => entry.resourceId === 'host:dokploy-azure');
-  assert.equal(azure.status, 'unknown');
-  assert.ok(azure.conditionCodes.includes('provider_entity_missing'));
 });
 
 test('provider errors produce explicit stale or unknown observations, never healthy', () => {
   const observations = normalizeNewRelic({ status: 'error', hosts: [], synthetics: [], apm: [], issues: { open: 0, critical: 0 } }, bindings, { now });
-  assert.equal(observations.length, 3);
+  assert.equal(observations.length, 2);
   assert.ok(observations.every((entry) => entry.status !== 'healthy'));
   assert.ok(observations.every((entry) => entry.conditionCodes.includes('provider_error')));
 });
@@ -107,7 +104,7 @@ test('Cloudflare domain and DNS observations preserve unknown drift without fals
 
 test('Tailscale normalizes expected devices and never silently drops missing peers', () => {
   const observations = normalizeTailscale(fixtures.tailscale, bindings, { now });
-  assert.equal(observations.length, 5);
+  assert.equal(observations.length, 4);
 
   const office = observations.find((entry) => entry.resourceId === 'host:office');
   assert.equal(office.status, 'healthy');

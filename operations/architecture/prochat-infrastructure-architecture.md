@@ -36,6 +36,8 @@ Previous production runtime:    Azure Dokploy (vm-dokploy, Spain Central) — qu
 Production cutover completed:   2026-08-17 (~28 min downtime, 16/16 DB restores, Class B rollback)
 ```
 
+> **Current-vs-historical rule (2026-08-18):** the post-cutover block above, the `F-CUT-*` evidence register, and the IKHP catalog are current authority. Later migration/rehearsal sections intentionally preserve time-scoped pre-cutover phrases such as “Azure authoritative”, “AWS shadow”, “source Azure”, and “target AWS” because they document the procedure that was executed. Those phrases are **historical procedure context only** and must not be interpreted as present infrastructure state.
+
 ---
 
 ## ═══════════════════════════════════════════════════════

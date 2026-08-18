@@ -1,21 +1,24 @@
 # Infrastructure Reference
 
-This is the central infrastructure document for the Brain repo.
+This is the human-readable infrastructure orientation page for the Brain repo. The canonical machine-readable infrastructure authority is the IKHP catalog discovered through `operations/infrastructure/catalog/manifest.v1.json`; this page must not contradict that catalog.
 
 Purpose:
-- Give Claude and Codex one canonical reference for cloud accounts, servers, access paths, hosted platforms, and recovery-critical details.
-- Capture what is verified live versus what is only historical or still incomplete.
+- Give humans and LLMs a readable orientation for cloud accounts, servers, access paths, hosted platforms, and recovery-critical details.
+- Point back to the canonical IKHP catalog and evidence sources rather than creating parallel infrastructure truth.
+- Capture what is verified live versus what is historical, configuration-backed, or still unknown.
 
-**Roadmap direction:** this document remains the human infrastructure entry page. The planned machine-readable unification, live health/freshness model, credential-reference health, backup/restore health, safety policy, and unified Brain Core/CLI/MCP/Obsidian interface are defined by the Infrastructure Knowledge & Health Plane (IKHP):
+**IKHP direction:** this document remains the human infrastructure entry page. Machine-readable unification, live health/freshness, credential-reference health, backup/restore health, safety policy, and future Brain Core/CLI/MCP/Obsidian interfaces are defined by the Infrastructure Knowledge & Health Plane (IKHP):
 - `operations/specs/infrastructure-knowledge-health-plane-architecture.md`
 - `operations/specs/infrastructure-knowledge-health-plane-roadmap.md`
 - `operations/specs/infrastructure-knowledge-health-plane-implementation-plan.md`
 
-IKHP is a roadmap program only at present; no new monitoring or infrastructure mutation is activated by these documents.
+IKHP0-IKHP3 are implemented repository capabilities. IKHP4 is currently reconciling canonical safety/infrastructure truth; IKHP5, IKHP6, and CLR5 are not authorized. No new live monitoring, provider mutation, remediation, or infrastructure execution is activated by this page.
 
 Verification status:
-- Last verified live on 2026-05-19 from the `Office` Mac mini.
-- Sources used: `az`, `aws sts`, SSH, Dokploy API, Cloudflare API, Docker Swarm inspection, local SSH config, local skill/runbook docs.
+- The last broad live estate verification represented in older sections of this page was 2026-05-19 from the `Office` Mac mini.
+- Dokploy production authority was superseded by the observed Azure → AWS cutover completed 2026-08-17: AWS `dokploy-aws` is authoritative production. Owner clarification on 2026-08-18 confirms the old Azure PROCHAT-APPS Dokploy estate is fully decommissioned and is no longer part of current infrastructure truth.
+- Packet 2 does not claim a new whole-estate live probe. CloudPanel, provider-access, monitoring, and ongoing backup attributes that were not freshly observed remain explicit UNKNOWNs in IKHP.
+- Historical sources used by this page include `az`, `aws sts`, SSH, Dokploy API, Cloudflare API, Docker Swarm inspection, local SSH config, migration evidence, and runbooks.
 
 Related local control-plane inventory:
 - `operations/infrastructure/scheduler-inventory.md` — canonical scheduler and LaunchAgent inventory for the `Office` Mac
@@ -64,12 +67,15 @@ To add a new local app, edit `local-apps.json` — the Brain Console "Local Apps
 
 ## Cloud Accounts
 
+The access-status text below is a historical configuration/live snapshot, not a fresh Packet 2 credential probe. Canonical non-secret account/access resources live in the IKHP catalog; current connectivity belongs to IKHP health observations.
+
 ### Azure
+
+Only the separate `PROCHAT-DATA` subscription remains part of the current infrastructure estate, for Supabase/data-side infrastructure. The old PROCHAT-APPS Dokploy subscription is decommissioned and is not current IKHP truth.
 
 | Subscription | Subscription ID | Tenant ID | Signed-in identity | Current access status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `PROCHAT-APPS` | `1db6646e-69c0-4ee0-a4d5-53d40421a5a4` | `afab256a-cbf5-4aab-a7d1-f271bda38123` | `steve@yeshuaacademypt.onmicrosoft.com` | Confirmed in `az`; role assignment shows `Owner` at subscription scope | Primary Azure apps subscription. Contains Dokploy VM and related infra. |
-| `PROCHAT-DATA` | `6e99b82d-43e3-41cc-ad94-8733afeb2a7e` | `290d8a41-0cbc-450b-9263-f018dc28165d` | `admin@yeshuaacademy.onmicrosoft.com` | Confirmed in `az`; resources fully readable; subscription role assignments show a user-level `Owner` assignment at subscription scope | Primary Azure data subscription. Contains Supabase VM and data-side infra. |
+| `PROCHAT-DATA` | `6e99b82d-43e3-41cc-ad94-8733afeb2a7e` | `290d8a41-0cbc-450b-9263-f018dc28165d` | `admin@yeshuaacademy.onmicrosoft.com` | Historical configuration/access evidence; Packet 2 did not re-probe Azure live auth | Current Azure data subscription containing Supabase/data-side infrastructure. |
 
 ### AWS
 
@@ -77,34 +83,17 @@ To add a new local app, edit `local-apps.json` — the Brain Console "Local Apps
 | --- | --- | --- | --- |
 | `909439522876` | Base identity `arn:aws:iam::909439522876:user/claude-code` plus assumed roles `ClaudeCodexProvisioner` and `ClaudeCodexDestroyer` | Confirmed live in `aws sts`; both role-backed wrappers work and `ec2 describe-regions` / `lightsail get-regions` succeed through the provisioner role | AWS automation is now role-based rather than single-user-only. The earlier inventory-permission gap is resolved for the standard provisioner / destroyer workflow. |
 
-### Hetzner Cloud
-
-| Environment | Current access status | Notes |
-| --- | --- | --- |
-| Current production CloudPanel host | Confirmed over SSH and `hcloud` | Hetzner CLI is installed and authenticated on this Mac. Current project inventory shows one running server: `cloudpanel`. |
-
 ## Server Inventory
 
 | Server | Purpose | Cloud | Region / Platform | OS | CPU / RAM | Public IP | Tailscale IP | Access path | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `dokploy` / `vm-dokploy` | Main app host and container orchestrator | Azure / `PROCHAT-APPS` | Spain Central | Ubuntu 24.04.3 LTS | 4 vCPU, 15 GiB RAM observed live | `68.221.139.108` | `100.83.38.48` | `ssh dokploy` | Running |
-| `supabase` / `vm-supabase` | Supabase + PostgreSQL backend host | Azure / `PROCHAT-DATA` | Spain Central | Ubuntu 24.04.3 LTS | 2 vCPU, 7.8 GiB RAM observed live | `68.221.194.245` | `100.71.31.88` | `ssh supabase` | Running |
-| `cloudpanel` | Current CloudPanel production host | Hetzner Cloud | Hetzner | Ubuntu 24.04.3 LTS | 4 vCPU, 7.5 GiB RAM observed live | IPv4 `91.99.71.221`, IPv6 `2a01:4f8:1c1c:38c1::1` | None observed; `tailscale` not installed | `ssh cloudpanel` via Cloudflare Tunnel | Running |
+| `dokploy-aws` | Authoritative Dokploy production host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu / exact patch level not re-probed | 4 vCPU, 16 GiB RAM, 320 GiB SSD | `18.135.240.168` | `100.71.47.24` | `ssh dokploy` / `ssh dokploy-aws` -> AWS Tailscale | **Running authoritative production** — owner AWS console evidence 2026-08-18 |
+| `supabase` / `vm-supabase` | Authoritative Supabase + PostgreSQL backend host | Azure / `PROCHAT-DATA` | Spain Central | Ubuntu 24.04.3 LTS (historical observation) | 2 vCPU, 7.8 GiB RAM (historical observation) | `68.221.194.245` | `100.71.31.88` | `ssh supabase` | Current Azure data authority; volatile VM state not re-probed in Packet 2 |
+| `cloudpanel-aws` | Authoritative CloudPanel host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu / exact patch level not re-probed | 2 vCPU, 8 GiB RAM, 160 GiB SSD | `13.135.227.0` | UNKNOWN | `ssh cloudpanel` | **Running authoritative CloudPanel** — owner AWS console evidence 2026-08-18 |
 
 ## Azure Resource Inventory
 
-### `PROCHAT-APPS`
-
-Resource groups:
-- `AzureBackupRG_spaincentral_1`
-- `NetworkWatcherRG`
-- `rg-apps-cloudpanel`
-- `rg-apps-dokploy`
-
-Live observations:
-- The only current VM in this subscription is `vm-dokploy`.
-- `rg-apps-cloudpanel` exists but currently contains no resources.
-- `rg-apps-dokploy` contains the Dokploy VM, NIC, VNet, NSG, public IP, recovery vault, VM extension, disks, and seven Azure Monitor metric alerts.
+Only `PROCHAT-DATA` remains part of the current Azure estate, for Supabase/data-side infrastructure. The detailed inventory below is a **2026-05-19 historical live snapshot** unless a newer dated evidence item says otherwise; Packet 2 did not re-query Azure live state.
 
 ### `PROCHAT-DATA`
 
@@ -128,11 +117,13 @@ Live observations:
 Source of truth:
 - [ssh config](/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/ssh/config)
 
-Current aliases:
-- `dokploy` -> Tailscale `100.83.38.48`, user `master`
-- `supabase` -> Tailscale `100.71.31.88`, user `master`
-- `cloudpanel` -> `ssh_cp.prochat.tools` through `cloudflared access ssh`, user `master`
-- `office` -> Tailscale `100.86.124.66`, user `office`
+Current Git-managed aliases:
+- `dokploy` is **stale in the repository file** because Workbench policy blocked the owner-authorized correction. Current authority requires `dokploy` / `dokploy-aws` -> AWS Tailscale `100.71.47.24`, user `ubuntu`.
+- `supabase` -> Tailscale `100.71.31.88`, user `master`.
+- `cloudpanel` -> AWS public `13.135.227.0`, user `ubuntu`.
+- `office` -> Tailscale `100.86.124.66`, user `office`.
+
+The required Dokploy SSH correction is documented in `operations/reports/infrastructure-estate-reconciliation-2026-08-17.md`. `operations/system-configs/ssh/config` itself remains unchanged only because the Workbench source policy returns `PATH_NOT_ALLOWED` for that file.
 
 ### Admin / service entrypoints
 
@@ -140,11 +131,8 @@ Known service URLs:
 - Dokploy UI: `https://dokploy.prochat.tools`
 - Supabase Studio: `https://studio.prochat.tools`
 - n8n: `https://n8n.prochat.tools`
-- CloudPanel SSH ingress: `ssh_cp.prochat.tools`
 
-Tailscale private services (no internet exposure):
-- Firecrawl API: `http://100.83.38.48:3002` (web scraping & search)
-- Firecrawl admin queue: `http://100.83.38.48:3002/admin/<BULL_AUTH_KEY>/queues`
+The current private Firecrawl endpoint was not independently re-queried in Packet 2 and remains UNKNOWN; do not reuse historical Azure addresses as current service authority.
 
 Retired infrastructure:
 - The old OpenClaw AWS Lightsail host was decommissioned on `2026-04-04` after Telegram cutover to the local daemon on the `Office` Mac.
@@ -155,7 +143,7 @@ Retired infrastructure:
 
 #### Architecture
 
-Dokploy runs as a **Docker Swarm** stack on Azure VM `vm-dokploy`. Core services:
+Dokploy production now runs as a **Docker Swarm** stack on AWS Lightsail host `dokploy-aws`. The core-service table below originated from the pre-cutover inventory and remains useful as topology context, but image versions must be reverified before operational use:
 
 | Service | Image | Role | Network |
 |---------|-------|------|---------|
@@ -169,7 +157,7 @@ All application containers also attach to `dokploy-network`.
 #### Traffic Flow
 
 ```
-Internet → Cloudflare (TLS termination) → Cloudflare Tunnel (dc7bb87e) → Azure VM
+Internet → Cloudflare (TLS termination) → Cloudflare Tunnel (dc7bb87e) → AWS `dokploy-aws` production host
 
   dokploy.prochat.tools  →  localhost:3000  (Dokploy direct — bypasses Traefik)
   all other apps         →  localhost:80    (Traefik → Docker containers)
@@ -178,7 +166,7 @@ Internet → Cloudflare (TLS termination) → Cloudflare Tunnel (dc7bb87e) → A
 - **Dokploy UI/API**: Cloudflare Tunnel routes `dokploy.prochat.tools` directly to `localhost:3000`. Traefik is NOT in this path.
 - **Deployed apps**: Cloudflare Tunnel routes all other hostnames to `localhost:80` (Traefik entrypoint `web`). Traefik uses Docker/Swarm labels to route to the correct container.
 - **SSL/TLS**: Cloudflare handles TLS termination for ALL tunnel-routed traffic. The connection from Cloudflare Tunnel to localhost is unencrypted HTTP. Traefik's LetsEncrypt/ACME config exists but is unused for tunnel traffic.
-- **Cloudflared**: Runs as a systemd service on the VM using a remotely-managed token-based tunnel.
+- **Cloudflared**: The production connector runs on AWS `dokploy-aws` using the remotely-managed production tunnel. Historical Azure Dokploy connector state is migration history only; the Azure Dokploy estate is fully decommissioned.
 
 #### API
 
@@ -196,7 +184,8 @@ Application IDs:
 
 #### Recovery
 
-- **Backup**: Azure disk snapshots (nightly via Azure Backup vault in `rg-apps-dokploy`)
+- **Recovery evidence**: the 2026-08-17 migration used AWS Lightsail snapshots plus 16/16 version-matched PostgreSQL logical dump/restore verification. Provider snapshots and application-consistent database recovery are separate evidence classes.
+- **Ongoing backup cadence**: UNKNOWN in Packet 2. The Azure Backup-vault description below is historical rollback evidence, not proof of current AWS production backup health; use IKHP `backup-policies.v1.json` for canonical policy state.
 - **Critical after restore**: Port 3000 MUST be published to host for Cloudflare Tunnel to reach Dokploy: `docker service update dokploy --publish-add 3000:3000`
 - **Service restart**: `docker service update dokploy --force` (restarts without config change)
 - **Postgres recovery**: Wait for postgres to be fully ready before restarting Dokploy service (race condition on cold boot)
@@ -271,10 +260,10 @@ Notable statuses seen in Dokploy:
 Runtime location:
 - Docker Compose workload on the Dokploy host (project: `Ops`)
 
-Live endpoints:
-- Tailscale private: `http://100.83.38.48:3002` (via Tailscale network)
-- Internal (on dokploy): `http://localhost:3002`
-- Admin queue UI: `http://100.83.38.48:3002/admin/<BULL_AUTH_KEY>/queues`
+Current endpoint authority:
+- Internal on authoritative AWS Dokploy: `http://localhost:3002`.
+- The former Azure Tailscale endpoint is decommissioned and must not be used.
+- A current private Tailscale endpoint for Firecrawl was not independently re-verified in Packet 2 and remains UNKNOWN.
 
 Service details:
 - **Purpose**: Self-hosted web scraping & search API (default web research tool for Claude Code, Codex, Gemini)
@@ -308,45 +297,37 @@ Latest verified backup state on 2026-04-03:
 
 ### CloudPanel
 
-Current state:
-- The live CloudPanel server is the Hetzner host reachable through `ssh cloudpanel`.
-- CloudPanel CLI is available through `~/.local/bin/cloudpanel-cli`.
-- Hetzner Cloud CLI is available through `~/.local/bin/hetzner-cli`.
-- Hetzner Cloud inventory currently shows:
-  - server: `cloudpanel`
-  - type: `cax21`
-  - location: `nbg1`
-  - datacenter: `nbg1-dc3`
-  - firewall: `CloudPanel Firewall`
-- The currently exposed CLI surface on this server is narrow and oriented to database export/import, permission reset, and Varnish purge.
-- The Azure migration target is not currently live as a VM; the Azure resource group `rg-apps-cloudpanel` exists but is empty as of 2026-04-03.
+Current evidence state:
+- `cloudpanel-aws` is **OBSERVED-VERIFIED running** in AWS Lightsail, London Zone A, public `13.135.227.0`, with 8 GiB RAM, 2 vCPU, and 160 GiB SSD from owner-supplied AWS console evidence on 2026-08-18.
+- Current Git-managed `ssh cloudpanel` / `ssh cloudpanel-aws` points directly to `13.135.227.0` as user `ubuntu`.
+- Current hosted-site inventory, Cloudflare connector health, backup state, monitoring coverage, and Tailscale membership remain UNKNOWN until separately observed.
+- Hetzner is not part of the current infrastructure estate.
 
 ## Network Model
 
-- Primary inter-server private connectivity is Tailscale, not Azure VNet peering.
-- Dokploy reaches Supabase over Tailscale.
-- SSH for Azure servers is done over Tailscale.
-- CloudPanel SSH is done through a Cloudflare Tunnel, not Tailscale.
+- Primary private connectivity between the Dokploy/Supabase/control-host estate is Tailscale, not Azure VNet peering.
+- Authoritative AWS Dokploy reaches the shared Supabase authority through the tailnet; migration evidence records AWS `100.71.47.24` and Supabase `100.71.31.88`.
+- Supabase SSH uses Tailscale. Dokploy SSH now uses the AWS Tailscale address `100.71.47.24` in the manually updated repository config.
+- Current Git-managed CloudPanel SSH points directly to AWS public `13.135.227.0`. CloudPanel does not yet have a canonical Tailscale address in IKHP; adding one is a desirable follow-up if the host is enrolled safely.
 - Supabase PostgreSQL is intended to stay private to the server and trusted internal access paths.
 
 ## Tailscale Network Inventory
 
-All nodes in the tailnet as of 2026-04-04:
+Fresh migration evidence recorded **7 registered devices, 6 active and 1 offline on 2026-08-16**. This is dated observation evidence, not a Packet 2 live refresh:
 
-| Node | Tailscale IP | OS | Role | Status |
-|------|--------------|----|------|--------|
-| `office` | `100.86.124.66` | macOS | Primary control plane (Mac mini) | Online |
-| `dokploy` | `100.83.38.48` | Linux | Azure VM — app host / container orchestrator | Online |
-| `supabase` | `100.71.31.88` | Linux | Azure VM — Supabase / PostgreSQL backend | Online |
-| `macbook` | `100.70.12.18` | macOS | Secondary Mac — personal laptop | Idle |
-| `iphone` | `100.107.201.123` | iOS | Mobile device | Online |
-| `motorola` | `100.107.156.26` | Android | Mobile device | Offline |
+| Node | Tailscale IP | OS | Role | Status at observation |
+|------|--------------|----|------|-----------------------|
+| `office` | `100.86.124.66` | macOS | Primary control plane (Mac mini) | Active |
+| `dokploy-aws` | `100.71.47.24` | Linux | AWS authoritative Dokploy production host | Active |
+| `supabase` | `100.71.31.88` | Linux | Azure Supabase / PostgreSQL authority | Active |
+| `macbook` | `100.70.12.18` | macOS | Secondary Mac | Active/registered |
+| `iphone` | `100.107.201.123` | iOS | Contextual personal device | Active/registered |
+| `motorola` | `100.107.156.26` | Android | Contextual personal device | Offline at observation |
 
-Nodes without Tailscale:
-- `cloudpanel` (Hetzner) — uses Cloudflare Tunnel for SSH; no Tailscale installed
+CloudPanel Tailscale membership is **UNKNOWN** for the current AWS host. Public-IP SSH works via `13.135.227.0`; a Tailscale enrollment/address is a desirable follow-up before IKHP treats private-only CloudPanel SSH as canonical.
 
-Tag assignments:
-- `tagged-devices`: `dokploy`, `supabase` — server nodes managed as tagged devices in the tailnet
+Historical tag assignment note (2026-04-era):
+- `tagged-devices` previously covered `dokploy` and `supabase`. Current tag membership, including `dokploy-aws`, was not re-queried in Packet 2 and remains UNKNOWN until a safe Tailscale read succeeds.
 
 ## Automation Interfaces
 
@@ -354,9 +335,8 @@ These are the standard AI-agnostic interfaces both Claude and Codex should use:
 
 | Surface | Standard interface | Notes |
 | --- | --- | --- |
-| Azure | `~/.local/bin/azure-apps-provisioner`, `~/.local/bin/azure-data-provisioner`, and matching destroyer wrappers | Service-principal-backed, subscription-explicit Azure automation surface |
+| Azure PROCHAT-DATA | `~/.local/bin/azure-data-provisioner` and matching destroyer wrapper | Service-principal-backed Azure data-subscription surface for Supabase/data infrastructure only |
 | AWS | `~/.local/bin/aws-provisioner` and `~/.local/bin/aws-destroyer` | Assumed-role AWS automation surface layered on top of the base `claude-code` IAM user |
-| Hetzner | `~/.local/bin/hetzner-cli` | Hetzner Cloud infrastructure surface backed by local `hcloud` auth |
 | Dokploy | Direct tRPC API (`POST /api/trpc/*` with `x-api-key`); creds in `~/.config/dokploy/.env` | Primary deployment surface; `dokploy-cli` is broken (401s) — use direct API |
 | n8n | `~/.local/bin/n8n-api` | Primary headless workflow automation interface |
 | CloudPanel | `~/.local/bin/cloudpanel-cli` | Production-scoped; confirm before mutations |
@@ -381,7 +361,7 @@ Run `sync-credentials` at any time to scan `~/.config/` for new `.env` files and
   - `~/.local/bin/aws-destroyer` assumes `ClaudeCodexDestroyer`
 - Azure role flow on this Mac:
   - `~/.local/bin/azure-cli` is the generic user-authenticated `az`
-  - `azure-apps-*` and `azure-data-*` wrappers authenticate through dedicated service principals stored in `~/.config/azure-ai/credentials/`
+  - current IKHP scope uses the `azure-data-*` wrappers for PROCHAT-DATA/Supabase only; old `azure-apps-*` automation is decommissioned with PROCHAT-APPS.
 
 ## Domain & Site Inventory
 
@@ -391,9 +371,9 @@ To re-enable a disabled site: add its entry back to the relevant Cloudflare Tunn
 
 ### CloudPanel AWS (tunnel `1bdef92e`)
 
-Sites hosted on the AWS CloudPanel server (13.135.227.0), accessed via the `CloudPanel AWS` Cloudflare Tunnel.
-SSH access: `ssh cloudpanel-aws` (ubuntu user with sudo).
-CloudPanel UI: `https://cp.prochat.tools`
+Historical/configuration inventory for sites associated with AWS CloudPanel `13.135.227.0` and the `CloudPanel AWS` tunnel. The per-site status table below was not live-reverified in Packet 2; treat current site health as UNKNOWN unless newer dated evidence exists.
+SSH configuration: `ssh cloudpanel` currently targets `13.135.227.0` as user `ubuntu`; reachability was not re-probed in Packet 2.
+CloudPanel UI reference: `https://cp.prochat.tools`
 
 | Domain | Status | Notes |
 |--------|--------|-------|
@@ -412,8 +392,8 @@ CloudPanel UI: `https://cp.prochat.tools`
 
 ### Dokploy (tunnel `dc7bb87e`)
 
-Sites deployed on the Dokploy host (Azure VM `vm-dokploy`, 68.221.139.108).
-SSH access: `ssh dokploy` (Tailscale).
+Sites in this inventory now belong to the authoritative AWS Dokploy runtime `dokploy-aws`; the 2026-08-17 cutover verified 17 production-critical domains externally. The full table also contains older inventory entries, so individual status labels should not be treated as a fresh whole-estate probe.
+SSH: the owner manually updated `operations/system-configs/ssh/config`; `ssh dokploy` and `ssh dokploy-aws` now target AWS Tailscale `100.71.47.24` as user `ubuntu`.
 Dokploy UI: `https://dokploy.prochat.tools`
 
 | Domain | App | Project | Status | Notes |
@@ -450,24 +430,12 @@ SSH access: `ssh supabase` (Tailscale).
 
 ### Cloudflare Tunnel Reference
 
-| Tunnel | ID | Server | Purpose |
-|--------|-----|--------|---------|
-| `CloudPanel` (Hetzner) | `91069afe-7e45-4703-88c3-73bcf61c3fb6` | Hetzner `cloudpanel` | Hetzner CloudPanel SSH + UI + studio.prochat.tools |
-| `CloudPanel AWS` | `1bdef92e-5e70-4836-9552-3e4653cef43a` | AWS `cloudpanel-aws` | All CloudPanel AWS hosted WordPress sites |
-| `Dokploy` | `dc7bb87e-...` | Azure `vm-dokploy` | All Dokploy-hosted apps |
+Dokploy connector handoff to AWS is OBSERVED-VERIFIED from the 2026-08-17 cutover. CloudPanel tunnel identities come from older configuration/inventory evidence; their current connector/liveness remains UNKNOWN in Packet 2.
 
-### Hetzner CloudPanel (tunnel `91069afe`) — Legacy
-
-The Hetzner server is the **old** CloudPanel. Migrated sites have been removed from its tunnel. Remaining tunnel entries as of 2026-04-04:
-
-| Hostname | Service | Notes |
-|----------|---------|-------|
-| `ssh_cp.prochat.tools` | SSH | Cloudflare SSH ingress for `cloudpanel` alias |
-| `cp.prochat.tools` | CloudPanel UI | Stale — DNS now points to AWS tunnel; effectively unreachable |
-| `studio.prochat.tools` | Supabase Studio | — |
-
-Known sites still present on Hetzner server filesystem (not yet deleted):
-- `jccp-management.pro` — requires manual deletion via Hetzner CloudPanel UI at `https://91.99.71.221:8443`
+| Tunnel | ID | Server / configured target | Purpose / current evidence state |
+|--------|-----|----------------------------|----------------------------------|
+| `CloudPanel AWS` | `1bdef92e-5e70-4836-9552-3e4653cef43a` | AWS `cloudpanel-aws` | Configured AWS CloudPanel ingress; current connector/site health UNKNOWN |
+| `Dokploy` | `dc7bb87e-...` | AWS `dokploy-aws` | **Current production ingress**; Azure connector stopped at cutover |
 
 ## Application-Specific Notes
 
@@ -509,7 +477,6 @@ Known sites still present on Hetzner server filesystem (not yet deleted):
 ## Gaps / TODO
 
 - Confirm domain names for remaining Dokploy apps (ProChat Accountant, Egg Cooker, Free Resend, kutt, umami, boilerplates).
-- Delete `jccp-management.pro` site files from Hetzner server via CloudPanel UI.
 - Supabase database password rotation (currently expired; not blocking Family Finance which is local-only)
 - Optional: Clean up stale Cloudflare DNS record for `finance.prochat.tools` (no longer routes anywhere)
 
