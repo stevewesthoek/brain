@@ -18,11 +18,24 @@ Host MacBook macbook
   ConnectTimeout 5
 
 # ============================================================
-# Dokploy @ Azure via Tailscale
+# Dokploy @ AWS via Tailscale
 # ============================================================
-Host dokploy
-  HostName 100.83.38.48
-  User master
+Host dokploy dokploy-aws
+  HostName 100.71.47.24
+  User ubuntu
+  Port 22
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+  ConnectTimeout 5
+
+# ============================================================
+# CloudPanel @ AWS via Tailscale
+# ============================================================
+Host cloudpanel cloudpanel-aws
+  HostName 100.121.12.36
+  User ubuntu
   Port 22
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
@@ -38,19 +51,6 @@ Host supabase
   User master
   Port 22
   IdentityFile ~/.ssh/id_ed25519
-  IdentitiesOnly yes
-  ServerAliveInterval 30
-  ServerAliveCountMax 3
-  ConnectTimeout 5
-
-# ============================================================
-# CloudPanel @ AWS
-# ============================================================
-Host cloudpanel
-  HostName 13.135.227.0
-  User ubuntu
-  Port 22
-  IdentityFile ~/.ssh/cloudpanel-aws-key.pem
   IdentitiesOnly yes
   ServerAliveInterval 30
   ServerAliveCountMax 3

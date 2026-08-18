@@ -89,7 +89,7 @@ Only the separate `PROCHAT-DATA` subscription remains part of the current infras
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `dokploy-aws` | Authoritative Dokploy production host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu / exact patch level not re-probed | 4 vCPU, 16 GiB RAM, 320 GiB SSD | `18.135.240.168` | `100.71.47.24` | `ssh dokploy` / `ssh dokploy-aws` -> AWS Tailscale | **Running authoritative production** — owner AWS console evidence 2026-08-18 |
 | `supabase` / `vm-supabase` | Authoritative Supabase + PostgreSQL backend host | Azure / `PROCHAT-DATA` | Spain Central | Ubuntu 24.04.3 LTS (historical observation) | 2 vCPU, 7.8 GiB RAM (historical observation) | `68.221.194.245` | `100.71.31.88` | `ssh supabase` | Current Azure data authority; volatile VM state not re-probed in Packet 2 |
-| `cloudpanel-aws` | Authoritative CloudPanel host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu / exact patch level not re-probed | 2 vCPU, 8 GiB RAM, 160 GiB SSD | `13.135.227.0` | UNKNOWN | `ssh cloudpanel` | **Running authoritative CloudPanel** — owner AWS console evidence 2026-08-18 |
+| `cloudpanel-aws` | Authoritative CloudPanel host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu 24.04.4 LTS | 2 vCPU, 8 GiB RAM, 160 GiB SSD | `13.135.227.0` | `100.121.12.36` | `ssh cloudpanel` -> Tailscale | **Running authoritative CloudPanel** — management-plane hardened 2026-08-18 |
 
 ## Azure Resource Inventory
 
@@ -117,13 +117,11 @@ Live observations:
 Source of truth:
 - [ssh config](/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/ssh/config)
 
-Current Git-managed aliases:
-- `dokploy` is **stale in the repository file** because Workbench policy blocked the owner-authorized correction. Current authority requires `dokploy` / `dokploy-aws` -> AWS Tailscale `100.71.47.24`, user `ubuntu`.
-- `supabase` -> Tailscale `100.71.31.88`, user `master`.
-- `cloudpanel` -> AWS public `13.135.227.0`, user `ubuntu`.
-- `office` -> Tailscale `100.86.124.66`, user `office`.
-
-The required Dokploy SSH correction is documented in `operations/reports/infrastructure-estate-reconciliation-2026-08-17.md`. `operations/system-configs/ssh/config` itself remains unchanged only because the Workbench source policy returns `PATH_NOT_ALLOWED` for that file.
+Current Git-managed aliases (all via Tailscale — management-plane hardened 2026-08-18):
+- `dokploy` / `dokploy-aws` -> Tailscale `100.71.47.24`, user `ubuntu`, key `id_ed25519`.
+- `supabase` -> Tailscale `100.71.31.88`, user `master`, key `id_ed25519`.
+- `cloudpanel` / `cloudpanel-aws` -> Tailscale `100.121.12.36`, user `ubuntu`, key `id_ed25519`.
+- `office` -> Tailscale `100.86.124.66`, user `office`, key `id_ed25519`.
 
 ### Admin / service entrypoints
 
@@ -297,37 +295,47 @@ Latest verified backup state on 2026-04-03:
 
 ### CloudPanel
 
-Current evidence state:
-- `cloudpanel-aws` is **OBSERVED-VERIFIED running** in AWS Lightsail, London Zone A, public `13.135.227.0`, with 8 GiB RAM, 2 vCPU, and 160 GiB SSD from owner-supplied AWS console evidence on 2026-08-18.
-- Current Git-managed `ssh cloudpanel` / `ssh cloudpanel-aws` points directly to `13.135.227.0` as user `ubuntu`.
-- Current hosted-site inventory, Cloudflare connector health, backup state, monitoring coverage, and Tailscale membership remain UNKNOWN until separately observed.
+Current evidence state (management-plane hardened 2026-08-18):
+- `cloudpanel-aws` is **OBSERVED-VERIFIED running** in AWS Lightsail, London Zone A, public `13.135.227.0`, Tailscale `100.121.12.36`, with 8 GiB RAM, 2 vCPU, and 160 GiB SSD.
+- SSH access: Tailscale-only via `ssh cloudpanel` -> `100.121.12.36`, user `ubuntu`, key `id_ed25519`.
+- Admin panel (TCP/8443): Tailscale-only access via `https://100.121.12.36:8443`.
+- Public web ingress: TCP/80, TCP/443, UDP/443 open to `0.0.0.0/0` (direct website serving).
+- UFW active on host with rules matching Lightsail firewall (80/443/22 + Tailscale).
+- Hosted sites: admin.yeshua.academy, ag.prochat.tools, click.israelinvestment.org, feelgoodwithana.com, legacy.prochat.tools, microgreens.market, onefleshinchrist.com, pedroandkristina.com, portal.jpvbootcamp.com, services.avigdor.tech, thedutchperformance.nl, vilasolidaria.pt, wedding.onefleshinchrist.com.
+- Cloudflare Tunnel `1bdef92e-5e70-4836-9552-3e4653cef43a` connects from the host.
 - Hetzner is not part of the current infrastructure estate.
 
 ## Network Model
 
-- Primary private connectivity between the Dokploy/Supabase/control-host estate is Tailscale, not Azure VNet peering.
-- Authoritative AWS Dokploy reaches the shared Supabase authority through the tailnet; migration evidence records AWS `100.71.47.24` and Supabase `100.71.31.88`.
-- Supabase SSH uses Tailscale. Dokploy SSH now uses the AWS Tailscale address `100.71.47.24` in the manually updated repository config.
-- Current Git-managed CloudPanel SSH points directly to AWS public `13.135.227.0`. CloudPanel does not yet have a canonical Tailscale address in IKHP; adding one is a desirable follow-up if the host is enrolled safely.
+- Primary private connectivity between all production servers is **Tailscale**. All SSH management is Tailscale-only (no public TCP/22).
+- Authoritative AWS Dokploy reaches the shared Supabase authority through the tailnet; `100.71.47.24` ↔ `100.71.31.88`.
+- All three production servers (dokploy-aws, cloudpanel-aws, supabase) are enrolled in the tailnet and use OpenSSH-over-Tailscale for administration.
+- Dokploy application ingress: Cloudflare Tunnel (outbound, no public ports required).
+- CloudPanel application ingress: Direct public 80/443/UDP443 (websites served directly).
+- CloudPanel admin panel (8443): Tailscale-only access.
+- Public TCP/22: Blocked on both AWS Lightsail instances. Only `lightsail-connect` (browser console) retained as emergency fallback.
 - Supabase PostgreSQL is intended to stay private to the server and trusted internal access paths.
 
 ## Tailscale Network Inventory
 
-Fresh migration evidence recorded **7 registered devices, 6 active and 1 offline on 2026-08-16**. This is dated observation evidence, not a Packet 2 live refresh:
+Live observation **2026-08-18** (8 registered devices, 7 active, 1 offline):
 
-| Node | Tailscale IP | OS | Role | Status at observation |
-|------|--------------|----|------|-----------------------|
+| Node | Tailscale IP | OS | Role | Status |
+|------|--------------|----|------|--------|
 | `office` | `100.86.124.66` | macOS | Primary control plane (Mac mini) | Active |
 | `dokploy-aws` | `100.71.47.24` | Linux | AWS authoritative Dokploy production host | Active |
+| `cloudpanel-aws` | `100.121.12.36` | Linux | AWS authoritative CloudPanel host | Active |
 | `supabase` | `100.71.31.88` | Linux | Azure Supabase / PostgreSQL authority | Active |
+| `dokploy` | `100.83.38.48` | Linux | Old Azure Dokploy (decommissioned) | Registered/idle |
 | `macbook` | `100.70.12.18` | macOS | Secondary Mac | Active/registered |
 | `iphone` | `100.107.201.123` | iOS | Contextual personal device | Active/registered |
-| `motorola` | `100.107.156.26` | Android | Contextual personal device | Offline at observation |
+| `motorola` | `100.107.156.26` | Android | Contextual personal device | Offline |
 
-CloudPanel Tailscale membership is **UNKNOWN** for the current AWS host. Public-IP SSH works via `13.135.227.0`; a Tailscale enrollment/address is a desirable follow-up before IKHP treats private-only CloudPanel SSH as canonical.
-
-Historical tag assignment note (2026-04-era):
-- `tagged-devices` previously covered `dokploy` and `supabase`. Current tag membership, including `dokploy-aws`, was not re-queried in Packet 2 and remains UNKNOWN until a safe Tailscale read succeeds.
+Management-plane model (hardened 2026-08-18):
+- All production servers use OpenSSH-over-Tailscale (NOT Tailscale SSH mode).
+- Public TCP/22 blocked at Lightsail cloud firewall on both AWS hosts.
+- Emergency fallback: `lightsail-connect` alias retained for Lightsail browser console.
+- Tailscale key expiry: dokploy-aws expires 2027-02-12; cloudpanel-aws TBD.
 
 ## Automation Interfaces
 

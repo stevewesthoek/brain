@@ -63,18 +63,20 @@ No auth config file needed — Tailscale uses its own daemon (`tailscaled`) and 
 
 ## Tailnet node inventory
 
-Current nodes as of 2026-04-07:
+Current nodes as of 2026-08-18:
 
 | Node | Tailscale IP | OS | Role | Status |
 |------|--------------|----|------|--------|
 | `office` | `100.86.124.66` | macOS | Primary control plane (Mac mini) | Online |
-| `dokploy` | `100.83.38.48` | Linux | Azure VM — app host / container orchestrator | Online |
+| `dokploy-aws` | `100.71.47.24` | Linux | AWS Lightsail — authoritative Dokploy production | Online |
+| `cloudpanel-aws` | `100.121.12.36` | Linux | AWS Lightsail — authoritative CloudPanel host | Online |
 | `supabase` | `100.71.31.88` | Linux | Azure VM — Supabase / PostgreSQL backend | Online |
+| `dokploy` | `100.83.38.48` | Linux | Old Azure Dokploy (decommissioned) | Idle |
 | `macbook` | `100.70.12.18` | macOS | Secondary Mac — personal laptop | Idle |
 | `iphone` | `100.107.201.123` | iOS | Mobile device | Online |
 | `motorola` | `100.107.156.26` | Android | Mobile device | Offline |
 
-Note: `cloudpanel` (Hetzner) does not have Tailscale installed — it uses a Cloudflare Tunnel for SSH access.
+All production servers use OpenSSH-over-Tailscale (not Tailscale SSH mode). Public TCP/22 is blocked at the Lightsail cloud firewall on both AWS hosts.
 
 ## Read-only discovery commands
 
@@ -122,6 +124,6 @@ fi
 
 ## Notes
 
-- Tailscale is the primary private network for this infrastructure. All Azure server SSH goes through Tailscale IPs.
-- `cloudpanel` (Hetzner) is the one exception — no Tailscale, uses Cloudflare Tunnel.
+- Tailscale is the primary private network for this infrastructure. All production server SSH goes through Tailscale IPs.
+- Public SSH (TCP/22) is blocked on both AWS Lightsail hosts. Emergency access only via `lightsail-connect` browser console.
 - Tailscale admin console and ACL management are out of scope for this skill.

@@ -52,15 +52,16 @@ operations/system-configs/ssh/config
 ```
 
 Current alias configuration:
-- SSH host alias: `cloudpanel`
-- Remote host: `ssh_cp.prochat.tools`
-- Access path: Cloudflare Tunnel via `cloudflared access ssh`
-- Remote user: `master`
-- Remote CLI binary: `/usr/bin/clpctl`
+- SSH host alias: `cloudpanel` / `cloudpanel-aws`
+- Remote host: Tailscale `100.121.12.36`
+- Access path: OpenSSH over Tailscale (no public SSH, no Cloudflare Tunnel for SSH)
+- Remote user: `ubuntu`
+- Remote CLI binary: `/usr/bin/clpctl` (requires `sudo`)
+- Admin panel: `https://100.121.12.36:8443` (Tailscale-only)
 
 Important:
-- The current shared wrapper runs as `master` on the server.
-- Root-only CloudPanel commands from the broader CloudPanel docs may require a different SSH user or passwordless `sudo` for `/usr/bin/clpctl`.
+- The wrapper connects as `ubuntu` via Tailscale and runs `sudo /usr/bin/clpctl`.
+- Public TCP/22 is blocked. SSH only works over Tailscale.
 
 ## Recommended workflow
 ```bash

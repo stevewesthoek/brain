@@ -9,4 +9,4 @@ set -euo pipefail
 target_host="${CLOUDPANEL_SSH_HOST:-cloudpanel}"
 remote_bin="${CLOUDPANEL_CLI_REMOTE_BIN:-/usr/bin/clpctl}"
 
-exec ssh "${target_host}" "${remote_bin}" "$@"
+exec ssh "${target_host}" sudo "${remote_bin}" "$@"
