@@ -87,9 +87,9 @@ Only the separate `PROCHAT-DATA` subscription remains part of the current infras
 
 | Server | Purpose | Cloud | Region / Platform | OS | CPU / RAM | Public IP | Tailscale IP | Access path | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `dokploy-aws` | Authoritative Dokploy production host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu / exact patch level not re-probed | 4 vCPU, 16 GiB RAM, 320 GiB SSD | `18.135.240.168` | `100.71.47.24` | `ssh dokploy` / `ssh dokploy-aws` -> AWS Tailscale | **Running authoritative production** — owner AWS console evidence 2026-08-18 |
+| `dokploy-aws` | Authoritative Dokploy production host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu 24.04.4 LTS, kernel 6.17.0-1019-aws | 4 vCPU, 16 GiB RAM, 320 GiB SSD | `18.135.240.168` | `100.71.47.24` | `ssh dokploy` -> Tailscale | **Running authoritative production** — Linux hostname `dokploy-aws`, standardized 2026-08-18 |
 | `supabase` / `vm-supabase` | Authoritative Supabase + PostgreSQL backend host | Azure / `PROCHAT-DATA` | Spain Central | Ubuntu 24.04.3 LTS (historical observation) | 2 vCPU, 7.8 GiB RAM (historical observation) | `68.221.194.245` | `100.71.31.88` | `ssh supabase` | Current Azure data authority; volatile VM state not re-probed in Packet 2 |
-| `cloudpanel-aws` | Authoritative CloudPanel host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu 24.04.4 LTS | 2 vCPU, 8 GiB RAM, 160 GiB SSD | `13.135.227.0` | `100.121.12.36` | `ssh cloudpanel` -> Tailscale | **Running authoritative CloudPanel** — management-plane hardened 2026-08-18 |
+| `cloudpanel-aws` | Authoritative CloudPanel host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu 24.04.4 LTS, kernel 6.17.0-1007-aws | 2 vCPU, 8 GiB RAM, 160 GiB SSD | `13.135.227.0` | `100.121.12.36` | `ssh cloudpanel` -> Tailscale | **Running authoritative CloudPanel** — Linux hostname `cloudpanel-aws`, standardized 2026-08-18 |
 
 ## Azure Resource Inventory
 
@@ -313,7 +313,7 @@ Current evidence state (management-plane hardened 2026-08-18):
 - Dokploy application ingress: Cloudflare Tunnel (outbound, no public ports required).
 - CloudPanel application ingress: Direct public 80/443/UDP443 (websites served directly).
 - CloudPanel admin panel (8443): Tailscale-only access.
-- Public TCP/22: Blocked on both AWS Lightsail instances. Only `lightsail-connect` (browser console) retained as emergency fallback.
+- Public TCP/22: Blocked on both AWS Lightsail instances. `lightsail-connect` alias retained in Lightsail firewall. Actual browser SSH viability differs per server (see Emergency access model below).
 - Supabase PostgreSQL is intended to stay private to the server and trusted internal access paths.
 
 ## Tailscale Network Inventory
@@ -331,11 +331,16 @@ Live observation **2026-08-18** (8 registered devices, 7 active, 1 offline):
 | `iphone` | `100.107.201.123` | iOS | Contextual personal device | Active/registered |
 | `motorola` | `100.107.156.26` | Android | Contextual personal device | Offline |
 
-Management-plane model (hardened 2026-08-18):
+Management-plane model (hardened + hostnames standardized 2026-08-18):
 - All production servers use OpenSSH-over-Tailscale (NOT Tailscale SSH mode).
+- Linux hostnames match Tailscale/Lightsail names: `dokploy-aws`, `cloudpanel-aws`.
+- `preserve_hostname: true` set in cloud-init on both to prevent revert on reboot.
 - Public TCP/22 blocked at Lightsail cloud firewall on both AWS hosts.
-- Emergency fallback: `lightsail-connect` alias retained for Lightsail browser console.
 - Tailscale key expiry: dokploy-aws expires 2027-02-12; cloudpanel-aws TBD.
+
+Emergency access model (verified 2026-08-18):
+- **dokploy-aws**: Lightsail browser SSH is SUPPORTED-BY-CONFIG. `lightsail-connect` passes Lightsail firewall, UFW is inactive, sshd has `TrustedUserCAKeys` for the Lightsail CA, and `LightsailDefaultKeyPair` is in authorized_keys. All layers allow it.
+- **cloudpanel-aws**: Lightsail browser SSH is BLOCKED BY HOST UFW. `lightsail-connect` passes the Lightsail cloud firewall, but host UFW restricts TCP/22 to `100.64.0.0/10` only (Tailscale CGNAT). The Lightsail relay IPs are public AWS addresses outside this range. Recovery if Tailscale fails requires: stop instance, use Lightsail launch script or snapshot-based recovery, or temporarily add relay IPs to UFW via instance user-data on next boot.
 
 ## Automation Interfaces
 
