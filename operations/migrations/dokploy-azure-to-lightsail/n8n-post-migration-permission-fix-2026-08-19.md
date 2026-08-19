@@ -4,7 +4,7 @@
 
 n8n was completely non-functional on AWS from migration completion (2026-08-17) through 2026-08-19. Five independent defects were discovered and resolved during a multi-hour diagnostic session. The final and most elusive defect — intermittent authentication failure — was caused by a Docker DNS collision where two PostgreSQL containers advertised the same generic hostname on a shared overlay network.
 
-**Final status:** n8n fully operational. All production data preserved with zero mutations to owner, password, API keys, credentials, workflows, or encryption identity.
+**Final status:** CLOSED. n8n fully operational. All production data preserved with zero mutations to owner, password, API keys, credentials, workflows, or encryption identity. Human login acceptance: 3/3 consecutive logins PASS (existing owner, unchanged password, 2026-08-19).
 
 ---
 
@@ -267,6 +267,8 @@ During diagnostic instrumentation, the full `N8N_ENCRYPTION_KEY` was accidentall
 
 - **Migration completion:** 2026-08-17
 - **All defects resolved:** 2026-08-19 ~20:15 UTC
+- **Human login acceptance:** 2026-08-19 — 3/3 consecutive logins PASS
+- **Incident status:** CLOSED
 - **Total n8n outage:** ~2.5 days (never fully functional on AWS post-migration)
 
 ---

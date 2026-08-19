@@ -294,6 +294,8 @@ Production state (verified 2026-08-19):
 - 17 credentials (encrypted, depend on N8N_ENCRYPTION_KEY)
 - 2 API keys (Milestone App, ProChat)
 - 6 webhook registrations
+- Login acceptance: 3/3 consecutive logins PASS (existing owner, unchanged password)
+- Incident status: CLOSED
 
 Critical invariant: postgres MUST NOT be on any shared Docker network where another compose project could advertise the same `postgres` DNS alias. Current architecture isolates postgres to the compose-internal network only.
 

@@ -1282,6 +1282,8 @@ n8n container → DNS "postgres" → compose-internal network only → 172.19.0.
 3. No stale n8n PostgreSQL service may advertise the same DB DNS identity on any network visible to production n8n.
 4. `N8N_ENCRYPTION_KEY` must be preserved exactly — if changed, all 17 credentials become unreadable.
 5. Volume `_data` directory must be owned by 1000:1000 (not root).
+6. `N8N_PROXY_HOPS` must match the observed production proxy topology (currently 2: Cloudflare → Traefik → n8n).
+7. Production DB hostname must resolve to exactly one target from within the n8n container runtime.
 
 **Critical dependency:** `N8N_ENCRYPTION_KEY` in `.env` — if lost or changed, credentials are unreadable.
 Zero Azure infrastructure references in workflows (confirmed by Section 16 audit).

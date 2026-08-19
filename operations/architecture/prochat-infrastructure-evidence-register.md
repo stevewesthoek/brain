@@ -708,3 +708,9 @@ None. All material factual contradictions identified through Phase 3C11 have bee
 - **Evidence:** Diagnostic session terminal output (ephemeral, not persisted to disk or logs).
 - **Observed:** 2026-08-19
 - **Deferred follow-up:** Evaluate key rotation after extended stability period.
+
+### F-N8N-009 — Human login acceptance: 3/3 consecutive logins PASS
+- **Claim:** Production owner (info@prochat.tools) performed 3 consecutive login/logout cycles at `https://n8n.prochat.tools` using the existing unchanged password. All 3 passed. No password reset, no new account, no replacement owner. Incident CLOSED.
+- **Classification:** OBSERVED-VERIFIED (human-performed)
+- **Evidence:** Owner self-report, 2026-08-19. Closes final acceptance gate from `n8n-post-migration-permission-fix-2026-08-19.md`.
+- **Observed:** 2026-08-19
