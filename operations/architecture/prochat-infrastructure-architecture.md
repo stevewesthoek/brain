@@ -216,26 +216,55 @@ Azure is a quiesced rollback source — data frozen at cutover point-in-time.
 control-plane, pg15 for tenant local DBs) are Docker containers running on the **Dokploy host**,
 not on the Supabase server. They are entirely separate infrastructure.
 
+### 2.4 AWS Lightsail CloudPanel (Current Production — Authoritative)
+
+| Property | Value |
+|----------|-------|
+| Name / Linux hostname | `cloudpanel-aws` |
+| Provider | AWS Lightsail |
+| Region | eu-west-2 (London, Zone A) |
+| CPU / RAM | 2 vCPU / 8 GB |
+| Disk | 160 GB SSD |
+| Static public IPv4 | `13.135.227.0` (retained for website ingress) |
+| Tailscale IPv4 | `100.121.12.36` |
+| Tailscale FQDN | `cloudpanel-aws.tail3c0f0a.ts.net` |
+| Management SSH | standard OpenSSH over Tailscale; `ssh cloudpanel`; normal public TCP/22 blocked at the Lightsail perimeter |
+| CloudPanel admin | `https://100.121.12.36:8443`; current UFW evidence keeps 8443 on the Tailscale management path |
+| Host UFW TCP/22 | allows Anywhere (IPv4 + IPv6) in the final evidence closure; this is not the effective public perimeter |
+| Lightsail TCP/22 | `lightsail-connect` only; no ordinary public CIDRs |
+| Public website ingress | public 80/tcp, 443/tcp, 443/udp retained; CloudPanel also has active Cloudflare Tunnel ingress for configured hostnames |
+| Tailscale SSH feature | disabled |
+| Tailscale node-key expiry | disabled |
+| Hostname persistence | `preserve_hostname: true`; verified persistent |
+| Emergency browser SSH | supported by current Lightsail `lightsail-connect` configuration; not independently browser-session tested |
+| Production health | PASS on 2026-08-18 |
+
 ---
 
 ## 3. Network Architecture
 
-### 3.1 Tailscale Mesh
+### 3.1 Tailscale Management Mesh
 
-All infrastructure nodes are joined to the same Tailscale network (`tail3c0f0a.ts.net`).
-Cross-node traffic flows over Tailscale encrypted tunnels. No cloud firewall exceptions are
-required beyond Tailscale's own UDP handshake.
+Tailscale is the canonical private **management plane** for ProChat infrastructure. Normal AWS server administration uses standard OpenSSH over Tailscale; the Tailscale SSH server feature is disabled. Public-IP presence is independent from administrative exposure.
 
-**Infrastructure nodes (OBSERVED-VERIFIED 2026-08-16 from `sudo tailscale status` on AWS):**
+**Infrastructure identities (latest canonical evidence 2026-08-18):**
 ```
-  Azure Dokploy      100.83.38.48   ←→  Tailscale mesh
-  AWS Lightsail      100.71.47.24   ←→  Tailscale mesh
-  Supabase           100.71.31.88   ←→  Tailscale mesh (+ subnet 10.0.2.0/24); direct peer tunnel
+  dokploy-aws       100.71.47.24    dokploy-aws.tail3c0f0a.ts.net   authoritative AWS production
+  cloudpanel-aws    100.121.12.36   cloudpanel-aws.tail3c0f0a.ts.net authoritative AWS CloudPanel
+  supabase          100.71.31.88    self-hosted Supabase + subnet 10.0.2.0/24
+  dokploy           100.83.38.48    retained Azure fallback only; non-production
+  office            100.86.124.66   local control host
+  macbook           100.70.12.18    local operator host
 ```
 
-**Full tailnet:** The tailnet contains 7 registered devices (6 active): the 3 infrastructure nodes
-above, plus macbook (100.70.12.18), iphone (100.107.201.123), office (100.86.124.66), and motorola
-(offline 76d+). Architecture references to "3 Tailscale nodes" mean the 3 infrastructure nodes.
+Management-plane invariants:
+- `dokploy-aws` and `cloudpanel-aws` use OpenSSH over Tailscale; normal public TCP/22 is blocked.
+- Tailscale node-key expiry is disabled for permanent infrastructure nodes `dokploy-aws`, `cloudpanel-aws`, and Supabase.
+- Both AWS production nodes are currently user-owned by `info@prochat.tools`, untagged, and receive effective connectivity through the existing wildcard grant; no ACL/tag redesign was part of the 2026-08-18 standardization.
+- CloudPanel TCP/8443 remains on the Tailscale management path. Final closure evidence shows host UFW TCP/22 allows Anywhere, while the Lightsail perimeter restricts TCP/22 to `lightsail-connect` only; ordinary public SSH remains blocked.
+- Dokploy and CloudPanel share the same management plane but intentionally use different application-ingress models.
+
+The older 2026-08-16 `7 registered / 6 active` tailnet count is historical observation evidence only and is not a durable architecture invariant after CloudPanel enrollment.
 
 **Subnet route:** The Supabase Tailscale node advertises `10.0.2.0/24`. Application containers
 holding `DATABASE_URL`/`SYSTEM_DATABASE_URL` pointing to `10.0.2.4:5433` reach PostgreSQL via
@@ -801,11 +830,15 @@ Supabase even if cloudflared is masked.
 ### 10.4 n8n Automation Flow
 
 ```
-Scheduled triggers / webhooks
-  → n8n:2.4.7 container
+Scheduled triggers / webhooks (https://n8n.prochat.tools/webhook/*)
+  → Cloudflare Tunnel → cloudflared (systemd) → http://localhost:80
+  → Traefik (file-provider route: /etc/dokploy/traefik/dynamic/n8n.yml)
+  → http://apps-internal-n8n-cvjx2s-n8n-1:5678 (Docker DNS, dokploy-network)
+  → n8n:2.4.7 container (Docker Compose, UID 1000:1000)
   → n8n postgres:17-alpine (local: workflows, credentials, execution logs)
   → External services via HTTP (Resend, Stripe, GHCR, Google Calendar, etc.)
   Note: n8n is NOT connected to Supabase — local postgres only
+  Note: n8n is a Compose workload routed via file-provider (not Swarm discovery)
 ```
 
 ### 10.5 Auth Flow (Ory Kratos)

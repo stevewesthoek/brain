@@ -2,7 +2,7 @@
 
 **Phase:** 3C7–3C11 + Phase 3F Post-Cutover — Architecture Evidence-Provenance Audit and Correction Passes  
 **Created:** 2026-08-16  
-**Last updated:** 2026-08-17 (Phase 3F — post-cutover facts added)  
+**Last updated:** 2026-08-19 (n8n post-migration regression fix)  
 **Status:** COMPLETE — production running on AWS Lightsail
 
 ## Purpose
@@ -560,3 +560,118 @@ None. All material factual contradictions identified through Phase 3C11 have bee
 | Ory Kratos config drift since Phase 3A | CUTOVER-TIME GATE | Q9 |
 | tenant_* schema current runtime dependency | NOT FULLY VERIFIED | See Section 8.5 |
 | tenant_prokit / tenant_saaskit logical DB usage | UNKNOWN | F-UNK-005 |
+
+
+
+---
+
+## AWS Management-Plane Closure Facts (2026-08-18)
+
+### F-MGMT-001 — AWS production management plane is OpenSSH over Tailscale
+- **Claim:** Normal administrative SSH for both `dokploy-aws` and `cloudpanel-aws` uses standard OpenSSH over private Tailscale connectivity; the Tailscale SSH server feature is disabled on both nodes, and normal public TCP/22 is blocked.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18; fresh independent SSH-over-Tailscale checks PASS on both hosts; current repository SSH config uses the Tailscale addresses.
+- **Observed:** 2026-08-18
+
+### F-MGMT-002 — Dokploy AWS permanent infrastructure identity
+- **Claim:** `dokploy-aws` has persistent Linux hostname `dokploy-aws`, Tailscale FQDN `dokploy-aws.tail3c0f0a.ts.net`, Tailscale IPv4 `100.71.47.24`, `tailscaled` enabled/active, and Tailscale node-key expiry disabled. Static public IPv4 `18.135.240.168` remains attached but is not normal SSH or application ingress.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18; `preserve_hostname: true`; production health PASS; Cloudflare Tunnel remains application ingress.
+- **Observed:** 2026-08-18
+
+### F-MGMT-003 — CloudPanel AWS permanent infrastructure identity and management firewall
+- **Claim:** `cloudpanel-aws` has persistent Linux hostname `cloudpanel-aws`, Tailscale FQDN `cloudpanel-aws.tail3c0f0a.ts.net`, Tailscale IPv4 `100.121.12.36`, `tailscaled` enabled/active, and Tailscale node-key expiry disabled. Final evidence shows host UFW TCP/22 allows Anywhere (v4+v6), while the Lightsail perimeter permits TCP/22 only from `lightsail-connect`; ordinary public SSH is blocked. CloudPanel admin 8443 remains on the Tailscale management path, while public website ingress on 80/443/UDP443 remains intentionally enabled.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/infrastructure/tailscale-cloudflare-connectivity-audit-2026-08-18.md` evidence-closure addendum; fresh Tailscale SSH PASS; AWS Lightsail API port-state evidence; external public SSH timeout; CloudPanel production health PASS.
+- **Observed:** 2026-08-18
+
+### F-MGMT-004 — Permanent infrastructure Tailscale key-expiry policy
+- **Claim:** Tailscale node-key expiry is disabled for the long-lived infrastructure nodes `dokploy-aws`, `cloudpanel-aws`, and self-hosted Supabase.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18; Supabase precedent plus closure verification on both AWS nodes.
+- **Observed:** 2026-08-18
+
+### F-MGMT-005 — Management plane and application plane are separate concerns
+- **Claim:** Tailscale is the canonical private management plane. Application ingress remains workload-specific: Dokploy uses Cloudflare Tunnel; CloudPanel uses a mixed model with active Cloudflare Tunnel ingress for configured hostnames plus retained public Lightsail IPv4 web ingress on 80/443/UDP443. A retained public IPv4 does not imply public administrative exposure.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18.
+- **Observed:** 2026-08-18
+
+### F-NAME-001 — Azure subscription display names changed only
+- **Claim:** Azure subscription display name `PROCHAT-DATA` is now `supabase-azure`; legacy Dokploy subscription display name `PROCHAT-APPS` is now `dokploy-azure`. The rename changes labels only, not subscription IDs, VM identities, network topology, data authority, or application connectivity.
+- **Classification:** AUTHORITATIVE-CONFIG
+- **Evidence:** Owner canonical naming update dated 2026-08-18.
+- **Observed:** 2026-08-18
+
+### F-MGMT-006 — Former Azure Dokploy remains quiesced fallback, not production authority
+- **Claim:** The former Azure Dokploy server remains a quiesced fallback/rollback source with application writers and production Cloudflare connector stopped. It is distinct from authoritative AWS `dokploy-aws` and its Tailscale identity remains `dokploy` / `100.83.38.48` while retained.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18, consistent with F-CUT-006.
+- **Observed:** 2026-08-18
+
+
+
+### F-NET-011 — Complete tailnet inventory and access model
+- **Claim:** The 2026-08-18 audit observed 8 Tailscale devices: 7 active and 1 offline (`motorola`). Current access uses the Grants model with one wildcard grant (`src:*`, `dst:*`, `ip:*`); AWS production nodes are user-owned by `info@prochat.tools` and untagged, while Supabase carries an infrastructure tag.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/infrastructure/tailscale-cloudflare-connectivity-audit-2026-08-18.md` sections 3–5 and evidence closure.
+- **Observed:** 2026-08-18
+
+### F-NET-012 — Supabase subnet routing and multi-path connectivity
+- **Claim:** Supabase advertises and owns approved route `10.0.2.0/24`; the known routed database endpoint is `10.0.2.4:5433`. Current consumers use both subnet-routed access and direct Tailscale node access (`100.71.31.88:5433`), while Supabase Studio/API also has Cloudflare Tunnel ingress.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/infrastructure/tailscale-cloudflare-connectivity-audit-2026-08-18.md` sections 6 and 14.
+- **Observed:** 2026-08-18
+
+### F-NET-013 — Azure fallback-to-Supabase connectivity survived UFW cleanup
+- **Claim:** Four stale Supabase UFW rules referencing Azure fallback Tailscale IP `100.83.38.48` on 8000/5432/5433/8443 were removed. Bidirectional Tailscale connectivity remained functional because authenticated Tailscale traffic is accepted by `ts-input` before those UFW rules; rollback network capability did not regress.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/infrastructure/tailscale-cloudflare-connectivity-audit-2026-08-18.md` evidence-closure addendum.
+- **Observed:** 2026-08-18
+
+### F-CF-001 — Complete Cloudflare tunnel inventory and connector topology
+- **Claim:** Four Cloudflare tunnels are active with four active connectors, one connector per tunnel: Dokploy, CloudPanel, Supabase, and OfficeMac. No production tunnel routes to Azure Dokploy.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/infrastructure/tailscale-cloudflare-connectivity-audit-2026-08-18.md` final tunnel inventory and evidence closure.
+- **Observed:** 2026-08-18
+
+### F-CF-002 — Complete tunnel-to-hostname mapping
+- **Claim:** The active tunnel configuration contains 53 public hostnames: 39 on Dokploy, 10 on CloudPanel, 2 on Supabase, and 2 on OfficeMac, plus catch-all 404 rules. `traefik.prochat.tools` is not in any active tunnel configuration and is stale DNS/configuration evidence only.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/infrastructure/tailscale-cloudflare-connectivity-audit-2026-08-18.md` evidence closure lines 968–1047; detailed per-hostname mapping remains in the audit artifact.
+- **Observed:** 2026-08-18
+
+### F-CF-003 — Cloudflare Access standalone policy state remains unknown
+- **Claim:** Tunnel-level Cloudflare Access fields are absent across the observed ingress rules, but standalone account-level Zero Trust Access applications/policies were not independently verified because available API credentials returned 401. Canonical state is UNKNOWN / NOT VERIFIED; no remediation is implied.
+- **Classification:** UNKNOWN
+- **Evidence:** `operations/infrastructure/tailscale-cloudflare-connectivity-audit-2026-08-18.md` evidence closure lines 1049–1058.
+- **Observed:** 2026-08-18
+
+
+
+### F-MIG-001 — Phase 3E0 rollback evidence distinguished VM snapshots from consistent database rollback
+- **Claim:** During the Azure → AWS Dokploy cutover readiness phase, VM/provider snapshots were treated as OS/config recovery evidence, while post-freeze PostgreSQL logical dumps were the authoritative consistent database rollback artifact because live VM snapshots do not quiesce PostgreSQL WAL/volumes. Post-cutover Lightsail snapshot creation remained an explicitly authorization-gated operation.
+- **Classification:** OBSERVED-VERIFIED / HISTORICAL
+- **Evidence:** `operations/migrations/dokploy-azure-to-lightsail/phase-3e0-final-pre-cutover-readiness.md` sections 5–7.
+- **Observed:** 2026-08-17
+- **Current-use boundary:** This is reusable migration/rollback evidence, not authorization to perform backup, restore, snapshot, or infrastructure mutation.
+
+### F-N8N-001 — n8n volume ownership regression caused persistent crash loop
+- **Claim:** The n8n Docker volume `_data` directory was owned by root:root (0:0) after migration, while n8n runs as UID 1000. This prevented n8n from creating `crash.journal` or any new files, causing an immediate EACCES crash loop on every startup attempt since migration (2026-08-17 through 2026-08-19).
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md`
+- **Observed:** 2026-08-19
+- **Fix:** `chown 1000:1000` on volume `_data` directory. No data modified.
+
+### F-N8N-002 — n8n ingress routing absent due to Compose/Swarm provider mismatch
+- **Claim:** n8n is deployed as a Docker Compose container. Traefik's active discovery provider is `swarm` (the `docker` provider in config is non-functional). No router existed for `n8n.prochat.tools`, returning Traefik 404 for all requests.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md`
+- **Observed:** 2026-08-19
+- **Fix:** File-provider route at `/etc/dokploy/traefik/dynamic/n8n.yml` targeting `http://apps-internal-n8n-cvjx2s-n8n-1:5678`.
+
+### F-N8N-003 — n8n fully operational end-to-end after both fixes
+- **Claim:** n8n 2.4.7 is running stably on AWS (0 restarts, 10+ min stable), all 6 active workflows activated, 17 credentials decrypt, PostgreSQL 17 healthy, public endpoint `https://n8n.prochat.tools/` returns 200 with valid TLS, no dual execution with Azure.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md`
+- **Observed:** 2026-08-19

@@ -766,6 +766,53 @@ CLOSURE:       Domain validation + suppression reversal + snapshot + authority u
 
 ---
 
+## 18. Post-Migration Regression: n8n (Discovered 2026-08-19)
+
+**Status:** RESOLVED 2026-08-19
+
+The original migration verification reported all 17 production domains as PASS and classified the migration as SUCCESS. However, n8n was never functional on AWS post-migration. This was not discovered during migration because:
+
+1. The domain health check verified Cloudflare → Traefik routing existed, but n8n's crash loop meant the backend was never reachable
+2. No stability window was applied to n8n specifically
+3. No internal application health check was performed (only Docker container state)
+
+### Two Independent Defects
+
+**Defect A — Volume ownership (caused crash loop):**
+- Docker volume `_data` directory created as root:root (0:0) with mode 755
+- n8n runtime UID 1000 could not write files to the mount
+- Symptom: `EACCES: permission denied, open '/home/node/.n8n/crash.journal'`
+- Fix: `chown 1000:1000` on the volume `_data` directory
+
+**Defect B — Ingress discovery (caused 404):**
+- n8n deployed as Docker Compose container, not a Swarm service
+- Traefik's active provider is `swarm` — the `docker` provider in config is non-functional
+- No router existed for `n8n.prochat.tools`
+- Symptom: Traefik returned 404 for all requests to `n8n.prochat.tools`
+- Fix: Traefik file-provider route at `/etc/dokploy/traefik/dynamic/n8n.yml`
+
+### Why Validation Missed These
+
+1. Migration Phase 3B restored file contents correctly but the volume parent directory was freshly created by Docker (root ownership)
+2. The "17/17 domains PASS" check verified TLS/DNS routing existed but did not verify backend application response
+3. n8n's restart loop was visible in `docker ps` (status: "Restarting") but was not treated as a blocking failure
+4. The Ory Kratos parity defect (Lesson 8) should have prompted a broader audit of all compose workloads, but the lesson was narrowly scoped
+
+### Improved Future Migration Gates
+
+For every stateful service, the following must pass before declaring that service's migration COMPLETE:
+
+1. Container starts and remains stable for 5+ minutes
+2. Internal health endpoint returns success
+3. Public endpoint returns expected response (not just "route exists")
+4. Application-specific validation (for n8n: workflows activate, credentials decrypt)
+5. Write-test from inside container verifies mount permissions
+6. Any failure keeps that service's migration status OPEN regardless of other services
+
+**Full incident details and checklist:** `n8n-post-migration-permission-fix-2026-08-19.md`
+
+---
+
 ## Document Metadata
 
 | Field | Value |
