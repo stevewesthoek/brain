@@ -272,6 +272,34 @@ Service details:
 - **Skill documentation**: `brain/ai/skills/custom/firecrawl/SKILL.md`
 - **Operations runbook**: `brain/operations/runbooks/firecrawl.md`
 
+### Umami
+
+Runtime location:
+- Docker Compose workload on the Dokploy host (AWS Lightsail dokploy-aws)
+- Compose project: `ops-umami-sqswbj`
+- Container: `ops-umami-sqswbj-umami-1`
+- Image: `ghcr.io/umami-software/umami:3.0.3`
+- Database: Supabase `analytics` at `10.0.2.4:5433` via Tailscale subnet route (NO local Docker postgres)
+- Traefik route: file-provider at `/etc/dokploy/traefik/dynamic/umami.yml` (NOT Swarm/Docker label discovery)
+- Tailscale dependency: `10.0.2.4` routes via `tailscale0`; requires Tailscale active on dokploy-aws
+
+Live endpoints:
+- App URL: `https://umami.prochat.tools`
+
+Production state (verified 2026-08-19):
+- 4 websites (production UUID: `5ceba17d-4125-4a75-a1f6-9add5c4b1803` — ProChat / prochat.tools)
+- 596 sessions, 1,816 events (through 2026-08-17; no events in last 24h is expected, not data loss)
+- User acceptance 2026-08-19: login PASS, all 4 websites visible, historical analytics visible (last 20 days range)
+- Note: default dashboard view is "last 24 hours" — adjust date range to see historical data
+- code-umami-1 (stale migration residue): retired 2026-08-19
+- Incident status: CLOSED
+
+Critical invariant: Azure Supabase (`vm-supabase`, Tailscale `100.71.31.88`) is the authoritative analytics DB. It MUST NOT be decommissioned as part of Azure Dokploy decommission planning — these are separate Azure resources.
+
+Future consideration: Steve is evaluating Umami retirement (New Relic Browser replacement). This is NOT approved — separate planning required before any decommission.
+
+Incident history: `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md` (Umami ingress gap noted)
+
 ### n8n
 
 Runtime location:

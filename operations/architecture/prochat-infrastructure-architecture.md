@@ -532,7 +532,7 @@ Full map in evidence register (F-APP-001). Key notes:
 |---------|------|----------|-----------------|-------|
 | apps-internal-n8n-cvjx2s | n8n | n8n:2.4.7 + postgres:17-alpine | NO | Local DB only; n8n container stopped on AWS |
 | compose-index-haptic-firewall-rlwj48 | ory | oryd/kratos:v1.3.1 | YES (ory_prod) | Auth service; container stopped on AWS |
-| ops-umami-sqswbj | umami | umami:3.0.3 | YES (analytics) | Analytics; container stopped on AWS |
+| ops-umami-sqswbj | umami | umami:3.0.3 | YES (analytics) | Analytics; running on AWS (`ops-umami-sqswbj-umami-1`); file-provider Traefik route restored + acceptance PASS 2026-08-19; code-umami-1 retired |
 
 ### 7.2 Local Tenant Database Compose Projects (14)
 
@@ -1235,9 +1235,50 @@ in the cutover checklist) before declaring production stable.
 
 ### 18.2 Umami Analytics
 
-Self-hosted at `umami.prochat.tools`. Data in Supabase `analytics` database. Container stopped
-on AWS. Will start during cutover as part of Supabase writer activation sequence (after the
-NO-DUAL-WRITER gate clears).
+**Current production state (verified 2026-08-19):**
+
+| Property | Value |
+|----------|-------|
+| URL | `https://umami.prochat.tools/` |
+| Image | `ghcr.io/umami-software/umami:3.0.3` |
+| Container | `ops-umami-sqswbj-umami-1` |
+| Compose project | `ops-umami-sqswbj` |
+| Backend port | 3000 |
+| Traefik route | `umami-web@file` + `umami-websecure@file` (file-provider at `/etc/dokploy/traefik/dynamic/umami.yml`) |
+| DB location | Azure Supabase `vm-supabase` (68.221.194.245), Tailscale `100.71.31.88` |
+| DB endpoint | `10.0.2.4:5433` (Azure VNet private IP, advertised via Tailscale subnet route) |
+| DB name | `analytics` |
+| DB schema | `public` |
+| Local Docker DB | NONE — no local postgres dependency |
+| Tailscale dependency | YES — `10.0.2.4` is routed via `tailscale0`; Tailscale on `dokploy-aws` must be active |
+| Websites | 4 (including production site `5ceba17d-4125-4a75-a1f6-9add5c4b1803`: ProChat / prochat.tools) |
+| Analytics events | 1,816 (as of 2026-08-17) |
+| Human acceptance | Login PASS, websites visible, historical analytics visible (2026-08-19) |
+| code-umami-1 | Retired 2026-08-19 (stale migration residue; stopped + removed) |
+
+**Ingress path:**
+```
+Client → Cloudflare (TLS) → Cloudflare Tunnel → Traefik :80/:443
+  → file-provider router Host(`umami.prochat.tools`)
+  → http://ops-umami-sqswbj-umami-1:3000 (Docker DNS on ops-umami-sqswbj network)
+```
+
+**Database path:**
+```
+Umami container → DATABASE_URL (env) → 10.0.2.4:5433 via tailscale0
+  → Azure vm-supabase → analytics database / public schema
+```
+
+**INVARIANTS:**
+1. `ops-umami-sqswbj-umami-1` is the only intended Umami runtime. `code-umami-1` (stale migration residue) was retired 2026-08-19. No duplicate may run concurrently.
+2. Tailscale on `dokploy-aws` must remain active; losing Tailscale connectivity breaks Umami DB access.
+3. Azure Supabase (`vm-supabase`) MUST NOT be decommissioned as part of Azure Dokploy decommission — it is an active production dependency.
+4. `analytics` database on Supabase must not be dropped or renamed.
+5. Default Umami dashboard view is "last 24 hours". Empty charts in the default view do not indicate data loss; historical analytics require adjusting the date range filter.
+
+**Incident history:** `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md` (Umami ingress gap — same class as Defect B)
+
+**Future retirement:** Steve is evaluating replacing Umami with New Relic Browser. Retirement requires separate planning — do not decommission this service without that plan.
 
 ### 18.3 n8n Automation
 

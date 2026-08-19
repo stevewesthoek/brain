@@ -257,9 +257,9 @@ During diagnostic instrumentation, the full `N8N_ENCRYPTION_KEY` was accidentall
 
 1. **Security follow-up:** Evaluate N8N_ENCRYPTION_KEY rotation (low urgency — no evidence of compromise)
 2. **Stale volumes:** `code_n8n_data` and `code_postgres_data` remain on disk (intentionally preserved, not deleted)
-3. **code-umami-1:** Unrelated container from stale `code` project still running (separate service, harmless)
+3. **code-umami-1 (RESOLVED 2026-08-19):** This container was from the stale `code` migration-rehearsal project and was a duplicate connection to the live Supabase `analytics` database. The original characterization of "harmless" was imprecise — it was consuming an unnecessary connection to the authoritative production analytics DB. Stale container retired after canonical `ops-umami-sqswbj-umami-1` passed validation. See Umami recovery post-2026-08-19.
 4. **Monitoring:** No APM/alerting on n8n (pre-existing gap, not introduced by this incident)
-5. **Azure decommission:** Separate planning exercise, NOT part of this recovery
+5. **Azure decommission:** Azure Dokploy decommission is a separate planning exercise. CRITICAL SCOPE: Azure **Supabase** (`vm-supabase`, 68.221.194.245, Tailscale `100.71.31.88`) is a separate Azure resource that is an active production database for Umami analytics. Azure Dokploy may be decommissioned independently; Azure Supabase MUST NOT be decommissioned as part of that exercise.
 
 ---
 

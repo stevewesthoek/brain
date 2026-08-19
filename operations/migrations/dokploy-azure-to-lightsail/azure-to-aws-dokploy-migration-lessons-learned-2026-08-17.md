@@ -849,6 +849,25 @@ The most misleading evidence during diagnosis was: every time we ran `psql` agai
 19. **EARLY PASS CONCLUSIONS MUST BE CORRECTED WHEN LATER EVIDENCE DISPROVES THEM** — "n8n healthy" was premature
 20. **A MIGRATION IS NOT CLOSED UNTIL APPLICATION-SPECIFIC ACCEPTANCE GATES PASS** — login, API key, credential, workflow activation
 
+### Umami Ingress Gap Lessons (2026-08-19 Post-Incident)
+
+The Umami analytics service returned HTTP 404 from migration cutover (2026-08-17) through 2026-08-19 — a 2.5-day silent outage never flagged as part of the migration validation, because no application-specific acceptance gate was run for Umami.
+
+21. **A HEALTHY CONTAINER DOES NOT PROVE PUBLIC REACHABILITY** — `code-umami-1` was healthy for 2+ days with no public route; healthz passes before routing is confirmed
+22. **DOCKER/COMPOSE LABELS DO NOT PROVE TRAEFIK DISCOVERED THE SERVICE** — in this Swarm-mode architecture, Compose labels are not read by the Swarm/file provider; effective routers must be verified via Traefik API
+23. **EVERY PUBLIC HOSTNAME REQUIRES AN END-TO-END POST-CUTOVER TEST** — `curl https://umami.prochat.tools/` not just domain DNS resolution
+24. **EVERY STATEFUL APP REQUIRES A REAL USER-PATH ACCEPTANCE TEST** — not just container health or HTTP 200
+25. **MIGRATION REHEARSAL CONTAINERS MUST BE INVENTORIED AND RETIRED** — `code-umami-1` consumed a live Supabase DB connection while providing no user value
+26. **DUPLICATE APP RUNTIMES CONSUME LIVE EXTERNAL RESOURCES EVEN WHEN NOT PUBLICLY ROUTED** — connects to real production DB on start regardless of Traefik routing
+27. **EXTERNAL DATABASE BACKENDS MUST BE MAPPED EXPLICITLY PER APP** — Umami's Supabase backend at 10.0.2.4:5433 was invisible in the standard Docker-network inspection; required `ip route get` to identify Tailscale subnet routing
+28. **A LOCAL POSTGRES CONTAINER WITH A SIMILAR PROJECT NAME IS NOT A SUBSTITUTE DATABASE** — `code-postgres-1` (n8n test DB) and Umami's Supabase analytics are completely independent; the naming proximity was misleading
+29. **AZURE DECOMMISSION SCOPE MUST DISTINGUISH DOKPLOY FROM SUPABASE** — Azure Dokploy (VMs, Traefik, app containers) and Azure Supabase (`vm-supabase`) are separate resources; decommissioning one does not imply or require decommissioning the other
+30. **"17/17 DOMAINS PASS" OR EQUIVALENT AGGREGATE CHECKS CANNOT REPLACE PER-APPLICATION VALIDATION** — domain reachability proves Traefik is routing something; it does not prove the right container is serving or that authenticated application workflows work
+31. **HISTORICAL ANALYTICS MUST BE VALIDATED IN A DATE RANGE THAT ACTUALLY CONTAINS EXPECTED RECORDS** — an empty default "last 24 hours" view is expected behavior after a period of low/no traffic; always verify the last known event timestamp before diagnosing analytics data loss
+32. **EMPTY CHARTS DO NOT PROVE DATA LOSS** — before escalating to a data-loss incident, verify three things: (1) the selected date range, (2) the latest known event timestamp in the DB, (3) the underlying database row counts; all three must be checked
+33. **DIRECT EVIDENCE SUPERSEDES INTERMEDIATE HYPOTHESES** — if the owner logs in and historical data appears after a date-range adjustment, a previously proposed mechanism (e.g. stale browser JS, authorization failure) was not the cause; trace conclusions to the actual observed behavior, not to earlier diagnostic speculation
+34. **A SERVICE IS NOT MIGRATION-COMPLETE UNTIL ALL FOUR GATES PASS: public route + login + expected state + historical data visible** — each gate is independent and can fail silently while others pass; a service that authenticates but shows empty analytics has not passed the full gate
+
 ### Improved Future Migration Gates
 
 For every stateful service, the following must pass before declaring that service's migration COMPLETE:
@@ -864,6 +883,22 @@ For every stateful service, the following must pass before declaring that servic
 9. Rate limiter uses correct per-client identity
 10. API keys and credentials verified by fingerprint/count
 11. Any failure keeps that service's migration status OPEN regardless of other services
+
+**Ingress Acceptance Gate** (required for every public Compose application):
+
+- [ ] Expected public hostname
+- [ ] Effective Traefik router exists (verify via Traefik API `/api/http/routers`)
+- [ ] Effective Traefik service exists (verify via Traefik API `/api/http/services`)
+- [ ] Intended backend only — correct container, not stale/duplicate
+- [ ] Backend status UP in Traefik service view
+- [ ] External HTTPS succeeds (`curl -sI https://<hostname>/`)
+- [ ] Real application page returns expected content (not Traefik 404)
+- [ ] Real user login succeeds where applicable
+- [ ] Expected application objects visible (websites, records, etc.)
+- [ ] Historical state visible (date range set to cover known event window)
+- [ ] Analytics date range verified to include records (confirm latest event timestamp before testing)
+- [ ] Stale rehearsal runtime confirmed absent (stop + remove migration residue containers)
+- [ ] Application-specific acceptance complete (login + expected data + historical data all PASS)
 
 **Full incident details and checklist:** `n8n-post-migration-permission-fix-2026-08-19.md`
 

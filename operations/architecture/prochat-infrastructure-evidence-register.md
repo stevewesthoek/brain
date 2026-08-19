@@ -714,3 +714,45 @@ None. All material factual contradictions identified through Phase 3C11 have bee
 - **Classification:** OBSERVED-VERIFIED (human-performed)
 - **Evidence:** Owner self-report, 2026-08-19. Closes final acceptance gate from `n8n-post-migration-permission-fix-2026-08-19.md`.
 - **Observed:** 2026-08-19
+
+---
+
+## Umami Analytics Evidence
+
+### F-UMM-001 — Umami ingress gap: no Traefik route for umami.prochat.tools from cutover through 2026-08-19
+- **Claim:** `umami.prochat.tools` returned HTTP 404 from migration cutover (2026-08-17) through 2026-08-19. Root cause: no file-provider Traefik route existed. Docker Compose labels on the Umami container are not discovered by the Swarm/file provider without explicit file-provider configuration. This is the same class as n8n Defect B.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `curl -sI https://umami.prochat.tools/` → 404. Traefik API `/api/http/routers` showed no `umami.prochat.tools` entry. `ops-umami-sqswbj-umami-1` was healthy but unreachable. Duration: ~2.5 days.
+- **Observed:** 2026-08-19
+- **Cause:** Migration acceptance gates did not include per-application ingress verification via Traefik API.
+
+### F-UMM-002 — Authoritative Umami data verified in Supabase analytics database
+- **Claim:** Production Umami data is in the Supabase `analytics` database at `10.0.2.4:5433` (Azure vm-supabase, Tailscale). Website UUID `5ceba17d-4125-4a75-a1f6-9add5c4b1803` (ProChat / prochat.tools, created 2026-03-10) confirmed present. 4 websites, 596 sessions, 1,816 events. Latest event: 2026-08-17. No data loss. 14 migrations applied, 0 pending.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Read-only psql query via n8n postgres container (which has psql) connecting to Supabase at `10.0.2.4:5433`. Credentials not exposed.
+- **Observed:** 2026-08-19
+
+### F-UMM-003 — Umami ingress restored via file-provider route
+- **Claim:** `/etc/dokploy/traefik/dynamic/umami.yml` created on AWS Dokploy host. Traefik hot-reloaded (file-provider). Routers `umami-web@file` and `umami-websecure@file` confirmed enabled. Service `umami-service@file` with backend `http://ops-umami-sqswbj-umami-1:3000` confirmed UP. `https://umami.prochat.tools/` returns HTTP 200. Known website URL returns HTTP 200.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Traefik API response; `curl -sI https://umami.prochat.tools/` → 200 (x-powered-by: Next.js). No Traefik restart required.
+- **Observed:** 2026-08-19
+
+### F-UMM-004 — User acceptance: login and historical analytics PASS
+- **Claim:** After Traefik route restoration, Steve logged into `umami.prochat.tools` successfully. All 4 expected websites were visible (ProChat, Says the Bible, Proofly, Yeshua Academy). Historical analytics became visible after changing the date range from the default "last 24 hours" to "last 20 days". No data loss. No authorization failure. No ownership failure. No frontend rendering failure.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Owner self-report, 2026-08-19. Login PASS. Websites list visible. Historical analytics visible with 20-day date range. Closes final Umami recovery acceptance gate.
+- **Observed:** 2026-08-19
+
+### F-UMM-005 — Default 24-hour view legitimately empty — not data loss
+- **Claim:** The default Umami dashboard view is "last 24 hours". The most recent analytics event was 2026-08-17 (2 days before user acceptance test). DB query confirmed zero events in last 48 hours. The initially empty dashboard was user interpretation of the default time range, not a production defect.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** DB query `SELECT COUNT(*) FROM website_event WHERE created_at > NOW() - INTERVAL '48 hours'` → 0. Date range changed to 20 days → historical data visible immediately. All data counts verified intact (596 sessions, 1,816 events, 2026-03-11 through 2026-08-17).
+- **Observed:** 2026-08-19
+- **Clarification:** Empty charts in the default time window are expected behavior when no recent traffic occurred. This is NOT a data loss incident. Empty charts require date range verification before diagnosing data loss.
+
+### F-UMM-006 — Stale code-umami-1 runtime retired
+- **Claim:** The stale `code-umami-1` container (migration rehearsal residue from 2026-08-17, project `code`) stopped and removed after canonical `ops-umami-sqswbj-umami-1` passed all acceptance gates. Container had been running since 2026-08-17 with a live connection to the Supabase analytics DB despite providing no user-facing value.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `docker stop code-umami-1` → success. `docker rm code-umami-1` → success. `docker ps -a --filter name=code-umami` → empty. Canonical container: `running` / 0 restarts post-retirement. HTTP 200 confirmed after retirement.
+- **Observed:** 2026-08-19
