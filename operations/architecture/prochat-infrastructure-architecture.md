@@ -1241,12 +1241,50 @@ NO-DUAL-WRITER gate clears).
 
 ### 18.3 n8n Automation
 
-Runs at `n8n.prochat.tools`. Local postgres:17-alpine. 43 workflows (6 active webhooks).
-Critical: `N8N_ENCRYPTION_KEY` must match on AWS — already present in AWS Dokploy env from
-Phase 3A migration. If it differs, n8n credentials are unreadable.
+**Current production state (verified 2026-08-19):**
 
-After cutover (P3-B in hygiene roadmap): audit n8n workflows for any references to old
-Azure infrastructure (confirmed NONE from Section 16 audit — this audit is already complete).
+| Property | Value |
+|----------|-------|
+| URL | `https://n8n.prochat.tools/` |
+| Image | `n8nio/n8n:2.4.7` |
+| Container | `apps-internal-n8n-cvjx2s-n8n-1` |
+| Compose project | `apps-internal-n8n-cvjx2s` |
+| Runtime UID:GID | 1000:1000 (node:node) |
+| PostgreSQL | `postgres:17-alpine` (`apps-internal-n8n-cvjx2s-postgres-1`) |
+| DB hostname | `postgres` (resolved via compose-internal `default` network ONLY) |
+| Postgres network | `apps-internal-n8n-cvjx2s_default` only (NOT on dokploy-network) |
+| n8n networks | `apps-internal-n8n-cvjx2s_default` + `dokploy-network` |
+| N8N_PROXY_HOPS | 2 (Cloudflare → Traefik → n8n) |
+| Persistent volume | `apps-internal-n8n-cvjx2s_n8n_data` → `/home/node/.n8n` |
+| Traefik route | `n8n-web@file` + `n8n-websecure@file` (file-provider, not Docker/Swarm labels) |
+| Workflows | 43 total, 6 active |
+| Credentials | 17 (encrypted, depend on N8N_ENCRYPTION_KEY) |
+| API keys | 2 (Milestone App, ProChat) |
+| Webhooks | 6 registered paths |
+
+**Ingress path:**
+```
+Client → Cloudflare (TLS) → Cloudflare Tunnel → Traefik :80
+  → file-provider router Host(`n8n.prochat.tools`)
+  → http://apps-internal-n8n-cvjx2s-n8n-1:5678 (Docker DNS on dokploy-network)
+```
+
+**Database path:**
+```
+n8n container → DNS "postgres" → compose-internal network only → 172.19.0.x
+  → apps-internal-n8n-cvjx2s-postgres-1:5432
+```
+
+**INVARIANTS (established 2026-08-19 after DNS collision incident):**
+
+1. Production postgres MUST NOT be on `dokploy-network` or any shared overlay network where other compose projects could advertise the same `postgres` DNS alias.
+2. There MUST be only ONE intended production n8n main process. No stale n8n containers from prior project names may coexist.
+3. No stale n8n PostgreSQL service may advertise the same DB DNS identity on any network visible to production n8n.
+4. `N8N_ENCRYPTION_KEY` must be preserved exactly — if changed, all 17 credentials become unreadable.
+5. Volume `_data` directory must be owned by 1000:1000 (not root).
+
+**Critical dependency:** `N8N_ENCRYPTION_KEY` in `.env` — if lost or changed, credentials are unreadable.
+Zero Azure infrastructure references in workflows (confirmed by Section 16 audit).
 
 ---
 

@@ -766,17 +766,13 @@ CLOSURE:       Domain validation + suppression reversal + snapshot + authority u
 
 ---
 
-## 18. Post-Migration Regression: n8n (Discovered 2026-08-19)
+## 18. Post-Migration Regression: n8n — Five Defects (Discovered 2026-08-19)
 
-**Status:** RESOLVED 2026-08-19
+**Status:** RESOLVED 2026-08-19 — all five defects fixed, production hardened
 
-The original migration verification reported all 17 production domains as PASS and classified the migration as SUCCESS. However, n8n was never functional on AWS post-migration. This was not discovered during migration because:
+The original migration verification reported all 17 production domains as PASS and classified the migration as SUCCESS. However, n8n was never functional on AWS post-migration. Five independent defects were required to achieve full operational status. The final defect (Docker DNS collision) was the most dangerous and took the longest to diagnose.
 
-1. The domain health check verified Cloudflare → Traefik routing existed, but n8n's crash loop meant the backend was never reachable
-2. No stability window was applied to n8n specifically
-3. No internal application health check was performed (only Docker container state)
-
-### Two Independent Defects
+### Five Independent Defects Discovered
 
 **Defect A — Volume ownership (caused crash loop):**
 - Docker volume `_data` directory created as root:root (0:0) with mode 755
@@ -791,23 +787,83 @@ The original migration verification reported all 17 production domains as PASS a
 - Symptom: Traefik returned 404 for all requests to `n8n.prochat.tools`
 - Fix: Traefik file-provider route at `/etc/dokploy/traefik/dynamic/n8n.yml`
 
-### Why Validation Missed These
+**Defect C — Proxy trust (caused shared rate-limit bucket):**
+- `N8N_PROXY_HOPS` was unset; Express did not trust X-Forwarded-For
+- All external requests shared one rate-limit bucket keyed on Traefik overlay IP
+- Symptom: `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` + premature 429 responses
+- Fix: `N8N_PROXY_HOPS=2` (Cloudflare → Traefik → n8n)
+- NOT the root cause of 401 authentication failures (separate defect)
 
-1. Migration Phase 3B restored file contents correctly but the volume parent directory was freshly created by Docker (root ownership)
-2. The "17/17 domains PASS" check verified TLS/DNS routing existed but did not verify backend application response
-3. n8n's restart loop was visible in `docker ps` (status: "Restarting") but was not treated as a blocking failure
-4. The Ory Kratos parity defect (Lesson 8) should have prompted a broader audit of all compose workloads, but the lesson was narrowly scoped
+**Defect D — Docker DNS collision (FINAL ROOT CAUSE of intermittent auth failure):**
+- Stale migration project `code` had a `postgres` service on `dokploy-network`
+- Production project also had `postgres` service on `dokploy-network`
+- Docker DNS returned BOTH IPs when n8n resolved hostname `postgres`
+- Stale DB contained only `test@test.com`; production DB contained `info@prochat.tools`
+- n8n's TypeORM pool randomly connected to one or the other at startup
+- Symptom: Intermittent "Wrong username or password" with identical correct credentials
+- Emergency fix: `docker network disconnect dokploy-network code-postgres-1`
+- Durable fix: Removed postgres from `dokploy-network` in compose; now only on compose-internal network
+
+**Defect E — Stale duplicate migration stack (enabled Defect D):**
+- `code-n8n-1` and `code-postgres-1` running with `restart: unless-stopped`
+- Created during migration when compose project was started with wrong project name
+- Stale postgres shared production-facing network with same hostname alias
+- Fix: Stopped and removed stale containers (volumes preserved)
+
+### Why Validation Missed All Five
+
+1. Volume ownership: checked file presence, not write capability from container process
+2. Ingress: checked route existence (TLS valid, DNS resolves), not backend response
+3. Proxy trust: not checked at all during migration (pre-existing configuration gap)
+4. DNS collision: direct DB inspection ALWAYS showed correct data — the bug was only visible from within n8n's TypeORM runtime connection
+5. Stale containers: classified as "harmless residue" because they weren't externally routed — overlooked that their DATABASE could collide via shared DNS
+
+### Critical Lesson: Application Runtime DB Identity
+
+**Querying the expected database directly is NOT proof that the application uses that database.**
+
+The most misleading evidence during diagnosis was: every time we ran `psql` against the production postgres container, it showed `info@prochat.tools` with the correct password hash. Every bcrypt comparison passed. But n8n's running process was connected to a DIFFERENT postgres instance.
+
+**The only valid proof of database identity is observing what the running application's connection actually sees.** This required injecting instrumentation into the TypeORM handler to discover the discrepancy.
+
+### 20 Migration Lessons from This Incident
+
+1. **RUNNING != HEALTHY** — a container running for 2 days can be broken the entire time
+2. **HTTP 200 != APPLICATION VALIDATION** — healthz passed while login did not
+3. **QUERYING THE EXPECTED DB != PROVING THE APPLICATION USES THAT DB** — direct psql and application TypeORM saw different databases
+4. **DATABASE IDENTITY MUST BE PROVEN FROM APPLICATION RUNTIME** — not external inspection
+5. **GENERIC DOCKER DNS NAMES ARE UNSAFE ON SHARED NETWORKS** — `postgres` is ambiguous when multiple compose projects share an overlay network
+6. **STALE CONTAINERS ARE NOT HARMLESS JUST BECAUSE THEY ARE NOT ROUTED** — their databases can cause DNS collisions
+7. **STALE DATABASES CAN CORRUPT BEHAVIOR WITHOUT CORRUPTING DATA** — no data was lost or modified; behavior was wrong
+8. **CONNECTION POOLS MAKE DNS COLLISIONS APPEAR INTERMITTENT** — pool establishes at startup, persists until restart
+9. **MIGRATION CLEANUP MUST INVENTORY NETWORK ALIASES** — not only container names and running state
+10. **STATEFUL VOLUME RESTORES MUST PRESERVE UID/GID/MODES** — file content is not enough
+11. **INGRESS DISCOVERY MODEL MUST BE VERIFIED** — Swarm provider doesn't see Compose containers
+12. **REVERSE PROXY TRUST MUST BE VERIFIED** — each proxy hop must be accounted for
+13. **USER LOGIN MUST BE TESTED WITH THE EXISTING ACCOUNT** — not just healthz or HTML responses
+14. **API-KEY FINGERPRINTS MUST BE VERIFIED** — count + owner + label + scope
+15. **CREDENTIAL FIDELITY MUST BE VERIFIED** — decrypt test via workflow activation
+16. **WORKFLOW OWNERSHIP AND ACTIVE STATE MUST BE VERIFIED** — not just row counts
+17. **OLD AND NEW STACKS MUST NEVER SHARE AMBIGUOUS SERVICE DISCOVERY** — quarantine stale services from production DNS
+18. **DIAGNOSTICS MUST NOT PRINT SECRET-BEARING ENVIRONMENTS** — use allowlisted env inspection
+19. **EARLY PASS CONCLUSIONS MUST BE CORRECTED WHEN LATER EVIDENCE DISPROVES THEM** — "n8n healthy" was premature
+20. **A MIGRATION IS NOT CLOSED UNTIL APPLICATION-SPECIFIC ACCEPTANCE GATES PASS** — login, API key, credential, workflow activation
 
 ### Improved Future Migration Gates
 
 For every stateful service, the following must pass before declaring that service's migration COMPLETE:
 
-1. Container starts and remains stable for 5+ minutes
+1. Container starts and remains stable for 15+ minutes
 2. Internal health endpoint returns success
 3. Public endpoint returns expected response (not just "route exists")
-4. Application-specific validation (for n8n: workflows activate, credentials decrypt)
+4. Application-specific validation (for n8n: login with existing account, workflows activate, credentials decrypt)
 5. Write-test from inside container verifies mount permissions
-6. Any failure keeps that service's migration status OPEN regardless of other services
+6. Database hostname resolves to exactly ONE intended target from within the application container
+7. No duplicate DNS aliases exist on shared networks for the same service name
+8. Proxy trust verified (no ERR_ERL warnings)
+9. Rate limiter uses correct per-client identity
+10. API keys and credentials verified by fingerprint/count
+11. Any failure keeps that service's migration status OPEN regardless of other services
 
 **Full incident details and checklist:** `n8n-post-migration-permission-fix-2026-08-19.md`
 

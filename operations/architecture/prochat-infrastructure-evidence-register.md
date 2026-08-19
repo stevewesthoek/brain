@@ -670,8 +670,41 @@ None. All material factual contradictions identified through Phase 3C11 have bee
 - **Observed:** 2026-08-19
 - **Fix:** File-provider route at `/etc/dokploy/traefik/dynamic/n8n.yml` targeting `http://apps-internal-n8n-cvjx2s-n8n-1:5678`.
 
-### F-N8N-003 — n8n fully operational end-to-end after both fixes
-- **Claim:** n8n 2.4.7 is running stably on AWS (0 restarts, 10+ min stable), all 6 active workflows activated, 17 credentials decrypt, PostgreSQL 17 healthy, public endpoint `https://n8n.prochat.tools/` returns 200 with valid TLS, no dual execution with Azure.
-- **Classification:** OBSERVED-VERIFIED
+### F-N8N-003 — n8n operational after volume/routing fixes (SUPERSEDED by F-N8N-007)
+- **Claim:** n8n appeared operational after Defect A and B fixes. However, authentication was intermittently failing due to Defect D (Docker DNS collision). This entry was premature.
+- **Classification:** OBSERVED-VERIFIED (partial — did not validate login or DB identity)
 - **Evidence:** `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md`
 - **Observed:** 2026-08-19
+- **Superseded by:** F-N8N-007 (complete validation including DB identity and login)
+
+### F-N8N-004 — Docker DNS collision: dual postgres on dokploy-network
+- **Claim:** Two postgres containers (`apps-internal-n8n-cvjx2s-postgres-1` at 10.0.1.189 and `code-postgres-1` at 10.0.1.14) both advertised DNS alias `postgres` on `dokploy-network`. n8n's TypeORM connection pool randomly connected to one or the other at startup, causing intermittent authentication failure.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `nslookup postgres 127.0.0.11` from n8n container returned both 10.0.1.189 and 10.0.1.14. Direct query of code-postgres-1 showed user `test@test.com`; production postgres showed `info@prochat.tools`. TypeORM instrumentation in email.js confirmed `first_user_email=[test@test.com]` when login failed.
+- **Observed:** 2026-08-19
+- **Fix:** Disconnected stale postgres from dokploy-network; then removed postgres from dokploy-network in compose definition entirely.
+
+### F-N8N-005 — Stale code project containers removed
+- **Claim:** Stale `code-n8n-1` and `code-postgres-1` containers (migration residue from starting compose with wrong project name) stopped and removed. Volumes `code_n8n_data` and `code_postgres_data` preserved on disk.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `docker stop code-n8n-1 code-postgres-1 && docker rm code-n8n-1 code-postgres-1` — confirmed no longer in `docker ps -a` output.
+- **Observed:** 2026-08-19
+
+### F-N8N-006 — Durable DB identity: postgres removed from dokploy-network
+- **Claim:** Production postgres service removed from `dokploy-network` in docker-compose.yml. Postgres now exists only on compose-internal `apps-internal-n8n-cvjx2s_default` network. DNS resolution of `postgres` from n8n returns only 172.19.0.2 (compose-internal). 10/10 repeated lookups confirmed single target.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Compose file diff (removed `- dokploy-network` from postgres service networks). `nslookup postgres 127.0.0.11` from n8n container: 10/10 returns only `172.19.0.2`. `docker inspect apps-internal-n8n-cvjx2s-postgres-1` shows only one network: `apps-internal-n8n-cvjx2s_default`.
+- **Observed:** 2026-08-19
+
+### F-N8N-007 — n8n fully operational with proven DB identity and data fidelity
+- **Claim:** n8n 2.4.7 running from pristine image (no diagnostic instrumentation), 0 restarts, healthz OK, PostgreSQL 17 healthy, DB hostname resolves unambiguously, owner UUID/email/role/password-fingerprint match authoritative source, 2 API keys preserved, 17 credentials present, 43 workflows (6 active), 6 webhook registrations, public endpoint 200, no ERR_ERL errors, N8N_PROXY_HOPS=2 active, volume owner 1000:1000.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md` — final data fidelity table.
+- **Observed:** 2026-08-19
+
+### F-N8N-008 — Security incident: encryption key emitted in diagnostic output
+- **Claim:** During diagnostic instrumentation, `docker inspect --format '{{json .Config.Env}}'` emitted the full N8N_ENCRYPTION_KEY value in terminal output. Key was NOT rotated (credentials currently decrypt). No evidence of compromise beyond ephemeral SSH session.
+- **Classification:** OBSERVED-VERIFIED
+- **Evidence:** Diagnostic session terminal output (ephemeral, not persisted to disk or logs).
+- **Observed:** 2026-08-19
+- **Deferred follow-up:** Evaluate key rotation after extended stability period.

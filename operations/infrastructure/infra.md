@@ -12,11 +12,11 @@ Purpose:
 - `operations/specs/infrastructure-knowledge-health-plane-roadmap.md`
 - `operations/specs/infrastructure-knowledge-health-plane-implementation-plan.md`
 
-IKHP0-IKHP3 are implemented repository capabilities. IKHP4 is currently reconciling canonical safety/infrastructure truth; IKHP5, IKHP6, and CLR5 are not authorized. No new live monitoring, provider mutation, remediation, or infrastructure execution is activated by this page.
+IKHP0-IKHP4 are implemented repository capabilities. IKHP4 safety/action contracts and bounded non-secret runtime receipt persistence are accepted as repository implementation only; IKHP5, IKHP6, and CLR5 are not authorized. No new live monitoring, provider mutation, remediation, or infrastructure execution is activated by this page.
 
 Verification status:
 - The last broad live estate verification represented in older sections of this page was 2026-05-19 from the `Office` Mac mini.
-- Dokploy production authority was superseded by the observed Azure → AWS cutover completed 2026-08-17: AWS `dokploy-aws` is authoritative production. Owner clarification on 2026-08-18 confirms the old Azure PROCHAT-APPS Dokploy estate is fully decommissioned and is no longer part of current infrastructure truth.
+- Dokploy production authority was superseded by the observed Azure → AWS cutover completed 2026-08-17: AWS `dokploy-aws` is authoritative production. The old Azure `dokploy-azure` environment is non-authoritative and retained only as a quiesced fallback/rollback source.
 - Packet 2 does not claim a new whole-estate live probe. CloudPanel, provider-access, monitoring, and ongoing backup attributes that were not freshly observed remain explicit UNKNOWNs in IKHP.
 - Historical sources used by this page include `az`, `aws sts`, SSH, Dokploy API, Cloudflare API, Docker Swarm inspection, local SSH config, migration evidence, and runbooks.
 
@@ -71,11 +71,11 @@ The access-status text below is a historical configuration/live snapshot, not a 
 
 ### Azure
 
-Only the separate `PROCHAT-DATA` subscription remains part of the current infrastructure estate, for Supabase/data-side infrastructure. The old PROCHAT-APPS Dokploy subscription is decommissioned and is not current IKHP truth.
+`supabase-azure` is the current Azure subscription for Supabase/data-side infrastructure. `dokploy-azure` is retained only for the quiesced legacy Dokploy fallback and is not production authority.
 
 | Subscription | Subscription ID | Tenant ID | Signed-in identity | Current access status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `PROCHAT-DATA` | `6e99b82d-43e3-41cc-ad94-8733afeb2a7e` | `290d8a41-0cbc-450b-9263-f018dc28165d` | `admin@yeshuaacademy.onmicrosoft.com` | Historical configuration/access evidence; Packet 2 did not re-probe Azure live auth | Current Azure data subscription containing Supabase/data-side infrastructure. |
+| `supabase-azure` | `6e99b82d-43e3-41cc-ad94-8733afeb2a7e` | `290d8a41-0cbc-450b-9263-f018dc28165d` | `admin@yeshuaacademy.onmicrosoft.com` | Historical configuration/access evidence; Packet 2 did not re-probe Azure live auth | Current Azure data subscription containing Supabase/data-side infrastructure. |
 
 ### AWS
 
@@ -88,14 +88,14 @@ Only the separate `PROCHAT-DATA` subscription remains part of the current infras
 | Server | Purpose | Cloud | Region / Platform | OS | CPU / RAM | Public IP | Tailscale IP | Access path | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `dokploy-aws` | Authoritative Dokploy production host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu 24.04.4 LTS, kernel 6.17.0-1019-aws | 4 vCPU, 16 GiB RAM, 320 GiB SSD | `18.135.240.168` | `100.71.47.24` | `ssh dokploy` -> Tailscale | **Running authoritative production** — Linux hostname `dokploy-aws`, standardized 2026-08-18 |
-| `supabase` / `vm-supabase` | Authoritative Supabase + PostgreSQL backend host | Azure / `PROCHAT-DATA` | Spain Central | Ubuntu 24.04.3 LTS (historical observation) | 2 vCPU, 7.8 GiB RAM (historical observation) | `68.221.194.245` | `100.71.31.88` | `ssh supabase` | Current Azure data authority; volatile VM state not re-probed in Packet 2 |
+| `supabase` / `vm-supabase` | Authoritative Supabase + PostgreSQL backend host | Azure / `supabase-azure` | Spain Central | Ubuntu 24.04.3 LTS (historical observation) | 2 vCPU, 7.8 GiB RAM (historical observation) | `68.221.194.245` | `100.71.31.88` | `ssh supabase` | Current Azure data authority; volatile VM state not re-probed in Packet 2 |
 | `cloudpanel-aws` | Authoritative CloudPanel host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu 24.04.4 LTS, kernel 6.17.0-1007-aws | 2 vCPU, 8 GiB RAM, 160 GiB SSD | `13.135.227.0` | `100.121.12.36` | `ssh cloudpanel` -> Tailscale | **Running authoritative CloudPanel** — Linux hostname `cloudpanel-aws`, standardized 2026-08-18 |
 
 ## Azure Resource Inventory
 
-Only `PROCHAT-DATA` remains part of the current Azure estate, for Supabase/data-side infrastructure. The detailed inventory below is a **2026-05-19 historical live snapshot** unless a newer dated evidence item says otherwise; Packet 2 did not re-query Azure live state.
+Only `supabase-azure` remains part of the current Azure estate, for Supabase/data-side infrastructure. The detailed inventory below is a **2026-05-19 historical live snapshot** unless a newer dated evidence item says otherwise; Packet 2 did not re-query Azure live state.
 
-### `PROCHAT-DATA`
+### `supabase-azure`
 
 Resource groups:
 - `AzureBackupRG_spaincentral_1`
@@ -164,7 +164,7 @@ Internet → Cloudflare (TLS termination) → Cloudflare Tunnel (dc7bb87e) → A
 - **Dokploy UI/API**: Cloudflare Tunnel routes `dokploy.prochat.tools` directly to `localhost:3000`. Traefik is NOT in this path.
 - **Deployed apps**: Cloudflare Tunnel routes all other hostnames to `localhost:80` (Traefik entrypoint `web`). Traefik uses Docker/Swarm labels to route to the correct container.
 - **SSL/TLS**: Cloudflare handles TLS termination for ALL tunnel-routed traffic. The connection from Cloudflare Tunnel to localhost is unencrypted HTTP. Traefik's LetsEncrypt/ACME config exists but is unused for tunnel traffic.
-- **Cloudflared**: The production connector runs on AWS `dokploy-aws` using the remotely-managed production tunnel. Historical Azure Dokploy connector state is migration history only; the Azure Dokploy estate is fully decommissioned.
+- **Cloudflared**: The production connector runs on AWS `dokploy-aws` using the remotely-managed production tunnel. On the retained Azure `dokploy-azure` fallback, the production connector remains stopped; it is not an active ingress path.
 
 #### API
 
@@ -275,12 +275,27 @@ Service details:
 ### n8n
 
 Runtime location:
-- Docker Compose workload on the Dokploy host
+- Docker Compose workload on the Dokploy host (AWS Lightsail dokploy-aws)
+- Compose project: `apps-internal-n8n-cvjx2s`
+- Container: `apps-internal-n8n-cvjx2s-n8n-1`
+- Image: `n8nio/n8n:2.4.7`
+- PostgreSQL: `postgres:17-alpine` (`apps-internal-n8n-cvjx2s-postgres-1`)
+- DB hostname: `postgres` via compose-internal network only (NOT on shared dokploy-network)
+- Traefik route: file-provider at `/etc/dokploy/traefik/dynamic/n8n.yml` (NOT Swarm/Docker label discovery)
+- N8N_PROXY_HOPS: 2 (Cloudflare → Traefik → n8n)
 
 Live endpoints:
 - App URL: `https://n8n.prochat.tools`
 - Public API base: `https://n8n.prochat.tools/api/v1`
 - Webhook base: `https://n8n.prochat.tools/webhook`
+
+Production state (verified 2026-08-19):
+- 43 workflows (6 active)
+- 17 credentials (encrypted, depend on N8N_ENCRYPTION_KEY)
+- 2 API keys (Milestone App, ProChat)
+- 6 webhook registrations
+
+Critical invariant: postgres MUST NOT be on any shared Docker network where another compose project could advertise the same `postgres` DNS alias. Current architecture isolates postgres to the compose-internal network only.
 
 Automation and recovery:
 - API wrapper: `~/.local/bin/n8n-api`
@@ -288,6 +303,7 @@ Automation and recovery:
 - Backup root: [n8n backup](/Users/Office/Repos/stevewesthoek/brain/operations/automations/n8n/n8n_backup)
 - Runbook: [n8n runbook](/Users/Office/Repos/stevewesthoek/brain/operations/runbooks/n8n.md)
 - Nightly scheduler: macOS `launchd` daily at `03:00` with `RunAtLoad` catch-up
+- Incident history: `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md`
 
 Latest verified backup state on 2026-04-03:
 - `4` credentials exported
@@ -311,7 +327,7 @@ Current evidence state (management-plane hardened 2026-08-18):
 - Authoritative AWS Dokploy reaches the shared Supabase authority through the tailnet; `100.71.47.24` ↔ `100.71.31.88`.
 - All three production servers (dokploy-aws, cloudpanel-aws, supabase) are enrolled in the tailnet and use OpenSSH-over-Tailscale for administration.
 - Dokploy application ingress: Cloudflare Tunnel (outbound, no public ports required).
-- CloudPanel application ingress: Direct public 80/443/UDP443 (websites served directly).
+- CloudPanel application ingress is mixed: public 80/443/UDP443 remains required for direct website origins, while 10 current hostnames are also served through the active CloudPanel Tunnel.
 - CloudPanel admin panel (8443): Tailscale-only access.
 - Public TCP/22: Blocked on both AWS Lightsail instances. `lightsail-connect` alias retained in Lightsail firewall. Actual browser SSH viability differs per server (see Emergency access model below).
 - Supabase PostgreSQL is intended to stay private to the server and trusted internal access paths.
@@ -326,7 +342,7 @@ Live observation **2026-08-18** (8 registered devices, 7 active, 1 offline):
 | `dokploy-aws` | `100.71.47.24` | Linux | AWS authoritative Dokploy production host | Active |
 | `cloudpanel-aws` | `100.121.12.36` | Linux | AWS authoritative CloudPanel host | Active |
 | `supabase` | `100.71.31.88` | Linux | Azure Supabase / PostgreSQL authority | Active |
-| `dokploy` | `100.83.38.48` | Linux | Old Azure Dokploy (decommissioned) | Registered/idle |
+| `dokploy` | `100.83.38.48` | Linux | Azure `dokploy-azure` quiesced fallback / rollback source | Registered/idle |
 | `macbook` | `100.70.12.18` | macOS | Secondary Mac | Active/registered |
 | `iphone` | `100.107.201.123` | iOS | Contextual personal device | Active/registered |
 | `motorola` | `100.107.156.26` | Android | Contextual personal device | Offline |
@@ -336,11 +352,11 @@ Management-plane model (hardened + hostnames standardized 2026-08-18):
 - Linux hostnames match Tailscale/Lightsail names: `dokploy-aws`, `cloudpanel-aws`.
 - `preserve_hostname: true` set in cloud-init on both to prevent revert on reboot.
 - Public TCP/22 blocked at Lightsail cloud firewall on both AWS hosts.
-- Tailscale key expiry: dokploy-aws expires 2027-02-12; cloudpanel-aws TBD.
+- Tailscale node-key expiry is disabled for permanent infrastructure nodes `dokploy-aws`, `cloudpanel-aws`, and Supabase.
 
 Emergency access model (verified 2026-08-18):
 - **dokploy-aws**: Lightsail browser SSH is SUPPORTED-BY-CONFIG. `lightsail-connect` passes Lightsail firewall, UFW is inactive, sshd has `TrustedUserCAKeys` for the Lightsail CA, and `LightsailDefaultKeyPair` is in authorized_keys. All layers allow it.
-- **cloudpanel-aws**: Lightsail browser SSH is BLOCKED BY HOST UFW. `lightsail-connect` passes the Lightsail cloud firewall, but host UFW restricts TCP/22 to `100.64.0.0/10` only (Tailscale CGNAT). The Lightsail relay IPs are public AWS addresses outside this range. Recovery if Tailscale fails requires: stop instance, use Lightsail launch script or snapshot-based recovery, or temporarily add relay IPs to UFW via instance user-data on next boot.
+- **cloudpanel-aws**: Lightsail browser SSH is SUPPORTED BY CURRENT CONFIGURATION. Final closure evidence shows host UFW allows TCP/22 from Anywhere (v4+v6), while the Lightsail perimeter permits TCP/22 only from `lightsail-connect`; ordinary public SSH to `13.135.227.0:22` times out. Normal administration remains OpenSSH over Tailscale.
 
 ## Automation Interfaces
 
@@ -348,7 +364,7 @@ These are the standard AI-agnostic interfaces both Claude and Codex should use:
 
 | Surface | Standard interface | Notes |
 | --- | --- | --- |
-| Azure PROCHAT-DATA | `~/.local/bin/azure-data-provisioner` and matching destroyer wrapper | Service-principal-backed Azure data-subscription surface for Supabase/data infrastructure only |
+| Azure supabase-azure | `~/.local/bin/azure-data-provisioner` and matching destroyer wrapper | Service-principal-backed Azure data-subscription surface for Supabase/data infrastructure only |
 | AWS | `~/.local/bin/aws-provisioner` and `~/.local/bin/aws-destroyer` | Assumed-role AWS automation surface layered on top of the base `claude-code` IAM user |
 | Dokploy | Direct tRPC API (`POST /api/trpc/*` with `x-api-key`); creds in `~/.config/dokploy/.env` | Primary deployment surface; `dokploy-cli` is broken (401s) — use direct API |
 | n8n | `~/.local/bin/n8n-api` | Primary headless workflow automation interface |
@@ -374,7 +390,7 @@ Run `sync-credentials` at any time to scan `~/.config/` for new `.env` files and
   - `~/.local/bin/aws-destroyer` assumes `ClaudeCodexDestroyer`
 - Azure role flow on this Mac:
   - `~/.local/bin/azure-cli` is the generic user-authenticated `az`
-  - current IKHP scope uses the `azure-data-*` wrappers for PROCHAT-DATA/Supabase only; old `azure-apps-*` automation is decommissioned with PROCHAT-APPS.
+  - current production/data operations use the `azure-data-*` wrappers for `supabase-azure`/Supabase; `azure-apps-*` wrappers are legacy/fallback-only for retained `dokploy-azure` and are not a production deployment path.
 
 ## Domain & Site Inventory
 
@@ -384,8 +400,8 @@ To re-enable a disabled site: add its entry back to the relevant Cloudflare Tunn
 
 ### CloudPanel AWS (tunnel `1bdef92e`)
 
-Historical/configuration inventory for sites associated with AWS CloudPanel `13.135.227.0` and the `CloudPanel AWS` tunnel. The per-site status table below was not live-reverified in Packet 2; treat current site health as UNKNOWN unless newer dated evidence exists.
-SSH configuration: `ssh cloudpanel` currently targets `13.135.227.0` as user `ubuntu`; reachability was not re-probed in Packet 2.
+CloudPanel production is OBSERVED-VERIFIED healthy as of 2026-08-18 (nginx active, MariaDB active, two PHP-FPM services running, admin endpoint responsive, hosted websites responding). The per-site table below remains an inventory view rather than a replacement for live health observations.
+SSH configuration: `ssh cloudpanel` / `ssh cloudpanel-aws` targets Tailscale `100.121.12.36` as user `ubuntu`; fresh independent OpenSSH-over-Tailscale validation passed. Normal public TCP/22 is blocked.
 CloudPanel UI reference: `https://cp.prochat.tools`
 
 | Domain | Status | Notes |
