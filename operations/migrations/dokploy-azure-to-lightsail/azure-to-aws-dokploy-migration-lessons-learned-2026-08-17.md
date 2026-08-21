@@ -904,6 +904,249 @@ For every stateful service, the following must pass before declaring that servic
 
 ---
 
+## 31. Production Acceptance Contract
+
+**Infrastructure health does not equal user availability.**
+
+A migration is NOT production-complete until all twelve gates pass. Passing some is not sufficient — each gate is independent and can fail silently while others pass.
+
+| # | Gate | Verification method |
+|---|------|---------------------|
+| 1 | Container health | `docker inspect --format '{{.State.Health.Status}}'` or `docker ps` |
+| 2 | Database connectivity | `psql <dsn> -c 'SELECT 1'` from within the application container |
+| 3 | Application HTTP response | `curl http://localhost:<port>/health` from the container host |
+| 4 | Traefik router exists | `curl localhost:8080/api/http/routers` — named router for this hostname present |
+| 5 | Correct hostname routing | Traefik router rule matches the intended production hostname exactly |
+| 6 | TLS certificate issuance | ACME JSON contains a valid, unexpired cert for the domain |
+| 7 | HTTPS request through production path | `curl -sI https://<hostname>/` from outside the server |
+| 8 | Cloudflare/Tunnel path | Request traces through Cloudflare edge (check `CF-Ray` response header) |
+| 9 | Fresh browser session | Incognito window — application loads with no cached state |
+| 10 | Authentication flow | Log in with an existing production account; session persists |
+| 11 | Environment secrets/configuration | Application-specific config verified (API keys, DSN, env vars active) |
+| 12 | No stale deployments | No duplicate containers share service names or DB connections on shared networks |
+
+Gates 1–3 prove the container is alive. Gates 4–8 prove traffic reaches it through the real production path. Gates 9–11 prove the application works for a real user. Gate 12 proves the environment is clean.
+
+A service that passes gates 1–3 but fails gate 7 is **not available to users**. Declare it migration-complete only when all twelve pass.
+
+---
+
+## 32. Ingress Acceptance Path
+
+Every migration must explicitly verify the complete end-to-end request path before declaring a service available:
+
+```
+Browser
+  → DNS (resolves to Cloudflare edge IP)
+  → Cloudflare (WAF, Full SSL)
+  → Cloudflare Tunnel (encrypted to origin connector)
+  → Traefik HTTPS (SNI routing, TLS)
+  → TLS certificate (ACME-issued, valid, not expired)
+  → Traefik router rule (Host(`hostname`) matches exactly)
+  → Traefik backend service (correct container, status UP)
+  → Application container (HTTP response)
+```
+
+Failures can occur at every layer. The most common silent failures in this migration:
+
+| Layer | Failure mode | Why it is silent |
+|-------|-------------|-----------------|
+| Traefik router | No router rule exists for the hostname | Container health passes; Traefik returns 404 |
+| Traefik backend | Router points to wrong or stale container | Correct domain serves wrong app |
+| TLS certificate | ACME issuance blocked by invalid hostname in rule | HTTPS unreachable; internal HTTP may still respond |
+| Cloudflare Full SSL | Origin not listening on HTTPS | Cloudflare returns 525/526 to the user |
+| Tunnel | Connector on wrong host or stopped | All requests fail; internal checks still pass |
+
+**Validation commands:**
+
+```bash
+# Traefik routers list
+curl -s http://localhost:8080/api/http/routers | jq '.[].name'
+
+# Backend service status
+curl -s http://localhost:8080/api/http/services/<service>@file | jq '.serverStatus'
+
+# ACME certificate present
+jq '.letsencrypt.Certificates[].domain.main' /etc/dokploy/traefik/acme.json
+
+# External HTTPS end-to-end
+curl -sI https://<hostname>/
+```
+
+---
+
+## 33. Automated Ingress Validation Requirement
+
+A reusable `check-domain.sh <hostname>` script must be built and run against every public hostname after every migration, deployment, and ingress change.
+
+**Required checks:**
+
+```
+check-domain.sh app.domain.com
+  [ ] DNS resolves to Cloudflare edge IP (not bare origin IP)
+  [ ] HTTPS endpoint responds (curl -sI https://app.domain.com/)
+  [ ] TLS certificate is valid (not self-signed, not expired)
+  [ ] Expected HTTP status code returned (200 or 301/302, not 404/502/525)
+  [ ] Traefik router exists for hostname (via Traefik API /api/http/routers)
+  [ ] Traefik backend resolves correctly (correct container, status UP)
+  [ ] Response body contains an expected application marker (not Traefik generic error page)
+```
+
+Failures returned by this script are **deployment contract failures, not application failures.** They indicate that infrastructure setup is incomplete. The migration remains open until all checks pass.
+
+**Priority:** This script should be the first automation produced after a migration establishes a stable environment. It eliminates the most common regression class: a container is healthy but publicly unreachable for 2+ days because no one ran an end-to-end check. All three post-cutover incidents (Ory, n8n, Umami) would have been surfaced within seconds by this script.
+
+---
+
+## 34. Traefik Hostname Validation Rule
+
+Every hostname inside a Traefik router rule must satisfy all four conditions before the rule is deployed:
+
+1. **Valid DNS** — the hostname resolves to an address reachable through the configured ingress path
+2. **Intended production domain** — the hostname is the correct canonical domain, not a test alias or deprecated name
+3. **Certificate coverage** — ACME is configured to issue for this exact hostname, or a valid wildcard covers it
+4. **No unregistered aliases** — every `Host()` clause in the rule refers to a domain that actually exists in DNS
+
+**Example failure:**
+
+```yaml
+# This rule blocks ACME certificate issuance for auth.prochat.tools
+# because www.auth.prochat.tools has no DNS record
+rule: "Host(`auth.prochat.tools`) || Host(`www.auth.prochat.tools`)"
+```
+
+Traefik's ACME client attempts certificate issuance for every hostname it encounters in active router rules. If any hostname in the rule fails the ACME challenge (does not resolve, is not owned, or has no DNS record), the entire certificate issuance for the rule fails. The result: HTTPS is unavailable for the entire service, including correctly configured hostnames.
+
+**DNS validation after every file-provider edit:**
+
+```bash
+# Check all hostnames in dynamic config resolve correctly
+grep -h 'Host(' /etc/dokploy/traefik/dynamic/*.yml \
+  | grep -oP '`[^`]+`' | tr -d '`' \
+  | while read h; do
+      dig +short "$h" | grep -q '.' || echo "MISSING DNS: $h"
+    done
+```
+
+---
+
+## 35. HTTP Success Is Insufficient
+
+`curl localhost`, `curl <container-ip>`, and HTTP port checks do not constitute migration acceptance.
+
+These checks validate that a process is listening. They do not validate that:
+- Traffic from real users reaches the process
+- TLS terminates correctly at every layer in the ingress chain
+- The reverse proxy routes to the correct backend
+- Authentication works end-to-end
+- The application's environment and secrets are correctly loaded in the running process
+
+**The only proof of production availability is:**
+
+```
+External client (browser or curl from outside the server)
+  → HTTPS (not HTTP, not localhost)
+  → Through Cloudflare edge
+  → Through Cloudflare Tunnel to origin
+  → To the application
+  → Returns a valid, application-specific response
+```
+
+Internal health checks, `docker inspect`, and curl-to-localhost are necessary pre-conditions. They are not substitutes for the real acceptance test.
+
+**Incident evidence from this migration:**
+
+| Service | Internal state | External state | Duration |
+|---------|---------------|----------------|----------|
+| Ory Kratos | Container running, healthz OK | `auth.prochat.tools` → 404 (missing `ory.yml`) | ~1 hour (resolved at cutover) |
+| n8n | Container running, healthz OK | Login failed (stale DNS collision on `postgres`) | 2+ days |
+| Umami | Container running, healthz OK | No public route (Swarm provider ignores Compose labels) | 2.5 days |
+
+In all three cases, a single `curl -sI https://<hostname>/` from outside the server would have surfaced the failure within seconds of cutover.
+
+---
+
+## 36. Migration Failure Patterns Prevented
+
+The following patterns each surfaced in multiple services during this migration. Future agents must treat these as mandatory checklist items, not edge cases.
+
+### Pattern 1: Missing Traefik File-Provider Artifacts
+
+**What happens:** A service deployed as Docker Compose (not a Swarm service) has no Traefik router. The Swarm provider only reads Swarm service labels. Compose labels are silently ignored. The container is healthy; the public hostname returns 404.
+
+**Services affected in this migration:** Ory Kratos, n8n, Umami, Via di Eden, BuildFlow staging
+
+**Prevention:** After every Compose deployment, verify the router exists via Traefik API. File-provider routes must be created explicitly in `/etc/dokploy/traefik/dynamic/` for every Compose service that requires public routing.
+
+---
+
+### Pattern 2: Invalid Traefik Host Rules Blocking ACME
+
+**What happens:** A Traefik router rule contains an unregistered hostname (e.g., `www.service.domain.com` where `www.` has no DNS record). Traefik's ACME client attempts to issue a certificate covering the invalid hostname. The challenge fails. The entire service becomes HTTPS-unavailable even though the primary hostname is correctly configured.
+
+**Prevention:** Validate all hostnames in dynamic config against DNS before deploying. Run the check loop from Section 34 after every file-provider edit.
+
+---
+
+### Pattern 3: ACME Certificate Failures
+
+**What happens:** Traefik cannot issue a Let's Encrypt certificate because: (a) a hostname in the rule doesn't resolve, (b) the ACME challenge is blocked by Cloudflare or a firewall, (c) `acme.json` has incorrect permissions (must be `600`), or (d) a Let's Encrypt rate limit has been reached.
+
+**Prevention:**
+- `acme.json` must have mode `600` — Traefik refuses to write to it otherwise
+- Challenge type must match infrastructure (HTTP-01 requires public port 80; DNS-01 requires Cloudflare API token)
+- Every hostname in active rules must resolve before Traefik starts
+- Verify cert presence: `jq '.letsencrypt.Certificates[].domain.main' /etc/dokploy/traefik/acme.json`
+
+---
+
+### Pattern 4: Cloudflare Full SSL Origin Failures
+
+**What happens:** Cloudflare is configured in Full SSL (strict) mode. The origin is not serving valid HTTPS or has an expired certificate. Cloudflare returns 525 (SSL Handshake Failed) or 526 (Invalid SSL Certificate). Users see a Cloudflare error page.
+
+**Prevention:** With Cloudflare Tunnel, this is typically not an issue (the tunnel uses its own TLS). For any direct-origin paths, verify the Cloudflare SSL mode and the origin certificate match. Never use "Flexible" SSL when the origin serves HTTPS — the double-termination causes redirect loops.
+
+---
+
+### Pattern 5: Mixed/Stale Deployments
+
+**What happens:** Migration-phase containers remain running after cutover. They share overlay networks with production containers. Docker DNS returns both IPs when resolving shared service names (e.g., `postgres`). The application randomly connects to the stale container's database at TypeORM pool startup. Symptoms are intermittent and difficult to reproduce because the pool persists across requests until the container restarts.
+
+**Services affected in this migration:** n8n (DNS collision with `code-postgres-1`)
+
+**Prevention:**
+- Explicitly stop and remove all migration-phase containers after cutover
+- Verify no duplicate service names exist on shared networks: `docker network inspect dokploy-network | jq '.[].Containers[].Name'`
+- Database containers must only join compose-internal networks — never attach them to `dokploy-network` or any shared overlay
+
+---
+
+### Pattern 6: Missing Environment Variables
+
+**What happens:** An application starts, passes health checks, and appears functional. A specific feature fails because a required environment variable is absent or holds the wrong value (wrong database URL, missing API key, wrong base URL for self-referencing services).
+
+**Prevention:**
+- For every migrated service, verify the full `.env` was transferred and is active in the running container
+- For services with self-referencing config (n8n `WEBHOOK_URL`, Umami `APP_SECRET`), verify the value matches the new environment
+- Test at least one feature that exercises the critical env var — the health endpoint does not cover this
+
+---
+
+### Pattern 7: Browser vs. Server Deployment Mismatch
+
+**What happens:** A user's browser has cached asset manifests, API base URLs, or auth tokens from the previous deployment. After migration, client-side references point to the old server or old endpoints. The application appears broken only for returning users, not fresh sessions.
+
+**Prevention:**
+- Acceptance testing must always use a fresh incognito window with no cached state
+- For Next.js or SSR apps, verify `NEXTAUTH_URL` and `NEXT_PUBLIC_*` env vars match the new domain
+- For apps with service workers, verify the service worker cache is busted post-deploy
+
+---
+
+*These seven patterns account for all three post-cutover incidents in this migration (Ory, n8n, Umami). Checking all seven before declaring any service migration-complete would have prevented every incident.*
+
+---
+
 ## Document Metadata
 
 | Field | Value |
