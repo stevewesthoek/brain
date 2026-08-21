@@ -1147,6 +1147,123 @@ The following patterns each surfaced in multiple services during this migration.
 
 ---
 
+## 37. Additional DNS, ACME, and HTTPS Ingress Lessons
+
+These lessons generalize from post-cutover ingress incidents and complement the framework in Sections 31–36.
+
+### 37.1 Invalid Traefik hostnames silently block production HTTPS
+
+A Traefik router can be enabled and visible in the API while HTTPS is completely broken for users. A single invalid hostname in a `Host()` rule is sufficient to block ACME certificate issuance for every hostname in that rule.
+
+Every hostname in every `Host()` clause must have:
+- valid DNS that resolves from the public internet
+- intentional production ownership (no test aliases, deprecated names, or accidental `www.` variants)
+- certificate coverage — named in the ACME config or covered by a valid wildcard
+- correct `www`/non-`www` treatment — include only the variant that exists in DNS
+
+**Failure chain:**
+
+```
+Host(`example.com`) || Host(`www.example.com`)
+  where www.example.com has no DNS record
+  → ACME attempts challenge for www.example.com
+  → DNS lookup returns NXDOMAIN
+  → Certificate issuance blocked for the entire rule
+  → Traefik cannot serve HTTPS for example.com
+  → Cloudflare Full SSL origin handshake fails (525/526)
+  → User-facing outage — router exists, container healthy, HTTPS dead
+```
+
+### 37.2 ACME certificate validation is part of ingress acceptance
+
+A migration is not complete until all three hold:
+- Certificate issuance succeeded: `jq '.letsencrypt.Certificates[].domain.main' /etc/dokploy/traefik/acme.json` lists the hostname
+- HTTPS works through the external production path: `curl -sI https://<hostname>/` from outside the server
+- No ACME errors in Traefik logs: `grep -i "acme\|certificate" /var/log/dokploy/traefik.log`
+
+**ACME failures are ingress failures, not application failures.** They are invisible to container health checks and internal HTTP tests. The only detection path is an external HTTPS request.
+
+### 37.3 The only authoritative production test path
+
+The following checks are **insufficient alone** to confirm user availability:
+
+- `curl localhost:<port>` — validates the process is listening; nothing more
+- `curl <container-ip>` — bypasses the reverse proxy entirely
+- Docker `healthcheck` status — application process alive; ingress unknown
+- Internal Docker network curl — skips DNS, Traefik routing, TLS, and Cloudflare
+
+The authoritative test path is:
+
+```
+External browser or curl (from outside the server)
+  → public DNS
+  → Cloudflare edge (if used)
+  → Cloudflare Tunnel → origin connector
+  → Traefik HTTPS → TLS certificate
+  → Router rule → correct backend container
+  → Application response
+```
+
+Each layer can fail independently. The internal checks are necessary pre-conditions, not substitutes for the full path test.
+
+### 37.4 Domain inventory gate before declaring migration complete
+
+Before closing any migration, run an explicit domain inventory gate against every hostname in every active Traefik router rule:
+
+```bash
+# All hostnames in dynamic config must resolve
+grep -h 'Host(' /etc/dokploy/traefik/dynamic/*.yml \
+  | grep -oP '`[^`]+`' | tr -d '`' \
+  | while read h; do
+      result=$(dig +short "$h")
+      [ -z "$result" ] && echo "NXDOMAIN: $h" || echo "OK: $h → $result"
+    done
+
+# Certificates must be issued
+jq '.letsencrypt.Certificates[].domain.main' /etc/dokploy/traefik/acme.json
+```
+
+Gate criteria:
+- No NXDOMAIN results
+- No unintentional `www.`/non-`www.` mismatches
+- Certificate present for every public hostname
+- Router rules match only intended production domains
+
+### 37.5 Automated ingress acceptance tooling is a reliability requirement
+
+`check-domain.sh <hostname>` (specified in Section 33) must be treated as a **migration reliability tool**, not an optional convenience. Priority: high. Rationale: every ingress-class incident in this migration would have been surfaced within seconds of cutover by a single script that:
+
+- resolves DNS
+- confirms HTTPS responds
+- validates TLS certificate (not self-signed, not expired)
+- checks expected HTTP status code
+- confirms Traefik router exists for the hostname
+- confirms Traefik backend is reachable and status UP
+
+Until this script exists, the manual equivalent must be run explicitly for every public hostname after every deployment and migration cutover.
+
+### 37.6 Start investigation at the external path, not the application
+
+Many post-migration outages are caused by **deployment contract failures**, not application bugs. Reversing the investigation order wastes time diagnosing correct application code.
+
+Deployment contract failures (investigate first):
+- Missing Traefik file-provider route (service unreachable via public hostname)
+- Invalid hostname in router rule (certificate blocked, HTTPS dead)
+- ACME failure (no valid certificate)
+- Cloudflare origin configuration mismatch (525/526 at edge)
+- Missing or wrong environment variable (feature broken, healthz still passes)
+
+**Correct investigation order:**
+1. External HTTPS test: `curl -sI https://<hostname>/`
+2. Traefik API: router exists? backend UP? `curl localhost:8080/api/http/routers`
+3. ACME JSON: certificate present and valid?
+4. Container logs: application errors visible?
+5. Application code: only after steps 1–4 pass
+
+If step 1 fails, do not proceed to step 4 or 5.
+
+---
+
 ## Document Metadata
 
 | Field | Value |
