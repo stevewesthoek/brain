@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "1.0.0",
+  "validMeasurements": [
+    {
+      "schemaVersion": "1.0.0",
+      "measurementId": "measurement:false-positive-001",
+      "metric": "false_positive",
+      "value": 0,
+      "resourceIds": ["host:test"]
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "measurementId": "measurement:failed-remediation-001",
+      "metric": "failed_remediation_attempt",
+      "value": 0,
+      "resourceIds": ["host:test"]
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "measurementId": "measurement:mttd-001",
+      "metric": "mttd",
+      "value": 120,
+      "resourceIds": ["host:test"]
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "measurementId": "measurement:mttr-001",
+      "metric": "mttr",
+      "value": 300,
+      "resourceIds": ["host:test"]
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "measurementId": "measurement:backup-success-001",
+      "metric": "backup_success",
+      "value": 1,
+      "resourceIds": ["host:test"]
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "measurementId": "measurement:restore-test-success-001",
+      "metric": "restore_test_success",
+      "value": 1,
+      "resourceIds": ["host:test"]
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "measurementId": "measurement:credential-warning-001",
+      "metric": "credential_expiry_warning_coverage",
+      "value": 1,
+      "resourceIds": ["host:test"]
+    },
+    {
+      "schemaVersion": "1.0.0",
+      "measurementId": "measurement:alert-noise-001",
+      "metric": "alert_noise_reduction",
+      "value": 0.25,
+      "resourceIds": ["host:test"]
+    }
+  ],
+  "invalidMeasurements": [
+    {
+      "caseId": "missing-measurement-id",
+      "measurement": {
+        "schemaVersion": "1.0.0",
+        "metric": "mttd",
+        "value": 120,
+        "resourceIds": ["host:test"]
+      }
+    },
+    {
+      "caseId": "unknown-metric",
+      "measurement": {
+        "schemaVersion": "1.0.0",
+        "measurementId": "measurement:unknown-001",
+        "metric": "execution_attempt",
+        "value": 0,
+        "resourceIds": ["host:test"]
+      }
+    },
+    {
+      "caseId": "execution-field-forbidden",
+      "measurement": {
+        "schemaVersion": "1.0.0",
+        "measurementId": "measurement:execution-field-001",
+        "metric": "mttd",
+        "value": 120,
+        "resourceIds": ["host:test"],
+        "executionEnabled": true
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 # Infrastructure Knowledge & Health Plane — Implementation Plan
 
 **Namespace:** IKHP
-**Status:** IKHP0-IKHP3 complete; IKHP4-IKHP6 not authorized
+**Status:** IKHP0-IKHP5 complete; IKHP6 Packet 1 accepted; later automation/remediation not authorized
 **Owner:** Brain
 **Primary entry point:** Brain Core / Context Broker
 **Primary human UI:** Obsidian Brain Console
@@ -363,6 +363,10 @@ Only create Decision Core items when a real human choice is required.
 
 ## IKHP4 — Safety and action contracts
 
+**Status:** owner-authorized and complete 2026-08-19 as a repository implementation.
+**Acceptance:** `operations/reports/ikhp4-safety-action-contracts-acceptance-2026-08-19.md`
+**Boundary:** deterministic safety policy, typed action-plan validation, fail-closed preflight evaluation, and bounded non-secret receipt persistence only. No live/provider/infrastructure execution, remediation, IKHP5 activation, IKHP6 activation, or CLR5 implementation.
+
 ### IKHP4.1 — Protected resource policy
 
 Version resource risk classes and mutation classes.
@@ -436,6 +440,10 @@ Require:
 
 ## IKHP5 — Unified consumer surfaces
 
+**Status:** owner-authorized and complete 2026-08-19 as a repository implementation.
+**Acceptance:** `operations/reports/ikhp5-unified-consumer-surfaces-acceptance-2026-08-19.md`
+**Boundary:** one canonical read-only infrastructure identity/state model across Brain Core API, Context Broker, CLI/MCP, and the existing Obsidian Brain Console. No live/provider/infrastructure execution, remediation, IKHP6 activation, or CLR5 implementation.
+
 ### IKHP5.1 — Brain Core API
 
 Implement the planned `/infra/*` unified endpoints from the architecture spec.
@@ -479,6 +487,22 @@ Required visual sections:
 - offline/stale provider states visible.
 
 ## IKHP6 — Preventive automation
+
+**Status:** Packet 1 complete and accepted 2026-08-22 as an admission-only repository implementation. Later automation execution and remediation remain not authorized.
+**Acceptance:** `operations/reports/ikhp6-packet1-reconciliation-2026-08-22.md`
+**Boundary:** versioned admission and measurement contracts, deterministic validators, and evidence-only fixtures. Preserve `executionEnabled=false`, `executionPerformed=false`, and `actualEffects=[]`. No provider/infrastructure execution, remediation, scheduling, credential mutation, or live action path is authorized.
+
+### IKHP6 Packet 1 acceptance
+
+Complete the admission-only foundation before any runtime automation packet:
+
+- admission proposal schema and validator;
+- measurement schema, complete metric fixtures, validator, and focused tests;
+- IKHP4 action/receipt safety regression floor;
+- IKHP5 unified-consumer regression floor;
+- JSON, syntax, diff, and explicit non-execution validation.
+
+Acceptance evidence is recorded in the reconciliation report above. This acceptance does not authorize the candidate automation examples below.
 
 Only authorize after measured IKHP2-IKHP5 reliability.
 

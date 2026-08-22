@@ -12,7 +12,7 @@ Purpose:
 - `operations/specs/infrastructure-knowledge-health-plane-roadmap.md`
 - `operations/specs/infrastructure-knowledge-health-plane-implementation-plan.md`
 
-IKHP0-IKHP4 are implemented repository capabilities. IKHP4 safety/action contracts and bounded non-secret runtime receipt persistence are accepted as repository implementation only; IKHP5, IKHP6, and CLR5 are not authorized. No new live monitoring, provider mutation, remediation, or infrastructure execution is activated by this page.
+IKHP0-IKHP5 are implemented repository capabilities. IKHP4 safety/action contracts and bounded non-secret runtime receipt persistence remain accepted as repository implementation only; IKHP5 unified Brain Core, Context Broker, CLI/MCP, and Brain Console surfaces are accepted as read-only consumers of the same canonical infrastructure model. IKHP6 Packet 1 is accepted as an admission and measurement foundation only; later IKHP6 automation/remediation and CLR5 remain unauthorized. No new live monitoring, provider mutation, remediation, or infrastructure execution is activated by this page.
 
 Verification status:
 - The last broad live estate verification represented in older sections of this page was 2026-05-19 from the `Office` Mac mini.

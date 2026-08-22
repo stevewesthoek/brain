@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.prochat.local/ikhp/infrastructure-automation-measurement-v1.schema.json",
+  "title": "Infrastructure Automation Measurement v1",
+  "type": "object",
+  "required": ["schemaVersion", "measurementId", "metric", "value", "resourceIds"],
+  "properties": {
+    "schemaVersion": {"const": "1.0.0"},
+    "measurementId": {"type":"string"},
+    "metric": {"enum":["false_positive","failed_remediation_attempt","mttd","mttr","backup_success","restore_test_success","credential_expiry_warning_coverage","alert_noise_reduction"]},
+    "value": {},
+    "resourceIds": {"type":"array","items":{"type":"string"}}
+  },
+  "additionalProperties": false
+}

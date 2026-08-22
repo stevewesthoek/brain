@@ -1,7 +1,7 @@
 # Infrastructure Knowledge & Health Plane — Roadmap
 
 **Namespace:** IKHP
-**Status:** IKHP0-IKHP3 complete; IKHP4-IKHP6 not authorized
+**Status:** IKHP0-IKHP5 complete; IKHP6 Packet 1 accepted; later automation/remediation not authorized
 **Owner:** Brain
 **Primary human surface:** Obsidian Brain Console
 **Program relationship:** sibling Brain program to CLR. CLR consumes IKHP context/health through Brain Core/Context Broker; IKHP does not ingest conversations.
@@ -162,7 +162,11 @@ Exit gate:
 
 ## IKHP4 — Infrastructure safety policy and guarded action contracts
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-08-19 as a repository implementation.
+
+**Acceptance evidence:** `operations/reports/ikhp4-safety-action-contracts-acceptance-2026-08-19.md`
+
+**Boundary:** deterministic safety policy, typed action plans, fail-closed preflight evaluation, and bounded non-secret runtime receipt persistence only. No live/provider/infrastructure execution, remediation, IKHP5 activation, IKHP6 activation, or CLR5 implementation.
 
 Define protected resource classes and mutation policies for:
 
@@ -200,7 +204,11 @@ Exit gate:
 
 ## IKHP5 — Unified Brain Core, Context Broker, CLI/MCP, and Obsidian surfaces
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-08-19 as a repository implementation.
+
+**Acceptance evidence:** `operations/reports/ikhp5-unified-consumer-surfaces-acceptance-2026-08-19.md`
+
+**Boundary:** one canonical read-only infrastructure identity/state model across Brain Core API, Context Broker, CLI/MCP, and the existing Obsidian Brain Console. No provider/infrastructure execution, remediation, IKHP6 activation, or CLR5 implementation.
 
 Expose one logical infrastructure interface:
 
@@ -254,7 +262,13 @@ Exit gate:
 
 ## IKHP6 — Measured preventive automation and bounded remediation
 
-**Status:** not authorized.
+**Status:** Packet 1 complete and accepted 2026-08-22 as an admission-only repository implementation. Later measured automation execution and bounded remediation remain not authorized.
+
+**Acceptance evidence:** `operations/reports/ikhp6-packet1-reconciliation-2026-08-22.md`
+
+**Packet 1 boundary:** versioned automation-admission and measurement contracts, deterministic validation, and evidence-only fixtures. `executionEnabled=false`, `executionPerformed=false`, and `actualEffects=[]` remain mandatory. No provider/infrastructure execution, remediation, scheduling, credential mutation, or live action path is authorized.
+
+**Packet 1 exit gate:** admission and measurement schemas, dedicated validators, focused measurement tests, IKHP4/IKHP5 regression floors, JSON/syntax/diff validation, and explicit non-execution evidence are complete.
 
 Only after sustained read-only reliability evidence:
 
@@ -276,4 +290,4 @@ IKHP is now admitted as a sibling program. It does not reopen CLR0-CLR4.
 
 Before CLR5 implementation is authorized, the CLR5 ingestion design must reference IKHP authority boundaries so infrastructure conversation evidence cannot become a parallel infrastructure truth store. CLR5 may capture evidence/candidates, but canonical server/network/config/credential-reference/backup knowledge remains IKHP/Brain authority.
 
-IKHP implementation itself requires separate owner authorization.
+IKHP6 Packet 1 is accepted. Any later packet that enables automation execution, remediation, scheduling, provider mutation, or other capability expansion requires separate owner authorization and acceptance.
