@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "AI infrastructure, system configs, and skills for Claude Code, Codex, and Gemini",
   "private": true,
+  "bin": {
+    "prochat": "tools/prochat.mjs"
+  },
   "scripts": {
     "models:sync:bedrock": "bash tools/scripts/models-sync-bedrock.sh",
     "models:validate": "bash tools/scripts/models-validate.sh",
@@ -40,6 +43,15 @@
     "test:infrastructure-health": "node --test projects/brain-core/src/tests/infrastructure-observation-runtime.test.mjs",
     "validate:infrastructure-incidents": "node tools/validate-infrastructure-incidents.mjs",
     "test:infrastructure-incidents": "node --test projects/brain-core/src/tests/infrastructure-incident-engine.test.mjs",
+    "validate:infrastructure-actions": "node tools/validate-infrastructure-actions.mjs",
+    "test:infrastructure-actions": "node --test projects/brain-core/src/tests/infrastructure-action-safety.test.mjs",
+    "validate:infrastructure-action-receipts": "node tools/validate-infrastructure-action-receipts.mjs",
+    "test:infrastructure-action-receipts": "node --test projects/brain-core/src/tests/infrastructure-action-receipt-runtime.test.mjs",
+    "validate:infrastructure-automation-admission": "node tools/validate-infrastructure-automation-admission.mjs",
+    "validate:infrastructure-automation-measurement": "node tools/validate-infrastructure-automation-measurement.mjs",
+    "test:infrastructure-automation-measurement": "node --test projects/brain-core/src/tests/infrastructure-automation-measurement.test.mjs",
+    "validate:infrastructure-consumers": "node tools/validate-infrastructure-consumers.mjs",
+    "test:infrastructure-consumers": "node --test projects/brain-core/src/tests/infrastructure-plane.test.mjs",
     "infinite-brain:conformance": "node tools/scripts/validate-infinite-brain-conformance.mjs",
     "infinite-brain:cross-repo-contract": "node tools/scripts/validate-cross-repo-contract.mjs"
   },

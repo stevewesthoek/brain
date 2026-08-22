@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.prochat.local/ikhp/infrastructure-action-v1.schema.json",
+  "title": "Infrastructure Guarded Action v1",
+  "type": "object",
+  "$defs": {
+    "resourceId": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+    "actionType": {
+      "enum": [
+        "inspect",
+        "config.change",
+        "service.restart",
+        "service.deploy",
+        "network.route.change",
+        "dns.change",
+        "tunnel.change",
+        "credential.rotate",
+        "credential.revoke",
+        "backup.policy.change",
+        "backup.restore",
+        "resource.delete",
+        "provider.write"
+      ]
+    },
+    "operation": { "enum": ["inspect", "diagnose", "plan", "propose", "mutate", "delete", "restore"] },
+    "actionSafetyClass": { "enum": ["read-only", "low-risk-reversible", "guarded-reversible", "high-risk-human-approval-required", "forbidden"] },
+    "requiredAuthority": { "enum": ["none", "decision_core_approval"] },
+    "freshness": { "enum": ["fresh", "stale", "unknown"] },
+    "revision": {
+      "type": "object",
+      "required": ["resourceId", "revisionKind", "expectedRevision"],
+      "properties": {
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "revisionKind": { "enum": ["git_head", "content_hash", "provider_revision", "state_hash"] },
+        "expectedRevision": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "healthEvidence": {
+      "type": "object",
+      "required": ["resourceId", "observationId", "freshness", "observedAt"],
+      "properties": {
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "observationId": { "type": "string", "pattern": "^observation:[a-z0-9._:-]+$" },
+        "freshness": { "$ref": "#/$defs/freshness" },
+        "observedAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "relationSnapshot": {
+      "type": "object",
+      "required": ["catalogVersion", "relationIds", "completeness", "computedAt"],
+      "properties": {
+        "catalogVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "relationIds": { "type": "array", "items": { "type": "string", "pattern": "^relation:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true },
+        "completeness": { "enum": ["complete", "partial", "unknown"] },
+        "computedAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "blastRadius": {
+      "type": "object",
+      "required": ["directTargetResourceIds", "dependentResourceIds", "relationIds", "completeness", "computedAt"],
+      "properties": {
+        "directTargetResourceIds": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/resourceId" }, "uniqueItems": true },
+        "dependentResourceIds": { "type": "array", "items": { "$ref": "#/$defs/resourceId" }, "uniqueItems": true },
+        "relationIds": { "type": "array", "items": { "type": "string", "pattern": "^relation:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true },
+        "completeness": { "enum": ["complete", "partial", "unknown"] },
+        "computedAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "providerAvailability": {
+      "type": "object",
+      "required": ["providerRef", "supported", "available", "freshness", "observedAt"],
+      "properties": {
+        "providerRef": { "type": "string", "minLength": 1 },
+        "supported": { "type": "boolean" },
+        "available": { "type": "boolean" },
+        "freshness": { "$ref": "#/$defs/freshness" },
+        "observedAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "preconditions": {
+      "type": "object",
+      "required": ["expectedRevisions", "currentRevisions", "healthEvidence", "incidentConstraints", "relationSnapshot", "blastRadius", "providerAvailability", "backupEvidenceRefs", "dryRunEvidenceRefs", "configValidationEvidenceRefs"],
+      "properties": {
+        "expectedRevisions": { "type": "array", "items": { "$ref": "#/$defs/revision" } },
+        "currentRevisions": { "type": "array", "items": { "$ref": "#/$defs/revision" } },
+        "healthEvidence": { "type": "array", "items": { "$ref": "#/$defs/healthEvidence" } },
+        "incidentConstraints": {
+          "type": "object",
+          "required": ["allowedIncidentIds", "blockedIncidentIds", "maxAllowedSeverity"],
+          "properties": {
+            "allowedIncidentIds": { "type": "array", "items": { "type": "string", "pattern": "^incident:[a-f0-9]{16,64}$" }, "uniqueItems": true },
+            "blockedIncidentIds": { "type": "array", "items": { "type": "string", "pattern": "^incident:[a-f0-9]{16,64}$" }, "uniqueItems": true },
+            "maxAllowedSeverity": { "enum": ["critical", "high", "medium", "low", "unknown", "none"] }
+          },
+          "additionalProperties": false
+        },
+        "relationSnapshot": { "$ref": "#/$defs/relationSnapshot" },
+        "blastRadius": { "$ref": "#/$defs/blastRadius" },
+        "providerAvailability": { "type": "array", "items": { "$ref": "#/$defs/providerAvailability" } },
+        "backupEvidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "dryRunEvidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "configValidationEvidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "effect": {
+      "type": "object",
+      "required": ["effectType", "description"],
+      "properties": {
+        "effectType": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "resourceId": { "anyOf": [{ "$ref": "#/$defs/resourceId" }, { "type": "null" }] },
+        "description": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "approvalRef": {
+      "type": ["object", "null"],
+      "required": ["system", "decisionId", "proposalId", "proposalHash", "actionId", "decision", "decidedAt", "freshnessDeadline"],
+      "properties": {
+        "system": { "const": "clr3-decision-core" },
+        "decisionId": { "type": "string", "minLength": 1 },
+        "proposalId": { "type": "string", "minLength": 1 },
+        "proposalHash": { "type": "string", "pattern": "^[a-f0-9]{16,64}$" },
+        "actionId": { "type": "string", "pattern": "^action:[a-z0-9._:-]+$" },
+        "decision": { "const": "approved" },
+        "decidedAt": { "type": "string", "format": "date-time" },
+        "freshnessDeadline": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "rollback": {
+      "type": "object",
+      "required": ["required", "available", "strategy", "evidenceRefs", "validationPlan", "restoreTargetRef"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "available": { "type": "boolean" },
+        "strategy": { "type": ["string", "null"] },
+        "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "validationPlan": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "restoreTargetRef": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "actionPlan": {
+      "type": "object",
+      "required": ["schemaVersion", "actionId", "actionType", "operation", "targetResourceIds", "requestedBy", "requestedAt", "policyCatalogVersion", "policyRefs", "preconditions", "safetyClass", "reversibility", "expectedEffects", "forbiddenEffects", "evidenceRefs", "requiredAuthority", "approvalRef", "idempotencyKey", "dryRun", "rollback", "validationPlan", "postCheckPlan", "provenance"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "actionId": { "type": "string", "pattern": "^action:[a-z0-9._:-]+$" },
+        "actionType": { "$ref": "#/$defs/actionType" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "targetResourceIds": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/resourceId" }, "uniqueItems": true },
+        "requestedBy": { "type": "string", "minLength": 1 },
+        "requestedAt": { "type": "string", "format": "date-time" },
+        "policyCatalogVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "policyRefs": { "type": "array", "items": { "type": "string", "pattern": "^safety_policy:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true },
+        "preconditions": { "$ref": "#/$defs/preconditions" },
+        "safetyClass": { "$ref": "#/$defs/actionSafetyClass" },
+        "reversibility": {
+          "type": "object",
+          "required": ["class", "rollbackRequired"],
+          "properties": {
+            "class": { "enum": ["reversible", "conditionally-reversible", "irreversible", "unknown"] },
+            "rollbackRequired": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "expectedEffects": { "type": "array", "items": { "$ref": "#/$defs/effect" } },
+        "forbiddenEffects": { "type": "array", "items": { "$ref": "#/$defs/effect" } },
+        "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "requiredAuthority": { "$ref": "#/$defs/requiredAuthority" },
+        "approvalRef": { "$ref": "#/$defs/approvalRef" },
+        "idempotencyKey": { "type": "string", "minLength": 8, "maxLength": 160 },
+        "dryRun": {
+          "type": "object",
+          "required": ["supported", "required", "evidenceRef"],
+          "properties": {
+            "supported": { "type": "boolean" },
+            "required": { "type": "boolean" },
+            "evidenceRef": { "type": ["string", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "rollback": { "$ref": "#/$defs/rollback" },
+        "validationPlan": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "postCheckPlan": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "provenance": {
+          "type": "object",
+          "required": ["source", "authority", "containsSecrets"],
+          "properties": {
+            "source": { "type": "string", "minLength": 1 },
+            "authority": { "enum": ["request", "derived-safety"] },
+            "containsSecrets": { "const": false }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["actionPlan"],
+  "properties": { "actionPlan": { "$ref": "#/$defs/actionPlan" } },
+  "additionalProperties": false
+}

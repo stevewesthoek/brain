@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, AppWindow, BrainCircuit, CalendarClock, FileVideo2, Gauge, Globe, ListVideo, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
+import { Activity, AppWindow, BrainCircuit, CalendarClock, FileVideo2, Gauge, Globe, ListVideo, Network, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { brainCoreRequest, BRAIN_CORE_URL } from '@/lib/braincore-client';
 import { brainCoreStatusSchema } from '@/lib/braincore-schemas';
@@ -15,6 +15,7 @@ const nav = [
   { href: '/', label: 'Overview', icon: Gauge },
   { href: '/ai-models', label: 'AI Models', icon: BrainCircuit },
   { href: '/local-apps', label: 'Local Apps', icon: AppWindow },
+  { href: '/infrastructure', label: 'Infrastructure', icon: Network },
   { href: '/dokploy', label: 'Dokploy', icon: Server },
   { href: '/monitoring', label: 'New Relic', icon: Activity },
   { href: '/tunnels', label: 'Tunnels', icon: Globe },

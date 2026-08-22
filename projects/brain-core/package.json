@@ -21,6 +21,7 @@
     "ibr:verify": "node scripts/dev/verify-metadata-write.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "npm run build && node --test dist/tests/*.test.js",
+    "test:infrastructure-unified-endpoints": "tsx --test src/tests/infrastructure-unified-endpoints.test.ts",
     "test:clr3-decision-runtime": "node --test src/tests/infinite-brain-decision-runtime.test.mjs",
     "test:vo-studio-write": "tsx --test src/tests/vo-studio-write.test.ts",
     "test:metadata-approval": "tsx --test --test-name-pattern=approveMetadataRequest src/tests/vo-studio-write.test.ts",

@@ -269,6 +269,21 @@ import { getInfraUmamiStatus } from '../adapters/infra-umami.js';
 import { getInfraGoogleAdsMetrics } from '../adapters/infra-google-ads.js';
 import { getInfraStripeStatus } from '../adapters/infra-stripe.js';
 import { getInfraStudioStatus } from '../adapters/infra-studio.js';
+import {
+  getInfrastructureMcpCapabilities,
+  readInfrastructureActionReceipts,
+  readInfrastructureBackups,
+  readInfrastructureCatalog,
+  readInfrastructureCredentialStatus,
+  readInfrastructureDoctor,
+  readInfrastructureHealth,
+  readInfrastructureIncidents,
+  readInfrastructureResource,
+  readInfrastructureResourceRelations,
+  readInfrastructureSafety,
+  readInfrastructureStatus,
+  readInfrastructureTopology,
+} from '../adapters/infrastructure-plane.mjs';
 import { getInfraVideoOrchestratorStatus } from '../adapters/infra-video-orchestrator-status.js';
 import {
   getInfraVOAccounts,
@@ -2220,7 +2235,75 @@ export async function routeRequest(
           }
         }
 
-        // Infrastructure adapter routes
+        // Unified Infrastructure Knowledge & Health Plane routes
+        if (url.pathname === '/infra/status') {
+          sendJson(response, 200, readInfrastructureStatus());
+          return;
+        }
+        if (url.pathname === '/infra/catalog') {
+          sendJson(response, 200, readInfrastructureCatalog());
+          return;
+        }
+        if (url.pathname === '/infra/topology') {
+          sendJson(response, 200, readInfrastructureTopology());
+          return;
+        }
+        if (url.pathname === '/infra/health') {
+          sendJson(response, 200, readInfrastructureHealth());
+          return;
+        }
+        if (url.pathname === '/infra/incidents') {
+          sendJson(response, 200, readInfrastructureIncidents());
+          return;
+        }
+        if (url.pathname === '/infra/backups') {
+          sendJson(response, 200, readInfrastructureBackups());
+          return;
+        }
+        if (url.pathname === '/infra/credentials/status') {
+          sendJson(response, 200, readInfrastructureCredentialStatus());
+          return;
+        }
+        if (url.pathname === '/infra/safety') {
+          sendJson(response, 200, readInfrastructureSafety());
+          return;
+        }
+        if (url.pathname === '/infra/action-receipts') {
+          sendJson(response, 200, readInfrastructureActionReceipts());
+          return;
+        }
+        if (url.pathname === '/infra/capabilities') {
+          sendJson(response, 200, getInfrastructureMcpCapabilities());
+          return;
+        }
+        if (url.pathname === '/infra/doctor') {
+          sendJson(response, 200, readInfrastructureDoctor());
+          return;
+        }
+        const infrastructureRelationsMatch = /^\/infra\/resources\/([^/]+)\/relations$/.exec(url.pathname);
+        if (infrastructureRelationsMatch) {
+          const resourceId = decodeURIComponent(infrastructureRelationsMatch[1] ?? '');
+          const result = readInfrastructureResourceRelations(resourceId);
+          if (result) {
+            sendJson(response, 200, result);
+          } else {
+            sendJson(response, 404, { error: { code: 'not_found', message: `Infrastructure resource not found: ${resourceId}` } });
+          }
+          return;
+        }
+        const infrastructureResourceMatch = /^\/infra\/resources\/([^/]+)$/.exec(url.pathname);
+        if (infrastructureResourceMatch) {
+          const resourceId = decodeURIComponent(infrastructureResourceMatch[1] ?? '');
+          const result = readInfrastructureResource(resourceId);
+          if (result) {
+            sendJson(response, 200, result);
+          } else {
+            sendJson(response, 404, { error: { code: 'not_found', message: `Infrastructure resource not found: ${resourceId}` } });
+          }
+          return;
+        }
+
+        // Provider-backed compatibility infrastructure routes
         if (url.pathname === '/infra/dokploy') {
           sendJson(response, 200, await getInfraDokployStatus());
           return;

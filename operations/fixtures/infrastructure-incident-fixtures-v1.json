@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "policyCatalogVersion": "1.1.0",
+  "policyCatalogVersion": "1.3.0",
   "fingerprintContract": {
     "algorithm": "sha256",
     "orderedInputs": ["resourceId", "conditionCode", "healthPolicyId", "policyCatalogVersion"],

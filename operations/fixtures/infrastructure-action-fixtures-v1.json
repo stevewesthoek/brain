@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "1.0.0",
+  "policyCatalogVersion": "1.3.0",
+  "now": "2026-08-18T18:00:00Z",
+  "resources": [
+    {"resourceId":"host:test-high"},
+    {"resourceId":"host:test-low"},
+    {"resourceId":"host:test-read"},
+    {"resourceId":"service:test-app"}
+  ],
+  "relations": [
+    {"relationId":"relation:test-app-high","relationClass":"runs_on","sourceId":"service:test-app","targetId":"host:test-high","state":"active"}
+  ],
+  "safetyPolicies": [
+    {
+      "safetyPolicyId":"safety_policy:test-high",
+      "resourceId":"host:test-high",
+      "safetyClass":"availability_impacting",
+      "allowedOperations":["inspect","mutate"],
+      "requiredEvidence":["expected_revision","dependency_graph","current_health","backup_evidence","dry_run","config_validation","owner_approval","rollback_plan","post_change_health"]
+    },
+    {
+      "safetyPolicyId":"safety_policy:test-low",
+      "resourceId":"host:test-low",
+      "safetyClass":"low_risk_reversible",
+      "allowedOperations":["inspect","mutate"],
+      "requiredEvidence":["expected_revision","dependency_graph","current_health","dry_run","config_validation","rollback_plan","post_change_health"]
+    },
+    {
+      "safetyPolicyId":"safety_policy:test-read",
+      "resourceId":"host:test-read",
+      "safetyClass":"read_only",
+      "allowedOperations":["inspect","diagnose","plan","propose"],
+      "requiredEvidence":[]
+    }
+  ],
+  "plans": {
+    "readOnly": {
+      "schemaVersion":"1.0.0",
+      "actionId":"action:test-read",
+      "actionType":"inspect",
+      "operation":"inspect",
+      "targetResourceIds":["host:test-read"],
+      "requestedBy":"fixture:test",
+      "requestedAt":"2026-08-18T17:45:00Z",
+      "policyCatalogVersion":"1.3.0",
+      "policyRefs":["safety_policy:test-read"],
+      "preconditions": {
+        "expectedRevisions":[],
+        "currentRevisions":[],
+        "healthEvidence":[],
+        "incidentConstraints":{"allowedIncidentIds":[],"blockedIncidentIds":[],"maxAllowedSeverity":"none"},
+        "relationSnapshot":{"catalogVersion":"1.3.0","relationIds":[],"completeness":"complete","computedAt":"2026-08-18T17:44:00Z"},
+        "blastRadius":{"directTargetResourceIds":["host:test-read"],"dependentResourceIds":[],"relationIds":[],"completeness":"complete","computedAt":"2026-08-18T17:44:00Z"},
+        "providerAvailability":[],
+        "backupEvidenceRefs":[],
+        "dryRunEvidenceRefs":[],
+        "configValidationEvidenceRefs":[]
+      },
+      "safetyClass":"read-only",
+      "reversibility":{"class":"reversible","rollbackRequired":false},
+      "expectedEffects":[],
+      "forbiddenEffects":[{"effectType":"mutation","resourceId":"host:test-read","description":"No mutation may occur during read-only inspection."}],
+      "evidenceRefs":["fixture:evidence:read"],
+      "requiredAuthority":"none",
+      "approvalRef":null,
+      "idempotencyKey":"fixture-read-only",
+      "dryRun":{"supported":false,"required":false,"evidenceRef":null},
+      "rollback":{"required":false,"available":false,"strategy":null,"evidenceRefs":[],"validationPlan":[],"restoreTargetRef":null},
+      "validationPlan":["inspect only"],
+      "postCheckPlan":[],
+      "provenance":{"source":"fixture","authority":"request","containsSecrets":false}
+    },
+    "lowRiskReady": {
+      "schemaVersion":"1.0.0",
+      "actionId":"action:test-low",
+      "actionType":"config.change",
+      "operation":"mutate",
+      "targetResourceIds":["host:test-low"],
+      "requestedBy":"fixture:test",
+      "requestedAt":"2026-08-18T17:45:00Z",
+      "policyCatalogVersion":"1.3.0",
+      "policyRefs":["safety_policy:test-low"],
+      "preconditions": {
+        "expectedRevisions":[{"resourceId":"host:test-low","revisionKind":"state_hash","expectedRevision":"rev-low-1"}],
+        "currentRevisions":[{"resourceId":"host:test-low","revisionKind":"state_hash","expectedRevision":"rev-low-1"}],
+        "healthEvidence":[{"resourceId":"host:test-low","observationId":"observation:test-low","freshness":"fresh","observedAt":"2026-08-18T17:44:00Z"}],
+        "incidentConstraints":{"allowedIncidentIds":[],"blockedIncidentIds":[],"maxAllowedSeverity":"medium"},
+        "relationSnapshot":{"catalogVersion":"1.3.0","relationIds":[],"completeness":"complete","computedAt":"2026-08-18T17:44:00Z"},
+        "blastRadius":{"directTargetResourceIds":["host:test-low"],"dependentResourceIds":[],"relationIds":[],"completeness":"complete","computedAt":"2026-08-18T17:44:00Z"},
+        "providerAvailability":[],
+        "backupEvidenceRefs":[],
+        "dryRunEvidenceRefs":["evidence:dry-run-low"],
+        "configValidationEvidenceRefs":["evidence:config-low"]
+      },
+      "safetyClass":"low-risk-reversible",
+      "reversibility":{"class":"reversible","rollbackRequired":true},
+      "expectedEffects":[{"effectType":"config.update","resourceId":"host:test-low","description":"Apply bounded reversible test configuration."}],
+      "forbiddenEffects":[{"effectType":"delete","resourceId":"host:test-low","description":"Resource deletion is forbidden."}],
+      "evidenceRefs":["evidence:dry-run-low","evidence:config-low"],
+      "requiredAuthority":"none",
+      "approvalRef":null,
+      "idempotencyKey":"fixture-low-risk",
+      "dryRun":{"supported":true,"required":true,"evidenceRef":"evidence:dry-run-low"},
+      "rollback":{"required":true,"available":true,"strategy":"restore previous test configuration","evidenceRefs":["evidence:rollback-low"],"validationPlan":["verify previous revision"],"restoreTargetRef":"host:test-low"},
+      "validationPlan":["validate test configuration"],
+      "postCheckPlan":["verify fresh health observation"],
+      "provenance":{"source":"fixture","authority":"request","containsSecrets":false}
+    },
+    "highRiskApproved": {
+      "schemaVersion":"1.0.0",
+      "actionId":"action:test-high",
+      "actionType":"config.change",
+      "operation":"mutate",
+      "targetResourceIds":["host:test-high"],
+      "requestedBy":"fixture:test",
+      "requestedAt":"2026-08-18T17:45:00Z",
+      "policyCatalogVersion":"1.3.0",
+      "policyRefs":["safety_policy:test-high"],
+      "preconditions": {
+        "expectedRevisions":[{"resourceId":"host:test-high","revisionKind":"state_hash","expectedRevision":"rev-high-1"}],
+        "currentRevisions":[{"resourceId":"host:test-high","revisionKind":"state_hash","expectedRevision":"rev-high-1"}],
+        "healthEvidence":[{"resourceId":"host:test-high","observationId":"observation:test-high","freshness":"fresh","observedAt":"2026-08-18T17:44:00Z"}],
+        "incidentConstraints":{"allowedIncidentIds":[],"blockedIncidentIds":[],"maxAllowedSeverity":"medium"},
+        "relationSnapshot":{"catalogVersion":"1.3.0","relationIds":["relation:test-app-high"],"completeness":"complete","computedAt":"2026-08-18T17:44:00Z"},
+        "blastRadius":{"directTargetResourceIds":["host:test-high"],"dependentResourceIds":["service:test-app"],"relationIds":["relation:test-app-high"],"completeness":"complete","computedAt":"2026-08-18T17:44:00Z"},
+        "providerAvailability":[],
+        "backupEvidenceRefs":["evidence:backup-high"],
+        "dryRunEvidenceRefs":["evidence:dry-run-high"],
+        "configValidationEvidenceRefs":["evidence:config-high"]
+      },
+      "safetyClass":"high-risk-human-approval-required",
+      "reversibility":{"class":"conditionally-reversible","rollbackRequired":true},
+      "expectedEffects":[{"effectType":"config.update","resourceId":"host:test-high","description":"Apply guarded high-risk test configuration."}],
+      "forbiddenEffects":[{"effectType":"delete","resourceId":"host:test-high","description":"Resource deletion is forbidden."}],
+      "evidenceRefs":["evidence:backup-high","evidence:dry-run-high","evidence:config-high"],
+      "requiredAuthority":"decision_core_approval",
+      "approvalRef":{"system":"clr3-decision-core","decisionId":"decision:test-high","proposalId":"proposal:test-high","proposalHash":"0123456789abcdef0123456789abcdef","actionId":"action:test-high","decision":"approved","decidedAt":"2026-08-18T17:30:00Z","freshnessDeadline":"2026-08-18T19:00:00Z"},
+      "idempotencyKey":"fixture-high-risk",
+      "dryRun":{"supported":true,"required":true,"evidenceRef":"evidence:dry-run-high"},
+      "rollback":{"required":true,"available":true,"strategy":"restore previous test configuration","evidenceRefs":["evidence:rollback-high"],"validationPlan":["verify previous revision"],"restoreTargetRef":"host:test-high"},
+      "validationPlan":["validate test configuration"],
+      "postCheckPlan":["verify fresh health observation"],
+      "provenance":{"source":"fixture","authority":"request","containsSecrets":false}
+    }
+  },
+  "blockingIncident": {
+    "incidentId":"incident:aaaaaaaaaaaaaaaa",
+    "resourceId":"host:test-high",
+    "severity":"high",
+    "status":"open"
+  }
+}

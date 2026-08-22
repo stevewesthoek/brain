@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.1.0",
+  "catalogVersion": "1.3.0",
   "serviceBindings": [
     {"bindingId":"binding:brain-core-newrelic","serviceId":"service:brain-core","resourceId":"monitor:newrelic-infrastructure","bindingKind":"monitoring","endpointRef":"provider-graph-api","configSourceRef":"projects/brain-core/src/adapters/infra-new-relic.ts","provenance":{"sourceRef":"projects/brain-core/src/adapters/infra-new-relic.ts","classification":"AUTHORITATIVE-CONFIG","verifiedAt":"2026-08-14T15:58:10Z","freshnessDeadline":"2026-09-14T15:58:10Z","owner":"brain/core","evidenceRefs":[]}},
     {"bindingId":"binding:brain-core-cloudflare","serviceId":"service:brain-core","resourceId":"tunnel:cloudflare-production","bindingKind":"monitoring","endpointRef":"provider-tunnel-api","configSourceRef":"projects/brain-core/src/adapters/infra-cloudflare-tunnels.ts","provenance":{"sourceRef":"projects/brain-core/src/adapters/infra-cloudflare-tunnels.ts","classification":"AUTHORITATIVE-CONFIG","verifiedAt":"2026-08-14T15:58:10Z","freshnessDeadline":"2026-09-14T15:58:10Z","owner":"brain/core","evidenceRefs":[]}},
