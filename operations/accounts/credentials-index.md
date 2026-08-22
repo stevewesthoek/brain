@@ -533,7 +533,7 @@ Billing-specific service principals (separate from the AI provisioner/destroyer 
 
 Note: ADC and OAuth credentials are at `~/.config/gcloud/application_default_credentials.json`. Legacy credentials for 3 accounts (info@prochat.tools, steve@yeshua.academy, westhoek@hotmail.com) at `~/.config/gcloud/legacy_credentials/`.
 
-## BuildFlow — Relay Server & ChatGPT Actions API
+## Workbench — Relay Server & ChatGPT Actions API
 
 ### Relay Server (WebSocket bridge for local agents)
 
@@ -547,7 +547,7 @@ Self-hosted relay server on OrbStack. Port: `3053`. Bridges ChatGPT actions and 
 | `BRIDGE_PORT` | Docker compose env | TCP port for relay WebSocket + HTTP server (default: 3053) | Read-only config | N/A | Change if port conflict | N/A |
 
 **Account Details:**
-- Service: BuildFlow Relay (WebSocket bridge + session management)
+- Service: Workbench Relay (WebSocket bridge + session management)
 - Deployment: OrbStack Docker Compose (or local dev via `pnpm`)
 - Data directory: `~/.buildflow` locally, or `/var/lib/buildflow` in container
 - Auth scheme: HTTP Bearer token (optional, enabled if `RELAY_ADMIN_TOKEN` is set)
@@ -609,7 +609,7 @@ Public read-only API for ChatGPT Custom Actions. Public endpoint: `https://build
 | `BUILDFLOW_ACTION_TOKEN` | `~/.config/buildflow/.env` | Bearer token for `/api/actions/*` endpoints (search, read, search-and-read) — required for ChatGPT Custom GPT authentication | No automatic expiry; rotate before sharing with new users or if compromised | Generate new with `openssl rand -hex 32` |
 
 **Account Details:**
-- Service: BuildFlow API (read-only ChatGPT Actions)
+- Service: Workbench API (read-only ChatGPT Actions)
 - Deployment: Cloudflare tunnel → localhost:3054 (Next.js web app)
 - Auth scheme: HTTP Bearer token (required for all `/api/actions/*` requests)
 - Protected endpoints: `/api/actions/search`, `/api/actions/read`, `/api/actions/search-and-read`

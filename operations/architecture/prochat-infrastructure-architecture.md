@@ -429,7 +429,7 @@ projects managed by Dokploy.
 | kNa9UD808a88taxtLmcnQ | Demo | Vault Legal frontend + API |
 | 2VaDvNViTYD_asKA_h6sb | Ops | n8n, umami, ory, free-resend |
 | Weq2uY4KM9IKizVAw_RE- | SaaS | Proofly, Status Link, Egg Cooker |
-| VGUe7AzRsqLFv_wSPDCQ- | WaaS | BuildFlow, fala |
+| VGUe7AzRsqLFv_wSPDCQ- | WaaS | Workbench, fala |
 | SPX-3TSitP84hxmp51gDT | Web | ProChat, Cedula, Oliveto, Yeshua Academy, Via di Eden, JCCP, Says the Bible, ProChat Accountant |
 
 ### 5.3 Ory Kratos (Standalone Container)
@@ -468,8 +468,8 @@ All AWS workloads are suppressed:
 
 | # | appName | Human Name | Image | Classification | Supabase Writer | Local DB |
 |---|---------|------------|-------|---------------|-----------------|----------|
-| 1 | app-index-haptic-port-m88k9z | BuildFlow | ghcr.io/stevewesthoek/buildflow@sha256:4a657 (pinned) | CURRENT-ACTIVE | NO | volume only |
-| 2 | app-transmit-online-hard-drive-of1m9k | BuildFlow Staging | ghcr.io/stevewesthoek/buildflow@sha256:4a657 (pinned) | CURRENT-ACTIVE | NO | volume only |
+| 1 | app-index-haptic-port-m88k9z | Workbench | ghcr.io/stevewesthoek/buildflow@sha256:4a657 (pinned) | CURRENT-ACTIVE | NO | volume only |
+| 2 | app-transmit-online-hard-drive-of1m9k | Workbench Staging | ghcr.io/stevewesthoek/buildflow@sha256:4a657 (pinned) | CURRENT-ACTIVE | NO | volume only |
 | 3 | web-cedula-b1gepj | Cedula | ghcr.io/prochattools/cedula:latest | CURRENT-ACTIVE | YES | tenant_cedula |
 | 4 | apps-saas-egg-cooker-qtutkp | Egg Cooker | nixpacks (github) | CURRENT-INACTIVE | NO | — |
 | 5 | app-override-online-interface-1wzjpb | fala | ghcr.io/prochattools/fala:latest | KNOWN-BROKEN-SOURCE-PARITY | YES | fala (Supabase) |
@@ -499,7 +499,7 @@ All AWS workloads are suppressed:
 
 | Application | Reproducible Source of Truth | Mutable? |
 |-------------|------------------------------|---------|
-| BuildFlow, BuildFlow Staging | Pinned digest sha256:4a657686731b in GHCR | NO — pinned |
+| Workbench, Workbench Staging | Pinned digest sha256:4a657686731b in GHCR | NO — pinned |
 | Via di Eden | Commit SHA tag `f2d0650e` in GHCR | NO — pinned |
 | JPV Bootcamp Payload CMS | Commit SHA `a0c32276` in GHCR | NO — pinned (confirm before cutover) |
 | JPV Bootcamp (public site) | `ghcr.io/prochattools/jpv-bootcamp:latest` | YES — re-pull at cutover |
@@ -750,8 +750,8 @@ neither legacy nor obsolescence. Do not rename or drop without investigation.
 
 | Application | Local DB (postgres:15) | Supabase Logical DB | tenant_* Schema (postgres) |
 |-------------|----------------------|--------------------|-----------------------------|
-| BuildFlow | volume only | — | — |
-| BuildFlow Staging | volume only | — | — |
+| Workbench | volume only | — | — |
+| Workbench Staging | volume only | — | — |
 | Cedula | tenant_cedula | cedula | tenant_cedula |
 | Egg Cooker | — | — | — |
 | fala | — | fala | — |
