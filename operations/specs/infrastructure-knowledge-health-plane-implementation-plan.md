@@ -538,4 +538,4 @@ Before CLR5 conversation evidence ingestion begins:
 4. Infrastructure health/provider observations remain IKHP runtime state, not conversation memory.
 5. CLR5 must not create a parallel server/network/credential/backup truth store.
 
-IKHP1 now provides the canonical catalog/relationship foundation for this gate. CLR5 remains not authorized, and IKHP2 live health/provider normalization still requires separate owner authorization.
+IKHP1 provides the canonical catalog/relationship foundation for this gate, and IKHP2 live health/provider normalization is complete and accepted with evidence recorded in `operations/reports/ikhp2-live-health-normalization-acceptance-2026-08-16.md`. CLR5 remains not authorized.
