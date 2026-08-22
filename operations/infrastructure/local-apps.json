@@ -285,7 +285,7 @@
     "notes": "Local-first language app. Fala owns the app lifecycle scripts; OrbStack/PostgreSQL and Ollama remain external prerequisites. Run npm run dashboard:status in the repo for safe Obsidian metadata including LAN phone URL candidates, mind-steward fallback flags, and router-owned Bedrock policy."
   },
   {
-    "name": "BuildFlow",
+    "name": "Workbench",
     "repoPath": "/Users/Office/Repos/stevewesthoek/buildflow",
     "port": 3054,
     "appPort": 3054,
@@ -299,7 +299,7 @@
     "stopCommand": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh stop",
     "restart": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart",
     "restartCommand": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart",
-    "description": "BuildFlow: unified lifecycle for agent (3052), web (3054), and relay (3053)",
+    "description": "Workbench: unified lifecycle for agent (3052), web (3054), and relay (3053)",
     "startupTimeoutMs": 90000,
     "servicePorts": [
       3052,

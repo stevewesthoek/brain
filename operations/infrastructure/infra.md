@@ -42,7 +42,7 @@ The registry is dual-compatible during the migration window:
 - legacy consumers may continue to use `port`, `url`, `check`, `start`, and `stop`
 - both sets of fields are kept aligned in `local-apps.json`
 
-Current inventory: Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Oliveto Organizing (3059 / DB 5453), JPV Bootcamp (3000 / DB 5444), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), BuildFlow (3054), TradeBot (3061 / DB 5454).
+Current inventory: Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Oliveto Organizing (3059 / DB 5453), JPV Bootcamp (3000 / DB 5444), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), Workbench (3054), TradeBot (3061 / DB 5454).
 
 To add a new local app, edit `local-apps.json` — the Brain Console "Local Apps" tab updates immediately.
 
@@ -215,7 +215,7 @@ Projects and workloads verified through the Dokploy API on 2026-05-19:
 - Compose: `jpvbootcamp`
 
 `Web`
-- App: `BuildFlow` (managed relay for ChatGPT Custom Actions)
+- App: `Workbench` (managed relay for ChatGPT Custom Actions)
 - App: `Yeshua Academy`
 - App: `Yeshua Academy Finance`
 - App: `ProChat`
@@ -457,7 +457,7 @@ Dokploy UI: `https://dokploy.prochat.tools`
 
 | Domain | App | Project | Status | Notes |
 |--------|-----|---------|--------|-------|
-| `buildflow.prochat.tools` | BuildFlow | Web | Pending provisioning | Managed relay for ChatGPT Custom Actions; router to connected local devices. Status: phase 1 provisioning plan documented. |
+| `buildflow.prochat.tools` | Workbench | Web | Pending provisioning | Managed relay for ChatGPT Custom Actions; router to connected local devices. Status: phase 1 provisioning plan documented. |
 | `dokploy.prochat.tools` | — | Ops | Online | Dokploy UI |
 | `n8n.prochat.tools` | n8n | Ops | Online | Workflow automation |
 | `firecrawl.prochat.tools` | Firecrawl | Ops | Online | Web scraping & search API; PostgreSQL in Docker volume `firecrawl_pgdata`; replaces `/browse` and WebFetch for research |

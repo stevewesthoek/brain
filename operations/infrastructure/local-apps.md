@@ -35,7 +35,7 @@ One permanent port per app, one per database.
 | ComfyUI | 8188 | - | Image generation UI |
 | Family Finance | 3060 | 5452 | Household finance tracker |
 | Fala | 3050 | 5432 | Portuguese language learning app |
-| BuildFlow | 3054 | - | Agent (3052), relay (3053), web (3054) |
+| Workbench | 3054 | - | Agent (3052), relay (3053), web (3054) |
 | TradeBot | 3061 | 5454 | Crypto trading cockpit |
 | Video Orchestrator | - | 5450 | Video production pipeline |
 
