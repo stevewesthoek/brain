@@ -1102,3 +1102,28 @@ Git commits:                      0
 Git pushes:                       0
 Secrets in report:                0
 ```
+
+## 2026-08-22 OfficeMac correction and live verification
+
+This section supersedes the OfficeMac version and transport details above;
+the original audit remains historical evidence.
+
+    Status:           LIVE CORRECTION / VERIFIED
+    Correction date:  2026-08-22
+    Cloudflared:      2026.8.2
+    Tunnel transport: http2 over TCP
+    Tunnel status:    4 active HA connections
+    Request errors:   0 at verification time
+    Origin:           http://127.0.0.1:3154/health -> HTTP 200
+    Public health:    https://workbench.prochat.tools/health -> 10/10 HTTP 200
+    Public latency:   approximately 69-116 ms across 10 probes
+    Local firewall:   disabled; no local firewall rule added
+    Secrets exposed:  0
+
+The earlier 2026.3.0 OfficeMac connector was upgraded after repeated
+outdated-version warnings. Historical origin connection refused/EOF events
+coincided with Workbench restart windows. Historical QUIC connection resets
+led to the reversible OfficeMac protocol: http2 mitigation. Direct local
+probes to Cloudflare port 7844 succeeded; no macOS firewall rule was available
+or necessary to change. Router/firewall policy outside this host remains an
+infrastructure boundary and was not mutated by this correction.
