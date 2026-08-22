@@ -3,7 +3,7 @@
   "generated": "2026-08-15T14:50:00Z",
   "source": {
     "provider": "azure",
-    "subscription": "PROCHAT-APPS",
+    "subscription": "dokploy-azure",
     "resource_group": "RG-APPS-DOKPLOY",
     "region": "spaincentral",
     "vm": {
