@@ -1,4 +1,4 @@
-# PROCHAT-APPS Revised Budget Analysis (Post-Disk Downgrade)
+# dokploy-azure Revised Budget Analysis (Post-Disk Downgrade)
 
 ## Change Made
 - **Disk downgrade**: Premium SSD (€13.46/month) → Standard SSD (~€1.50/month)
@@ -115,6 +115,6 @@
 
 ---
 
-**Conclusion:** PROCHAT-APPS is now **€1,269.44 under budget annually** with the Standard SSD, and the server should operate normally for typical Dokploy workloads.
+**Conclusion:** dokploy-azure is now **€1,269.44 under budget annually** with the Standard SSD, and the server should operate normally for typical Dokploy workloads.
 
 Last updated: 2026-04-12 11:45 UTC

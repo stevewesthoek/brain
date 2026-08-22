@@ -34,7 +34,7 @@ The earlier blocker report that concluded "add public hostname via Cloudflare da
 **Source:** `/Users/Office/Repos/stevewesthoek/brain/operations/infrastructure/infra.md`
 
 ```
-| `dokploy` / `vm-dokploy` | Main app host | Azure / `PROCHAT-APPS` | Spain Central | Ubuntu 24.04.3 LTS | 4 vCPU, 15 GiB RAM | 68.221.139.108 | 100.83.38.48 | ssh dokploy | Running |
+| `dokploy` / `vm-dokploy` | Main app host | Azure / `dokploy-azure` | Spain Central | Ubuntu 24.04.3 LTS | 4 vCPU, 15 GiB RAM | 68.221.139.108 | 100.83.38.48 | ssh dokploy | Running |
 ```
 
 **Finding:** Dokploy has **confirmed public IP: 68.221.139.108**

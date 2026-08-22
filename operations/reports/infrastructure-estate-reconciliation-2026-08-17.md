@@ -19,10 +19,10 @@
 The owner explicitly clarified and supplied AWS console evidence that supersedes earlier Packet 1 uncertainty:
 
 1. **AWS `dokploy-aws` is the live authoritative Dokploy production server.**
-2. **Azure PROCHAT-APPS / old Azure Dokploy is fully decommissioned and is not part of the current estate.** Historical migration documents remain provenance only.
+2. **Azure `dokploy-azure` / old Azure Dokploy is retired from production but remains a quiesced fallback/rollback source.** It is non-authoritative; application writers and the production Cloudflare connector are stopped.
 3. **CloudPanel is active on AWS** as `cloudpanel-aws`.
 4. **Hetzner is not used** and must not appear in the current IKHP estate.
-5. **Azure remains applicable only through the separate PROCHAT-DATA subscription for Supabase.**
+5. **Azure remains applicable only through the separate supabase-azure subscription for Supabase.**
 6. The generic `dokploy` SSH alias now points to the AWS Dokploy server after the owner manually updated `operations/system-configs/ssh/config`. Workbench re-read the file and verified the target/user fields by inspection; the path remains user-authored and excluded from the Packet 2 commit.
 
 The owner-supplied AWS console screenshot on 2026-08-18 shows the two canonical AWS Lightsail instances in the same AWS console view:
@@ -42,13 +42,13 @@ Classification: **OBSERVED-VERIFIED** from owner-supplied AWS console evidence. 
 |---|---|---|---|---|
 | `host:dokploy-aws` | Authoritative Dokploy production | AWS Lightsail | Running; London Zone A; `18.135.240.168`; 16 GiB RAM; 4 vCPU; 320 GiB SSD; Tailscale `100.71.47.24` | **OBSERVED-VERIFIED** |
 | `host:cloudpanel-aws` | Authoritative CloudPanel host | AWS Lightsail | Running; London Zone A; `13.135.227.0`; 8 GiB RAM; 2 vCPU; 160 GiB SSD | **OBSERVED-VERIFIED** |
-| `host:supabase` | Authoritative shared Supabase/PostgreSQL data host | Azure PROCHAT-DATA | Tailscale `100.71.31.88`; private endpoint evidence `10.0.2.4:5433`; exact current Azure VM state was not re-probed in Packet 2 | **OBSERVED-VERIFIED** authority from migration evidence; volatile VM state **UNKNOWN** |
+| `host:supabase` | Authoritative shared Supabase/PostgreSQL data host | Azure supabase-azure | Tailscale `100.71.31.88`; private endpoint evidence `10.0.2.4:5433`; exact current Azure VM state was not re-probed in Packet 2 | **OBSERVED-VERIFIED** authority from migration evidence; volatile VM state **UNKNOWN** |
 | `host:office` | Local infrastructure/control host | local macOS | Repo configuration / IKHP1 | **AUTHORITATIVE-CONFIG** |
 | `host:macbook` | Local consumer/development host | local macOS | Repo configuration / IKHP1 | **AUTHORITATIVE-CONFIG** |
 
 ## 1.2 Explicitly not current infrastructure
 
-- Azure PROCHAT-APPS / historical `vm-dokploy`: **decommissioned** by owner authority. Do not model as a current host/provider account/access target.
+- Azure `dokploy-azure` / historical `vm-dokploy`: **retired from production and retained only as quiesced fallback/rollback evidence**. It must never be treated as current production authority.
 - Hetzner / historical CloudPanel: **not used** by owner authority. Do not model as a current host/provider account/access target.
 - Historical Azure/Hetzner IPs, tunnels, backup vaults, SSH aliases and migration roles may remain in dated migration/decision evidence but must not be surfaced as current topology.
 
@@ -57,14 +57,14 @@ Classification: **OBSERVED-VERIFIED** from owner-supplied AWS console evidence. 
 | Provider/account | Current role | Classification |
 |---|---|---|
 | AWS primary | Current compute provider for Dokploy and CloudPanel | **OBSERVED-VERIFIED / DERIVED-VERIFIED** from shared AWS console evidence |
-| Azure PROCHAT-DATA | Current Supabase/data subscription | **AUTHORITATIVE-CONFIG** + migration authority evidence |
+| Azure supabase-azure | Current Supabase/data subscription | **AUTHORITATIVE-CONFIG** + migration authority evidence |
 | Cloudflare ProChat | Public ingress / DNS provider authority | **AUTHORITATIVE-CONFIG**; volatile connector health belongs to IKHP observations |
 | Tailscale | Private network dependency | **OBSERVED-VERIFIED** dated migration evidence; current device health belongs to IKHP observations |
 | Dokploy management | Current management provider/account surface | **AUTHORITATIVE-CONFIG** |
 | New Relic | Monitoring account/access surface | **AUTHORITATIVE-CONFIG**; current host coverage remains **UNKNOWN** until observed |
 
 Not current:
-- Azure PROCHAT-APPS — decommissioned.
+- Azure `dokploy-azure` — non-production quiesced fallback/rollback source; not authoritative.
 - Hetzner — unused.
 
 # 3. Current topology authority
@@ -84,8 +84,8 @@ Not current:
 
 ## Supabase
 
-- Supabase remains on Azure PROCHAT-DATA and remains shared authoritative data infrastructure for migration-documented dependencies.
-- Azure PROCHAT-DATA remains the only current Azure infrastructure/account representation required by this reconciliation.
+- Supabase remains on Azure supabase-azure and remains shared authoritative data infrastructure for migration-documented dependencies.
+- Azure supabase-azure remains the only current Azure infrastructure/account representation required by this reconciliation.
 
 # 4. SSH reconciliation
 
@@ -139,7 +139,7 @@ There is no current Hetzner recovery requirement because Hetzner is not used.
 - Static health-policy definitions remain fail-closed: `unknownIsHealthy=false`.
 - Current New Relic coverage for the AWS Dokploy and CloudPanel hosts was not live-probed in Packet 2; do not infer healthy coverage from historical decisions.
 - Supabase host/service health remains dependent on IKHP observation evidence.
-- Decommissioned Azure PROCHAT-APPS and unused Hetzner require no current health policies.
+- Decommissioned Azure dokploy-azure and unused Hetzner require no current health policies.
 
 # 7. Safety-policy implications
 
@@ -148,7 +148,7 @@ Current protected infrastructure should include at minimum:
 - AWS CloudPanel production host;
 - Supabase host;
 - production/CloudPanel tunnels that remain current;
-- AWS, Azure PROCHAT-DATA, Cloudflare, Tailscale, Dokploy and New Relic provider/account or access resources as applicable;
+- AWS, Azure supabase-azure, Cloudflare, Tailscale, Dokploy and New Relic provider/account or access resources as applicable;
 - domain/DNS resources;
 - backup/recovery resources.
 
@@ -166,7 +166,7 @@ Resolved: AWS `cloudpanel-aws` is current and running. Hetzner is not used and i
 
 ## Azure scope
 
-Resolved: Azure is not a current Dokploy/provider estate. The separate Azure PROCHAT-DATA subscription remains current because it hosts Supabase.
+Resolved: Azure is not a current Dokploy/provider estate. The separate Azure supabase-azure subscription remains current because it hosts Supabase.
 
 ## Production tunnel
 
@@ -196,9 +196,9 @@ Packet 2 current-state rules:
 
 - `host:dokploy-aws` = active authoritative AWS Lightsail production.
 - `host:cloudpanel-aws` = active authoritative AWS Lightsail CloudPanel runtime.
-- `host:supabase` = current data host under Azure PROCHAT-DATA.
+- `host:supabase` = current data host under Azure supabase-azure.
 - no `host:dokploy-azure` current resource.
-- no Azure PROCHAT-APPS current provider/access resource.
+- no Azure dokploy-azure current provider/access resource.
 - no Hetzner current host/provider/access/tunnel resource.
 - production Cloudflare tunnel routes only to AWS Dokploy.
 - CloudPanel tunnel state may remain UNKNOWN until observed.
@@ -209,7 +209,7 @@ The infrastructure catalog schema remains sufficient; the Packet 2 data-only exp
 
 # 11. Human/configuration views
 
-- `operations/infrastructure/infra.md` should describe AWS Dokploy + AWS CloudPanel as current, Azure PROCHAT-DATA/Supabase as the only current Azure scope, and must not present Hetzner or Azure Dokploy as current.
+- `operations/infrastructure/infra.md` should describe AWS Dokploy + AWS CloudPanel as current, Azure supabase-azure/Supabase as the only current Azure scope, and must not present Hetzner or Azure Dokploy as current.
 - `operations/architecture/prochat-infrastructure-architecture.md` keeps migration procedure/history but clearly marks current-vs-historical semantics.
 - `operations/accounts/credentials-index.md` contains stale descriptive location prose but Workbench blocks writes because the path is credential-sensitive. It is not current infrastructure-location authority.
 - `operations/system-configs/ssh/config` requires the owner-authorized Dokploy correction described above but Workbench blocks writes to that path.
@@ -221,9 +221,9 @@ Packet 2 validation must prove:
 - exactly one current authoritative Dokploy runtime: AWS;
 - exactly one current CloudPanel runtime: AWS;
 - production tunnel has one active route to AWS Dokploy;
-- no current Azure PROCHAT-APPS / old Dokploy identity;
+- no current Azure dokploy-azure / old Dokploy identity;
 - no current Hetzner identity;
-- Azure PROCHAT-DATA/Supabase remains represented;
+- Azure supabase-azure/Supabase remains represented;
 - every health policy has `unknownIsHealthy=false`;
 - no safety policy enables `mutate`, `delete`, or `restore`;
 - manifest remains the single catalog discovery entrypoint;

@@ -2,7 +2,7 @@
 
 ## Actual Costs — April 2026 (Month-to-Date)
 
-### PROCHAT-APPS Subscription
+### dokploy-azure Subscription
 *Billing Period: 2026-04-01 to 2026-04-12 (partial month)*
 
 | Resource Type | Cost (EUR) | Annualized |
@@ -18,7 +18,7 @@
 
 ---
 
-### PROCHAT-DATA Subscription  
+### supabase-azure Subscription
 *Billing Period: 2026-04-01 to 2026-04-12 (partial month)*
 
 | Resource Type | Cost (EUR) | Annualized |
@@ -41,8 +41,8 @@
 
 | Item | Monthly | Annualized |
 |---|---|---|
-| PROCHAT-APPS | €72.46 | €869.52 |
-| PROCHAT-DATA | €59.72 | €716.58 |
+| dokploy-azure | €72.46 | €869.52 |
+| supabase-azure | €59.72 | €716.58 |
 | **Total Current** | **€132.18** | **€1,586.10** |
 | **Non-Profit Grant Budget** | — | **€2,000.00** |
 | **Headroom** | — | **€413.90** |
@@ -53,13 +53,13 @@
 
 ## Breakdown by Service
 
-### PROCHAT-APPS: Dokploy Deployment Infrastructure
+### dokploy-azure: Dokploy Deployment Infrastructure
 - **Compute**: Standard_D4as_v5 VM in Spain Central (~€46.62/month)
 - **Storage**: 256 GB Premium P15 data disk + 30 GB StandardSSD OS disk (~€15.41/month)
 - **Reliability**: Automated backups + restore points + vault (~€9.28/month)
 - **Networking**: Static public IP (~€1.16/month)
 
-### PROCHAT-DATA: Supabase + TTS Services
+### supabase-azure: Supabase + TTS Services
 - **Compute**: Supabase PostgreSQL VM (~€23.32/month)
 - **AI/ML**: Text-to-Speech Cognitive Services (~€13.05/month)
 - **Storage**: Database disks + snapshots (~€5.35/month)
@@ -71,8 +71,8 @@
 ## Feasibility: ProKit Staging on Existing Infrastructure
 
 Based on current utilization:
-- **PROCHAT-APPS Dokploy**: 63% disk used (after cleanup), 2.2 GB min RAM available
-- **PROCHAT-DATA Supabase**: Costs €59.72/month, with €413.90 annual headroom
+- **dokploy-azure Dokploy**: 63% disk used (after cleanup), 2.2 GB min RAM available
+- **supabase-azure Supabase**: Costs €59.72/month, with €413.90 annual headroom
 
 **Recommendation**: ProKit staging can be deployed **without exceeding the non-profit grant budget**, but disk pressure on the Dokploy server remains. Options:
 

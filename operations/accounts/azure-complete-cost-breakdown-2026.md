@@ -1,6 +1,6 @@
 # Azure Complete Cost Breakdown — All Services
 
-## PROCHAT-APPS Subscription
+## dokploy-azure Subscription
 
 ### Month-to-Date (April 1-12, 2026) — 12 Days into Month
 
@@ -20,7 +20,7 @@
 
 ---
 
-## PROCHAT-DATA Subscription
+## supabase-azure Subscription
 
 ### Month-to-Date (April 1-12, 2026) — 12 Days into Month
 
@@ -46,8 +46,8 @@
 
 | Metric | Value |
 |---|---|
-| PROCHAT-APPS (Dokploy) Annual | €2,179.80 |
-| PROCHAT-DATA (Supabase + TTS) Annual | €1,806.60 |
+| dokploy-azure (Dokploy) Annual | €2,179.80 |
+| supabase-azure (Supabase + TTS) Annual | €1,806.60 |
 | **Combined Annual** | **€3,986.40** |
 | Non-Profit Grant Budget | €2,000.00 |
 | **OVERAGE** | **€1,986.40 (199% of budget)** |
@@ -56,8 +56,8 @@
 
 If the €2,000 annual grant must be split between two subscriptions:
 
-- **PROCHAT-APPS gets €1,090** → €2,179.80 cost = **€1,089.80 overage**
-- **PROCHAT-DATA gets €910** → €1,806.60 cost = **€896.60 overage**
+- **dokploy-azure gets €1,090** → €2,179.80 cost = **€1,089.80 overage**
+- **supabase-azure gets €910** → €1,806.60 cost = **€896.60 overage**
 
 **Both subscriptions exceed their pro-rata budget allocation.**
 
@@ -70,14 +70,14 @@ If the €2,000 annual grant must be split between two subscriptions:
 - **Days elapsed**: 12 of 30 (40%)
 - **Days remaining**: 18 (60%)
 
-#### PROCHAT-APPS
+#### dokploy-azure
 - **MTD spend**: €72.47
 - **Daily rate**: €6.04/day
 - **Projected April total**: €181.65
 - **Grant allocation (monthly)**: €181.65/12 = €15.14/month
 - **April will exceed monthly allocation by**: €181.65 - €15.14 = **€166.51**
 
-#### PROCHAT-DATA
+#### supabase-azure
 - **MTD spend**: €59.74
 - **Daily rate**: €4.98/day
 - **Projected April total**: €150.55
@@ -90,14 +90,14 @@ If the €2,000 annual grant must be split between two subscriptions:
 
 | Subscription | Jan-Apr YTD | Monthly Avg | Months Left | Projected Rest of Year | Total Annual | Overage |
 |---|---|---|---|---|---|---|
-| PROCHAT-APPS | €72.47 | €181.65 | 8 | €1,453.20 | €1,525.67 (4 mo) | exceeds budget |
-| PROCHAT-DATA | €59.74 | €150.55 | 8 | €1,204.40 | €1,264.14 (4 mo) | **OK** ✅ |
+| dokploy-azure | €72.47 | €181.65 | 8 | €1,453.20 | €1,525.67 (4 mo) | exceeds budget |
+| supabase-azure | €59.74 | €150.55 | 8 | €1,204.40 | €1,264.14 (4 mo) | **OK** ✅ |
 
 ---
 
 ## What's Costing Money (Service Breakdown)
 
-### PROCHAT-APPS — Dokploy Infrastructure
+### dokploy-azure — Dokploy Infrastructure
 
 1. **Virtual Machines: €46.62/month**
    - 1x Standard_D4as_v5 in Spain Central
@@ -120,7 +120,7 @@ If the €2,000 annual grant must be split between two subscriptions:
 
 **Total: €72.47/month**
 
-### PROCHAT-DATA — Supabase Database + TTS
+### supabase-azure — Supabase Database + TTS
 
 1. **Virtual Machines: €23.32/month**
    - 1x Standard_D4as_v5 in Spain Central (Supabase server)
@@ -133,7 +133,7 @@ If the €2,000 annual grant must be split between two subscriptions:
 
 3. **Backup & Recovery: €14.88/month**
    - Recovery Services Vault for database backups
-   - Higher cost than PROCHAT-APPS because database criticality
+   - Higher cost than dokploy-azure because database criticality
 
 4. **Storage — Disks: €7.32/month**
    - Premium SSD (database disk): €3.61/month
@@ -154,17 +154,17 @@ If the €2,000 annual grant must be split between two subscriptions:
 
 1. **You are 199% over budget annually** when combining both subscriptions (€3,986.40 vs €2,000 grant)
 2. **Egress/Bandwidth is negligible** (~€0 for both)
-3. **TTS is your variable cost driver** on PROCHAT-DATA (€13.05/month currently)
+3. **TTS is your variable cost driver** on supabase-azure (€13.05/month currently)
 4. **Backup costs are high**: Combined €20.56/month (28% of total spend)
 5. **Both VMs run 24/7** at €69.94/month combined
-6. **PROCHAT-APPS exceeds budget**, PROCHAT-DATA is within budget individually
+6. **dokploy-azure exceeds budget**, supabase-azure is within budget individually
 
 ---
 
 ## What Must Change for 2026
 
 To stay within the €2,000 annual grant:
-- **Option 1**: Reduce PROCHAT-APPS VM size (€20-30/month savings)
+- **Option 1**: Reduce dokploy-azure VM size (€20-30/month savings)
 - **Option 2**: Reduce backup retention (€10-15/month savings)
 - **Option 3**: Pause TTS during off-peak (€5-10/month savings)
 - **Option 4**: Request larger grant or find additional funding (€1,986.40 shortfall)

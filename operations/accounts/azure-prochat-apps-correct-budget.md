@@ -1,6 +1,6 @@
-# PROCHAT-APPS Correct Budget Calculation (Excluding Premium SSD Only)
+# dokploy-azure Correct Budget Calculation (Excluding Premium SSD Only)
 
-## All Services - PROCHAT-APPS (April 1-12, 2026 — 12 days)
+## All Services - dokploy-azure (April 1-12, 2026 — 12 days)
 
 | Service | Cost (EUR) |
 |---|---|
@@ -52,7 +52,7 @@ When backup retention reduced from 7 days to 1 day, snapshots should decrease pr
 
 This is **well within** your €2,000 annual budget.
 
-You can sustain PROCHAT-APPS indefinitely at this cost level.
+You can sustain dokploy-azure indefinitely at this cost level.
 
 ---
 
