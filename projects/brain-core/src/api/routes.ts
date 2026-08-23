@@ -304,6 +304,7 @@ import { getSystemMetrics } from '../adapters/system-metrics.js';
 import { createProjectionEnvelope } from '../adapters/projection-envelope.js';
 import { readContractsProjection, readServicesProjection, readSystemHealthProjection, readTopologyProjection } from '../adapters/system-projections.js';
 import { readInfiniteBrainProjection } from '../adapters/infinite-brain-intelligence-projections.js';
+import { readInfiniteBrainEvolutionProjection } from '../adapters/infinite-brain-evolution-projections.js';
 import type { VideoAnalysisResult } from '../adapters/research-video.js';
 import { readVideoAnalysisHistory, recordVideoAnalysisHistory } from '../adapters/research-video-history.js';
 import { defaultAlertManager } from '../adapters/alerting.js';
@@ -649,6 +650,14 @@ export async function routeRequest(
     case '/projections/learning': {
       const kind = url.pathname.slice('/projections/'.length) as 'ingestion' | 'review' | 'intelligence' | 'calibration' | 'learning';
       sendJson(response, 200, readInfiniteBrainProjection(kind));
+      return;
+    }
+    case '/projections/evolution':
+    case '/projections/promotion':
+    case '/projections/transactions':
+    case '/projections/receipts': {
+      const kind = url.pathname.slice('/projections/'.length) as 'evolution' | 'promotion' | 'transactions' | 'receipts';
+      sendJson(response, 200, readInfiniteBrainEvolutionProjection(kind));
       return;
     }
     case '/infinite-brain/proposals': {
