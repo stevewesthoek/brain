@@ -11,6 +11,25 @@ Call `buildUnifiedIntelligenceBriefing(projection)` from `tools/scripts/mind-ste
 
 The output is runtime-local and is not canonical Brain or Mind state.
 
+## Activation and example
+
+Activation is an explicit operator action: load an already-built unified review projection, call `buildUnifiedIntelligenceBriefing(projection)`, and inspect the returned `attention_queue` or call `writeUnifiedIntelligenceBriefing` for local JSON/Markdown output. There is no scheduler or automatic daily run.
+
+Example item summary:
+
+```json
+{
+  "source_type": "conversation_evidence",
+  "source_reference": "runtime/local/mind-steward/conversation-evidence/example.json",
+  "briefing": {
+    "group": "important_review",
+    "why_surfaced": ["review_state=needs_review", "freshness=unknown", "uncertainty_present"],
+    "available_actions": ["review", "accept", "reject", "defer", "archive"]
+  },
+  "requires_human_decision": true
+}
+```
+
 ## Groups
 
 - `urgent_review`: explicit stale freshness.

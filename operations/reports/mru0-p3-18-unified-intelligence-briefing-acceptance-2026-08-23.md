@@ -1,6 +1,6 @@
 # MRU0-P3.18 Unified Intelligence Review Briefing — Acceptance
 
-Status: implementation-complete / acceptance-pending validation
+Status: accepted
 
 ## Scope
 
@@ -33,7 +33,7 @@ The briefing cannot establish human importance, resolve conflicting authority, o
 
 ## Acceptance evidence
 
-Focused briefing tests cover deterministic grouping, provenance preservation, human-action visibility, no inferred importance, invariants, and runtime-local containment. Existing unified-review, ingestion-envelope, conversation-evidence, decision-boundary, review-projection, and validation regressions remain required gates.
+Focused briefing tests cover deterministic grouping, provenance preservation, human-action visibility, no inferred importance, invariants, and runtime-local containment. The focused briefing and existing ingestion/review regression suite pass 29/29; documentation consistency and `git diff --check` pass.
 
 ## Next roadmap item
 
