@@ -35,6 +35,7 @@ function buildSignal(record) {
   const evidenceRefs = strings([proposal.proposalId, ...(proposal.evidenceRefs ?? []), ...(record.decision.evidenceRefs ?? []), ...(validation.evidenceRefs ?? []), ...(record.transaction.rollbackRefs ?? [])]);
   const payload = {
     proposal_id: proposal.proposalId,
+    category: proposal.category ?? 'unknown',
     transaction_id: record.transaction.transactionId,
     decision: decision.decision,
     validation_result: validation.result,
