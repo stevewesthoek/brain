@@ -301,6 +301,7 @@ import { getInfraVOAccountStats } from '../adapters/infra-video-orchestrator-acc
 import { getInfraVOReadiness } from '../adapters/infra-video-orchestrator-readiness.js';
 import { getInfraPipelinesStatus } from '../adapters/infra-pipelines-status.js';
 import { getSystemMetrics } from '../adapters/system-metrics.js';
+import { createProjectionEnvelope } from '../adapters/projection-envelope.js';
 import type { VideoAnalysisResult } from '../adapters/research-video.js';
 import { readVideoAnalysisHistory, recordVideoAnalysisHistory } from '../adapters/research-video-history.js';
 import { defaultAlertManager } from '../adapters/alerting.js';
@@ -510,8 +511,51 @@ export async function routeRequest(
     case '/api/health':
       sendJson(response, 200, await buildHealthReport());
       return;
+    case '/health/projection':
+      sendJson(response, 200, createProjectionEnvelope({
+        projection: 'system-health',
+        authorityOwner: 'brain',
+        provenance: {
+          sourceReferences: [
+            { ref: '/status', kind: 'route' },
+            { ref: '/capabilities', kind: 'route' },
+          ],
+          adapter: 'brain-core-projection-envelope',
+          capturedAt: new Date().toISOString(),
+          sourceRevision: null,
+        },
+        freshness: 'fresh',
+        confidence: 'verified',
+        privacyClassification: 'public-local',
+        generatedAt: new Date().toISOString(),
+        availability: 'available',
+        data: {
+          service: 'brain-core',
+          status: getStatus(),
+          capabilities: getCapabilities(),
+        },
+      }));
+      return;
     case '/status':
       sendJson(response, 200, getStatus());
+      return;
+    case '/projections/status':
+      sendJson(response, 200, createProjectionEnvelope({
+        projection: 'status',
+        authorityOwner: 'brain',
+        provenance: {
+          sourceReferences: [{ ref: '/status', kind: 'route' }],
+          adapter: 'brain-core-status-projection',
+          capturedAt: new Date().toISOString(),
+          sourceRevision: null,
+        },
+        freshness: 'fresh',
+        confidence: 'verified',
+        privacyClassification: 'public-local',
+        generatedAt: new Date().toISOString(),
+        availability: 'available',
+        data: getStatus(),
+      }));
       return;
     case '/ops/system-metrics':
       sendJson(response, 200, await readOpsSystemMetrics());
@@ -545,6 +589,42 @@ export async function routeRequest(
       return;
     case '/infinite-brain/status':
       sendJson(response, 200, await getInfiniteBrainStatus());
+      return;
+    case '/projections/capabilities':
+      sendJson(response, 200, createProjectionEnvelope({
+        projection: 'capabilities',
+        authorityOwner: 'brain',
+        provenance: {
+          sourceReferences: [{ ref: '/capabilities', kind: 'route' }],
+          adapter: 'brain-core-capabilities-projection',
+          capturedAt: new Date().toISOString(),
+          sourceRevision: null,
+        },
+        freshness: 'fresh',
+        confidence: 'verified',
+        privacyClassification: 'public-local',
+        generatedAt: new Date().toISOString(),
+        availability: 'available',
+        data: getCapabilities(),
+      }));
+      return;
+    case '/projections/runtime-state':
+      sendJson(response, 200, createProjectionEnvelope({
+        projection: 'runtime-state',
+        authorityOwner: 'derived-runtime',
+        provenance: {
+          sourceReferences: [{ ref: '/infinite-brain/status', kind: 'route' }],
+          adapter: 'brain-core-runtime-state-projection',
+          capturedAt: new Date().toISOString(),
+          sourceRevision: null,
+        },
+        freshness: 'fresh',
+        confidence: 'verified',
+        privacyClassification: 'private-local',
+        generatedAt: new Date().toISOString(),
+        availability: 'available',
+        data: await getInfiniteBrainStatus(),
+      }));
       return;
     case '/infinite-brain/proposals': {
       const report = readInfiniteBrainProposalReport();
