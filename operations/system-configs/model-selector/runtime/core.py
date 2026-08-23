@@ -21,6 +21,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from registry_shadow import load_and_compare
+
 log = logging.getLogger(__name__)
 
 CONFIG_DIR = Path.home() / ".config/video-orchestrator"
@@ -31,6 +33,7 @@ PROVIDERS_PATH = CONFIG_DIR / "ai-providers.json"
 TASK_TYPES_PATH = CONFIG_DIR / "ai-task-types.json"
 SELECTOR_CONFIG_PATH = CONFIG_DIR / "ai-selector-config.json"
 BEDROCK_MODELS_PATH = CONFIG_DIR / "ai-bedrock-models.json"
+REGISTRY_PATH = CONFIG_DIR / "ai-model-registry.json"
 RATE_LIMITS_PATH = STATE_DIR / "rate-limits.json"
 CB_STATE_PATH = STATE_DIR / "circuit-breakers.json"
 BEDROCK_ACCESS_PATH = STATE_DIR / "bedrock-model-access.json"
@@ -246,6 +249,13 @@ class ModelSelector:
         self._bedrock_models: list[dict] = []
         self._bedrock_access: dict[str, dict] = {}
         self._bedrock_outcomes: dict[str, dict] = {}
+        self._registry_shadow_report: dict[str, Any] = {
+            "mode": "shadow",
+            "status": "unavailable",
+            "selection_authority": "legacy",
+            "selection_affected": False,
+            "reason": "not_loaded",
+        }
         self._rate_limits: dict[str, dict] = {}
         self._provider_models: dict[str, list[str]] = {}
         self._provider_last_check: dict[str, float] = {}
@@ -276,6 +286,20 @@ class ModelSelector:
         else:
             self._bedrock_config = {}
             self._bedrock_models = []
+
+        # Shadow-only comparison. Legacy sources above remain the sole
+        # selection authority until a later MRU0 packet explicitly changes it.
+        self._registry_shadow_report = load_and_compare(
+            REGISTRY_PATH,
+            self._providers,
+            self._bedrock_config,
+        )
+        if self._registry_shadow_report.get("status") == "mismatch":
+            log.warning("selector registry shadow status=%s reason=%s", self._registry_shadow_report.get("status"), self._registry_shadow_report.get("reason", "parity_mismatch"))
+
+    def registry_shadow_report(self) -> dict[str, Any]:
+        """Return the non-authoritative registry comparison report."""
+        return dict(self._registry_shadow_report)
 
     def _validate_providers(self) -> None:
         for provider in self._providers:

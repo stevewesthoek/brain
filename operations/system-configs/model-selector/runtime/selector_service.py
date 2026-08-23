@@ -189,6 +189,9 @@ class SelectorHandler(BaseHTTPRequestHandler):
             cfg = dict(_selector._config)
             _json_response(self, 200, cfg)
 
+        elif path == "/registry/shadow":
+            _json_response(self, 200, _selector.registry_shadow_report())
+
         else:
             _json_response(self, 404, {"error": f"Not found: {path}"})
 

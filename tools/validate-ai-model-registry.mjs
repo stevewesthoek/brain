@@ -191,8 +191,9 @@ function validateRegistry(rootDir = ROOT) {
 
   const core = fs.readFileSync(path.join(rootDir, RELATIVE_PATHS.runtimeCore), 'utf8');
   const service = fs.readFileSync(path.join(rootDir, RELATIVE_PATHS.runtimeService), 'utf8');
-  assertCondition(!core.includes('ai-model-registry.json'), 'runtime/core.py must not read the P2.1 registry');
-  assertCondition(!service.includes('ai-model-registry.json'), 'selector_service.py must not read the P2.1 registry');
+  assertCondition(core.includes('from registry_shadow import load_and_compare'), 'runtime/core.py must retain shadow-only registry loading');
+  assertCondition(core.includes('REGISTRY_PATH'), 'runtime/core.py must retain the shadow registry path');
+  assertCondition(service.includes('/registry/shadow'), 'selector_service.py must expose the shadow report');
 
   return {
     valid: true,
@@ -200,7 +201,7 @@ function validateRegistry(rootDir = ROOT) {
     providerCount: registry.providers.length,
     modelCount: registry.models.length,
     sourceModelCount: expectedModelCount,
-    runtimeIntegration: false,
+    runtimeIntegration: 'shadow-only',
     privateMindPolicy: 'claude-bedrock/us.anthropic.claude-sonnet-4-6',
   };
 }

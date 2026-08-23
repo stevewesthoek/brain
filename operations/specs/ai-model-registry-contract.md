@@ -2,8 +2,8 @@
 
 **Status:** MRU0-P2.1 implementation contract
 
-**Runtime authority:** Not enabled by this packet. The registry is a canonical
-parity artifact until a later MRU0 packet authorizes selector integration.
+**Runtime authority:** Shadow reporting only. The registry is not a selector
+authority and does not change provider/model selection.
 
 ## Purpose
 
@@ -15,13 +15,18 @@ authority.
 
 ## Authority boundary
 
-During MRU0-P2.1:
+During MRU0-P2.1 and MRU0-P2.2:
 
 - `ai-providers.json` remains the provider selector source.
 - `ai-bedrock-models.json` remains the detailed Bedrock model source.
 - `ai-task-types.json` remains the task and private-Mind policy source.
 - `ai-model-registry.json` is a parity-only canonical registry artifact.
-- `core.py` and `selector_service.py` do not read the new registry.
+- `core.py` loads it through `runtime/registry_shadow.py` for comparison only.
+- `selector_service.py` exposes the non-authoritative `GET /registry/shadow`
+  report.
+- `core.py` continues to select exclusively from the legacy configuration.
+- A missing, invalid, or mismatching registry cannot reject valid legacy
+  routing and cannot auto-admit a model.
 
 Later packets may introduce projections and dual-read validation. They must
 preserve the legacy sources until parity, rollback, and acceptance gates pass.

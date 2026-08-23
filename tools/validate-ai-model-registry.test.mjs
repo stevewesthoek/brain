@@ -13,14 +13,15 @@ test('MRU0-P2.1 registry preserves provider and model parity', () => {
   assert.equal(result.providerCount, 4);
   assert.equal(result.modelCount, 16);
   assert.equal(result.sourceModelCount, 16);
-  assert.equal(result.runtimeIntegration, false);
+  assert.equal(result.runtimeIntegration, 'shadow-only');
 });
 
-test('MRU0-P2.1 does not integrate the registry into runtime selection', () => {
+test('MRU0-P2.2 integrates the registry only for shadow reporting', () => {
   const core = fs.readFileSync(path.join(ROOT, 'operations/system-configs/model-selector/runtime/core.py'), 'utf8');
   const service = fs.readFileSync(path.join(ROOT, 'operations/system-configs/model-selector/runtime/selector_service.py'), 'utf8');
-  assert.equal(core.includes('ai-model-registry.json'), false);
-  assert.equal(service.includes('ai-model-registry.json'), false);
+  assert.match(core, /from registry_shadow import load_and_compare/);
+  assert.match(core, /REGISTRY_PATH/);
+  assert.match(service, /\/registry\/shadow/);
 });
 
 test('private Mind routing remains explicit Bedrock-only and fail-closed', () => {
