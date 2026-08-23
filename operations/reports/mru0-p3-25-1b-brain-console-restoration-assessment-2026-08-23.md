@@ -6,13 +6,19 @@
 
 ## Decision
 
-**Status: READY for optional local diagnostics use; NOT the unified Infinite Brain review cockpit.**
+**Status: NEEDS REPAIR for current end-to-end activation; READY as a restored/buildable optional surface.**
 
 The existing Brain Console can be restored and operated locally through its documented
 Brain Console → Brain Core API boundary. It is type-safe, buildable, and its documented
 routes render successfully. It should remain an optional/specialist surface until a
 separate, authorized compatibility decision exposes P3.17–P3.24 review capabilities
 through Brain Core.
+
+The current end-to-end runtime is not ready for activation: port `4877` is occupied by
+PID `3386`, launched from the protected `brain-video-orchestrator` worktree, and the
+read-only status route timed out during the follow-up audit. The process was not
+stopped or modified. The Console therefore has verified build/render readiness, but
+not current live Brain Core API readiness.
 
 No UI redesign, new Brain Core API, runtime authority change, or Video Orchestrator
 merge was performed.
@@ -37,6 +43,11 @@ Results:
 The development server started on `http://localhost:4881`. Brain Core remained the
 backend at `http://localhost:4877` and reported `mode: read-only`, `ok: true`, and
 `generationModeRuntime: fixture`.
+
+That earlier status response is historical evidence from the restoration run. A later
+read-only probe found the protected worktree process still listening on `4877`, but
+`/status` and representative API routes timed out. This is an environment/process
+readiness issue, not a Console source or dependency failure.
 
 Documented Console routes returned HTTP 200:
 
@@ -127,7 +138,10 @@ define those routes and schemas first, then add a bounded Console read-only view
 
 ## Final assessment
 
-The existing Brain Console is restored and technically healthy for its current
-documented purpose. It is **READY** as an optional local diagnostics surface and
+The existing Brain Console is restored and technically healthy at source/build level
+for its current documented purpose. It is **NEEDS REPAIR for current end-to-end
+activation** because the occupied Brain Core runtime is not presently responsive.
+After the protected runtime is independently recovered or released by its owner, a
+fresh `/status` plus representative read-only route probe is required. It also
 **NEEDS A SEPARATE API/authority DECISION** before it can represent the unified
 Infinite Brain P3.17–P3.24 review layer.
