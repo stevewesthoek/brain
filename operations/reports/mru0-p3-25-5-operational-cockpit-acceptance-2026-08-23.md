@@ -64,4 +64,6 @@ These are improvement candidates only. No automatic fix or feature expansion is 
 
 ## Acceptance conclusion
 
-The Brain/Mind workflow contracts and compiled Brain Core are usable and safety-preserving. Console production routes are usable after a clean production start. The default 4881 dev process requires an explicit owner-authorized restart when its generated Next state is stale. No feature expansion should begin before deciding whether that maintenance issue warrants a separate bounded packet.
+The Brain/Mind workflow contracts and compiled Brain Core are usable and safety-preserving in isolated validation. The canonical Brain Console runtime was restored on `localhost:4881` using `npm start` after removing only generated `.next` output and rebuilding. Routes `/`, `/ai-models`, `/infrastructure`, `/monitoring`, and `/settings` returned HTTP 200 and the process remained stable at 0% CPU / approximately 68 MB RSS.
+
+The overall cockpit checkpoint remains **NOT READY** because the compiled Brain Core process on its required `localhost:4877` port still reproduced high CPU/RSS growth and timeouts on `/infinite-brain/status` and `/projections/evolution`, while `/health`, `/status`, and `/projections/promotion` responded. Brain Core was stopped rather than left unstable. This is now the only unresolved runtime gate; no feature expansion should begin before it is repaired.
