@@ -34,6 +34,17 @@ PDF, DOCX, XLSX, images, audio, video, URLs, YouTube, GitHub repositories, and A
 
 Each envelope contains provenance, source revision, privacy classification, freshness, uncertainty, Mind/Brain impact, and `review_required: true`. `latest.md` projects each item as `needs_review` with the workflow-only options `accepted`, `rejected`, `deferred`, and `archived`. These states do not promote memory. Human review and an existing approved bounded transaction are required before any durable Mind or Brain update.
 
+## Recording a human decision
+
+Decision recording is explicit and produces a Brain-local evidence artifact. It does not modify Mind or Brain canonical knowledge. The decision module accepts a reviewed item plus a reviewer, timestamp, and reason where required:
+
+- `accepted` → `promotion_candidate` only;
+- `rejected` → retained evidence with rejection reason;
+- `deferred` → review-queue item;
+- `archived` → traceable historical evidence.
+
+Decision artifacts are written under `runtime/local/mind-steward/decisions/`. A later durable update still requires the existing human-approved bounded transaction, exact target, validation, and receipt flow.
+
 ## Failure and safety behavior
 
 - Missing or symlinked `inbox/new/` fails closed.
