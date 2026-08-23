@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/schemas/ai-model-registry-v1.schema.json",
+  "title": "Brain AI Model Registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["registry_id", "registry_version", "source_provenance", "providers", "models"],
+  "properties": {
+    "registry_id": { "const": "ai-model-registry" },
+    "registry_version": { "const": 1 },
+    "source_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_source", "bedrock_model_source", "task_policy_source", "mode"],
+      "properties": {
+        "provider_source": { "const": "operations/system-configs/model-selector/config/ai-providers.json" },
+        "bedrock_model_source": { "const": "operations/system-configs/model-selector/config/ai-bedrock-models.json" },
+        "task_policy_source": { "const": "operations/system-configs/model-selector/config/ai-task-types.json" },
+        "mode": { "const": "parity-only" }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/provider" }
+    },
+    "models": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/model" }
+    }
+  },
+  "$defs": {
+    "lifecycleState": {
+      "enum": ["discovered", "evaluated", "admitted", "preferred", "deprecated", "retired"]
+    },
+    "accessState": {
+      "enum": ["unknown", "configured", "available", "unavailable", "denied", "expired", "not_applicable"]
+    },
+    "healthState": {
+      "enum": ["unknown", "healthy", "degraded", "unhealthy", "stale", "not_applicable"]
+    },
+    "safetyConstraints": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "compatibilityAlias": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "kind", "source"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_id",
+        "display_name",
+        "adapter_ref",
+        "lifecycle_state",
+        "access_state",
+        "health_state",
+        "supported_environments",
+        "capabilities",
+        "safety_constraints",
+        "last_verified_at",
+        "model_refs",
+        "compatibility_aliases",
+        "selection_metadata",
+        "runtime_compatibility"
+      ],
+      "properties": {
+        "provider_id": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "adapter_ref": { "type": "string", "minLength": 1 },
+        "lifecycle_state": { "$ref": "#/$defs/lifecycleState" },
+        "access_state": { "$ref": "#/$defs/accessState" },
+        "health_state": { "$ref": "#/$defs/healthState" },
+        "supported_environments": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "safety_constraints": { "$ref": "#/$defs/safetyConstraints" },
+        "last_verified_at": { "type": ["string", "null"], "format": "date-time" },
+        "model_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "compatibility_aliases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/compatibilityAlias" },
+          "uniqueItems": true
+        },
+        "selection_metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider_type", "priority", "cost_per_1k_tokens", "schedule_preference"],
+          "properties": {
+            "provider_type": { "type": "string", "minLength": 1 },
+            "priority": { "type": "number" },
+            "cost_per_1k_tokens": { "type": "number", "minimum": 0 },
+            "schedule_preference": { "type": "string", "minLength": 1 }
+          }
+        },
+        "runtime_compatibility": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_model_id",
+        "display_name",
+        "provider_id",
+        "provider_model_binding",
+        "capabilities",
+        "profile_compatibility",
+        "lifecycle_state",
+        "health_state",
+        "access_state",
+        "cost_metadata",
+        "latency_metadata",
+        "evaluation_evidence",
+        "safety_constraints",
+        "compatibility_aliases",
+        "last_verified_at",
+        "selection_metadata",
+        "legacy_selection_flags"
+      ],
+      "properties": {
+        "registry_model_id": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string", "minLength": 1 },
+        "provider_id": { "type": "string", "minLength": 1 },
+        "provider_model_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["binding_type", "model_id"],
+          "properties": {
+            "binding_type": { "type": "string", "minLength": 1 },
+            "model_id": { "type": "string", "minLength": 1 },
+            "region": { "type": ["string", "null"] }
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "profile_compatibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["capability_profiles", "quality_tiers", "role_labels"],
+          "properties": {
+            "capability_profiles": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "quality_tiers": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "role_labels": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+          }
+        },
+        "lifecycle_state": { "$ref": "#/$defs/lifecycleState" },
+        "health_state": { "$ref": "#/$defs/healthState" },
+        "access_state": { "$ref": "#/$defs/accessState" },
+        "cost_metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["currency", "input_per_1m", "output_per_1m"],
+          "properties": {
+            "currency": { "const": "USD" },
+            "input_per_1m": { "type": ["number", "null"], "minimum": 0 },
+            "output_per_1m": { "type": ["number", "null"], "minimum": 0 }
+          }
+        },
+        "latency_metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["connect_timeout_sec", "inference_timeout_sec", "expected_latency_class"],
+          "properties": {
+            "connect_timeout_sec": { "type": ["number", "null"], "minimum": 0 },
+            "inference_timeout_sec": { "type": ["number", "null"], "minimum": 0 },
+            "expected_latency_class": { "type": ["string", "null"] }
+          }
+        },
+        "evaluation_evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "evidence_refs", "evaluated_at"],
+          "properties": {
+            "status": { "enum": ["not_evaluated", "partial", "passed", "failed"] },
+            "evidence_refs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "evaluated_at": { "type": ["string", "null"], "format": "date-time" }
+          }
+        },
+        "safety_constraints": { "$ref": "#/$defs/safetyConstraints" },
+        "compatibility_aliases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/compatibilityAlias" },
+          "uniqueItems": true
+        },
+        "last_verified_at": { "type": ["string", "null"], "format": "date-time" },
+        "selection_metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["priority", "roles", "task_affinity", "max_context_tokens", "max_output_tokens", "quality_score", "notes"],
+          "properties": {
+            "priority": { "type": ["number", "null"] },
+            "roles": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "task_affinity": { "type": "object", "additionalProperties": { "type": "number" } },
+            "max_context_tokens": { "type": ["integer", "null"], "minimum": 0 },
+            "max_output_tokens": { "type": ["integer", "null"], "minimum": 0 },
+            "quality_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "notes": { "type": "string" }
+          }
+        },
+        "legacy_selection_flags": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "upgrade_candidate"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "upgrade_candidate": { "type": "boolean" },
+            "access_probe_ttl_hours": { "type": ["number", "null"], "minimum": 0 }
+          }
+        }
+      }
+    }
+  }
+}
