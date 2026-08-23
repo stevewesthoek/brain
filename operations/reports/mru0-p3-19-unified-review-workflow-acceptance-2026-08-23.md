@@ -1,6 +1,6 @@
 # MRU0-P3.19 Unified Intelligence Review Workflow — Acceptance
 
-Status: implementation-complete / acceptance-pending validation
+Status: accepted
 
 ## Operational result
 
@@ -20,9 +20,9 @@ The review loop now has explicit `new`, `reviewing`, `accepted`, `rejected`, `de
 - `new_storage_authority=false`
 - no scheduler, client change, autonomous agent, OCR, video processing, or external provider call
 
-## Validation target
+## Validation evidence
 
-Focused workflow tests cover deterministic artifacts, lifecycle transitions, reason/source requirements, history preservation, duplicate rejection, evidence preservation, and runtime-local containment. Existing briefing, unified-review, ingestion, conversation-evidence, decision-boundary, review-projection, and validation regressions remain required gates.
+Focused workflow tests cover deterministic artifacts, lifecycle transitions, reason/source requirements, history preservation, duplicate rejection, evidence preservation, and runtime-local containment. The workflow, briefing, unified-review, ingestion, conversation-evidence, decision-boundary, review-projection, and validation regression suite passes 33/33. Documentation consistency and `git diff --check` pass.
 
 ## Limitations and next phase
 
