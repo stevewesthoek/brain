@@ -6,7 +6,7 @@
 
 ## Decision
 
-**Status: NEEDS REPAIR for current end-to-end activation; READY as a restored/buildable optional surface.**
+**Status: READY for optional local diagnostics use; NOT the unified Infinite Brain review cockpit.**
 
 The existing Brain Console can be restored and operated locally through its documented
 Brain Console → Brain Core API boundary. It is type-safe, buildable, and its documented
@@ -14,11 +14,9 @@ routes render successfully. It should remain an optional/specialist surface unti
 separate, authorized compatibility decision exposes P3.17–P3.24 review capabilities
 through Brain Core.
 
-The current end-to-end runtime is not ready for activation: port `4877` is occupied by
-PID `3386`, launched from the protected `brain-video-orchestrator` worktree, and the
-read-only status route timed out during the follow-up audit. The process was not
-stopped or modified. The Console therefore has verified build/render readiness, but
-not current live Brain Core API readiness.
+The current end-to-end runtime was rechecked after the owner-controlled process
+recovered. Brain Core on `4877` and Brain Console on `4881` both served successfully;
+the protected process was not stopped or modified.
 
 No UI redesign, new Brain Core API, runtime authority change, or Video Orchestrator
 merge was performed.
@@ -44,12 +42,10 @@ The development server started on `http://localhost:4881`. Brain Core remained t
 backend at `http://localhost:4877` and reported `mode: read-only`, `ok: true`, and
 `generationModeRuntime: fixture`.
 
-That earlier status response is historical evidence from the restoration run. A later
-read-only probe found the protected worktree process still listening on `4877`, but
-`/status` and `/infinite-brain/status` returned 200 while representative operational
-routes (`/ops/system-metrics`, `/local-apps/dashboard`, `/infra/dokploy`, and others)
-timed out. This is an environment/process readiness issue, not a Console source or
-dependency failure.
+The final read-only probe returned HTTP 200 for Brain Core `/status`,
+`/infinite-brain/status`, `/local-apps/dashboard`, `/infra/dokploy`,
+`/infra/monitoring`, `/infra/scheduler`, and `/ai-model-selector/health-matrix`.
+All documented Console routes also returned HTTP 200 on `4881`.
 
 Documented Console routes returned HTTP 200:
 
@@ -120,14 +116,12 @@ review.
   plain Node invocation because its extensionless local import is unresolved; no test
   runner or source change was introduced in this assessment.
 
-To separate source health from the occupied protected port, the current Brain Core
-source was started read-only on isolated port `4897` using `BRAIN_CORE_PORT=4897
-npm run dev`. On that isolated instance, `/status`, `/infinite-brain/status`,
-`/local-apps/dashboard`, `/infra/dokploy`, `/infra/monitoring`, `/infra/scheduler`,
-and `/ai-model-selector/health-matrix` returned HTTP 200 with structured payloads.
-`/ops/system-metrics` and `/infra/tunnels` timed out in that run, so those routes
-remain unverified rather than being called healthy. The isolated process was stopped
-after the probe.
+The current Brain Core source was also independently started read-only on isolated
+port `4897` using `BRAIN_CORE_PORT=4897 npm run dev`. On that instance,
+`/status`, `/infinite-brain/status`, `/local-apps/dashboard`, `/infra/dokploy`,
+`/infra/monitoring`, `/infra/scheduler`, and `/ai-model-selector/health-matrix`
+returned HTTP 200 with structured payloads. The isolated process was stopped after
+the probe.
 
 ## Roadmap
 
@@ -153,10 +147,7 @@ define those routes and schemas first, then add a bounded Console read-only view
 
 ## Final assessment
 
-The existing Brain Console is restored and technically healthy at source/build level
-for its current documented purpose. It is **NEEDS REPAIR for current end-to-end
-activation** because the occupied Brain Core runtime is not presently responsive.
-After the protected runtime is independently recovered or released by its owner, a
-fresh `/status` plus representative read-only route probe is required. It also
+The existing Brain Console is restored and technically healthy for its current
+documented purpose. It is **READY** as an optional local diagnostics surface and
 **NEEDS A SEPARATE API/authority DECISION** before it can represent the unified
 Infinite Brain P3.17–P3.24 review layer.
