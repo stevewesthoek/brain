@@ -29,6 +29,7 @@ function makePattern(key, signals) {
     decision_outcomes: Object.fromEntries([...DECISIONS].sort().map((decision) => [decision, signals.filter((signal) => signal.decision === decision).length])),
     usefulness: { supported: supported, not_supported: knownUsefulness.filter((signal) => signal.usefulness === 'not_supported').length, unknown: signals.length - knownUsefulness.length },
     confidence: { min: confidences.length ? Math.min(...confidences) : null, max: confidences.length ? Math.max(...confidences) : null, mean: confidences.length ? confidences.reduce((sum, value) => sum + value, 0) / confidences.length : null },
+    freshness: [...new Set(signals.map((signal) => signal.freshness ?? 'unknown'))].sort(),
     mind_impact: [...new Set(signals.map((signal) => signal.mind_impact ?? 'unknown'))].sort(),
     conclusion: 'recurring_pattern_for_human_review',
     action: 'review_only'
