@@ -4,7 +4,7 @@
 
 MRU0-P3.11 activates the first bounded ingestion capability: an explicit scan of Mind `inbox/new/` for Markdown and plain-text captures. It creates provider-neutral ingestion envelopes and a review report under Brain runtime state.
 
-This is not an always-on watcher. It does not support PDF yet because no existing safe PDF normalization capability was established for this packet.
+This is not an always-on watcher. PDF support is bounded to local embedded-text extraction; OCR, compressed-stream/layout interpretation, and external providers are not used.
 
 ## Activation
 
@@ -27,8 +27,9 @@ The report contains the raw envelope JSON plus a per-item human review projectio
 
 - `.md` → `markdown`
 - `.txt` → `text`
+- `.pdf` → `pdf` with limited embedded-text extraction
 
-PDF, DOCX, XLSX, images, audio, video, URLs, YouTube, GitHub repositories, and AI sessions remain future capabilities. An unsupported file is reported as a failure rather than treated as ingested.
+DOCX, XLSX, images, audio, video, URLs, YouTube, GitHub repositories, and AI sessions remain future capabilities. Invalid, scanned, compressed/unextractable, or oversized PDFs are reported as failures rather than treated as ingested.
 
 ## Review boundary
 
@@ -50,6 +51,8 @@ Decision artifacts are written under `runtime/local/mind-steward/decisions/`. A 
 - Missing or symlinked `inbox/new/` fails closed.
 - Unsupported extensions appear in the review report.
 - Read/hash failures appear in the review report.
+- PDF extraction failures appear as `pdf_extraction_failed`.
+- Extracted PDF text is written only as Brain-local evidence under `runtime/local/mind-steward/ingestion/extracted/`.
 - Outputs are restricted to `brain/runtime/local/mind-steward/`.
 - `writes_to_mind=false` and `automatic_promotion=false` are explicit report invariants.
 - No external provider, n8n workflow, watcher, or model call is required by this scanner.

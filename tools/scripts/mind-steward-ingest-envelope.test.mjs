@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { scanMindInbox, writeReviewReport } from './mind-steward-ingest-envelope.mjs';
+import { extractPdfText, scanMindInbox, writeReviewReport } from './mind-steward-ingest-envelope.mjs';
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mind-envelope-'));
@@ -26,12 +26,26 @@ test('detects Markdown and text files and creates reviewable envelopes', () => {
   assert.ok(report.envelopes.every((item) => item.governance.review_required === true));
 });
 
-test('unsupported PDF is visible as a bounded failure without pretending support', () => {
+test('PDF with no extractable text is visible as a bounded failure', () => {
   const f = fixture();
   fs.writeFileSync(path.join(f.inbox, 'document.pdf'), '%PDF-fixture');
   const report = scanMindInbox({ mindRoot: f.mindRoot, repoRoot: f.repoRoot });
   assert.equal(report.envelopes.length, 0);
-  assert.deepEqual(report.failures[0], { file: 'document.pdf', code: 'unsupported_file_type', message: 'Only Markdown and plain text are active in P3.11.' });
+  assert.deepEqual(report.failures[0], { file: 'document.pdf', code: 'pdf_extraction_failed', message: 'pdf_text_unavailable' });
+});
+
+test('extracts bounded embedded PDF text and preserves review uncertainty', () => {
+  const f = fixture();
+  const pdf = '%PDF-1.4\n1 0 obj\n<<>>\nstream\n(Hello PDF) Tj\nendstream\nendobj\n%%EOF';
+  fs.writeFileSync(path.join(f.inbox, 'document.pdf'), pdf);
+  const extraction = extractPdfText(path.join(f.inbox, 'document.pdf'));
+  assert.equal(extraction.text, 'Hello PDF');
+  const report = scanMindInbox({ mindRoot: f.mindRoot, repoRoot: f.repoRoot, createdAt: '2026-08-23T12:00:00Z' });
+  assert.equal(report.envelopes.length, 1);
+  assert.equal(report.envelopes[0].identity.source_type, 'pdf');
+  assert.equal(report.envelopes[0].content.detected_format, 'application/pdf');
+  assert.ok(report.envelopes[0].content.uncertainty.some((item) => item.includes('limited embedded-text extraction')));
+  assert.equal(fs.existsSync(path.join(f.repoRoot, 'runtime', 'local', 'mind-steward', 'ingestion', 'extracted')), true);
 });
 
 test('report writes only to Brain runtime/local and never promotes or writes Mind', () => {

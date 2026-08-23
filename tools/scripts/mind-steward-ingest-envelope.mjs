@@ -9,7 +9,9 @@ import { projectIngestionReview, renderIngestionReviewMarkdown } from './mind-st
 const SUPPORTED_EXTENSIONS = new Map([
   ['.md', 'markdown'],
   ['.txt', 'text'],
+  ['.pdf', 'pdf'],
 ]);
+const MAX_PDF_BYTES = 25 * 1024 * 1024;
 
 function isoFromStat(stat) {
   return new Date(stat.mtimeMs).toISOString();
@@ -38,7 +40,30 @@ function listInboxFiles(inboxRoot) {
     .sort();
 }
 
-function makeEnvelope({ filePath, inboxRoot, stat, digest, sourceType, createdAt = new Date().toISOString() }) {
+function decodePdfLiteral(value) {
+  return value.replace(/\\([\\()nrtbf])/g, (_, escaped) => ({ n: '\n', r: '\r', t: '\t', b: '\b', f: '\f' })[escaped] ?? escaped);
+}
+
+export function extractPdfText(filePath) {
+  const bytes = fs.readFileSync(filePath);
+  if (bytes.length > MAX_PDF_BYTES) throw new Error('pdf_too_large');
+  const header = bytes.subarray(0, 5).toString('ascii');
+  if (header !== '%PDF-') throw new Error('invalid_pdf_header');
+  const source = bytes.toString('latin1');
+  const literalMatches = [...source.matchAll(/\((?:\\.|[^\\)])*\)\s*Tj/g)].map((match) => {
+    const literal = match[0].replace(/\)\s*Tj$/, '').slice(1);
+    return decodePdfLiteral(literal);
+  });
+  const hexMatches = [...source.matchAll(/<([0-9A-Fa-f\s]+)>\s*Tj/g)].map((match) => {
+    const hex = match[1].replace(/\s/g, '');
+    return Buffer.from(hex.length % 2 ? `${hex}0` : hex, 'hex').toString('latin1');
+  });
+  const text = [...literalMatches, ...hexMatches].join(' ').replace(/\s+/g, ' ').trim();
+  if (!text) throw new Error('pdf_text_unavailable');
+  return { text, confidence: 0.7, uncertainty: ['limited embedded-text extraction; layout and compressed streams are not interpreted'] };
+}
+
+function makeEnvelope({ filePath, inboxRoot, stat, digest, sourceType, createdAt = new Date().toISOString(), extractedContentReferences, detectedFormat, metadata, confidence, uncertainty, evidenceUncertainty }) {
   const relative = path.relative(inboxRoot, filePath).replaceAll(path.sep, '/');
   const sourceRef = `mind/inbox/new/${relative}`;
   const reference = { ref: sourceRef, kind: 'source', hash: `sha256:${digest}` };
@@ -63,13 +88,13 @@ function makeEnvelope({ filePath, inboxRoot, stat, digest, sourceType, createdAt
       },
     },
     content: {
-      detected_format: sourceType === 'markdown' ? 'text/markdown' : 'text/plain',
-      extracted_content_references: [reference],
-      metadata: { filename: relative, size_bytes: stat.size, modified_at: isoFromStat(stat) },
+      detected_format: detectedFormat ?? (sourceType === 'markdown' ? 'text/markdown' : 'text/plain'),
+      extracted_content_references: extractedContentReferences ?? [reference],
+      metadata: metadata ?? { filename: relative, size_bytes: stat.size, modified_at: isoFromStat(stat) },
       entities: [],
       relationships: [],
-      confidence: 1,
-      uncertainty: ['meaning and destination require human review'],
+      confidence: confidence ?? 1,
+      uncertainty: uncertainty ?? ['meaning and destination require human review'],
     },
     governance: {
       mind_impact: 'possible',
@@ -82,8 +107,8 @@ function makeEnvelope({ filePath, inboxRoot, stat, digest, sourceType, createdAt
     evidence: {
       source_references: [reference],
       validation_references: [],
-      extraction_confidence: 1,
-      uncertainty: ['no semantic extraction performed by this adapter'],
+      extraction_confidence: confidence ?? 1,
+      uncertainty: evidenceUncertainty ?? ['no semantic extraction performed by this adapter'],
     },
     lifecycle: { state: 'ready_for_review' },
   };
@@ -100,17 +125,37 @@ export function scanMindInbox({ mindRoot, repoRoot = process.cwd(), outputRoot, 
     const relative = path.relative(inboxRoot, filePath).replaceAll(path.sep, '/');
     const sourceType = SUPPORTED_EXTENSIONS.get(path.extname(filePath).toLowerCase());
     if (!sourceType) {
-      failures.push({ file: relative, code: 'unsupported_file_type', message: 'Only Markdown and plain text are active in P3.11.' });
+      failures.push({ file: relative, code: 'unsupported_file_type', message: 'Only Markdown, plain text, and bounded PDF text extraction are active.' });
       continue;
     }
     try {
       const stat = fs.statSync(filePath);
-      const envelope = makeEnvelope({ filePath, inboxRoot, stat, digest: hashFile(filePath), sourceType, createdAt });
+      const digest = hashFile(filePath);
+      let extraction;
+      let extractedContentReferences;
+      if (sourceType === 'pdf') {
+        extraction = extractPdfText(filePath);
+        const extractedDir = path.join(resolvedOutputRoot, 'extracted');
+        fs.mkdirSync(extractedDir, { recursive: true, mode: 0o700 });
+        const extractedPath = path.join(extractedDir, `${digest}.txt`);
+        fs.writeFileSync(extractedPath, `${extraction.text}\n`, { mode: 0o600 });
+        const extractedHash = crypto.createHash('sha256').update(extraction.text).digest('hex');
+        extractedContentReferences = [{ ref: path.relative(repoRoot, extractedPath).replaceAll(path.sep, '/'), kind: 'extracted', hash: `sha256:${extractedHash}` }];
+      }
+      const envelope = makeEnvelope({
+        filePath, inboxRoot, stat, digest, sourceType, createdAt, extractedContentReferences,
+        detectedFormat: sourceType === 'pdf' ? 'application/pdf' : undefined,
+        metadata: sourceType === 'pdf' ? { filename: relative, size_bytes: stat.size, modified_at: isoFromStat(stat), extraction: 'embedded-text-limited' } : undefined,
+        confidence: extraction?.confidence,
+        uncertainty: extraction ? [...extraction.uncertainty, 'meaning and destination require human review'] : undefined,
+        evidenceUncertainty: extraction?.uncertainty,
+      });
       const errors = assertNoAuthorityEscalation(envelope);
       if (errors.length) failures.push({ file: relative, code: 'envelope_validation_failed', errors });
       else envelopes.push(envelope);
     } catch (error) {
-      failures.push({ file: relative, code: 'read_failed', message: error instanceof Error ? error.message : String(error) });
+      const code = error instanceof Error && error.message.startsWith('pdf_') || error instanceof Error && error.message === 'invalid_pdf_header' ? 'pdf_extraction_failed' : 'read_failed';
+      failures.push({ file: relative, code, message: error instanceof Error ? error.message : String(error) });
     }
   }
 

@@ -33,7 +33,8 @@ test('validation reports unsupported formats and duplicate source revisions', ()
   fs.writeFileSync(path.join(f.inbox, 'document.pdf'), '%PDF-fixture');
   const report = validateMindStewardIngestion({ ...f, asOf: '2026-08-23T12:00:00Z' });
   assert.equal(report.counts.successful_ingestions, 2);
-  assert.equal(report.counts.unsupported_formats, 1);
+  assert.equal(report.counts.failed_ingestions, 1);
+  assert.equal(report.failures[0].code, 'pdf_extraction_failed');
   assert.equal(report.counts.duplicate_groups, 1);
   assert.ok(report.friction.includes('unsupported_or_unreadable_inputs_require_manual_review'));
   assert.ok(report.friction.includes('duplicate_inputs_require_human_disposition'));
