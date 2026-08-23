@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.json",
+    "build": "node scripts/clean-dist.mjs && tsc -p tsconfig.json && node scripts/flatten-dist.mjs",
     "start": "node dist/index.js",
     "brain-agent": "npm run build && node dist/bin/brain-agent.js",
     "brain-core:restart": "node scripts/dev/restart-brain-core.mjs restart",
