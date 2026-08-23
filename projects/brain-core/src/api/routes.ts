@@ -302,6 +302,7 @@ import { getInfraVOReadiness } from '../adapters/infra-video-orchestrator-readin
 import { getInfraPipelinesStatus } from '../adapters/infra-pipelines-status.js';
 import { getSystemMetrics } from '../adapters/system-metrics.js';
 import { createProjectionEnvelope } from '../adapters/projection-envelope.js';
+import { readContractsProjection, readServicesProjection, readSystemHealthProjection, readTopologyProjection } from '../adapters/system-projections.js';
 import type { VideoAnalysisResult } from '../adapters/research-video.js';
 import { readVideoAnalysisHistory, recordVideoAnalysisHistory } from '../adapters/research-video-history.js';
 import { defaultAlertManager } from '../adapters/alerting.js';
@@ -535,6 +536,20 @@ export async function routeRequest(
           capabilities: getCapabilities(),
         },
       }));
+      return;
+    case '/projections/health': {
+      const generatedAt = new Date().toISOString();
+      sendJson(response, 200, readSystemHealthProjection({ status: getStatus(), capabilities: getCapabilities(), generatedAt }));
+      return;
+    }
+    case '/projections/topology':
+      sendJson(response, 200, readTopologyProjection({ repos: listRepos(), generatedAt: new Date().toISOString() }));
+      return;
+    case '/projections/services':
+      sendJson(response, 200, readServicesProjection({ generatedAt: new Date().toISOString() }));
+      return;
+    case '/projections/contracts':
+      sendJson(response, 200, readContractsProjection({ generatedAt: new Date().toISOString() }));
       return;
     case '/status':
       sendJson(response, 200, getStatus());
