@@ -73,8 +73,10 @@ test('doctor and health expose missing runtime as explicit UNKNOWN evidence', as
   const doctor = JSON.parse(doctorResponse.body) as { readOnly: boolean; executionEnabled: boolean; runtime: Record<string, string>; unknowns: string[] };
   assert.equal(doctor.readOnly, true);
   assert.equal(doctor.executionEnabled, false);
-  assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.health));
-  if (doctor.runtime.health !== 'ok') assert.ok(doctor.unknowns.some((value) => value.includes('health-state.json')));
+  const runtimeHealth = doctor.runtime.health;
+  assert.ok(typeof runtimeHealth === 'string');
+  assert.ok(['ok', 'missing', 'invalid'].includes(runtimeHealth));
+  if (runtimeHealth !== 'ok') assert.ok(doctor.unknowns.some((value) => value.includes('health-state.json')));
 
   const healthResponse = await request('GET', '/infra/health');
   const health = JSON.parse(healthResponse.body) as { runtimeState: string; observations: unknown[] };

@@ -185,7 +185,7 @@ export function recordInfiniteBrainProposalDecision(input: {
     return { ok: false, code: guard.code, currentProposalHash };
   }
   if (guard.code === 'decision_idempotent') {
-    return { ok: true, code: guard.code, currentProposalHash, record: existing };
+    return { ok: true, code: guard.code, currentProposalHash };
   }
 
   if (existingIndex >= 0) store.records[existingIndex] = record;

@@ -50,7 +50,8 @@ declare module 'node:fs' {
   export function readdirSync(path: string, options: { withFileTypes: true }): Dirent[];
   export function statSync(path: string): Stats;
   export function mkdirSync(path: string, options?: { recursive?: boolean }): void;
-  export function writeFileSync(path: string, data: string): void;
+  export function writeFileSync(path: string, data: string, options?: { mode?: number; flag?: string }): void;
+  export function renameSync(oldPath: string, newPath: string): void;
   export function appendFileSync(path: string, data: string): void;
   export function readFileSync(path: string, encoding: 'utf8'): string;
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
@@ -61,6 +62,7 @@ declare module 'node:fs' {
     statSync: typeof statSync;
     mkdirSync: typeof mkdirSync;
     writeFileSync: typeof writeFileSync;
+    renameSync: typeof renameSync;
     appendFileSync: typeof appendFileSync;
     readFileSync: typeof readFileSync;
     rmSync: typeof rmSync;
