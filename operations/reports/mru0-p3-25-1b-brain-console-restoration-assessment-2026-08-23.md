@@ -120,6 +120,15 @@ review.
   plain Node invocation because its extensionless local import is unresolved; no test
   runner or source change was introduced in this assessment.
 
+To separate source health from the occupied protected port, the current Brain Core
+source was started read-only on isolated port `4897` using `BRAIN_CORE_PORT=4897
+npm run dev`. On that isolated instance, `/status`, `/infinite-brain/status`,
+`/local-apps/dashboard`, `/infra/dokploy`, `/infra/monitoring`, `/infra/scheduler`,
+and `/ai-model-selector/health-matrix` returned HTTP 200 with structured payloads.
+`/ops/system-metrics` and `/infra/tunnels` timed out in that run, so those routes
+remain unverified rather than being called healthy. The isolated process was stopped
+after the probe.
+
 ## Roadmap
 
 ### Immediate
