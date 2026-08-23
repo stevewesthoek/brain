@@ -672,6 +672,25 @@ export const graphifyStatusSchema = z.object({
 
 export type GraphifyStatus = z.infer<typeof graphifyStatusSchema>;
 
+export const brainCoreProjectionEnvelopeSchema = z.object({
+  contract: z.literal('brain-core-projection-v1'),
+  projection: z.string(),
+  version: z.number(),
+  authorityOwner: z.string(),
+  provenance: z.object({
+    sourceReferences: z.array(z.object({ ref: z.string(), kind: z.string() })).default([]),
+    adapter: z.string(),
+    capturedAt: z.string(),
+    sourceRevision: z.string().nullable(),
+  }).passthrough(),
+  freshness: z.string(),
+  confidence: z.string(),
+  uncertainty: z.array(z.string()).default([]),
+  safety: z.record(z.unknown()),
+}).passthrough();
+
+export type BrainCoreProjectionEnvelope = z.infer<typeof brainCoreProjectionEnvelopeSchema>;
+
 const infiniteBrainAtomizerSchema = z.union([
   z.object({
     available: z.literal(true),

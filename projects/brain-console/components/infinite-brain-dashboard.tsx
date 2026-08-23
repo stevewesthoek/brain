@@ -12,6 +12,7 @@ import {
   type MindStewardSchedulerStatus,
 } from '../lib/braincore-schemas';
 import { InfiniteBrainProposalReview } from './infinite-brain-proposal-review';
+import { InfiniteBrainProjectionOverview } from './infinite-brain-projection-overview';
 
 export function InfiniteBrainDashboard() {
   const [status, setStatus] = useState<InfiniteBrainStatus | null>(null);
@@ -92,6 +93,7 @@ export function InfiniteBrainDashboard() {
 
   return (
     <div className="space-y-4">
+      <InfiniteBrainProjectionOverview />
       <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
         <h2 className="text-lg font-semibold text-slate-900">Infinite Brain Runtime</h2>
         <p className="text-xs text-slate-500 mt-1">
