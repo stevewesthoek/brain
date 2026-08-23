@@ -21,7 +21,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from registry_shadow import load_and_compare
+from registry_shadow import load_and_compare, registry_model_lifecycle, registry_model_selectable
 
 log = logging.getLogger(__name__)
 
@@ -725,6 +725,7 @@ class ModelSelector:
         available = bool(access.get("available"))
         enabled = bool(model.get("enabled", True))
         selectable = self._bedrock_model_selectable(model, access) and available
+        lifecycle_state = registry_model_lifecycle(self._registry_shadow_report, "claude-bedrock", str(model.get("id", "")))
         return {
             "provider_id": "claude-bedrock",
             "provider_type": "bedrock",
@@ -733,7 +734,8 @@ class ModelSelector:
             "label": model.get("label") or model.get("model_id", ""),
             "enabled": enabled,
             "selectable": selectable,
-            "status": "ok" if selectable else ("disabled" if not enabled and not model.get("upgrade_candidate") else "unavailable"),
+            "status": "ok" if selectable else ("disabled" if not enabled else "unavailable"),
+            "lifecycle_state": lifecycle_state,
             "capabilities": model.get("capabilities", []),
             "roles": model.get("roles", []),
             "region": model.get("region") or self._bedrock_config.get("default_region"),
@@ -751,9 +753,19 @@ class ModelSelector:
         }
 
     def _bedrock_model_selectable(self, model: dict, access: dict) -> bool:
-        if model.get("enabled", True):
-            return True
-        return bool(model.get("upgrade_candidate") and access.get("available"))
+        # Legacy enabled state remains a prerequisite. Discovery/access and
+        # upgrade_candidate metadata never grant selection authority.
+        if not model.get("enabled", True):
+            return False
+        model_id = str(model.get("id", ""))
+        if not registry_model_selectable(self._registry_shadow_report, "claude-bedrock", model_id):
+            log.debug(
+                "selector  skip bedrock_model_lifecycle  model=%s  lifecycle=%s",
+                model.get("model_id"),
+                registry_model_lifecycle(self._registry_shadow_report, "claude-bedrock", model_id) or "unknown",
+            )
+            return False
+        return True
 
     def _bedrock_outcome_score(self, model: dict) -> float:
         model_id = model.get("model_id", "")
@@ -794,9 +806,10 @@ class ModelSelector:
             access = self._bedrock_access_status(model)
             if not self._bedrock_model_selectable(model, access):
                 log.debug(
-                    "selector  skip bedrock_model_disabled  model=%s  upgrade_candidate=%s  access=%s",
+                    "selector  skip bedrock_model_not_selectable  model=%s  lifecycle=%s  enabled=%s  access=%s",
                     model.get("model_id"),
-                    bool(model.get("upgrade_candidate")),
+                    registry_model_lifecycle(self._registry_shadow_report, "claude-bedrock", str(model.get("id", ""))) or "unknown",
+                    bool(model.get("enabled", True)),
                     bool(access.get("available")),
                 )
                 continue
@@ -875,6 +888,14 @@ class ModelSelector:
             resource_ok, reason = self._local_model_resource_ok(provider, str(model), task_spec)
             if not resource_ok:
                 log.info("selector  skip local_model_resource_guard  provider=%s  model=%s  reason=%s", provider.get("id"), model, reason)
+                continue
+            if not registry_model_selectable(self._registry_shadow_report, str(provider.get("id", "")), str(model)):
+                log.debug(
+                    "selector  skip model_lifecycle  provider=%s  model=%s  lifecycle=%s",
+                    provider.get("id"),
+                    model,
+                    registry_model_lifecycle(self._registry_shadow_report, str(provider.get("id", "")), str(model)) or "unknown",
+                )
                 continue
             viable.append(model)
 
@@ -1158,6 +1179,8 @@ class ModelSelector:
                         "model_id": model.get("model_id"),
                         "region": model.get("region"),
                         "enabled": bool(model.get("enabled", True)),
+                        "lifecycle_state": registry_model_lifecycle(self._registry_shadow_report, "claude-bedrock", str(model.get("id", ""))),
+                        "selectable": self._bedrock_model_selectable(model, access) and bool(access.get("available")),
                         "roles": model.get("roles", []),
                         "price_input_per_1m": model.get("price_input_per_1m"),
                         "price_output_per_1m": model.get("price_output_per_1m"),
@@ -1165,7 +1188,7 @@ class ModelSelector:
                         "outcome": self._bedrock_outcomes.get(str(model.get("model_id", "")), {}),
                     })
                 entry["healthy"] = any(
-                    m.get("enabled") and m.get("access", {}).get("available")
+                    m.get("selectable")
                     for m in model_entries
                 ) if model_entries else True
                 entry["circuit_state"] = self._circuit_breaker.get_state(p["id"])
@@ -1209,7 +1232,13 @@ class ModelSelector:
                 model_ids = [""]
             for model_id in model_ids:
                 loaded = not loaded_models or model_id in loaded_models
-                selectable = provider_healthy and loaded and not rate_limited and not circuit_state.get("open")
+                selectable = (
+                    provider_healthy
+                    and loaded
+                    and not rate_limited
+                    and not circuit_state.get("open")
+                    and registry_model_selectable(self._registry_shadow_report, provider_id, str(model_id))
+                )
                 probe = {"status": "not_run", "checked_at": None}
                 if run_probe and provider_type == "openai-compatible" and loaded and model_id:
                     probe = self._probe_openai_compatible_model(provider, str(model_id))

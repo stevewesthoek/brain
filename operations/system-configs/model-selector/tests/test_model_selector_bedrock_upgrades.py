@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for Bedrock premium fallback and upgrade-candidate routing."""
+"""Tests for Bedrock premium fallback and lifecycle admission."""
 import json
 import sys
 import tempfile
@@ -31,6 +31,7 @@ class TestBedrockUpgradeCandidates(unittest.TestCase):
             "TASK_TYPES_PATH": core.TASK_TYPES_PATH,
             "SELECTOR_CONFIG_PATH": core.SELECTOR_CONFIG_PATH,
             "BEDROCK_MODELS_PATH": core.BEDROCK_MODELS_PATH,
+            "REGISTRY_PATH": core.REGISTRY_PATH,
             "RATE_LIMITS_PATH": core.RATE_LIMITS_PATH,
             "CB_STATE_PATH": core.CB_STATE_PATH,
             "BEDROCK_ACCESS_PATH": core.BEDROCK_ACCESS_PATH,
@@ -44,6 +45,7 @@ class TestBedrockUpgradeCandidates(unittest.TestCase):
         core.TASK_TYPES_PATH = self.config_dir / "ai-task-types.json"
         core.SELECTOR_CONFIG_PATH = self.config_dir / "ai-selector-config.json"
         core.BEDROCK_MODELS_PATH = self.config_dir / "ai-bedrock-models.json"
+        core.REGISTRY_PATH = self.config_dir / "missing-ai-model-registry.json"
         core.RATE_LIMITS_PATH = self.state_dir / "rate-limits.json"
         core.CB_STATE_PATH = self.state_dir / "circuit-breakers.json"
         core.BEDROCK_ACCESS_PATH = self.state_dir / "bedrock-model-access.json"
@@ -132,13 +134,13 @@ class TestBedrockUpgradeCandidates(unittest.TestCase):
 
         self.assertEqual(result.model, "us.anthropic.claude-opus-4-6-v1")
 
-    def test_opus_47_upgrade_candidate_selected_when_access_available(self):
+    def test_opus_47_upgrade_candidate_not_selected_when_access_available(self):
         selector = core.ModelSelector()
         selector._bedrock_access_status = lambda model: {"available": True, "checked_at": 1}
 
         result = selector.select("orchestration", input_token_count=1000, urgent=True)
 
-        self.assertEqual(result.model, "us.anthropic.claude-opus-4-7")
+        self.assertEqual(result.model, "us.anthropic.claude-opus-4-6-v1")
 
 
 if __name__ == "__main__":

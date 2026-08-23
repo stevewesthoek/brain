@@ -1,9 +1,10 @@
 # AI Model Registry Contract v1
 
-**Status:** MRU0-P2.1 implementation contract
+**Status:** MRU0-P2.3 implementation contract
 
-**Runtime authority:** Shadow reporting only. The registry is not a selector
-authority and does not change provider/model selection.
+**Runtime authority:** Legacy configuration remains the candidate source. The
+registry lifecycle is an admission gate for known provider/model identities;
+the registry is not a replacement candidate source.
 
 ## Purpose
 
@@ -25,11 +26,23 @@ During MRU0-P2.1 and MRU0-P2.2:
 - `selector_service.py` exposes the non-authoritative `GET /registry/shadow`
   report.
 - `core.py` continues to select exclusively from the legacy configuration.
-- A missing, invalid, or mismatching registry cannot reject valid legacy
-  routing and cannot auto-admit a model.
+- A missing, invalid, or mismatching registry cannot auto-admit a model.
 
-Later packets may introduce projections and dual-read validation. They must
-preserve the legacy sources until parity, rollback, and acceptance gates pass.
+During MRU0-P2.3:
+
+- legacy configuration continues to provide candidate metadata and the
+  provider inventory;
+- a known registry model is selectable only in `admitted` or `preferred`
+  lifecycle state;
+- `enabled: false` always blocks selection, regardless of access or
+  `upgrade_candidate`;
+- `upgrade_candidate` remains evaluation/migration metadata and never grants
+  selection authority;
+- an unavailable registry preserves already-enabled legacy models during the
+  compatibility rollout, but never promotes a disabled upgrade candidate.
+
+Later packets may replace legacy candidate reads only after parity, rollback,
+and acceptance gates pass.
 
 ## Provider contract
 
@@ -81,7 +94,8 @@ Concrete provider model IDs appear only in `provider_model_binding` or
 Provider access or a successful health probe never promotes a model. Admission
 requires capability verification, context/tool compatibility, health/access
 evidence, cost/latency metadata, evaluation evidence, provider adapter support,
-and applicable safety constraints.
+and applicable safety constraints. Access and health alone never promote a
+model.
 
 Discovery may be automatic where a provider supports reliable discovery. Where
 it does not, a bounded reviewed registry synchronization is required. Neither

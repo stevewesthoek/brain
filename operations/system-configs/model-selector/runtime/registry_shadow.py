@@ -18,6 +18,7 @@ LIFECYCLE_STATES = {
     "deprecated",
     "retired",
 }
+SELECTABLE_LIFECYCLE_STATES = frozenset({"admitted", "preferred"})
 
 
 class RegistryShadowValidationError(ValueError):
@@ -126,6 +127,25 @@ def _registry_lifecycle(registry: dict[str, Any]) -> dict[str, str]:
     return {model["registry_model_id"]: model["lifecycle_state"] for model in registry["models"]}
 
 
+def registry_model_lifecycle(report: dict[str, Any], provider_id: str, model_id: str) -> str | None:
+    """Return the registry lifecycle for a legacy provider/model identity."""
+    return report.get("registry_lifecycle", {}).get(f"{provider_id}/{model_id}")
+
+
+def registry_model_selectable(report: dict[str, Any], provider_id: str, model_id: str) -> bool:
+    """Apply lifecycle admission without making the registry a candidate source.
+
+    A missing registry is a rollout compatibility state: legacy-enabled models
+    remain usable until the registry is installed. Once a registry is present,
+    a known model must be explicitly admitted or preferred. Unknown models are
+    rejected when the registry is present so discovery cannot become admission.
+    """
+    lifecycle = registry_model_lifecycle(report, provider_id, model_id)
+    if lifecycle is None:
+        return report.get("status") == "unavailable"
+    return lifecycle in SELECTABLE_LIFECYCLE_STATES
+
+
 def compare_legacy_to_registry(
     providers: list[dict[str, Any]],
     bedrock_config: dict[str, Any],
@@ -192,6 +212,7 @@ def compare_legacy_to_registry(
         "missing_metadata": missing_metadata,
         "legacy_candidates": {"providers": legacy_providers, "models": legacy_models},
         "registry_candidates": {"providers": registry_providers, "models": registry_models},
+        "registry_lifecycle": registry_lifecycle,
         "registry_selectable_models": selectable_registry_models,
         "selection_affected": False,
     }
@@ -205,6 +226,7 @@ def unavailable_report(registry_path: str, reason: str) -> dict[str, Any]:
         "selection_authority": "legacy",
         "registry_path": registry_path,
         "reason": reason,
+        "registry_lifecycle": {},
         "selection_affected": False,
     }
 
