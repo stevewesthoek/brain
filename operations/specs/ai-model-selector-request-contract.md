@@ -61,8 +61,12 @@ Service endpoint: `http://127.0.0.1:4890` (override with `AI_SELECTOR_URL` env v
 
 ## Response — success
 
+HTTP 200 when a provider and model are selected. Consumers must branch on the
+`outcome` discriminator before using the selection fields.
+
 ```json
 {
+  "outcome": "selected",
   "provider_id": "codex-cli",
   "model": "gpt-5.5",
   "base_url": "",
@@ -75,22 +79,54 @@ Service endpoint: `http://127.0.0.1:4890` (override with `AI_SELECTOR_URL` env v
 
 ## Response — deferred
 
+HTTP 200 when policy defers a non-urgent request to a later batch window. A
+deferred response is not a provider/model selection and must not be executed.
+The `deferred` field is retained for compatibility.
+
 ```json
 {
+  "outcome": "deferred",
   "deferred": true,
-  "scheduled_after": "2026-06-10T01:00:00"
+  "scheduled_after": "2026-06-10T01:00:00",
+  "reason": "selector_policy_deferred"
 }
 ```
 
-## Response — error
+## Response — unavailable
+
+HTTP 503 when no eligible provider is available after the selector's health,
+constraint, and failure checks. This response contains no executable
+provider/model selection.
 
 ```json
 {
+  "outcome": "unavailable",
   "error": "No provider available for task='codebase_semantic_graph' after failures=[]",
+  "reason": "No provider available for task='codebase_semantic_graph' after failures=[]",
   "task_type": "codebase_semantic_graph"
 }
 ```
-HTTP 503 when no provider is available, 400 when request is invalid.
+
+## Response — rejected
+
+HTTP 400 when the request is invalid, malformed, or violates the selector's
+request constraints. This response contains no executable provider/model
+selection.
+
+```json
+{
+  "outcome": "rejected",
+  "error": "task_type is required",
+  "reason": "task_type is required"
+}
+```
+
+Unexpected internal server failures use HTTP 500 and may not include a typed
+outcome. Consumers must fail closed for those responses as well.
+
+Consumers must branch on `outcome`; only `selected` permits use of
+`provider_id` and `model`. A non-selected outcome must never be interpreted as
+an executable provider/model selection.
 
 ---
 
