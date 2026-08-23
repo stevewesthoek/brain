@@ -5851,6 +5851,7 @@ export interface BrainCoreAgentCostLineItem {
   taskType: string;
   surface: BrainCoreRouteSurface;
   providerId: string;
+  profile?: 'fast' | 'standard' | 'deep';
   model?: string;
   estimatedTokens: number;
   estimatedCostUsd: number;

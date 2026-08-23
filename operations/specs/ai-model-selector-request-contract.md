@@ -30,7 +30,7 @@ Service endpoint: `http://127.0.0.1:4890` (override with `AI_SELECTOR_URL` env v
 |-------|------|-------------|
 | `quality_tier` | string | Hint to selector: `"highest"`, `"balanced"`, `"efficient"`, `"cost_efficient"` |
 | `preferred_providers` | string[] | Provider IDs in preference order. Selector tries these first. |
-| `preferred_models` | string[] | Model IDs in preference order. Selector applies within each provider. |
+| `preferred_models` | string[] | Registry model IDs or compatibility aliases in preference order. The request adapter resolves them before selection. |
 | `allowed_providers` | string[] | Whitelist: restrict to these provider IDs only |
 | `disallowed_providers` | string[] | Blacklist: exclude these provider IDs |
 | `allowed_models` | string[] | Whitelist: restrict to these model IDs only |
@@ -185,6 +185,13 @@ an executable provider/model selection.
 | `codex-cli` | cli | 4 | gpt-5.4-mini, gpt-5.4, gpt-5.5 |
 | `claude-bedrock` | bedrock | 5 | See bedrock model registry below |
 
+### Registry compatibility references
+
+The following provider/model values document compatibility aliases and registry
+bindings. They are not policy-owned portfolios. New consumers should send a
+`task_type` plus capability/constraint metadata and use model references only
+when an explicit compatibility preference or safety constraint is required.
+
 ### Bedrock model registry
 
 | Model Key (id) | Model ID (use in preferred_models) | Label |
@@ -199,7 +206,9 @@ an executable provider/model selection.
 | `claude-opus-4-6` | `us.anthropic.claude-opus-4-6-v1` | Claude Opus 4.6 ✓ |
 | `claude-opus-4-7` | `us.anthropic.claude-opus-4-7` | Claude Opus 4.7 (disabled) |
 
-When using `preferred_models`, always use the **Model ID** column, not the model key.
+When using `preferred_models`, use a `registry_model_id` or compatibility alias.
+The request adapter resolves it to the provider binding and rejects ambiguous,
+unknown, or non-admitted references.
 
 ---
 
@@ -239,7 +248,7 @@ When using `preferred_models`, always use the **Model ID** column, not the model
   "task_metadata": {
     "quality_tier": "highest",
     "preferred_providers": ["codex-cli", "claude-bedrock"],
-    "preferred_models": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+    "preferred_models": ["codex-cli/gpt-5.5", "claude-bedrock/claude-opus-4-6"],
     "fallback_policy": "ordered_then_selector_default"
   }
 }

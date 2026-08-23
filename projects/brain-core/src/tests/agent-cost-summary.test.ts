@@ -22,7 +22,8 @@ test('selectModelRouteSnapshot prefers Bedrock-backed Claude by default', () => 
 
   assert.equal(route.surface, 'claude-bedrock');
   assert.equal(route.providerId, 'claude-bedrock');
-  assert.equal(route.model, 'bedrock-model-portfolio');
+  assert.equal(route.profile, 'standard');
+  assert.equal(route.model, undefined);
   assert.ok(route.estimatedCostUsd > 0);
   assert.match(route.rationale, /default Brain-managed text surface/);
 });
@@ -70,7 +71,8 @@ test('selectModelRouteSnapshot falls back to Codex when Bedrock is unavailable',
   );
 
   assert.equal(route.surface, 'codex-cli');
-  assert.equal(route.model, 'gpt-5.5');
+  assert.equal(route.profile, 'deep');
+  assert.equal(route.model, undefined);
   assert.match(route.rationale, /secondary managed surface/);
   assert.equal(route.estimatedCostUsd, 0);
 });
@@ -89,7 +91,8 @@ test('background-image text planning remains Bedrock-first', () => {
   );
 
   assert.equal(route.surface, 'claude-bedrock');
-  assert.equal(route.model, 'bedrock-model-portfolio');
+  assert.equal(route.profile, 'standard');
+  assert.equal(route.model, undefined);
 });
 
 test('budget helpers evaluate status from spend thresholds', () => {

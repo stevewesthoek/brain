@@ -49,7 +49,6 @@ export function readAgentExecutorPlan(
       providerId: selection.providerId,
       reason: selection.reason,
       source: 'derived' as const,
-      ...(selection.model ? { model: selection.model } : {}),
     } satisfies BrainCoreAgentExecutorPlanStepSummary;
   });
 
@@ -100,15 +99,13 @@ export function saveAgentExecutorPlanSnapshot(executorPlan: BrainCoreAgentExecut
 function selectExecutorForTask(task: BrainCoreAgentTaskGraphSummary['tasks'][number] | undefined): {
   executorId: string;
   providerId: string;
-  model?: string;
   reason: string;
 } {
   if (!task) {
     return {
       executorId: 'claude-bedrock',
       providerId: 'claude-bedrock',
-      model: 'bedrock-model-portfolio',
-      reason: 'No matching task found; default to the Bedrock-backed Claude surface.',
+      reason: 'No matching task found; default to the Bedrock-backed Claude surface and let the registry resolve the model.',
     };
   }
 
@@ -116,8 +113,7 @@ function selectExecutorForTask(task: BrainCoreAgentTaskGraphSummary['tasks'][num
     return {
       executorId: 'claude-bedrock',
       providerId: 'claude-bedrock',
-      model: 'bedrock-model-portfolio',
-      reason: 'Approval-sensitive coordination uses the primary Bedrock-backed Claude surface.',
+      reason: 'Approval-sensitive coordination uses the primary Bedrock-backed Claude surface; the registry resolves the model.',
     };
   }
 
@@ -125,18 +121,16 @@ function selectExecutorForTask(task: BrainCoreAgentTaskGraphSummary['tasks'][num
     return {
       executorId: 'claude-bedrock',
       providerId: 'claude-bedrock',
-      model: 'bedrock-model-portfolio',
-      reason: 'Orchestration and executor-selection work use Bedrock-backed Claude by default.',
+      reason: 'Orchestration and executor-selection work use Bedrock-backed Claude by default; the registry resolves the model.',
     };
   }
 
   return {
     executorId: 'claude-bedrock',
     providerId: 'claude-bedrock',
-    model: 'bedrock-model-portfolio',
     reason: task.capabilityIds.some((id) => id.startsWith('skill.'))
-      ? 'Skill-first work uses Bedrock-backed Claude; no Brain-managed always-on local text executor is admitted.'
-      : 'Routine text work uses Bedrock-backed Claude; Codex CLI remains the secondary managed surface.',
+      ? 'Skill-first work uses Bedrock-backed Claude; the registry resolves the model and no Brain-managed always-on local text executor is admitted.'
+      : 'Routine text work uses Bedrock-backed Claude; the registry resolves the model and Codex CLI remains the secondary managed surface.',
   };
 }
 

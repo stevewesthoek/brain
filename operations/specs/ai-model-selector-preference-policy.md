@@ -1,6 +1,8 @@
 # AI Model Selector Preference and Fallback Policy
 
-This specification defines the repo-agnostic model preference and fallback mechanism for AI Model Selector.
+This specification defines the repo-agnostic capability preference and fallback
+mechanism for AI Model Selector. Concrete model resolution belongs to the
+admitted model registry.
 
 It is not Graphify-specific.
 
@@ -130,12 +132,14 @@ task_type: semantic_full_build
 quality_tier: highest
 selection_policy: ordered_premium
 preferred_models:
-  - gpt-5.5
-  - us.anthropic.claude-opus-4-6-v1
+  - codex-cli/gpt-5.5
+  - claude-bedrock/claude-opus-4-6
 fallback_policy: ordered_then_selector_default
 ```
 
-The exact model labels must be mapped by AI Model Selector configuration to concrete providers/models.
+Model references are compatibility aliases or registry model IDs. The request
+adapter resolves them through the admitted registry; policy does not own a
+concrete model portfolio.
 
 ## Consumer contract
 
@@ -149,7 +153,7 @@ selector.select(
     previous_failures=[...],
     task_metadata=TaskMetadata(
         quality_tier="highest",
-        preferred_models=["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+        preferred_models=["codex-cli/gpt-5.5", "claude-bedrock/claude-opus-4-6"],
         fallback_policy="ordered_then_selector_default",
     ),
 )
@@ -211,7 +215,7 @@ result = selector.select(
     urgent=False,
     task_metadata=TaskMetadata(
         quality_tier="highest",
-        preferred_models=["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+        preferred_models=["codex-cli/gpt-5.5", "claude-bedrock/claude-opus-4-6"],
         fallback_policy="ordered_then_selector_default",
     ),
 )
@@ -253,8 +257,8 @@ task_type: graphify_semantic_full_build
 quality_tier: highest
 selection_policy: ordered_premium
 preferred_models:
-  - gpt-5.5
-  - us.anthropic.claude-opus-4-6-v1
+  - codex-cli/gpt-5.5
+  - claude-bedrock/claude-opus-4-6
 fallback_policy: ordered_then_selector_default
 ```
 

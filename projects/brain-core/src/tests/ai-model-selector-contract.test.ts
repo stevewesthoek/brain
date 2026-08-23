@@ -153,6 +153,43 @@ test('ambiguous or free-form legacy requests are rejected before fetch', async (
   assert.equal(fetchCalls, 0);
 });
 
+test('legacy model aliases normalize through the admitted registry', () => {
+  const normalized = normalizeAiModelSelectionRequest({
+    task_type: 'description_quality_review',
+    provider_id: 'claude-bedrock',
+    preferred_model: 'claude-sonnet-4-6',
+  });
+  assert.equal(normalized.ok, true);
+  if (normalized.ok) {
+    assert.deepEqual(normalized.body, {
+      task_type: 'description_quality_review',
+      task_metadata: {
+        preferred_providers: ['claude-bedrock'],
+        preferred_models: ['us.anthropic.claude-sonnet-4-6'],
+      },
+    });
+  }
+});
+
+test('retired or evaluated model references fail closed', () => {
+  const normalized = normalizeAiModelSelectionRequest({
+    task_type: 'description_quality_review',
+    provider_id: 'claude-bedrock',
+    model_id: 'claude-opus-4-7',
+  });
+  assert.equal(normalized.ok, false);
+  if (!normalized.ok) assert.match(normalized.result.reason, /lifecycle state "evaluated"/);
+});
+
+test('ambiguous model aliases fail closed without a provider constraint', () => {
+  const normalized = normalizeAiModelSelectionRequest({
+    task_type: 'subtitle_generation',
+    model_id: 'large-v3',
+  });
+  assert.equal(normalized.ok, false);
+  if (!normalized.ok) assert.match(normalized.result.reason, /ambiguous across providers/);
+});
+
 test('service client normalizes legacy requests and preserves all selector outcomes', async () => {
   const selected = await withFakeFetch({ status: 200, body: SELECTED }, async (requests) => {
     const result = await selectAiModel({ task: 'metadata_generation', sensitivity: 'low' });

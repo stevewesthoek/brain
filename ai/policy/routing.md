@@ -7,6 +7,19 @@ Safety and high-risk action policy canonical source: `brain/ai/policy/guardrails
 Tool-specific config files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`) embed the relevant parts of this policy.
 When updating routing rules, update this file first, then sync the tool configs.
 
+## Registry-first routing contract
+
+Routing policy owns `task_type`, capability, constraints, and the requested
+profile. The AI Model Selector resolves an admitted provider/model from the
+canonical model registry. Policy and consumers must not own a concrete model
+portfolio.
+
+`preferred_models`, `allowed_models`, and legacy `model_id` values are
+compatibility references only. They must resolve through a registry entry or
+compatibility alias; ambiguous, unknown, and non-admitted references fail
+closed. Provider adapters may retain concrete invocation identifiers where
+their external interface requires them.
+
 ---
 
 ## Local AI Tier (Tier 0) — Free, Local, Batch-Window Priority
@@ -27,10 +40,11 @@ When a model is loaded, it is always the first choice for generation tasks — z
 
 **Does NOT replace:** Gemini Flash for 1M-token context ingestion, Claude for code/architecture reasoning, Codex for code review.
 
-**Recommended models to download in LM Studio** (Apple Silicon M-series):
-- `mistral-7b-instruct-v0.3-Q4_K_M` (~4.4 GB) — fast, small tasks
-- `llama-3.1-8b-instruct-Q4_K_M` (~5.0 GB) — metadata, summarization, 128K context
-- `qwen2.5-14b-instruct-Q4_K_M` (~8.5 GB) — best local quality for metadata
+**Recommended local capability profiles** (Apple Silicon M-series):
+- fast local text generation for short metadata and triage;
+- standard local text generation for summaries and structured outputs;
+- larger-context local generation only when the admitted registry and resource
+  policy confirm compatibility.
 
 ---
 
@@ -45,9 +59,9 @@ Four AI engines now work together. Claude always orchestrates — route sub-task
 | **Codex** | Reviewer / Parallel executor | Isolated well-scoped tasks, code review, second opinions, fast parallel checks |
 | **Gemini Flash** | Preprocessor | Large context ingestion (1M tokens), bulk analysis, free-tier summarization |
 
-**Cost priority (updated):** Local Ollama (free) > Gemini Flash (free preprocessing) > Bedrock value portfolio (`nvidia.nemotron-super-3-120b`, `qwen.qwen3-coder-next`, `deepseek.v3.2`, Kimi/gpt-oss challengers) > Codex low/mini when a subscription-backed surface is a better fit > Sonnet > Opus / Codex max.
+**Cost priority (updated):** Local Ollama (free) > Gemini Flash (free preprocessing) > admitted Bedrock value portfolio > Codex low/mini when a subscription-backed surface is a better fit > Sonnet > Opus / Codex max. The registry owns the concrete portfolio and ranking facts.
 
-**Bedrock value portfolio:** The AI Model Selector validates account/region access before selecting Bedrock models. Cheap capable models are tried before premium Claude. `us.anthropic.claude-opus-4-7` remains disabled until the AWS account has access.
+**Bedrock value portfolio:** The AI Model Selector validates lifecycle admission and account/region access before selecting Bedrock models. Cheap capable models are tried before premium Claude. Evaluated upgrade candidates remain unavailable until separately admitted.
 
 **Manual terminal entrypoint:** `repos` offers `Auto`, `Claude`, `Codex`, and `Gemini`. `Auto` chooses the interactive runtime only: Claude for repo-wide/multi-step work, Codex for isolated review/small execution, and Gemini for large-context preprocessing. Raw Bedrock models stay behind the AI Model Selector and are not exposed as manual top-level choices.
 
@@ -82,10 +96,10 @@ Invoked via `brain/tools/codex-review.sh`. Start low, escalate when struggling.
 
 | Tier | Invocation | Model | Effort | Use when |
 |------|-----------|-------|--------|----------|
-| **low** | `codex-review.sh '<prompt>'` | gpt-5.4 | low | **DEFAULT** — start here for all Codex tasks |
-| **mini** | `codex-review.sh '<prompt>' mini` | codex-mini-latest | low | Fast parallel filler only (small, isolated sanity checks) |
-| **standard** | `codex-review.sh '<prompt>' standard` | gpt-5.4 | medium | Escalate when low is insufficient; normal code review |
-| **max** | `codex-review.sh '<prompt>' max` | gpt-5.4 | xhigh | Escalate for auth, migrations, prod-touching, deep critique |
+| **low** | `codex-review.sh '<prompt>'` | registry-admitted low tier | low | **DEFAULT** — start here for all Codex tasks |
+| **mini** | `codex-review.sh '<prompt>' mini` | registry-admitted mini tier | low | Fast parallel filler only (small, isolated sanity checks) |
+| **standard** | `codex-review.sh '<prompt>' standard` | registry-admitted standard tier | medium | Escalate when low is insufficient; normal code review |
+| **max** | `codex-review.sh '<prompt>' max` | registry-admitted max tier | xhigh | Escalate for auth, migrations, prod-touching, deep critique |
 
 **Codex escalation rules:**
 1. Default to `low`. Most tasks complete fine here.

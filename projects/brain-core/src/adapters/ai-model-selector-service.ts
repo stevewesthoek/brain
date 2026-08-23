@@ -1,5 +1,11 @@
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
+import {
+  loadModelRegistry,
+  resolveModelReference,
+  resolveProviderReference,
+  type ModelRegistryDocument,
+} from './ai-model-registry-compatibility.js';
 
 const SELECTOR_URL = process.env.AI_SELECTOR_URL ?? 'http://127.0.0.1:4890';
 const LAUNCHD_LABEL = 'com.office.ai-model-selector';
@@ -372,6 +378,12 @@ export interface AiModelSelectionRequest {
   task_type?: string;
   /** Legacy alias; it is accepted only as an exact task_type-shaped identifier. */
   task?: string;
+  /** Legacy provider preference; validated against the admitted registry. */
+  provider_id?: string;
+  /** Legacy concrete model reference; normalized to task metadata. */
+  model_id?: string;
+  /** Legacy singular model preference; normalized to preferred_models. */
+  preferred_model?: string;
   capability?: string;
   complexity?: 'low' | 'medium' | 'high';
   sensitivity?: 'low' | 'medium' | 'high';
@@ -440,6 +452,66 @@ export function normalizeAiModelSelectionRequest(
   // Preserve the only unambiguous legacy safety signal without inventing a task profile.
   if (request.sensitivity === 'high' && taskMetadata.sensitive === undefined) taskMetadata.sensitive = true;
 
+  const collectedModelReferences = collectLegacyModelReferences(request, taskMetadata);
+  if (collectedModelReferences.invalid) {
+    return { ok: false, result: rejectedSelection('Legacy model references must be strings.') };
+  }
+  const modelReferences = collectedModelReferences.values;
+  const providerReferences = collectProviderReferences(request, taskMetadata);
+  const hasModelMetadata = ['allowed_models', 'disallowed_models', 'preferred_models']
+    .some((field) => taskMetadata[field] !== undefined);
+  if (modelReferences.length > 0 || providerReferences.length > 0 || hasModelMetadata) {
+    let registry: ModelRegistryDocument;
+    try {
+      registry = loadModelRegistry();
+    } catch (error) {
+      return {
+        ok: false,
+        result: rejectedSelection(`Model compatibility registry unavailable: ${error instanceof Error ? error.message : String(error)}`),
+      };
+    }
+
+    if (request.provider_id || typeof taskMetadata.provider_id === 'string') {
+      const providerReference = request.provider_id ?? String(taskMetadata.provider_id);
+      const provider = resolveProviderReference(providerReference, registry);
+      if (!provider.ok) return { ok: false, result: rejectedSelection(provider.reason) };
+      taskMetadata.preferred_providers = prependUnique(
+        Array.isArray(taskMetadata.preferred_providers) ? taskMetadata.preferred_providers : [],
+        provider.providerId,
+      );
+      delete taskMetadata.provider_id;
+    }
+
+    const providerIds = providerConstraintIds(taskMetadata);
+    const modelResolutionOptions = providerIds === undefined ? {} : { providerIds };
+    for (const field of ['allowed_models', 'disallowed_models', 'preferred_models'] as const) {
+      if (taskMetadata[field] === undefined) continue;
+      if (!Array.isArray(taskMetadata[field]) || !taskMetadata[field].every((value) => typeof value === 'string')) {
+        return { ok: false, result: rejectedSelection(`${field} must be an array of model references.`) };
+      }
+      const resolvedModels: string[] = [];
+      for (const reference of taskMetadata[field] as string[]) {
+        const resolution = resolveModelReference(reference, modelResolutionOptions, registry);
+        if (!resolution.ok) return { ok: false, result: rejectedSelection(resolution.reason) };
+        resolvedModels.push(resolution.modelId);
+      }
+      taskMetadata[field] = resolvedModels;
+    }
+
+    if (modelReferences.length > 0) {
+      const resolvedPreferredModels: string[] = [];
+      for (const reference of modelReferences) {
+        const resolution = resolveModelReference(reference, modelResolutionOptions, registry);
+        if (!resolution.ok) return { ok: false, result: rejectedSelection(resolution.reason) };
+        resolvedPreferredModels.push(resolution.modelId);
+      }
+      taskMetadata.preferred_models = prependUnique(
+        Array.isArray(taskMetadata.preferred_models) ? taskMetadata.preferred_models as string[] : [],
+        ...resolvedPreferredModels,
+      );
+    }
+  }
+
   return {
     ok: true,
     body: {
@@ -447,6 +519,44 @@ export function normalizeAiModelSelectionRequest(
       ...(Object.keys(taskMetadata).length > 0 ? { task_metadata: taskMetadata } : {}),
     },
   };
+}
+
+function collectLegacyModelReferences(
+  request: AiModelSelectionRequest,
+  taskMetadata: Record<string, unknown>,
+): { values: string[]; invalid: boolean } {
+  const references: string[] = [];
+  let invalid = false;
+  for (const value of [request.model_id, request.preferred_model, taskMetadata.model_id, taskMetadata.preferred_model]) {
+    if (value !== undefined) {
+      if (typeof value !== 'string') invalid = true;
+      else references.push(value);
+    }
+  }
+  delete taskMetadata.model_id;
+  delete taskMetadata.preferred_model;
+  return { values: references, invalid };
+}
+
+function collectProviderReferences(
+  request: AiModelSelectionRequest,
+  taskMetadata: Record<string, unknown>,
+): string[] {
+  const references = [request.provider_id, taskMetadata.provider_id]
+    .filter((value): value is string => typeof value === 'string' && value.length > 0);
+  return [...new Set(references)];
+}
+
+function providerConstraintIds(taskMetadata: Record<string, unknown>): string[] | undefined {
+  const constrained = [taskMetadata.allowed_providers, taskMetadata.preferred_providers]
+    .filter(Array.isArray)
+    .flat()
+    .filter((value): value is string => typeof value === 'string');
+  return constrained.length > 0 ? [...new Set(constrained)] : undefined;
+}
+
+function prependUnique(values: string[], ...items: string[]): string[] {
+  return [...new Set([...items, ...values])];
 }
 
 function outcomeFromPayload(payload: Record<string, unknown>, status: number): AiModelSelectionOutcome {

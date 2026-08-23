@@ -15,9 +15,12 @@ export interface ModelRoutingPolicyInput {
   qualityPriority?: 'speed' | 'balanced' | 'quality';
 }
 
+export type ModelRoutingProfile = 'fast' | 'standard' | 'deep';
+
 export interface ModelRoutingPolicyResult {
   surface: BrainCoreRouteSurface;
   providerId: string;
+  profile: ModelRoutingProfile;
   model?: string;
   rationale: string;
   estimatedTokens: number;
@@ -64,9 +67,11 @@ export function selectModelRouteSnapshot(
 
   const surface = orderedSurfaces[0] ?? allowedSurfaces[0] ?? 'claude-bedrock';
   const providerId = surface;
-  const model = surface === 'codex-cli'
-    ? input.qualityPriority === 'quality' ? 'gpt-5.5' : 'gpt-5.4-mini'
-    : 'bedrock-model-portfolio';
+  const profile: ModelRoutingProfile = input.qualityPriority === 'quality'
+    ? 'deep'
+    : input.qualityPriority === 'speed'
+      ? 'fast'
+      : 'standard';
 
   const estimatedTokens = estimateTokens(input);
   const estimatedCostUsd = estimateCost(surface, estimatedTokens);
@@ -74,13 +79,13 @@ export function selectModelRouteSnapshot(
     ? `Escalated from ${allowedSurfaces[0]} to ${surface} based on capability and health ordering.`
     : undefined;
   const rationale = surface === 'claude-bedrock'
-    ? 'Bedrock-backed Claude selected as the default Brain-managed text surface.'
-    : 'Codex CLI selected as the secondary managed surface when Bedrock is unavailable or Codex is explicitly preferred.';
+    ? 'Bedrock-backed Claude selected as the default Brain-managed text surface; the admitted registry resolves the model for the requested profile.'
+    : 'Codex CLI selected as the secondary managed surface; the admitted registry resolves the model for the requested profile.';
 
   const result: Omit<ModelRoutingPolicyResult, 'budgetStatus'> = {
     surface,
     providerId,
-    model,
+    profile,
     rationale,
     estimatedTokens,
     estimatedCostUsd,
@@ -94,7 +99,7 @@ export function selectModelRouteSnapshot(
 }
 
 export function describeRouteLineItem(
-  result: Pick<ModelRoutingPolicyResult, 'surface' | 'providerId' | 'model' | 'rationale' | 'estimatedTokens' | 'estimatedCostUsd' | 'escalationReason'>,
+  result: Pick<ModelRoutingPolicyResult, 'surface' | 'providerId' | 'profile' | 'model' | 'rationale' | 'estimatedTokens' | 'estimatedCostUsd' | 'escalationReason'>,
   input: ModelRoutingPolicyInput,
 ): BrainCoreAgentCostLineItem {
   const item: BrainCoreAgentCostLineItem = {
@@ -102,6 +107,7 @@ export function describeRouteLineItem(
     taskType: input.taskType,
     surface: result.surface,
     providerId: result.providerId,
+    profile: result.profile,
     estimatedTokens: result.estimatedTokens,
     estimatedCostUsd: result.estimatedCostUsd,
     routingReason: result.rationale,
