@@ -51,7 +51,7 @@ export interface EvolutionArtifact {
   artifactRevision: string | null;
   capturedAt: string | null;
   freshness: 'fresh' | 'stale' | 'unknown' | 'unavailable';
-  artifact: unknown;
+  artifactSummary: Record<string, unknown> | null;
 }
 
 export interface EvolutionProjectionData {
@@ -86,22 +86,34 @@ function readOne(spec: ArtifactSpec, now: Date): EvolutionArtifact[] {
   if (fs.existsSync(absolute) && fs.statSync(absolute).isDirectory()) {
     return fs.readdirSync(absolute, { withFileTypes: true }).filter(entry => entry.isFile() && entry.name.endsWith('.json')).map(entry => readOne({ ...spec, relativePath: path.join(spec.relativePath, entry.name) }, now)[0]).filter((item): item is EvolutionArtifact => Boolean(item));
   }
-  if (!fs.existsSync(absolute)) return [{ role: spec.role, sourcePath: `runtime/local/${spec.relativePath}`, present: false, artifactRevision: null, capturedAt: null, freshness: 'unavailable', artifact: null }];
+  if (!fs.existsSync(absolute)) return [{ role: spec.role, sourcePath: `runtime/local/${spec.relativePath}`, present: false, artifactRevision: null, capturedAt: null, freshness: 'unavailable', artifactSummary: null }];
   try {
     const raw = fs.readFileSync(absolute, 'utf8');
     const artifact = JSON.parse(raw) as unknown;
     const stat = fs.statSync(absolute);
     const freshness = now.getTime() - stat.mtime.getTime() > STALE_AFTER_MS ? 'stale' : 'fresh';
     const record = artifact && typeof artifact === 'object' ? artifact as Record<string, unknown> : null;
-    return [{ role: spec.role, sourcePath: `runtime/local/${spec.relativePath}`, present: true, artifactRevision: hash(raw), capturedAt: typeof record?.generated_at === 'string' ? record.generated_at : null, freshness, artifact }];
+    const artifactSummary: Record<string, unknown> = record ? {
+      generated_at: record.generated_at ?? null,
+      state: record.state ?? null,
+      status: record.status ?? null,
+      summary: record.summary ?? null,
+      counts: record.counts ?? null,
+      safety: record.safety ?? null,
+      invariants: record.invariants ?? null,
+      rollback_reference: record.rollback_reference ?? null,
+      source_paths: record.source_paths ?? null,
+      evidence_references: record.evidence_references ?? null,
+    } : { value_type: typeof artifact };
+    return [{ role: spec.role, sourcePath: `runtime/local/${spec.relativePath}`, present: true, artifactRevision: hash(raw), capturedAt: typeof record?.generated_at === 'string' ? record.generated_at : null, freshness, artifactSummary }];
   } catch {
-    return [{ role: spec.role, sourcePath: `runtime/local/${spec.relativePath}`, present: true, artifactRevision: null, capturedAt: null, freshness: 'unknown', artifact: null }];
+    return [{ role: spec.role, sourcePath: `runtime/local/${spec.relativePath}`, present: true, artifactRevision: null, capturedAt: null, freshness: 'unknown', artifactSummary: null }];
   }
 }
 
 function stateValues(artifacts: EvolutionArtifact[], keys: string[]): string[] {
   const values = artifacts.flatMap(item => {
-    const record = item.artifact && typeof item.artifact === 'object' ? item.artifact as Record<string, unknown> : null;
+    const record = item.artifactSummary;
     return keys.flatMap(key => typeof record?.[key] === 'string' ? [record[key] as string] : []);
   });
   return [...new Set(values)].sort();
@@ -115,7 +127,7 @@ export function readInfiniteBrainEvolutionProjection(kind: EvolutionProjectionKi
   const stale = artifacts.filter(item => item.freshness === 'stale');
   const missing = artifacts.filter(item => !item.present);
   const sourceReferences = specs.map(spec => ({ ref: `runtime/local/${spec.relativePath}`, kind: 'file' as const }));
-  const invalid = available.some(item => item.artifact === null);
+  const invalid = available.some(item => item.artifactSummary === null);
   const availability = invalid ? 'invalid' : available.length ? 'available' : 'empty';
   const freshness = invalid ? 'unknown' : stale.length ? 'stale' : available.length ? 'fresh' : 'unavailable';
   return createProjectionEnvelope({

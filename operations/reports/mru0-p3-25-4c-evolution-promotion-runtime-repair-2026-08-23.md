@@ -28,7 +28,9 @@ The repository build path is independently blocked by the known TS5055 collision
 
 ## Repair performed
 
-No application source repair was applied because the evidence does not identify a safe projection-logic defect. The bounded runtime action was to stop the stale supervised feature runtime and run the canonical main runtime; that corrected repository ownership but did not eliminate the transpiler/runtime churn.
+The projection adapter was bounded so it no longer serializes arbitrary raw runtime artifact payloads. It now exposes selected lifecycle, summary, safety, rollback, source-path, and evidence-reference fields while retaining content hashes and provenance. This preserves the derived-view contract and reduces response/serialization risk without weakening validation or inventing data.
+
+The bounded runtime action was also to stop the stale supervised feature runtime and run the canonical main runtime. That corrected repository ownership but did not eliminate the available TypeScript runtime's repeated read/CPU churn.
 
 ## Validation
 
@@ -44,6 +46,8 @@ Insufficient/failed:
 - repeated live HTTP response-time validation for both endpoints;
 - production-style `npm start`, because `npm run build` is blocked by TS5055;
 - stable long-lived local Brain Core process under the available TypeScript runtime wrappers.
+
+After the bounded payload repair, direct adapter and route tests remained green, but repeated live HTTP checks still intermittently time out while the TypeScript process reaches approximately 99% CPU. The remaining blocker is therefore the local runtime execution path, not unvalidated projection data.
 
 ## Safety
 
