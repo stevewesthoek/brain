@@ -44,7 +44,7 @@ test('report writes only to Brain runtime/local and never promotes or writes Min
   assert.equal(report.automatic_promotion, false);
   assert.equal(fs.readFileSync(path.join(f.inbox, 'note.md'), 'utf8'), before);
   assert.ok(paths.jsonPath.startsWith(path.join(f.repoRoot, 'runtime', 'local', 'mind-steward')));
-  assert.match(fs.readFileSync(paths.markdownPath, 'utf8'), /Human review is required/);
+  assert.match(fs.readFileSync(paths.markdownPath, 'utf8'), /Human review must use/);
 });
 
 test('unsafe output root fails closed', () => {

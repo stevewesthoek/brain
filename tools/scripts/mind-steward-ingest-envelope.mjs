@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { assertNoAuthorityEscalation } from '../validate-infinite-brain-ingestion-envelope.mjs';
+import { projectIngestionReview, renderIngestionReviewMarkdown } from './mind-steward-review-projection.mjs';
 
 const SUPPORTED_EXTENSIONS = new Map([
   ['.md', 'markdown'],
@@ -129,16 +130,10 @@ export function writeReviewReport(report) {
   fs.mkdirSync(report.output_root, { recursive: true, mode: 0o700 });
   const jsonPath = path.join(report.output_root, 'latest.json');
   const markdownPath = path.join(report.output_root, 'latest.md');
-  const markdown = [
-    '# Mind Inbox Ingestion Review', '',
-    `Generated: ${report.generated_at}`, `Source: ${report.source}`, '',
-    `- Envelopes ready for review: ${report.envelopes.length}`,
-    `- Failures requiring review: ${report.failures.length}`,
-    '- Writes to Mind: false', '- Automatic promotion: false', '',
-    'Each envelope references the original `mind/inbox/new/` source. Human review is required before any promotion.',
-  ].join('\n');
+  const projection = projectIngestionReview(report);
+  const markdown = renderIngestionReviewMarkdown(projection);
   fs.writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
-  fs.writeFileSync(markdownPath, `${markdown}\n`, { mode: 0o600 });
+  fs.writeFileSync(markdownPath, markdown, { mode: 0o600 });
   return { jsonPath, markdownPath };
 }
 

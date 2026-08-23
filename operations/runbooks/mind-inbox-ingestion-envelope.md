@@ -21,7 +21,7 @@ Outputs:
 - `runtime/local/mind-steward/ingestion/latest.json`
 - `runtime/local/mind-steward/ingestion/latest.md`
 
-The report contains envelopes ready for review and bounded failures for unsupported/unreadable files. The original Mind files remain in `inbox/new/`; the scanner does not move, rename, delete, rewrite, classify, or promote them.
+The report contains the raw envelope JSON plus a per-item human review projection and bounded failures for unsupported/unreadable files. The original Mind files remain in `inbox/new/`; the scanner does not move, rename, delete, rewrite, classify, or promote them.
 
 ## Supported inputs
 
@@ -32,7 +32,7 @@ PDF, DOCX, XLSX, images, audio, video, URLs, YouTube, GitHub repositories, and A
 
 ## Review boundary
 
-Each envelope contains provenance, source revision, privacy classification, freshness, uncertainty, Mind/Brain impact, and `review_required: true`. A valid envelope is evidence preparation only. Human review and an existing approved bounded transaction are required before any durable Mind or Brain update.
+Each envelope contains provenance, source revision, privacy classification, freshness, uncertainty, Mind/Brain impact, and `review_required: true`. `latest.md` projects each item as `needs_review` with the workflow-only options `accepted`, `rejected`, `deferred`, and `archived`. These states do not promote memory. Human review and an existing approved bounded transaction are required before any durable Mind or Brain update.
 
 ## Failure and safety behavior
 
