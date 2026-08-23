@@ -37,7 +37,7 @@ function listInboxFiles(inboxRoot) {
     .sort();
 }
 
-function makeEnvelope({ filePath, inboxRoot, stat, digest, sourceType }) {
+function makeEnvelope({ filePath, inboxRoot, stat, digest, sourceType, createdAt = new Date().toISOString() }) {
   const relative = path.relative(inboxRoot, filePath).replaceAll(path.sep, '/');
   const sourceRef = `mind/inbox/new/${relative}`;
   const reference = { ref: sourceRef, kind: 'source', hash: `sha256:${digest}` };
@@ -47,7 +47,7 @@ function makeEnvelope({ filePath, inboxRoot, stat, digest, sourceType }) {
       ingestion_id: `ingestion:mind-inbox-${digest.slice(0, 20)}`,
       source_type: sourceType,
       source_reference: reference,
-      created_at: new Date().toISOString(),
+      created_at: createdAt,
       source_revision: `sha256:${digest}`,
     },
     provenance: {
@@ -88,7 +88,7 @@ function makeEnvelope({ filePath, inboxRoot, stat, digest, sourceType }) {
   };
 }
 
-export function scanMindInbox({ mindRoot, repoRoot = process.cwd(), outputRoot } = {}) {
+export function scanMindInbox({ mindRoot, repoRoot = process.cwd(), outputRoot, createdAt = new Date().toISOString() } = {}) {
   if (!mindRoot) throw new Error('mindRoot is required');
   const inboxRoot = path.resolve(mindRoot, 'inbox', 'new');
   const resolvedOutputRoot = safeOutputRoot(repoRoot, outputRoot);
@@ -104,7 +104,7 @@ export function scanMindInbox({ mindRoot, repoRoot = process.cwd(), outputRoot }
     }
     try {
       const stat = fs.statSync(filePath);
-      const envelope = makeEnvelope({ filePath, inboxRoot, stat, digest: hashFile(filePath), sourceType });
+      const envelope = makeEnvelope({ filePath, inboxRoot, stat, digest: hashFile(filePath), sourceType, createdAt });
       const errors = assertNoAuthorityEscalation(envelope);
       if (errors.length) failures.push({ file: relative, code: 'envelope_validation_failed', errors });
       else envelopes.push(envelope);
