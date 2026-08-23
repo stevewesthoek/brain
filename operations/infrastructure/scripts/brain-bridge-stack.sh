@@ -2,6 +2,13 @@
 
 set -e
 
+# LEGACY / LOCAL-ONLY HELPER
+# Retained for historical and operator reference only.
+# This is not a supported canonical Brain runtime surface.
+# No current Brain runbook, launcher, or automation invokes this helper.
+# Do not add new callers without explicit owner approval.
+# BuildFlow identifiers below remain technical compatibility identifiers.
+
 BUILDFLOW_DIR="${BUILDFLOW_DIR:-/Users/Office/Repos/stevewesthoek/buildflow}"
 VAULT_DIR="${VAULT_DIR:-/Users/Office/Repos/stevewesthoek/brain}"
 LOG_DIR="/tmp"
