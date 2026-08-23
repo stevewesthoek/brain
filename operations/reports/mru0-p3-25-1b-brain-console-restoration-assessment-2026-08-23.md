@@ -46,8 +46,10 @@ backend at `http://localhost:4877` and reported `mode: read-only`, `ok: true`, a
 
 That earlier status response is historical evidence from the restoration run. A later
 read-only probe found the protected worktree process still listening on `4877`, but
-`/status` and representative API routes timed out. This is an environment/process
-readiness issue, not a Console source or dependency failure.
+`/status` and `/infinite-brain/status` returned 200 while representative operational
+routes (`/ops/system-metrics`, `/local-apps/dashboard`, `/infra/dokploy`, and others)
+timed out. This is an environment/process readiness issue, not a Console source or
+dependency failure.
 
 Documented Console routes returned HTTP 200:
 
@@ -113,6 +115,10 @@ review.
 - Dependency audit findings require a separate owner-authorized dependency review.
 - Route HTTP 200 proves server rendering, not populated live provider data; Brain Core
   was intentionally observed in read-only fixture mode.
+- `projects/brain-console/package.json` has no test script. The checked-in
+  `lib/aws-video-selection.test.ts` is not directly runnable with the repository's
+  plain Node invocation because its extensionless local import is unresolved; no test
+  runner or source change was introduced in this assessment.
 
 ## Roadmap
 
