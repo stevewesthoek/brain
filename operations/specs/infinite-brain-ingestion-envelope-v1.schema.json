@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.prochat.local/infinite-brain/ingestion-envelope-v1.schema.json",
+  "title": "Infinite Brain Provider-Neutral Ingestion Envelope v1",
+  "type": "object",
+  "required": ["schema_version", "identity", "provenance", "content", "governance", "evidence", "lifecycle"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "identity": { "$ref": "#/$defs/identity" },
+    "provenance": { "$ref": "#/$defs/provenance" },
+    "content": { "$ref": "#/$defs/content" },
+    "governance": { "$ref": "#/$defs/governance" },
+    "evidence": { "$ref": "#/$defs/evidence" },
+    "lifecycle": { "$ref": "#/$defs/lifecycle" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "reference": {
+      "type": "object",
+      "required": ["ref", "kind"],
+      "properties": {
+        "ref": { "$ref": "#/$defs/nonEmpty" },
+        "kind": { "enum": ["source", "extracted", "validation", "relationship", "report", "session"] },
+        "hash": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "identity": {
+      "type": "object",
+      "required": ["ingestion_id", "source_type", "source_reference", "created_at", "source_revision"],
+      "properties": {
+        "ingestion_id": { "type": "string", "pattern": "^ingestion:[a-z0-9][a-z0-9._:-]*$" },
+        "source_type": { "enum": ["markdown", "text", "pdf", "docx", "xlsx", "image", "audio", "video", "url", "youtube", "github_repository", "claude_session", "codex_session", "workbench_session"] },
+        "source_reference": { "$ref": "#/$defs/reference" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "source_revision": { "$ref": "#/$defs/nonEmpty" }
+      },
+      "additionalProperties": false
+    },
+    "authorityContext": {
+      "type": "object",
+      "required": ["authority_owner", "domain", "source_of_authority"],
+      "properties": {
+        "authority_owner": { "enum": ["mind-human", "brain-runtime", "external-source"] },
+        "domain": { "enum": ["mind", "brain", "external"] },
+        "source_of_authority": { "$ref": "#/$defs/reference" }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["origin", "capture_method", "adapter", "captured_at", "authority_context"],
+      "properties": {
+        "origin": { "$ref": "#/$defs/nonEmpty" },
+        "capture_method": { "enum": ["manual", "webhook", "file_import", "session_export", "repository_reference", "existing_report", "other"] },
+        "adapter": { "$ref": "#/$defs/nonEmpty" },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "authority_context": { "$ref": "#/$defs/authorityContext" }
+      },
+      "additionalProperties": false
+    },
+    "content": {
+      "type": "object",
+      "required": ["detected_format", "extracted_content_references", "metadata", "confidence", "uncertainty"],
+      "properties": {
+        "detected_format": { "$ref": "#/$defs/nonEmpty" },
+        "extracted_content_references": { "type": "array", "items": { "$ref": "#/$defs/reference" } },
+        "metadata": { "type": "object", "additionalProperties": true },
+        "summary_reference": { "$ref": "#/$defs/reference" },
+        "entities": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" }, "uniqueItems": true },
+        "relationships": { "type": "array", "items": { "$ref": "#/$defs/reference" } },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "uncertainty": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" } }
+      },
+      "additionalProperties": false
+    },
+    "governance": {
+      "type": "object",
+      "required": ["mind_impact", "brain_impact", "privacy_classification", "freshness", "review_required", "promotion_authority"],
+      "properties": {
+        "mind_impact": { "enum": ["none", "possible", "material"] },
+        "brain_impact": { "enum": ["none", "possible", "material"] },
+        "privacy_classification": { "enum": ["public", "internal", "personal", "sensitive", "restricted"] },
+        "freshness": { "enum": ["fresh", "stale", "unknown"] },
+        "review_required": { "const": true },
+        "promotion_authority": { "const": "human-approved-bounded-transaction" }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["source_references", "validation_references", "extraction_confidence", "uncertainty"],
+      "properties": {
+        "source_references": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/reference" } },
+        "validation_references": { "type": "array", "items": { "$ref": "#/$defs/reference" } },
+        "extraction_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "uncertainty": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" } }
+      },
+      "additionalProperties": false
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": ["state"],
+      "properties": {
+        "state": { "enum": ["captured", "normalized", "ready_for_review", "reviewed", "promoted", "rejected", "archived"] },
+        "review_reference": { "$ref": "#/$defs/reference" },
+        "promotion_reference": { "$ref": "#/$defs/reference" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "promoted" } } },
+          "then": { "required": ["review_reference", "promotion_reference"] }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}
