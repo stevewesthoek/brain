@@ -4,16 +4,20 @@ import {
   createMindMaintenanceJobRouter,
   MIND_MAINTENANCE_SCHEDULER_JOB,
 } from '../adapters/mind-maintenance-routing.js';
+import type { AiModelSelectionRequest } from '../adapters/ai-model-selector-service.js';
 import type { MindMaintenancePilotRunnerInput } from '../mind-maintenance-pilot/pilot-runner.js';
 
 function createHarness() {
   let selectorCalls = 0;
+  let receivedSelectionRequest: AiModelSelectionRequest | null = null;
   let receivedPilotInput: MindMaintenancePilotRunnerInput | null = null;
 
   const route = createMindMaintenanceJobRouter({
-    selectModel: async () => {
+    selectModel: async (request) => {
       selectorCalls += 1;
+      receivedSelectionRequest = request;
       return {
+        outcome: 'selected',
         ok: true,
         selectedModel: 'test-model',
         provider: 'test-provider',
@@ -64,6 +68,7 @@ function createHarness() {
   return {
     route,
     getSelectorCalls: () => selectorCalls,
+    getSelectionRequest: () => receivedSelectionRequest,
     getReceivedPilotInput: () => receivedPilotInput,
   };
 }
@@ -101,6 +106,18 @@ test('consults AI Model Selector only when ambiguous semantic checks are present
 
   assert.equal(routed.route.modelSelector.consulted, true);
   assert.equal(harness.getSelectorCalls(), 1);
+  assert.deepEqual(harness.getSelectionRequest(), {
+    task_type: 'mind_maintenance_semantic_comparison',
+    taskMetadata: {
+      private: true,
+      sensitive: true,
+      allowed_providers: ['claude-bedrock'],
+      allowed_models: ['us.anthropic.claude-sonnet-4-6'],
+      preferred_providers: ['claude-bedrock'],
+      preferred_models: ['us.anthropic.claude-sonnet-4-6'],
+      fallback_policy: 'none',
+    },
+  });
   assert.equal(routed.route.modelSelector.selection?.selectedModel, 'test-model');
 });
 

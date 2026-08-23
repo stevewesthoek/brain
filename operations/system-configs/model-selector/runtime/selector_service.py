@@ -12,11 +12,12 @@ import sys
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 # Ensure this package is importable when run directly
 sys.path.insert(0, str(Path(__file__).parent))
-from core import ModelSelector, NoProviderAvailable, TaskMetadata
+from core import DeferredSelection, ModelSelector, NoProviderAvailable, SelectionResult, TaskMetadata
 
 LOG_DIR = Path.home() / ".local/video-orchestrator/logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -45,12 +46,114 @@ def _json_response(handler: BaseHTTPRequestHandler, status: int, data: object) -
     handler.wfile.write(body)
 
 
-def _read_body(handler: BaseHTTPRequestHandler) -> dict:
+def _read_body(handler: BaseHTTPRequestHandler) -> object:
     length = int(handler.headers.get("Content-Length", 0))
     if length:
         raw = handler.rfile.read(length)
         return json.loads(raw.decode("utf-8"))
     return {}
+
+
+_METADATA_BOOL_FIELDS = {
+    "sensitive",
+    "private",
+    "offline",
+    "external_provider_disallowed",
+}
+_METADATA_LIST_FIELDS = {
+    "preferred_models",
+    "preferred_providers",
+    "allowed_models",
+    "disallowed_models",
+    "allowed_providers",
+    "disallowed_providers",
+}
+_METADATA_STRING_FIELDS = {
+    "quality_tier",
+    "fallback_policy",
+    "selection_policy",
+}
+
+
+def normalize_select_request(body: object) -> dict[str, Any]:
+    """Validate the public /select shape without widening selector behavior."""
+    if not isinstance(body, dict):
+        raise ValueError("request body must be a JSON object")
+
+    task_type = body.get("task_type")
+    if not isinstance(task_type, str) or not task_type.strip():
+        raise ValueError("task_type is required")
+
+    input_tokens = body.get("input_token_count", 0)
+    if isinstance(input_tokens, bool) or not isinstance(input_tokens, int) or input_tokens < 0:
+        raise ValueError("input_token_count must be a non-negative integer")
+
+    urgent = body.get("urgent", False)
+    if not isinstance(urgent, bool):
+        raise ValueError("urgent must be a boolean")
+
+    previous_failures = body.get("previous_failures", [])
+    if not isinstance(previous_failures, list) or not all(isinstance(item, str) for item in previous_failures):
+        raise ValueError("previous_failures must be an array of strings")
+
+    local_only = body.get("local_only", False)
+    if not isinstance(local_only, bool):
+        raise ValueError("local_only must be a boolean")
+
+    metadata = body.get("task_metadata", {})
+    if not isinstance(metadata, dict):
+        raise ValueError("task_metadata must be an object")
+    for field_name in _METADATA_BOOL_FIELDS:
+        if field_name in metadata and not isinstance(metadata[field_name], bool):
+            raise ValueError(f"task_metadata.{field_name} must be a boolean")
+    for field_name in _METADATA_LIST_FIELDS:
+        if field_name in metadata and (
+            not isinstance(metadata[field_name], list)
+            or not all(isinstance(item, str) for item in metadata[field_name])
+        ):
+            raise ValueError(f"task_metadata.{field_name} must be an array of strings")
+    for field_name in _METADATA_STRING_FIELDS:
+        if field_name in metadata and metadata[field_name] is not None and not isinstance(metadata[field_name], str):
+            raise ValueError(f"task_metadata.{field_name} must be a string or null")
+
+    return {
+        "task_type": task_type.strip(),
+        "input_token_count": input_tokens,
+        "urgent": urgent,
+        "previous_failures": previous_failures,
+        "local_only": local_only,
+        "task_metadata": dict(metadata),
+    }
+
+
+def serialize_selection_result(result: SelectionResult | DeferredSelection) -> dict[str, Any]:
+    if isinstance(result, DeferredSelection):
+        return {
+            "outcome": result.outcome,
+            "deferred": result.deferred,
+            "scheduled_after": result.scheduled_after,
+            "reason": result.reason,
+        }
+    return {
+        "outcome": result.outcome,
+        "provider_id": result.provider_id,
+        "model": result.model,
+        "base_url": result.base_url,
+        "reason": result.reason,
+        "cost_estimate": result.cost_estimate,
+        "timeout_inference_sec": result.timeout_inference_sec,
+    }
+
+
+def serialize_rejected(message: str, task_type: str | None = None) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "outcome": "rejected",
+        "error": message,
+        "reason": message,
+    }
+    if task_type:
+        payload["task_type"] = task_type
+    return payload
 
 
 class SelectorHandler(BaseHTTPRequestHandler):
@@ -94,20 +197,21 @@ class SelectorHandler(BaseHTTPRequestHandler):
         path = parsed.path
 
         if path == "/select":
-            body = _read_body(self)
-            task_type = body.get("task_type", "")
-            input_tokens = int(body.get("input_token_count", 0))
-            urgent = bool(body.get("urgent", False))
-            previous_failures = body.get("previous_failures", [])
-            local_only = bool(body.get("local_only", False))
-
-            if not task_type:
-                _json_response(self, 400, {"error": "task_type is required"})
+            try:
+                request = normalize_select_request(_read_body(self))
+            except (ValueError, json.JSONDecodeError) as error:
+                _json_response(self, 400, serialize_rejected(str(error)))
                 return
+
+            task_type = request["task_type"]
+            input_tokens = request["input_token_count"]
+            urgent = request["urgent"]
+            previous_failures = request["previous_failures"]
+            local_only = request["local_only"]
 
             # Build task_metadata from request body.
             # local_only is a legacy convenience shorthand and overrides external/offline constraints.
-            task_metadata_body = body.get("task_metadata", {}) if isinstance(body.get("task_metadata"), dict) else {}
+            task_metadata_body = request["task_metadata"]
             if local_only:
                 task_metadata = TaskMetadata(
                     external_provider_disallowed=True,
@@ -138,21 +242,16 @@ class SelectorHandler(BaseHTTPRequestHandler):
                     previous_failures=previous_failures,
                     task_metadata=task_metadata,
                 )
-                if isinstance(result, dict):
-                    _json_response(self, 200, result)
-                else:
-                    _json_response(self, 200, {
-                        "provider_id": result.provider_id,
-                        "model": result.model,
-                        "base_url": result.base_url,
-                        "reason": result.reason,
-                        "cost_estimate": result.cost_estimate,
-                        "timeout_inference_sec": result.timeout_inference_sec,
-                    })
+                _json_response(self, 200, serialize_selection_result(result))
             except NoProviderAvailable as e:
-                _json_response(self, 503, {"error": str(e), "task_type": task_type})
+                _json_response(self, 503, {
+                    "outcome": e.outcome,
+                    "error": str(e),
+                    "reason": str(e),
+                    "task_type": task_type,
+                })
             except ValueError as e:
-                _json_response(self, 400, {"error": str(e)})
+                _json_response(self, 400, serialize_rejected(str(e), task_type))
             except Exception as e:
                 log.exception("select error")
                 _json_response(self, 500, {"error": str(e)})

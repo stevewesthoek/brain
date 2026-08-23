@@ -368,23 +368,142 @@ function readClaudeCodeVersion(): string | undefined {
 
 
 export interface AiModelSelectionRequest {
-  task: string;
-  capability: string;
-  complexity: 'low' | 'medium' | 'high';
-  sensitivity: 'low' | 'medium' | 'high';
+  /** Canonical selector field. */
+  task_type?: string;
+  /** Legacy alias; it is accepted only as an exact task_type-shaped identifier. */
+  task?: string;
+  capability?: string;
+  complexity?: 'low' | 'medium' | 'high';
+  sensitivity?: 'low' | 'medium' | 'high';
   maxLatencyMs?: number;
+  taskMetadata?: Record<string, unknown>;
 }
 
+export type AiModelSelectionOutcome = 'selected' | 'deferred' | 'unavailable' | 'rejected';
+
 export interface AiModelSelectionResult {
+  outcome: AiModelSelectionOutcome;
   ok: boolean;
   selectedModel: string | null;
   provider: string | null;
   reason: string;
+  scheduledAfter?: string;
+}
+
+type NormalizedAiModelSelectionRequest =
+  | { ok: true; body: Record<string, unknown> }
+  | { ok: false; result: AiModelSelectionResult };
+
+const TASK_TYPE_IDENTIFIER = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
+
+function rejectedSelection(reason: string): AiModelSelectionResult {
+  return {
+    outcome: 'rejected',
+    ok: false,
+    selectedModel: null,
+    provider: null,
+    reason,
+  };
+}
+
+export function normalizeAiModelSelectionRequest(
+  request: AiModelSelectionRequest,
+): NormalizedAiModelSelectionRequest {
+  const canonicalTaskType = request.task_type?.trim();
+  const legacyTask = request.task?.trim();
+
+  if (canonicalTaskType && legacyTask && canonicalTaskType !== legacyTask) {
+    return { ok: false, result: rejectedSelection('task_type and legacy task identify different tasks.') };
+  }
+
+  const taskType = canonicalTaskType || legacyTask;
+  if (!taskType || !TASK_TYPE_IDENTIFIER.test(taskType)) {
+    return {
+      ok: false,
+      result: rejectedSelection(
+        'A registered task_type is required; capability, complexity, sensitivity, and free-form task text cannot infer one.',
+      ),
+    };
+  }
+
+  if (request.complexity !== undefined && !['low', 'medium', 'high'].includes(request.complexity)) {
+    return { ok: false, result: rejectedSelection('complexity must be low, medium, or high.') };
+  }
+  if (request.sensitivity !== undefined && !['low', 'medium', 'high'].includes(request.sensitivity)) {
+    return { ok: false, result: rejectedSelection('sensitivity must be low, medium, or high.') };
+  }
+  if (request.maxLatencyMs !== undefined && (!Number.isFinite(request.maxLatencyMs) || request.maxLatencyMs <= 0)) {
+    return { ok: false, result: rejectedSelection('maxLatencyMs must be a positive finite number.') };
+  }
+
+  const taskMetadata: Record<string, unknown> = { ...(request.taskMetadata ?? {}) };
+  // Preserve the only unambiguous legacy safety signal without inventing a task profile.
+  if (request.sensitivity === 'high' && taskMetadata.sensitive === undefined) taskMetadata.sensitive = true;
+
+  return {
+    ok: true,
+    body: {
+      task_type: taskType,
+      ...(Object.keys(taskMetadata).length > 0 ? { task_metadata: taskMetadata } : {}),
+    },
+  };
+}
+
+function outcomeFromPayload(payload: Record<string, unknown>, status: number): AiModelSelectionOutcome {
+  if (payload.outcome === 'selected' || payload.outcome === 'deferred' || payload.outcome === 'unavailable' || payload.outcome === 'rejected') {
+    return payload.outcome;
+  }
+  if (payload.deferred === true) return 'deferred';
+  if (status === 503 || status >= 500) return 'unavailable';
+  if (status >= 400) return 'rejected';
+  return 'selected';
+}
+
+function resultFromPayload(payload: Record<string, unknown>, status: number): AiModelSelectionResult {
+  const outcome = outcomeFromPayload(payload, status);
+  const reason = typeof payload.reason === 'string'
+    ? payload.reason
+    : typeof payload.error === 'string'
+      ? payload.error
+      : `AI Model Selector returned HTTP ${status}.`;
+  const selectedModel = typeof payload.model === 'string'
+    ? payload.model
+    : typeof payload.modelId === 'string'
+      ? payload.modelId
+      : null;
+  const provider = typeof payload.provider === 'string'
+    ? payload.provider
+    : typeof payload.provider_id === 'string'
+      ? payload.provider_id
+      : typeof payload.providerId === 'string'
+        ? payload.providerId
+        : null;
+  const scheduledAfter = typeof payload.scheduled_after === 'string'
+    ? payload.scheduled_after
+    : typeof payload.scheduledAfter === 'string'
+      ? payload.scheduledAfter
+      : undefined;
+
+  if (outcome === 'selected' && (!selectedModel || !provider)) {
+    return rejectedSelection('AI Model Selector selected outcome did not include provider and model.');
+  }
+
+  return {
+    outcome,
+    ok: outcome === 'selected',
+    selectedModel,
+    provider,
+    reason,
+    ...(scheduledAfter ? { scheduledAfter } : {}),
+  };
 }
 
 export async function selectAiModel(
   request: AiModelSelectionRequest,
 ): Promise<AiModelSelectionResult> {
+  const normalized = normalizeAiModelSelectionRequest(request);
+  if (!normalized.ok) return normalized.result;
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
 
@@ -392,43 +511,23 @@ export async function selectAiModel(
     const response = await fetch(`${SELECTOR_URL}/select`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(request),
+      body: JSON.stringify(normalized.body),
       signal: controller.signal,
     });
 
-    if (!response.ok) {
+    let payload: Record<string, unknown>;
+    try {
+      payload = await response.json() as Record<string, unknown>;
+    } catch {
       return {
-        ok: false,
-        selectedModel: null,
-        provider: null,
-        reason: `AI Model Selector returned HTTP ${response.status}.`,
+        ...rejectedSelection(`AI Model Selector returned non-JSON HTTP ${response.status}.`),
+        ...(response.status === 503 || response.status >= 500 ? { outcome: 'unavailable' as const } : {}),
       };
     }
-
-    const payload = await response.json() as Record<string, unknown>;
-    const selectedModel = typeof payload.model === 'string'
-      ? payload.model
-      : typeof payload.modelId === 'string'
-        ? payload.modelId
-        : null;
-    const provider = typeof payload.provider === 'string'
-      ? payload.provider
-      : typeof payload.providerId === 'string'
-        ? payload.providerId
-        : null;
-
-    return {
-      ok: selectedModel !== null,
-      selectedModel,
-      provider,
-      reason: typeof payload.reason === 'string'
-        ? payload.reason
-        : selectedModel
-          ? 'AI Model Selector returned a model.'
-          : 'AI Model Selector response did not include a model.',
-    };
+    return resultFromPayload(payload, response.status);
   } catch (error) {
     return {
+      outcome: 'unavailable',
       ok: false,
       selectedModel: null,
       provider: null,

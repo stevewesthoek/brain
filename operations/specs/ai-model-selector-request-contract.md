@@ -133,6 +133,7 @@ HTTP 503 when no provider is available, 400 when request is invalid.
 | `fala_content_analysis` | text/large | FALA content analysis |
 | `fala_curriculum_generation` | text/large | FALA curriculum generation |
 | `mind_capture_classification` | text/small | Mind capture triage |
+| `mind_maintenance_semantic_comparison` | text/medium | Bounded private-Mind semantic comparison for the report-only maintenance pilot |
 | `codebase_semantic_graph` | text/large | Codebase semantic graph generation (Graphify) |
 
 ---

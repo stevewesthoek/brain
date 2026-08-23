@@ -17,6 +17,8 @@ export const TASK_TYPES = {
 
 export type TaskType = typeof TASK_TYPES[keyof typeof TASK_TYPES];
 
+export type AISelectionOutcome = 'selected' | 'deferred' | 'unavailable' | 'rejected';
+
 export interface AISelection {
   providerId: string;
   model: string;
@@ -25,6 +27,23 @@ export interface AISelection {
   reason: string;
   costEstimate: number;
   timeoutInferenceSec: number;
+  outcome: 'selected';
+}
+
+export class AISelectionOutcomeError extends Error {
+  readonly outcome: Exclude<AISelectionOutcome, 'selected'>;
+  readonly details: Record<string, unknown>;
+
+  constructor(
+    outcome: Exclude<AISelectionOutcome, 'selected'>,
+    reason: string,
+    details: Record<string, unknown> = {},
+  ) {
+    super(`AI Model Selector outcome=${outcome}: ${reason}`);
+    this.name = 'AISelectionOutcomeError';
+    this.outcome = outcome;
+    this.details = details;
+  }
 }
 
 export interface SelectorHealth {
@@ -75,32 +94,66 @@ export async function selectAI(
     );
   }
 
-  if (resp.status === 503) {
-    throw new Error(`No AI provider available for task=${taskType}`);
-  }
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => '');
-    throw new Error(`AI Model Selector error ${resp.status}: ${body}`);
+  let data: Record<string, unknown>;
+  try {
+    data = await resp.json() as Record<string, unknown>;
+  } catch {
+    throw new AISelectionOutcomeError(
+      resp.status === 503 || resp.status >= 500 ? 'unavailable' : 'rejected',
+      `AI Model Selector returned non-JSON HTTP ${resp.status}.`,
+    );
   }
 
-  const data = (await resp.json()) as {
-    provider_id: string;
-    model: string;
-    base_url: string;
-    api_key: string | null;
-    reason: string;
-    cost_estimate: number;
-    timeout_inference_sec?: number;
-  };
+  const reportedOutcome = data.outcome;
+  const outcome: AISelectionOutcome = reportedOutcome === 'deferred'
+    || reportedOutcome === 'unavailable'
+    || reportedOutcome === 'rejected'
+    || reportedOutcome === 'selected'
+    ? reportedOutcome
+    : data.deferred === true
+      ? 'deferred'
+      : resp.status === 503 || resp.status >= 500
+        ? 'unavailable'
+        : resp.ok
+          ? 'selected'
+          : 'rejected';
+  const reason = typeof data.reason === 'string'
+    ? data.reason
+    : typeof data.error === 'string'
+      ? data.error
+      : `AI Model Selector returned HTTP ${resp.status}.`;
+
+  if (outcome !== 'selected' || !resp.ok) {
+    throw new AISelectionOutcomeError(outcome === 'selected' ? 'rejected' : outcome, reason, data);
+  }
+
+  const providerId = typeof data.provider_id === 'string'
+    ? data.provider_id
+    : typeof data.providerId === 'string'
+      ? data.providerId
+      : '';
+  const model = typeof data.model === 'string'
+    ? data.model
+    : typeof data.modelId === 'string'
+      ? data.modelId
+      : '';
+  if (!providerId || !model) {
+    throw new AISelectionOutcomeError(
+      'rejected',
+      'AI Model Selector selected outcome did not include provider_id and model.',
+      data,
+    );
+  }
 
   return {
-    providerId: data.provider_id,
-    model: data.model,
-    baseUrl: data.base_url,
-    apiKey: data.api_key,
-    reason: data.reason,
-    costEstimate: data.cost_estimate,
-    timeoutInferenceSec: data.timeout_inference_sec ?? 300,
+    providerId,
+    model,
+    baseUrl: typeof data.base_url === 'string' ? data.base_url : '',
+    apiKey: typeof data.api_key === 'string' ? data.api_key : null,
+    reason,
+    costEstimate: typeof data.cost_estimate === 'number' ? data.cost_estimate : 0,
+    timeoutInferenceSec: typeof data.timeout_inference_sec === 'number' ? data.timeout_inference_sec : 300,
+    outcome: 'selected',
   };
 }
 

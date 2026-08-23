@@ -60,11 +60,16 @@ export function createMindMaintenanceJobRouter(
 
     const selection = input.ambiguousSemanticChecks > 0
       ? await dependencies.selectModel({
-          task: 'mind-maintenance-semantic-comparison',
-          capability: 'bounded-semantic-classification',
-          complexity: 'medium',
-          sensitivity: 'high',
-          maxLatencyMs: 3000,
+          task_type: 'mind_maintenance_semantic_comparison',
+          taskMetadata: {
+            private: true,
+            sensitive: true,
+            allowed_providers: ['claude-bedrock'],
+            allowed_models: ['us.anthropic.claude-sonnet-4-6'],
+            preferred_providers: ['claude-bedrock'],
+            preferred_models: ['us.anthropic.claude-sonnet-4-6'],
+            fallback_policy: 'none',
+          },
         })
       : null;
 

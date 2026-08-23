@@ -89,6 +89,17 @@ class SelectionResult:
     input_tokens: int = 0
     timeout_inference_sec: int = 30
     task_metadata: TaskMetadata | None = None
+    outcome: str = "selected"
+
+
+@dataclass
+class DeferredSelection:
+    """A policy-level deferral that must not be treated as a provider choice."""
+
+    scheduled_after: str
+    reason: str = "selector_policy_deferred"
+    outcome: str = "deferred"
+    deferred: bool = True
 
 
 @dataclass
@@ -222,6 +233,7 @@ class NoProviderAvailable(Exception):
     def __init__(self, task_type: str, previous_failures: list[str]):
         self.task_type = task_type
         self.previous_failures = previous_failures
+        self.outcome = "unavailable"
         super().__init__(f"No provider available for task={task_type!r} after failures={previous_failures}")
 
 
@@ -922,7 +934,7 @@ class ModelSelector:
         urgent: bool = False,
         previous_failures: list[str] | None = None,
         task_metadata: TaskMetadata | None = None,
-    ) -> SelectionResult:
+    ) -> SelectionResult | DeferredSelection:
         if previous_failures is None:
             previous_failures = []
         if task_metadata is None:
@@ -1050,7 +1062,7 @@ class ModelSelector:
 
         if not urgent and self._config.get("prefer_defer_over_paid", True):
             target = self._next_batch_window_iso()
-            return {"deferred": True, "scheduled_after": target}  # type: ignore[return-value]
+            return DeferredSelection(scheduled_after=target)
         raise NoProviderAvailable(task_type, previous_failures)
 
     def select(
@@ -1060,7 +1072,7 @@ class ModelSelector:
         urgent: bool = False,
         previous_failures: list[str] | None = None,
         task_metadata: TaskMetadata | None = None,
-    ) -> SelectionResult:
+    ) -> SelectionResult | DeferredSelection:
         return self.select_provider(task_type, input_token_count, urgent, previous_failures, task_metadata)
 
     def _next_batch_window_iso(self) -> str:
