@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "fixtures": [
+    {
+      "id": "brain-validation",
+      "source": {
+        "sourceKind": "validation_result",
+        "sourceRef": "operations/reports/example-validation.md",
+        "authorityKind": "runtime_observation",
+        "observedAt": "2026-08-23T10:00:00Z",
+        "sourceRevision": "abc1234",
+        "evidenceRefs": ["evt-validation-001"],
+        "relationshipRefs": ["rel-validation-001"],
+        "freshnessInput": { "freshnessClass": "changing", "reviewAfter": "2026-09-23T00:00:00Z" },
+        "confidence": 0.99,
+        "privacyClass": "internal",
+        "mindImpact": "none"
+      }
+    },
+    {
+      "id": "mind-context-review",
+      "source": {
+        "sourceKind": "mind_context",
+        "sourceRef": "mind://context/strategy-summary",
+        "authorityKind": "context_pack",
+        "observedAt": "2026-08-23T10:01:00Z",
+        "sourceRevision": "mind-rev-20260823",
+        "evidenceRefs": ["evt-context-001"],
+        "relationshipRefs": [],
+        "freshnessInput": { "freshnessClass": "changing", "reviewAfter": "2026-08-30T00:00:00Z" },
+        "confidence": 0.9,
+        "privacyClass": "sensitive"
+      }
+    },
+    {
+      "id": "stale-observation",
+      "source": {
+        "sourceKind": "report",
+        "sourceRef": "operations/reports/historical-report.md",
+        "authorityKind": "runtime_observation",
+        "observedAt": "2026-08-20T10:00:00Z",
+        "sourceRevision": "def5678",
+        "evidenceRefs": ["evt-report-001"],
+        "relationshipRefs": [],
+        "freshnessInput": { "freshnessClass": "changing", "validTo": "2026-08-22T00:00:00Z" },
+        "confidence": 0.8,
+        "privacyClass": "internal",
+        "mindImpact": "possible"
+      }
+    }
+  ]
+}

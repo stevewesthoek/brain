@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/context-learning/observation-projection-v1.schema.json",
+  "title": "Infinite Brain Derived Observation Projection v1",
+  "description": "A rebuildable, non-authoritative observation view composed from existing Brain/Mind evidence and authority contracts.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "observation_id",
+    "source_kind",
+    "source_ref",
+    "authority_kind",
+    "authority_owner",
+    "canonical",
+    "observed_at",
+    "source_revision",
+    "evidence_refs",
+    "relationship_refs",
+    "freshness",
+    "confidence",
+    "privacy_class",
+    "mind_impact",
+    "fingerprint"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "observation_id": { "type": "string", "pattern": "^obs-[a-f0-9]{24}$" },
+    "source_kind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$", "maxLength": 120 },
+    "source_ref": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "authority_kind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$", "maxLength": 120 },
+    "authority_owner": { "enum": ["mind", "brain", "evidence", "derived", "ephemeral"] },
+    "canonical": { "type": "boolean" },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "source_revision": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "uniqueItems": true
+    },
+    "relationship_refs": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^rel-[a-z0-9][a-z0-9._-]*$" },
+      "uniqueItems": true
+    },
+    "freshness": {
+      "enum": ["fresh", "review_due", "stale", "superseded", "contradicted", "unknown"]
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "privacy_class": { "enum": ["public", "internal", "sensitive", "restricted"] },
+    "mind_impact": { "enum": ["none", "possible", "requires_review"] },
+    "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}
