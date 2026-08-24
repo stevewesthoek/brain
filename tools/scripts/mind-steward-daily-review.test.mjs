@@ -33,6 +33,7 @@ test('enriches GitHub evidence only through the explicit opt-in helper', async (
     fetchImpl: async (url) => url.endsWith('/releases/latest') ? { ok: false, status: 404, async json() { return {}; } } : { ok: true, status: 200, async json() { return { stargazers_count: 7 }; } },
   });
   assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].metadata.stars.value, 7);
+  assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].fit_assessment.disposition.advisory_only, true);
   assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].review_required, true);
 });
 

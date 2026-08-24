@@ -22,12 +22,18 @@ node tools/scripts/mind-steward-daily-review.mjs --enrich-github-metadata
 
 This performs unauthenticated read-only requests for repository metadata and the latest release. Every returned field includes provenance, retrieval time, freshness, confidence, and uncertainty. Rate limits, private/deleted repositories, unavailable endpoints, and timeouts remain visible as unknown/unavailable evidence. README and documentation signals are intentionally not fetched by this bounded adapter.
 
+## Relevance and fit assessment
+
+The same explicit enrichment pass also attaches a deterministic advisory fit assessment. It compares repository evidence with the existing Brain capability manifest and displays apparent purpose, technology, maintenance signals, possible overlap, possible gaps, integration uncertainty, licensing, and unknowns in the existing review projection and workflow outputs.
+
+The assessment is not a decision. `likely_overlap` means confirmed identity or possible term overlap as stated in the evidence; it does not establish equivalence. `potentially_useful` means no overlap was found in the supplied capability projection, not that a gap has been proven. Missing or stale metadata produces `insufficient_evidence`.
+
 ## Current behavior
 
 The default adapter recognizes the URL and records identity only. Remote metadata is not fetched automatically. Enrichment is available only through the explicit flag above, so activity, maintenance, licensing, dependency, and documentation fields may remain unknown. That is an explicit uncertainty state, not a positive or negative recommendation.
 
 ## Safety boundary
 
-This workflow does not clone, install, execute, modify, adopt, or promote repository code. It does not use credentials, write Mind, or write Brain canonical state. A repository identity or public metadata result is evidence and requires human review.
+This workflow does not clone, install, execute, modify, adopt, create tasks, update the roadmap, or promote repository code. It does not use credentials, write Mind, or write Brain canonical state. A repository identity, public metadata result, or fit assessment is evidence and requires human review.
 
 Invalid URLs, unavailable metadata, and duplicate repository identities fail closed. Do not treat a repository mention as authorization to inspect, install, or merge it.
