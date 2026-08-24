@@ -319,6 +319,11 @@ Traefik discovers services via Docker socket labels on the `dokploy-network` ove
 Application containers on the same network communicate via Docker DNS resolution. Applications
 reach Supabase via the host-level Tailscale route (not via the Docker overlay network).
 
+**Redeploy invariant:** Public availability is not redeploy-safe until the live service labels or
+managed file-provider route, Traefik router, backend status, `dokploy-network` membership, TLS,
+and external HTTPS response have all been re-verified after service recreation. See
+`operations/standards/redeploy-ingress-persistence.md` for the acceptance gate.
+
 ---
 
 ## 4. Firewall & Access Model

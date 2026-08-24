@@ -15,6 +15,7 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
   - **`context-compression.md`** — explicit reversible compression, retrieval, evaluation, and failure-learning workflow for large local context.
 - `standards/` — durable standards used by multiple workflows
   - **`human-writing-guardrails.md`** — shared final-stage writing-quality standard for research, Bible stories, marketing copy, websites, video scripts, captions, and other human-facing text.
+  - **`redeploy-ingress-persistence.md`** — canonical Dokploy/Traefik acceptance gate proving ingress survives application and service recreation.
 - `specs/` — implementation-facing operating specifications
   - **`graphify-standard.md`** — canonical Graphify operating standard for cross-repo graph generation, AI context, model-selection policy, and repo profiles.
   - **`graphify-profile-contract.md`** — declarative `.graphify-profile.json` contract for Graphify-enabled repositories.
