@@ -74,6 +74,28 @@ test('records an explicit human decision without canonical mutation', () => {
   assert.equal(session.invariants.writes_to_mind, false);
 });
 
+test('projects explicit conversation evidence into the existing review workflow', async () => {
+  const github = buildGitHubRepositoryEvidence({ url: 'https://github.com/a/one' });
+  const conversation = {
+    identity: { ingestion_id: 'ingestion:conversation-test', source_type: 'codex_session', source_reference: { ref: 'session:codex:session-test', kind: 'session', hash: 'sha256:conversation' }, created_at: '2026-08-24T12:00:00Z', source_revision: 'sha256:conversation' },
+    provenance: { origin: 'codex-session-reference', capture_method: 'session_export', adapter: 'test', captured_at: '2026-08-24T11:00:00Z', authority_context: { authority_owner: 'external-source', domain: 'external', source_of_authority: { ref: 'session:codex:session-test', kind: 'session', hash: 'sha256:conversation' } } },
+    content: { detected_format: 'application/session-evidence+json', extracted_content_references: [{ ref: 'session:codex:session-test', kind: 'session', hash: 'sha256:conversation' }], metadata: { transcript_read: false }, entities: [], relationships: [], confidence: 0.8, uncertainty: ['human review required'] },
+    governance: { mind_impact: 'possible', brain_impact: 'possible', privacy_classification: 'restricted', freshness: 'fresh', review_required: true, promotion_authority: 'human-approved-bounded-transaction' },
+    evidence: { source_references: [{ ref: 'session:codex:session-test', kind: 'session', hash: 'sha256:conversation' }], validation_references: [], extraction_confidence: 0.8, uncertainty: ['no full transcript stored'] },
+    lifecycle: { state: 'ready_for_review' },
+    candidate_insights: [{ candidate_id: 'candidate:test:1', category: 'decision', statement: 'Keep the review boundary human-controlled.', source_session_id: 'session-test', observed_at: '2026-08-24T11:00:00Z', repository: 'brain', freshness: 'fresh', provenance: { source: { ref: 'session:codex:session-test', kind: 'session', hash: 'sha256:conversation' }, retrieved_at: '2026-08-24T12:00:00Z' }, confidence: 0.8, uncertainty: 'requires human review' }],
+  };
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'daily-review-conversation-'));
+  const mindRoot = path.join(root, 'mind');
+  fs.mkdirSync(path.join(mindRoot, 'inbox', 'new'), { recursive: true });
+  const { runDailyReview } = await import('./mind-steward-daily-review.mjs');
+  const session = await runDailyReview({ repoRoot: root, mindRoot, generatedAt: '2026-08-24T12:00:00Z', conversationEvidence: [conversation], systemCapabilities: { capabilities: [] } });
+  assert.equal(session.ingestion.envelopes, 0);
+  assert.equal(session.pending.length, 1);
+  assert.equal(session.pending[0].source, 'session:codex:session-test');
+  assert.equal(session.pending[0].requires_human_decision, true);
+});
+
 test('records a validated decision batch in one runtime-local write', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'daily-review-batch-'));
   const workflowRoot = path.join(root, 'runtime', 'local', 'mind-steward', 'unified-review');

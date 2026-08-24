@@ -13,6 +13,7 @@ import { attachEvidencePreviews } from './mind-steward-evidence-preview.mjs';
 import { enrichGitHubRepositoryEvidence } from './mind-steward-github-repository-metadata.mjs';
 import { assessGitHubRepositoryFit, buildBrainCapabilityProjection } from './mind-steward-github-repository-fit.mjs';
 import { enrichGitHubRepositoryDocumentation } from './mind-steward-github-repository-documentation.mjs';
+import { readConversationEvidenceFile } from './mind-steward-conversation-evidence.mjs';
 
 const RUNTIME_ROOT = path.join('runtime', 'local', 'mind-steward');
 const REVIEW_ROOT = path.join(RUNTIME_ROOT, 'unified-review');
@@ -42,13 +43,13 @@ export async function enrichGitHubIngestion({ ingestion, fetchImpl = globalThis.
   return { ...ingestion, envelopes };
 }
 
-export async function runDailyReview({ repoRoot = process.cwd(), mindRoot, generatedAt = new Date().toISOString(), enrichGitHub = false, enrichGitHubDocumentation = false, enrichGitHubArchitecture = false, metadataFetcher = globalThis.fetch, systemCapabilities } = {}) {
+export async function runDailyReview({ repoRoot = process.cwd(), mindRoot, generatedAt = new Date().toISOString(), enrichGitHub = false, enrichGitHubDocumentation = false, enrichGitHubArchitecture = false, metadataFetcher = globalThis.fetch, systemCapabilities, conversationEvidence = [] } = {}) {
   if (!mindRoot) throw new Error('mindRoot is required');
   let ingestion = scanMindInbox({ mindRoot, repoRoot, createdAt: generatedAt });
   const capabilityManifest = systemCapabilities ?? readJson(path.join(repoRoot, 'operations', 'specs', 'infinite-brain-capabilities.json'), { capabilities: [] });
   if (enrichGitHub || enrichGitHubDocumentation || enrichGitHubArchitecture) ingestion = await enrichGitHubIngestion({ ingestion, fetchImpl: metadataFetcher, generatedAt, systemCapabilities: buildBrainCapabilityProjection(capabilityManifest), includeDocumentation: enrichGitHubDocumentation || enrichGitHubArchitecture, includeArchitecture: enrichGitHubArchitecture });
   writeReviewReport(ingestion);
-  const projection = buildUnifiedReviewInbox({ ingestion: ingestion.envelopes, generatedAt });
+  const projection = buildUnifiedReviewInbox({ ingestion: ingestion.envelopes, conversations: conversationEvidence, generatedAt });
   writeUnifiedReviewInbox({ projection, repoRoot });
   const briefing = buildUnifiedIntelligenceBriefing(projection, { generatedAt });
   writeUnifiedIntelligenceBriefing({ briefing, repoRoot });
@@ -148,7 +149,10 @@ async function main() {
   }
   const enrichGitHubDocumentation = args.includes('--enrich-github-documentation');
   const enrichGitHubArchitecture = args.includes('--enrich-github-architecture');
-  const session = await runDailyReview({ repoRoot, mindRoot, enrichGitHub: args.includes('--enrich-github-metadata'), enrichGitHubDocumentation, enrichGitHubArchitecture });
+  const conversationIndex = args.indexOf('--conversation-evidence-file');
+  const conversationPath = conversationIndex >= 0 ? args[conversationIndex + 1] : null;
+  const conversationEvidence = conversationPath ? [readConversationEvidenceFile({ repoRoot, filePath: path.resolve(conversationPath) })] : [];
+  const session = await runDailyReview({ repoRoot, mindRoot, conversationEvidence, enrichGitHub: args.includes('--enrich-github-metadata'), enrichGitHubDocumentation, enrichGitHubArchitecture });
   process.stdout.write(`${JSON.stringify(session, null, 2)}\n`);
 }
 

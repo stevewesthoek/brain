@@ -5,6 +5,14 @@ import { assertNoAuthorityEscalation } from '../validate-infinite-brain-ingestio
 
 const PROVIDERS = new Set(['claude', 'codex', 'workbench']);
 const CATEGORIES = new Set(['decision', 'architecture', 'lesson', 'unresolved_question', 'changed_file', 'validation', 'recurring_problem', 'improvement']);
+const FRESHNESS = new Set(['fresh', 'stale', 'unknown']);
+const MAX_CANDIDATES = 100;
+const SECRET_PATTERNS = [
+  /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/i,
+  /\b(?:sk|pk|ghp|github_pat|xox[baprs])-[-_a-z0-9]{12,}\b/i,
+  /\b(?:api[_-]?key|access[_-]?token|refresh[_-]?token|password|secret)\s*[:=]\s*[^\s,;]{8,}/i,
+  /\bBearer\s+[A-Za-z0-9._~+/=-]{12,}/i,
+];
 const SESSION_ROOTS = {
   claude: path.join(process.env.HOME ?? '', '.claude', 'projects'),
   codex: path.join(process.env.HOME ?? '', '.codex', 'sessions'),
@@ -38,13 +46,48 @@ export function readSessionMetadata({ provider, sessionPath } = {}) {
   };
 }
 
+function validateSessionContext(session) {
+  for (const name of ['session_id', 'repository', 'workspace']) {
+    if (session[name] != null && (typeof session[name] !== 'string' || session[name].length > 500)) throw new Error(`invalid_session_${name}`);
+  }
+  if (session.freshness != null && !FRESHNESS.has(session.freshness)) throw new Error('invalid_session_freshness');
+  if (session.timestamp != null && typeof session.timestamp !== 'string') throw new Error('invalid_session_timestamp');
+}
+
+function assertNoSecretLikeContent(statement) {
+  if (SECRET_PATTERNS.some((pattern) => pattern.test(statement))) throw new Error('secret_like_conversation_content_is_not_allowed');
+}
+
+export function extractConversationCandidates({ session, records = [] } = {}) {
+  if (!Array.isArray(records) || records.length > MAX_CANDIDATES) throw new Error('conversation_records_limit_exceeded');
+  return records.map((record) => {
+    if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error('conversation_record_must_be_object');
+    if ('transcript' in record || 'messages' in record || 'content' in record) throw new Error('raw_transcript_record_is_not_allowed');
+    const candidate = record.candidate ?? record;
+    return {
+      category: candidate.category,
+      statement: candidate.statement,
+      confidence: candidate.confidence,
+      uncertainty: candidate.uncertainty,
+      observed_at: candidate.observed_at ?? record.observed_at ?? session.timestamp ?? null,
+      freshness: candidate.freshness ?? record.freshness ?? session.freshness ?? 'unknown',
+      repository: candidate.repository ?? record.repository ?? session.repository ?? null,
+    };
+  });
+}
+
 export function createConversationEvidence({ session, candidates = [], asOf = new Date().toISOString() } = {}) {
   if (!session?.provider || !PROVIDERS.has(session.provider)) throw new Error('supported provider is required');
   if (!session.session_id) throw new Error('session_id is required');
   if (session.transcript_read === true) throw new Error('full_transcript_ingestion_is_not_allowed');
+  validateSessionContext(session);
+  if (!Array.isArray(candidates) || candidates.length > MAX_CANDIDATES) throw new Error('conversation_candidates_limit_exceeded');
   for (const candidate of candidates) {
     if (!CATEGORIES.has(candidate.category)) throw new Error(`unsupported_candidate_category: ${candidate.category}`);
     if (!candidate.statement || candidate.statement.length > 1000) throw new Error('candidate statement must be bounded');
+    assertNoSecretLikeContent(candidate.statement);
+    if (candidate.freshness != null && !FRESHNESS.has(candidate.freshness)) throw new Error('invalid_candidate_freshness');
+    if (candidate.repository != null && candidate.repository !== session.repository) throw new Error('conflicting_repository_context');
   }
   const sourceRef = `session:${session.provider}:${session.session_id}`;
   const digest = crypto.createHash('sha256').update(JSON.stringify({ sourceRef, asOf, candidates })).digest('hex');
@@ -72,7 +115,7 @@ export function createConversationEvidence({ session, candidates = [], asOf = ne
       entities: [], relationships: [], confidence: candidates.length ? Math.min(...candidates.map((candidate) => candidate.confidence ?? 0.5)) : 0.5,
       uncertainty: ['candidate extraction is bounded and requires human review', 'conversation context is not copied by default'],
     },
-    governance: { mind_impact: 'possible', brain_impact: 'possible', privacy_classification: 'restricted', freshness: 'unknown', review_required: true, promotion_authority: 'human-approved-bounded-transaction' },
+    governance: { mind_impact: 'possible', brain_impact: 'possible', privacy_classification: 'restricted', freshness: session.freshness ?? 'unknown', review_required: true, promotion_authority: 'human-approved-bounded-transaction' },
     evidence: { source_references: [sourceReference], validation_references: [], extraction_confidence: candidates.length ? Math.min(...candidates.map((candidate) => candidate.confidence ?? 0.5)) : 0.5, uncertainty: ['no full transcript stored'] },
     lifecycle: { state: 'ready_for_review' },
   };
@@ -80,11 +123,35 @@ export function createConversationEvidence({ session, candidates = [], asOf = ne
   if (errors.length) throw new Error(`conversation_envelope_invalid: ${errors.join('; ')}`);
   return {
     envelope,
-    candidate_insights: candidates.map((candidate, index) => ({ candidate_id: `candidate:${digest.slice(0, 12)}:${index + 1}`, category: candidate.category, statement: candidate.statement, confidence: candidate.confidence ?? 0.5, uncertainty: candidate.uncertainty ?? 'requires human review' })),
+    candidate_insights: candidates.map((candidate, index) => ({ candidate_id: `candidate:${digest.slice(0, 12)}:${index + 1}`, category: candidate.category, statement: candidate.statement, source_session_id: session.session_id, observed_at: candidate.observed_at ?? session.timestamp ?? asOf, repository: session.repository ?? null, freshness: candidate.freshness ?? session.freshness ?? 'unknown', provenance: { source: sourceReference, retrieved_at: asOf }, confidence: candidate.confidence ?? 0.5, uncertainty: candidate.uncertainty ?? 'requires human review' })),
     writes_to_mind: false,
     writes_to_brain_canonical: false,
     automatic_promotion: false,
   };
+}
+
+export function readConversationEvidenceFile({ filePath, repoRoot = process.cwd() } = {}) {
+  if (!filePath) throw new Error('conversation_evidence_file_required');
+  const allowed = path.resolve(repoRoot, 'runtime', 'local', 'mind-steward', 'conversation-evidence');
+  const resolved = path.resolve(filePath);
+  if (resolved !== allowed && !resolved.startsWith(`${allowed}${path.sep}`)) throw new Error('unsafe_conversation_input');
+  const parsed = JSON.parse(fs.readFileSync(resolved, 'utf8'));
+  const envelope = parsed.envelope ?? parsed;
+  const errors = assertNoAuthorityEscalation(envelope);
+  if (errors.length) throw new Error(`conversation_envelope_invalid: ${errors.join('; ')}`);
+  if (envelope.content?.metadata?.transcript_read === true) throw new Error('full_transcript_ingestion_is_not_allowed');
+  const candidates = parsed.candidate_insights ?? envelope.candidate_insights ?? [];
+  if (!Array.isArray(candidates) || candidates.length > MAX_CANDIDATES) throw new Error('conversation_candidates_limit_exceeded');
+  const sessionId = envelope.content?.metadata?.session_id;
+  const repository = envelope.content?.metadata?.repository ?? null;
+  for (const candidate of candidates) {
+    if (!candidate || !CATEGORIES.has(candidate.category) || typeof candidate.statement !== 'string' || candidate.statement.length === 0 || candidate.statement.length > 1000) throw new Error('conversation_candidate_invalid');
+    assertNoSecretLikeContent(candidate.statement);
+    if (candidate.source_session_id && candidate.source_session_id !== sessionId) throw new Error('conflicting_session_context');
+    if (candidate.repository != null && candidate.repository !== repository) throw new Error('conflicting_repository_context');
+    if (candidate.freshness != null && !FRESHNESS.has(candidate.freshness)) throw new Error('invalid_candidate_freshness');
+  }
+  return { ...envelope, candidate_insights: candidates };
 }
 
 export function writeConversationEvidence({ envelope, repoRoot = process.cwd(), outputRoot } = {}) {
