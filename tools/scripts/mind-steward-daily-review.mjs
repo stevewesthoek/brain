@@ -9,6 +9,7 @@ import { applyReviewAction, buildReviewWorkflow, writeReviewWorkflow } from './m
 import { buildDailyIntelligenceLoop, writeDailyIntelligenceLoop } from './mind-steward-daily-intelligence-loop.mjs';
 import { buildOperationalFeedbackCalibration, writeOperationalFeedbackCalibration } from './mind-steward-operational-feedback-calibration.mjs';
 import { buildOperationalReadiness } from './mind-steward-operational-readiness.mjs';
+import { attachEvidencePreviews } from './mind-steward-evidence-preview.mjs';
 
 const RUNTIME_ROOT = path.join('runtime', 'local', 'mind-steward');
 const REVIEW_ROOT = path.join(RUNTIME_ROOT, 'unified-review');
@@ -32,7 +33,7 @@ export function runDailyReview({ repoRoot = process.cwd(), mindRoot, generatedAt
   const briefing = buildUnifiedIntelligenceBriefing(projection, { generatedAt });
   writeUnifiedIntelligenceBriefing({ briefing, repoRoot });
   const previous = readJson(path.join(repoRoot, REVIEW_ROOT, 'workflow-latest.json'), null);
-  const workflow = buildReviewWorkflow({ briefing, previous: previous?.items ?? [] });
+  const workflow = attachEvidencePreviews(buildReviewWorkflow({ briefing, previous: previous?.items ?? [] }), { mindRoot, now: new Date(generatedAt) });
   writeReviewWorkflow({ workflow, repoRoot });
   const dailyLoop = buildDailyIntelligenceLoop({ briefing, workflow, promotions: [], generatedAt, sourcePaths: [
     path.join(REVIEW_ROOT, 'briefing-latest.json'),
@@ -72,6 +73,7 @@ export function buildReviewSession({ repoRoot = process.cwd(), ingestion = null,
       confidence: item.source.confidence,
       freshness: item.source.freshness,
       uncertainty: item.source.uncertainty,
+      evidence_preview: item.evidence_preview ?? null,
       decision_options: ['accepted', 'rejected', 'deferred', 'archived'],
       requires_human_decision: true,
     })),

@@ -11,7 +11,7 @@ MIND_STEWARD_MIND_ROOT=/Users/Office/Repos/stevewesthoek/mind \
 node tools/scripts/mind-steward-daily-review.mjs
 ```
 
-The output includes readiness, pending items, source/evidence references, provenance, required actions, and review counts. Detailed artifacts remain under `runtime/local/mind-steward/`.
+The output includes readiness, pending items, bounded evidence previews when the configured source is available, source/evidence references, provenance, required actions, and review counts. Detailed artifacts remain under `runtime/local/mind-steward/`.
 
 ## Record a human decision
 
@@ -45,6 +45,8 @@ node tools/scripts/mind-steward-daily-review.mjs --decisions-file /path/to/decis
 ```
 
 The complete batch is validated before the runtime-local workflow is written. Every decision still requires an explicit reason, reviewer, and matching source reference; no canonical Mind or Brain state is changed.
+
+Evidence previews are limited operator context. They verify the source hash and show a bounded excerpt when possible; they do not replace the source, infer meaning, or make a decision. An unavailable or stale preview must be handled as an evidence limitation.
 
 ## Boundary
 

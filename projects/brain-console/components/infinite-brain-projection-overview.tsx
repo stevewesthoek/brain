@@ -22,7 +22,13 @@ function reviewCounts(data: BrainCoreProjectionEnvelope | undefined): Record<str
   if (!artifact || typeof artifact !== 'object') return null;
   const counts = (artifact as { counts?: unknown }).counts;
   if (!counts || typeof counts !== 'object') return null;
-  return Object.fromEntries(REVIEW_STATES.map((state) => [state, typeof (counts as Record<string, unknown>)[state] === 'number' ? (counts as Record<string, number>)[state] : 0]));
+  const items = (artifact as { items?: unknown }).items;
+  const previews = Array.isArray(items) ? items.map((item) => (item && typeof item === 'object' ? (item as { evidence_preview?: { status?: unknown } }).evidence_preview?.status : null)) : [];
+  return {
+    ...Object.fromEntries(REVIEW_STATES.map((state) => [state, typeof (counts as Record<string, unknown>)[state] === 'number' ? (counts as Record<string, number>)[state] : 0])),
+    preview_available: previews.filter((status) => status === 'available').length,
+    preview_unavailable: previews.filter((status) => status === 'unavailable').length,
+  };
 }
 
 export function InfiniteBrainProjectionOverview() {
@@ -71,6 +77,7 @@ export function InfiniteBrainProjectionOverview() {
                 <div className="mt-2 text-xs text-slate-600" aria-label="Human review queue summary">
                   <p><strong>{(counts.new ?? 0) + (counts.reviewing ?? 0) + (counts.deferred ?? 0)}</strong> need attention</p>
                   <p className="text-slate-500">{counts.accepted ?? 0} accepted · {counts.rejected ?? 0} rejected · {counts.archived ?? 0} archived</p>
+                  <p className="text-slate-500">Evidence preview: {counts.preview_available ?? 0} available · {counts.preview_unavailable ?? 0} unavailable</p>
                   <p className="mt-1 text-slate-500">Decisions remain human-gated.</p>
                 </div>
               ) : state?.data ? <p className="mt-1 text-xs text-slate-500">{state.data.authorityOwner} · {state.data.provenance.sourceReferences.length} source{state.data.provenance.sourceReferences.length === 1 ? '' : 's'}</p> : state?.error ? <p className="mt-1 text-xs text-red-600">Unavailable; retrying with Brain Core.</p> : <p className="mt-1 text-xs text-slate-500">Loading projection…</p>}
