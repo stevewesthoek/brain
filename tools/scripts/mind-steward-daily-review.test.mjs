@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { buildReviewSession, recordDailyReviewDecision, recordDailyReviewDecisions } from './mind-steward-daily-review.mjs';
+import { buildReviewSession, enrichGitHubIngestion, recordDailyReviewDecision, recordDailyReviewDecisions } from './mind-steward-daily-review.mjs';
+import { buildGitHubRepositoryEvidence } from './mind-steward-github-repository-evidence.mjs';
 
 function workflow() {
   return {
@@ -21,6 +22,18 @@ test('builds a bounded review session from existing workflow state', () => {
   assert.equal(session.pending[0].ingestion_id, 'ingestion:a');
   assert.deepEqual(session.pending[0].decision_options, ['accepted', 'rejected', 'deferred', 'archived']);
   assert.equal(session.invariants.automatic_promotion, false);
+});
+
+test('enriches GitHub evidence only through the explicit opt-in helper', async () => {
+  const github = buildGitHubRepositoryEvidence({ url: 'https://github.com/a/one' });
+  const ingestion = { envelopes: [{ content: { github_repository_evidence: [github] } }], failures: [] };
+  const enriched = await enrichGitHubIngestion({
+    ingestion,
+    generatedAt: '2026-08-24T12:00:00Z',
+    fetchImpl: async (url) => url.endsWith('/releases/latest') ? { ok: false, status: 404, async json() { return {}; } } : { ok: true, status: 200, async json() { return { stargazers_count: 7 }; } },
+  });
+  assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].metadata.stars.value, 7);
+  assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].review_required, true);
 });
 
 test('records an explicit human decision without canonical mutation', () => {

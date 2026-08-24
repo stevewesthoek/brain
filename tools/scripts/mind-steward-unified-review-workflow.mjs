@@ -116,7 +116,9 @@ export function applyReviewAction(workflow, { reviewId, state, reason, decidedAt
 export function renderReviewWorkflow(workflow) {
   const lines = ['# Infinite Brain Unified Review Workflow', '', `Generated: ${workflow.generated_at}`, '', '- Workflow state is not canonical knowledge.', '- Evidence is retained; every terminal decision requires an explicit human reason.', '- Writes to Mind: false; writes to Brain canonical: false; automatic promotion: false', ''];
   for (const item of workflow.items) {
-    lines.push(`## ${item.review_id}`, '', `- State: **${item.state}**`, `- Source: ${item.source.source_reference}`, `- Evidence: ${item.source.evidence_references.join(', ') || 'source reference only'}`, `- Freshness: ${item.source.freshness}; confidence: ${item.source.confidence}; uncertainty: ${Array.isArray(item.source.uncertainty) ? item.source.uncertainty.join('; ') : item.source.uncertainty}`, `- History entries: ${item.history.length}`, `- Unresolved: ${item.unresolved}`, '');
+    lines.push(`## ${item.review_id}`, '', `- State: **${item.state}**`, `- Source: ${item.source.source_reference}`, `- Evidence: ${item.source.evidence_references.join(', ') || 'source reference only'}`, `- Freshness: ${item.source.freshness}; confidence: ${item.source.confidence}; uncertainty: ${Array.isArray(item.source.uncertainty) ? item.source.uncertainty.join('; ') : item.source.uncertainty}`);
+    if (item.source.repository_evidence?.length) lines.push(`- Repository evidence: ${JSON.stringify(item.source.repository_evidence)}`);
+    lines.push(`- History entries: ${item.history.length}`, `- Unresolved: ${item.unresolved}`, '');
   }
   return `${lines.join('\n')}\n`;
 }

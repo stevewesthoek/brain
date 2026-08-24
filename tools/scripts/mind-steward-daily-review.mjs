@@ -10,6 +10,7 @@ import { buildDailyIntelligenceLoop, writeDailyIntelligenceLoop } from './mind-s
 import { buildOperationalFeedbackCalibration, writeOperationalFeedbackCalibration } from './mind-steward-operational-feedback-calibration.mjs';
 import { buildOperationalReadiness } from './mind-steward-operational-readiness.mjs';
 import { attachEvidencePreviews } from './mind-steward-evidence-preview.mjs';
+import { enrichGitHubRepositoryEvidence } from './mind-steward-github-repository-metadata.mjs';
 
 const RUNTIME_ROOT = path.join('runtime', 'local', 'mind-steward');
 const REVIEW_ROOT = path.join(RUNTIME_ROOT, 'unified-review');
@@ -24,9 +25,21 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
 }
 
-export function runDailyReview({ repoRoot = process.cwd(), mindRoot, generatedAt = new Date().toISOString() } = {}) {
+export async function enrichGitHubIngestion({ ingestion, fetchImpl = globalThis.fetch, generatedAt = new Date().toISOString() } = {}) {
+  if (!ingestion?.envelopes?.length) return ingestion;
+  const envelopes = await Promise.all(ingestion.envelopes.map(async (envelope) => {
+    const evidence = envelope.content?.github_repository_evidence;
+    if (!Array.isArray(evidence) || evidence.length === 0) return envelope;
+    const enriched = await Promise.all(evidence.map((item) => enrichGitHubRepositoryEvidence(item, { fetchImpl, now: new Date(generatedAt) })));
+    return { ...envelope, content: { ...envelope.content, github_repository_evidence: enriched } };
+  }));
+  return { ...ingestion, envelopes };
+}
+
+export async function runDailyReview({ repoRoot = process.cwd(), mindRoot, generatedAt = new Date().toISOString(), enrichGitHub = false, metadataFetcher = globalThis.fetch } = {}) {
   if (!mindRoot) throw new Error('mindRoot is required');
-  const ingestion = scanMindInbox({ mindRoot, repoRoot, createdAt: generatedAt });
+  let ingestion = scanMindInbox({ mindRoot, repoRoot, createdAt: generatedAt });
+  if (enrichGitHub) ingestion = await enrichGitHubIngestion({ ingestion, fetchImpl: metadataFetcher, generatedAt });
   writeReviewReport(ingestion);
   const projection = buildUnifiedReviewInbox({ ingestion: ingestion.envelopes, generatedAt });
   writeUnifiedReviewInbox({ projection, repoRoot });
@@ -111,7 +124,7 @@ export function recordDailyReviewDecisions({ repoRoot = process.cwd(), decisions
   return buildReviewSession({ repoRoot, workflow: updated, generatedAt: decisions.at(-1)?.decidedAt ?? new Date().toISOString() });
 }
 
-function main() {
+async function main() {
   const repoRoot = process.env.MIND_STEWARD_REPO_ROOT ?? process.cwd();
   const mindRoot = process.env.MIND_STEWARD_MIND_ROOT;
   const args = process.argv.slice(2);
@@ -126,7 +139,7 @@ function main() {
     process.stdout.write(`${JSON.stringify(recordDailyReviewDecisions({ repoRoot, decisions }), null, 2)}\n`);
     return;
   }
-  const session = runDailyReview({ repoRoot, mindRoot });
+  const session = await runDailyReview({ repoRoot, mindRoot, enrichGitHub: args.includes('--enrich-github-metadata') });
   process.stdout.write(`${JSON.stringify(session, null, 2)}\n`);
 }
 

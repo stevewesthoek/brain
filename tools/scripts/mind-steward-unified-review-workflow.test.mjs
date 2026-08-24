@@ -48,6 +48,14 @@ test('preserves history through reviewing and deferral without canonical mutatio
   assert.equal(workflow.invariants.writes_to_brain_canonical, false);
 });
 
+test('renders enriched repository evidence in the human-readable workflow', () => {
+  const repositoryItem = { ...item('review:github:1'), repository_evidence: [{ metadata_status: 'available', metadata: { stars: { value: 3 } } }] };
+  const workflow = buildReviewWorkflow({ briefing: briefing([repositoryItem]) });
+  const rendered = renderReviewWorkflow(workflow);
+  assert.match(rendered, /metadata_status/);
+  assert.match(rendered, /stars/);
+});
+
 test('rejects duplicate review identities and unsafe output', () => {
   assert.throws(() => buildReviewWorkflow({ briefing: briefing([item(), item()]) }), /duplicate review item/);
   const workflow = buildReviewWorkflow({ briefing: briefing() });
