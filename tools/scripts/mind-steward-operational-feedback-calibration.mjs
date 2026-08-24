@@ -21,6 +21,8 @@ export function buildOperationalFeedbackCalibration({ briefing = null, workflow 
   const duplicates = [...duplicateHashes.entries()].filter(([, ids]) => ids.length > 1);
   const failedIngestion = briefingItems.filter((item) => /failure|failed|error/i.test(`${item.source_type} ${item.extracted_information ?? ''}`));
   const missingContext = items.filter((item) => (Array.isArray(item.source?.uncertainty) ? item.source.uncertainty : [item.source?.uncertainty]).some((value) => /context|uncertain|unknown/i.test(String(value))));
+  const previewAvailable = items.filter((item) => item.evidence_preview?.status === 'available');
+  const previewUnavailable = items.filter((item) => item.evidence_preview?.status === 'unavailable');
 
   if (items.length) findings.push(finding({ type: 'review_usefulness', evidence: { reviewed_items: items.length, accepted_items: items.filter((item) => item.state === 'accepted').length, rejected_items: rejected.length, deferred_items: deferred.length }, affectedCapability: 'human review workflow', confidence: 1, uncertainty: [], improvementArea: 'Compare these report-only counts over time before changing workflow guidance.' }));
   if (repeated.length) findings.push(finding({ type: 'review_usefulness', evidence: repeated.map((item) => ({ review_id: item.review_id, history_entries: item.history.length })), affectedCapability: 'review history continuity', confidence: 0.9, uncertainty: ['Repeated review indicates friction but does not establish its cause.'], improvementArea: 'Inspect repeated items and clarify evidence or review guidance.' }));
@@ -33,7 +35,7 @@ export function buildOperationalFeedbackCalibration({ briefing = null, workflow 
   return {
     calibration_version: '1.0.0', generated_at: generatedAt, source: 'infinite-brain-operational-feedback', source_paths: sourcePaths,
     real_inputs_present: Boolean(briefing || workflow || dailyLoop),
-    signals: { reviewed_items: items.length, accepted_items: items.filter((item) => item.state === 'accepted').length, rejected_items: rejected.length, deferred_items: deferred.length, repeated_review_items: repeated.length, noisy_or_rejected_items: rejected.length, missing_context_items: missingContext.length, stale_items: stale.length, duplicate_findings: duplicates.length, missing_provenance_items: missingProvenance.length, failed_ingestion_items: failedIngestion.length },
+    signals: { reviewed_items: items.length, accepted_items: items.filter((item) => item.state === 'accepted').length, rejected_items: rejected.length, deferred_items: deferred.length, repeated_review_items: repeated.length, noisy_or_rejected_items: rejected.length, false_positive_measurement: 'not_instrumented', missing_context_items: missingContext.length, stale_items: stale.length, duplicate_findings: duplicates.length, missing_provenance_items: missingProvenance.length, failed_ingestion_items: failedIngestion.length, evidence_preview_available_items: previewAvailable.length, evidence_preview_unavailable_items: previewUnavailable.length, evidence_preview_usage: 'not_instrumented' },
     findings,
     invariants: { report_only: true, writes_to_mind: false, writes_to_brain_canonical: false, automatic_proposals: false, automatic_promotion: false, provider_calls: false, new_storage_authority: false },
     limitations: ['signals are observations, not diagnoses', 'no automatic optimization or change decision', 'no synthetic usage data when source artifacts are absent'],

@@ -48,6 +48,8 @@ The complete batch is validated before the runtime-local workflow is written. Ev
 
 Evidence previews are limited operator context. They verify the source hash and show a bounded excerpt when possible; they do not replace the source, infer meaning, or make a decision. An unavailable or stale preview must be handled as an evidence limitation.
 
+The briefing also explains why an item is surfaced, how producer-reported confidence and freshness should be interpreted, and what uncertainty still requires human attention. These explanations are advisory signals, not an importance ranking. Rejection counts are human outcomes; they are not automatically classified as false positives, and preview usage is not claimed unless it is explicitly instrumented.
+
 ## Boundary
 
 An accepted review is still only eligible for a separately approved promotion candidate. Promotion remains human-authorized and receipt-gated.

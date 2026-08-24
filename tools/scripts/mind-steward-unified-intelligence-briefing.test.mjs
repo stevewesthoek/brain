@@ -30,6 +30,16 @@ test('preserves provenance, human actions, and safety invariants', () => {
   assert.equal(briefing.invariants.automatic_prioritization_of_human_meaning, false);
 });
 
+test('explains advisory quality signals without changing ordering authority', () => {
+  const briefing = buildUnifiedIntelligenceBriefing({ generated_at: 'fixed', items: [base({ confidence: 0.6, freshness: 'stale', uncertainty: ['needs context'], evidence_preview: { status: 'available' } })] });
+  const item = briefing.attention_queue[0];
+  assert.match(item.briefing.confidence_interpretation, /low/);
+  assert.match(item.briefing.freshness_interpretation, /refresh/);
+  assert.match(item.briefing.uncertainty_handling, /uncertainty/);
+  assert.equal(item.briefing.preview_status, 'bounded preview available');
+  assert.equal(briefing.grouping_policy, 'explicit-evidence-signals-only');
+});
+
 test('rendering is deterministic and output remains runtime-local', () => {
   const projection = { generated_at: 'fixed', items: [base({ source_reference: 'b.md' }), base({ source_reference: 'a.md' })] };
   const first = buildUnifiedIntelligenceBriefing(projection);

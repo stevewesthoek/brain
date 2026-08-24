@@ -36,6 +36,7 @@ export function createReviewWorkflowItem(item, previous = null) {
     review_id: reviewId,
     state: prior?.state ?? 'new',
     source: sourceSnapshot(item),
+    review_context: item.briefing ?? null,
     history: prior?.history ?? [],
     unresolved: prior ? !['accepted', 'rejected', 'archived'].includes(prior.state) : true,
     evidence_preserved: true,

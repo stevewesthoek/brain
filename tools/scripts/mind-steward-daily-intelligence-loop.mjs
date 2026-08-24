@@ -45,6 +45,7 @@ export function buildDailyIntelligenceLoop({ briefing = null, workflow = null, p
     confidence: item.source.confidence,
     freshness: item.source.freshness,
     uncertainty: item.source.uncertainty,
+    review_context: item.review_context ?? null,
     mind_impact: item.source.mind_impact ?? null,
     brain_impact: item.source.brain_impact ?? null,
     requires_human_decision: true,
@@ -86,7 +87,7 @@ export function buildDailyIntelligenceLoop({ briefing = null, workflow = null, p
 export function renderDailyIntelligenceLoop(loop) {
   const state = loop.current_state;
   const lines = ['# Infinite Brain Daily Intelligence Loop', '', `Generated: ${loop.generated_at}`, `Real runtime inputs present: ${loop.real_inputs_present}`, '', '## Current state', '', `- Pending reviews: ${state.pending_reviews}`, `- Accepted items: ${state.accepted_items}`, `- Deferred items: ${state.deferred_items}`, `- Promotion candidates: ${state.promotion_candidates}`, `- Unresolved conflicts: ${state.unresolved_conflicts}`, `- Stale items: ${state.stale_items}`, '', '## Human attention', ''];
-  for (const item of loop.attention_queue) lines.push(`### ${item.review_id}`, '', `- Source: ${item.source}`, `- Why: ${item.reason}`, `- Confidence: ${item.confidence}; freshness: ${item.freshness}; uncertainty: ${Array.isArray(item.uncertainty) ? item.uncertainty.join('; ') : item.uncertainty}`, `- Mind impact: ${item.mind_impact}; Brain impact: ${item.brain_impact}; requires human decision: ${item.requires_human_decision}`, `- Available action: ${item.available_action}`, `- Evidence: ${item.evidence_references.join(', ') || 'source reference only'}`, '');
+  for (const item of loop.attention_queue) lines.push(`### ${item.review_id}`, '', `- Source: ${item.source}`, `- Why: ${item.reason}`, `- Confidence: ${item.confidence}; freshness: ${item.freshness}; uncertainty: ${Array.isArray(item.uncertainty) ? item.uncertainty.join('; ') : item.uncertainty}`, `- Review context: ${item.review_context?.attention_summary ?? 'advisory context not supplied'}`, `- Mind impact: ${item.mind_impact}; Brain impact: ${item.brain_impact}; requires human decision: ${item.requires_human_decision}`, `- Available action: ${item.available_action}`, `- Evidence: ${item.evidence_references.join(', ') || 'source reference only'}`, '');
   if (!loop.attention_queue.length) lines.push('_No current workflow items require attention._', '');
   lines.push('## Promotion preparation', '');
   for (const item of loop.promotion_actions) lines.push(`- ${item.promotion_id}: ${item.state}; action: ${item.available_action}; source: ${item.source}; rollback: ${item.rollback_reference}`, '');

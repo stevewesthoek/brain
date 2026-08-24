@@ -9,6 +9,26 @@ function uncertaintySignals(value) {
   return value ? [String(value)] : [];
 }
 
+function confidenceInterpretation(value) {
+  if (typeof value !== 'number') return 'unavailable; verify source evidence before deciding';
+  if (value >= 0.9) return 'high producer-reported confidence; human review still required';
+  if (value >= 0.7) return 'moderate producer-reported confidence; inspect supporting evidence';
+  return 'low producer-reported confidence; seek context before deciding';
+}
+
+function freshnessInterpretation(value) {
+  if (value === 'fresh') return 'source is within the producer freshness window';
+  if (value === 'stale') return 'source may need refresh or explicit stale-evidence review';
+  return 'freshness is not established; verify the source directly';
+}
+
+function previewStatus(item) {
+  const status = item.evidence_preview?.status;
+  if (status === 'available') return 'bounded preview available';
+  if (status === 'unavailable') return `preview unavailable: ${item.evidence_preview.reason ?? 'reason not supplied'}`;
+  return 'preview not supplied by this producer';
+}
+
 export function classifyBriefingGroup(item) {
   if (item.review_state === 'deferred') return 'deferred';
   if (item.review_state === 'archived') return 'historical';
@@ -24,10 +44,17 @@ function explanationFor(item, group) {
   if (item.mind_impact === 'material') reasons.push('mind_impact=material');
   if (item.brain_impact === 'material') reasons.push('brain_impact=material');
   if (uncertaintySignals(item.uncertainty).length > 0) reasons.push('uncertainty_present');
+  reasons.push(`confidence=${typeof item.confidence === 'number' ? item.confidence : 'unknown'}`);
+  reasons.push(`preview=${item.evidence_preview?.status ?? 'not_supplied'}`);
   return {
     group,
     why_surfaced: reasons,
     supporting_evidence: [item.source_reference, ...(item.source_hash ? [item.source_hash] : []), ...(item.provenance?.evidence_references ?? [])],
+    attention_summary: group === 'informational' ? 'No explicit urgency signal; review when convenient.' : `Evidence signals place this item in ${group.replaceAll('_', ' ')}.`,
+    confidence_interpretation: confidenceInterpretation(item.confidence),
+    freshness_interpretation: freshnessInterpretation(item.freshness),
+    uncertainty_handling: uncertaintySignals(item.uncertainty).length > 0 ? 'Resolve or acknowledge the listed uncertainty before a durable decision.' : 'No producer uncertainty was supplied; verify meaning remains human work.',
+    preview_status: previewStatus(item),
     available_actions: ACTIONS,
   };
 }
@@ -78,8 +105,12 @@ export function renderUnifiedIntelligenceBriefing(briefing) {
     for (const item of briefing.groups[group]) {
       lines.push(`### ${item.source_type} — ${item.source_reference}`, '');
       lines.push(`- Why surfaced: ${item.briefing.why_surfaced.join(', ')}`);
+      lines.push(`- Attention: ${item.briefing.attention_summary}`);
       lines.push(`- Evidence: ${item.briefing.supporting_evidence.join(', ') || 'source reference only'}`);
       lines.push(`- Freshness: ${item.freshness}; confidence: ${item.confidence}; uncertainty: ${Array.isArray(item.uncertainty) ? item.uncertainty.join('; ') : item.uncertainty}`);
+      lines.push(`- Interpretation: ${item.briefing.confidence_interpretation}; ${item.briefing.freshness_interpretation}`);
+      lines.push(`- Uncertainty handling: ${item.briefing.uncertainty_handling}`);
+      lines.push(`- Evidence preview: ${item.briefing.preview_status}`);
       lines.push(`- Mind impact: ${item.mind_impact}; Brain impact: ${item.brain_impact}; requires human decision: ${item.requires_human_decision}`);
       lines.push(`- Available actions: ${item.briefing.available_actions.join(', ')}`, '');
     }
