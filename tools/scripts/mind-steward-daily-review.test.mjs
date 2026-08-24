@@ -37,6 +37,18 @@ test('enriches GitHub evidence only through the explicit opt-in helper', async (
   assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].review_required, true);
 });
 
+test('keeps documentation enrichment behind its explicit opt-in boundary', async () => {
+  const github = buildGitHubRepositoryEvidence({ url: 'https://github.com/a/one' });
+  const ingestion = { envelopes: [{ content: { github_repository_evidence: [github] } }], failures: [] };
+  const enriched = await enrichGitHubIngestion({ ingestion, includeDocumentation: true, systemCapabilities: [], fetchImpl: async (url) => {
+    if (url.endsWith('/readme')) return { ok: true, status: 200, async json() { return { content: Buffer.from('# Example\n\nA documented tool.').toString('base64') }; } };
+    if (url.endsWith('/releases/latest')) return { ok: false, status: 404, async json() { return {}; } };
+    return { ok: true, status: 200, async json() { return { description: 'A documented tool for context', language: 'TypeScript' }; } };
+  } });
+  assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].documentation_status, 'available');
+  assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].fit_assessment.evidence_quality.documentation_status, 'available');
+});
+
 test('records an explicit human decision without canonical mutation', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'daily-review-'));
   const workflowRoot = path.join(root, 'runtime', 'local', 'mind-steward', 'unified-review');

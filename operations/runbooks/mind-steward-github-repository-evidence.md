@@ -22,11 +22,20 @@ node tools/scripts/mind-steward-daily-review.mjs --enrich-github-metadata
 
 This performs unauthenticated read-only requests for repository metadata and the latest release. Every returned field includes provenance, retrieval time, freshness, confidence, and uncertainty. Rate limits, private/deleted repositories, unavailable endpoints, and timeouts remain visible as unknown/unavailable evidence. README and documentation signals are intentionally not fetched by this bounded adapter.
 
+To include bounded README/documentation evidence in the same review pass, add:
+
+```bash
+MIND_STEWARD_MIND_ROOT=/Users/Office/Repos/stevewesthoek/mind \
+node tools/scripts/mind-steward-daily-review.mjs --enrich-github-documentation
+```
+
+This flag performs the metadata pass and then requests only the public README endpoint. It extracts bounded text signals for purpose, capabilities, target users, technology mentions, integrations, examples, and limitations. The README is treated as an untrusted documented claim, not verified implementation fact. Content is capped at 64 KiB; unavailable, stale, minimal, and truncated documentation remains uncertain.
+
 ## Relevance and fit assessment
 
 The same explicit enrichment pass also attaches a deterministic advisory fit assessment. It compares repository evidence with the existing Brain capability manifest and displays apparent purpose, technology, maintenance signals, possible overlap, possible gaps, integration uncertainty, licensing, and unknowns in the existing review projection and workflow outputs.
 
-The assessment is not a decision. `likely_overlap` means confirmed identity or possible term overlap as stated in the evidence; it does not establish equivalence. `potentially_useful` means no overlap was found in the supplied capability projection, not that a gap has been proven. Missing or stale metadata produces `insufficient_evidence`.
+The assessment is not a decision. `likely_overlap` means confirmed identity or possible term overlap as stated in the evidence; it does not establish equivalence. `potentially_useful` means no overlap was found in the supplied capability projection, not that a gap has been proven. Documentation can improve purpose evidence but cannot establish integration compatibility. Missing or stale metadata/documentation produces conservative uncertainty.
 
 ## Current behavior
 
@@ -34,6 +43,6 @@ The default adapter recognizes the URL and records identity only. Remote metadat
 
 ## Safety boundary
 
-This workflow does not clone, install, execute, modify, adopt, create tasks, update the roadmap, or promote repository code. It does not use credentials, write Mind, or write Brain canonical state. A repository identity, public metadata result, or fit assessment is evidence and requires human review.
+This workflow does not clone, install, execute, inspect source code, inspect dependencies, follow arbitrary documentation links, modify, adopt, create tasks, update the roadmap, or promote repository code. It does not use credentials, write Mind, or write Brain canonical state. A repository identity, public metadata result, documentation result, or fit assessment is evidence and requires human review.
 
 Invalid URLs, unavailable metadata, and duplicate repository identities fail closed. Do not treat a repository mention as authorization to inspect, install, or merge it.

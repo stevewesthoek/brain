@@ -8,6 +8,10 @@ function fieldValue(metadata, name) {
   return metadata?.[name]?.value ?? null;
 }
 
+function documentationValue(evidence, name) {
+  return evidence.documentation_evidence?.[name]?.value ?? null;
+}
+
 function evidenceRefs(evidence) {
   return [evidence.source_reference, evidence.source_hash, evidence.provenance?.source_reference].filter(Boolean);
 }
@@ -34,7 +38,7 @@ function maintenanceAssessment(metadata) {
 }
 
 function evidenceSignals(metadata, evidence) {
-  const description = fieldValue(metadata, 'description') ?? evidence.description ?? null;
+  const description = fieldValue(metadata, 'description') ?? evidence.description ?? documentationValue(evidence, 'stated_purpose');
   const topics = fieldValue(metadata, 'topics') ?? [];
   const language = fieldValue(metadata, 'primary_language');
   const ecosystem = fieldValue(metadata, 'ecosystem') ?? [];
@@ -50,8 +54,13 @@ function evidenceSignals(metadata, evidence) {
   if (license) positive.push('license metadata available'); else missing.push('license metadata');
   if (release) positive.push('latest release metadata available'); else missing.push('latest release metadata');
   if (activity.length) positive.push(...activity); else negative.push('recent activity unavailable');
-  missing.push('README and documentation content', 'pull-request activity', 'dependency and architecture evidence');
-  return { positive, negative, missing, meaningful_description: typeof description === 'string' && description.trim().length >= 15, corroborating_signal_count: [topics.length > 0, Boolean(language || ecosystem.length), Boolean(license), Boolean(release)].filter(Boolean).length };
+  if (evidence.documentation_status === 'available') {
+    const documentedCapabilities = documentationValue(evidence, 'main_capabilities') ?? [];
+    if (documentedCapabilities.length) positive.push(`documented_capabilities:${documentedCapabilities.slice(0, 3).join(',')}`);
+    else missing.push('documented capabilities');
+  } else missing.push('README and documentation content');
+  missing.push('pull-request activity', 'dependency and architecture evidence');
+  return { positive, negative, missing, meaningful_description: typeof description === 'string' && description.trim().length >= 15, corroborating_signal_count: [topics.length > 0, Boolean(language || ecosystem.length), Boolean(license), Boolean(release), evidence.documentation_status === 'available' && Boolean(documentationValue(evidence, 'main_capabilities')?.length)].filter(Boolean).length };
 }
 
 export function assessGitHubRepositoryFit(evidence, { systemCapabilities = [] } = {}) {
@@ -125,10 +134,10 @@ export function assessGitHubRepositoryFit(evidence, { systemCapabilities = [] } 
     assessment_type: 'github_repository_relevance_fit',
     repository_id: repositoryId,
     generated_at: evidence.metadata_retrieved_at ?? evidence.retrieved_at ?? null,
-    purpose: { apparent_purpose: description, principal_capabilities: topics, technology: { primary_language: language, ecosystem: fieldValue(metadata, 'ecosystem') ?? [] }, maintenance_signals: maintenanceAssessment(metadata) },
+    purpose: { apparent_purpose: description, principal_capabilities: [...topics, ...(documentationValue(evidence, 'main_capabilities') ?? [])], target_users: documentationValue(evidence, 'target_users') ?? [], technology: { primary_language: language, ecosystem: fieldValue(metadata, 'ecosystem') ?? [], documented: documentationValue(evidence, 'supported_technologies') ?? [] }, integration_points: documentationValue(evidence, 'integration_points') ?? [], examples_use_cases: documentationValue(evidence, 'examples_use_cases') ?? [], limitations: documentationValue(evidence, 'limitations') ?? [], maintenance_signals: maintenanceAssessment(metadata) },
     system_relevance: { possible_capability_matches: matches, confirmed_overlap: exactMatches.map((match) => match.capability_id), possible_overlap: possibleMatches.map((match) => match.capability_id), potential_gaps: systemCapabilities.length && !matches.length ? ['No matching capability evidence was found; a gap is possible but not established.'] : [], mind_review_required: true, brain_review_required: true },
     integration_considerations: { likely_surface: 'human-reviewed evidence and bounded future analysis only', dependencies: fieldValue(metadata, 'ecosystem') ?? [], operational_complexity: 'unknown_without_repository_inspection', maintenance_burden: 'unknown_without_repository_inspection', security_privacy: ['No repository code or dependencies were inspected.', 'External repository trust and privacy require human review.'], licensing: fieldValue(metadata, 'license'), },
-    evidence_quality: { source_references: evidenceRefs(evidence), freshness: evidence.freshness ?? 'unknown', confidence: evidence.confidence ?? 0, uncertainty, metadata_status: metadataStatus, positive_evidence: signals.positive, negative_evidence: signals.negative, missing_evidence: signals.missing },
+    evidence_quality: { source_references: [...evidenceRefs(evidence), ...(evidence.documentation_provenance?.source ? [evidence.documentation_provenance.source] : [])], freshness: evidence.freshness ?? 'unknown', documentation_freshness: evidence.documentation_freshness ?? 'unknown', confidence: evidence.confidence ?? 0, uncertainty, metadata_status: metadataStatus, documentation_status: evidence.documentation_status ?? 'not_requested', positive_evidence: signals.positive, negative_evidence: signals.negative, missing_evidence: signals.missing },
     disposition: { value: DISPOSITIONS.includes(disposition) ? disposition : 'insufficient_evidence', advisory_only: true, reasoning, confidence, uncertainty, alternatives },
     safety: { read_only: true, human_review_required: true, automatic_recommendation: false, automatic_adoption: false, repository_execution: false, dependency_installation: false, canonical_writes: false },
   };
