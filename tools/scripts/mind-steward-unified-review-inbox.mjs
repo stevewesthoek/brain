@@ -14,6 +14,8 @@ function refFor(item, fallback) {
 }
 
 function normalizeItem(item, sourceType, index) {
+  const repositoryEvidence = item.content?.github_repository_evidence ?? item.github_repository_evidence ?? [];
+  const effectiveSourceType = repositoryEvidence.length ? 'github_repository' : sourceType;
   const source = refFor(item, `${sourceType}:${index + 1}`);
   const sourceHash = item.source_revision
     ?? item.identity?.source_revision
@@ -25,16 +27,17 @@ function normalizeItem(item, sourceType, index) {
   const provenance = item.provenance ?? { origin: item.origin ?? sourceType, adapter: item.adapter ?? 'unified-review-projection', authority_context: item.authority_context ?? { authority_owner: 'brain-runtime', domain: 'brain' } };
   const candidates = item.candidate_insights ?? [];
   return {
-    review_id: `review:${sourceType}:${index + 1}:${sourceHash ?? 'unhashed'}`,
+    review_id: `review:${effectiveSourceType}:${index + 1}:${sourceHash ?? 'unhashed'}`,
     ingestion_id: item.ingestion_id ?? item.identity?.ingestion_id ?? null,
-    source_type: sourceType,
-    origin: provenance.origin ?? sourceType,
+    source_type: effectiveSourceType,
+    origin: provenance.origin ?? effectiveSourceType,
     timestamp: item.timestamp ?? item.created_at ?? item.identity?.created_at ?? item.decided_at ?? provenance.captured_at ?? null,
     source_reference: source,
     source_hash: sourceHash,
     authority_owner: provenance.authority_context?.authority_owner ?? item.authority_owner ?? 'brain-runtime',
     provenance,
-    extracted_information: item.extracted_information ?? item.content?.extracted_information ?? item.statement ?? item.title ?? item.message ?? candidates,
+    extracted_information: item.extracted_information ?? item.content?.extracted_information ?? (repositoryEvidence.length ? repositoryEvidence : item.statement ?? item.title ?? item.message ?? candidates),
+    repository_evidence: repositoryEvidence,
     confidence: item.confidence ?? item.content?.confidence ?? item.extraction_confidence ?? item.evidence?.extraction_confidence ?? 0.5,
     uncertainty: item.uncertainty ?? item.content?.uncertainty ?? item.evidence?.uncertainty ?? ['source-specific uncertainty not supplied'],
     freshness: item.freshness ?? item.governance?.freshness ?? 'unknown',
@@ -53,6 +56,14 @@ export function buildUnifiedReviewInbox({ ingestion = [], pdf = [], conversation
     ['maintenance_finding', maintenance], ['lifecycle_finding', lifecycle], ['operational_feedback', feedback],
   ];
   const items = sources.flatMap(([sourceType, values]) => values.map((item, index) => normalizeItem(item, sourceType, index)));
+  const repositoryEvidence = items.flatMap((item) => item.repository_evidence ?? []);
+  // Duplicate repository identities are rejected rather than silently merged or ranked.
+  const repositoryIds = new Set();
+  for (const evidence of repositoryEvidence) {
+    const repositoryId = typeof evidence.repository?.repository_id === 'string' ? evidence.repository.repository_id.toLowerCase() : null;
+    if (repositoryId && repositoryIds.has(repositoryId)) throw new Error(`duplicate_github_repository_identity:${repositoryId}`);
+    if (repositoryId) repositoryIds.add(repositoryId);
+  }
   return {
     projection_version: '1.0.0',
     generated_at: generatedAt,

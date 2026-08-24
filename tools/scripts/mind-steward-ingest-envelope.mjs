@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { assertNoAuthorityEscalation } from '../validate-infinite-brain-ingestion-envelope.mjs';
 import { projectIngestionReview, renderIngestionReviewMarkdown } from './mind-steward-review-projection.mjs';
+import { buildGitHubRepositoryEvidence, extractGitHubRepositoryUrls } from './mind-steward-github-repository-evidence.mjs';
 
 const SUPPORTED_EXTENSIONS = new Map([
   ['.md', 'markdown'],
@@ -19,6 +20,15 @@ function isoFromStat(stat) {
 
 function hashFile(filePath) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+}
+
+function readGitHubReferences(filePath, sourceReference, sourceHash, ingestionId, capturedAt) {
+  const extension = path.extname(filePath).toLowerCase();
+  if (!['.md', '.txt'].includes(extension)) return [];
+  const text = fs.readFileSync(filePath, 'utf8').slice(0, 200_000);
+  return extractGitHubRepositoryUrls(text).map((url) => buildGitHubRepositoryEvidence({
+    url, sourceReference, sourceHash, ingestionId, retrievedAt: capturedAt,
+  }));
 }
 
 function safeOutputRoot(repoRoot, outputRoot) {
@@ -150,6 +160,13 @@ export function scanMindInbox({ mindRoot, repoRoot = process.cwd(), outputRoot, 
         uncertainty: extraction ? [...extraction.uncertainty, 'meaning and destination require human review'] : undefined,
         evidenceUncertainty: extraction?.uncertainty,
       });
+      envelope.content.github_repository_evidence = readGitHubReferences(
+        filePath,
+        envelope.identity.source_reference.ref,
+        envelope.identity.source_revision,
+        envelope.identity.ingestion_id,
+        envelope.provenance.captured_at,
+      );
       const errors = assertNoAuthorityEscalation(envelope);
       if (errors.length) failures.push({ file: relative, code: 'envelope_validation_failed', errors });
       else envelopes.push(envelope);

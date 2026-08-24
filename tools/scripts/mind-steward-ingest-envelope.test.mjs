@@ -26,6 +26,19 @@ test('detects Markdown and text files and creates reviewable envelopes', () => {
   assert.ok(report.envelopes.every((item) => item.governance.review_required === true));
 });
 
+test('recognizes GitHub repository references as reviewable evidence without fetching or executing', () => {
+  const f = fixture();
+  fs.writeFileSync(path.join(f.inbox, 'repo.md'), 'Consider https://github.com/owner/project for review.\n');
+  const report = scanMindInbox({ mindRoot: f.mindRoot, repoRoot: f.repoRoot, createdAt: 'fixed' });
+  const evidence = report.envelopes[0].content.github_repository_evidence[0];
+  assert.equal(evidence.repository.repository_id, 'owner/project');
+  assert.equal(evidence.review_required, true);
+  assert.equal(evidence.safety.automatic_clone, false);
+  assert.equal(evidence.safety.repository_execution, false);
+  assert.equal(evidence.provenance.source_reference, 'mind/inbox/new/repo.md');
+  assert.equal(report.writes_to_mind, false);
+});
+
 test('PDF with no extractable text is visible as a bounded failure', () => {
   const f = fixture();
   fs.writeFileSync(path.join(f.inbox, 'document.pdf'), '%PDF-fixture');

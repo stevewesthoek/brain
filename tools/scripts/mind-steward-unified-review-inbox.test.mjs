@@ -23,6 +23,19 @@ test('combines all evidence producer classes without changing authority', () => 
   assert.equal(projection.invariants.duplicate_authority, false);
 });
 
+test('projects GitHub repository evidence into the existing human review workflow', () => {
+  const projection = buildUnifiedReviewInbox({ ingestion: [{ identity: { ingestion_id: 'ingestion:repo', source_revision: 'sha256:repo', source_reference: { ref: 'mind/inbox/new/repo.md', hash: 'sha256:repo' } }, provenance: { origin: 'mind-inbox/new', authority_context: { authority_owner: 'external-source' } }, content: { github_repository_evidence: [{ repository: { repository_id: 'owner/name' }, review_required: true, safety: { automatic_adoption: false } }] } }] });
+  assert.equal(projection.items[0].source_type, 'github_repository');
+  assert.equal(projection.items[0].repository_evidence[0].repository.repository_id, 'owner/name');
+  assert.equal(projection.items[0].requires_human_decision, true);
+  assert.equal(projection.invariants.automatic_decisions, false);
+});
+
+test('rejects duplicate GitHub repository identities instead of merging them', () => {
+  const make = (id) => ({ content: { github_repository_evidence: [{ repository: { repository_id: id } }] }, source_file: `mind/inbox/new/${id.replace('/', '-')}.md` });
+  assert.throws(() => buildUnifiedReviewInbox({ ingestion: [make('owner/name'), make('OWNER/NAME')] }), /duplicate_github_repository_identity/);
+});
+
 test('rendering is deterministic and exposes impact/provenance fields', () => {
   const projection = buildUnifiedReviewInbox({ generatedAt: '2026-08-23T12:00:00Z', feedback: [{ reference: 'feedback:1', message: 'friction' }] });
   const markdown = renderUnifiedReviewInbox(projection);

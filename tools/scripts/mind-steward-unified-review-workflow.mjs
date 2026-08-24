@@ -21,6 +21,7 @@ function sourceSnapshot(item) {
     freshness: item.freshness ?? 'unknown',
     confidence: item.confidence ?? null,
     uncertainty: item.uncertainty ?? [],
+    repository_evidence: item.repository_evidence ?? [],
   };
 }
 
