@@ -61,6 +61,8 @@ docs/system/brain-console-design-system.md
 - Video Analyzer from `/research/video-analyze` and `/research/video-analyze/history`
 - AWS Video Pipeline from the current Brain Core AWS Video endpoints
 
+The Overview surface also shows the read-only Infinite Brain review queue from `/projections/review`, including items needing attention and terminal decision counts. It is a visibility aid only: review decisions remain in the Mind Steward workflow, and the Console does not approve, promote, or write Mind.
+
 ## Design system
 
 Before changing the UI or operational contracts, read:

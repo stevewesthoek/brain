@@ -89,13 +89,22 @@ export function buildReviewSession({ repoRoot = process.cwd(), ingestion = null,
 }
 
 export function recordDailyReviewDecision({ repoRoot = process.cwd(), reviewId, state, reason, reviewer, decidedAt = new Date().toISOString(), sourceReference } = {}) {
-  if (!reviewId || !state || !reason || !reviewer || !sourceReference) throw new Error('reviewId, state, reason, reviewer, and sourceReference are required');
+  return recordDailyReviewDecisions({ repoRoot, decisions: [{ reviewId, state, reason, reviewer, decidedAt, sourceReference }] });
+}
+
+export function recordDailyReviewDecisions({ repoRoot = process.cwd(), decisions } = {}) {
+  if (!Array.isArray(decisions) || decisions.length === 0) throw new Error('at least one review decision is required');
   const workflowPath = path.join(repoRoot, REVIEW_ROOT, 'workflow-latest.json');
   const workflow = readJson(workflowPath);
   if (!workflow) throw new Error('daily review workflow is unavailable; run the daily review first');
-  const updated = applyReviewAction(workflow, { reviewId, state, reason, decidedAt, reviewer, sourceReference });
+  // Validate the complete batch before writing, preventing partial workflow updates.
+  const updated = decisions.reduce((current, decision) => {
+    const { reviewId, state, reason, reviewer, decidedAt = new Date().toISOString(), sourceReference } = decision ?? {};
+    if (!reviewId || !state || !reason || !reviewer || !sourceReference) throw new Error('reviewId, state, reason, reviewer, and sourceReference are required for every decision');
+    return applyReviewAction(current, { reviewId, state, reason, decidedAt, reviewer, sourceReference });
+  }, workflow);
   writeReviewWorkflow({ workflow: updated, repoRoot });
-  return buildReviewSession({ repoRoot, workflow: updated, generatedAt: decidedAt });
+  return buildReviewSession({ repoRoot, workflow: updated, generatedAt: decisions.at(-1)?.decidedAt ?? new Date().toISOString() });
 }
 
 function main() {
@@ -105,6 +114,12 @@ function main() {
   if (args[0] === '--decision') {
     const [reviewId, state, reason, reviewer, sourceReference] = args.slice(1);
     process.stdout.write(`${JSON.stringify(recordDailyReviewDecision({ repoRoot, reviewId, state, reason, reviewer, sourceReference }), null, 2)}\n`);
+    return;
+  }
+  if (args[0] === '--decisions-file') {
+    const decisionsPath = path.resolve(args[1] ?? '');
+    const decisions = JSON.parse(fs.readFileSync(decisionsPath, 'utf8'));
+    process.stdout.write(`${JSON.stringify(recordDailyReviewDecisions({ repoRoot, decisions }), null, 2)}\n`);
     return;
   }
   const session = runDailyReview({ repoRoot, mindRoot });

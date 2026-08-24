@@ -13,6 +13,18 @@ const PROJECTIONS = [
 
 type ProjectionState = { loading: boolean; data?: BrainCoreProjectionEnvelope; error?: string };
 
+const REVIEW_STATES = ['new', 'reviewing', 'accepted', 'rejected', 'deferred', 'archived'] as const;
+
+function reviewCounts(data: BrainCoreProjectionEnvelope | undefined): Record<string, number> | null {
+  if (!data || data.projection !== 'infinite-brain-review') return null;
+  const projectionData = (data as BrainCoreProjectionEnvelope & { data?: { artifact?: unknown } }).data;
+  const artifact = projectionData?.artifact;
+  if (!artifact || typeof artifact !== 'object') return null;
+  const counts = (artifact as { counts?: unknown }).counts;
+  if (!counts || typeof counts !== 'object') return null;
+  return Object.fromEntries(REVIEW_STATES.map((state) => [state, typeof (counts as Record<string, unknown>)[state] === 'number' ? (counts as Record<string, number>)[state] : 0]));
+}
+
 export function InfiniteBrainProjectionOverview() {
   const [states, setStates] = useState<Record<string, ProjectionState>>({});
 
@@ -48,13 +60,20 @@ export function InfiniteBrainProjectionOverview() {
         {PROJECTIONS.map(([key, label]) => {
           const state = states[key];
           const status = state?.loading ? 'loading' : state?.data ? state.data.freshness : 'unavailable';
+          const counts = key === 'review' ? reviewCounts(state?.data) : null;
           return (
             <div key={key} className="rounded border border-slate-200 bg-white p-3" data-testid={`projection-${key}`}>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium text-slate-800">{label}</span>
                 <span className={`text-xs ${state?.data ? 'text-green-700' : state?.loading ? 'text-slate-500' : 'text-red-700'}`}>{status}</span>
               </div>
-              {state?.data ? <p className="mt-1 text-xs text-slate-500">{state.data.authorityOwner} · {state.data.provenance.sourceReferences.length} source{state.data.provenance.sourceReferences.length === 1 ? '' : 's'}</p> : state?.error ? <p className="mt-1 text-xs text-red-600">Unavailable; retrying with Brain Core.</p> : <p className="mt-1 text-xs text-slate-500">Loading projection…</p>}
+              {counts ? (
+                <div className="mt-2 text-xs text-slate-600" aria-label="Human review queue summary">
+                  <p><strong>{(counts.new ?? 0) + (counts.reviewing ?? 0) + (counts.deferred ?? 0)}</strong> need attention</p>
+                  <p className="text-slate-500">{counts.accepted ?? 0} accepted · {counts.rejected ?? 0} rejected · {counts.archived ?? 0} archived</p>
+                  <p className="mt-1 text-slate-500">Decisions remain human-gated.</p>
+                </div>
+              ) : state?.data ? <p className="mt-1 text-xs text-slate-500">{state.data.authorityOwner} · {state.data.provenance.sourceReferences.length} source{state.data.provenance.sourceReferences.length === 1 ? '' : 's'}</p> : state?.error ? <p className="mt-1 text-xs text-red-600">Unavailable; retrying with Brain Core.</p> : <p className="mt-1 text-xs text-slate-500">Loading projection…</p>}
             </div>
           );
         })}

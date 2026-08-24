@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { buildReviewSession, recordDailyReviewDecision } from './mind-steward-daily-review.mjs';
+import { buildReviewSession, recordDailyReviewDecision, recordDailyReviewDecisions } from './mind-steward-daily-review.mjs';
 
 function workflow() {
   return {
@@ -32,4 +32,42 @@ test('records an explicit human decision without canonical mutation', () => {
   assert.equal(session.pending[0].review_id, 'review:source:1');
   assert.equal(JSON.parse(fs.readFileSync(path.join(workflowRoot, 'workflow-latest.json'), 'utf8')).items[0].state, 'deferred');
   assert.equal(session.invariants.writes_to_mind, false);
+});
+
+test('records a validated decision batch in one runtime-local write', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'daily-review-batch-'));
+  const workflowRoot = path.join(root, 'runtime', 'local', 'mind-steward', 'unified-review');
+  fs.mkdirSync(workflowRoot, { recursive: true });
+  const first = workflow().items[0];
+  const second = { ...first, review_id: 'review:source:2', source: { ...first.source, source_reference: 'mind/inbox/new/b.md' } };
+  const initial = { items: [first, second], counts: { new: 2, reviewing: 0, accepted: 0, rejected: 0, deferred: 0, archived: 0 } };
+  fs.writeFileSync(path.join(workflowRoot, 'workflow-latest.json'), `${JSON.stringify(initial)}\n`);
+  const session = recordDailyReviewDecisions({
+    repoRoot: root,
+    decisions: [
+      { reviewId: 'review:source:1', state: 'deferred', reason: 'needs Mind context', reviewer: 'human', sourceReference: 'mind/inbox/new/a.md', decidedAt: 'fixed-1' },
+      { reviewId: 'review:source:2', state: 'accepted', reason: 'retained for review', reviewer: 'human', sourceReference: 'mind/inbox/new/b.md', decidedAt: 'fixed-2' },
+    ],
+  });
+  assert.equal(session.counts.deferred, 1);
+  assert.equal(session.counts.accepted, 1);
+  assert.equal(session.invariants.automatic_decisions, false);
+  const saved = JSON.parse(fs.readFileSync(path.join(workflowRoot, 'workflow-latest.json'), 'utf8'));
+  assert.deepEqual(saved.items.map((item) => item.state), ['deferred', 'accepted']);
+});
+
+test('rejects a malformed decision batch without partial mutation', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'daily-review-batch-invalid-'));
+  const workflowRoot = path.join(root, 'runtime', 'local', 'mind-steward', 'unified-review');
+  fs.mkdirSync(workflowRoot, { recursive: true });
+  const initial = workflow();
+  fs.writeFileSync(path.join(workflowRoot, 'workflow-latest.json'), `${JSON.stringify(initial)}\n`);
+  assert.throws(() => recordDailyReviewDecisions({
+    repoRoot: root,
+    decisions: [
+      { reviewId: 'review:source:1', state: 'deferred', reason: 'needs context', reviewer: 'human', sourceReference: 'mind/inbox/new/a.md', decidedAt: 'fixed-1' },
+      { reviewId: 'review:source:missing', state: 'accepted', reason: 'invalid', reviewer: 'human', sourceReference: 'mind/inbox/new/missing.md', decidedAt: 'fixed-2' },
+    ],
+  }));
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(workflowRoot, 'workflow-latest.json'), 'utf8')), initial);
 });
