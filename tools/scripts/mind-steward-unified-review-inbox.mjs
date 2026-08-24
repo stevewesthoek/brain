@@ -4,26 +4,39 @@ import path from 'node:path';
 const REVIEW_STATES = ['needs_review', 'accepted', 'rejected', 'deferred', 'archived'];
 
 function refFor(item, fallback) {
-  return item.source_reference?.ref ?? item.source?.file ?? item.source_file ?? item.file ?? item.reference ?? fallback;
+  return item.source_reference?.ref
+    ?? item.identity?.source_reference?.ref
+    ?? item.source?.file
+    ?? item.source_file
+    ?? item.file
+    ?? item.reference
+    ?? fallback;
 }
 
 function normalizeItem(item, sourceType, index) {
   const source = refFor(item, `${sourceType}:${index + 1}`);
-  const sourceHash = item.source_revision ?? item.source_hash ?? item.source?.source_hash ?? item.hash ?? null;
+  const sourceHash = item.source_revision
+    ?? item.identity?.source_revision
+    ?? item.source_hash
+    ?? item.source?.source_hash
+    ?? item.identity?.source_reference?.hash
+    ?? item.hash
+    ?? null;
   const provenance = item.provenance ?? { origin: item.origin ?? sourceType, adapter: item.adapter ?? 'unified-review-projection', authority_context: item.authority_context ?? { authority_owner: 'brain-runtime', domain: 'brain' } };
   const candidates = item.candidate_insights ?? [];
   return {
     review_id: `review:${sourceType}:${index + 1}:${sourceHash ?? 'unhashed'}`,
+    ingestion_id: item.ingestion_id ?? item.identity?.ingestion_id ?? null,
     source_type: sourceType,
     origin: provenance.origin ?? sourceType,
-    timestamp: item.timestamp ?? item.created_at ?? item.decided_at ?? null,
+    timestamp: item.timestamp ?? item.created_at ?? item.identity?.created_at ?? item.decided_at ?? provenance.captured_at ?? null,
     source_reference: source,
     source_hash: sourceHash,
     authority_owner: provenance.authority_context?.authority_owner ?? item.authority_owner ?? 'brain-runtime',
     provenance,
-    extracted_information: item.extracted_information ?? item.statement ?? item.title ?? item.message ?? candidates,
-    confidence: item.confidence ?? item.extraction_confidence ?? 0.5,
-    uncertainty: item.uncertainty ?? item.evidence?.uncertainty ?? ['source-specific uncertainty not supplied'],
+    extracted_information: item.extracted_information ?? item.content?.extracted_information ?? item.statement ?? item.title ?? item.message ?? candidates,
+    confidence: item.confidence ?? item.content?.confidence ?? item.extraction_confidence ?? item.evidence?.extraction_confidence ?? 0.5,
+    uncertainty: item.uncertainty ?? item.content?.uncertainty ?? item.evidence?.uncertainty ?? ['source-specific uncertainty not supplied'],
     freshness: item.freshness ?? item.governance?.freshness ?? 'unknown',
     relevance: item.relevance ?? 'unassessed',
     mind_impact: item.mind_impact ?? item.governance?.mind_impact ?? 'possible',

@@ -14,7 +14,7 @@ function sourceSnapshot(item) {
   return {
     source_reference: item.source_reference,
     evidence_references: item.briefing?.supporting_evidence ?? item.provenance?.evidence_references ?? [],
-    ingestion_or_review_id: item.review_id,
+    ingestion_or_review_id: item.ingestion_id ?? item.review_id,
     timestamp: item.timestamp ?? null,
     source_hash: item.source_hash ?? null,
     authority_owner: item.authority_owner ?? null,

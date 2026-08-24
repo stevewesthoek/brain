@@ -34,6 +34,35 @@ test('rendering is deterministic and exposes impact/provenance fields', () => {
   assert.match(markdown, /Automatic promotion: false/);
 });
 
+test('preserves nested ingestion-envelope provenance through the unified projection', () => {
+  const projection = buildUnifiedReviewInbox({ generatedAt: 'fixed', ingestion: [{
+    identity: {
+      ingestion_id: 'ingestion:mind-inbox-abc',
+      source_revision: 'sha256:abc',
+      created_at: '2026-08-24T07:00:00Z',
+      source_reference: { ref: 'mind/inbox/new/example.md', hash: 'sha256:abc' },
+    },
+    provenance: {
+      origin: 'mind/inbox/new',
+      captured_at: '2026-08-24T06:59:00Z',
+      authority_context: { authority_owner: 'external-source', domain: 'external' },
+      evidence_references: ['mind/inbox/new/example.md'],
+    },
+    content: { confidence: 1, uncertainty: ['meaning requires review'] },
+    governance: { freshness: 'fresh', mind_impact: 'possible', brain_impact: 'none' },
+    evidence: { extraction_confidence: 1, uncertainty: ['no semantic extraction'] },
+  }] });
+  const item = projection.items[0];
+  assert.equal(item.ingestion_id, 'ingestion:mind-inbox-abc');
+  assert.equal(item.source_reference, 'mind/inbox/new/example.md');
+  assert.equal(item.source_hash, 'sha256:abc');
+  assert.equal(item.timestamp, '2026-08-24T07:00:00Z');
+  assert.equal(item.authority_owner, 'external-source');
+  assert.equal(item.confidence, 1);
+  assert.deepEqual(item.uncertainty, ['meaning requires review']);
+  assert.equal(item.freshness, 'fresh');
+});
+
 test('output is restricted to Brain runtime-local review state', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'unified-review-'));
   fs.mkdirSync(path.join(root, 'runtime', 'local', 'mind-steward'), { recursive: true });

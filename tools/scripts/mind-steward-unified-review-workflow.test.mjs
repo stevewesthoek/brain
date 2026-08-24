@@ -17,6 +17,17 @@ test('creates a new workflow while preserving review identity and evidence', () 
   assert.equal(workflow.items[0].evidence_preserved, true);
 });
 
+test('carries the original ingestion identity into the review source snapshot', () => {
+  const workflow = buildReviewWorkflow({ briefing: briefing([itemWithIngestion()]) });
+  assert.equal(workflow.items[0].source.ingestion_or_review_id, 'ingestion:mind-inbox-example');
+  assert.equal(workflow.items[0].source.source_hash, 'sha256:example');
+  assert.equal(workflow.items[0].source.timestamp, '2026-08-23T12:00:00Z');
+});
+
+function itemWithIngestion() {
+  return { ...item(), ingestion_id: 'ingestion:mind-inbox-example' };
+}
+
 test('requires explicit human reason and matching source for decisions', () => {
   const workflow = buildReviewWorkflow({ briefing: briefing() });
   assert.throws(() => applyReviewAction(workflow, { reviewId: 'review:source:1', state: 'accepted', decidedAt: '2026-08-23T13:00:00Z', reviewer: 'human', sourceReference: item().source_reference }), /reason is required/);
