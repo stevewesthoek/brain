@@ -84,7 +84,10 @@ export async function enrichGitHubRepositoryEvidence(evidence, { fetchImpl = glo
       if (releaseResult.response.ok) release = releaseResult.body;
     } catch { release = null; }
     const freshness = freshnessFor(retrievedAt, now, staleAfterMs);
-    return { ...evidence, metadata_status: 'available', metadata: mapMetadata(repositoryResult.body, release, source, releaseSource, retrievedAt, freshness), metadata_retrieved_at: retrievedAt, freshness, uncertainty: [...(evidence.uncertainty ?? []), ...(freshness === 'stale' ? ['metadata is older than the configured freshness window'] : [])], safety: { ...evidence.safety, read_only: true, automatic_adoption: false, repository_execution: false, dependency_installation: false } };
+    const priorUncertainty = evidence.uncertainty ?? [];
+    const identityOnlyUncertainty = priorUncertainty.filter((entry) => entry === 'remote repository metadata was not fetched by this report-only adapter');
+    const currentUncertainty = priorUncertainty.filter((entry) => !identityOnlyUncertainty.includes(entry));
+    return { ...evidence, metadata_status: 'available', metadata: mapMetadata(repositoryResult.body, release, source, releaseSource, retrievedAt, freshness), metadata_retrieved_at: retrievedAt, freshness, uncertainty: [...currentUncertainty, ...(freshness === 'stale' ? ['metadata is older than the configured freshness window'] : [])], provenance: { ...evidence.provenance, prior_uncertainty: identityOnlyUncertainty }, safety: { ...evidence.safety, read_only: true, automatic_adoption: false, repository_execution: false, dependency_installation: false } };
   } catch (error) {
     const reason = error?.name === 'AbortError' ? 'GitHub metadata request timed out' : 'GitHub metadata request failed';
     return { ...evidence, metadata_status: 'unavailable', metadata: emptyMetadata(source, retrievedAt, reason), metadata_retrieved_at: retrievedAt, freshness: 'unavailable', uncertainty: [...(evidence.uncertainty ?? []), reason] };

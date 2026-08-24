@@ -25,6 +25,8 @@ test('enriches public repository metadata with field-level provenance', async ()
     now: new Date('2026-08-24T12:00:00Z'),
   });
   assert.equal(result.metadata_status, 'available');
+  assert.equal(result.uncertainty.some((entry) => /metadata was not fetched/.test(entry)), false);
+  assert.deepEqual(result.provenance.prior_uncertainty, ['remote repository metadata was not fetched by this report-only adapter']);
   assert.equal(result.metadata.stars.value, 4);
   assert.equal(result.metadata.last_release.value.tag_name, 'v1.0.0');
   for (const item of Object.values(result.metadata)) {

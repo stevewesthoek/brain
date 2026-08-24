@@ -1,6 +1,6 @@
 # Infinite Brain GitHub Repository Relevance and Fit Contract
 
-**Status:** MRU0-P3.35 bounded advisory intelligence
+**Status:** MRU0-P3.37 bounded advisory intelligence quality refinement
 **Scope:** deterministic, explainable comparison of existing GitHub evidence with the canonical Brain capability projection
 
 ## Purpose
@@ -29,6 +29,12 @@ The output includes:
 - an advisory disposition: `investigate_further`, `potentially_useful`, `likely_overlap`, `likely_low_value`, or `insufficient_evidence`.
 
 Every disposition includes reasoning, confidence, uncertainty, and alternatives. Term overlap is not treated as proof of equivalent capability. Missing capability evidence keeps the disposition at `insufficient_evidence`.
+
+## Quality gates
+
+The assessment records positive evidence, negative evidence, and missing evidence separately. A substantive description plus at least one corroborating public signal is required before a repository can receive `potentially_useful`; a small project is not penalized when corroborating signals exist. Recognized low-signal control descriptions with no corroborating signals may receive `likely_low_value`; other sparse evidence receives `investigate_further` or `insufficient_evidence`.
+
+When enrichment succeeds, identity-stage uncertainty is retained in provenance history but is not repeated as current uncertainty. Current uncertainty describes only what remains unknown or why the current assessment is limited.
 
 ## Safety and authority boundary
 

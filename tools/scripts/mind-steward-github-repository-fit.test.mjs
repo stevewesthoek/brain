@@ -44,3 +44,17 @@ test('does not invent comparison when canonical system capability evidence is ab
   assert.equal(assessment.disposition.value, 'insufficient_evidence');
   assert.match(assessment.disposition.uncertainty.join(' '), /canonical Brain capability projection/);
 });
+
+test('downgrades a low-signal control without penalizing small projects with corroborating signals', async () => {
+  const lowSignal = await enrichGitHubRepositoryEvidence(buildGitHubRepositoryEvidence({ url: 'https://github.com/octocat/Hello-World' }), {
+    fetchImpl: async (url) => url.endsWith('/releases/latest') ? { ok: false, status: 404, async json() { return {}; } } : { ok: true, status: 200, async json() { return { description: 'My first repository on GitHub!', topics: [], language: null, stargazers_count: 1 }; } },
+  });
+  const lowAssessment = assessGitHubRepositoryFit(lowSignal, { systemCapabilities: [{ capability_id: 'context', terms: ['context', 'gateway'] }] });
+  assert.equal(lowAssessment.disposition.value, 'likely_low_value');
+  assert.ok(lowAssessment.evidence_quality.negative_evidence.length > 0);
+  const smallProject = await enrichGitHubRepositoryEvidence(buildGitHubRepositoryEvidence({ url: 'https://github.com/a/one' }), {
+    fetchImpl: async (url) => url.endsWith('/releases/latest') ? { ok: false, status: 404, async json() { return {}; } } : { ok: true, status: 200, async json() { return { description: 'Small focused tool', topics: ['context'], language: 'TypeScript', stargazers_count: 1 }; } },
+  });
+  const smallAssessment = assessGitHubRepositoryFit(smallProject, { systemCapabilities: [{ capability_id: 'video', terms: ['video', 'rendering'] }] });
+  assert.equal(smallAssessment.disposition.value, 'potentially_useful');
+});

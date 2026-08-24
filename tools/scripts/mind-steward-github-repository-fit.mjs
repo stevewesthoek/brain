@@ -1,16 +1,5 @@
 const DISPOSITIONS = ['investigate_further', 'potentially_useful', 'likely_overlap', 'likely_low_value', 'insufficient_evidence'];
 
-function valuesFromMetadata(metadata) {
-  if (!metadata || typeof metadata !== 'object') return [];
-  return Object.values(metadata).flatMap((entry) => {
-    const value = entry?.value;
-    if (typeof value === 'string') return [value];
-    if (Array.isArray(value)) return value.filter((item) => typeof item === 'string');
-    if (value && typeof value === 'object') return Object.values(value).filter((item) => typeof item === 'string');
-    return [];
-  });
-}
-
 function tokens(values) {
   return new Set(values.join(' ').toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length >= 4));
 }
@@ -44,11 +33,33 @@ function maintenanceAssessment(metadata) {
   return signals;
 }
 
+function evidenceSignals(metadata, evidence) {
+  const description = fieldValue(metadata, 'description') ?? evidence.description ?? null;
+  const topics = fieldValue(metadata, 'topics') ?? [];
+  const language = fieldValue(metadata, 'primary_language');
+  const ecosystem = fieldValue(metadata, 'ecosystem') ?? [];
+  const license = fieldValue(metadata, 'license');
+  const release = fieldValue(metadata, 'last_release');
+  const activity = fieldValue(metadata, 'recent_activity') ?? [];
+  const positive = [];
+  const negative = [];
+  const missing = [];
+  if (description) positive.push(`description:${description}`); else negative.push('repository description unavailable');
+  if (topics.length) positive.push(`topics:${topics.join(',')}`); else missing.push('repository topics');
+  if (language || ecosystem.length) positive.push(`technology:${language ?? ecosystem.join(',')}`); else missing.push('primary language/ecosystem');
+  if (license) positive.push('license metadata available'); else missing.push('license metadata');
+  if (release) positive.push('latest release metadata available'); else missing.push('latest release metadata');
+  if (activity.length) positive.push(...activity); else negative.push('recent activity unavailable');
+  missing.push('README and documentation content', 'pull-request activity', 'dependency and architecture evidence');
+  return { positive, negative, missing, meaningful_description: typeof description === 'string' && description.trim().length >= 15, corroborating_signal_count: [topics.length > 0, Boolean(language || ecosystem.length), Boolean(license), Boolean(release)].filter(Boolean).length };
+}
+
 export function assessGitHubRepositoryFit(evidence, { systemCapabilities = [] } = {}) {
   if (!evidence?.repository?.repository_id) throw new Error('github_repository_identity_required');
   const metadata = evidence.metadata;
   const repositoryId = evidence.repository.repository_id;
   const metadataStatus = evidence.metadata_status ?? 'identity_only';
+  const signals = evidenceSignals(metadata, evidence);
   const repositoryTokens = tokens([
     fieldValue(metadata, 'description') ?? evidence.description ?? '',
     ...(fieldValue(metadata, 'topics') ?? []),
@@ -86,16 +97,23 @@ export function assessGitHubRepositoryFit(evidence, { systemCapabilities = [] } 
     reasoning.push('Repository terms overlap with existing capability descriptions, but this is a possible overlap rather than confirmed equivalence.');
     uncertainty.push('term overlap does not prove equivalent implementation or capability parity');
     alternatives.push('The repository may address a distinct gap despite similar terminology.');
-  } else if (fieldValue(metadata, 'description') && (fieldValue(metadata, 'primary_language') || fieldValue(metadata, 'ecosystem'))) {
+  } else if (signals.meaningful_description && signals.corroborating_signal_count >= 1) {
     disposition = 'potentially_useful';
     confidence = 0.55;
-    reasoning.push('Repository purpose and technology are visible, and no overlap was found in the supplied capability projection.');
+    reasoning.push('Repository purpose is substantive and at least one corroborating public signal is present; no overlap was found in the supplied capability projection.');
     uncertainty.push('absence of term overlap is not proof that the repository fills a system gap');
     alternatives.push('Deeper inspection may reveal overlap or incompatible assumptions.');
+  } else if (/first repository|hello world|hello-world/i.test(String(fieldValue(metadata, 'description') ?? evidence.description ?? '')) && signals.corroborating_signal_count === 0) {
+    disposition = 'likely_low_value';
+    confidence = 0.4;
+    reasoning.push('The repository has a recognized low-signal description and no corroborating public metadata.');
+    uncertainty.push('low-value appearance is based only on sparse public metadata; repository purpose may still be specialized');
+    alternatives.push('A human may retain it as a control, example, or intentionally minimal project.');
   } else {
     disposition = 'investigate_further';
     confidence = 0.3;
-    reasoning.push('Some metadata is available, but purpose or technology evidence is too limited for a stronger disposition.');
+    reasoning.push('Metadata is available, but substantive purpose or corroborating signals are too limited for a stronger usefulness disposition.');
+    uncertainty.push('meaningful purpose and maturity cannot be established from the available metadata');
   }
   if (metadataStatus === 'available' && evidence.freshness !== 'stale' && !systemCapabilities.length) disposition = 'insufficient_evidence';
   if (metadataStatus === 'available' && evidence.freshness !== 'stale' && systemCapabilities.length && !reasoning.length) disposition = 'investigate_further';
@@ -110,7 +128,7 @@ export function assessGitHubRepositoryFit(evidence, { systemCapabilities = [] } 
     purpose: { apparent_purpose: description, principal_capabilities: topics, technology: { primary_language: language, ecosystem: fieldValue(metadata, 'ecosystem') ?? [] }, maintenance_signals: maintenanceAssessment(metadata) },
     system_relevance: { possible_capability_matches: matches, confirmed_overlap: exactMatches.map((match) => match.capability_id), possible_overlap: possibleMatches.map((match) => match.capability_id), potential_gaps: systemCapabilities.length && !matches.length ? ['No matching capability evidence was found; a gap is possible but not established.'] : [], mind_review_required: true, brain_review_required: true },
     integration_considerations: { likely_surface: 'human-reviewed evidence and bounded future analysis only', dependencies: fieldValue(metadata, 'ecosystem') ?? [], operational_complexity: 'unknown_without_repository_inspection', maintenance_burden: 'unknown_without_repository_inspection', security_privacy: ['No repository code or dependencies were inspected.', 'External repository trust and privacy require human review.'], licensing: fieldValue(metadata, 'license'), },
-    evidence_quality: { source_references: evidenceRefs(evidence), freshness: evidence.freshness ?? 'unknown', confidence: evidence.confidence ?? 0, uncertainty, metadata_status: metadataStatus },
+    evidence_quality: { source_references: evidenceRefs(evidence), freshness: evidence.freshness ?? 'unknown', confidence: evidence.confidence ?? 0, uncertainty, metadata_status: metadataStatus, positive_evidence: signals.positive, negative_evidence: signals.negative, missing_evidence: signals.missing },
     disposition: { value: DISPOSITIONS.includes(disposition) ? disposition : 'insufficient_evidence', advisory_only: true, reasoning, confidence, uncertainty, alternatives },
     safety: { read_only: true, human_review_required: true, automatic_recommendation: false, automatic_adoption: false, repository_execution: false, dependency_installation: false, canonical_writes: false },
   };
