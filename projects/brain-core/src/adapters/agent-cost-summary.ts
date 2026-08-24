@@ -33,7 +33,7 @@ const DEFAULT_TASK_SPECS: Array<{ taskId: string; taskType: string; inputTokens:
 
 export function readAgentCostSummary(): BrainCoreAgentCostSummary {
   const snapshot = readSnapshotFile<CostSummarySnapshotFile>(DEFAULT_COST_SUMMARY_PATH)?.costSummary;
-  if (snapshot) {
+  if (snapshot && isCompatibleSnapshot(snapshot)) {
     return {
       ...snapshot,
       source: 'snapshot',
@@ -113,6 +113,14 @@ export function readAgentCostSummary(): BrainCoreAgentCostSummary {
       loadedFromDisk: false,
     },
   };
+}
+
+function isCompatibleSnapshot(snapshot: BrainCoreAgentCostSummary): boolean {
+  const supportedSurfaces = new Set<BrainCoreRouteSurface>(['codex-cli', 'claude-bedrock']);
+  return snapshot.localRouteCount === 0
+    && snapshot.cheapestRouteCount === snapshot.subscriptionRouteCount
+    && snapshot.escalatedRouteCount === snapshot.paidRouteCount
+    && snapshot.routeHistory.every((item) => supportedSurfaces.has(item.surface));
 }
 
 export function saveAgentCostSummarySnapshot(costSummary: BrainCoreAgentCostSummary): boolean {

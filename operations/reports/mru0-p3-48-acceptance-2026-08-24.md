@@ -13,7 +13,7 @@ Operational adoption evidence is established for the current daily workflow. The
 - Brain Console typecheck passed.
 - Mind Context tests: 159/159 passed.
 - Mind Steward operational tests: 21/21 passed.
-- Brain Core full suite has one unrelated existing agent-cost compatibility failure.
+- Brain Core full suite: 1934/1937; the targeted stale agent-cost compatibility failure is repaired and passes 6/6, while three unrelated local-app/video tests remain failing.
 - Unrelated dirty worktree paths were preserved.
 
 ## Scope control
@@ -22,4 +22,4 @@ No automatic discovery, historical ingestion, deeper GitHub analysis, video inte
 
 ## Final assessment
 
-Infinite Brain is already useful enough for daily bounded evidence triage and human review. It is not yet sufficiently measured to justify further automation or controlled discovery. The next phase should collect at least two weeks or ten completed review sessions, then decide from real workload, usefulness, noise, and friction evidence whether any narrowly authorized improvement is warranted.
+Infinite Brain is already useful enough for daily bounded evidence triage and human review. The adoption workflow is operational, but the overall phase remains open because Brain Core is not fully green. It is not yet sufficiently measured to justify further automation or controlled discovery. The next phase should collect at least two weeks or ten completed review sessions, then decide from real workload, usefulness, noise, and friction evidence whether any narrowly authorized improvement is warranted.
