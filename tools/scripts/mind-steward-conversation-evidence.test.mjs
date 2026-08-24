@@ -44,6 +44,18 @@ test('extracts only bounded structured candidate records and preserves stale sta
   assert.deepEqual(candidates[0], { category: 'lesson', statement: 'Keep review decisions separate.', confidence: 0.7, uncertainty: undefined, observed_at: '2026-08-20T12:00:00Z', freshness: 'stale', repository: 'brain' });
 });
 
+test('expands bounded decision and outcome signals while attaching context', () => {
+  const candidates = extractConversationCandidates({ session, records: [{ signals: { decision: 'Keep human review authoritative.', validated_solution: 'Focused tests pass.', unresolved_question: 'Should discovery remain deferred?' }, context: { repository: 'brain', reason: 'benchmark correction' } }] });
+  assert.deepEqual(candidates.map(candidate => candidate.category), ['decision', 'validation', 'unresolved_question']);
+  assert.match(candidates[0].statement, /reason: benchmark correction/);
+  assert.equal(candidates[1].context.repository, 'brain');
+});
+
+test('rejects restricted privacy classes before evidence creation', () => {
+  assert.throws(() => extractConversationCandidates({ session, records: [{ category: 'lesson', statement: 'Private personal detail.', privacy_classification: 'personal' }] }), /restricted_conversation/);
+  assert.throws(() => createConversationEvidence({ session, candidates: [{ category: 'lesson', statement: 'Credential context.', privacy_classification: 'restricted' }] }), /restricted_conversation/);
+});
+
 test('session file access is restricted to the provider-owned session root', () => {
   assert.throws(() => readSessionMetadata({ provider: 'codex', sessionPath: '/tmp/session.jsonl' }), /unsafe_session_path/);
 });

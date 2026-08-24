@@ -1,6 +1,6 @@
 # Infinite Brain Conversation Intelligence Contract
 
-**Status:** MRU0-P3.42 bounded conversation evidence activation
+**Status:** MRU0-P3.47 bounded structured-signal extraction improvement
 **Scope:** explicit, report-only session evidence; no transcript database
 
 ## Purpose
@@ -17,7 +17,7 @@ Conversation intelligence turns selected structured knowledge from Claude Code, 
 
 ## Evidence extraction
 
-Only bounded structured candidate records are accepted. Categories are decisions, architecture choices, lessons, unresolved questions, changed files, validation evidence, recurring problems, and improvements. Each candidate preserves:
+Only bounded structured candidate records are accepted. Records may provide explicit `signals` for `decision`, `architecture`, `lesson`, `tradeoff`, `validated_solution`, `changed_behavior`, `changed_file`, `recurring_problem`, `unresolved_question`, or `future_action`; these normalize to the existing review categories. A signal may be a scalar or bounded list, and optional producer-supplied context is attached to the candidate. This improves coverage of secondary outcomes without parsing transcripts or inferring unstated knowledge. Categories are decisions, architecture choices, lessons, unresolved questions, changed files, validation evidence, recurring problems, and improvements. Each candidate preserves:
 
 - source session ID and provider;
 - observed timestamp and repository context;
@@ -25,6 +25,8 @@ Only bounded structured candidate records are accepted. Categories are decisions
 - freshness, confidence, provenance, and uncertainty.
 
 Raw transcript fields, message arrays, full transcript reads, secret-like values, invalid metadata, and conflicting repository context are rejected. Candidate text is capped at 1,000 characters and batches at 100 records. No semantic provider call is required by this adapter.
+
+Candidate privacy classifications are limited to `public`, `technical`, and `internal`; `personal`, `restricted`, `secret`, credential-like, and unrelated content is rejected before evidence creation. The envelope remains restricted and review-required, and producer context is evidence rather than authority.
 
 ## Workflow
 
@@ -41,4 +43,3 @@ The daily review CLI accepts one explicit runtime-local artifact with `--convers
 ## Storage and privacy
 
 Raw client-owned sessions remain in their owning local runtime. Brain stores only a restricted runtime-local evidence artifact and source reference by default. Artifacts are not committed to Git. Secret-bearing values are rejected before persistence. Infrastructure claims remain non-canonical evidence and must defer to IKHP/provider authority.
-
