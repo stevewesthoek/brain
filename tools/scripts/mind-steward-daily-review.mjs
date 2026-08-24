@@ -27,14 +27,14 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
 }
 
-export async function enrichGitHubIngestion({ ingestion, fetchImpl = globalThis.fetch, generatedAt = new Date().toISOString(), systemCapabilities = [], includeDocumentation = false } = {}) {
+export async function enrichGitHubIngestion({ ingestion, fetchImpl = globalThis.fetch, generatedAt = new Date().toISOString(), systemCapabilities = [], includeDocumentation = false, includeArchitecture = false } = {}) {
   if (!ingestion?.envelopes?.length) return ingestion;
   const envelopes = await Promise.all(ingestion.envelopes.map(async (envelope) => {
     const evidence = envelope.content?.github_repository_evidence;
     if (!Array.isArray(evidence) || evidence.length === 0) return envelope;
     const enriched = await Promise.all(evidence.map(async (item) => {
       const metadata = await enrichGitHubRepositoryEvidence(item, { fetchImpl, now: new Date(generatedAt) });
-      const documented = includeDocumentation ? await enrichGitHubRepositoryDocumentation(metadata, { fetchImpl, now: new Date(generatedAt) }) : metadata;
+      const documented = includeDocumentation || includeArchitecture ? await enrichGitHubRepositoryDocumentation(metadata, { fetchImpl, now: new Date(generatedAt), includeArchitecture }) : metadata;
       return { ...documented, fit_assessment: assessGitHubRepositoryFit(documented, { systemCapabilities }) };
     }));
     return { ...envelope, content: { ...envelope.content, github_repository_evidence: enriched } };
@@ -42,11 +42,11 @@ export async function enrichGitHubIngestion({ ingestion, fetchImpl = globalThis.
   return { ...ingestion, envelopes };
 }
 
-export async function runDailyReview({ repoRoot = process.cwd(), mindRoot, generatedAt = new Date().toISOString(), enrichGitHub = false, enrichGitHubDocumentation = false, metadataFetcher = globalThis.fetch, systemCapabilities } = {}) {
+export async function runDailyReview({ repoRoot = process.cwd(), mindRoot, generatedAt = new Date().toISOString(), enrichGitHub = false, enrichGitHubDocumentation = false, enrichGitHubArchitecture = false, metadataFetcher = globalThis.fetch, systemCapabilities } = {}) {
   if (!mindRoot) throw new Error('mindRoot is required');
   let ingestion = scanMindInbox({ mindRoot, repoRoot, createdAt: generatedAt });
   const capabilityManifest = systemCapabilities ?? readJson(path.join(repoRoot, 'operations', 'specs', 'infinite-brain-capabilities.json'), { capabilities: [] });
-  if (enrichGitHub || enrichGitHubDocumentation) ingestion = await enrichGitHubIngestion({ ingestion, fetchImpl: metadataFetcher, generatedAt, systemCapabilities: buildBrainCapabilityProjection(capabilityManifest), includeDocumentation: enrichGitHubDocumentation });
+  if (enrichGitHub || enrichGitHubDocumentation || enrichGitHubArchitecture) ingestion = await enrichGitHubIngestion({ ingestion, fetchImpl: metadataFetcher, generatedAt, systemCapabilities: buildBrainCapabilityProjection(capabilityManifest), includeDocumentation: enrichGitHubDocumentation || enrichGitHubArchitecture, includeArchitecture: enrichGitHubArchitecture });
   writeReviewReport(ingestion);
   const projection = buildUnifiedReviewInbox({ ingestion: ingestion.envelopes, generatedAt });
   writeUnifiedReviewInbox({ projection, repoRoot });
@@ -147,7 +147,8 @@ async function main() {
     return;
   }
   const enrichGitHubDocumentation = args.includes('--enrich-github-documentation');
-  const session = await runDailyReview({ repoRoot, mindRoot, enrichGitHub: args.includes('--enrich-github-metadata'), enrichGitHubDocumentation });
+  const enrichGitHubArchitecture = args.includes('--enrich-github-architecture');
+  const session = await runDailyReview({ repoRoot, mindRoot, enrichGitHub: args.includes('--enrich-github-metadata'), enrichGitHubDocumentation, enrichGitHubArchitecture });
   process.stdout.write(`${JSON.stringify(session, null, 2)}\n`);
 }
 

@@ -49,6 +49,20 @@ test('keeps documentation enrichment behind its explicit opt-in boundary', async
   assert.equal(enriched.envelopes[0].content.github_repository_evidence[0].fit_assessment.evidence_quality.documentation_status, 'available');
 });
 
+test('keeps architecture enrichment behind its explicit opt-in boundary', async () => {
+  const github = buildGitHubRepositoryEvidence({ url: 'https://github.com/a/one' });
+  const ingestion = { envelopes: [{ content: { github_repository_evidence: [github] } }], failures: [] };
+  const enriched = await enrichGitHubIngestion({ ingestion, includeArchitecture: true, systemCapabilities: [], fetchImpl: async (url) => {
+    if (url.endsWith('/readme')) return { ok: true, status: 200, async json() { return { content: Buffer.from('# Example\n\nA documented tool.\n\n## Architecture\n- API\n\n## Deployment\n- Docker').toString('base64') }; } };
+    if (url.endsWith('/releases/latest')) return { ok: false, status: 404, async json() { return {}; } };
+    return { ok: true, status: 200, async json() { return { description: 'A documented tool for context', language: 'TypeScript' }; } };
+  } });
+  const item = enriched.envelopes[0].content.github_repository_evidence[0];
+  assert.equal(item.architecture_status, 'available');
+  assert.deepEqual(item.fit_assessment.purpose.architecture.components, ['API']);
+  assert.equal(item.fit_assessment.evidence_quality.architecture_status, 'available');
+});
+
 test('records an explicit human decision without canonical mutation', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'daily-review-'));
   const workflowRoot = path.join(root, 'runtime', 'local', 'mind-steward', 'unified-review');

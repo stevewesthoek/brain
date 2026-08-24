@@ -1,6 +1,7 @@
 const DEFAULT_TIMEOUT_MS = 8_000;
 const DEFAULT_STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 const MAX_README_BYTES = 64 * 1024;
+import { buildGitHubArchitectureEvidence } from './mind-steward-github-repository-architecture.mjs';
 
 function field(value, source, retrievedAt, { freshness = 'fresh', confidence = 1, uncertainty = [] } = {}) {
   return { value, source, retrieved_at: retrievedAt, freshness, confidence, uncertainty, provenance: { source, retrieved_at: retrievedAt } };
@@ -78,7 +79,7 @@ async function fetchReadme(url, fetchImpl, timeoutMs) {
   } finally { clearTimeout(timer); }
 }
 
-export async function enrichGitHubRepositoryDocumentation(evidence, { fetchImpl = globalThis.fetch, now = new Date(), retrievedAt = now.toISOString(), timeoutMs = DEFAULT_TIMEOUT_MS, staleAfterMs = DEFAULT_STALE_AFTER_MS } = {}) {
+export async function enrichGitHubRepositoryDocumentation(evidence, { fetchImpl = globalThis.fetch, now = new Date(), retrievedAt = now.toISOString(), timeoutMs = DEFAULT_TIMEOUT_MS, staleAfterMs = DEFAULT_STALE_AFTER_MS, includeArchitecture = false } = {}) {
   if (!evidence?.repository?.owner || !evidence.repository.name) throw new Error('github_repository_identity_required');
   const source = sourceFor(evidence);
   if (typeof fetchImpl !== 'function') return { ...evidence, documentation_status: 'unavailable', documentation_evidence: emptyEvidence(source, retrievedAt, 'documentation fetch is unavailable in this environment'), documentation_retrieved_at: retrievedAt, documentation_freshness: 'unavailable', uncertainty: [...(evidence.uncertainty ?? []), 'documentation fetch is unavailable in this environment'] };
@@ -92,7 +93,8 @@ export async function enrichGitHubRepositoryDocumentation(evidence, { fetchImpl 
     const bounded = Buffer.byteLength(markdown, 'utf8') > MAX_README_BYTES ? Buffer.from(markdown, 'utf8').subarray(0, MAX_README_BYTES).toString('utf8') : markdown;
     const freshness = freshnessFor(retrievedAt, now, staleAfterMs);
     const truncation = bounded.length < markdown.length ? ['README was truncated to the bounded documentation limit'] : [];
-    return { ...evidence, documentation_status: 'available', documentation_evidence: mapSignals(extractSignals(bounded), source, retrievedAt, freshness), documentation_retrieved_at: retrievedAt, documentation_freshness: freshness, documentation_provenance: { source, retrieved_at: retrievedAt, readme_url: result.body.html_url ?? null, truncated: bounded.length < markdown.length }, uncertainty: [...(evidence.uncertainty ?? []), ...truncation, ...(freshness === 'stale' ? ['documentation is older than the configured freshness window'] : [])], safety: { ...evidence.safety, read_only: true, automatic_adoption: false, repository_execution: false, dependency_installation: false } };
+    const documentation = { ...evidence, documentation_status: 'available', documentation_evidence: mapSignals(extractSignals(bounded), source, retrievedAt, freshness), documentation_retrieved_at: retrievedAt, documentation_freshness: freshness, documentation_provenance: { source, retrieved_at: retrievedAt, readme_url: result.body.html_url ?? null, truncated: bounded.length < markdown.length }, uncertainty: [...(evidence.uncertainty ?? []), ...truncation, ...(freshness === 'stale' ? ['documentation is older than the configured freshness window'] : [])], safety: { ...evidence.safety, read_only: true, automatic_adoption: false, repository_execution: false, dependency_installation: false } };
+    return includeArchitecture ? { ...documentation, architecture_status: 'available', architecture_evidence: buildGitHubArchitectureEvidence({ markdown: bounded, source, retrievedAt, freshness, truncated: bounded.length < markdown.length }) } : documentation;
   } catch (error) {
     const reason = error?.name === 'AbortError' ? 'GitHub documentation request timed out' : 'GitHub documentation request failed';
     return { ...evidence, documentation_status: 'unavailable', documentation_evidence: emptyEvidence(source, retrievedAt, reason), documentation_retrieved_at: retrievedAt, documentation_freshness: 'unavailable', uncertainty: [...(evidence.uncertainty ?? []), reason] };
