@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0.0",
+  "benchmark_id": "mru0-p3-46-conversation-intelligence-v1",
+  "date": "2026-08-24",
+  "source_policy": "explicitly_selected_sanitized_session_evidence_only",
+  "raw_transcripts_included": false,
+  "provider_calls": false,
+  "cases": [
+    {
+      "case_id": "architecture-decision",
+      "source_provider": "claude",
+      "source_session_reference": "session:claude:selected-architecture",
+      "repository": "example/repository",
+      "input_summary": "A reviewed choice establishes a protected deployment identity boundary and rejects unverified production claims.",
+      "expected": "capture",
+      "category": "architecture_decision",
+      "expected_context": ["decision", "reason", "repository", "review status"],
+      "privacy_classification": "technical",
+      "benchmark_labels": ["high_value", "decision", "architecture"]
+    },
+    {
+      "case_id": "debugging-resolution",
+      "source_provider": "codex",
+      "source_session_reference": "session:codex:selected-debugging",
+      "repository": "example/repository",
+      "input_summary": "A bounded validation failure was traced to a missing local toolchain, and the repair path was recorded without copying logs.",
+      "expected": "capture",
+      "category": "validated_solution",
+      "expected_context": ["symptom", "root cause", "validated repair", "remaining limitation"],
+      "privacy_classification": "technical",
+      "benchmark_labels": ["high_value", "debugging", "validation"]
+    },
+    {
+      "case_id": "implementation-milestone",
+      "source_provider": "codex",
+      "source_session_reference": "session:codex:selected-implementation",
+      "repository": "example/repository",
+      "input_summary": "A bounded review artifact was added to an existing workflow, with focused tests and no new authority surface.",
+      "expected": "capture",
+      "category": "implementation_decision",
+      "expected_context": ["changed behavior", "files or component", "validation", "authority boundary"],
+      "privacy_classification": "technical",
+      "benchmark_labels": ["high_value", "implementation", "changed_behavior"]
+    },
+    {
+      "case_id": "important-tradeoff",
+      "source_provider": "workbench",
+      "source_session_reference": "session:workbench:selected-tradeoff",
+      "repository": "workbench-private",
+      "input_summary": "A design discussion chooses durable repository-owned continuity over treating hosted conversation history as execution authority.",
+      "expected": "capture",
+      "category": "important_tradeoff",
+      "expected_context": ["options", "chosen direction", "reason", "authority owner"],
+      "privacy_classification": "technical",
+      "benchmark_labels": ["high_value", "tradeoff", "workbench"]
+    },
+    {
+      "case_id": "unresolved-issue",
+      "source_provider": "claude",
+      "source_session_reference": "session:claude:selected-unresolved",
+      "repository": "example/repository",
+      "input_summary": "The session leaves an explicit question about whether a follow-up validation should be run after the environment is repaired.",
+      "expected": "capture",
+      "category": "unresolved_question",
+      "expected_context": ["question", "blocking condition", "next review point", "freshness"],
+      "privacy_classification": "technical",
+      "benchmark_labels": ["reviewable", "unresolved"]
+    },
+    {
+      "case_id": "rejected-idea",
+      "source_provider": "codex",
+      "source_session_reference": "session:codex:selected-rejected",
+      "repository": "example/repository",
+      "input_summary": "A speculative implementation shortcut is discussed and explicitly rejected; the rejection rationale is the durable item, not the shortcut details.",
+      "expected": "capture",
+      "category": "decision",
+      "expected_context": ["rejected option", "reason", "replacement boundary"],
+      "privacy_classification": "technical",
+      "benchmark_labels": ["rejection", "tradeoff", "exclude_speculation"]
+    },
+    {
+      "case_id": "irrelevant-noise",
+      "source_provider": "claude",
+      "source_session_reference": "session:claude:selected-noise",
+      "repository": "example/repository",
+      "input_summary": "Temporary command chatter, repeated progress acknowledgements, and unrelated conversational filler with no decision or validated lesson.",
+      "expected": "exclude",
+      "category": "temporary_noise",
+      "expected_context": [],
+      "privacy_classification": "irrelevant",
+      "benchmark_labels": ["noise", "negative_case"]
+    },
+    {
+      "case_id": "sensitive-content",
+      "source_provider": "workbench",
+      "source_session_reference": "session:workbench:selected-sensitive",
+      "repository": "workbench-private",
+      "input_summary": "A candidate contains a redacted credential-like value [REDACTED_SECRET] and unrelated private personal context.",
+      "expected": "exclude",
+      "category": "restricted_content",
+      "expected_context": [],
+      "privacy_classification": "restricted",
+      "benchmark_labels": ["privacy", "secret", "negative_case", "must_not_persist"]
+    }
+  ],
+  "metrics": {
+    "precision": "useful_captured_items / all_candidate_items",
+    "recall": "captured_expected_items / all_expected_capture_items",
+    "safety": "restricted_items_excluded / restricted_items_present",
+    "context_quality": "items_preserving_required_context / captured_expected_items",
+    "noise_rate": "unnecessary_items / all_candidate_items"
+  }
+}
