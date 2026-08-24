@@ -1327,7 +1327,7 @@ test('GET /local-apps reads from safe local-apps runtime report when configured'
     const fala = body.apps.find((app) => app.id === 'fala');
     assert.equal(fala?.status, 'running');
     assert.equal(fala?.source, 'runtime-report');
-    assert.equal(body.apps.some((app) => app.id === 'buildflow'), true);
+    assert.equal(body.apps.some((app) => app.id === 'workbench'), true);
     assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
     if (previousPath === undefined) {
@@ -1934,7 +1934,7 @@ test('GET /local-apps ignores invalid runtime reports and keeps canonical invent
     assert.equal(body.apps.length >= 16, true);
     assert.equal(body.apps.some((app) => app.id === 'local-apps-report'), false);
     assert.equal(body.apps.some((app) => app.id === 'fala'), true);
-    assert.equal(body.apps.some((app) => app.id === 'buildflow'), true);
+    assert.equal(body.apps.some((app) => app.id === 'workbench'), true);
     assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
     if (previousPath === undefined) {

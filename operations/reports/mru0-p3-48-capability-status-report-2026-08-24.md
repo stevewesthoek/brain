@@ -21,7 +21,7 @@
 - Mind Steward operational suite: 21/21 tests passed.
 - Brain Console: typecheck passed.
 - Documentation consistency: `docs=pass`, 10 files.
-- Brain Core: the stale agent-cost snapshot repair passes its focused 6/6 test. The full suite is 1934/1937, with three remaining failures in two local-app runtime-report tests and one video metadata-generation test; those are outside the Infinite Brain adoption path.
+- Brain Core: stale agent-cost snapshot repair passes its focused 6/6 test; full suite now passes 1937/1937 after aligning two obsolete inventory/content expectations with current canonical sources.
 
 ## Decision
 

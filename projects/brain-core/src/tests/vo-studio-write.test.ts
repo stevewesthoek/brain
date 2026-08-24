@@ -362,7 +362,7 @@ test('generateMetadataRequest generates YouTube metadata from the canonical movi
   assert.ok(result.preview);
   assert.equal(result.preview!.job!.type, 'metadata');
   assert.equal(result.preview!.job!.status, 'pending_approval');
-  assert.equal(result.preview!.metadata!.youtubeTitle, 'Genesis: Creation Story');
+  assert.equal(result.preview!.metadata!.youtubeTitle, 'Genesis: Creation Story | Says the Bible');
   assert.ok(result.preview!.metadata!.youtubeDescription.length > 0);
   assert.ok(result.preview!.metadata!.youtubeTags.length > 0);
   assert.ok(result.preview!.metadata!.hashtags.length > 0);
