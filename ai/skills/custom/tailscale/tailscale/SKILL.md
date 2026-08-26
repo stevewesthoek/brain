@@ -63,7 +63,7 @@ No auth config file needed — Tailscale uses its own daemon (`tailscaled`) and 
 
 ## Tailnet node inventory
 
-Current nodes as of 2026-08-18:
+Current production nodes as of 2026-08-26 (the 2026-08-18 inventory was superseded by Azure Dokploy decommission):
 
 | Node | Tailscale IP | OS | Role | Status |
 |------|--------------|----|------|--------|
@@ -71,7 +71,6 @@ Current nodes as of 2026-08-18:
 | `dokploy-aws` | `100.71.47.24` | Linux | AWS Lightsail — authoritative Dokploy production | Online |
 | `cloudpanel-aws` | `100.121.12.36` | Linux | AWS Lightsail — authoritative CloudPanel host | Online |
 | `supabase` | `100.71.31.88` | Linux | Azure VM — Supabase / PostgreSQL backend | Online |
-| `dokploy` | `100.83.38.48` | Linux | Old Azure Dokploy (decommissioned) | Idle |
 | `macbook` | `100.70.12.18` | macOS | Secondary Mac — personal laptop | Idle |
 | `iphone` | `100.107.201.123` | iOS | Mobile device | Online |
 | `motorola` | `100.107.156.26` | Android | Mobile device | Offline |
@@ -88,17 +87,16 @@ All production servers use OpenSSH-over-Tailscale (not Tailscale SSH mode). Publ
 ~/.local/bin/tailscale-cli status --json
 
 # Ping a specific node (connectivity check)
-~/.local/bin/tailscale-cli ping dokploy
-~/.local/bin/tailscale-cli ping 100.83.38.48
+~/.local/bin/tailscale-cli ping dokploy-aws
 
 # Ping with timeout and count (for pre-flight use)
-~/.local/bin/tailscale-cli ping -c 1 --timeout 5s dokploy
+~/.local/bin/tailscale-cli ping -c 1 --timeout 5s dokploy-aws
 
 # Show this node's Tailscale IP
 ~/.local/bin/tailscale-cli ip -4
 
 # Look up a node's identity
-~/.local/bin/tailscale-cli whois 100.83.38.48
+~/.local/bin/tailscale-cli whois 100.71.47.24
 
 # Show version
 ~/.local/bin/tailscale-cli version

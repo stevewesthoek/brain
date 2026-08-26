@@ -1,5 +1,8 @@
 # IKHP4 Packet 3 Conversation Handoff — 2026-08-19
 
+> **Historical handoff:** This 2026-08-19 snapshot predates the 2026-08-26 Azure Dokploy
+> decommission. Its Azure fallback/node statements are historical and not current authority.
+
 ## Purpose
 
 Resume the existing IKHP4 Packet 3 Workbench run in a new ChatGPT conversation without losing the owner-canonical infrastructure/network reconciliation, current uncommitted repository state, or the remaining Packet 3 validation work.

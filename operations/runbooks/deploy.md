@@ -2,7 +2,7 @@
 
 ## Platform
 
-**Dokploy** (self-hosted on Azure VM `vm-dokploy`). UI: `https://dokploy.prochat.tools`. Never use Vercel.
+**Dokploy** (self-hosted on AWS Lightsail `dokploy-aws`). UI: `https://dokploy.prochat.tools`. Never use Vercel. Azure Dokploy was decommissioned 2026-08-26.
 
 ## Ship workflow
 

@@ -114,7 +114,7 @@ Reachable directly from the Mac via Tailscale — no tunnel or subnet routing ne
 |---|---|
 | PostgreSQL | `100.71.31.88:5433` |
 | Supabase API | `http://100.71.31.88:8000` |
-| Tailscale IP (Dokploy) | `100.83.38.48` |
+| Tailscale IP (Dokploy) | `100.71.47.24` (`dokploy-aws`; former Azure `100.83.38.48` is decommissioned) |
 
 **Central credential location:**
 ```text

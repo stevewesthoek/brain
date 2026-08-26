@@ -29,8 +29,7 @@ Phase 3C11 corrections applied: 2026-08-16 (final factual wording cleanup; Secti
                                              claim, ADR-004 historical rationale downgraded,
                                              ADR-007 staging-schema unsupported claim removed)
 Phase 3F applied:               2026-08-17 (post-cutover authority handoff; production runtime
-                                             updated to AWS, Azure reclassified as quiesced rollback
-                                             source, invariants updated to reflect live state)
+                                             updated to AWS; migration evidence retained below)
 Evidence register:              operations/architecture/prochat-infrastructure-evidence-register.md
 Current production runtime:     AWS Lightsail dokploy-aws (eu-west-2, London)
 Previous production runtime:    Azure Dokploy (vm-dokploy, Spain Central) — DECOMMISSIONED 2026-08-26
@@ -38,7 +37,7 @@ Production cutover completed:   2026-08-17 (~28 min downtime, 16/16 DB restores,
 Azure decommission completed:   2026-08-26 (all PROCHAT-APPS resources deleted, Tailscale node removed)
 ```
 
-> **Current-vs-historical rule (2026-08-26):** the post-decommission block above is current authority. Azure Dokploy no longer exists — all references to “Azure Dokploy”, “quiesced rollback”, “Class B reconciliation”, “source Azure”, and “target AWS” in later sections are **historical procedure context only** documenting the migration that was executed. They must not be interpreted as present infrastructure state. The only surviving Azure resource is Supabase (PROCHAT-DATA subscription).
+> **Current-vs-historical rule (2026-08-26):** the post-decommission block above is current authority. Azure Dokploy no longer exists. Any later Azure Dokploy inventory, IP, backup, cutover, Class A/B, or rollback wording is **HISTORICAL** and describes the migration state at the date shown; it is not a present runtime, recovery source, or operator target. The only surviving Azure production resource is Supabase (PROCHAT-DATA).
 
 ---
 
@@ -105,7 +104,7 @@ downtime, 16/16 database restores, and 17/17 domain validations passing. Azure D
 permanently decommissioned 2026-08-26 (all compute, storage, networking, backups deleted from
 PROCHAT-APPS subscription).
 
-The system consists of two infrastructure nodes joined by a **Tailscale mesh**:
+The system consists of three production infrastructure nodes joined by a **Tailscale mesh**:
 
 ```
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -138,9 +137,9 @@ The system consists of two infrastructure nodes joined by a **Tailscale mesh**:
                               │                                             │
                               │  One PostgreSQL server                      │
                               │  24 logical databases                       │
- │  App writers: 0/0                  │    │  (proposed future model:         │
- │  Data: frozen at cutover point     │    │   one DB + schemas)     │
- └────────────────────────────────────┘    └─────────────────────────────────┘
+                              │  AWS writers active; Azure Supabase active │
+                              │  PROCHAT-DATA — untouched by decommission │
+                              └─────────────────────────────────────────────┘
 ```
 
 **USER-PROPOSED FUTURE DATA MODEL** (not an approved architecture decision — see ADR-003):
@@ -153,14 +152,20 @@ The system consists of two infrastructure nodes joined by a **Tailscale mesh**:
 > neither legacy nor obsolescence.
 > Post-cutover investigation and explicit approval required before any change.
 
-**AWS is authoritative for all operational config (cutover completed 2026-08-17).**
-Azure is a quiesced rollback source — data frozen at cutover point-in-time.
+**AWS is authoritative for all operational configuration and production Dokploy runtime.**
+Azure Dokploy is decommissioned; rollback to it is impossible. Recovery relies on AWS
+Lightsail snapshots/backups and documented reconstruction procedures. Azure Supabase remains
+the active production data service.
 
 ---
 
 ## 2. Server Inventory
 
-### 2.1 Azure Dokploy (Quiesced Rollback Source — Post-Cutover)
+### 2.1 Azure Dokploy (HISTORICAL / DECOMMISSIONED 2026-08-26)
+
+The following inventory is retained solely as migration evidence. Every listed Azure Dokploy
+resource was deleted on 2026-08-26; none is a current server, network path, backup source, or
+rollback target.
 
 | Property | Value |
 |----------|-------|
@@ -253,7 +258,6 @@ Tailscale is the canonical private **management plane** for ProChat infrastructu
   dokploy-aws       100.71.47.24    dokploy-aws.tail3c0f0a.ts.net   authoritative AWS production
   cloudpanel-aws    100.121.12.36   cloudpanel-aws.tail3c0f0a.ts.net authoritative AWS CloudPanel
   supabase          100.71.31.88    self-hosted Supabase + subnet 10.0.2.0/24
-  dokploy           100.83.38.48    retained Azure fallback only; non-production
   office            100.86.124.66   local control host
   macbook           100.70.12.18    local operator host
 ```
@@ -510,14 +514,14 @@ All AWS workloads are suppressed:
 | JPV Bootcamp Payload CMS | Commit SHA `a0c32276` in GHCR | NO — pinned (confirm before cutover) |
 | JPV Bootcamp (public site) | `ghcr.io/prochattools/jpv-bootcamp:latest` | YES — re-pull at cutover |
 | ProChat, Cedula, Oliveto, Says the Bible, Status Link, Proofly, JCCP, Vault Legal (+API), Via di Eden, Yeshua Academy, Yeshua Academy Finance, fala | `ghcr.io/<org>/<repo>:latest` — 11 apps with mutable tag | YES — re-pull at cutover |
-| Free Resend | GitHub source + nixpacks build (Dokploy build pipeline) | YES — rebuild from current Azure source |
+| Free Resend | GitHub source + nixpacks build (Dokploy build pipeline) | YES — rebuild from current GitHub source on AWS |
 | ProChat Accountant | Dockerfile in `/etc/dokploy/applications/web-public-prochat-accountant-zrekal/code/` | YES — `docker build` at cutover |
 | ProKit Studio, SaaSKit Studio | Registry image missing; source-parity exception; remain stopped | N/A |
 | Egg Cooker, ProKit Dev, SaaSKit Dev | GitHub source + nixpacks; inactive; not deployed | N/A |
 
-**Note:** Azure Dokploy is authoritative for current image/tag choices. AWS Dokploy DB contains a
-snapshot of image references from migration capture. Any image tag changes made on Azure since
-capture are not reflected in AWS. Final sync of Dokploy metadata (Section 15) captures this.
+**Historical note:** Before the 2026-08-17 cutover, Azure Dokploy was authoritative for image/tag
+choices. AWS is now the sole production Dokploy authority; this historical migration note must
+not be used to select current images.
 
 **Application → Supabase connection map (OBSERVED-VERIFIED 2026-08-16 from `application.env`):**
 Full map in evidence register (F-APP-001). Key notes:
@@ -561,9 +565,9 @@ Each runs a single `postgres:15` container serving the local tenant database.
 | compose-reboot-cross-platform-driver-6l6dun | tenant_resend | 6 | ZERO ✓ |
 | compose-synthesize-bluetooth-panel-tg5mhy | tenant_saaskit | 4 | ZERO ✓ |
 
-**Drift status as of 2026-08-16:** ZERO against Phase 3A manifests. AWS containers are frozen.
-Azure production continues writing to its own local copies — drift is ongoing and expected.
-All 14 require fresh pg_dump → restore at cutover.
+**Historical drift status (2026-08-16):** ZERO against Phase 3A manifests. AWS containers were
+frozen and Azure production continued writing to its local copies before cutover. The migration
+dump/restore requirement was completed during cutover; Azure Dokploy no longer exists.
 
 ### 7.3 Scheduled Jobs (1)
 
@@ -579,8 +583,8 @@ All 14 require fresh pg_dump → restore at cutover.
 
 | Concept | What it is | Authoritative Source | Independent copies? |
 |---------|-----------|---------------------|-------------------|
-| A — Dokploy Control Plane | postgres:16 container; stores Dokploy operational state, app configs, env vars | **Azure Dokploy** (until cutover) | YES — Azure and AWS have independent Dokploy DBs |
-| B — Local Tenant Databases | postgres:15 containers (14) + postgres:17 (n8n); per-application runtime data | **Azure** (live, until cutover) | YES — Azure has live copies; AWS copies are frozen snapshots |
+| A — Dokploy Control Plane | postgres:16 container; stores Dokploy operational state, app configs, env vars | **AWS Dokploy** — current | Historical Azure copy deleted with Azure Dokploy |
+| B — Local Tenant Databases | postgres:15 containers (14) + postgres:17 (n8n); per-application runtime data | **AWS Dokploy** — current | Historical Azure copies were reconciled during cutover |
 | C — Supabase | One shared self-hosted PostgreSQL 15.8 server reachable through Tailscale by workloads configured to use it | **Supabase** (always, single instance) | NO — there is only one instance; both environments connect to it |
 
 ### 8.2 USER-PROPOSED FUTURE DATA MODEL vs. VERIFIED CURRENT ARCHITECTURE
@@ -866,23 +870,24 @@ Browser page view → umami.prochat.tools → Traefik → umami:3.0.3
 
 ## 11. Source-of-Truth Matrix
 
-**Key rule:** Azure Dokploy is authoritative for ALL operational configuration until explicit
-manual cutover. AWS Dokploy DB is a snapshot from migration capture and may be out of date.
+**Current key rule:** AWS Dokploy is the sole authority for operational configuration. The Azure
+authority statements in the matrix below are HISTORICAL pre-cutover state, retained to explain
+the migration and not current ownership.
 
 | Data Type | Authoritative Source | Notes |
 |-----------|---------------------|-------|
 | **Supabase data (all 24 databases)** | **Supabase** — always live | Single instance; no sync needed at cutover |
-| **Azure local DB data (14 × postgres:15)** | **Azure Dokploy** — live | AWS copies frozen; require full dump/restore at cutover |
-| **n8n data (postgres:17)** | **Azure Dokploy** — live | AWS copy frozen; P0 sync at cutover |
-| **Dokploy control-plane config** | **Azure Dokploy (postgres:16)** | AWS has migration-capture snapshot only; may be out of date |
-| **Application configs (env vars)** | **Azure Dokploy** | Any env changes after migration capture are Azure-only |
-| **Application image/tag choices** | **Azure Dokploy** | Active autoDeploy on Azure may have updated tags |
-| **Deployment metadata** | **Azure Dokploy** | Deploy history, source/build references live on Azure |
-| **Scheduled job state** | **Azure Dokploy** | jpv-email-queue state authoritative on Azure |
-| **Traefik config + TLS certs** | **AWS** (Phase-3A migrated copy) — Azure remains production reference | AWS has Phase-3A copy. Azure-side Traefik changes since Phase-3A are not tracked in AWS. **Cutover gate:** diff Azure vs AWS Traefik config after production freeze; sync only if changed; preserve AWS-specific Traefik v3 compatibility fixes. Do NOT blindly overwrite. |
+| **Azure local DB data (14 × postgres:15)** | **AWS Dokploy** — current | Historical Azure copy was reconciled during cutover; recover using AWS snapshots/backups |
+| **n8n data (postgres:17)** | **AWS Dokploy** — current | Historical Azure copy was reconciled during cutover |
+| **Dokploy control-plane config** | **AWS Dokploy** — current | Historical Azure control-plane authority ended at cutover |
+| **Application configs (env vars)** | **AWS Dokploy** — current | Historical Azure-only changes are not current authority |
+| **Application image/tag choices** | **AWS Dokploy** — current | Reproducible source and AWS deployment state are current authority |
+| **Deployment metadata** | **AWS Dokploy** — current | Historical Azure metadata is retained only in migration evidence |
+| **Scheduled job state** | **AWS Dokploy** — current | Historical Azure schedule state was reconciled during cutover |
+| **Traefik config + TLS certs** | **AWS Dokploy** — current | Historical Azure reference was superseded at cutover; recover through AWS snapshots/backups and reconstruction procedures |
 | **Docker images (GHCR)** | **GHCR** | Re-pull mutable :latest at cutover; pinned digests are immutable |
 | **Application source code** | **GitHub** | Source repositories under prochattools / yeshuaacademy / stevewesthoek |
-| **Locally-built images** | **Source code on Azure** | Must rebuild from current source at cutover |
+| **Locally-built images** | **Source code / build pipeline** | Rebuild on AWS from current source when required |
 | **Cloudflare tunnel routing** | **Cloudflare dashboard** | No change expected at cutover |
 | **DNS** | **DNS provider** | No change expected; Cloudflare handles routing via tunnel |
 
@@ -902,18 +907,12 @@ cloudflared ACTIVE  = Public traffic flows through this server
 cloudflared MASKED  = No public tunnel traffic possible from this server
 ```
 
-AWS cloudflared is masked at systemd level. To receive public traffic, cloudflared must be
-explicitly unmasked AND started. This is a deliberate manual operation.
+AWS cloudflared is active on `dokploy-aws` and is the sole production connector. Any future
+maintenance must preserve this single-connector state.
 
-**CRITICAL DUAL-CONNECTOR RISK:** The Cloudflare Tunnel uses a single token for both Azure and
-AWS. If cloudflared were started on AWS while still running on Azure, Cloudflare would distribute
-traffic to BOTH connectors (load-balanced, not exclusive). This would split production traffic
-across two servers in an uncontrolled manner.
-
-**Cutover order to prevent dual-connector split-traffic:**
-1. Stop and confirm Azure cloudflared offline
-2. Verify Cloudflare dashboard shows Azure connector inactive
-3. Only then start AWS cloudflared
+**Final connector state:** The production Cloudflare Tunnel has one active connector on AWS
+`dokploy-aws`. The Azure Dokploy connector was removed with the decommissioned host on
+2026-08-26; no dual-connector or Azure failover path exists.
 
 ### Gate 2 — Direct-Origin Gate (Lightsail Firewall)
 
@@ -923,14 +922,14 @@ Tunnel traffic — cloudflared opens an outbound connection that is not subject 
 
 ### Gate 3 — Data-Writer Gate (NO-DUAL-WRITER)
 
-AWS has zero running application Swarm service tasks. Even if Gates 1 and 2 were bypassed,
-no application would be running to write to Supabase or local databases.
+AWS production application writers are active on the sole production Dokploy host. This gate
+now means that any recovery or maintenance operation must preserve single-writer control.
 
 **Gate 3 is entirely independent of Gates 1 and 2.** An AWS workload can write to Supabase
 through Tailscale even if cloudflared is masked and TCP 80/443 are blocked. Therefore the
 NO-DUAL-WRITER gate must be enforced and verified separately from Cloudflare state.
 
-**Current state (as of 2026-08-16):**
+**Historical cutover state (as of 2026-08-16):**
 
 ```
 Azure cloudflared:      ACTIVE → production traffic
@@ -938,6 +937,9 @@ AWS cloudflared:        MASKED
 AWS production writers: 0
 NO-DUAL-WRITER gate:    CLEAR (zero AWS Supabase connections)
 ```
+
+This block records the pre-cutover gate only. It is superseded by the post-decommission state
+above: AWS is active, Azure Dokploy is deleted, and rollback to Azure Dokploy is impossible.
 
 ---
 
@@ -991,10 +993,12 @@ cloudflared is masked and no public traffic reaches it.
 
 ---
 
-## 14. JPV Bootcamp Active-Development Model
+## 14. JPV Bootcamp Active-Development Model (HISTORICAL MIGRATION CONTEXT)
 
-JPV Bootcamp is under **active development on Azure** — the highest-churn workload in the
-migration.
+This section describes the pre-cutover Azure development state observed during Phase 3C4. It is
+retained for migration history and is not a statement that Azure Dokploy remains active.
+
+JPV Bootcamp was under **active development on Azure** during the migration.
 
 ### 14.1 Evidence of Active Development
 
@@ -1170,11 +1174,11 @@ of which server holds the active cloudflared tunnel.
   Lightsail resources that must be re-attached manually
 - Snapshots are stored in the same region as the instance (eu-west-2)
 
-**Azure (current production):**
+**Azure (historical pre-cutover production):**
 
 | Mechanism | Coverage | Notes |
 |-----------|---------|-------|
-| Azure Recovery Services | VM + attached disks | cloudpanel-dokploy-vault, EnhancedPolicy-CloudPanel-Dokploy |
+| Azure Recovery Services (historical) | VM + attached disks | cloudpanel-dokploy-vault, EnhancedPolicy-CloudPanel-Dokploy; deleted 2026-08-26 |
 | pg_dump bind-mounted path | `/var/backups/pgdump` | Bind-mounted in all compose DB projects; used during Phase 3A capture |
 
 ### 17.2 Planned Post-Cutover Backup Hardening
@@ -1206,8 +1210,8 @@ has occurred to any authoritative state owned by or routed through AWS. This inc
 - External systems (no email sent, webhook processed, payment recorded, or other
   authoritative side effect created by an AWS-side workload)
 
-Recovery: stop AWS cloudflared → start Azure cloudflared. No data reconciliation needed.
-AWS shadow state is preserved and Azure remains fully authoritative.
+Historical recovery action (pre-decommission only): stop AWS cloudflared → start Azure cloudflared.
+This path is impossible after 2026-08-26.
 
 **IMPORTANT:** Class A requires ALL of the above to be zero. A single authoritative write
 through any channel moves the incident to Class B — even if Supabase itself was not touched.
@@ -1221,8 +1225,9 @@ on rollback direction.
 
 See `operations/migrations/dokploy-azure-to-lightsail/cutover-checklist.md` for operator steps.
 
-**Post-cutover snapshot:** Create `dokploy-aws-post-cutover-YYYYMMDD` immediately after declaring
-production stable. This becomes the new rollback baseline.
+**Current recovery model:** Rollback to Azure Dokploy is impossible. Recovery relies on AWS
+Lightsail snapshots/backups and documented reconstruction procedures; any AWS recovery must be
+validated against the active Azure Supabase production dependency.
 
 ---
 
@@ -1278,7 +1283,7 @@ Umami container → DATABASE_URL (env) → 10.0.2.4:5433 via tailscale0
 **INVARIANTS:**
 1. `ops-umami-sqswbj-umami-1` is the only intended Umami runtime. `code-umami-1` (stale migration residue) was retired 2026-08-19. No duplicate may run concurrently.
 2. Tailscale on `dokploy-aws` must remain active; losing Tailscale connectivity breaks Umami DB access.
-3. Azure Supabase (`vm-supabase`) MUST NOT be decommissioned as part of Azure Dokploy decommission — it is an active production dependency.
+3. Azure Supabase (`vm-supabase`) is ACTIVE PRODUCTION and was untouched by the Azure Dokploy decommission.
 4. `analytics` database on Supabase must not be dropped or renamed.
 5. Default Umami dashboard view is "last 24 hours". Empty charts in the default view do not indicate data loss; historical analytics require adjusting the date range filter.
 

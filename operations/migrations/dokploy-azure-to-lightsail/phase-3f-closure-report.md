@@ -4,6 +4,8 @@
 **Phase:** 3F — Post-Cutover Closure + Normal Operation Restoration
 **Status:** COMPLETE
 
+> **Historical scope:** This report records the state immediately after the 2026-08-17 cutover. Its Azure rollback/fallback statements were superseded when Azure Dokploy was decommissioned on 2026-08-26. Rollback to Azure Dokploy is now impossible; recovery relies on AWS snapshots/backups and reconstruction procedures. Azure Supabase / PROCHAT-DATA remained active production and untouched.
+
 ---
 
 ## Summary
@@ -38,7 +40,7 @@ authority documents.
 | Component | Authority |
 |-----------|-----------|
 | Production runtime | AWS Lightsail dokploy-aws (eu-west-2, London) |
-| Azure VM | Powered on, quiesced, rollback source only |
+| Azure VM | Historical cutover state: powered on, quiesced, rollback source only; decommissioned 2026-08-26 |
 | Cloudflare tunnel | AWS connector active, Azure connector stopped |
 | Supabase PostgreSQL | Same server (100.71.31.88:5433), reached from AWS |
 | Writer authority | AWS workloads active, Azure writers at 0/0 |
@@ -160,7 +162,7 @@ These were in error state BEFORE migration and are NOT migration closure blocker
 
 3. **Build locally-built images on AWS** — `prochat-accountant` and `fala` need `docker build` on AWS to restore from error state. Non-critical (pre-existing).
 
-4. **Azure decommission planning** — Azure remains powered on as rollback source. Future decision needed on retention period and eventual teardown.
+4. **Azure decommission planning (historical at report date)** — Azure remained powered on as rollback source. This was superseded by the completed 2026-08-26 decommission.
 
 5. **Lightsail firewall ports** — Verify HTTP/HTTPS ports are open in Lightsail networking (currently working via Cloudflare tunnel, but direct access policy should be documented).
 
@@ -191,4 +193,4 @@ These were in error state BEFORE migration and are NOT migration closure blocker
 ## CORE MIGRATION CLOSED: YES
 
 The Azure → AWS Dokploy production cutover is complete. AWS is the authoritative
-production runtime. Azure remains intact as a quiesced rollback source.
+production runtime. At the time of this 2026-08-17 report, Azure remained intact as a quiesced rollback source. That historical state ended on 2026-08-26; the migration is fully closed.

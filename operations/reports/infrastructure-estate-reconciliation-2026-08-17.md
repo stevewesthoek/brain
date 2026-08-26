@@ -1,5 +1,9 @@
 # Infrastructure Estate Reconciliation — 2026-08-17 / owner refresh 2026-08-18
 
+> **Historical record:** This reconciliation predates the 2026-08-26 Azure Dokploy decommission.
+> Its fallback/rollback and Azure node statements are retained as dated evidence only and are
+> superseded by the final canonical architecture. Rollback to Azure Dokploy is impossible.
+
 **Purpose:** IKHP4 Packet 1 read-only census, superseded where necessary by explicit owner evidence received on 2026-08-18 during Packet 2.
 
 **Repository baseline:** `a84711af — feat: implement IKHP3 incidents and attention`

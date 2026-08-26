@@ -2,8 +2,8 @@
 
 **Phase:** 3C7–3C11 + Phase 3F Post-Cutover — Architecture Evidence-Provenance Audit and Correction Passes  
 **Created:** 2026-08-16  
-**Last updated:** 2026-08-19 (n8n post-migration regression fix)  
-**Status:** COMPLETE — production running on AWS Lightsail
+**Last updated:** 2026-08-26 (Azure Dokploy decommission and canonicalization)
+**Status:** COMPLETE — AWS Dokploy sole production authority; Azure Supabase active production
 
 ## Purpose
 
@@ -603,11 +603,24 @@ None. All material factual contradictions identified through Phase 3C11 have bee
 - **Evidence:** Owner canonical naming update dated 2026-08-18.
 - **Observed:** 2026-08-18
 
-### F-MGMT-006 — Former Azure Dokploy remains quiesced fallback, not production authority
-- **Claim:** The former Azure Dokploy server remains a quiesced fallback/rollback source with application writers and production Cloudflare connector stopped. It is distinct from authoritative AWS `dokploy-aws` and its Tailscale identity remains `dokploy` / `100.83.38.48` while retained.
+### F-MGMT-006 — Former Azure Dokploy decommissioned (SUPERSEDES prior fallback claim)
+- **Claim:** Azure Dokploy was decommissioned on 2026-08-26. PROCHAT-APPS has zero resources and zero resource groups; its Tailscale node `100.83.38.48` and Dokploy backup data were removed. Rollback to Azure Dokploy is impossible.
+- **Classification:** OBSERVED-VERIFIED / AUTHORITATIVE-CONFIG
+- **Evidence:** Owner-supplied final decommission acceptance recorded in the architecture audit addendum; closure commit `1c5ab2754faec8a4ac511ab675c3cadf70ef9fb4`.
+- **Observed:** 2026-08-26
+- **Current-use boundary:** AWS `dokploy-aws` is the sole production Dokploy authority. Recovery relies on AWS snapshots/backups and documented reconstruction procedures.
+
+### F-MGMT-007 — Azure Supabase preserved as active production
+- **Claim:** Azure Supabase / PROCHAT-DATA remains ACTIVE PRODUCTION and was untouched by the Azure Dokploy decommission. AWS-to-Supabase connectivity remains active.
+- **Classification:** OBSERVED-VERIFIED / AUTHORITATIVE-CONFIG
+- **Evidence:** Final decommission acceptance and post-decommission connectivity checks recorded in the architecture audit addendum.
+- **Observed:** 2026-08-26
+
+### F-MGMT-008 — PROCHAT-APPS is empty after decommission
+- **Claim:** PROCHAT-APPS contains zero resources and zero resource groups, with zero remaining Dokploy-related billable footprint.
 - **Classification:** OBSERVED-VERIFIED
-- **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18, consistent with F-CUT-006.
-- **Observed:** 2026-08-18
+- **Evidence:** Final decommission acceptance recorded in the architecture audit addendum.
+- **Observed:** 2026-08-26
 
 
 

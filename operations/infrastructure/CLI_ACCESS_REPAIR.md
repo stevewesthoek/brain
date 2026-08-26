@@ -1,5 +1,8 @@
 # BuildFlow CLI Access Diagnostics & Repair
 
+> **Historical record:** This 2026-05-03 diagnostic references the former Azure Dokploy host. It
+> is retained for incident history only; Azure Dokploy was decommissioned on 2026-08-26.
+
 **Last tested**: 2026-05-03
 **Status**: Dokploy API access restored; Supabase DB auth restored; both networks reachable
 

@@ -57,4 +57,4 @@ If the service was accidentally removed entirely, recreate with ALL of these:
 
 Repo: brain (cross-repo infrastructure knowledge)
 Discovered: 2026-05-19
-Area: operations/infrastructure (Dokploy on Azure VM `vm-dokploy`)
+Area: operations/infrastructure (historical Dokploy recovery on Azure VM `vm-dokploy`; current production is AWS `dokploy-aws`)

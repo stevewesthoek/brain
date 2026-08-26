@@ -154,7 +154,7 @@ Route automatically on every task — never ask the user which model to use.
 - Web search (returns full markdown content from top results)
 - Single URL scraping to clean markdown (75–90% token savings vs raw HTML)
 - Async batch crawling of entire sites
-- No auth required (self-hosted, private Tailscale network at `http://100.83.38.48:3002`)
+- No auth required (self-hosted on authoritative AWS Dokploy, local endpoint `http://localhost:3002`)
 - AI-agnostic: works with Claude Code, Codex, and Gemini Flash
 
 **Always use `/firecrawl` for:**

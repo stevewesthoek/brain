@@ -1,13 +1,15 @@
 # ProChat Network Connectivity Audit — 2026-08-18
 
 ```
-Status:           EVIDENCE ARTIFACT (not canonical architecture)
+Status:           HISTORICAL EVIDENCE ARTIFACT (not canonical architecture)
 Audit type:       READ-ONLY infrastructure connectivity audit
 Audit date:       2026-08-18
 Auditor:          Claude Opus 4.6 (automated)
 Mutations:        0
 Secrets exposed:  0
 ```
+
+**Final-state boundary (2026-08-26):** Sections 2–14 below preserve the read-only audit observed on 2026-08-18 and are HISTORICAL. They are superseded for current topology by the decommission record at the end of this file: `dokploy-aws`, `cloudpanel-aws`, and Azure Supabase are the production infrastructure nodes; the Azure Dokploy node `100.83.38.48` was removed. The former Azure Dokploy is not a fallback, rollback source, connector, or current Tailscale member.
 
 ---
 

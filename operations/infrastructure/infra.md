@@ -16,7 +16,7 @@ IKHP0-IKHP5 are implemented repository capabilities. IKHP4 safety/action contrac
 
 Verification status:
 - The last broad live estate verification represented in older sections of this page was 2026-05-19 from the `Office` Mac mini.
-- Dokploy production authority was superseded by the observed Azure → AWS cutover completed 2026-08-17: AWS `dokploy-aws` is authoritative production. The old Azure `dokploy-azure` environment is non-authoritative and retained only as a quiesced fallback/rollback source.
+- Dokploy production authority was superseded by the observed Azure → AWS cutover completed 2026-08-17: AWS `dokploy-aws` is authoritative production. The former Azure Dokploy environment was decommissioned on 2026-08-26 and is neither a runtime nor a rollback source.
 - Packet 2 does not claim a new whole-estate live probe. CloudPanel, provider-access, monitoring, and ongoing backup attributes that were not freshly observed remain explicit UNKNOWNs in IKHP.
 - Historical sources used by this page include `az`, `aws sts`, SSH, Dokploy API, Cloudflare API, Docker Swarm inspection, local SSH config, migration evidence, and runbooks.
 
@@ -71,7 +71,7 @@ The access-status text below is a historical configuration/live snapshot, not a 
 
 ### Azure
 
-`supabase-azure` is the current Azure subscription for Supabase/data-side infrastructure. `dokploy-azure` is retained only for the quiesced legacy Dokploy fallback and is not production authority.
+`supabase-azure` / `PROCHAT-DATA` is the only remaining Azure production subscription, hosting active Supabase data infrastructure. The former `PROCHAT-APPS` Dokploy subscription has zero resources and zero resource groups after decommission on 2026-08-26; it has zero Dokploy-related billable footprint and is not an authority or rollback source.
 
 | Subscription | Subscription ID | Tenant ID | Signed-in identity | Current access status | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -164,7 +164,7 @@ Internet → Cloudflare (TLS termination) → Cloudflare Tunnel (dc7bb87e) → A
 - **Dokploy UI/API**: Cloudflare Tunnel routes `dokploy.prochat.tools` directly to `localhost:3000`. Traefik is NOT in this path.
 - **Deployed apps**: Cloudflare Tunnel routes all other hostnames to `localhost:80` (Traefik entrypoint `web`). Traefik uses Docker/Swarm labels to route to the correct container.
 - **SSL/TLS**: Cloudflare handles TLS termination for ALL tunnel-routed traffic. The connection from Cloudflare Tunnel to localhost is unencrypted HTTP. Traefik's LetsEncrypt/ACME config exists but is unused for tunnel traffic.
-- **Cloudflared**: The production connector runs on AWS `dokploy-aws` using the remotely-managed production tunnel. On the retained Azure `dokploy-azure` fallback, the production connector remains stopped; it is not an active ingress path.
+- **Cloudflared**: The sole production connector runs on AWS `dokploy-aws` using the remotely-managed production tunnel. The former Azure connector and host were deleted on 2026-08-26.
 
 #### API
 
@@ -294,7 +294,7 @@ Production state (verified 2026-08-19):
 - code-umami-1 (stale migration residue): retired 2026-08-19
 - Incident status: CLOSED
 
-Critical invariant: Azure Supabase (`vm-supabase`, Tailscale `100.71.31.88`) is the authoritative analytics DB. It MUST NOT be decommissioned as part of Azure Dokploy decommission planning — these are separate Azure resources.
+Critical invariant: Azure Supabase (`vm-supabase`, Tailscale `100.71.31.88`) is ACTIVE PRODUCTION and the authoritative analytics DB. It was untouched by the Azure Dokploy decommission.
 
 Future consideration: Steve is evaluating Umami retirement (New Relic Browser replacement). This is NOT approved — separate planning required before any decommission.
 
@@ -364,7 +364,7 @@ Current evidence state (management-plane hardened 2026-08-18):
 
 ## Tailscale Network Inventory
 
-Live observation **2026-08-18** (8 registered devices, 7 active, 1 offline):
+Historical observation **2026-08-18** (8 registered devices, 7 active, 1 offline); superseded by the final 2026-08-26 topology below:
 
 | Node | Tailscale IP | OS | Role | Status |
 |------|--------------|----|------|--------|
@@ -372,10 +372,11 @@ Live observation **2026-08-18** (8 registered devices, 7 active, 1 offline):
 | `dokploy-aws` | `100.71.47.24` | Linux | AWS authoritative Dokploy production host | Active |
 | `cloudpanel-aws` | `100.121.12.36` | Linux | AWS authoritative CloudPanel host | Active |
 | `supabase` | `100.71.31.88` | Linux | Azure Supabase / PostgreSQL authority | Active |
-| `dokploy` | `100.83.38.48` | Linux | Azure `dokploy-azure` quiesced fallback / rollback source | Registered/idle |
 | `macbook` | `100.70.12.18` | macOS | Secondary Mac | Active/registered |
 | `iphone` | `100.107.201.123` | iOS | Contextual personal device | Active/registered |
 | `motorola` | `100.107.156.26` | Android | Contextual personal device | Offline |
+
+Final production topology (2026-08-26): `dokploy-aws`, `cloudpanel-aws`, and `supabase` are the three infrastructure nodes. The former Azure Dokploy node `100.83.38.48` was removed.
 
 Management-plane model (hardened + hostnames standardized 2026-08-18):
 - All production servers use OpenSSH-over-Tailscale (NOT Tailscale SSH mode).
@@ -420,7 +421,7 @@ Run `sync-credentials` at any time to scan `~/.config/` for new `.env` files and
   - `~/.local/bin/aws-destroyer` assumes `ClaudeCodexDestroyer`
 - Azure role flow on this Mac:
   - `~/.local/bin/azure-cli` is the generic user-authenticated `az`
-  - current production/data operations use the `azure-data-*` wrappers for `supabase-azure`/Supabase; `azure-apps-*` wrappers are legacy/fallback-only for retained `dokploy-azure` and are not a production deployment path.
+  - current production/data operations use the `azure-data-*` wrappers for `supabase-azure`/Supabase; `azure-apps-*` wrappers are legacy-only references for the decommissioned Dokploy estate and are not a production deployment path.
 
 ## Domain & Site Inventory
 

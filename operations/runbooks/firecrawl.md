@@ -1,14 +1,14 @@
 # Firecrawl Runbook
 
-Self-hosted web scraping & search API. Deployed on Dokploy, accessible via Tailscale at `http://localhost:3051`.
+Self-hosted web scraping & search API. Deployed on authoritative AWS Dokploy, accessible locally at `http://localhost:3002`. The former Azure endpoint is decommissioned and must not be used.
 
 ## Service Details
 
 | Aspect | Value |
 |--------|-------|
-| **Tailscale Endpoint** | `http://localhost:3051` |
-| **Tailscale Node** | `dokploy` (100.83.38.48) |
-| **Deployment** | Dokploy (Azure `vm-dokploy`) |
+| **Endpoint** | `http://localhost:3002` on `dokploy-aws` |
+| **Tailscale Node** | `dokploy-aws` (100.71.47.24) |
+| **Deployment** | Dokploy (AWS Lightsail `dokploy-aws`) |
 | **Docker Compose** | `brain/operations/deploy/firecrawl/docker-compose.yml` |
 | **Database** | PostgreSQL in Docker volume `firecrawl_pgdata` |
 | **Port (internal)** | 3051 |

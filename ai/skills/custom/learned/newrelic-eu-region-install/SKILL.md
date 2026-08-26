@@ -71,7 +71,7 @@ NODE_OPTIONS=--require newrelic   # append to existing value if NODE_OPTIONS alr
 - **User API key shown only once** — copy immediately when creating in NR UI. The key listing page only shows a truncated version; if you copy that, the key will fail auth silently.
 - **`NRAK-` prefix required** — the User API key must include the `NRAK-` prefix. The hex string alone is not valid.
 - **BROWSER entities cannot be deleted** via `entityDelete` NerdGraph mutation — error: "Entities of this domain-type: BROWSER-APPLICATION cannot be deleted with this mutation". They auto-expire when data stops flowing. Don't retry.
-- **dokploy server**: `master` user requires sudo password — use `root` SSH directly (`ssh root@100.83.38.48`) for infra agent install and `/etc/newrelic-infra.yml` changes.
+- **Historical Azure Dokploy server**: `master` user required sudo password — use `root` SSH directly (`ssh root@100.83.38.48`) for the former infra agent install and `/etc/newrelic-infra.yml` changes. Azure Dokploy was decommissioned 2026-08-26; do not use this path.
 - **Credentials file:** `~/.config/newrelic/.env` — local only, off-git, chmod 600.
 
 ## Context
