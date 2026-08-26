@@ -56,6 +56,18 @@ All CLIs in this manifest are symlinked to `~/.local/bin/` or exist in Homebrew/
 
 ## Master CLI Registry
 
+### Registered operational CLI additions
+
+This block is maintained by `tools/register-cli-manifest.mjs` for future
+installations that do not fit an existing category. It is part of the same
+manifest consumed by capability discovery.
+
+| CLI | Path | Type | Description |
+|-----|------|------|-------------|
+<!-- BEGIN REGISTERED CLI ENTRIES -->
+| `newrelic` | `/opt/homebrew/bin/newrelic` | managed | New Relic CLI for EU-region telemetry, NerdGraph, and NRQL read access |
+<!-- END REGISTERED CLI ENTRIES -->
+
 ### System & Core Tools
 
 | CLI | Location | Installation | Type | Notes |
