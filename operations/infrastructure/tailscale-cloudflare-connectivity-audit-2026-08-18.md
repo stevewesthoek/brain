@@ -9,7 +9,7 @@ Mutations:        0
 Secrets exposed:  0
 ```
 
-**Final-state boundary (2026-08-26):** Sections 2–14 below preserve the read-only audit observed on 2026-08-18 and are HISTORICAL. They are superseded for current topology by the decommission record at the end of this file: `dokploy-aws`, `cloudpanel-aws`, and VM `vm-supabase` in Azure subscription `supabase-azure` are the production infrastructure servers; the Azure Dokploy node `100.83.38.48` was removed. The former Azure Dokploy is not a fallback, rollback source, connector, or current Tailscale member.
+**Final-state boundary (2026-08-26):** Sections 2–14 below preserve the read-only audit observed on 2026-08-18 and are HISTORICAL. They are superseded for current topology by the decommission record at the end of this file: Tailscale identities `dokploy`, `cloudpanel`, and `supabase` map to production servers/resources `dokploy-aws`, `cloudpanel-aws`, and VM `vm-supabase` in Azure subscription `supabase-azure`; the Azure Dokploy node `100.83.38.48` was removed. The former Azure Dokploy is not a fallback, rollback source, connector, or current Tailscale member.
 
 ---
 

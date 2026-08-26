@@ -7,7 +7,7 @@ Self-hosted web scraping & search API. Deployed on authoritative AWS Dokploy, ac
 | Aspect | Value |
 |--------|-------|
 | **Endpoint** | `http://localhost:3002` on `dokploy-aws` |
-| **Tailscale Node** | `dokploy-aws` (100.71.47.24) |
+| **Tailscale Node** | `dokploy` (100.71.47.24; AWS resource `dokploy-aws`) |
 | **Deployment** | Dokploy (AWS Lightsail `dokploy-aws`) |
 | **Docker Compose** | `brain/operations/deploy/firecrawl/docker-compose.yml` |
 | **Database** | PostgreSQL in Docker volume `firecrawl_pgdata` |

@@ -118,9 +118,9 @@ Source of truth:
 - [ssh config](/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/ssh/config)
 
 Current Git-managed aliases (all via Tailscale — management-plane hardened 2026-08-18):
-- `dokploy` / `dokploy-aws` -> Tailscale `100.71.47.24`, user `ubuntu`, key `id_ed25519`.
+- Tailscale identity `dokploy` / AWS resource `dokploy-aws` -> `100.71.47.24`, user `ubuntu`, key `id_ed25519`.
 - `supabase` -> Tailscale `100.71.31.88`, user `master`, key `id_ed25519`.
-- `cloudpanel` / `cloudpanel-aws` -> Tailscale `100.121.12.36`, user `ubuntu`, key `id_ed25519`.
+- Tailscale identity `cloudpanel` / AWS resource `cloudpanel-aws` -> `100.121.12.36`, user `ubuntu`, key `id_ed25519`.
 - `office` -> Tailscale `100.86.124.66`, user `office`, key `id_ed25519`.
 
 ### Admin / service entrypoints
@@ -355,7 +355,7 @@ Current evidence state (management-plane hardened 2026-08-18):
 
 - Primary private connectivity between all production servers is **Tailscale**. All SSH management is Tailscale-only (no public TCP/22).
 - Authoritative AWS Dokploy reaches the shared Supabase authority through the tailnet; `100.71.47.24` ↔ `100.71.31.88`.
-- All three production servers (dokploy-aws, cloudpanel-aws, supabase) are enrolled in the tailnet and use OpenSSH-over-Tailscale for administration.
+- All three production servers (`dokploy-aws`, `cloudpanel-aws`, and `vm-supabase`) are enrolled in the tailnet. Their Tailscale identities are `dokploy`, `cloudpanel`, and `supabase`; all use OpenSSH-over-Tailscale for administration.
 - Dokploy application ingress: Cloudflare Tunnel (outbound, no public ports required).
 - CloudPanel application ingress is mixed: public 80/443/UDP443 remains required for direct website origins, while 10 current hostnames are also served through the active CloudPanel Tunnel.
 - CloudPanel admin panel (8443): Tailscale-only access.
@@ -369,8 +369,8 @@ Historical observation **2026-08-18** (8 registered devices, 7 active, 1 offline
 | Node | Tailscale IP | OS | Role | Status |
 |------|--------------|----|------|--------|
 | `office` | `100.86.124.66` | macOS | Primary control plane (Mac mini) | Active |
-| `dokploy-aws` | `100.71.47.24` | Linux | AWS authoritative Dokploy production host | Active |
-| `cloudpanel-aws` | `100.121.12.36` | Linux | AWS authoritative CloudPanel host | Active |
+| `dokploy-aws` | `100.71.47.24` | Linux | AWS authoritative Dokploy production host; historical Tailscale identity at the time was `dokploy-aws` | Active |
+| `cloudpanel-aws` | `100.121.12.36` | Linux | AWS authoritative CloudPanel host; historical Tailscale identity at the time was `cloudpanel-aws` | Active |
 | `vm-supabase` (Tailscale identity `supabase`) | `100.71.31.88` | Linux | Azure-hosted self-managed Supabase/PostgreSQL VM in `supabase-azure` | Active |
 | `macbook` | `100.70.12.18` | macOS | Secondary Mac | Active/registered |
 | `iphone` | `100.107.201.123` | iOS | Contextual personal device | Active/registered |
@@ -383,7 +383,7 @@ Management-plane model (hardened + hostnames standardized 2026-08-18):
 - Linux hostnames match Tailscale/Lightsail names: `dokploy-aws`, `cloudpanel-aws`.
 - `preserve_hostname: true` set in cloud-init on both to prevent revert on reboot.
 - Public TCP/22 blocked at Lightsail cloud firewall on both AWS hosts.
-- Tailscale node-key expiry is disabled for permanent infrastructure nodes `dokploy-aws`, `cloudpanel-aws`, and Supabase.
+- Tailscale node-key expiry is disabled for permanent infrastructure identities `dokploy`, `cloudpanel`, and `supabase` (underlying servers `dokploy-aws`, `cloudpanel-aws`, and `vm-supabase`).
 
 Emergency access model (verified 2026-08-18):
 - **dokploy-aws**: Lightsail browser SSH is SUPPORTED-BY-CONFIG. `lightsail-connect` passes Lightsail firewall, UFW is inactive, sshd has `TrustedUserCAKeys` for the Lightsail CA, and `LightsailDefaultKeyPair` is in authorized_keys. All layers allow it.
@@ -432,7 +432,7 @@ To re-enable a disabled site: add its entry back to the relevant Cloudflare Tunn
 ### CloudPanel AWS (tunnel `1bdef92e`)
 
 CloudPanel production is OBSERVED-VERIFIED healthy as of 2026-08-18 (nginx active, MariaDB active, two PHP-FPM services running, admin endpoint responsive, hosted websites responding). The per-site table below remains an inventory view rather than a replacement for live health observations.
-SSH configuration: `ssh cloudpanel` / `ssh cloudpanel-aws` targets Tailscale `100.121.12.36` as user `ubuntu`; fresh independent OpenSSH-over-Tailscale validation passed. Normal public TCP/22 is blocked.
+ SSH configuration: `ssh cloudpanel` targets Tailscale identity `cloudpanel` at `100.121.12.36` as user `ubuntu`; fresh independent OpenSSH-over-Tailscale validation passed. Normal public TCP/22 is blocked.
 CloudPanel UI reference: `https://cp.prochat.tools`
 
 | Domain | Status | Notes |
@@ -453,7 +453,7 @@ CloudPanel UI reference: `https://cp.prochat.tools`
 ### Dokploy (tunnel `dc7bb87e`)
 
 Sites in this inventory now belong to the authoritative AWS Dokploy runtime `dokploy-aws`; the 2026-08-17 cutover verified 17 production-critical domains externally. The full table also contains older inventory entries, so individual status labels should not be treated as a fresh whole-estate probe.
-SSH: the owner manually updated `operations/system-configs/ssh/config`; `ssh dokploy` and `ssh dokploy-aws` now target AWS Tailscale `100.71.47.24` as user `ubuntu`.
+SSH: the owner manually updated `operations/system-configs/ssh/config`; `ssh dokploy` targets Tailscale identity `dokploy` at `100.71.47.24` as user `ubuntu` (underlying AWS resource `dokploy-aws`).
 Dokploy UI: `https://dokploy.prochat.tools`
 
 | Domain | App | Project | Status | Notes |

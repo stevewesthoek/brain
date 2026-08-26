@@ -118,7 +118,7 @@ three-node infrastructure and is documented separately below:
  ┌──────────────────────────▼───────────────────────────────────────────────┐
  │  PRODUCTION NODE (AWS Lightsail)                                         │
  │                                                                          │
- │  dokploy-aws · xlarge_3_0 · 4 vCPU / 16 GB · eu-west-2 (London)        │
+ │  dokploy-aws · AWS Lightsail · Tailscale identity: dokploy             │
  │  Static IP: 18.135.240.168 · Tailscale: 100.71.47.24                    │
  │                                                                          │
  │  ┌──────────────────────────────────────────────────────────────────┐    │
@@ -202,7 +202,7 @@ rollback target.
 | Disk | 320 GB (single disk) |
 | Static IP | 18.135.240.168 |
 | Tailscale IP | 100.71.47.24 |
-| Tailscale FQDN | dokploy-aws.tail3c0f0a.ts.net |
+| Tailscale identity / FQDN | `dokploy` / `dokploy.tail3c0f0a.ts.net` |
 | Docker data-root | `/mnt/data-dokploy/docker` |
 | Docker version | 29.2.0 (Swarm mode) |
 | Auto-snapshot | Daily, 03:00 UTC |
@@ -238,7 +238,7 @@ not on VM `vm-supabase`. They are entirely separate infrastructure.
 | Disk | 160 GB SSD |
 | Static public IPv4 | `13.135.227.0` (retained for website ingress) |
 | Tailscale IPv4 | `100.121.12.36` |
-| Tailscale FQDN | `cloudpanel-aws.tail3c0f0a.ts.net` |
+| Tailscale identity / FQDN | `cloudpanel` / `cloudpanel.tail3c0f0a.ts.net` |
 | Management SSH | standard OpenSSH over Tailscale; `ssh cloudpanel`; normal public TCP/22 blocked at the Lightsail perimeter |
 | CloudPanel admin | `https://100.121.12.36:8443`; current UFW evidence keeps 8443 on the Tailscale management path |
 | Host UFW TCP/22 | allows Anywhere (IPv4 + IPv6) in the final evidence closure; this is not the effective public perimeter |
@@ -260,21 +260,26 @@ Tailscale is the canonical private **management plane** for ProChat infrastructu
 
 **Infrastructure identities (latest canonical evidence 2026-08-18):**
 ```
-  dokploy-aws       100.71.47.24    dokploy-aws.tail3c0f0a.ts.net   authoritative AWS production
-  cloudpanel-aws    100.121.12.36   cloudpanel-aws.tail3c0f0a.ts.net authoritative AWS CloudPanel
+  dokploy            100.71.47.24    dokploy.tail3c0f0a.ts.net       Tailscale identity for AWS resource dokploy-aws
+  cloudpanel         100.121.12.36   cloudpanel.tail3c0f0a.ts.net    Tailscale identity for AWS resource cloudpanel-aws
   vm-supabase       100.71.31.88    Tailscale identity `supabase`; self-hosted Supabase + subnet 10.0.2.0/24
   office            100.86.124.66   local control host
   macbook           100.70.12.18    local operator host
 ```
 
 Management-plane invariants:
-- `dokploy-aws` and `cloudpanel-aws` use OpenSSH over Tailscale; normal public TCP/22 is blocked.
-- Tailscale node-key expiry is disabled for permanent infrastructure nodes `dokploy-aws`, `cloudpanel-aws`, and `vm-supabase` (Tailscale identity `supabase`).
+- Tailscale identities `dokploy` and `cloudpanel` map to AWS resources `dokploy-aws` and `cloudpanel-aws`; both use OpenSSH over Tailscale and normal public TCP/22 is blocked.
+- Tailscale node-key expiry is disabled for permanent infrastructure identities `dokploy`, `cloudpanel`, and `supabase` (underlying servers/resources `dokploy-aws`, `cloudpanel-aws`, and `vm-supabase`).
 - Both AWS production nodes are currently user-owned by `info@prochat.tools`, untagged, and receive effective connectivity through the existing wildcard grant; no ACL/tag redesign was part of the 2026-08-18 standardization.
 - CloudPanel TCP/8443 remains on the Tailscale management path. Final closure evidence shows host UFW TCP/22 allows Anywhere, while the Lightsail perimeter restricts TCP/22 to `lightsail-connect` only; ordinary public SSH remains blocked.
 - Dokploy and CloudPanel share the same management plane but intentionally use different application-ingress models.
 
 The older 2026-08-16 `7 registered / 6 active` tailnet count is historical observation evidence only and is not a durable architecture invariant after CloudPanel enrollment.
+
+The `-aws` suffix was a temporary Tailscale collision differentiator while the former Azure
+Dokploy/CloudPanel nodes coexisted with their AWS replacements. After the Azure Dokploy estate
+was decommissioned, Tailscale identities were canonicalized to `dokploy` and `cloudpanel`; the
+underlying AWS resource names remain `dokploy-aws` and `cloudpanel-aws`.
 
 **Subnet route:** `vm-supabase` (Tailscale identity `supabase`) advertises `10.0.2.0/24`. Application containers
 holding `DATABASE_URL`/`SYSTEM_DATABASE_URL` pointing to `10.0.2.4:5433` reach PostgreSQL via
@@ -402,7 +407,7 @@ ssh -o IdentitiesOnly=yes -i /tmp/lsl-key ubuntu@18.135.240.168
 ```
 
 SSH is restricted to CIDR `5.249.73.210/32` (operator IP). Access from other IPs requires
-either a Lightsail firewall rule change or access via Tailscale (`dokploy-aws.tail3c0f0a.ts.net`).
+either a Lightsail firewall rule change or access via Tailscale (`dokploy.tail3c0f0a.ts.net`).
 
 ---
 

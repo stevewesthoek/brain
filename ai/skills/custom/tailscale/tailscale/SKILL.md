@@ -7,7 +7,7 @@ description: Use when the user asks to inspect Tailscale network status, check n
 
 ## What this skill is for
 
-Help Claude and Codex inspect and reason about the Tailscale network safely using the local CLI wrapper. Tailscale is the primary private network for this infrastructure — all Azure VMs (dokploy, supabase) and the Office Mac communicate over Tailscale. Pre-flight checks use Tailscale to verify node reachability before SSH, backup, or deploy operations.
+Help Claude and Codex inspect and reason about the Tailscale network safely using the local CLI wrapper. Tailscale is the primary private network for this infrastructure — AWS servers `dokploy-aws` and `cloudpanel-aws`, Azure VM `vm-supabase`, and the Office Mac communicate over Tailscale. Current Tailscale identities are `dokploy`, `cloudpanel`, and `supabase`.
 
 This skill is primarily read-only and observability-oriented. For device removal and account management, use the Tailscale API (key at `~/.config/tailscale/.env`) or the admin console.
 
@@ -68,9 +68,9 @@ Current production nodes as of 2026-08-26 (the 2026-08-18 inventory was supersed
 | Node | Tailscale IP | OS | Role | Status |
 |------|--------------|----|------|--------|
 | `office` | `100.86.124.66` | macOS | Primary control plane (Mac mini) | Online |
-| `dokploy-aws` | `100.71.47.24` | Linux | AWS Lightsail — authoritative Dokploy production | Online |
-| `cloudpanel-aws` | `100.121.12.36` | Linux | AWS Lightsail — authoritative CloudPanel host | Online |
-| `supabase` | `100.71.31.88` | Linux | Azure VM — Supabase / PostgreSQL backend | Online |
+| `dokploy` (AWS resource `dokploy-aws`) | `100.71.47.24` | Linux | AWS Lightsail — authoritative Dokploy production | Online |
+| `cloudpanel` (AWS resource `cloudpanel-aws`) | `100.121.12.36` | Linux | AWS Lightsail — authoritative CloudPanel host | Online |
+| `vm-supabase` (Tailscale identity `supabase`) | `100.71.31.88` | Linux | Azure-hosted self-managed Supabase/PostgreSQL VM in subscription `supabase-azure` | Online |
 | `macbook` | `100.70.12.18` | macOS | Secondary Mac — personal laptop | Idle |
 | `iphone` | `100.107.201.123` | iOS | Mobile device | Online |
 | `motorola` | `100.107.156.26` | Android | Mobile device | Offline |
@@ -87,10 +87,10 @@ All production servers use OpenSSH-over-Tailscale (not Tailscale SSH mode). Publ
 ~/.local/bin/tailscale-cli status --json
 
 # Ping a specific node (connectivity check)
-~/.local/bin/tailscale-cli ping dokploy-aws
+~/.local/bin/tailscale-cli ping dokploy
 
 # Ping with timeout and count (for pre-flight use)
-~/.local/bin/tailscale-cli ping -c 1 --timeout 5s dokploy-aws
+~/.local/bin/tailscale-cli ping -c 1 --timeout 5s dokploy
 
 # Show this node's Tailscale IP
 ~/.local/bin/tailscale-cli ip -4

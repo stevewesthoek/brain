@@ -574,19 +574,19 @@ None. All material factual contradictions identified through Phase 3C11 have bee
 - **Observed:** 2026-08-18
 
 ### F-MGMT-002 — Dokploy AWS permanent infrastructure identity
-- **Claim:** `dokploy-aws` has persistent Linux hostname `dokploy-aws`, Tailscale FQDN `dokploy-aws.tail3c0f0a.ts.net`, Tailscale IPv4 `100.71.47.24`, `tailscaled` enabled/active, and Tailscale node-key expiry disabled. Static public IPv4 `18.135.240.168` remains attached but is not normal SSH or application ingress.
+- **Claim:** HISTORICAL 2026-08-18 observation: AWS resource `dokploy-aws` had persistent Linux hostname `dokploy-aws` and Tailscale identity/FQDN `dokploy-aws` / `dokploy-aws.tail3c0f0a.ts.net` at Tailscale IPv4 `100.71.47.24`. On 2026-08-26 the Tailscale identity was renamed to `dokploy`; the IP and underlying resource name were unchanged. `tailscaled` is enabled/active and Tailscale node-key expiry is disabled. Static public IPv4 `18.135.240.168` remains attached but is not normal SSH or application ingress.
 - **Classification:** OBSERVED-VERIFIED
 - **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18; `preserve_hostname: true`; production health PASS; Cloudflare Tunnel remains application ingress.
 - **Observed:** 2026-08-18
 
 ### F-MGMT-003 — CloudPanel AWS permanent infrastructure identity and management firewall
-- **Claim:** `cloudpanel-aws` has persistent Linux hostname `cloudpanel-aws`, Tailscale FQDN `cloudpanel-aws.tail3c0f0a.ts.net`, Tailscale IPv4 `100.121.12.36`, `tailscaled` enabled/active, and Tailscale node-key expiry disabled. Final evidence shows host UFW TCP/22 allows Anywhere (v4+v6), while the Lightsail perimeter permits TCP/22 only from `lightsail-connect`; ordinary public SSH is blocked. CloudPanel admin 8443 remains on the Tailscale management path, while public website ingress on 80/443/UDP443 remains intentionally enabled.
+- **Claim:** HISTORICAL 2026-08-18 observation: AWS resource `cloudpanel-aws` had persistent Linux hostname `cloudpanel-aws` and Tailscale identity/FQDN `cloudpanel-aws` / `cloudpanel-aws.tail3c0f0a.ts.net` at Tailscale IPv4 `100.121.12.36`. On 2026-08-26 the Tailscale identity was renamed to `cloudpanel`; the IP and underlying resource name were unchanged. `tailscaled` is enabled/active and Tailscale node-key expiry is disabled. Final evidence shows host UFW TCP/22 allows Anywhere (v4+v6), while the Lightsail perimeter permits TCP/22 only from `lightsail-connect`; ordinary public SSH is blocked. CloudPanel admin 8443 remains on the Tailscale management path, while public website ingress on 80/443/UDP443 remains intentionally enabled.
 - **Classification:** OBSERVED-VERIFIED
 - **Evidence:** `operations/infrastructure/tailscale-cloudflare-connectivity-audit-2026-08-18.md` evidence-closure addendum; fresh Tailscale SSH PASS; AWS Lightsail API port-state evidence; external public SSH timeout; CloudPanel production health PASS.
 - **Observed:** 2026-08-18
 
 ### F-MGMT-004 — Permanent infrastructure Tailscale key-expiry policy
-- **Claim:** Tailscale node-key expiry is disabled for the long-lived infrastructure nodes `dokploy-aws`, `cloudpanel-aws`, and self-hosted Supabase.
+- **Claim:** Tailscale node-key expiry is disabled for the long-lived infrastructure identities `dokploy`, `cloudpanel`, and `supabase`, mapping to servers/resources `dokploy-aws`, `cloudpanel-aws`, and `vm-supabase`.
 - **Classification:** OBSERVED-VERIFIED
 - **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18; Supabase precedent plus closure verification on both AWS nodes.
 - **Observed:** 2026-08-18
