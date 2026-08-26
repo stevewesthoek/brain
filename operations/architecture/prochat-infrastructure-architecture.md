@@ -104,7 +104,9 @@ downtime, 16/16 database restores, and 17/17 domain validations passing. Azure D
 permanently decommissioned 2026-08-26 (all compute, storage, networking, backups deleted from
 PROCHAT-APPS subscription).
 
-The system consists of three production infrastructure nodes joined by a **Tailscale mesh**:
+The system consists of three production infrastructure nodes joined by a **Tailscale mesh**. The
+diagram below shows the Dokploy↔Supabase data path; `cloudpanel-aws` is part of the wider
+three-node infrastructure and is documented separately below:
 
 ```
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -1183,8 +1185,8 @@ of which server holds the active cloudflared tunnel.
 
 ### 17.2 Planned Post-Cutover Backup Hardening
 
-The following hardening is NOT authorized until AWS is stable, rollback window closed, and
-Steve has given explicit approval. Document only.
+The following hardening is NOT authorized until the AWS runtime is stable, the current
+backup/recovery point is verified, and Steve has given explicit approval. Document only.
 
 | Item | Target | Details |
 |------|--------|---------|
@@ -1392,8 +1394,7 @@ requirements on AWS.
 The proposed future model (ONE application database + explicit schemas — see Section 8.2 and
 ADR-003 PROPOSED) requires post-cutover convergence work and explicit Steve approval before
 any steps below are taken. Prerequisites before any convergence:
-- AWS stable for rollback window + explicit close
-- Fresh backup verified
+- Stable AWS runtime and current backup/recovery point verified
 - Per-application dependency analysis (which apps use local DB vs Supabase vs both)
 - Explicit Steve approval for each schema migration
 
@@ -1476,7 +1477,7 @@ does not use the proposed single-database-plus-schemas model.** The current stat
 intermediate step toward any approved target. No convergence is approved by this document.
 
 **Future convergence (if authorized):** Explicit planning required. No schema migration until:
-stable runtime + rollback window closed + per-app dependency analysis + Steve approval.
+stable AWS runtime + current backup/recovery point verified + per-app dependency analysis + Steve approval.
 
 **Consequence:** All applications that write to Supabase are subject to NO-DUAL-WRITER.
 This applies regardless of which logical database or schema they use — all are on the same server.
