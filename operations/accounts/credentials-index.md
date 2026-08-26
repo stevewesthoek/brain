@@ -765,8 +765,8 @@ All detected credentials have been categorized. Run `sync-credentials` to check 
 | `YOUTUBE_UPLOAD_API_URL` | `~/.config/youtube/.env` | 2026-05-31 |
 | `YOUTUBE_CLIENT_SECRET_JSON` | `~/.config/youtube/.env` | 2026-05-31 |
 | `YOUTUBE_SCOPES` | `~/.config/youtube/.env` | 2026-05-31 |
-| `TELEGRAM_BOT_TOKEN` | `~/.config/probot/.env` | 2026-06-20 |
-| `TELEGRAM_ALLOWED_USER_IDS` | `~/.config/probot/.env` | 2026-06-20 |
+| `TELEGRAM_BOT_TOKEN` | `~/.config/probot/.env` | 2026-06-20 — retained legacy ProBot credential; inactive; no current runtime consumer; preserved for possible future reuse |
+| `TELEGRAM_ALLOWED_USER_IDS` | `~/.config/probot/.env` | 2026-06-20 — retained legacy ProBot configuration; inactive; no current runtime consumer; preserved for possible future reuse |
 | `CLAUDE_PROJECTS_DIR` | `~/.config/probot/.env` | 2026-06-20 |
 | `CODEX_SESSIONS_DIR` | `~/.config/probot/.env` | 2026-06-20 |
 | `CODEX_SESSION_INDEX` | `~/.config/probot/.env` | 2026-06-20 |
