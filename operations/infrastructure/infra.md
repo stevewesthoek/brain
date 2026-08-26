@@ -71,7 +71,7 @@ The access-status text below is a historical configuration/live snapshot, not a 
 
 ### Azure
 
-`supabase-azure` / `PROCHAT-DATA` is the only remaining Azure production subscription, hosting active Supabase data infrastructure. The former `PROCHAT-APPS` Dokploy subscription has zero resources and zero resource groups after decommission on 2026-08-26; it has zero Dokploy-related billable footprint and is not an authority or rollback source.
+`supabase-azure` is the only remaining Azure production subscription, hosting active self-managed Supabase/PostgreSQL on VM `vm-supabase`. `PROCHAT-DATA` is the historical former display name for this subscription. The former `PROCHAT-APPS` Dokploy subscription has zero resources and zero resource groups after decommission on 2026-08-26; it has zero Dokploy-related billable footprint and is not an authority or rollback source.
 
 | Subscription | Subscription ID | Tenant ID | Signed-in identity | Current access status | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -88,12 +88,12 @@ The access-status text below is a historical configuration/live snapshot, not a 
 | Server | Purpose | Cloud | Region / Platform | OS | CPU / RAM | Public IP | Tailscale IP | Access path | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `dokploy-aws` | Authoritative Dokploy production host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu 24.04.4 LTS, kernel 6.17.0-1019-aws | 4 vCPU, 16 GiB RAM, 320 GiB SSD | `18.135.240.168` | `100.71.47.24` | `ssh dokploy` -> Tailscale | **Running authoritative production** — Linux hostname `dokploy-aws`, standardized 2026-08-18 |
-| `supabase` / `vm-supabase` | Authoritative Supabase + PostgreSQL backend host | Azure / `supabase-azure` | Spain Central | Ubuntu 24.04.3 LTS (historical observation) | 2 vCPU, 7.8 GiB RAM (historical observation) | `68.221.194.245` | `100.71.31.88` | `ssh supabase` | Current Azure data authority; volatile VM state not re-probed in Packet 2 |
+| `vm-supabase` | Authoritative self-managed Supabase/PostgreSQL VM | Azure subscription `supabase-azure` | Spain Central | Ubuntu 24.04.3 LTS (historical observation) | 2 vCPU, 7.8 GiB RAM (historical observation) | `68.221.194.245` | `100.71.31.88` (Tailscale identity `supabase`) | `ssh supabase` | ACTIVE PRODUCTION; volatile VM state not re-probed in Packet 2 |
 | `cloudpanel-aws` | Authoritative CloudPanel host | AWS Lightsail | London, Zone A (`eu-west-2`) | Ubuntu 24.04.4 LTS, kernel 6.17.0-1007-aws | 2 vCPU, 8 GiB RAM, 160 GiB SSD | `13.135.227.0` | `100.121.12.36` | `ssh cloudpanel` -> Tailscale | **Running authoritative CloudPanel** — Linux hostname `cloudpanel-aws`, standardized 2026-08-18 |
 
 ## Azure Resource Inventory
 
-Only `supabase-azure` remains part of the current Azure estate, for Supabase/data-side infrastructure. The detailed inventory below is a **2026-05-19 historical live snapshot** unless a newer dated evidence item says otherwise; Packet 2 did not re-query Azure live state.
+Only `supabase-azure` remains part of the current Azure estate, containing production VM `vm-supabase` and its Supabase/data-side infrastructure. The detailed inventory below is a **2026-05-19 historical live snapshot** unless a newer dated evidence item says otherwise; Packet 2 did not re-query Azure live state.
 
 ### `supabase-azure`
 
@@ -294,7 +294,7 @@ Production state (verified 2026-08-19):
 - code-umami-1 (stale migration residue): retired 2026-08-19
 - Incident status: CLOSED
 
-Critical invariant: Azure Supabase (`vm-supabase`, Tailscale `100.71.31.88`) is ACTIVE PRODUCTION and the authoritative analytics DB. It was untouched by the Azure Dokploy decommission.
+Critical invariant: VM `vm-supabase` (Tailscale identity `supabase`, `100.71.31.88`) is ACTIVE PRODUCTION in Azure subscription `supabase-azure` and is the authoritative analytics DB. It was untouched by the Azure Dokploy decommission.
 
 Future consideration: Steve is evaluating Umami retirement (New Relic Browser replacement). This is NOT approved — separate planning required before any decommission.
 
@@ -371,12 +371,12 @@ Historical observation **2026-08-18** (8 registered devices, 7 active, 1 offline
 | `office` | `100.86.124.66` | macOS | Primary control plane (Mac mini) | Active |
 | `dokploy-aws` | `100.71.47.24` | Linux | AWS authoritative Dokploy production host | Active |
 | `cloudpanel-aws` | `100.121.12.36` | Linux | AWS authoritative CloudPanel host | Active |
-| `supabase` | `100.71.31.88` | Linux | Azure Supabase / PostgreSQL authority | Active |
+| `vm-supabase` (Tailscale identity `supabase`) | `100.71.31.88` | Linux | Azure-hosted self-managed Supabase/PostgreSQL VM in `supabase-azure` | Active |
 | `macbook` | `100.70.12.18` | macOS | Secondary Mac | Active/registered |
 | `iphone` | `100.107.201.123` | iOS | Contextual personal device | Active/registered |
 | `motorola` | `100.107.156.26` | Android | Contextual personal device | Offline |
 
-Final production topology (2026-08-26): `dokploy-aws`, `cloudpanel-aws`, and `supabase` are the three infrastructure nodes. The former Azure Dokploy node `100.83.38.48` was removed.
+Final production topology (2026-08-26): `dokploy-aws`, `cloudpanel-aws`, and VM `vm-supabase` (Tailscale identity `supabase`) are the three infrastructure servers. The former Azure Dokploy node `100.83.38.48` was removed.
 
 Management-plane model (hardened + hostnames standardized 2026-08-18):
 - All production servers use OpenSSH-over-Tailscale (NOT Tailscale SSH mode).
@@ -481,7 +481,7 @@ Dokploy UI: `https://dokploy.prochat.tools`
 
 ### Supabase
 
-Self-hosted Supabase on Azure VM `vm-supabase` (68.221.194.245).
+`vm-supabase` — Azure-hosted self-managed Supabase/PostgreSQL production VM in subscription `supabase-azure` (68.221.194.245).
 SSH access: `ssh supabase` (Tailscale).
 
 | Domain | Status | Notes |

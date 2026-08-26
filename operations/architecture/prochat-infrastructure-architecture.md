@@ -37,7 +37,7 @@ Production cutover completed:   2026-08-17 (~28 min downtime, 16/16 DB restores,
 Azure decommission completed:   2026-08-26 (all PROCHAT-APPS resources deleted, Tailscale node removed)
 ```
 
-> **Current-vs-historical rule (2026-08-26):** the post-decommission block above is current authority. Azure Dokploy no longer exists. Any later Azure Dokploy inventory, IP, backup, cutover, Class A/B, or rollback wording is **HISTORICAL** and describes the migration state at the date shown; it is not a present runtime, recovery source, or operator target. The only surviving Azure production resource is Supabase (PROCHAT-DATA).
+> **Current-vs-historical rule (2026-08-26):** the post-decommission block above is current authority. Azure Dokploy no longer exists. Any later Azure Dokploy inventory, IP, backup, cutover, Class A/B, or rollback wording is **HISTORICAL** and describes the migration state at the date shown; it is not a present runtime, recovery source, or operator target. The only surviving Azure production scope is `supabase-azure`, containing the active production VM `vm-supabase` and its self-hosted Supabase/PostgreSQL service.
 
 ---
 
@@ -49,14 +49,15 @@ Azure decommission completed:   2026-08-26 (all PROCHAT-APPS resources deleted, 
 POST-DECOMMISSION STATE (Azure Dokploy decommissioned 2026-08-26):
 
   AWS Lightsail:        SOLE PRODUCTION RUNTIME (authoritative since 2026-08-17)
-  Supabase (Azure):     AUTHORITATIVE DATABASE (reached from AWS via Tailscale)
+  vm-supabase:          AUTHORITATIVE SELF-HOSTED SUPABASE/POSTGRESQL VM
+                        (Azure subscription supabase-azure; reached from AWS via Tailscale)
   Azure Dokploy:        DECOMMISSIONED — all compute, storage, networking, backups,
                         and Tailscale node permanently deleted 2026-08-26
 
   AWS production application writers:   ACTIVE (22 Swarm services at 1/1)
   AWS cloudflared:                      ACTIVE (tunnel to Cloudflare edge)
   Azure Dokploy:                        DELETED (subscription PROCHAT-APPS = zero resources)
-  Azure Supabase:                       ACTIVE PRODUCTION (subscription PROCHAT-DATA, untouched)
+  vm-supabase:                          ACTIVE PRODUCTION (subscription supabase-azure, untouched)
   Dual Supabase writers:                N/A (only one Dokploy instance exists)
   Rollback to Azure Dokploy:            NOT POSSIBLE (infrastructure destroyed)
 ```
@@ -64,7 +65,7 @@ POST-DECOMMISSION STATE (Azure Dokploy decommissioned 2026-08-26):
 These rules are not advisory:
 - Azure Dokploy is permanently decommissioned — no rollback path exists
 - AWS Dokploy is the sole production Dokploy authority
-- Azure Supabase (PROCHAT-DATA subscription) remains active production
+- `vm-supabase` remains ACTIVE PRODUCTION in Azure subscription `supabase-azure`
 - All 13 Supabase-writing services run exclusively on AWS
 
 ---
@@ -131,16 +132,17 @@ three-node infrastructure and is documented separately below:
                                             │ Tailscale mesh
                                             │
                               ┌──────────────▼──────────────────────────────┐
-                              │  SUPABASE (PostgreSQL 15.8) — Azure         │
+                              │  vm-supabase — Supabase/PostgreSQL         │
+                              │  Azure subscription: supabase-azure       │
                               │                                             │
                               │  Tailscale: 100.71.31.88                    │
                               │  Subnet route: 10.0.2.0/24                  │
                               │  PostgreSQL at 10.0.2.4:5433                │
                               │                                             │
-                              │  One PostgreSQL server                      │
+                              │  One PostgreSQL server on vm-supabase      │
                               │  24 logical databases                       │
-                              │  AWS writers active; Azure Supabase active │
-                              │  PROCHAT-DATA — untouched by decommission │
+                              │  AWS writers active; Supabase ACTIVE       │
+                              │  vm-supabase / supabase-azure — untouched │
                               └─────────────────────────────────────────────┘
 ```
 
@@ -156,8 +158,8 @@ three-node infrastructure and is documented separately below:
 
 **AWS is authoritative for all operational configuration and production Dokploy runtime.**
 Azure Dokploy is decommissioned; rollback to it is impossible. Recovery relies on AWS
-Lightsail snapshots/backups and documented reconstruction procedures. Azure Supabase remains
-the active production data service.
+Lightsail snapshots/backups and documented reconstruction procedures. `vm-supabase` remains
+the active production self-hosted Supabase/PostgreSQL service in `supabase-azure`.
 
 ---
 
@@ -208,11 +210,12 @@ rollback target.
 | System services | cloudflared (ACTIVE — production tunnel), tailscaled |
 | Disk utilization | 32 GB / 309 GB (11%) as of 2026-08-16 |
 
-### 2.3 Supabase
+### 2.3 `vm-supabase` — Azure-hosted self-managed Supabase/PostgreSQL production VM
 
 | Property | Value |
 |----------|-------|
-| Type | Self-hosted Supabase |
+| Type | Self-hosted Supabase/PostgreSQL service on VM `vm-supabase` |
+| Azure subscription | `supabase-azure` |
 | Tailscale IP | 100.71.31.88 |
 | Subnet route | 10.0.2.0/24 (advertised by Supabase Tailscale node) |
 | PostgreSQL endpoint | 10.0.2.4:5433 |
@@ -222,7 +225,7 @@ rollback target.
 
 **Note:** The PostgreSQL versions listed in other sections (pg17 for n8n, pg16 for Dokploy
 control-plane, pg15 for tenant local DBs) are Docker containers running on the **Dokploy host**,
-not on the Supabase server. They are entirely separate infrastructure.
+not on VM `vm-supabase`. They are entirely separate infrastructure.
 
 ### 2.4 AWS Lightsail CloudPanel (Current Production — Authoritative)
 
@@ -259,21 +262,21 @@ Tailscale is the canonical private **management plane** for ProChat infrastructu
 ```
   dokploy-aws       100.71.47.24    dokploy-aws.tail3c0f0a.ts.net   authoritative AWS production
   cloudpanel-aws    100.121.12.36   cloudpanel-aws.tail3c0f0a.ts.net authoritative AWS CloudPanel
-  supabase          100.71.31.88    self-hosted Supabase + subnet 10.0.2.0/24
+  vm-supabase       100.71.31.88    Tailscale identity `supabase`; self-hosted Supabase + subnet 10.0.2.0/24
   office            100.86.124.66   local control host
   macbook           100.70.12.18    local operator host
 ```
 
 Management-plane invariants:
 - `dokploy-aws` and `cloudpanel-aws` use OpenSSH over Tailscale; normal public TCP/22 is blocked.
-- Tailscale node-key expiry is disabled for permanent infrastructure nodes `dokploy-aws`, `cloudpanel-aws`, and Supabase.
+- Tailscale node-key expiry is disabled for permanent infrastructure nodes `dokploy-aws`, `cloudpanel-aws`, and `vm-supabase` (Tailscale identity `supabase`).
 - Both AWS production nodes are currently user-owned by `info@prochat.tools`, untagged, and receive effective connectivity through the existing wildcard grant; no ACL/tag redesign was part of the 2026-08-18 standardization.
 - CloudPanel TCP/8443 remains on the Tailscale management path. Final closure evidence shows host UFW TCP/22 allows Anywhere, while the Lightsail perimeter restricts TCP/22 to `lightsail-connect` only; ordinary public SSH remains blocked.
 - Dokploy and CloudPanel share the same management plane but intentionally use different application-ingress models.
 
 The older 2026-08-16 `7 registered / 6 active` tailnet count is historical observation evidence only and is not a durable architecture invariant after CloudPanel enrollment.
 
-**Subnet route:** The Supabase Tailscale node advertises `10.0.2.0/24`. Application containers
+**Subnet route:** `vm-supabase` (Tailscale identity `supabase`) advertises `10.0.2.0/24`. Application containers
 holding `DATABASE_URL`/`SYSTEM_DATABASE_URL` pointing to `10.0.2.4:5433` reach PostgreSQL via
 this route. DATABASE_URL endpoint distribution (OBSERVED-VERIFIED, F-APP-001 / F-NET-006):
 - 14 of 24 apps: `10.0.2.4:5433` (subnet route)
@@ -953,9 +956,10 @@ production Supabase PostgreSQL server or another shared authoritative production
 SHARED AUTHORITATIVE STATE, not on the specific connection path or IP string.
 
 This means `fala` (which uses `100.71.31.88:5433`) and all workloads using `10.0.2.4:5433`
-are equally subject to NO-DUAL-WRITER — both paths reach the same single Supabase server.
+are equally subject to NO-DUAL-WRITER — both paths reach the same single Supabase service on
+VM `vm-supabase`.
 
-Running both Azure and AWS Supabase writers simultaneously causes data corruption.
+Running writers from any second Dokploy/runtime authority against the authoritative Supabase service causes data corruption.
 
 **15 workloads must not run on both Azure AND AWS simultaneously.**
 
@@ -1229,7 +1233,7 @@ See `operations/migrations/dokploy-azure-to-lightsail/cutover-checklist.md` for 
 
 **Current recovery model:** Rollback to Azure Dokploy is impossible. Recovery relies on AWS
 Lightsail snapshots/backups and documented reconstruction procedures; any AWS recovery must be
-validated against the active Azure Supabase production dependency.
+validated against active production `vm-supabase` in Azure subscription `supabase-azure`.
 
 ---
 
@@ -1258,8 +1262,8 @@ in the cutover checklist) before declaring production stable.
 | Compose project | `ops-umami-sqswbj` |
 | Backend port | 3000 |
 | Traefik route | `umami-web@file` + `umami-websecure@file` (file-provider at `/etc/dokploy/traefik/dynamic/umami.yml`) |
-| DB location | Azure Supabase `vm-supabase` (68.221.194.245), Tailscale `100.71.31.88` |
-| DB endpoint | `10.0.2.4:5433` (Azure VNet private IP, advertised via Tailscale subnet route) |
+| DB location | `vm-supabase` in Azure subscription `supabase-azure` (68.221.194.245), Tailscale identity `supabase` at `100.71.31.88` |
+| DB endpoint | `10.0.2.4:5433` (private endpoint for VM `vm-supabase` in `supabase-azure`, advertised via Tailscale subnet route) |
 | DB name | `analytics` |
 | DB schema | `public` |
 | Local Docker DB | NONE — no local postgres dependency |
@@ -1279,13 +1283,13 @@ Client → Cloudflare (TLS) → Cloudflare Tunnel → Traefik :80/:443
 **Database path:**
 ```
 Umami container → DATABASE_URL (env) → 10.0.2.4:5433 via tailscale0
-  → Azure vm-supabase → analytics database / public schema
+  → `vm-supabase` in Azure subscription `supabase-azure` → analytics database / public schema
 ```
 
 **INVARIANTS:**
 1. `ops-umami-sqswbj-umami-1` is the only intended Umami runtime. `code-umami-1` (stale migration residue) was retired 2026-08-19. No duplicate may run concurrently.
 2. Tailscale on `dokploy-aws` must remain active; losing Tailscale connectivity breaks Umami DB access.
-3. Azure Supabase (`vm-supabase`) is ACTIVE PRODUCTION and was untouched by the Azure Dokploy decommission.
+3. `vm-supabase` in Azure subscription `supabase-azure` is ACTIVE PRODUCTION and was untouched by the Azure Dokploy decommission.
 4. `analytics` database on Supabase must not be dropped or renamed.
 5. Default Umami dashboard view is "last 24 hours". Empty charts in the default view do not indicate data loss; historical analytics require adjusting the date range filter.
 

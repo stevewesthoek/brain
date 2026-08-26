@@ -3,7 +3,7 @@
 **Phase:** 3C7–3C11 + Phase 3F Post-Cutover — Architecture Evidence-Provenance Audit and Correction Passes  
 **Created:** 2026-08-16  
 **Last updated:** 2026-08-26 (Azure Dokploy decommission and canonicalization)
-**Status:** COMPLETE — AWS Dokploy sole production authority; Azure Supabase active production
+**Status:** COMPLETE — AWS Dokploy sole production authority; `vm-supabase` ACTIVE production in `supabase-azure`
 
 ## Purpose
 
@@ -35,8 +35,8 @@ Rule: **AUTHORITATIVE-CONFIG supersedes USER-PROPOSED. OBSERVED-VERIFIED superse
 - **Evidence:** `sudo tailscale status` from AWS returned `100.83.38.48 dokploy`
 - **Observed:** 2026-08-16
 
-### F-NET-003 — Supabase Tailscale IP
-- **Claim:** Supabase server has Tailscale IP 100.71.31.88
+### F-NET-003 — vm-supabase Tailscale IP
+- **Claim:** VM `vm-supabase` has Tailscale IP 100.71.31.88; Tailscale identity is `supabase`
 - **Classification:** OBSERVED-VERIFIED
 - **Evidence:** `sudo tailscale status` from AWS returned `100.71.31.88 supabase tagged-devices`; `active; direct 68.221.194.245:41641`
 - **Observed:** 2026-08-16
@@ -55,8 +55,8 @@ Rule: **AUTHORITATIVE-CONFIG supersedes USER-PROPOSED. OBSERVED-VERIFIED superse
 - **Significance:** Direct tunnel means lower latency and no DERP relay dependency for the Supabase path
 - **Observed:** 2026-08-16
 
-### F-NET-006 — Supabase subnet route via 10.0.2.4
-- **Claim:** Supabase PostgreSQL is reachable from AWS via subnet route 10.0.2.4:5433
+### F-NET-006 — vm-supabase subnet route via 10.0.2.4
+- **Claim:** PostgreSQL on VM `vm-supabase` is reachable from AWS via subnet route 10.0.2.4:5433
 - **Classification:** OBSERVED-VERIFIED
 - **Evidence:** Active connections query succeeded against the 10.0.2.4:5433 endpoint. DATABASE_URL distribution from F-APP-001 (24 total applications):
   - 14 × `10.0.2.4:5433` (subnet route)
@@ -71,7 +71,7 @@ Rule: **AUTHORITATIVE-CONFIG supersedes USER-PROPOSED. OBSERVED-VERIFIED superse
 - **Claim:** The `fala` application (app-override-online-interface-1wzjpb) connects to Supabase via `100.71.31.88:5433` (Tailscale IP), not the subnet route `10.0.2.4:5433`
 - **Classification:** OBSERVED-VERIFIED
 - **Evidence:** `application.env` column in Dokploy DB: `DATABASE_URL=postgresql://<user>:<pwd>@100.71.31.88:5433/fala?schema=public`
-- **Notes:** Both paths reach the same Supabase server; 100.71.31.88 is Tailscale peer IP while 10.0.2.4 is subnet route. Functionally equivalent but different routing mechanism.
+- **Notes:** Both paths reach VM `vm-supabase`; 100.71.31.88 is the Tailscale peer IP while 10.0.2.4 is the subnet route. Functionally equivalent but different routing mechanisms.
 - **Observed:** 2026-08-16
 
 ### F-NET-008 — Cloudflare Tunnel is outbound from cloudflared
@@ -126,8 +126,8 @@ Rule: **AUTHORITATIVE-CONFIG supersedes USER-PROPOSED. OBSERVED-VERIFIED superse
 
 ## Supabase Database Facts
 
-### F-DB-001 — Supabase PostgreSQL version
-- **Claim:** Self-hosted Supabase server runs PostgreSQL 15.8
+### F-DB-001 — vm-supabase PostgreSQL version
+- **Claim:** Self-hosted Supabase/PostgreSQL on VM `vm-supabase` runs PostgreSQL 15.8
 - **Classification:** OBSERVED-VERIFIED
 - **Evidence:** `SELECT version()` returned `PostgreSQL 15.8 (Ubuntu 15.8-1.pgdg22.04+1) on x86_64-pc-linux-gnu`
 - **Observed:** 2026-08-16
@@ -332,15 +332,15 @@ Rule: **AUTHORITATIVE-CONFIG supersedes USER-PROPOSED. OBSERVED-VERIFIED superse
 ### F-ARCH-001 — Actual Supabase data architecture
 - **Claim:** Self-hosted Supabase uses per-application dedicated logical databases (not a single shared database)
 - **Classification:** OBSERVED-VERIFIED
-- **Evidence:** 24 non-template databases in pg_database. Among applications with an observed DATABASE_URL targeting the self-hosted Supabase server, the connection generally targets a dedicated logical database per application (e.g., cedula→`cedula` DB, prochat→`prochat` DB, saysthebible→`saysthebible` DB). Seven applications have no DATABASE_URL in the observed Dokploy `application.env` field and cannot be classified from this field alone — they may or may not access Supabase through other mechanisms.
+- **Evidence:** 24 non-template databases in pg_database. Among applications with an observed DATABASE_URL targeting self-hosted Supabase/PostgreSQL on VM `vm-supabase`, the connection generally targets a dedicated logical database per application (e.g., cedula→`cedula` DB, prochat→`prochat` DB, saysthebible→`saysthebible` DB). Seven applications have no DATABASE_URL in the observed Dokploy `application.env` field and cannot be classified from this field alone — they may or may not access Supabase through other mechanisms.
 - **Critical correction:** Steve's stated model "Supabase uses one database with explicit per-application schemas" is **USER-PROPOSED** and does not match the observed current architecture. The observed architecture uses dedicated logical databases per application.
 - **Notes:** Within each dedicated DB, the application uses a named schema (e.g., `cedula` DB → `cedula` schema). This is a hybrid: dedicated DB + named schema, not a flat `public` schema in most cases.
 - **Observed:** 2026-08-16
 
 ### F-ARCH-002 — `postgres` database tenant_* schemas; local compose postgres schemas
 - **PROVEN FACT A (OBSERVED-VERIFIED):** The self-hosted Supabase `postgres` logical database contains 19 tenant_* schemas (schema names observed via `pg_namespace` query — see F-SCH-001, F-SCH-002).
-- **PROVEN FACT B (OBSERVED-VERIFIED):** The `boilerplates-saaskit-dev` application connects to `localhost:5433/postgres?schema=tenant_<slug>` — a LOCAL postgres:15 compose container, not the Supabase server.
-- **What FACT A and FACT B do NOT establish:** These are two physically separate PostgreSQL instances (Supabase server at 10.0.2.4 / 100.71.31.88 vs. local Docker containers at localhost). No evidence proves that the Supabase `postgres` DB tenant_* schemas "serve" or are "used by" the local compose postgres containers. Any historical or causal relationship between the schema naming patterns of both systems is UNKNOWN — historical relationship not established from available evidence.
+- **PROVEN FACT B (OBSERVED-VERIFIED):** The `boilerplates-saaskit-dev` application connects to `localhost:5433/postgres?schema=tenant_<slug>` — a LOCAL postgres:15 compose container, not VM `vm-supabase`.
+- **What FACT A and FACT B do NOT establish:** These are two physically separate PostgreSQL instances (VM `vm-supabase` at 10.0.2.4 / 100.71.31.88 vs. local Docker containers at localhost). No evidence proves that the Supabase `postgres` DB tenant_* schemas "serve" or are "used by" the local compose postgres containers. Any historical or causal relationship between the schema naming patterns of both systems is UNKNOWN — historical relationship not established from available evidence.
 - **Classification:** OBSERVED-VERIFIED (each fact independently) + UNKNOWN (for any causal or usage relationship between the two systems)
 - **Notes:** The `postgres` DB also hosts financialfreedom_user tables in `public`, Supabase system tables, and a `tenants` table (postgres-owned; exact architectural role not independently verified).
 - **Observed:** 2026-08-16
@@ -418,8 +418,8 @@ Rule: **AUTHORITATIVE-CONFIG supersedes USER-PROPOSED. OBSERVED-VERIFIED superse
 - **Actual observed state:** CONTRADICTED by evidence. 24 dedicated logical databases exist. See F-ARCH-001.
 - **Conclusion:** This is a USER-PROPOSED FUTURE DATA MODEL, not the observed current architecture. Architecture document documents the discrepancy clearly.
 
-### F-UNV-002 — Tailscale subnet route 10.0.2.0/24
-- **Claim:** Supabase server advertises subnet route 10.0.2.0/24 including PostgreSQL at 10.0.2.4:5433
+### F-UNV-002 — vm-supabase subnet route 10.0.2.0/24
+- **Claim:** VM `vm-supabase` advertises subnet route 10.0.2.0/24 including PostgreSQL at 10.0.2.4:5433
 - **Classification:** DERIVED-VERIFIED (14 of 24 applications have DATABASE_URL pointing to 10.0.2.4:5433, and active connections query succeeded against that endpoint; this implies the route is functional. The route advertisement itself was not directly verified in Phase 3C7. See F-NET-006 and F-APP-001 for full endpoint distribution.)
 
 ---
@@ -597,8 +597,8 @@ None. All material factual contradictions identified through Phase 3C11 have bee
 - **Evidence:** Owner-supplied AWS Management Plane canonical handoff dated 2026-08-18.
 - **Observed:** 2026-08-18
 
-### F-NAME-001 — Azure subscription display names changed only
-- **Claim:** Azure subscription display name `PROCHAT-DATA` is now `supabase-azure`; legacy Dokploy subscription display name `PROCHAT-APPS` is now `dokploy-azure`. The rename changes labels only, not subscription IDs, VM identities, network topology, data authority, or application connectivity.
+### F-NAME-001 — Historical Azure subscription display names
+- **Claim:** HISTORICAL: Azure subscription display name `PROCHAT-DATA` is now canonically `supabase-azure`; legacy Dokploy subscription display name `PROCHAT-APPS` was the former Dokploy subscription and is decommissioned/empty. The rename changed labels only, not subscription IDs, VM identities, network topology, data authority, or application connectivity.
 - **Classification:** AUTHORITATIVE-CONFIG
 - **Evidence:** Owner canonical naming update dated 2026-08-18.
 - **Observed:** 2026-08-18
@@ -610,8 +610,8 @@ None. All material factual contradictions identified through Phase 3C11 have bee
 - **Observed:** 2026-08-26
 - **Current-use boundary:** AWS `dokploy-aws` is the sole production Dokploy authority. Recovery relies on AWS snapshots/backups and documented reconstruction procedures.
 
-### F-MGMT-007 — Azure Supabase preserved as active production
-- **Claim:** Azure Supabase / PROCHAT-DATA remains ACTIVE PRODUCTION and was untouched by the Azure Dokploy decommission. AWS-to-Supabase connectivity remains active.
+### F-MGMT-007 — vm-supabase preserved as active production
+- **Claim:** VM `vm-supabase` in Azure subscription `supabase-azure` remains ACTIVE PRODUCTION and was untouched by the Azure Dokploy decommission. AWS-to-Supabase connectivity remains active.
 - **Classification:** OBSERVED-VERIFIED / AUTHORITATIVE-CONFIG
 - **Evidence:** Final decommission acceptance and post-decommission connectivity checks recorded in the architecture audit addendum.
 - **Observed:** 2026-08-26

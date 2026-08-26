@@ -9,13 +9,13 @@ Mutations:        0
 Secrets exposed:  0
 ```
 
-**Final-state boundary (2026-08-26):** Sections 2–14 below preserve the read-only audit observed on 2026-08-18 and are HISTORICAL. They are superseded for current topology by the decommission record at the end of this file: `dokploy-aws`, `cloudpanel-aws`, and Azure Supabase are the production infrastructure nodes; the Azure Dokploy node `100.83.38.48` was removed. The former Azure Dokploy is not a fallback, rollback source, connector, or current Tailscale member.
+**Final-state boundary (2026-08-26):** Sections 2–14 below preserve the read-only audit observed on 2026-08-18 and are HISTORICAL. They are superseded for current topology by the decommission record at the end of this file: `dokploy-aws`, `cloudpanel-aws`, and VM `vm-supabase` in Azure subscription `supabase-azure` are the production infrastructure servers; the Azure Dokploy node `100.83.38.48` was removed. The former Azure Dokploy is not a fallback, rollback source, connector, or current Tailscale member.
 
 ---
 
 ## 1. Executive Summary
 
-ProChat's production infrastructure comprises 7 Tailscale devices (post-decommission), 4 Cloudflare Tunnels, and 3 active infrastructure servers (AWS Dokploy, AWS CloudPanel, Azure Supabase). All application ingress flows through Cloudflare Tunnels except CloudPanel web traffic which uses direct Cloudflare-proxied public IP. Management access is Tailscale-only for all nodes. Azure Dokploy was decommissioned 2026-08-26 (see addendum at end of file).
+ProChat's production infrastructure comprises 7 Tailscale devices (post-decommission), 4 Cloudflare Tunnels, and 3 active infrastructure servers (`dokploy-aws`, `cloudpanel-aws`, and VM `vm-supabase` in subscription `supabase-azure`). All application ingress flows through Cloudflare Tunnels except CloudPanel web traffic which uses direct Cloudflare-proxied public IP. Management access is Tailscale-only for all nodes. Azure Dokploy was decommissioned 2026-08-26 (see addendum at end of file).
 
 **Key findings:**
 - P0: None
@@ -1139,7 +1139,7 @@ infrastructure boundary and was not mutated by this correction.
 
 Explicit destructive authorization granted by Steve Westhoek.
 Objective: remove all retired Azure Dokploy infrastructure from PROCHAT-APPS subscription.
-Azure Supabase (PROCHAT-DATA) explicitly preserved.
+VM `vm-supabase` in Azure subscription `supabase-azure` explicitly preserved.
 
 ### Pre-Deletion Gate (ALL PASS)
 
@@ -1150,7 +1150,7 @@ Azure Supabase (PROCHAT-DATA) explicitly preserved.
 | External HTTPS (7 domains) | All HTTP 200 |
 | AWS→Supabase (subnet route) | 10.0.2.4:5433 OK |
 | AWS→Supabase (Tailscale direct) | 100.71.31.88:5432 OK |
-| Azure Supabase health | 15 containers running |
+| VM `vm-supabase` health | 15 containers running |
 | Cloudflare tunnels | 4/4 active, none route to Azure Dokploy |
 | Azure Dokploy VM state | DEALLOCATED |
 | VNet peering to Supabase | NONE |
@@ -1221,7 +1221,7 @@ Resource groups deleted: rg-apps-dokploy, rg-apps-cloudpanel, AzureBackupRG_spai
 | studio.prochat.tools | HTTP 401 (expected — auth required) |
 | AWS→Supabase subnet | 10.0.2.4:5433 OK |
 | AWS→Supabase Tailscale | 100.71.31.88:5432 OK |
-| Azure Supabase | 15 containers running |
+| VM `vm-supabase` | 15 containers running |
 
 ### Migration Status
 
@@ -1230,7 +1230,7 @@ Azure → AWS Dokploy migration:  CLOSED
   Production cutover:           2026-08-17 (28 min downtime)
   Rollback window expired:      2026-08-26 (infrastructure destroyed)
   Azure Dokploy:                PERMANENTLY DECOMMISSIONED
-  Azure Supabase:               ACTIVE PRODUCTION (untouched)
+  vm-supabase (`supabase-azure`): ACTIVE PRODUCTION (untouched)
   AWS Dokploy:                  SOLE PRODUCTION AUTHORITY
   Estimated Azure savings:      ~$150-200/month (D4as_v5 deallocated + storage + backup)
 ```

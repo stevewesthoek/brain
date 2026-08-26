@@ -23,7 +23,7 @@ Identify the target from the connection string:
 | Connection | Environment | Rules |
 |---|---|---|
 | `localhost:544X` (per-app port) | **LOCAL** | Safe to reset, push, drop |
-| `100.71.31.88:5433` (Tailscale VPS) | **PRODUCTION** | Read-only only from Mac; all writes via Dokploy pipeline |
+| `100.71.31.88:5433` (Tailscale identity `supabase` on VM `vm-supabase` in subscription `supabase-azure`) | **PRODUCTION** | Read-only only from Mac; all writes via Dokploy pipeline |
 | `$SUPABASE_DB_URL_READONLY` | **PRODUCTION READ-ONLY** | Never pass to write commands |
 | `$SUPABASE_DB_URL` | **PRODUCTION WRITE** | Never from Mac — migrations run via Dokploy pipeline only |
 
@@ -108,7 +108,7 @@ Always call the CLI via `~/.local/bin/supabase-cli` or `/opt/homebrew/bin/supaba
 
 ## Self-hosted connection
 
-Reachable directly from the Mac via Tailscale — no tunnel or subnet routing needed.
+Reachable directly from the Mac via Tailscale — no tunnel or subnet routing needed. This is VM `vm-supabase`, the active self-hosted Supabase/PostgreSQL production VM in Azure subscription `supabase-azure`.
 
 | Endpoint | Address |
 |---|---|
@@ -140,7 +140,7 @@ export PGSSLMODE=disable   # REQUIRED — Supabase CLI ignores sslmode in connec
 
 **Credentials source:** Central `~/.config/supabase/.env` file (updated 2026-05-03 with valid password)
 
-Note: `10.0.2.4` is the internal LAN IP — only reachable from the Dokploy machine. Always use `100.71.31.88` from the Mac.
+Note: `10.0.2.4` is the private endpoint routed by VM `vm-supabase` (Tailscale identity `supabase`) — only reachable from trusted infrastructure paths. Always use `100.71.31.88` from the Mac.
 
 ## Unified database workflow — local development
 
@@ -224,7 +224,7 @@ PGSSLMODE=disable ~/.local/bin/supabase-cli migration list \
 | Environment | Database | Managed by | What runs here |
 |---|---|---|---|
 | Local | PostgreSQL (plain, localhost:544X per-app) | OrbStack (docker-compose container) | PostgreSQL only; Supabase CLI tools for migrations/types |
-| Production | PostgreSQL (Supabase-managed) | VPS at 100.71.31.88:5433 | Full self-hosted Supabase instance (auth, storage, API, etc.) |
+| Production | PostgreSQL (self-hosted Supabase/PostgreSQL) | VM `vm-supabase` in `supabase-azure`, Tailscale `100.71.31.88:5433` | Full self-hosted Supabase instance (auth, storage, API, etc.) |
 
 **Local development does not run a full Supabase stack.** The Supabase CLI is a tool for managing schemas against any PostgreSQL — it does not require or run the Supabase server locally.
 
@@ -248,7 +248,7 @@ PGSSLMODE=disable ~/.local/bin/supabase-cli migration list \
 - New version available: v2.95.4 (optional)
 
 **Infrastructure:**
-- Production Tailscale IP: `100.71.31.88` (PostgreSQL :5433, API :8000)
+- Production VM: `vm-supabase` in Azure subscription `supabase-azure`; Tailscale identity `supabase`, IP `100.71.31.88` (PostgreSQL :5433, API :8000)
 - Database connection: Requires `PGSSLMODE=disable` (TLS not configured on self-hosted)
 - No Supabase Cloud account required for any self-hosted operation
 

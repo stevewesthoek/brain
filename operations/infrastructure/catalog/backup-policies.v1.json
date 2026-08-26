@@ -35,7 +35,7 @@
     },
     {
       "backupPolicyId": "backup_policy:supabase",
-      "resourceId": "host:supabase",
+      "resourceId": "host:vm-supabase",
       "backupSystemId": "backup_system:supabase-recovery",
       "backupJobId": "backup_job:supabase-recovery",
       "cadence": "unknown: authoritative-data backup cadence not verified",

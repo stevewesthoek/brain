@@ -33,7 +33,7 @@ This skill is closer to AWS CLI usage than to n8n:
 3. **Read-only discovery first.** Start with account, subscription, resource group, and resource listing before any create/update/delete action.
 4. **Never expose tokens or secrets.** Do not print access tokens, refresh tokens, service principal secrets, or Key Vault secrets.
 5. **Use explicit subscription targeting in automation.** Prefer the subscription-specific wrappers below instead of relying on ambient account context.
-6. **Multi-account means multi-tenant caution.** `PROCHAT-APPS` and `PROCHAT-DATA` live in different tenants; do not assume one login context safely covers both.
+6. **Multi-account means multi-tenant caution.** The retired Dokploy subscription formerly displayed as `PROCHAT-APPS` and the active data subscription formerly displayed as `PROCHAT-DATA` live in different tenants; the active subscription is canonically `supabase-azure`. Do not assume one login context safely covers both.
 7. **Provisioner is the default persona.** Discovery, sizing, create, update, start, stop, and bootstrap should use the `*-provisioner` wrappers.
 8. **Destroyer is opt-in only.** Deletion and teardown require explicit user intent and the `*-destroyer` wrappers.
 
@@ -66,19 +66,19 @@ Installed binary on this machine:
 
 Current subscription mapping:
 - `PROCHAT-APPS` -> `1db6646e-69c0-4ee0-a4d5-53d40421a5a4`
-- `PROCHAT-DATA` -> `6e99b82d-43e3-41cc-ad94-8733afeb2a7e`
+- `supabase-azure` (historical display name `PROCHAT-DATA`) -> `6e99b82d-43e3-41cc-ad94-8733afeb2a7e`
 
 Default operating rule:
 - Use `azure-apps-provisioner` for non-destructive work in `PROCHAT-APPS`
-- Use `azure-data-provisioner` for non-destructive work in `PROCHAT-DATA`
+- Use `azure-data-provisioner` for non-destructive work in `supabase-azure` (historical display name `PROCHAT-DATA`)
 - Use the matching `*-destroyer` wrapper only for explicit teardown or cleanup
 - Keep `~/.local/bin/azure-cli` as the generic base CLI for auth and account inspection
 
 Azure-side enforcement:
 - `azure-apps-provisioner` runs as a dedicated service principal scoped to `PROCHAT-APPS` with the custom role `ClaudeCodexAppsProvisioner`
 - `azure-apps-destroyer` runs as a dedicated service principal scoped to `PROCHAT-APPS` with `Contributor`
-- `azure-data-provisioner` runs as a dedicated service principal scoped to `PROCHAT-DATA` with the custom role `ClaudeCodexDataProvisioner`
-- `azure-data-destroyer` runs as a dedicated service principal scoped to `PROCHAT-DATA` with `Contributor`
+- `azure-data-provisioner` runs as a dedicated service principal scoped to `supabase-azure` (historical display name `PROCHAT-DATA`) with the custom role `ClaudeCodexDataProvisioner`
+- `azure-data-destroyer` runs as a dedicated service principal scoped to `supabase-azure` (historical display name `PROCHAT-DATA`) with `Contributor`
 - Local service-principal credentials are stored only under `~/.config/azure-ai/credentials/` and must never be committed or printed
 
 ## Official installation
@@ -205,6 +205,6 @@ This script builds a machine-readable inventory of subscriptions, resource group
 ## Notes
 - `azd` is not the default tool for account inventory. Use it only for Azure Developer CLI workflows.
 - Azure CLI auth is local-machine state in `~/.azure`; do not commit or expose it.
-- Verified on 2026-04-03 that Azure CLI is authenticated to both `PROCHAT-APPS` and `PROCHAT-DATA`.
+- Historical verification on 2026-04-03 confirmed Azure CLI authentication to the then-displayed subscriptions `PROCHAT-APPS` and `PROCHAT-DATA`; current identity is `supabase-azure` for the active data subscription.
 - Verified on 2026-04-03 that service-principal-backed provisioner and destroyer wrappers work for both subscriptions.
 - The two subscriptions live in different tenants, so the enforced Azure role model uses separate service principals per tenant/subscription pair.
