@@ -3,7 +3,8 @@
 ```
 Status:                         CANONICAL
 Repository:                     brain
-Last verified:                  2026-08-17
+Last verified:                  2026-08-26
+Azure Dokploy decommissioned:   2026-08-26 (all PROCHAT-APPS resources deleted)
 Phase 3C6 corrections applied:  2026-08-16
 Phase 3C7 corrections applied:  2026-08-16 (evidence-provenance audit; schema counts, SSH model,
                                              tailnet topology, DB owners, app→DB map)
@@ -32,11 +33,12 @@ Phase 3F applied:               2026-08-17 (post-cutover authority handoff; prod
                                              source, invariants updated to reflect live state)
 Evidence register:              operations/architecture/prochat-infrastructure-evidence-register.md
 Current production runtime:     AWS Lightsail dokploy-aws (eu-west-2, London)
-Previous production runtime:    Azure Dokploy (vm-dokploy, Spain Central) — quiesced rollback source
+Previous production runtime:    Azure Dokploy (vm-dokploy, Spain Central) — DECOMMISSIONED 2026-08-26
 Production cutover completed:   2026-08-17 (~28 min downtime, 16/16 DB restores, Class B rollback)
+Azure decommission completed:   2026-08-26 (all PROCHAT-APPS resources deleted, Tailscale node removed)
 ```
 
-> **Current-vs-historical rule (2026-08-18):** the post-cutover block above, the `F-CUT-*` evidence register, and the IKHP catalog are current authority. Later migration/rehearsal sections intentionally preserve time-scoped pre-cutover phrases such as “Azure authoritative”, “AWS shadow”, “source Azure”, and “target AWS” because they document the procedure that was executed. Those phrases are **historical procedure context only** and must not be interpreted as present infrastructure state.
+> **Current-vs-historical rule (2026-08-26):** the post-decommission block above is current authority. Azure Dokploy no longer exists — all references to “Azure Dokploy”, “quiesced rollback”, “Class B reconciliation”, “source Azure”, and “target AWS” in later sections are **historical procedure context only** documenting the migration that was executed. They must not be interpreted as present infrastructure state. The only surviving Azure resource is Supabase (PROCHAT-DATA subscription).
 
 ---
 
@@ -45,27 +47,26 @@ Production cutover completed:   2026-08-17 (~28 min downtime, 16/16 DB restores,
 ## ═══════════════════════════════════════════════════════
 
 ```
-POST-CUTOVER STATE (completed 2026-08-17):
+POST-DECOMMISSION STATE (Azure Dokploy decommissioned 2026-08-26):
 
-  AWS Lightsail:        AUTHORITATIVE PRODUCTION RUNTIME
-  Supabase:             AUTHORITATIVE (same server, reached from AWS via Tailscale)
-  Azure Dokploy:        QUIESCED ROLLBACK SOURCE — powered on, writers stopped,
-                        cloudflared stopped, intact for Class B reconciliation
+  AWS Lightsail:        SOLE PRODUCTION RUNTIME (authoritative since 2026-08-17)
+  Supabase (Azure):     AUTHORITATIVE DATABASE (reached from AWS via Tailscale)
+  Azure Dokploy:        DECOMMISSIONED — all compute, storage, networking, backups,
+                        and Tailscale node permanently deleted 2026-08-26
 
   AWS production application writers:   ACTIVE (22 Swarm services at 1/1)
   AWS cloudflared:                      ACTIVE (tunnel to Cloudflare edge)
-  Azure application writers:            STOPPED (all Supabase-writing services at 0/0)
-  Azure cloudflared:                    STOPPED (inactive)
-  Dual Supabase writers:                PROHIBITED (ABSOLUTE)
-  Azure modifications:                  PROHIBITED until explicit decommission approval
-  Rollback class:                       B (production writes accepted on AWS)
+  Azure Dokploy:                        DELETED (subscription PROCHAT-APPS = zero resources)
+  Azure Supabase:                       ACTIVE PRODUCTION (subscription PROCHAT-DATA, untouched)
+  Dual Supabase writers:                N/A (only one Dokploy instance exists)
+  Rollback to Azure Dokploy:            NOT POSSIBLE (infrastructure destroyed)
 ```
 
 These rules are not advisory:
-- Azure remains powered on as rollback evidence/source only
-- NO-DUAL-WRITER is enforced: all 13 Supabase-writing services run exclusively on AWS
-- Azure writer services remain at 0/0 replicas
-- Any rollback to Azure requires Class B reconciliation (write diff analysis)
+- Azure Dokploy is permanently decommissioned — no rollback path exists
+- AWS Dokploy is the sole production Dokploy authority
+- Azure Supabase (PROCHAT-DATA subscription) remains active production
+- All 13 Supabase-writing services run exclusively on AWS
 
 ---
 
@@ -100,9 +101,11 @@ These rules are not advisory:
 
 ProChat's production infrastructure runs on **AWS Lightsail** (self-hosted Dokploy Docker PaaS,
 eu-west-2 London). Production cutover from Azure (Spain Central) completed 2026-08-17 with ~28 min
-downtime, 16/16 database restores, and 17/17 domain validations passing.
+downtime, 16/16 database restores, and 17/17 domain validations passing. Azure Dokploy was
+permanently decommissioned 2026-08-26 (all compute, storage, networking, backups deleted from
+PROCHAT-APPS subscription).
 
-The system consists of three infrastructure nodes joined by a **Tailscale mesh**:
+The system consists of two infrastructure nodes joined by a **Tailscale mesh**:
 
 ```
  ┌──────────────────────────────────────────────────────────────────────────┐
@@ -110,7 +113,6 @@ The system consists of three infrastructure nodes joined by a **Tailscale mesh**
  │  Users → Cloudflare CDN/WAF → Cloudflare Tunnel (cloudflared)           │
  └──────────────────────────┬───────────────────────────────────────────────┘
                             │ Cloudflare Tunnel (outbound from cloudflared)
-                            │ [routed to AWS — production since 2026-08-17]
  ┌──────────────────────────▼───────────────────────────────────────────────┐
  │  PRODUCTION NODE (AWS Lightsail)                                         │
  │                                                                          │
@@ -126,17 +128,16 @@ The system consists of three infrastructure nodes joined by a **Tailscale mesh**
  │  cloudflared (ACTIVE) · tailscaled                                      │
  └──────────────────────────────────────────┬───────────────────────────────┘
                                             │ Tailscale mesh
-           ┌────────────────────────────────┴─────────────────────────────┐
-           │                                                              │
- ┌─────────▼──────────────────────────┐    ┌──────────────────────────────▼──┐
- │  QUIESCED ROLLBACK (Azure)         │    │  SUPABASE (PostgreSQL 15.8)     │
- │                                    │    │                                 │
- │  vm-dokploy · Standard_D4as_v5     │    │  Tailscale: 100.71.31.88        │
- │  4 vCPU / 16 GB · Spain Central    │    │  Subnet route: 10.0.2.0/24     │
- │  Public IP: 68.221.139.108         │    │  PostgreSQL at 10.0.2.4:5433   │
- │  Tailscale: 100.83.38.48           │    │                                 │
- │                                    │    │  One PostgreSQL server          │
- │  cloudflared: STOPPED              │    │  24 logical databases           │
+                                            │
+                              ┌──────────────▼──────────────────────────────┐
+                              │  SUPABASE (PostgreSQL 15.8) — Azure         │
+                              │                                             │
+                              │  Tailscale: 100.71.31.88                    │
+                              │  Subnet route: 10.0.2.0/24                  │
+                              │  PostgreSQL at 10.0.2.4:5433                │
+                              │                                             │
+                              │  One PostgreSQL server                      │
+                              │  24 logical databases                       │
  │  App writers: 0/0                  │    │  (proposed future model:         │
  │  Data: frozen at cutover point     │    │   one DB + schemas)     │
  └────────────────────────────────────┘    └─────────────────────────────────┘

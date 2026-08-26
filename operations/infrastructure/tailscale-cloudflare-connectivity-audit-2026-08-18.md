@@ -13,7 +13,7 @@ Secrets exposed:  0
 
 ## 1. Executive Summary
 
-ProChat's production infrastructure comprises 8 Tailscale devices, 4 Cloudflare Tunnels, and 3 active infrastructure servers (AWS Dokploy, AWS CloudPanel, Azure Supabase). All application ingress flows through Cloudflare Tunnels except CloudPanel web traffic which uses direct Cloudflare-proxied public IP. Management access is Tailscale-only for all nodes.
+ProChat's production infrastructure comprises 7 Tailscale devices (post-decommission), 4 Cloudflare Tunnels, and 3 active infrastructure servers (AWS Dokploy, AWS CloudPanel, Azure Supabase). All application ingress flows through Cloudflare Tunnels except CloudPanel web traffic which uses direct Cloudflare-proxied public IP. Management access is Tailscale-only for all nodes. Azure Dokploy was decommissioned 2026-08-26 (see addendum at end of file).
 
 **Key findings:**
 - P0: None
@@ -1093,13 +1093,14 @@ policies remain UNKNOWN pending API token refresh.
 
 ```
 File created:                     2026-08-18
-Audit duration:                   Two sessions (same day)
-Infrastructure mutations:         1 (Supabase: 4 stale UFW rules removed)
+Audit duration:                   Multiple sessions (2026-08-18 to 2026-08-26)
+Infrastructure mutations:         2 (Supabase: 4 stale UFW rules removed;
+                                     Azure Dokploy: full decommission 2026-08-26)
 Cloudflare mutations:             0
-Tailscale mutations:              0
-Documentation mutations:          0
-Git commits:                      0
-Git pushes:                       0
+Tailscale mutations:              1 (stale Azure Dokploy node removed 2026-08-26)
+Documentation mutations:          1 (architecture doc updated post-decommission)
+Git commits:                      1 (decommission closure)
+Git pushes:                       1
 Secrets in report:                0
 ```
 
@@ -1127,3 +1128,107 @@ led to the reversible OfficeMac protocol: http2 mitigation. Direct local
 probes to Cloudflare port 7844 succeeded; no macOS firewall rule was available
 or necessary to change. Router/firewall policy outside this host remains an
 infrastructure boundary and was not mutated by this correction.
+
+---
+
+## Azure Dokploy Decommission Record (2026-08-26)
+
+### Authorization
+
+Explicit destructive authorization granted by Steve Westhoek.
+Objective: remove all retired Azure Dokploy infrastructure from PROCHAT-APPS subscription.
+Azure Supabase (PROCHAT-DATA) explicitly preserved.
+
+### Pre-Deletion Gate (ALL PASS)
+
+| Check | Result |
+|-------|--------|
+| Active subscription | PROCHAT-APPS |
+| AWS Dokploy health | 41 containers running |
+| External HTTPS (7 domains) | All HTTP 200 |
+| AWS→Supabase (subnet route) | 10.0.2.4:5433 OK |
+| AWS→Supabase (Tailscale direct) | 100.71.31.88:5432 OK |
+| Azure Supabase health | 15 containers running |
+| Cloudflare tunnels | 4/4 active, none route to Azure Dokploy |
+| Azure Dokploy VM state | DEALLOCATED |
+| VNet peering to Supabase | NONE |
+
+### Resources Deleted (PROCHAT-APPS subscription)
+
+| # | Resource | Type | Resource Group |
+|---|----------|------|----------------|
+| 1 | vm-dokploy | Virtual Machine | rg-apps-dokploy |
+| 2 | dokploy-os-disk-restored-20260519-142517 | Managed Disk (30GB) | rg-apps-dokploy |
+| 3 | data-dokploy-standard-from-snapshot | Managed Disk (256GB) | rg-apps-dokploy |
+| 4 | dokploy-os-disk-backup-20260519-141534 | Disk Snapshot (30GB) | rg-apps-dokploy |
+| 5 | data-dokploy-backup-20260412-100620 | Disk Snapshot (256GB) | rg-apps-dokploy |
+| 6 | vm-dokploy802 | Network Interface | rg-apps-dokploy |
+| 7 | vm-dokploy-ip (68.221.139.108) | Public IP | rg-apps-dokploy |
+| 8 | testPublicIpAddress (70.156.243.209) | Public IP | rg-apps-dokploy |
+| 9 | vm-dokploy-nsg | Network Security Group | rg-apps-dokploy |
+| 10 | vnet-spaincentral | Virtual Network | rg-apps-dokploy |
+| 11 | cloudpanel-dokploy-vault | Recovery Services Vault | rg-apps-dokploy |
+| 12 | dokploybkstore66067 | Storage Account | rg-apps-dokploy |
+| 13 | AzureBackup_vm-dokploy_8016460114137767687 | Restore Point Collection | AzureBackupRG_spaincentral_1 |
+| 14 | NetworkWatcher_spaincentral | Network Watcher | NetworkWatcherRG |
+| 15 | 7x Metric Alerts (vm-dokploy) | Metric Alerts | rg-apps-dokploy |
+| 16 | enablevmAccess | VM Extension | rg-apps-dokploy |
+
+Resource groups deleted: rg-apps-dokploy, rg-apps-cloudpanel, AzureBackupRG_spaincentral_1, NetworkWatcherRG
+
+### Backup Data Permanently Deleted
+
+- 8 recovery points deleted from cloudpanel-dokploy-vault
+- Backup protection stopped with DELETE DATA option
+- Vault force-deleted (soft-delete bypassed)
+- No Dokploy backup data retained anywhere in Azure
+
+### Tailscale Node Removed
+
+- Node: `dokploy` (100.83.38.48, device ID 4604199626369220)
+- Status at removal: offline, last seen 8 days prior
+- AWS→Supabase connectivity verified intact after removal
+
+### Final Tailscale Topology (post-decommission)
+
+| IP | Name | OS | Status |
+|----|------|----|--------|
+| 100.86.124.66 | office | macOS | active |
+| 100.121.12.36 | cloudpanel-aws | linux | active |
+| 100.71.47.24 | dokploy-aws | linux | active |
+| 100.107.201.123 | iphone | iOS | active |
+| 100.70.12.18 | macbook | macOS | active |
+| 100.107.156.26 | motorola | android | offline (stale) |
+| 100.71.31.88 | supabase | linux | active |
+
+### Post-Decommission Acceptance (ALL PASS)
+
+| Check | Result |
+|-------|--------|
+| PROCHAT-APPS resources | ZERO |
+| PROCHAT-APPS resource groups | ZERO |
+| AWS Dokploy | 41 containers running |
+| prochat.tools | HTTP 200 |
+| viadieden.it | HTTP 200 |
+| n8n.prochat.tools | HTTP 200 |
+| umami.prochat.tools | HTTP 200 |
+| yeshua.academy | HTTP 200 |
+| onestatus.link | HTTP 200 |
+| dokploy.prochat.tools | HTTP 200 |
+| auth.prochat.tools | HTTP 404 (expected — Ory Kratos root) |
+| studio.prochat.tools | HTTP 401 (expected — auth required) |
+| AWS→Supabase subnet | 10.0.2.4:5433 OK |
+| AWS→Supabase Tailscale | 100.71.31.88:5432 OK |
+| Azure Supabase | 15 containers running |
+
+### Migration Status
+
+```
+Azure → AWS Dokploy migration:  CLOSED
+  Production cutover:           2026-08-17 (28 min downtime)
+  Rollback window expired:      2026-08-26 (infrastructure destroyed)
+  Azure Dokploy:                PERMANENTLY DECOMMISSIONED
+  Azure Supabase:               ACTIVE PRODUCTION (untouched)
+  AWS Dokploy:                  SOLE PRODUCTION AUTHORITY
+  Estimated Azure savings:      ~$150-200/month (D4as_v5 deallocated + storage + backup)
+```
