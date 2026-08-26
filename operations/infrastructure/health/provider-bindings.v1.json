@@ -2,6 +2,7 @@
   "schemaVersion": "1.0.0",
   "bindings": [
     {"bindingId":"health_binding:newrelic-dokploy-aws","providerId":"newrelic","resourceId":"host:dokploy-aws","selector":{"kind":"entity-name","names":["dokploy-aws"]},"freshnessSeconds":300},
+    {"bindingId":"health_binding:newrelic-cloudpanel-aws","providerId":"newrelic","resourceId":"host:cloudpanel-aws","selector":{"kind":"entity-name","names":["cloudpanel-aws"]},"freshnessSeconds":300},
     {"bindingId":"health_binding:newrelic-supabase","providerId":"newrelic","resourceId":"host:vm-supabase","selector":{"kind":"entity-name","names":["supabase"]},"freshnessSeconds":300},
     {"bindingId":"health_binding:cloudflare-production","providerId":"cloudflare","resourceId":"tunnel:cloudflare-production","selector":{"kind":"hostname","names":["prochat.tools"]},"freshnessSeconds":300},
     {"bindingId":"health_binding:cloudflare-domain-prochat","providerId":"cloudflare-domain","resourceId":"domain:prochat-tools","selector":{"kind":"domain-name","names":["prochat.tools"]},"freshnessSeconds":3600},

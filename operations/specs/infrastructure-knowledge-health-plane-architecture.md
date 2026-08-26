@@ -1,6 +1,6 @@
 # Infrastructure Knowledge & Health Plane — Architecture
 
-**Status:** proposed architecture; roadmap admission only; no live monitoring/action implementation authorized
+**Status:** canonical architecture for the read-only infrastructure telemetry implementation; provider mutations remain bounded and explicit
 **Owner:** Brain
 **Relationship to CLR:** sibling Brain capability plane; CLR consumes its bounded context/health through Brain Core and Context Broker. CLR5 conversation ingestion remains separate.
 

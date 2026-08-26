@@ -193,7 +193,7 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
   }
 }
 
-function loadNewRelicCredentials(): { apiKey?: string; accountId?: string } {
+export function loadNewRelicCredentials(): { apiKey?: string; accountId?: string } {
   const envPath = path.join(os.homedir(), '.config', 'newrelic', '.env');
   const merged = parseEnvFile(envPath);
   const apiKey = process.env.NEW_RELIC_USER_API_KEY || merged.get('NEW_RELIC_USER_API_KEY');

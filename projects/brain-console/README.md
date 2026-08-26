@@ -55,7 +55,7 @@ docs/system/brain-console-design-system.md
 - Overview cards from `/ops/system-metrics`, `/ops/ai-usage-windows`, and `/ops/ai-costs`
 - Local Applications from `/local-apps/dashboard`, `/local-apps/action-readiness`, and `/local-apps/actions/status`
 - Dokploy status from `/infra/dokploy`
-- New Relic uptime from `/infra/monitoring`
+- Canonical New Relic production host telemetry from `/infra/telemetry` (the legacy `/infra/monitoring` view remains available)
 - Office nightly scheduler status from `/infra/scheduler`
 - Cloudflare Tunnels from `/infra/tunnels`
 - Video Analyzer from `/research/video-analyze` and `/research/video-analyze/history`

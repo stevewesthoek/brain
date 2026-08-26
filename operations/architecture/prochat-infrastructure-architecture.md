@@ -1246,14 +1246,42 @@ validated against active production `vm-supabase` in Azure subscription `supabas
 
 ### 18.1 New Relic
 
-| Property | Azure (current) | AWS (shadow) |
-|----------|----------------|-------------|
-| Agent version | 1.73.0 | NOT INSTALLED |
-| Config path | `/etc/newrelic-infra.yml` | Staged — not yet configured |
-| Display name | dokploy | dokploy (to be set) |
+New Relic infrastructure observability is canonical for the three active
+production hosts. The account is the EU account (`7019441`), and Brain Core
+reads the EU NerdGraph endpoint through `/infra/telemetry`. Host identity is
+mapped explicitly; the historical `dokploy` entity is retained as unmapped
+evidence and must never be attached to `dokploy-aws`.
 
-New Relic must be installed and configured on AWS as part of the cutover procedure (Phase E
-in the cutover checklist) before declaring production stable.
+| Resource | New Relic entity | Agent | Current coverage |
+|----------|-----------------|-------|------------------|
+| `host:dokploy-aws` | `dokploy-aws` | 1.80.0 | system, storage, network, Docker/container |
+| `host:cloudpanel-aws` | `cloudpanel-aws` | 1.80.0 | system, storage, network; Docker not applicable |
+| `host:vm-supabase` | `supabase` (continuity alias) | 1.69.0 | system, storage, network, Docker/container |
+
+The agent configuration path on each host is `/etc/newrelic-infra.yml` and
+the service is enabled. Brain Console renders exactly these three canonical
+hosts. The read path uses a 15-second in-process cache and keeps missing,
+stale, and uninstrumented signals non-green.
+
+The current canonical host alert policy is `Production Infrastructure - Host
+Telemetry` (New Relic policy `1730856`) with loss-of-signal, CPU, memory, and
+storage conditions. Warning starting points are CPU 85%, memory 90%, and
+storage 80%; critical starting points are CPU 95%, memory 95%, and storage
+90%. The policy is scoped to the three canonical hostnames and is separate
+from historical application policies.
+
+Backup state is derived from the bounded runtime evidence file
+`operations/infrastructure/health/backup-runtime-state.v1.json`: Dokploy is
+UNKNOWN, CloudPanel is UNKNOWN/UNVERIFIED, and Supabase is FAILED because the
+latest `pgdump-upload` run failed. This observability work does not repair
+backup jobs or alter Supabase backup configuration.
+
+New Relic installation and alert policy configuration are now complete for
+coverage. Runtime/service telemetry combines New Relic metrics with a bounded,
+read-only SSH probe from Brain Core: Docker/container counts and health come
+from the agent plus host probe, while known systemd service states and failed
+unit counts are reported without changing those services. If SSH is
+unavailable, those fields remain `unknown` rather than becoming green.
 
 ### 18.2 Umami Analytics
 

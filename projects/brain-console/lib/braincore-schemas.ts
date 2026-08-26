@@ -195,6 +195,64 @@ export const infraNewRelicStatusSchema = z.object({
 });
 export type InfraNewRelicStatus = z.infer<typeof infraNewRelicStatusSchema>;
 
+const canonicalHostStateSchema = z.enum(['HEALTHY', 'WARNING', 'CRITICAL', 'STALE', 'UNKNOWN']);
+const backupTelemetrySchema = z.object({
+  jobId: z.string(),
+  state: z.enum(['HEALTHY', 'WARNING', 'FAILED', 'UNKNOWN']),
+  reason: z.string(),
+  lastAttemptAt: z.string().nullable(),
+  lastSuccessAt: z.string().nullable(),
+  sourceRef: z.string().nullable(),
+});
+const canonicalInfrastructureHostSchema = z.object({
+  resourceId: z.string(),
+  name: z.string(),
+  state: canonicalHostStateSchema,
+  stateReason: z.string(),
+  entity: z.object({
+    guid: z.string().nullable(),
+    name: z.string().nullable(),
+    reporting: z.boolean(),
+    alertSeverity: z.string().nullable(),
+    continuityAlias: z.string().nullable(),
+  }),
+  telemetry: z.object({
+    freshness: z.enum(['fresh', 'stale', 'unknown']),
+    lastSeenAt: z.string().nullable(),
+    ageSeconds: z.number().nullable(),
+    agentVersion: z.string().nullable(),
+  }),
+  metrics: z.object({
+    cpuPercent: z.number().nullable(),
+    loadAverageOneMinute: z.number().nullable(),
+    memoryUsedPercent: z.number().nullable(),
+    memoryUsedBytes: z.number().nullable(),
+    memoryAvailableBytes: z.number().nullable(),
+    memoryTotalBytes: z.number().nullable(),
+    swapUsedBytes: z.number().nullable(),
+    swapTotalBytes: z.number().nullable(),
+    uptimeSeconds: z.number().nullable(),
+    storage: z.array(z.object({ mountPoint: z.string(), usedPercent: z.number().nullable(), usedBytes: z.number().nullable(), freeBytes: z.number().nullable(), totalBytes: z.number().nullable(), inodeUsedPercent: z.number().nullable() })),
+    network: z.array(z.object({ interfaceName: z.string(), receiveBytesPerSecond: z.number().nullable(), transmitBytesPerSecond: z.number().nullable(), receiveErrorsPerSecond: z.number().nullable(), transmitErrorsPerSecond: z.number().nullable() })),
+    processCount: z.number().nullable(),
+  }),
+  runtime: z.object({ docker: z.enum(['observed', 'not_reported', 'unknown']), runningContainers: z.number().nullable(), nonRunningContainers: z.number().nullable(), unhealthyContainers: z.number().nullable(), restartCount: z.number().nullable(), systemd: z.enum(['observed', 'unknown']), activeServices: z.number().nullable(), failedServices: z.number().nullable(), serviceStatuses: z.array(z.object({ name: z.string(), status: z.string() })) }),
+  backup: backupTelemetrySchema,
+});
+export const canonicalInfrastructureTelemetrySchema = z.object({
+  schemaVersion: z.string(),
+  status: z.enum(['ok', 'not-configured', 'error']),
+  generatedAt: z.string(),
+  accountId: z.string().nullable(),
+  region: z.literal('EU').nullable(),
+  cacheSeconds: z.number(),
+  hosts: z.array(canonicalInfrastructureHostSchema).length(3),
+  alerting: z.object({ status: z.enum(['audited', 'unavailable']), policyCount: z.number().nullable(), conditionCount: z.number().nullable(), canonicalPolicy: z.string(), thresholds: z.object({ cpuPercent: z.number(), memoryPercent: z.number(), diskUsedPercent: z.number(), telemetryStaleSeconds: z.number() }), notes: z.array(z.string()) }),
+  staleEntities: z.array(z.object({ name: z.string(), guid: z.string().nullable(), reason: z.string() })),
+  error: z.string().optional(),
+});
+export type CanonicalInfrastructureTelemetry = z.infer<typeof canonicalInfrastructureTelemetrySchema>;
+
 export const infraOfficeSchedulerJobSchema = z.object({
   key: z.string(),
   label: z.string(),

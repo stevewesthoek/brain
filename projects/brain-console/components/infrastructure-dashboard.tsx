@@ -7,6 +7,7 @@ import { RefreshCw } from 'lucide-react';
 import { brainCoreRequest } from '@/lib/braincore-client';
 import { infrastructureStatusSchema } from '@/lib/infrastructure-schemas';
 import { StatusBadge } from '@/components/status-badge';
+import { CanonicalInfrastructureTelemetry } from '@/components/canonical-infrastructure-telemetry';
 
 function tone(value: 'fresh' | 'stale' | 'unknown'): 'fresh' | 'stale' | 'unknown' {
   return value;
@@ -34,6 +35,7 @@ export function InfrastructureDashboard() {
 
   return (
     <div className="stack">
+      <CanonicalInfrastructureTelemetry />
       <section className="page-heading">
         <div>
           <div className="eyebrow">Infrastructure Knowledge & Health Plane</div>

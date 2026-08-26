@@ -265,6 +265,7 @@ import { getInfraOfficeScheduler } from '../adapters/infra-office-scheduler.js';
 import { getInfraCloudflareTunnels } from '../adapters/infra-cloudflare-tunnels.js';
 import { getInfraCloudfareDomains } from '../adapters/infra-cloudflare-domains.js';
 import { getInfraNewRelicStatus } from '../adapters/infra-new-relic.js';
+import { getCanonicalInfrastructureTelemetry } from '../adapters/canonical-infrastructure-telemetry.js';
 import { getInfraUmamiStatus } from '../adapters/infra-umami.js';
 import { getInfraGoogleAdsMetrics } from '../adapters/infra-google-ads.js';
 import { getInfraStripeStatus } from '../adapters/infra-stripe.js';
@@ -2436,6 +2437,10 @@ export async function routeRequest(
         }
         if (url.pathname === '/infra/monitoring') {
           sendJson(response, 200, await getInfraNewRelicStatus());
+          return;
+        }
+        if (url.pathname === '/infra/telemetry') {
+          sendJson(response, 200, await getCanonicalInfrastructureTelemetry({ probeRuntime: true }));
           return;
         }
         if (url.pathname === '/infra/analytics') {

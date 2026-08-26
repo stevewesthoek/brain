@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-08-26T23:00:00Z",
+  "sourceKind": "observed-runtime-evidence",
+  "states": [
+    {
+      "backupJobId": "backup_job:dokploy-aws-recovery",
+      "state": "UNKNOWN",
+      "reason": "No canonical recurring backup has been proven after the AWS cutover.",
+      "lastAttemptAt": null,
+      "lastSuccessAt": null,
+      "sourceRef": "operations/reports/infrastructure-estate-reconciliation-2026-08-17.md"
+    },
+    {
+      "backupJobId": "backup_job:cloudpanel-aws-recovery",
+      "state": "UNKNOWN",
+      "reason": "A scheduled CloudPanel backup exists, but a successful artifact has not been verified.",
+      "lastAttemptAt": null,
+      "lastSuccessAt": null,
+      "sourceRef": "operations/infrastructure/infra.md"
+    },
+    {
+      "backupJobId": "backup_job:supabase-recovery",
+      "state": "FAILED",
+      "reason": "The latest pgdump-upload run failed: Tenant or user not found.",
+      "lastAttemptAt": "2026-08-26T02:20:00Z",
+      "lastSuccessAt": null,
+      "sourceRef": "operations/reports/infrastructure-estate-reconciliation-2026-08-17.md"
+    }
+  ]
+}
