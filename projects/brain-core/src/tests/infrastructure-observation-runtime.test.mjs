@@ -48,7 +48,7 @@ test('freshness boundary is exact and stale healthy observations cannot remain h
 
 test('New Relic maps every configured resource and surfaces disk/reporting failures plus missing entities', () => {
   const observations = normalizeNewRelic(fixtures.newrelic, bindings, { now });
-  assert.equal(observations.length, 2);
+  assert.equal(observations.length, 3);
 
   const aws = observations.find((entry) => entry.resourceId === 'host:dokploy-aws');
   assert.equal(aws.status, 'healthy');
@@ -58,17 +58,20 @@ test('New Relic maps every configured resource and surfaces disk/reporting failu
   assert.equal(aws.metricsSummary.apmReporting, 1);
   assert.equal(aws.metricsSummary.openIssues, 1);
 
-  const supabase = observations.find((entry) => entry.resourceId === 'host:supabase');
+  const supabase = observations.find((entry) => entry.resourceId === 'host:vm-supabase');
   assert.equal(supabase.status, 'unhealthy');
   assert.equal(supabase.freshness, 'stale');
   assert.ok(supabase.conditionCodes.includes('host_not_reporting'));
   assert.ok(supabase.conditionCodes.includes('disk_capacity_critical'));
 
+  const cloudpanel = observations.find((entry) => entry.resourceId === 'host:cloudpanel-aws');
+  assert.equal(cloudpanel.status, 'unknown');
+
 });
 
 test('provider errors produce explicit stale or unknown observations, never healthy', () => {
   const observations = normalizeNewRelic({ status: 'error', hosts: [], synthetics: [], apm: [], issues: { open: 0, critical: 0 } }, bindings, { now });
-  assert.equal(observations.length, 2);
+  assert.equal(observations.length, 3);
   assert.ok(observations.every((entry) => entry.status !== 'healthy'));
   assert.ok(observations.every((entry) => entry.conditionCodes.includes('provider_error')));
 });
@@ -110,7 +113,7 @@ test('Tailscale normalizes expected devices and never silently drops missing pee
   assert.equal(office.status, 'healthy');
   assert.equal(office.metricsSummary.sshReachable, true);
 
-  const supabase = observations.find((entry) => entry.resourceId === 'host:supabase');
+  const supabase = observations.find((entry) => entry.resourceId === 'host:vm-supabase');
   assert.equal(supabase.status, 'unhealthy');
   assert.ok(supabase.conditionCodes.includes('tailscale_device_offline'));
 

@@ -26,7 +26,7 @@ test('shared infrastructure projection preserves one stable canonical ID set', (
   assert.ok(ids.length > 0);
   assert.equal(new Set(ids).size, ids.length);
   assert.ok(ids.includes('host:dokploy-aws'));
-  assert.ok(ids.includes('host:supabase'));
+  assert.ok(ids.includes('host:vm-supabase'));
 });
 
 test('CLI consumes the same canonical projection without execution authority', () => {
@@ -39,9 +39,9 @@ test('CLI consumes the same canonical projection without execution authority', (
 });
 
 test('CLI inspect preserves the exact canonical resource identity', () => {
-  const inspected = runProchatCli(['infra', 'inspect', 'host:supabase']);
-  assert.equal(inspected.resource.resourceId, 'host:supabase');
-  assert.deepEqual(inspected, readInfrastructureResource('host:supabase'));
+  const inspected = runProchatCli(['infra', 'inspect', 'host:vm-supabase']);
+  assert.equal(inspected.resource.resourceId, 'host:vm-supabase');
+  assert.deepEqual(inspected, readInfrastructureResource('host:vm-supabase'));
 });
 
 test('Context Broker provider resolves canonical IDs with citations and freshness', () => {
@@ -50,8 +50,8 @@ test('Context Broker provider resolves canonical IDs with citations and freshnes
   const broker = createContextBroker({ contextProviders: [contextProvider], capabilityProviders: [capabilityProvider], clock: () => now });
 
   const pack = broker.call('resolve', { query: 'supabase', maxItems: 5, maxTokens: 1200 });
-  assert.ok(pack.items.some((item) => item.itemId === 'host:supabase'));
-  const item = pack.items.find((entry) => entry.itemId === 'host:supabase');
+  assert.ok(pack.items.some((item) => item.itemId === 'host:vm-supabase'));
+  const item = pack.items.find((entry) => entry.itemId === 'host:vm-supabase');
   assert.ok(item?.citation);
   assert.ok(['fresh', 'stale', 'unknown'].includes(item?.freshness));
 

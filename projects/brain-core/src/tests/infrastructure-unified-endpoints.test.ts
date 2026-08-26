@@ -42,12 +42,12 @@ test('unified infrastructure catalog exposes stable canonical IDs', async () => 
 test('topology and resource inspection use the same canonical resource ID', async () => {
   const topologyResponse = await request('GET', '/infra/topology');
   const topology = JSON.parse(topologyResponse.body) as { resourceIds: string[] };
-  assert.ok(topology.resourceIds.includes('host:supabase'));
+  assert.ok(topology.resourceIds.includes('host:vm-supabase'));
 
-  const resourceResponse = await request('GET', '/infra/resources/host%3Asupabase');
+  const resourceResponse = await request('GET', '/infra/resources/host%3Avm-supabase');
   assert.equal(resourceResponse.statusCode, 200);
   const resource = JSON.parse(resourceResponse.body) as { resource: { resourceId: string }; relations: unknown[] };
-  assert.equal(resource.resource.resourceId, 'host:supabase');
+  assert.equal(resource.resource.resourceId, 'host:vm-supabase');
   assert.ok(resource.relations.length > 0);
 });
 
