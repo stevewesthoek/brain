@@ -8,17 +8,18 @@
 **Current client registration:** Brain-project Codex registration in `.codex/config.toml`, profile `brain`; Claude Code uses the equivalent project-local `brain` profile when separately configured
 **Server health:** observed healthy through a bounded direct MCP initialize/tools-list/status proof
 
-**Current admitted provider:** Workbench `1.3.12-beta` at revision
-`56d737d6f633afc74319fb55e254c80b07c19e83`, admitted by Brain commit
-`a42cc0b1ef2b12ee61043f0523bd29ba9991ec9e`. The committed Workbench
-provenance manifest is sourced from
-`f0b63f3d734f32e39be6e9136b05f7ad2b5af4f0` and is validated against the
-provider root before use.
+**Current admitted provider:** Workbench `1.3.12-beta` at the exact revision
+recorded in Brain's current `workbench-for-brain` admission entry. The
+committed Workbench
+provenance manifest is sourced from documentation revision
+`31342c51fd31017e4de1d95beeb4bb63a0cabb4d`; the implementation source
+revision is `f0b63f3d734f32e39be6e9136b05f7ad2b5af4f0`. It is validated
+against the provider root before use.
 
 > **Why `active-local` is now truthful:**
-> The current admitted Workbench revision is `56d737d6f633afc74319fb55e254c80b07c19e83`.
-> Its manifest binds 167 committed source inputs at source revision
-> `f0b63f3d734f32e39be6e9136b05f7ad2b5af4f0` to 95 generated JavaScript
+> The current admitted Workbench revision is the exact revision in the current
+> Brain admission entry. Its manifest binds 167 committed source inputs at
+> source revision `31342c51fd31017e4de1d95beeb4bb63a0cabb4d` to 95 generated JavaScript
 > runtime artifacts using Node `v20.20.2` and pnpm `10.33.0`; the admitted
 > revision differs from the build-source revision only by the committed
 > manifest. Brain validates the manifest against Git blobs and the actual

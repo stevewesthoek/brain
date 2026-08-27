@@ -122,14 +122,14 @@
       "provider": {
         "providerId": "workbench",
         "repository": "prochattools/workbench-private",
-        "revision": "bf01601bd585262d08369dfa10f40da681966123",
+        "revision": "bbbbadb2997140bd0f818a3ba00f36f2d8f80198",
         "sourceState": "reproducible-build",
         "version": "1.3.12-beta",
         "entrypoint": "packages/mcp/dist/server.js",
         "runtimeProvenanceManifest": "packages/mcp/runtime-provenance.json",
         "artifacts": [
           { "path": "packages/mcp/dist/server.js", "sha256": "5a29fe32973b5e63b8906d5470beaf6656501db26debcf33d0ed8429125fb91d", "note": "gitignored runtime entrypoint verified through the committed reproducible-build manifest" },
-          { "path": "packages/mcp/runtime-provenance.json", "sha256": "41931df45f14f9bfb58cdf9538ac21404ac7e1e89c97c6178b6052f35c1db325" },
+          { "path": "packages/mcp/runtime-provenance.json", "sha256": "9d5f527b9283f73c0fe68b59a287f59b6f2ec60461582ada54a781e29c30cc98" },
           { "path": "packages/shared/src/workbench-command-contract.ts", "sha256": "b3f7725aa67f4769d809f3b515778beff519c9daeaa1df3ed4739719f356c962" },
           { "path": "docs/openapi.chatgpt.json", "sha256": "78f1036584411712ba50240bbb4cf81ce877cabf534c6d051e42badd254843dc" },
           { "path": "apps/web/src/lib/actionAuth.ts", "sha256": "9709fa857b77a77ab9caea66baa4313d3335f574019f13e6d05ab4b42e3d0ade" },
