@@ -17,7 +17,7 @@ const nav = [
   { href: '/local-apps', label: 'Local Apps', icon: AppWindow },
   { href: '/infrastructure', label: 'Infrastructure', icon: Network },
   { href: '/dokploy', label: 'Dokploy', icon: Server },
-  { href: '/monitoring', label: 'New Relic', icon: Activity },
+  { href: '/monitoring', label: 'New Relic / Telemetry', icon: Activity },
   { href: '/tunnels', label: 'Tunnels', icon: Globe },
   { href: '/scheduler', label: 'Scheduler', icon: CalendarClock },
   { href: '/video-analyzer', label: 'Video Analyzer', icon: FileVideo2 },
