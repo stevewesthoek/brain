@@ -52,6 +52,28 @@ the Dock if desired. Diagnostics are written to
 `~/Library/Logs/Brain Console/` with bounded rotation and without environment
 or credential dumps.
 
+To rebuild and reinstall after a source update, run `npm ci` and `npm run
+build` in `projects/brain-core` and `projects/brain-console`, then rerun the
+installer. The installer records the version-controlled checkout path in the
+thin wrapper, so reinstall from the intended canonical checkout. To remove
+the app, move `~/Applications/Brain Console.app` to the macOS Trash; removing
+the app does not stop the persistent Core LaunchAgent.
+
+Failure diagnosis starts with the launcher log, then these bounded identity
+checks:
+
+```bash
+tail -50 "$HOME/Library/Logs/Brain Console/launcher.log"
+launchctl print "gui/$(id -u)/com.office.brain-core"
+lsof -nP -iTCP:4877 -sTCP:LISTEN
+lsof -nP -iTCP:4881 -sTCP:LISTEN
+```
+
+The startup decision is: healthy canonical Core → reuse; otherwise reconcile
+the existing Core LaunchAgent or stop on an ownership conflict; healthy
+canonical Console → reuse; otherwise start Console and wait up to 60 seconds;
+open `/monitoring` only after readiness succeeds.
+
 Brain Core must be available at:
 
 ```text
