@@ -122,27 +122,27 @@
       "provider": {
         "providerId": "workbench",
         "repository": "prochattools/workbench-private",
-        "revision": "385b67b693a42bfab63a0d456cc3884a7f58d369",
+        "revision": "56d737d6f633afc74319fb55e254c80b07c19e83",
         "sourceState": "reproducible-build",
-        "version": "1.3.11-beta",
+        "version": "1.3.12-beta",
         "entrypoint": "packages/mcp/dist/server.js",
         "runtimeProvenanceManifest": "packages/mcp/runtime-provenance.json",
         "artifacts": [
           { "path": "packages/mcp/dist/server.js", "sha256": "5a29fe32973b5e63b8906d5470beaf6656501db26debcf33d0ed8429125fb91d", "note": "gitignored runtime entrypoint verified through the committed reproducible-build manifest" },
-          { "path": "packages/mcp/runtime-provenance.json", "sha256": "dd223b8239819c5421909ec1c8e944483a18436a9e73f80e068a148e7e4fc54a" },
+          { "path": "packages/mcp/runtime-provenance.json", "sha256": "d99b8a863a10d2a968d343f754e65efd2767ec041ddd53353cf00f07ceaf354d" },
           { "path": "packages/shared/src/workbench-command-contract.ts", "sha256": "b3f7725aa67f4769d809f3b515778beff519c9daeaa1df3ed4739719f356c962" },
           { "path": "docs/openapi.chatgpt.json", "sha256": "78f1036584411712ba50240bbb4cf81ce877cabf534c6d051e42badd254843dc" },
           { "path": "apps/web/src/lib/actionAuth.ts", "sha256": "9709fa857b77a77ab9caea66baa4313d3335f574019f13e6d05ab4b42e3d0ade" },
-          { "path": "apps/web/src/app/api/actions/run-command/route.ts", "sha256": "c3aae3b4ab38e2bf5255acec497b6ff1aaee22d8c7b6a78de29d7ea61ace64d0" },
+          { "path": "apps/web/src/app/api/actions/run-command/route.ts", "sha256": "947f7acaa8a3d34a070198a228497bf60ebb2c932c9c13b90e7c9964119fc384" },
           { "path": "packages/cli/src/agent/n8n-workflow-migration-command-adapter.ts", "sha256": "6c3b4244862f30c0f577b76c5e33643e7229f5a75e3089eb5dac6545ad855a98" },
           { "path": "packages/cli/src/agent/capability-grants.ts", "sha256": "b07a8797b7e2caf4e438689ae01d75600f1e0c73869702e8c5c7fbb8782e3867" },
           { "path": "packages/cli/src/agent/n8n-workflow-migration-capability.ts", "sha256": "ae6185ad2e9300b7dd36dcb35a7e93e7bfd286947a11a47f9437ca2c9634f32b" },
           { "path": "packages/cli/src/agent/n8n-workflow-migration-executor.ts", "sha256": "ca747b5692cae3912b87e4253c61982d0794e430242924c7764956e448650f9b" },
           { "path": "packages/cli/src/agent/capability-operation-store.ts", "sha256": "06df2d83ab4a60678c0914a6f91cdfe2a410fc19749b0cdcb183822e20df54dc" },
-          { "path": "packages/cli/src/agent/config.ts", "sha256": "a4dae119a6430763f66103600440c28edd82c15574955fc7b53ddf9afc877964" },
+          { "path": "packages/cli/src/agent/config.ts", "sha256": "2a888ca331b84c2a6e2f7004e04b2d3ea5cd9c61744a7f6545c1e3af80b35cd6" },
           { "path": "packages/bridge/src/storage/request-audit.ts", "sha256": "9d1373ab958270f949aff2f513afef2eee04bef373320a8d20fbd4da3fceb57e" },
-          { "path": "packages/mcp/src/configure-codex.ts", "sha256": "42e5529fcdeae47dae86481d6ec857cae369c569141347ae201489885c6f1166" },
-          { "path": "pnpm-lock.yaml", "sha256": "94ff91194636b514e8e3f5ea481a086a102b45eacf1222e3a4b8c752a531737f" }
+          { "path": "packages/mcp/src/configure-codex.ts", "sha256": "1ab7597ea453d9d531d9c1cc662e5e2b4c669ce53febee1fdf4a7292dfb46bbf" },
+          { "path": "pnpm-lock.yaml", "sha256": "46c5fb7bdce0b332de7e49cf7d39e8091b7de970b4f24224241f804c147e130c" }
         ]
       },
       "transport": {
