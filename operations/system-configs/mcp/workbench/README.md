@@ -5,16 +5,23 @@
 **Standard:** `operations/system-configs/mcp/MCP-PROVIDER-ADMISSION-STANDARD.md`
 **Provider Repository:** `prochattools/workbench-private`
 **MCP Entrypoint:** `packages/mcp/dist/server.js` (gitignored runtime, verified by committed reproducible-build provenance)
-**Current client registration:** Brain-project Codex registration in `.codex/config.toml`, profile `brain`
+**Current client registration:** Brain-project Codex registration in `.codex/config.toml`, profile `brain`; Claude Code uses the equivalent project-local `brain` profile when separately configured
 **Server health:** observed healthy through a bounded direct MCP initialize/tools-list/status proof
 
+**Current admitted provider:** Workbench `1.3.12-beta` at revision
+`56d737d6f633afc74319fb55e254c80b07c19e83`, admitted by Brain commit
+`a42cc0b1ef2b12ee61043f0523bd29ba9991ec9e`. The committed Workbench
+provenance manifest is sourced from
+`f0b63f3d734f32e39be6e9136b05f7ad2b5af4f0` and is validated against the
+provider root before use.
+
 > **Why `active-local` is now truthful:**
-> Workbench revision `87ce34385277ce5bcbfd45266dbe2d925a536933` commits
-> `packages/mcp/runtime-provenance.json`. The manifest binds 54 committed source
-> inputs at source revision `7acdb6f88bcd0db37c1b515dfe627a1594ed1a32`
-> to 32 generated JavaScript runtime artifacts using Node `v20.20.2` and pnpm
-> `10.33.0`; the admitted revision differs from the build-source revision only
-> by that manifest. Brain validates the manifest against Git blobs and the actual
+> The current admitted Workbench revision is `56d737d6f633afc74319fb55e254c80b07c19e83`.
+> Its manifest binds 167 committed source inputs at source revision
+> `f0b63f3d734f32e39be6e9136b05f7ad2b5af4f0` to 95 generated JavaScript
+> runtime artifacts using Node `v20.20.2` and pnpm `10.33.0`; the admitted
+> revision differs from the build-source revision only by the committed
+> manifest. Brain validates the manifest against Git blobs and the actual
 > runtime files before treating the entrypoint as verified.
 >
 > **Source review is not runtime provenance.** Reviewing the committed source confirms
@@ -132,6 +139,7 @@ The Workbench MCP server requires these environment variables at startup:
 | `WORKBENCH_MCP_CREDENTIAL_FILE` | Path to credential file with auth token | `/Users/you/.credentials/workbench-mcp.token` |
 | `WORKBENCH_MCP_ALLOWED_TOOLS` | Comma-separated tools to admit | `getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand` |
 | `WORKBENCH_MCP_ALLOWED_COMMAND_KINDS` | Comma-separated command kinds | `n8n_workflow_migration` |
+| `WORKBENCH_MCP_ALLOWED_CLIENT_WORKFLOW_TOOLS` | Client-workflow tools to admit | empty for the restricted Brain profile |
 
 ---
 
@@ -141,11 +149,15 @@ The credential file must be **ignored by git** and stored outside both repositor
 
 ### Create the credential file
 ```bash
-# Choose location (e.g., ~/.credentials/ or ~/.config/)
-mkdir -p ~/.credentials
-echo "<your-workbench-mcp-token>" > ~/.credentials/workbench-mcp.token
-chmod 600 ~/.credentials/workbench-mcp.token
+# Do not copy an action token or manually invent an MCP credential.
+# From the Workbench checkout, use the supported profile configurator:
+pnpm mcp:codex:configure -- --project-root /absolute/path/to/brain --profile brain
 ```
+
+The Workbench configurator derives the owner-local MCP credential from the
+owner action-token source, writes it outside both repositories with mode
+`0600`, and registers only its path. The credential value must never appear in
+repository files, client configuration, or logs.
 
 ### Verify it's ignored
 ```bash
