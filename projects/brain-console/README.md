@@ -29,6 +29,29 @@ Open:
 http://localhost:4881
 ```
 
+## macOS Brain Console launcher
+
+The version-controlled launcher is `tools/brain-console-launcher.mjs`. Install
+the thin user-facing app with:
+
+```bash
+/opt/homebrew/bin/node tools/scripts/install-brain-console-app.mjs
+```
+
+This installs `~/Applications/Brain Console.app`. The app checks the managed
+Brain Core LaunchAgent on port `4877`, reuses or starts the on-demand Console
+on port `4881`, waits for bounded readiness, and opens `/monitoring`. Repeated
+launches are serialized and reuse healthy canonical processes. An occupied
+port whose owner is not the canonical Brain process is reported and never
+terminated automatically.
+
+Brain Core remains persistent through the existing
+`com.office.brain-core` LaunchAgent. Brain Console remains on-demand; the app
+does not add a login item or alter Dock preferences. Drag the installed app to
+the Dock if desired. Diagnostics are written to
+`~/Library/Logs/Brain Console/` with bounded rotation and without environment
+or credential dumps.
+
 Brain Core must be available at:
 
 ```text

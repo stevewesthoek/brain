@@ -104,6 +104,9 @@ interface RateLimitWindow {
   resets_at: number;
 }
 
+const CODEX_USAGE_CACHE_MS = 30_000;
+let codexUsageCache: { expiresAt: number; value: { fiveHour: SystemMetricsCodexWindow; sevenDay: SystemMetricsCodexWindow; asOf: string | null } } | null = null;
+
 function toCodexWindow(window: RateLimitWindow | undefined): SystemMetricsCodexWindow {
   if (!window) return FALLBACK_WINDOW;
   return {
@@ -126,6 +129,8 @@ function walkJsonl(dir: string, out: string[]): void {
 }
 
 function readCodexUsage(): { fiveHour: SystemMetricsCodexWindow; sevenDay: SystemMetricsCodexWindow; asOf: string | null } {
+  if (codexUsageCache && codexUsageCache.expiresAt > Date.now()) return codexUsageCache.value;
+
   const sessionsDir = path.join(os.homedir(), '.codex', 'sessions');
   const files: string[] = [];
   walkJsonl(sessionsDir, files);
@@ -159,7 +164,9 @@ function readCodexUsage(): { fiveHour: SystemMetricsCodexWindow; sevenDay: Syste
     }
   }
 
-  return { fiveHour: bestFiveHour, sevenDay: bestSevenDay, asOf: bestAsOf };
+  const value = { fiveHour: bestFiveHour, sevenDay: bestSevenDay, asOf: bestAsOf };
+  codexUsageCache = { expiresAt: Date.now() + CODEX_USAGE_CACHE_MS, value };
+  return value;
 }
 
 interface ClaudeUsageFile {

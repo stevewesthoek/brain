@@ -15,6 +15,18 @@ Legacy dashboards are reference-only:
 
 New dashboard feature work belongs in Brain Console and must be backed by Brain Core API contracts.
 
+## Local operator lifecycle
+
+Brain Core is the persistent local API boundary and is owned by the existing
+`com.office.brain-core` LaunchAgent on `127.0.0.1:4877`. Brain Console is an
+optional, on-demand specialist surface on `127.0.0.1:4881`. The versioned
+`tools/brain-console-launcher.mjs` is the single Dock/app entry point: it
+health-checks the managed Core, reconciles that exact LaunchAgent only when its
+installed identity is stale, starts or reuses Console, and opens
+`/monitoring`. It fails closed when a port is occupied by an unknown process;
+it never uses broad process cleanup. The generated app bundle is only a thin
+wrapper around that script and is not repository runtime logic.
+
 ## Tech stack
 
 Brain Console uses:

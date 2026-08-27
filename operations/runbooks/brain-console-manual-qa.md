@@ -18,6 +18,21 @@ Build validation proves the app compiles. Manual QA proves it is usable as a loc
 
 ## Start services
 
+Preferred macOS operator path:
+
+```bash
+/opt/homebrew/bin/node tools/scripts/install-brain-console-app.mjs
+open "$HOME/Applications/Brain Console.app"
+```
+
+The app reuses the existing persistent `com.office.brain-core` LaunchAgent,
+starts Brain Console only when needed, and opens the monitoring tab after both
+local services are ready. It does not kill an unknown process on either
+port. If the app reports an ownership conflict, inspect the diagnostic log at
+`~/Library/Logs/Brain Console/launcher.log` and resolve the conflict manually.
+
+Fallback developer path:
+
 From the Brain repo:
 
 ```bash
