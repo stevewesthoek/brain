@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.office.supabase-recovery-copy-backup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/Office/Repos/stevewesthoek/brain/tools/scripts/supabase-recovery-copy-backup.sh</string>
+      <string>--run</string>
+      <string>--scheduled</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/Office/Repos/stevewesthoek/brain</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PATH</key>
+      <string>/Users/Office/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+      <key>HOME</key>
+      <string>/Users/Office</string>
+    </dict>
+
+    <!-- Prepared only. Installation and recurring activation require a later explicit cutover. -->
+    <key>Disabled</key>
+    <true/>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+      <key>Hour</key>
+      <integer>5</integer>
+      <key>Minute</key>
+      <integer>30</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/Office/Library/Logs/office-scheduler/supabase-recovery-copy-backup.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/Office/Library/Logs/office-scheduler/supabase-recovery-copy-backup.log</string>
+  </dict>
+</plist>

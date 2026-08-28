@@ -518,6 +518,9 @@ main() {
 
   # Graphify receives its own containment decision in BS0.15.
   log "skipping job=graphify-nightly reason=bs0-15-pending-containment"
+  # Phase 3X scheduler artifact is prepared but remains disabled until the
+  # manual acceptance, idempotency, telemetry, and post-health gates pass.
+  log "skipping job=supabase-recovery-copy-backup reason=phase3x-scheduler-not-enabled"
   log "skipping job=ing-bank-statement-download reason=bs0-11-unsafe-quiesced"
   log "skipping job=skill-prune reason=bs0-11-unsafe-quiesced"
 

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0.0",
+  "databaseCount": 26,
+  "source": "Phase 3V isolated Azure recovery-copy inventory",
+  "databases": [
+    "_supabase",
+    "accountant",
+    "analytics",
+    "cedula",
+    "fala",
+    "finance",
+    "finance\\",
+    "finance_shadow",
+    "jpvbootcamp",
+    "jpvbootcamp_legacy",
+    "jpvbootcamp_preview",
+    "olivetoorganizing",
+    "openfund",
+    "ory_prod",
+    "postgres",
+    "prochat",
+    "prokitstudio",
+    "proofly",
+    "resend",
+    "saaskitstudio",
+    "saysthebible",
+    "statuslink",
+    "tenant_prokit",
+    "tenant_saaskit",
+    "vault_legal",
+    "viadieden"
+  ]
+}

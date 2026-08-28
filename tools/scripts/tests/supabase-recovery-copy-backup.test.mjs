@@ -1,0 +1,78 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+const root = fileURLToPath(new URL('../../..', import.meta.url));
+const scriptPath = `${root}/tools/scripts/supabase-recovery-copy-backup.sh`;
+const inventoryPath = `${root}/operations/infrastructure/catalog/supabase-logical-backup-databases.v1.json`;
+const script = fs.readFileSync(scriptPath, 'utf8');
+const inventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
+
+test('recovery-copy runner is explicitly gated and isolated', () => {
+  assert.match(script, /MODE="dry-run"/);
+  assert.match(script, /--run\) MODE="run"/);
+  assert.match(script, /--restore-mode AlternateLocation/);
+  assert.doesNotMatch(script, /--restore-mode (?:OriginalLocation|ReplaceDisks)/);
+  assert.match(script, /--target-resource-group/);
+  assert.match(script, /--target-vnet-name/);
+  assert.match(script, /--target-subnet-name/);
+  assert.match(script, /detach_temporary_public_ips/);
+  assert.match(script, /--remove publicIpAddress/);
+  assert.match(script, /network nic show -g/);
+  assert.match(script, /remote_stage_b64/);
+  assert.ok(script.includes("tr -d '\\n=' | tr '+/' '-_'"));
+  assert.match(script, /stage_init_path/);
+  assert.match(script, /chunk_script_path/);
+  assert.doesNotMatch(script, /--parameters/);
+  assert.match(script, /base64 -d/);
+  assert.match(script, /isolated_script_stage_chunk_failed/);
+  assert.match(script, /contains\("RESULT status="\)/);
+  assert.match(script, /restored_copy_has_public_ip/);
+  assert.match(script, /restored_copy_has_vnet_peering/);
+  assert.match(script, /temporary_resource_group_identity_mismatch/);
+  assert.match(script, /Microsoft\.Network\/publicIPAddresses/);
+  assert.match(script, /If-None-Match: \*/);
+  assert.match(script, /curl --config -/);
+  assert.match(script, /idempotency_state="ELIGIBLE"/);
+  assert.match(script, /recovery_point_already_processed/);
+  assert.match(script, /rm -rf -- "\$WORK_DIR"/);
+  assert.match(script, /productionLogicalDumpUsed: false/);
+  assert.match(script, /productionTouched: false/);
+});
+
+test('canonical database inventory contains exactly the proven 26 names', () => {
+  assert.equal(inventory.databaseCount, 26);
+  assert.equal(inventory.databases.length, 26);
+  assert.equal(new Set(inventory.databases).size, 26);
+  assert.ok(inventory.databases.includes('finance\\'));
+  assert.match(script, /expected_databases=\(/);
+});
+
+test('runner keeps the approved secret and legacy boundaries', () => {
+  assert.match(script, /container\.sas/);
+  assert.match(script, /SAS_FILE_INPUT=/);
+  assert.match(script, /printf \'blob_sas=%q/);
+  assert.match(script, /--scripts "@\$secret_wrapper_path"/);
+  assert.match(script, /unset existing_sas/);
+  assert.doesNotMatch(script, /--parameters[^\n]*(?:existing_sas|BLOB_SAS|sas)/);
+  assert.doesNotMatch(script, /azcopy\s+(?:copy|list)/);
+  assert.doesNotMatch(script, /printf.*\$sas|echo.*\$sas|log.*\$sas/);
+  assert.match(script, /pgdump-upload\.timer/);
+  assert.doesNotMatch(script, /systemctl\s+(?:enable|start)\s+pgdump-upload/);
+  assert.doesNotMatch(script, /docker\s+system\s+prune/);
+  assert.doesNotMatch(script, /azcopy\s+remove|azcopy\s+delete/);
+});
+
+test('synthetic SAS sentinel stays out of argv, logs, state, and dry-run materialization', () => {
+  const sentinel = 'sv=2026-02-06&sp=rcwl&sr=c&sig=phase3x-synthetic-sentinel';
+  const safeArgv = ['vm', 'run-command', 'invoke', '--scripts', '@/private/remote-final-wrapper.sh'];
+  const safeLog = 'BACKUP_RESULT=PASS run_id=synthetic remote_crypto=PARTIAL';
+  const safeState = JSON.stringify({ status: 'SUCCESS', sourceKind: 'durable-supabase-recovery-copy' });
+  const dryRunSection = script.slice(script.indexOf('if [[ "$MODE" == "dry-run" ]]'), script.indexOf('RUN_STARTED_AT='));
+  assert.doesNotMatch(script, new RegExp(sentinel));
+  assert.doesNotMatch(safeArgv.join(' '), new RegExp(sentinel));
+  assert.doesNotMatch(safeLog, new RegExp(sentinel));
+  assert.doesNotMatch(safeState, new RegExp(sentinel));
+  assert.doesNotMatch(dryRunSection, /container\.sas|existing_sas|BLOB_SAS/);
+});

@@ -94,6 +94,12 @@ function HostCard({ host, expectedId }: { host: CanonicalHost | null; expectedId
               <tr><td>Continuity alias</td><td className="meta">{host.entity.continuityAlias ?? 'Unavailable'}</td></tr>
               <tr><td>Last successful backup</td><td className="meta">{formatTimestamp(host.backup.lastSuccessAt)}</td></tr>
               <tr><td>Last backup attempt</td><td className="meta">{formatTimestamp(host.backup.lastAttemptAt)}</td></tr>
+              <tr><td>Backup run / recovery point</td><td className="meta">{host.backup.runId ?? 'Unavailable'} · {host.backup.recoveryPointId ?? 'Unavailable'}</td></tr>
+              <tr><td>Recovery-point time</td><td className="meta">{formatTimestamp(host.backup.recoveryPointTime)}</td></tr>
+              <tr><td>Backup set</td><td className="meta">{host.backup.objectCount === null ? 'Unavailable' : `${host.backup.objectCount} objects`} · {host.backup.totalBytes === null ? 'size unavailable' : formatBytes(host.backup.totalBytes)}</td></tr>
+              <tr><td>Validation / remote</td><td className="meta">{host.backup.localValidation} · {host.backup.remoteVerification}</td></tr>
+              <tr><td>Temporary cleanup</td><td className="meta">{host.backup.tempResourcesCleaned === null ? 'Unavailable' : host.backup.tempResourcesCleaned ? 'Completed' : 'Not completed'} · production dump {host.backup.productionLogicalDumpUsed === false ? 'not used' : 'unknown'}</td></tr>
+              <tr><td>Blob prefix</td><td className="meta">{host.backup.blobPrefix ?? 'Unavailable'}</td></tr>
               <tr><td>Backup source</td><td className="meta">{host.backup.sourceRef ?? 'Unavailable'}</td></tr>
               <tr><td>Service statuses</td><td className="meta">{host.runtime.serviceStatuses.length === 0 ? 'Unavailable' : host.runtime.serviceStatuses.map((service) => `${service.name}: ${service.status}`).join(' · ')}</td></tr>
               <tr><td>Storage detail</td><td className="meta">{host.metrics.storage.length === 0 ? 'Unavailable' : host.metrics.storage.map((item) => `${item.mountPoint}: ${formatPercent(item.usedPercent)}`).join(' · ')}</td></tr>
