@@ -149,24 +149,27 @@ export function createContinuousProcessingService(
       // Video captures use the same queue lifecycle but dispatch through the
       // canonical Brain video operation. Persistence produces a reviewed
       // Apply-one preview; it does not write to Mind from this worker.
-      const videoItem = policy.selectedItems.find((item) => /\.(?:md|txt|mp4|webm|mov|mkv|m4v|avi|flv|wmv)$/i.test(item.path));
-      if (videoItem) {
-        const dispatched = await dispatchMindStewardVideoCapture(videoItem, { mindRoot: queueState.mindRoot });
-        if (dispatched.kind === 'video' && dispatched.result) {
-          const persistenceStatus = dispatched.result.persistence?.status;
-          const canMarkDone = persistenceStatus === 'already_applied' || persistenceStatus === 'applied';
-          recordMindStewardInboxQueueVideoOutcome({
-            capturePath: videoItem.path,
-            jobId: dispatched.result.job_id,
-            status: canMarkDone ? 'done' : 'blocked',
-            error: canMarkDone ? null : 'video_analysis_result_requires_mind_apply_one_approval',
-            ...(statePath !== undefined ? { statePath } : {}),
-          });
-          runCount += 1;
-          consecutiveFailures = 0;
-          lastRunAt = new Date().toISOString();
-          return;
-        }
+      // Selected queue items can be Markdown/text captures as well as raw video
+      // files. Let the canonical dispatcher inspect each selected item until it
+      // finds a video source; choosing the first `.md`/`.txt` path would skip a
+      // later capture that actually contains a YouTube or direct-video URL.
+      for (const candidate of policy.selectedItems) {
+        const dispatched = await dispatchMindStewardVideoCapture(candidate, { mindRoot: queueState.mindRoot });
+        if (dispatched.kind !== 'video' || !dispatched.result) continue;
+
+        const persistenceStatus = dispatched.result.persistence?.status;
+        const canMarkDone = persistenceStatus === 'already_applied' || persistenceStatus === 'applied';
+        recordMindStewardInboxQueueVideoOutcome({
+          capturePath: candidate.path,
+          jobId: dispatched.result.job_id,
+          status: canMarkDone ? 'done' : 'blocked',
+          error: canMarkDone ? null : 'video_analysis_result_requires_mind_apply_one_approval',
+          ...(statePath !== undefined ? { statePath } : {}),
+        });
+        runCount += 1;
+        consecutiveFailures = 0;
+        lastRunAt = new Date().toISOString();
+        return;
       }
 
       // Run the dry-run report shell script
