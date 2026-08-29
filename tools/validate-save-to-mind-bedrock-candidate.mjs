@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 
 const WORKFLOW_ID = 'FwP5INe9qoo1OwGC';
 const ALLOWED_PARAMETER_CHANGES = new Set(['build-gemini-body', 'gemini-classify', 'build-processed-note']);
+const ALLOWED_NODE_TYPE_CHANGES = new Set(['gemini-classify']);
 const REQUIRED_NODE_IDS = new Set([
   'webhook-trigger', 'build-gemini-body', 'gemini-classify', 'build-processed-note',
   'check-github-file', 'handle-file-check', 'respond-webhook', 'file-exists-check',
@@ -53,7 +54,7 @@ export function validateCandidate(candidate, rollback) {
 
   for (const [id, liveNode] of rollbackNodes) {
     const candidateNode = candidateNodes.get(id);
-    if (candidateNode.type !== liveNode.type || candidateNode.name !== liveNode.name) fail('node_identity_changed:' + id);
+    if ((!ALLOWED_NODE_TYPE_CHANGES.has(id) && candidateNode.type !== liveNode.type) || candidateNode.name !== liveNode.name) fail('node_identity_changed:' + id);
     if (!ALLOWED_PARAMETER_CHANGES.has(id) && !same(candidateNode, liveNode)) fail('unapproved_node_changed:' + id);
   }
 
@@ -62,11 +63,13 @@ export function validateCandidate(candidate, rollback) {
   const processedNode = candidateNodes.get('build-processed-note');
   if (!requestNode.parameters?.jsCode.includes('classificationRequest')) fail('classification_request_builder_missing');
   if (requestNode.parameters.jsCode.includes('geminiBody')) fail('obsolete_gemini_request_field_present');
-  if (!classifierNode.parameters?.url.includes('bedrock-runtime')) fail('bedrock_endpoint_missing');
-  if (!classifierNode.parameters.url.includes('us.anthropic.claude-haiku-4-5-20251001-v1:0')) fail('haiku_model_id_missing');
-  if (classifierNode.parameters.authentication !== 'predefinedCredentialType' || classifierNode.parameters.nodeCredentialType !== 'aws') fail('aws_predefined_credential_route_missing');
-  if (classifierNode.parameters.body !== '={{ $json.classificationRequest }}') fail('bedrock_body_binding_invalid');
-  if (classifierNode.parameters.url.includes('generativelanguage.googleapis.com') || JSON.stringify(classifierNode.parameters).includes('GEMINI_API_KEY')) fail('obsolete_gemini_transport_present');
+  if (classifierNode.type !== 'n8n-nodes-base.code') fail('bedrock_classifier_node_type_invalid');
+  if (!classifierNode.parameters?.jsCode.includes('bedrock-runtime')) fail('bedrock_endpoint_missing');
+  if (!classifierNode.parameters.jsCode.includes('us.anthropic.claude-haiku-4-5-20251001-v1:0')) fail('haiku_model_id_missing');
+  if (!classifierNode.parameters.jsCode.includes("service: 'bedrock'")) fail('bedrock_sigv4_service_override_missing');
+  if (!classifierNode.parameters.jsCode.includes('httpRequestWithAuthentication')) fail('aws_authenticated_helper_missing');
+  if (!classifierNode.parameters.jsCode.includes('input.classificationRequest')) fail('bedrock_body_binding_invalid');
+  if (JSON.stringify(classifierNode.parameters).includes('generativelanguage.googleapis.com') || JSON.stringify(classifierNode.parameters).includes('GEMINI_API_KEY')) fail('obsolete_gemini_transport_present');
   if (!processedNode.parameters?.jsCode.includes('parseStrictClassification')) fail('strict_classification_parser_missing');
   if (!processedNode.parameters.jsCode.includes('claude-haiku-parse') || !processedNode.parameters.jsCode.includes('claude-haiku-classify')) fail('bounded_failure_stages_missing');
   if (processedNode.parameters.jsCode.includes('capture/inbox') || processedNode.parameters.jsCode.includes('capture/failed')) fail('retired_destination_present');

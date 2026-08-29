@@ -3,70 +3,71 @@
 ## Result
 
 The live workflow was exported through Brain's documented n8n Public API
-wrapper before any mutation. The export is preserved as the new rollback
-artifact at:
+wrapper before mutation and preserved byte-for-byte as the rollback artifact:
 
 ```text
-operations/reports/artifacts/save-to-mind-live-rollback-2026-08-29.json
+operations/reports/artifacts/save-to-mind-live-pre-bedrock-deploy-2026-08-29.json
 ```
 
 SHA-256: `301fc583e33a174581eb1ba98bfd2bf235d4158cd0161e43e3fa2bfe257eb77f`
 
-The live workflow is active, has 10 nodes, keeps webhook ID
-`e26dfdb3-670d-4ea1-973b-694ec97347eb`, and was last updated at
-`2026-07-22T09:11:34.235Z`. It is the Gemini classifier graph. The older
-tracked rollback artifact and topology manifests describe a materially older
-graph/version and were not overwritten.
+The Bedrock candidate was deployed once, read back active with the protected
+graph and webhook intact, then rolled back after live validation failed. The
+current live workflow is active on the pre-Bedrock graph, with readback version
+`3398e289-19ba-4684-978f-fd2bd3cb4474`, updated at
+`2026-08-29T10:18:34.325Z`. Webhook ID remains
+`e26dfdb3-670d-4ea1-973b-694ec97347eb`; path remains `mind-inbox`.
 
 ## Candidate
 
-The new paused candidate is:
+The paused candidate is:
 
 ```text
 operations/automations/n8n/workflows/save-to-mind-bedrock-haiku-candidate-2026-08-29.json
 ```
 
-SHA-256: `3d16a2713a9c03288f78fbbbfcde24ef4f2decfa1400ceb829b596e7f0bd2031`
+SHA-256: `61356604403855fe01b268aa2c300648ce03af467100e0126d64dd56f77799f6`
 
-It preserves the workflow identity, webhook, node IDs/names, graph, settings,
-sharing, GitHub create/update logic, response, and `inbox/new` / `inbox/failed`
-routing. Only the classification request/transport/parser portion changes.
-The transport is n8n's AWS predefined credential signer and the model is the
-Brain-pinned Claude Haiku 4.5 Bedrock ID. The parser accepts only the expected
-strict JSON shape, strips a single accidental Markdown fence defensively, and
-routes transport/parse failures to `inbox/failed` without copying raw provider
-errors or model output into the failure summary.
-
-The candidate intentionally contains no credential mapping because the exact
-existing n8n AWS credential reference could not be obtained through the live
-public API. No credential ID was invented, no credential backup was read, and
-no credential was created or changed.
+It preserves the workflow identity, webhook, graph, settings, sharing, GitHub
+create/update logic, response, and `inbox/new` / `inbox/failed` routing. The
+candidate resolves the existing non-secret n8n credential display name
+`AWS Bedrock - Brain` for the AWS credential type. The provider target is
+Claude Haiku 4.5 through Amazon Bedrock InvokeModel at the
+`bedrock-runtime` endpoint, with the required SigV4 signing name `bedrock`.
+The parser accepts only the expected strict JSON shape and routes provider or
+parse failures to `inbox/failed` without copying raw provider errors or model
+output into the failure summary.
 
 ## Validation and live state
 
-Passed:
+Offline checks passed:
 
 ```text
-node --test tools/n8n-save-to-mind-bedrock-candidate.test.mjs
-```
-
-The structural validator also confirms the preserved boundaries, canonical
-paths, graph, Bedrock request shape, and no Gemini transport in the active
-candidate nodes. It returns deployment readiness as false because the AWS
-credential reference is unresolved:
-
-```text
+node --test tools/n8n-save-to-mind-bedrock-candidate.test.mjs tools/n8n-save-to-mind-route-proof.test.mjs
 node tools/validate-save-to-mind-bedrock-candidate.mjs
 ```
 
-No live update, activation change, webhook request, GitHub write, or Mind write
-was performed. A live fixture test is therefore intentionally not claimed.
-The existing fixture adapter remains write-boundary aware, but it cannot make
-an un-deployed candidate executable.
+Result: 14/14 tests passed; route proof passed; candidate structural validation
+passed with `deploymentReady: true`.
 
-The live mutation is blocked until Brain's controlled n8n mutation surface is
-available and an operator-approved exact existing AWS credential reference can
-be resolved without exposing credential values.
+The documented Workbench prepare/execute path was unavailable because no active
+Workbench session could be established. The bounded n8n Public API wrapper
+fallback performed the update and subsequent rollback; both requests returned
+HTTP 200 and were read back without protected drift.
+
+The first live smoke execution was `1030`. The native n8n HTTP Request signer
+returned `Forbidden` because the request signature used the endpoint-derived
+service `bedrock-runtime`, while AWS required signing name `bedrock`. The one
+bounded repair changed the classifier to n8n's authenticated helper with an
+explicit signing service, but execution `1031` failed before the request because
+n8n 2.4.7 rejects `helpers.httpRequestWithAuthentication` in the Code Node as
+unsupported. Both executions fail-closed into `inbox/failed`; no successful
+Bedrock classification was established. The two failure artifacts remain in
+Mind as evidence, and the live workflow was rolled back.
+
+The migration remains blocked until a supported native/custom n8n signing
+override or compatible n8n runtime mechanism is available. No further repair
+was guessed or attempted.
 
 ## claude-watch vendor audit
 

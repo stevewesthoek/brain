@@ -20,7 +20,16 @@ test('Bedrock request builder emits Anthropic InvokeModel JSON without Gemini tr
   assert.equal(body.temperature, 0);
   assert.equal(body.messages[0].role, 'user');
   assert.match(body.messages[0].content[0].text, /Respond with exactly one JSON object/);
-  assert.doesNotMatch(node('gemini-classify').parameters.url, /generativelanguage\.googleapis\.com|GEMINI_API_KEY/);
+  assert.doesNotMatch(JSON.stringify(node('gemini-classify').parameters), /generativelanguage\.googleapis\.com|GEMINI_API_KEY/);
+});
+
+test('Bedrock classifier uses the n8n authenticated helper with the Bedrock SigV4 signing name', () => {
+  const classifier = node('gemini-classify');
+  assert.equal(classifier.type, 'n8n-nodes-base.code');
+  assert.match(classifier.parameters.jsCode, /httpRequestWithAuthentication/);
+  assert.match(classifier.parameters.jsCode, /service: 'bedrock'/);
+  assert.match(classifier.parameters.jsCode, /bedrock-runtime/);
+  assert.deepEqual(classifier.credentials.aws, { id: 'SneiWxlJXSzYmwtF', name: 'AWS Bedrock - Brain' });
 });
 
 test('strict response parsing preserves canonical success and failure destinations', () => {

@@ -39,29 +39,18 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ 'https://bedrock-runtime.' + ($env.BEDROCK_REGION || $env.AWS_REGION || 'us-east-1') + '.amazonaws.com/model/us.anthropic.claude-haiku-4-5-20251001-v1:0/invoke' }}",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "aws",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ $json.classificationRequest }}",
-        "options": {}
+        "jsCode": "const input = $input.first()?.json ?? {};\nconst region = $env.BEDROCK_REGION || $env.AWS_REGION || 'us-east-1';\nconst modelId = 'us.anthropic.claude-haiku-4-5-20251001-v1:0';\nconst uri = 'https://bedrock-runtime.' + region + '.amazonaws.com/model/' + modelId + '/invoke';\n\ntry {\n  const response = await helpers.httpRequestWithAuthentication('aws', {\n    method: 'POST',\n    uri,\n    service: 'bedrock',\n    headers: { 'Content-Type': 'application/json' },\n    body: input.classificationRequest,\n    json: true,\n  });\n  return [{ json: typeof response === 'string' ? JSON.parse(response) : response }];\n} catch (error) {\n  return [{ json: { error: { name: error?.name || 'BedrockRequestError', message: error?.message || 'Bedrock request failed', description: error?.description || '' } } }];\n}"
+      },
+      "credentials": {
+        "aws": {
+          "id": "SneiWxlJXSzYmwtF",
+          "name": "AWS Bedrock - Brain"
+        }
       },
       "id": "gemini-classify",
       "name": "Gemini Classify",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         448,
         0

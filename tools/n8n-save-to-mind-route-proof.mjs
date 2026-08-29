@@ -12,7 +12,7 @@ const EXPECTED_NODE_IDS = new Set([
 ]);
 const EXPECTED_NODE_TYPES = new Map([
   ['webhook-trigger', 'n8n-nodes-base.webhook'], ['build-gemini-body', 'n8n-nodes-base.code'],
-  ['gemini-classify', 'n8n-nodes-base.httpRequest'], ['build-processed-note', 'n8n-nodes-base.code'],
+  ['gemini-classify', ['n8n-nodes-base.httpRequest', 'n8n-nodes-base.code']], ['build-processed-note', 'n8n-nodes-base.code'],
   ['check-github-file', 'n8n-nodes-base.httpRequest'], ['handle-file-check', 'n8n-nodes-base.code'],
   ['file-exists-check', 'n8n-nodes-base.if'], ['save-to-github-create', 'n8n-nodes-base.httpRequest'],
   ['save-to-github-update', 'n8n-nodes-base.httpRequest'], ['respond-webhook', 'n8n-nodes-base.respondToWebhook'],
@@ -52,7 +52,10 @@ function reachable(start, graph) {
 
 function assertExactTopology(nodes, graph) {
   if (nodes.size !== EXPECTED_NODE_IDS.size || [...nodes.keys()].some(id => !EXPECTED_NODE_IDS.has(id))) fail('unexpected_node_set');
-  if ([...EXPECTED_NODE_TYPES].some(([id, type]) => nodes.get(id)?.type !== type)) fail('unlisted_node_type_change');
+  if ([...EXPECTED_NODE_TYPES].some(([id, expected]) => {
+    const allowed = Array.isArray(expected) ? expected : [expected];
+    return !allowed.includes(nodes.get(id)?.type);
+  })) fail('unlisted_node_type_change');
   if ([...nodes.values()].filter(node => String(node.type).toLowerCase().includes('webhook')).length !== 2) fail('webhook_boundary_count_invalid');
   if ([...nodes.values()].some(node => /schedule|cron/i.test(String(node.type)))) fail('schedule_trigger_present');
   if (graph.some(edge => !nodes.has(edge.sourceNodeId) || !nodes.has(edge.targetNodeId))) fail('invalid_graph_edge');
