@@ -41,11 +41,15 @@ test('recovery-copy runner is explicitly gated and isolated', () => {
   assert.match(script, /productionTouched: false/);
 });
 
-test('canonical database inventory contains exactly the proven 26 names', () => {
-  assert.equal(inventory.databaseCount, 26);
-  assert.equal(inventory.databases.length, 26);
-  assert.equal(new Set(inventory.databases).size, 26);
+test('canonical database inventory contains exactly the proven 27 names', () => {
+  assert.equal(inventory.databaseCount, 27);
+  assert.equal(inventory.databases.length, 27);
+  assert.equal(new Set(inventory.databases).size, 27);
   assert.ok(inventory.databases.includes('finance\\'));
+  assert.ok(inventory.databases.includes('jpvbootcamp'));
+  assert.ok(inventory.databases.includes('jpvbootcamp_legacy'));
+  assert.ok(inventory.databases.includes('jpvbootcamp_staging'));
+  assert.match(script, /EXPECTED_DATABASE_COUNT=27/);
   assert.match(script, /expected_databases=\(/);
 });
 

@@ -10,7 +10,7 @@ live-production `pgdump-upload` path.
 Azure VM Backup recovery point
   -> Azure AlternateLocation temporary VM in an isolated private VNet
   -> PostgreSQL crash recovery and PG15 validation
-  -> globals plus the exact 26-database sequential logical dumps
+  -> globals plus the exact 27-database sequential logical dumps
   -> local pg_restore --list, SHA-256 manifest, and fidelity checks
   -> existing Azure Blob container through the approved SAS
   -> remote object/name/size verification
@@ -74,7 +74,7 @@ tools/scripts/supabase-recovery-copy-backup.sh --run
 ```
 
 The real run is accepted only when the production/Azure preflight, isolated
-restore, PG15 checks, exact 26/26 dump and `pg_restore --list` validation,
+restore, PG15 checks, exact 27/27 dump and `pg_restore --list` validation,
 manifest/checksum, remote verification, and exact cleanup all pass. A remote
 Content-MD5 omission is reported as `PARTIAL` cryptographic verification, not
 silently promoted to full cryptographic proof.

@@ -34,6 +34,7 @@ PRODUCTION_RESOURCE_GROUP="${AZURE_PRODUCTION_RESOURCE_GROUP:-rg-data-supabase}"
 STORAGE_ACCOUNT_NAME="${AZURE_RECOVERY_STORAGE_ACCOUNT_NAME:-}"
 PROOFLY_HEALTH_URL="${PROOFLY_CANONICAL_HEALTH_URL:-https://getproofly.app/api/health}"
 JPV_SERVICE_NAME="${JPV_PRODUCTION_SERVICE_NAME:-clients-jpv-bootcamp-app-tp9xrk}"
+EXPECTED_DATABASE_COUNT=27
 RUN_ID=""
 MODE="dry-run"
 SCHEDULED="false"
@@ -114,8 +115,8 @@ preflight_production() {
   jpv_body="$(check_http jpv_health https://jpvbootcamp.com/api/health)"
   "$JQ_BIN" -e '.ok == true and .deploymentEnv == "production"' <<<"$jpv_body" >/dev/null || fail "jpv_health_not_ok"
 
-  jpv_body="$(check_http jpv_preview_health https://preview.jpvbootcamp.com/api/health)"
-  "$JQ_BIN" -e '.ok == true and .deploymentEnv == "preview"' <<<"$jpv_body" >/dev/null || fail "jpv_preview_health_not_ok"
+  jpv_body="$(check_http jpv_staging_health https://staging.jpvbootcamp.com/api/health)"
+  "$JQ_BIN" -e '.ok == true and .deploymentEnv == "staging"' <<<"$jpv_body" >/dev/null || fail "jpv_staging_health_not_ok"
 
   proofly_body="$(check_http proofly_canonical "$PROOFLY_HEALTH_URL")"
   "$JQ_BIN" -e '.status == "ok"' <<<"$proofly_body" >/dev/null || fail "proofly_canonical_health_not_ok"
@@ -133,7 +134,7 @@ sudo docker exec supabase-db psql -U postgres -d postgres -Atqc "SELECT current_
   [[ "$supabase_probe" == *"15."* ]] || fail "supabase_not_pg15"
   [[ "$supabase_probe" == *"|f|1"* ]] || fail "supabase_database_health_failed"
 
-  log "production preflight PASS jpv=1/1 jpv_preview=ok proofly=getproofly.app:200 supabase=pg15_ready_not_recovery_select1 timer=disabled_inactive backup_processes=0"
+  log "production preflight PASS jpv=1/1 jpv_staging=ok proofly=getproofly.app:200 supabase=pg15_ready_not_recovery_select1 timer=disabled_inactive backup_processes=0"
 }
 
 read_azure_json() {
@@ -310,7 +311,7 @@ die() {
 
 expected_databases=(
   "_supabase" "accountant" "analytics" "cedula" "fala" "finance" "finance\\"
-  "finance_shadow" "jpvbootcamp" "jpvbootcamp_legacy" "jpvbootcamp_preview"
+  "finance_shadow" "jpvbootcamp" "jpvbootcamp_legacy" "jpvbootcamp_preview" "jpvbootcamp_staging"
   "olivetoorganizing" "openfund" "ory_prod" "postgres" "prochat" "prokitstudio"
   "proofly" "resend" "saaskitstudio" "saysthebible" "statuslink" "tenant_prokit"
   "tenant_saaskit" "vault_legal" "viadieden"
@@ -589,7 +590,7 @@ main() {
   if [[ "$MODE" == "dry-run" ]]; then
     idempotency_state="ELIGIBLE"
     [[ "$LAST_SUCCESS_RECOVERY_POINT_ID" == "$RECOVERY_POINT_ID" ]] && idempotency_state="NOOP"
-    log "DRY_RUN=PASS mode=dry-run recovery_point=$RECOVERY_POINT_ID recovery_point_time=$RECOVERY_POINT_TIME prefix=$BLOB_PREFIX restore_mode=AlternateLocation overwrite=false idempotency=$idempotency_state expected_databases=26 scheduler=$SCHEDULED"
+    log "DRY_RUN=PASS mode=dry-run recovery_point=$RECOVERY_POINT_ID recovery_point_time=$RECOVERY_POINT_TIME prefix=$BLOB_PREFIX restore_mode=AlternateLocation overwrite=false idempotency=$idempotency_state expected_databases=$EXPECTED_DATABASE_COUNT scheduler=$SCHEDULED"
     return 0
   fi
 
@@ -693,7 +694,7 @@ REMOTE_WRAPPER
   [[ "$REMOTE_OBJECT_COUNT" == 29 ]] || fail isolated_object_count_not_29
   [[ "$REMOTE_CRYPTO" == PASS || "$REMOTE_CRYPTO" == PARTIAL ]] || fail remote_crypto_result_missing
 
-  log "BACKUP_RESULT=PASS run_id=$RUN_ID recovery_point=$RECOVERY_POINT_ID dumps=26 validations=26 objects=$REMOTE_OBJECT_COUNT bytes=$REMOTE_TOTAL_BYTES remote_crypto=$REMOTE_CRYPTO temp_cleanup=pending"
+  log "BACKUP_RESULT=PASS run_id=$RUN_ID recovery_point=$RECOVERY_POINT_ID dumps=${#expected_databases[@]} validations=${#expected_databases[@]} objects=$REMOTE_OBJECT_COUNT bytes=$REMOTE_TOTAL_BYTES remote_crypto=$REMOTE_CRYPTO temp_cleanup=pending"
 }
 
 main "$@"

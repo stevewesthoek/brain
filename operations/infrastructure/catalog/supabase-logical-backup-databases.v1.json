@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "databaseCount": 26,
+  "databaseCount": 27,
   "source": "Phase 3V isolated Azure recovery-copy inventory",
   "databases": [
     "_supabase",
@@ -14,6 +14,7 @@
     "jpvbootcamp",
     "jpvbootcamp_legacy",
     "jpvbootcamp_preview",
+    "jpvbootcamp_staging",
     "olivetoorganizing",
     "openfund",
     "ory_prod",
