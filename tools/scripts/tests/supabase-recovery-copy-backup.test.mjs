@@ -60,6 +60,18 @@ test('archive validation stays file-native inside the database container', () =>
   assert.doesNotMatch(script, /cat \"\$dump_file\" \| db_exec(?:_with_stdin)? pg_restore --list/);
 });
 
+test('backup CONNECT access is gated and reconciled only on the recovery copy', () => {
+  assert.match(script, /BACKUP_ROLE=.*postgres/);
+  assert.match(script, /connect_matrix\(\)/);
+  assert.match(script, /backup_connect_matrix_incomplete/);
+  assert.match(script, /reconcile_recovery_copy_connect\(\)/);
+  assert.match(script, /db_admin_psql\(\).*supabase_admin/);
+  assert.match(script, /GRANT CONNECT ON DATABASE/);
+  assert.match(script, /connect-matrix-before\.tsv/);
+  assert.match(script, /connect-matrix-after\.tsv/);
+  assert.doesNotMatch(script, /production.*GRANT CONNECT/i);
+});
+
 test('runner keeps the approved secret and legacy boundaries', () => {
   assert.match(script, /container\.sas/);
   assert.match(script, /SAS_FILE_INPUT=/);

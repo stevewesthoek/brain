@@ -35,6 +35,7 @@ STORAGE_ACCOUNT_NAME="${AZURE_RECOVERY_STORAGE_ACCOUNT_NAME:-}"
 PROOFLY_HEALTH_URL="${PROOFLY_CANONICAL_HEALTH_URL:-https://getproofly.app/api/health}"
 JPV_SERVICE_NAME="${JPV_PRODUCTION_SERVICE_NAME:-clients-jpv-bootcamp-app-tp9xrk}"
 EXPECTED_DATABASE_COUNT=27
+BACKUP_ROLE="${SUPABASE_BACKUP_ROLE:-postgres}"
 RUN_ID=""
 MODE="dry-run"
 SCHEDULED="false"
@@ -319,7 +320,8 @@ expected_databases=(
 
 db_exec() { sudo docker exec supabase-db "$@"; }
 db_exec_with_stdin() { sudo docker exec -i supabase-db "$@"; }
-db_psql() { db_exec psql -U postgres "$@"; }
+db_psql() { db_exec psql -U "$BACKUP_ROLE" "$@"; }
+db_admin_psql() { db_exec psql -U supabase_admin "$@"; }
 hex_name() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n'; }
 size_of() { stat -c '%s' "$1"; }
 blob_object_url() { printf '%s/%s%s' "${PREFIX_BASE%/}" "$1" "$SAS_QUERY"; }
@@ -358,14 +360,53 @@ wal_level="$(db_psql -d postgres -Atqc 'SHOW wal_level;')"
 [[ -n "$wal_level" ]] || die wal_level_unreadable
 
 mkdir -p "$WORK_DIR/databases" "$WORK_DIR/globals"
+connect_matrix() {
+  db_psql -d postgres -AtF $'\t' -c "WITH expected(datname) AS (
+    VALUES ('_supabase'),('accountant'),('analytics'),('cedula'),('fala'),('finance'),('finance' || chr(92)),
+      ('finance_shadow'),('jpvbootcamp'),('jpvbootcamp_legacy'),('jpvbootcamp_preview'),('jpvbootcamp_staging'),
+      ('olivetoorganizing'),('openfund'),('ory_prod'),('postgres'),('prochat'),('prokitstudio'),('proofly'),
+      ('resend'),('saaskitstudio'),('saysthebible'),('statuslink'),('tenant_prokit'),('tenant_saaskit'),
+      ('vault_legal'),('viadieden'))
+  SELECT e.datname, has_database_privilege(current_user, e.datname, 'CONNECT')
+  FROM expected e ORDER BY e.datname;"
+}
+
+reconcile_recovery_copy_connect() {
+  db_admin_psql -d postgres -v ON_ERROR_STOP=1 -c "DO \\$\\$
+  DECLARE db_name text;
+  BEGIN
+    FOR db_name IN
+      SELECT e.datname
+      FROM (VALUES ('_supabase'),('accountant'),('analytics'),('cedula'),('fala'),('finance'),('finance' || chr(92)),
+        ('finance_shadow'),('jpvbootcamp'),('jpvbootcamp_legacy'),('jpvbootcamp_preview'),('jpvbootcamp_staging'),
+        ('olivetoorganizing'),('openfund'),('ory_prod'),('postgres'),('prochat'),('prokitstudio'),('proofly'),
+        ('resend'),('saaskitstudio'),('saysthebible'),('statuslink'),('tenant_prokit'),('tenant_saaskit'),
+        ('vault_legal'),('viadieden')) AS e(datname)
+      WHERE NOT has_database_privilege('$BACKUP_ROLE', e.datname, 'CONNECT')
+    LOOP
+      EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', db_name, '$BACKUP_ROLE');
+    END LOOP;
+  END \\$\\$;" || die recovery_copy_connect_reconciliation_failed
+}
+
+connect_matrix > "$WORK_DIR/connect-matrix-before.tsv" || die backup_connect_matrix_unreadable
+denied_databases="$(awk -F '\t' '$2 != "t" { print $1 }' "$WORK_DIR/connect-matrix-before.tsv")"
+matrix_file="$WORK_DIR/connect-matrix-before.tsv"
+if [[ -n "$denied_databases" ]]; then
+  reconcile_recovery_copy_connect
+  connect_matrix > "$WORK_DIR/connect-matrix-after.tsv" || die backup_connect_matrix_unreadable_after_reconciliation
+  matrix_file="$WORK_DIR/connect-matrix-after.tsv"
+fi
+awk -F '\t' '$2 != "t" { denied = denied $1 " " } END { if (denied != "") { print denied > "/dev/stderr"; exit 1 } }' "$matrix_file" || die backup_connect_matrix_incomplete
+
 db_psql -d postgres -Atqc 'SELECT current_setting($$server_version$$),pg_is_in_recovery(),1;' > "$WORK_DIR/recovery-health.txt"
-db_exec pg_dumpall -U postgres --globals-only > "$WORK_DIR/globals/globals.sql" || die globals_dump_failed
+db_exec pg_dumpall -U "$BACKUP_ROLE" --globals-only > "$WORK_DIR/globals/globals.sql" || die globals_dump_failed
 
 for database_name in "${expected_databases[@]}"; do
   encoded_name="$(hex_name "$database_name")"
   dump_file="$WORK_DIR/databases/${encoded_name}.dump"
   container_dump_file="/var/tmp/supabase-recovery-${RUN_ID_INPUT}-${encoded_name}.dump"
-  db_exec pg_dump -U postgres -d "$database_name" --format=custom --no-owner --no-privileges --file="$container_dump_file" || die "dump_failed_${encoded_name}"
+  db_exec pg_dump -U "$BACKUP_ROLE" -d "$database_name" --format=custom --no-owner --no-privileges --file="$container_dump_file" || die "dump_failed_${encoded_name}"
   LOCAL_DUMP_COUNT=$((LOCAL_DUMP_COUNT + 1))
   db_exec pg_restore --list "$container_dump_file" >/dev/null || die "pg_restore_list_failed_${encoded_name}"
   db_exec sh -c "stat -c '%s' '$container_dump_file' >/dev/null" || die "dump_file_stat_failed_${encoded_name}"
