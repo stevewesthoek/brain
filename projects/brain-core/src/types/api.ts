@@ -11046,19 +11046,52 @@ export interface BrainCoreInfraTunnelsResponse {
   error?: string;
 }
 
-export type BrainCoreInfraSchedulerJobStatus = 'success' | 'failed' | 'timeout' | 'never' | 'running';
+export type BrainCoreInfraSchedulerJobStatus = 'success' | 'failed' | 'timeout' | 'running' | 'skipped' | 'disabled' | 'blocked' | 'never-run';
 
 export interface BrainCoreInfraSchedulerJob {
   key: string;
+  id: string;
   label: string;
+  name: string;
+  description: string;
+  owner: string;
   planned: true;
+  enabled: boolean;
   executed: boolean;
   status: BrainCoreInfraSchedulerJobStatus;
+  lifecycle: string;
+  mode: string;
+  entrypoint: string;
+  fixedArguments: string[];
+  dependencies: string[];
+  scheduleType: string;
+  schedule: string;
+  authority: string;
+  networkAccess: string;
+  credentialSensitive: boolean;
+  destructive: boolean;
+  mindWrite: boolean;
+  timeoutSeconds: number;
+  retries: number;
+  concurrency: string;
+  idempotency: string;
   exitCode: number | null;
   durationSeconds: number | null;
   lastRunAt: string | null;
-  nextRunAt: string;
+  nextRunAt: string | null;
+  latestError: string | null;
   errorMessage: string | null;
+  artifacts: string[];
+  artifactPaths: string[];
+  receiptPath: string;
+  skippedReason: string | null;
+  trigger: string | null;
+  policyReason: string;
+  runbook: string;
+  tags: string[];
+  humanAction: string;
+  evidenceState: string;
+  recentHistory: Array<Record<string, unknown>>;
 }
 
 export interface BrainCoreInfraSchedulerReport {
@@ -11071,7 +11104,23 @@ export interface BrainCoreInfraSchedulerReport {
 
 export interface BrainCoreInfraSchedulerResponse {
   status: 'ok' | 'not-configured' | 'error';
+  displayName: string;
+  health: 'healthy' | 'warning' | 'failed' | 'disabled';
+  launchMechanism: string;
+  launchAgentLabel: string;
+  timezone: string;
+  scheduleType: string;
+  schedule: string;
+  runAtLoad: boolean;
+  launch: Record<string, unknown>;
+  manifest: Record<string, unknown>;
+  lock: Record<string, unknown>;
+  lastRun: Record<string, unknown> | null;
+  latestOverallResult: Record<string, unknown> | null;
+  nextRunAt: string | null;
+  counts: Record<string, number>;
   jobs: BrainCoreInfraSchedulerJob[];
+  history: Array<Record<string, unknown>>;
   totalJobs: number;
   plannedJobs: number;
   executedJobs: number;
@@ -11080,7 +11129,6 @@ export interface BrainCoreInfraSchedulerResponse {
   failedJobs: number;
   timeoutJobs: number;
   neverRunJobs: number;
-  nextRunAt: string;
   report: BrainCoreInfraSchedulerReport;
   error?: string;
 }

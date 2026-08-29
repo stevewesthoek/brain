@@ -102,6 +102,7 @@ docs/system/brain-console-design-system.md
 - Dokploy status from `/infra/dokploy`
 - Canonical New Relic production host telemetry from `/infra/telemetry` (the legacy `/infra/monitoring` view remains available)
 - Office nightly scheduler status from `/infra/scheduler`
+- Brain Scheduler Control Center from `/infra/scheduler`
 - Cloudflare Tunnels from `/infra/tunnels`
 - Video Analyzer from `/research/video-analysis` and `/research/video-analysis/history`
 - AWS Video Pipeline from the current Brain Core AWS Video endpoints

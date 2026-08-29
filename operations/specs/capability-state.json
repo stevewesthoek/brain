@@ -134,7 +134,11 @@
       "owner": "brain-runtime",
       "contractId": "capability-state-contract",
       "implementationPaths": [
-        "operations/specs/infinite-brain-scheduler-inventory.json"
+        "operations/specs/typed-scheduler-jobs.json",
+        "operations/specs/typed-scheduler-jobs.schema.json",
+        "tools/scheduler/registry.mjs",
+        "tools/scripts/brain-scheduler-runner.mjs",
+        "projects/brain-core/src/adapters/infra-office-scheduler.ts"
       ],
       "configurationState": "configured",
       "deploymentState": "unknown",
@@ -142,17 +146,20 @@
       "verificationState": "verified",
       "safetyState": "verified",
       "evidencePaths": [
+        "tools/validate-typed-scheduler-jobs.mjs",
         "tools/validate-infinite-brain-scheduler-inventory.mjs"
       ],
       "validationCommands": [
-        "node tools/validate-infinite-brain-scheduler-inventory.mjs"
+        "node tools/validate-typed-scheduler-jobs.mjs",
+        "npm --prefix projects/brain-core run typecheck",
+        "npm --prefix projects/brain-console run typecheck"
       ],
       "reviewedAt": "2026-07-14",
       "blockers": [
         "external activation unknown"
       ],
       "dependencies": [],
-      "notes": "Repository scheduler truth only."
+      "notes": "The typed registry is the sole scheduler inventory authority; the legacy validator is compatibility-only. Runtime deployment and external activation remain separately evidenced."
     },
     {
       "capabilityId": "save-to-mind-candidate",

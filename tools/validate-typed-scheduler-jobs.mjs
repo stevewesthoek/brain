@@ -1,1 +1,24 @@
-import fs from 'node:fs';import path from 'node:path';import process from 'node:process';const root=path.resolve(import.meta.dirname,'..'),arg=(name,def)=>{const i=process.argv.indexOf(name);return i<0?def:process.argv[i+1]},manifestPath=arg('--manifest',path.join(root,'operations/specs/typed-scheduler-jobs.json')),inventoryPath=arg('--inventory',path.join(root,'operations/specs/infinite-brain-scheduler-inventory.json')),jobs=JSON.parse(fs.readFileSync(manifestPath,'utf8')).jobs,inventory=JSON.parse(fs.readFileSync(inventoryPath,'utf8')).jobs,ids=new Set(),errors=[];const inv=new Set(inventory.map(j=>j.id));for(const j of jobs){if(ids.has(j.id)||!inv.has(j.id))errors.push(`unknown or duplicate job ${j.id}`);ids.add(j.id);for(const f of ['capabilityId','entrypoint','packageRoot','readScope','writeScope','privilege','mode','timeoutSeconds','retries','concurrency','idempotency','receipt','failureStatus','killSwitch','externalActivation','evidenceState'])if(j[f]===undefined||j[f]==='')errors.push(`${j.id} missing ${f}`);if(!Array.isArray(j.fixedArguments)||j.fixedArguments.some(x=>typeof x!=='string'||x.includes(';')||x.includes('..')))errors.push(`${j.id} unsafe arguments`);if(j.externalActivation!=='unknown')errors.push(`${j.id} activation inferred`);if(j.privilege.includes('mind')&& !['report-only','dry-run-report-only','disabled'].includes(j.mode))errors.push(`${j.id} unsafe Mind mode`);if(j.privilege!=='mind-read-only'&&j.mode!=='disabled'&&j.mode!=='disabled-pending-bs0-15'&&j.privilege!=='local-read-only'&&!(j.privilege==='local-generated-output'&&j.mode==='event-driven-semantic-only'&&j.writeScope==='runtime-generated-output'))errors.push(`${j.id} privileged job masquerades as safe`)}for(const id of inv)if(!ids.has(id))errors.push(`unrepresented inventory job ${id}`);const visiting=new Set(),done=new Set();function walk(id){if(visiting.has(id))errors.push(`dependency cycle ${id}`);if(done.has(id))return;visiting.add(id);const j=jobs.find(x=>x.id===id);for(const d of j.dependencies){if(!ids.has(d))errors.push(`${id} unknown dependency ${d}`);else walk(d)}visiting.delete(id);done.add(id)}jobs.forEach(j=>walk(j.id));if(errors.length){console.error(errors.join('\n'));process.exit(1)}console.log(`typed-scheduler-jobs-valid jobs=${jobs.length}`);
+#!/usr/bin/env node
+import process from 'node:process';
+import path from 'node:path';
+import { loadAndValidateRegistry } from './scheduler/registry.mjs';
+
+const root = path.resolve(import.meta.dirname, '..');
+const argument = (name, fallback) => {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? fallback : process.argv[index + 1];
+};
+
+try {
+  const { registry, manifestPath } = loadAndValidateRegistry({
+    manifestPath: argument('--manifest', undefined),
+    schemaPath: argument('--schema', undefined),
+    rootDir: root,
+    checkEntrypoints: true,
+  });
+  const counts = Object.fromEntries(['active', 'manual-only', 'policy-blocked', 'disabled', 'deprecated'].map((lifecycle) => [lifecycle, registry.jobs.filter((job) => job.lifecycle === lifecycle).length]));
+  console.log(`typed-scheduler-jobs-valid jobs=${registry.jobs.length} manifest=${manifestPath} lifecycle=${JSON.stringify(counts)}`);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+}

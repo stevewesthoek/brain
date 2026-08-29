@@ -100,17 +100,28 @@ test('GET /infra/scheduler returns a valid status shape', async () => {
   );
 });
 
-test('GET /infra/scheduler ok response includes jobs array and report summary', async () => {
+test('GET /infra/scheduler exposes the canonical registry overview', async () => {
   const response = await exercise({ method: 'GET', url: '/infra/scheduler' });
   const body = JSON.parse(response.body) as {
     status: string;
-    jobs?: Array<{ planned?: boolean; executed?: boolean; status?: string }>;
+    jobs?: Array<{ planned?: boolean; executed?: boolean; status?: string; lifecycle?: string }>;
     report?: { summary?: string };
+    displayName?: string;
+    health?: string;
+    manifest?: { valid?: boolean; jobCount?: number };
+    schedule?: string;
   };
 
   if (body.status === 'ok') {
     assert.ok(Array.isArray(body.jobs), 'ok status must include jobs array');
+    assert.equal(body.jobs.length, 17, 'canonical registry must expose every configured job');
     assert.ok(body.jobs.every((job) => typeof job.planned === 'boolean' && typeof job.executed === 'boolean' && typeof job.status === 'string'), 'jobs must include planned, executed, and status fields');
+    assert.ok(body.jobs.every((job) => typeof job.lifecycle === 'string'), 'jobs must include lifecycle state');
+    assert.equal(body.displayName, 'Brain Scheduler');
+    assert.ok(['healthy', 'warning', 'failed', 'disabled'].includes(body.health ?? ''), 'health must be explicit');
+    assert.equal(body.manifest?.valid, true);
+    assert.equal(body.manifest?.jobCount, 17);
+    assert.equal(body.schedule, 'daily at 03:00 Europe/Lisbon');
     assert.ok(typeof body.report?.summary === 'string', 'ok status must include report summary');
   }
 });
