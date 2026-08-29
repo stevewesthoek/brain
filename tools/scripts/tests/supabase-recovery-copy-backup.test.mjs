@@ -63,12 +63,19 @@ test('archive validation stays file-native inside the database container', () =>
 test('backup CONNECT access is gated and reconciled only on the recovery copy', () => {
   assert.match(script, /BACKUP_ROLE=.*postgres/);
   assert.match(script, /connect_matrix\(\)/);
+  assert.match(script, /has_database_privilege\(current_user, e\.datname, 'CONNECT'\)/);
   assert.match(script, /backup_connect_matrix_incomplete/);
   assert.match(script, /reconcile_recovery_copy_connect\(\)/);
   assert.match(script, /db_admin_psql\(\).*supabase_admin/);
   assert.match(script, /GRANT CONNECT ON DATABASE/);
   assert.match(script, /connect-matrix-before\.tsv/);
   assert.match(script, /connect-matrix-after\.tsv/);
+  const matrixSection = script.slice(script.indexOf('connect_matrix()'), script.indexOf('reconcile_recovery_copy_connect()'));
+  for (const database of inventory.databases) {
+    const marker = database === 'finance\\' ? "('finance' || chr(92))" : `('${database}')`;
+    assert.match(matrixSection, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.ok(script.indexOf('connect_matrix > "$WORK_DIR/connect-matrix-before.tsv"') < script.indexOf('db_exec pg_dumpall -U "$BACKUP_ROLE"'));
   assert.doesNotMatch(script, /production.*GRANT CONNECT/i);
 });
 
