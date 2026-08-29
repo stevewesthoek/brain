@@ -2,22 +2,25 @@
 
 ## Disposition
 
-The bounded canonical visual path is accepted on branch
-`feat/video-ingestion-envelope` at `e3ad0a8a`:
+The bounded canonical visual path and the queue-driven Save-to-Mind path are
+accepted on branch `feat/video-ingestion-envelope`. The original visual
+acceptance is recorded at `014dfc28`; the queue/cache fix is recorded at
+`3a85bb2a`:
 
 - one short public YouTube source was processed;
 - one actual Bedrock vision request analyzed three selected frames;
 - captions, timestamped visual observations, and a structured summary were
   returned in the canonical v1 result; and
 - the Console, CLI callers, and Apply-one writer were exercised against the
-  completed cached result.
+  completed cached result; and
+- one real disposable queue run selected the capture, reused the compatible
+  completed result, and completed through the explicit Apply-one approval
+  boundary.
 
-The complete queue-driven Save-to-Mind E2E is **not accepted**. The disposable
-queue fixture selected the capture but remained pending with selector status
-`blocked` after resolving an existing no-focus partial cache entry. The queue
-dispatcher does not carry the smoke-test focus or paid-frame budget, and an
-uncached queue retry would default to eight paid frames. No such retry was
-performed, so the three-frame authorization was preserved.
+The queue worker remains report/preview-only until an operator approves the
+single canonical Mind write. The acceptance therefore records the transient
+queue `blocked` approval state followed by the explicit writer apply and final
+queue `done` state. No additional Bedrock request was made.
 
 This report supplements the historical live Save-to-Mind Bedrock migration
 audits. It does not claim production deployment, live webhook acceptance, or a
@@ -89,30 +92,65 @@ not independently establish exact discovery-index coverage for this CLI
 subcommand; invocation is verified, discoverability remains a documentation
 follow-up.
 
-## 4. Save-to-Mind E2E
+## 4. Queue/cache identity fix
+
+The original mismatch was exact and bounded:
+
+- the Python analyzer's semantic job identity was
+  `sha256(source_hash | normalized_focus)`, truncated to 20 hex characters in
+  the job ID; and
+- the direct caller supplied focus `identify the clearest visible subjects
+  and scene changes`, producing completed job
+  `video-analysis-d336a575f02416f6a221`, while queue dispatch omitted focus and
+  fell back to an empty focus, producing the existing partial job
+  `video-analysis-9d83eba4f38c54eeb4b3`.
+
+Caller, persistence, correlation, idempotency, and capture-reference fields do
+not participate in analysis identity. Frame budgets and transcript mode are
+coverage requirements: a cached result is reusable only when it is succeeded,
+valid, and has at least the requested extracted/paid/observation coverage and
+the requested transcript provider. Partial or insufficient results fall
+through to canonical processing; they are never returned as reusable cache
+hits.
+
+Queue dispatch now uses the shared TypeScript request normalizer and accepts
+the bounded analysis dimensions explicitly. The acceptance used
+`frame_budget=19`, `paid_vision_frame_budget=3`, and `transcript_provider=captions`,
+matching the previously approved completed result. The full semantic cache
+key was:
+
+```text
+source_sha256 = 4b0f48e4f4ae6e02a1b61dcca3425e6db6f6db1a945c66857cccfdd4c5a95c8c
+cache_key = d336a575f02416f6a221b52c5b9a512af7abd05f64a5dfa95cfcfe0985d9aafa
+job_id = video-analysis-d336a575f02416f6a221
+```
+
+## 5. Save-to-Mind E2E
 
 | Stage | Result | Evidence |
 |---|---|---|
-| Disposable capture | Pass | `/tmp/brain-video-save-to-mind-e2e/inbox/new/elephant-video-acceptance.md` |
-| Async queue selection | Partial | Queue item selected; state remained `pending`, `selectorStatus=blocked` |
-| Canonical queue dispatch | Not accepted | Existing no-focus partial job `video-analysis-9d83eba4f38c54eeb4b3` had 19 extracted frames, 0 paid frames, and `vision_disabled_by_runtime`; no paid retry was safe |
-| Save-to-Mind caller on completed result | Pass | Cached successful job returned `asynchronous=true`, captions, three observations, and `persist_to_mind=true` preview state |
-| Enriched artifact | Pass for disposable direct writer path; not queue-complete | `inbox/processed/video-analysis/video-analysis-d336a575f02416f6a221.md` under `/tmp/brain-video-save-to-mind-reused-e2e/` |
-| Original source traceability | Pass for direct writer path | Artifact preserves `inbox/new/elephant-video-acceptance.md` |
-| Duplicate/recursion check | Pass for direct writer path | Cache reuse and Apply-one replay were idempotent; no failed artifact was created |
+| Disposable capture | Pass | `/var/folders/g4/txyv4_ls347fb97r13twxh3c0000gp/T/brain-video-queue-final-Bfwu6Y/mind/inbox/new/elephant-video-queue-acceptance.md` |
+| Async queue selection | Pass | Actual continuous queue selected the stable capture; `serviceRunCount=1` |
+| Canonical queue dispatch | Pass/reused | Queue request reused completed job `video-analysis-d336a575f02416f6a221`; prior partial `video-analysis-9d83eba4f38c54eeb4b3` did not block it; cache mtime was unchanged |
+| Queue approval boundary | Pass | Queue recorded transient `blocked` with `video_analysis_result_requires_mind_apply_one_approval`; explicit Apply-one approval then recorded final `done` |
+| Enriched artifact | Pass | `/private/var/folders/g4/txyv4_ls347fb97r13twxh3c0000gp/T/brain-video-queue-final-Bfwu6Y/mind/inbox/processed/video-analysis/video-analysis-d336a575f02416f6a221.md` |
+| Original source traceability | Pass | Artifact preserves `inbox/new/elephant-video-queue-acceptance.md`; original capture remained in place |
+| Duplicate/recursion check | Pass | One queue run, no failed artifact, no new paid inference, and Apply-one replay returned `already_applied` |
 | Real Mind/production mutation | Not performed | Real Mind, production webhook, and shared services were untouched |
 
-The direct cached Save-to-Mind caller plus writer proves the downstream
-canonical result-to-artifact boundary without spending another paid frame.
-It does not turn the blocked queue fixture into a completed queue E2E.
+The queue acceptance used the existing completed result with
+`frames_extracted=19`, `frames_sent_to_paid_vision=3`, provider
+`claude-bedrock`, and model `us.anthropic.claude-sonnet-4-6`. The queue itself
+did not invoke Bedrock; the one actual Bedrock request remains the previously
+accepted visual smoke.
 
-## 5. Writer safety
+## 6. Writer safety
 
 **Apply-one controls verified: yes, in the disposable Mind root.** The first
 apply created exactly the canonical target and produced:
 
 - exact target `inbox/processed/video-analysis/video-analysis-d336a575f02416f6a221.md`;
-- source commit binding `e3ad0a8a`;
+- source commit binding `3a85bb2a`;
 - matching preview/approval hashes and explicit operator approval with second
   confirmation;
 - durable accepted-approval audit;
@@ -121,11 +159,11 @@ apply created exactly the canonical target and produced:
 - identity-bound rollback artifact; and
 - preserved original capture reference and `review_required: true`.
 
-The receipt is at
-`/tmp/brain-video-save-to-mind-reused-receipts/video-preview-f271a07c26a8e04160f1.receipt.json`.
+The queue receipt is at
+`/var/folders/g4/txyv4_ls347fb97r13twxh3c0000gp/T/brain-video-queue-final-Bfwu6Y/receipts/video-preview-85c927736d45e09f7d74.receipt.json`.
 The subsequent identical Apply-one call returned `already_applied`.
 
-## 6. Validation
+## 7. Validation
 
 Passed focused validation:
 
@@ -135,10 +173,10 @@ Passed focused validation:
   projects/brain-core/src/tests/mind-steward-inbox-queue.test.ts \
   projects/brain-core/src/tests/continuous-processing-service.test.ts \
   projects/brain-core/src/tests/continuous-processing-router.test.ts
-  -> 46/46 passed
+  -> 47/47 passed
 
 python3 -m unittest projects/brain-core/services/video-analyzer/test_analyze.py
-  -> 10/10 passed
+  -> 14/14 passed
 
 python3 -m py_compile projects/brain-core/services/video-analyzer/analyze.py
   -> passed
@@ -153,24 +191,27 @@ node --test tools/validate-ai-model-registry.test.mjs
 npm run typecheck  # projects/brain-core
 npm run typecheck  # projects/brain-console
   -> both passed
+
+npm run build  # projects/brain-core
+  -> passed
 ```
 
 The canonical direct API route, Console history/result surface, both CLI
-caller modes, schema validation, queue/dispatcher tests, writer tests, and
-Bedrock vision admission were covered. The live n8n classifier/webhook was
-not mutated or re-run in this video acceptance; its live evidence remains in
-the two historical Save-to-Mind Bedrock audit reports.
+caller modes, schema validation, queue/dispatcher/cache regressions, writer
+tests, and Bedrock vision admission were covered. The live n8n
+classifier/webhook was not mutated or re-run in this video acceptance; its
+live evidence remains in the two historical Save-to-Mind Bedrock audit
+reports.
 
-## 7. Git and remaining blockers
+## 8. Git and remaining blockers
 
 - Branch: `feat/video-ingestion-envelope`
-- Starting/current implementation checkpoint: `e3ad0a8a`
+- Queue/cache fix commit: `3a85bb2a`
 - Shared dirty `main` was not touched.
 - Temporary selector, Core, Console, proxy processes, and dependency
-  symlinks were removed from the isolated worktree.
+  symlinks were removed from the isolated worktree after validation.
 - No production deployment or real Mind write occurred.
 
-Remaining blocker: the async Save-to-Mind video dispatcher needs an explicit,
-bounded way to carry the operator focus and paid-frame budget, or to reuse an
-already-completed result by its full cache key. Until that is implemented and
-separately accepted, the queue-driven video-to-Mind path remains partial.
+No queue/cache integration blocker remains for this bounded tested source and
+request shape. This report does not claim broader source coverage, production
+deployment, live webhook acceptance, or a write to the real Mind repository.
