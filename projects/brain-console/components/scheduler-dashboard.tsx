@@ -1,198 +1,95 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarClock, RefreshCw } from 'lucide-react';
 import { brainCoreRequest } from '@/lib/braincore-client';
-import {
-  infraOfficeSchedulerStatusSchema,
-  type InfraOfficeSchedulerJob,
-} from '@/lib/braincore-schemas';
+import { infraOfficeSchedulerStatusSchema, type InfraOfficeSchedulerJob } from '@/lib/braincore-schemas';
 import { StatusBadge } from '@/components/status-badge';
 
-const JOB_STATUS_PRIORITY: Record<InfraOfficeSchedulerJob['status'], number> = {
-  running: 0,
-  failed: 1,
-  timeout: 2,
-  success: 3,
-  never: 4,
-};
-
-function normalizeDateLabel(value: string | null): string {
-  if (!value) return 'unknown';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'unknown';
-  return date.toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+function dateLabel(value: string | null | undefined): string {
+  if (!value) return '—'; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
-
-function timeUntil(value: string | null): string {
-  if (!value) return 'unknown';
-  const target = new Date(value).getTime();
-  if (!Number.isFinite(target)) return 'unknown';
-  const diff = target - Date.now();
-  const abs = Math.abs(diff);
-  if (abs < 60_000) return diff >= 0 ? 'in under 1m' : 'just now';
-  if (abs < 3_600_000) return diff >= 0 ? `in ${Math.round(abs / 60_000)}m` : `${Math.round(abs / 60_000)}m ago`;
-  if (abs < 86_400_000) return diff >= 0 ? `in ${Math.round(abs / 3_600_000)}h` : `${Math.round(abs / 3_600_000)}h ago`;
-  return diff >= 0 ? `in ${Math.round(abs / 86_400_000)}d` : `${Math.round(abs / 86_400_000)}d ago`;
+function durationLabel(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—'; if (value < 60) return `${value}s`; return `${Math.floor(value / 60)}m ${value % 60}s`;
 }
-
-function formatDuration(seconds: number | null): string {
-  if (typeof seconds !== 'number' || !Number.isFinite(seconds)) return '—';
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return `${hours}h ${minutes}m`;
+function resultLabel(job: InfraOfficeSchedulerJob): string {
+  if (job.status === 'failed' && job.exitCode !== null) return `Failed (${job.exitCode})`;
+  return job.status.replaceAll('-', ' ');
 }
-
-function jobTone(status: InfraOfficeSchedulerJob['status']): 'fresh' | 'warning' | 'error' {
-  if (status === 'success' || status === 'running') return 'fresh';
-  if (status === 'failed' || status === 'timeout') return 'error';
-  return 'warning';
+function jobTone(job: InfraOfficeSchedulerJob): string {
+  if (job.status === 'success' || job.status === 'running') return 'success';
+  if (job.status === 'failed' || job.status === 'timeout') return 'error';
+  return job.status;
 }
+function count(data: { counts: Record<string, number> } | undefined, key: string): number { return data?.counts[key] ?? 0; }
 
-function jobStatusLabel(job: InfraOfficeSchedulerJob): string {
-  if (job.status === 'running') return 'Running';
-  if (job.status === 'success') return 'Success';
-  if (job.status === 'timeout') return 'Timeout';
-  if (job.status === 'failed') return job.exitCode !== null ? `Failed (${job.exitCode})` : 'Failed';
-  return 'Never run';
-}
-
-function SchedulerJobRow({ job }: { job: InfraOfficeSchedulerJob }) {
+function JobDetail({ job, onClose }: { job: InfraOfficeSchedulerJob; onClose: () => void }) {
   return (
-    <tr>
-      <td>
-        <div className="card-title">{job.label}</div>
-        <div className="meta">{job.key}</div>
-      </td>
-      <td>
-        <StatusBadge status={job.planned ? 'fresh' : 'warning'} label={job.planned ? 'Planned' : 'Not planned'} />
-      </td>
-      <td>
-        <StatusBadge status={job.executed ? 'fresh' : 'warning'} label={job.executed ? 'Executed' : 'Pending'} />
-      </td>
-      <td>
-        <StatusBadge status={jobTone(job.status)} label={jobStatusLabel(job)} />
-      </td>
-      <td className="meta">{normalizeDateLabel(job.lastRunAt)}</td>
-      <td className="meta">{timeUntil(job.nextRunAt)}</td>
-      <td className="meta">{formatDuration(job.durationSeconds)}</td>
-    </tr>
+    <article className="card">
+      <div className="compact-actions">
+        <div><div className="eyebrow">Job detail</div><h2>{job.name}</h2></div>
+        <button className="button compact secondary" onClick={onClose}>Close</button>
+      </div>
+      <p>{job.description}</p>
+      <div className="grid cards">
+        <div><div className="meta">Lifecycle</div><StatusBadge status={job.lifecycle} label={job.lifecycle} /></div>
+        <div><div className="meta">Current result</div><StatusBadge status={jobTone(job)} label={resultLabel(job)} /></div>
+        <div><div className="meta">Mode</div><div>{job.mode}</div></div>
+        <div><div className="meta">Owner</div><div>{job.owner}</div></div>
+      </div>
+      <dl className="detail-list">
+        <dt>Entrypoint</dt><dd><code>{job.entrypoint}</code></dd>
+        <dt>Schedule</dt><dd>{job.schedule}</dd>
+        <dt>Dependencies</dt><dd>{job.dependencies.join(', ') || 'None'}</dd>
+        <dt>Safety</dt><dd>Network: {job.networkAccess}; credentials: {String(job.credentialSensitive)}; destructive: {String(job.destructive)}; Mind writes: {String(job.mindWrite)}</dd>
+        <dt>Last run</dt><dd>{dateLabel(job.lastRunAt)} · {durationLabel(job.durationSeconds)}</dd>
+        <dt>Next run / trigger</dt><dd>{dateLabel(job.nextRunAt)}{job.trigger ? ` · ${job.trigger}` : ''}</dd>
+        <dt>Receipt</dt><dd><code>{job.receiptPath}</code></dd>
+        <dt>Artifacts</dt><dd>{job.artifactPaths.join(', ') || 'None recorded'}</dd>
+        <dt>Policy</dt><dd>{job.policyReason}</dd>
+        <dt>Human action</dt><dd>{job.humanAction}</dd>
+        <dt>Runbook</dt><dd><code>{job.runbook}</code></dd>
+        {job.latestError ? <><dt>Latest error</dt><dd>{job.latestError}</dd></> : null}
+      </dl>
+      <div className="meta">Recent history: {job.recentHistory.length ? `${job.recentHistory.length} bounded record(s)` : 'none recorded'}.</div>
+    </article>
   );
 }
 
 export function SchedulerDashboard() {
-  const scheduler = useQuery({
-    queryKey: ['infra-office-scheduler'],
-    queryFn: () => brainCoreRequest('/infra/scheduler', infraOfficeSchedulerStatusSchema, { timeoutMs: 12_000 }),
-    refetchInterval: 15_000,
-  });
-
-  const jobs = useMemo(
-    () => [...(scheduler.data?.jobs ?? [])].sort((left, right) => {
-      const priority = JOB_STATUS_PRIORITY[left.status] - JOB_STATUS_PRIORITY[right.status];
-      if (priority !== 0) return priority;
-      return left.label.localeCompare(right.label);
-    }),
-    [scheduler.data?.jobs],
-  );
-
-  const overallStatus = scheduler.data?.status ?? (scheduler.isError ? 'error' : 'not-configured');
-  const overallTone: 'fresh' | 'warning' | 'error' = overallStatus === 'ok' ? 'fresh' : overallStatus === 'not-configured' ? 'warning' : 'error';
-  const overallLabel = overallStatus === 'ok' ? 'Connected' : overallStatus === 'not-configured' ? 'Not configured' : 'Offline';
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const scheduler = useQuery({ queryKey: ['infra-office-scheduler'], queryFn: () => brainCoreRequest('/infra/scheduler', infraOfficeSchedulerStatusSchema, { timeoutMs: 12_000 }), refetchInterval: 15_000 });
+  const data = scheduler.data;
+  const selectedJob = data?.jobs.find((job) => job.id === selectedJobId) ?? null;
+  const overallTone = data?.health === 'healthy' ? 'success' : data?.health === 'failed' ? 'error' : 'warning';
 
   return (
     <div className="stack">
       <section className="page-heading">
-        <div>
-          <div className="eyebrow">Infrastructure</div>
-          <h1>Scheduler</h1>
-          <p>Brain Core reads the Office nightly scheduler state and shows which tasks are planned, which have executed, and which ones are currently running or failed.</p>
-        </div>
-        <div className="compact-actions">
-          <StatusBadge status={overallTone} label={overallLabel} />
-          <span className="meta">Refreshes every 15 seconds</span>
-          <button className="button compact secondary" onClick={() => void scheduler.refetch()}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </div>
+        <div><div className="eyebrow">Brain infrastructure</div><h1>Brain Scheduler</h1><p>Canonical, read-only control center for the typed Brain Scheduler registry, launchd schedule, job lifecycle, receipts, and bounded runtime history.</p></div>
+        <div className="compact-actions"><StatusBadge status={overallTone} label={data?.health ?? (scheduler.isError ? 'error' : 'loading')} /><span className="meta">Auto-refreshes every 15 seconds</span><button className="button compact secondary" onClick={() => void scheduler.refetch()}><RefreshCw size={14} /> Refresh</button></div>
       </section>
 
-      {scheduler.isError ? (
-        <div className="compact-error">
-          <strong>Scheduler data failed to load.</strong> Brain Core could not read `/infra/scheduler`.
-        </div>
-      ) : null}
-
-      {scheduler.data?.status === 'not-configured' ? (
-        <div className="compact-error">
-          <strong>Office scheduler state is not configured.</strong> Brain Core can still render the planned job list, but the local scheduler state and report files were not found.
-        </div>
-      ) : null}
+      {scheduler.isError ? <div className="compact-error"><strong>Scheduler data failed to load.</strong> Brain Core could not read the canonical scheduler overview.</div> : null}
+      {data?.status === 'not-configured' ? <div className="compact-error"><strong>Brain Scheduler is not configured.</strong> The planned registry or runtime evidence is unavailable.</div> : null}
 
       <section className="grid cards">
-        <article className="card">
-          <div className="card-title">Planned tasks</div>
-          <div className="metric">{scheduler.data?.plannedJobs ?? 0}</div>
-          <div className="meta">{scheduler.data?.totalJobs ?? 0} configured jobs</div>
-        </article>
-        <article className="card">
-          <div className="card-title">Executed</div>
-          <div className="metric">{scheduler.data?.executedJobs ?? 0}</div>
-          <div className="meta">Jobs with at least one recorded run</div>
-        </article>
-        <article className="card">
-          <div className="card-title">Running</div>
-          <div className="metric">{scheduler.data?.runningJobs ?? 0}</div>
-          <div className="meta">Live lock detected from the local scheduler</div>
-        </article>
-        <article className="card">
-          <div className="card-title">Failures</div>
-          <div className="metric">{(scheduler.data?.failedJobs ?? 0) + (scheduler.data?.timeoutJobs ?? 0)}</div>
-          <div className="meta">{scheduler.data?.failedJobs ?? 0} failed, {scheduler.data?.timeoutJobs ?? 0} timed out</div>
-        </article>
-        <article className="card">
-          <div className="card-title">Next run</div>
-          <div className="metric">{scheduler.data ? normalizeDateLabel(scheduler.data.nextRunAt) : 'unknown'}</div>
-          <div className="meta">{scheduler.data ? timeUntil(scheduler.data.nextRunAt) : 'unknown'}</div>
-        </article>
-        <article className="card">
-          <div className="card-title">Report</div>
-          <div className="metric">{scheduler.data?.report.available ? 'Ready' : 'Missing'}</div>
-          <div className="meta">{scheduler.data?.report.summary ?? 'No report summary available.'}</div>
-        </article>
+        <article className="card"><div className="card-title">Health</div><div className="metric">{data?.health ?? '—'}</div><div className="meta">{data?.displayName ?? 'Canonical scheduler'}</div></article>
+        <article className="card"><div className="card-title">Schedule</div><div className="metric">03:00</div><div className="meta">{data?.timezone ?? 'Europe/Lisbon'} · RunAtLoad guarded</div></article>
+        <article className="card"><div className="card-title">Last run</div><div className="metric">{dateLabel(data?.lastRun?.endedAt as string | null | undefined)}</div><div className="meta">{data?.lastRun?.status ? `${String(data.lastRun.status)} · ${durationLabel((data.lastRun.durationSeconds as number | null | undefined) ?? null)}` : 'no receipt'}</div></article>
+        <article className="card"><div className="card-title">Next run</div><div className="metric">{dateLabel(data?.nextRunAt)}</div><div className="meta">{data?.schedule ?? 'daily schedule'}</div></article>
+        <article className="card"><div className="card-title">Lifecycle</div><div className="metric">{count(data, 'active')} active</div><div className="meta">{count(data, 'policy-blocked')} blocked · {count(data, 'disabled') + count(data, 'deprecated')} disabled/retired</div></article>
+        <article className="card"><div className="card-title">Runtime</div><div className="metric">{count(data, 'successful')} success</div><div className="meta">{count(data, 'failed') + count(data, 'timeout')} failures/timeouts · {count(data, 'running')} running</div></article>
       </section>
 
-      <section className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Job</th>
-              <th>Planned</th>
-              <th>Executed</th>
-              <th>Status</th>
-              <th>Last run</th>
-              <th>Next run</th>
-              <th>Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            {jobs.map((job) => <SchedulerJobRow key={job.key} job={job} />)}
-            {jobs.length === 0 ? (
-              <tr>
-                <td colSpan={7}>
-                  <div className="meta">No scheduler jobs were returned by Brain Core.</div>
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      {data ? <section className="card"><div className="card-title">Launch and authority</div><p>{data.launchMechanism} · <code>{data.launchAgentLabel}</code> · {data.schedule}</p><div className="meta">Manifest: {String(data.manifest.valid)} · {String(data.manifest.jobCount)} jobs · lock: {data.lock.held ? 'held' : data.lock.stale ? 'stale' : 'free'} · report: {data.report.available ? 'available' : 'missing'}</div></section> : null}
+      {selectedJob ? <JobDetail job={selectedJob} onClose={() => setSelectedJobId(null)} /> : null}
+
+      <section className="table-wrap"><table><thead><tr><th>Job / purpose</th><th>Schedule</th><th>Lifecycle</th><th>Mode</th><th>Last run</th><th>Result</th><th>Duration</th><th>Next / trigger</th><th>Human action</th></tr></thead><tbody>
+        {(data?.jobs ?? []).map((job) => <tr key={job.id}><td><button className="button-link" onClick={() => setSelectedJobId(job.id)}>{job.name}</button><div className="meta">{job.id} · {job.description}</div></td><td className="meta">{job.schedule}</td><td><StatusBadge status={job.lifecycle} label={job.lifecycle} /></td><td className="meta">{job.mode}</td><td className="meta">{dateLabel(job.lastRunAt)}</td><td><StatusBadge status={jobTone(job)} label={resultLabel(job)} /><div className="meta">{job.exitCode !== null ? `exit ${job.exitCode}` : ''}</div></td><td className="meta">{durationLabel(job.durationSeconds)}</td><td className="meta">{dateLabel(job.nextRunAt)}{job.trigger ? ` · ${job.trigger}` : ''}</td><td className="meta">{job.humanAction}</td></tr>)}
+        {(data?.jobs ?? []).length === 0 ? <tr><td colSpan={9}><div className="meta">No canonical scheduler jobs were returned.</div></td></tr> : null}
+      </tbody></table></section>
     </div>
   );
 }

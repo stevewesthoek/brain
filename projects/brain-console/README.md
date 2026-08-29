@@ -56,7 +56,7 @@ docs/system/brain-console-design-system.md
 - Local Applications from `/local-apps/dashboard`, `/local-apps/action-readiness`, and `/local-apps/actions/status`
 - Dokploy status from `/infra/dokploy`
 - New Relic uptime from `/infra/monitoring`
-- Office nightly scheduler status from `/infra/scheduler`
+- Brain Scheduler Control Center from `/infra/scheduler`
 - Cloudflare Tunnels from `/infra/tunnels`
 - Video Analyzer from `/research/video-analyze` and `/research/video-analyze/history`
 - AWS Video Pipeline from the current Brain Core AWS Video endpoints

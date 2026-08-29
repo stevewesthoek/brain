@@ -130,7 +130,7 @@ Current `/skills` indexes skill folders from `BRAIN_CORE_SKILLS_DIR` or the cano
 
 Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` in `name:/absolute/path` format, reports whether each repo exists, and detects known handoff files without reading secrets or runtime logs.
 
-Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Steward, and Office Nightly Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`, `runtimeReportsSupported: true`, and `runtimeReportEndpoint: /runtime/reports`, plus read-only metadata for Mind cleanup state and Brain Console scaffold status.
+Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Steward, and Brain Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`, `runtimeReportsSupported: true`, and `runtimeReportEndpoint: /runtime/reports`, plus read-only metadata for Mind cleanup state and Brain Console scaffold status.
 
 Current `/runtime/reports` returns read-only runtime report summaries for the mind-steward dry-run report, approval audit JSONL health, video runtime status, and local-app runtime status. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
 
@@ -142,7 +142,11 @@ Current `/infra/dokploy` is a read-only report-backed list of Dokploy applicatio
 
 Current `/infra/monitoring` is a read-only report-backed list of New Relic servers and synthetic website checks. It reads `~/.config/newrelic/.env` for `NEW_RELIC_USER_API_KEY` and `NEW_RELIC_ACCOUNT_ID`, calls the New Relic GraphQL API, and returns uptime state summaries without exposing credentials or write paths.
 
-Current `/infra/scheduler` is a read-only report-backed list of Office nightly scheduled tasks. It reads the local `office-scheduler` state directory and report files, returning planned job rows with execution status, last run time, next run time, and report summary without exposing shell control or mutation paths.
+Current `/infra/scheduler` is the read-only Brain Scheduler overview. It reads
+the canonical typed registry, launchd configuration evidence, per-job receipts,
+the overall receipt, bounded history, and the generated report. It returns all
+17 registry jobs with lifecycle, safety, schedule, status, human-action, and
+artifact metadata without exposing shell control, raw logs, or mutation paths.
 
 Current `/infra/tunnels` is a read-only report-backed list of Cloudflare tunnels and their hostnames. It reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, then checks tunnel route reachability without exposing secrets or mutating tunnel config.
 
