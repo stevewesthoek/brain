@@ -12,7 +12,7 @@ type RegistryJob = {
   scheduleType: string; schedule: string; lifecycle: string; mode: string; authority: string; networkAccess: string;
   credentialSensitive: boolean; destructive: boolean; mindWrite: boolean; timeoutSeconds: number; retries: number; concurrency: string;
   idempotency: string; receipt: string; outputArtifacts: string[]; policyReason: string; runbook: string; tags: string[];
-  humanAction: string; evidenceState: string; externalActivation: string;
+  humanAction: string; reviewCategory: 'ACTIVE' | 'BLOCKED' | 'NEEDS REVIEW' | 'OBSOLETE'; evidenceState: string; externalActivation: string;
 };
 type Registry = { registryVersion: string; authority: string; scheduler: { id: string; name: string; launchMechanism: string; launchAgentLabel: string; timezone: string; scheduleType: string; schedule: string; hour: number; minute: number; runAtLoad: boolean; bootstrap: string; runner: string; stateDirectory: string; logDirectory: string; latestReport: string }; jobs: RegistryJob[] };
 
@@ -23,7 +23,7 @@ export interface InfraSchedulerJob {
   mindWrite: boolean; timeoutSeconds: number; retries: number; concurrency: string; idempotency: string; exitCode: number | null;
   durationSeconds: number | null; lastRunAt: string | null; nextRunAt: string | null; latestError: string | null; errorMessage: string | null;
   artifacts: string[]; artifactPaths: string[]; receiptPath: string; skippedReason: string | null; trigger: string | null;
-  policyReason: string; runbook: string; tags: string[]; humanAction: string; evidenceState: string; recentHistory: Array<Record<string, unknown>>;
+  policyReason: string; runbook: string; tags: string[]; humanAction: string; reviewCategory: 'ACTIVE' | 'BLOCKED' | 'NEEDS REVIEW' | 'OBSOLETE'; evidenceState: string; recentHistory: Array<Record<string, unknown>>;
 }
 
 export interface InfraSchedulerReport { available: boolean; path: string; summary: string; generatedAt: string | null; failureCount: number; }
@@ -70,14 +70,14 @@ function loadRegistry(): { registry: Registry; error: null } | { registry: null;
   const scheduler = registry.scheduler;
   const validLifecycle = new Set(['active', 'manual-only', 'policy-blocked', 'disabled', 'deprecated']);
   const validSchedule = new Set(['daily', 'event-driven', 'manual', 'disabled']);
-  const requiredJobFields = ['id', 'name', 'description', 'owner', 'entrypoint', 'fixedArguments', 'dependencies', 'scheduleType', 'schedule', 'lifecycle', 'mode', 'authority', 'networkAccess', 'credentialSensitive', 'destructive', 'mindWrite', 'timeoutSeconds', 'retries', 'concurrency', 'idempotency', 'receipt', 'outputArtifacts', 'policyReason', 'runbook', 'tags', 'humanAction', 'evidenceState', 'externalActivation'];
+  const requiredJobFields = ['id', 'name', 'description', 'owner', 'entrypoint', 'fixedArguments', 'dependencies', 'scheduleType', 'schedule', 'lifecycle', 'mode', 'authority', 'networkAccess', 'credentialSensitive', 'destructive', 'mindWrite', 'timeoutSeconds', 'retries', 'concurrency', 'idempotency', 'receipt', 'outputArtifacts', 'policyReason', 'runbook', 'tags', 'humanAction', 'reviewCategory', 'evidenceState', 'externalActivation'];
   if (registry.registryVersion !== '2.0.0' || registry.authority !== 'canonical-job-registry' || registry.jobs.length === 0 || scheduler.id !== 'brain-scheduler' || scheduler.launchAgentLabel !== 'com.office.nightly-scheduler' || scheduler.timezone !== 'Europe/Lisbon' || scheduler.hour !== 3 || scheduler.minute !== 0 || scheduler.runAtLoad !== true) return { registry: null, error: registryError() };
   const ids = new Set<string>();
   const invalid = registry.jobs.some((job) => {
     const unknownJob = job as unknown as Record<string, unknown>;
     if (!isRecord(unknownJob) || requiredJobFields.some((field) => unknownJob[field] === undefined) || typeof job.id !== 'string' || ids.has(job.id)) return true;
     ids.add(job.id);
-    if (!validLifecycle.has(job.lifecycle) || !validSchedule.has(job.scheduleType) || !Array.isArray(job.fixedArguments) || !Array.isArray(job.dependencies) || !Array.isArray(job.outputArtifacts) || !Array.isArray(job.tags)) return true;
+    if (!validLifecycle.has(job.lifecycle) || !validSchedule.has(job.scheduleType) || !['ACTIVE', 'BLOCKED', 'NEEDS REVIEW', 'OBSOLETE'].includes(job.reviewCategory) || !Array.isArray(job.fixedArguments) || !Array.isArray(job.dependencies) || !Array.isArray(job.outputArtifacts) || !Array.isArray(job.tags)) return true;
     if (job.lifecycle === 'active' && (job.mode === 'disabled' || job.credentialSensitive || job.destructive || job.mindWrite || job.networkAccess === 'external-write-capable' || !['brain', 'mind-read-only'].includes(job.authority) || !['report-only', 'dry-run-report-only'].includes(job.mode))) return true;
     return false;
   });
@@ -152,7 +152,7 @@ function buildJob(job: RegistryJob, history: Array<Record<string, unknown>>, loc
     exitCode: typeof exitValue === 'number' && Number.isFinite(exitValue) ? exitValue : null, durationSeconds: typeof durationValue === 'number' && Number.isFinite(durationValue) ? durationValue : null,
     lastRunAt, nextRunAt, latestError: error, errorMessage: error, artifacts: job.outputArtifacts, artifactPaths, receiptPath: path.join(STATE_DIR, 'receipts', `${job.id}.json`),
     skippedReason: isRunning ? null : (receipt?.skippedReason as string | undefined) ?? fallback.reason, trigger: (receipt?.trigger as string | undefined) ?? null,
-    policyReason: job.policyReason, runbook: job.runbook, tags: job.tags, humanAction: job.humanAction, evidenceState: job.evidenceState, recentHistory: recentHistory(job.id, history),
+    policyReason: job.policyReason, runbook: job.runbook, tags: job.tags, humanAction: job.humanAction, reviewCategory: job.reviewCategory, evidenceState: job.evidenceState, recentHistory: recentHistory(job.id, history),
   };
 }
 
