@@ -373,7 +373,7 @@ connect_matrix() {
 }
 
 reconcile_recovery_copy_connect() {
-  db_admin_psql -d postgres -v ON_ERROR_STOP=1 -c "DO \\$\\$
+  db_admin_psql -d postgres -v ON_ERROR_STOP=1 -c "DO \$\$
   DECLARE db_name text;
   BEGIN
     FOR db_name IN
@@ -387,7 +387,7 @@ reconcile_recovery_copy_connect() {
     LOOP
       EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', db_name, '$BACKUP_ROLE');
     END LOOP;
-  END \\$\\$;" || die recovery_copy_connect_reconciliation_failed
+  END \$\$;" || die recovery_copy_connect_reconciliation_failed
 }
 
 connect_matrix > "$WORK_DIR/connect-matrix-before.tsv" || die backup_connect_matrix_unreadable
