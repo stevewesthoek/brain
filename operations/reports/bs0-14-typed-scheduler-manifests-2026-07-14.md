@@ -1,19 +1,17 @@
 # BS0.14 Typed Scheduler Job Manifests — 2026-07-14
 
-**Status:** complete — all current repository-defined jobs represented.
+**Status:** historical report — superseded by Brain Scheduler registry v2.0.0.
 
-`operations/specs/typed-scheduler-jobs.json` is a versioned manifest for all
-17 jobs in the BS0.11 inventory. Each declares capability ID, entrypoint,
-fixed arguments, root, dependencies, read/write scopes, privilege, mode,
-timeout, retry count, concurrency, idempotency, receipt, failure status, kill
-switch, activation, and evidence state.
+The original report described the predecessor manifest and duplicate BS0.11
+inventory. The current authority is `operations/specs/typed-scheduler-jobs.json`
+plus `operations/specs/typed-scheduler-jobs.schema.json`; see
+`operations/runbooks/brain-scheduler.md` for the current registry and job
+decisions. Historical claims in this report do not prove current deployment or
+external activation.
 
-`tools/validate-typed-scheduler-jobs.mjs` cross-checks all IDs against the
-canonical inventory and rejects unknown jobs, injection-like arguments,
-activation claims, unsafe Mind modes, privilege masquerading, missing required
-metadata, missing inventory jobs, and dependency cycles. The Office Scheduler
-validates this manifest before entering its already-contained sequence; it does
-not activate a scheduler or enable any job.
+`tools/validate-typed-scheduler-jobs.mjs` validates the sole typed registry,
+including safety invariants and dependency cycles. The compatibility validator
+delegates to it; no duplicate inventory is authoritative.
 
 ```text
 node tools/validate-typed-scheduler-jobs.mjs -> jobs=17, pass

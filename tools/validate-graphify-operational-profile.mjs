@@ -44,7 +44,7 @@ if (!legacyScript.includes('GRAPHIFY_CONTAINED_EXECUTION')) errors.push('legacy 
 if (!scheduler.includes('graphify-semantic-event.mjs')) errors.push('scheduler must call semantic event gate');
 if (scheduler.includes("GRAPHIFY_PHASES=%q")) errors.push('legacy phased Graphify scheduler still active');
 const job = typedJobs.jobs.find((item) => item.id === 'graphify-nightly');
-if (!job || job.entrypoint !== 'tools/graphify-semantic-event.mjs' || job.mode !== 'event-driven-semantic-only') errors.push('typed Graphify job not semantic-only');
+if (!job || job.entrypoint !== 'tools/graphify-semantic-event.mjs' || job.scheduleType !== 'event-driven' || job.lifecycle !== 'policy-blocked' || job.mode !== 'disabled') errors.push('typed Graphify job is not a blocked event-driven semantic gate');
 
 if (errors.length) {
   console.error(errors.join('\n'));

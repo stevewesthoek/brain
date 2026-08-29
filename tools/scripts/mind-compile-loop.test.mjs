@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const COMPILE_LOOP = path.join(SCRIPT_DIR, 'mind-compile-loop.sh');
 const SCHEDULER = path.join(SCRIPT_DIR, 'office-nightly-scheduler.sh');
+const REGISTRY = path.resolve(SCRIPT_DIR, '../../operations/specs/typed-scheduler-jobs.json');
 const CLASSIFY_WRAPPER = path.join(SCRIPT_DIR, 'mind-steward-classify-captures.sh');
 const BIBLE_WRAPPER = path.join(SCRIPT_DIR, 'bible-studies-pipeline.sh');
 const BIBLE_PIPELINE = path.join(SCRIPT_DIR, 'bible-studies/pipeline.mjs');
@@ -47,14 +48,19 @@ test('scheduler and wrappers pin safe modes without an environment apply switch'
   const wrapper = fs.readFileSync(CLASSIFY_WRAPPER, 'utf8');
   const bibleWrapper = fs.readFileSync(BIBLE_WRAPPER, 'utf8');
   const biblePipeline = fs.readFileSync(BIBLE_PIPELINE, 'utf8');
+  const registry = JSON.parse(fs.readFileSync(REGISTRY, 'utf8'));
+  const bibleJob = registry.jobs.find((job) => job.id === 'bible-studies-pipeline');
 
-  assert.match(scheduler, /printf 'bash %q --mode=report-only >> %q 2>&1'/);
+  assert.match(scheduler, /brain-scheduler-runner\.mjs/);
+  assert.doesNotMatch(scheduler, /run_bible_studies_pipeline|GRAPHIFY_PHASES/);
+  assert.equal(bibleJob?.lifecycle, 'policy-blocked');
+  assert.equal(bibleJob?.mode, 'disabled');
+  assert.equal(bibleJob?.mindWrite, true);
+  assert.deepEqual(bibleJob?.fixedArguments, ['--mode=report-only']);
   assert.doesNotMatch(compileLoop, />>/);
   assert.doesNotMatch(compileLoop, /proposed_dest=/);
   assert.match(wrapper, /MODE="dry-run"/);
   assert.doesNotMatch(wrapper, /MIND_STEWARD_CLASSIFY_DRY_RUN/);
-  assert.match(scheduler, /skipping job=bible-studies-pipeline reason=bs0-2-quiesced/);
-  assert.doesNotMatch(scheduler, /if run_bible_studies_pipeline/);
   assert.match(bibleWrapper, /MODE="report-only"/);
   assert.match(biblePipeline, /executionMode !== 'apply'/);
 
