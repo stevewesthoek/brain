@@ -318,6 +318,7 @@ expected_databases=(
 )
 
 db_exec() { sudo docker exec supabase-db "$@"; }
+db_exec_with_stdin() { sudo docker exec -i supabase-db "$@"; }
 db_psql() { db_exec psql -U postgres "$@"; }
 hex_name() { printf '%s' "$1" | od -An -tx1 | tr -d ' \n'; }
 size_of() { stat -c '%s' "$1"; }
@@ -365,7 +366,7 @@ for database_name in "${expected_databases[@]}"; do
   dump_file="$WORK_DIR/databases/${encoded_name}.dump"
   db_exec pg_dump -U postgres -d "$database_name" --format=custom --no-owner --no-privileges > "$dump_file" || die "dump_failed_${encoded_name}"
   LOCAL_DUMP_COUNT=$((LOCAL_DUMP_COUNT + 1))
-  cat "$dump_file" | db_exec pg_restore --list >/dev/null || die "pg_restore_list_failed_${encoded_name}"
+  cat "$dump_file" | db_exec_with_stdin pg_restore --list >/dev/null || die "pg_restore_list_failed_${encoded_name}"
   LOCAL_VALIDATION_COUNT=$((LOCAL_VALIDATION_COUNT + 1))
 done
 
