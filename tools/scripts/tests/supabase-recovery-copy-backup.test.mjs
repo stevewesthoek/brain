@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -77,6 +78,17 @@ test('backup CONNECT access is gated and reconciled only on the recovery copy', 
   }
   assert.ok(script.indexOf('connect_matrix > "$WORK_DIR/connect-matrix-before.tsv"') < script.indexOf('db_exec pg_dumpall -U "$BACKUP_ROLE"'));
   assert.doesNotMatch(script, /production.*GRANT CONNECT/i);
+});
+
+test('CONNECT reconciliation preserves shell dollar-quote and catalog backslash arguments', () => {
+  const oldShell = String.raw`old="DO \\$\\$;"; test "$old" = 'DO $$;'`;
+  assert.throws(() => execFileSync('/bin/bash', ['-c', oldShell], { encoding: 'utf8' }));
+
+  const fixedShell = String.raw`fixed="DO \$\$;"; test "$fixed" = 'DO $$;'`;
+  execFileSync('/bin/bash', ['-c', fixedShell], { encoding: 'utf8' });
+
+  const catalogValue = execFileSync('/bin/bash', ['-c', String.raw`value='finance\'; final_consumer() { test "$1" = 'finance\'; }; final_consumer "$value"`], { encoding: 'utf8' });
+  assert.equal(catalogValue, '');
 });
 
 test('runner keeps the approved secret and legacy boundaries', () => {
