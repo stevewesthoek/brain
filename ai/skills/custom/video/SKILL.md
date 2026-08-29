@@ -201,6 +201,11 @@ Route:
 /video → /web for discovery if needed → /media-acquisition → /ffmpeg if clipping/conversion is needed → /video production or synthesis
 ```
 
+For full multimodal watching and a local structured report, route to the dormant
+`watch-video` skill after source acquisition. It must not write directly to
+Mind or an Obsidian vault; Save-to-Mind remains a separate approved ingestion
+step.
+
 Required safeguards:
 - Preserve source URL, title, channel/uploader, access date, and rights notes.
 - Do not use for piracy, paywall bypass, private media, or redistribution without rights.
@@ -1165,4 +1170,3 @@ You excel at:
 The `/video` orchestrator is invisible by design. You don't think about it — you just talk to your AI about making videos, and the right toolchain runs automatically. No skill names (unless you want them), no tool knowledge needed.
 
 **Just describe what you need.** The orchestrator handles the rest.
-

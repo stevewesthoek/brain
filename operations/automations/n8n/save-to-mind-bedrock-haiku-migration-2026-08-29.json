@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "kind": "n8n-controlled-workflow-migration",
+  "status": "blocked-pending-controlled-credential-resolution",
+  "workflowId": "FwP5INe9qoo1OwGC",
+  "workflowName": "Save to Mind — Capture for Mind Steward",
+  "liveEvidence": {
+    "exportPath": "operations/reports/artifacts/save-to-mind-live-rollback-2026-08-29.json",
+    "sha256": "301fc583e33a174581eb1ba98bfd2bf235d4158cd0161e43e3fa2bfe257eb77f",
+    "active": true,
+    "versionId": "2f4a842c-8c94-4d40-aa8e-54683e213485",
+    "updatedAt": "2026-07-22T09:11:34.235Z",
+    "nodeCount": 10,
+    "webhookId": "e26dfdb3-670d-4ea1-973b-694ec97347eb"
+  },
+  "rollback": {
+    "artifactPath": "operations/reports/artifacts/save-to-mind-live-rollback-2026-08-29.json",
+    "sha256": "301fc583e33a174581eb1ba98bfd2bf235d4158cd0161e43e3fa2bfe257eb77f",
+    "credentialValuesPrinted": false
+  },
+  "candidate": {
+    "artifactPath": "operations/automations/n8n/workflows/save-to-mind-bedrock-haiku-candidate-2026-08-29.json",
+    "sha256": "3d16a2713a9c03288f78fbbbfcde24ef4f2decfa1400ceb829b596e7f0bd2031",
+    "active": false,
+    "nodeCount": 10,
+    "credentialReferencePresent": false
+  },
+  "preservedBoundaries": {
+    "workflowId": true,
+    "workflowName": true,
+    "activation": true,
+    "webhookIdAndPath": true,
+    "settings": true,
+    "sharing": true,
+    "tags": true,
+    "staticData": true,
+    "githubRepositoryAndPathLogic": true,
+    "createUpdateBranching": true,
+    "responseBehavior": true,
+    "canonicalSuccessPath": "inbox/new",
+    "canonicalFailurePath": "inbox/failed"
+  },
+  "providerChange": {
+    "changedNodeIds": ["build-gemini-body", "gemini-classify", "build-processed-note"],
+    "old": {
+      "provider": "Google Gemini HTTP API",
+      "secretReference": "$env.GEMINI_API_KEY"
+    },
+    "new": {
+      "provider": "Amazon Bedrock InvokeModel",
+      "modelId": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "regionExpression": "$env.BEDROCK_REGION || $env.AWS_REGION || us-east-1",
+      "n8nCredentialType": "aws",
+      "authentication": "predefinedCredentialType",
+      "requestSchema": "anthropic-claude-messages-bedrock-2023-05-31",
+      "credentialReference": "required; exact existing n8n AWS credential id/name was not discoverable through the current public API"
+    }
+  },
+  "validation": {
+    "candidateBuilder": "tools/build-save-to-mind-bedrock-candidate.mjs",
+    "structuralValidator": "tools/validate-save-to-mind-bedrock-candidate.mjs",
+    "nodeTests": "tools/n8n-save-to-mind-bedrock-candidate.test.mjs",
+    "nodeTestsResult": "pass",
+    "structuralResult": "pass-with-deployment-blocker",
+    "deploymentReady": false,
+    "liveMutationPerformed": false,
+    "liveEndToEndFixture": "not-run; no live write permitted while candidate is missing credential mapping"
+  },
+  "deploymentBlockers": [
+    "The current public API/build does not expose safe routine credential listing; no AWS credential id/name can be copied without inventing or reading secret backups.",
+    "The current Codex session does not expose Brain's controlled n8n mutation tool, so unrestricted direct update is not authorized.",
+    "The active live workflow materially differs from the older checked-in candidate and rollback manifest; historical artifacts were preserved rather than overwritten."
+  ]
+}

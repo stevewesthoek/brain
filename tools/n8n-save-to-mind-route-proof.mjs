@@ -62,8 +62,8 @@ function assertDestinationProgram(node) {
   if (!node || node.type !== 'n8n-nodes-base.code' || typeof node.parameters?.jsCode !== 'string') fail('failure_routing_node_missing');
   const code = node.parameters.jsCode;
   const required = [
-    /forceFailure\s*=\s*orig\.forceFailure\s*===\s*true/,
-    /failureStage\s*=\s*'gemini-classify'/,
+    /orig\.forceFailure\s*===\s*true/,
+    /failureStage\s*=\s*'(?:gemini-classify|claude-haiku-classify)'/,
     /\$env\.MIND_INBOX_PATH\s*\|\|\s*'inbox\/new'/,
     /\$env\.MIND_FAILED_PATH\s*\|\|\s*'inbox\/failed'/,
     /isFailed\s*\?\s*failedPrefix\s*:\s*inboxPrefix/,
