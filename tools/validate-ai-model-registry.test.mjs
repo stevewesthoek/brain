@@ -33,3 +33,16 @@ test('private Mind routing remains explicit Bedrock-only and fail-closed', () =>
     assert.match(tasks[taskId].notes, /fail closed/i);
   }
 });
+
+test('video frame analysis has an admitted Bedrock vision model', () => {
+  const providers = JSON.parse(fs.readFileSync(path.join(ROOT, 'operations/system-configs/model-selector/config/ai-providers.json'), 'utf8')).providers;
+  const bedrock = providers.find((provider) => provider.id === 'claude-bedrock');
+  assert.ok(bedrock?.capabilities.includes('image/analyze'));
+
+  const taskTypes = JSON.parse(fs.readFileSync(path.join(ROOT, 'operations/system-configs/model-selector/config/ai-task-types.json'), 'utf8')).task_types;
+  assert.equal(taskTypes.video_frame_analysis.capability, 'image/analyze');
+
+  const visionModels = JSON.parse(fs.readFileSync(path.join(ROOT, 'operations/system-configs/model-selector/config/ai-bedrock-models.json'), 'utf8')).models
+    .filter((model) => model.enabled !== false && model.capabilities.includes('image/analyze'));
+  assert.ok(visionModels.length > 0, 'at least one enabled Bedrock model must be admitted for video frame analysis');
+});

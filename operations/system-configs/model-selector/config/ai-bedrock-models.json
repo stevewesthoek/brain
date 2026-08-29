@@ -144,7 +144,7 @@
       "region": "us-east-1",
       "enabled": true,
       "priority": 90,
-      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch", "image/analyze"],
       "roles": ["premium", "reliable", "fallback"],
       "task_affinity": {
         "description_quality_review": 1.15,
@@ -165,7 +165,7 @@
       "region": "us-east-1",
       "enabled": true,
       "priority": 95,
-      "capabilities": ["text/large", "text/review", "text/large-context-batch"],
+      "capabilities": ["text/large", "text/review", "text/large-context-batch", "image/analyze"],
       "roles": ["premium", "deep-architecture", "last-resort"],
       "task_affinity": {
         "description_quality_review": 1.18,
@@ -188,7 +188,7 @@
       "upgrade_candidate": true,
       "access_probe_ttl_hours": 48,
       "priority": 100,
-      "capabilities": ["text/large", "text/review", "text/large-context-batch"],
+      "capabilities": ["text/large", "text/review", "text/large-context-batch", "image/analyze"],
       "roles": ["premium", "deep-architecture", "last-resort"],
       "task_affinity": {
         "description_quality_review": 1.2,
