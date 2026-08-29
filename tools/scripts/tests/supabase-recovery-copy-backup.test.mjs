@@ -51,6 +51,7 @@ test('canonical database inventory contains exactly the proven 27 names', () => 
   assert.ok(inventory.databases.includes('jpvbootcamp_legacy'));
   assert.ok(inventory.databases.includes('jpvbootcamp_staging'));
   assert.match(script, /EXPECTED_DATABASE_COUNT=27/);
+  assert.match(script, /EXPECTED_REMOTE_OBJECT_COUNT=.*EXPECTED_DATABASE_COUNT \+ 3/);
   assert.match(script, /expected_databases=\(/);
 });
 
@@ -78,6 +79,14 @@ test('backup CONNECT access is gated and reconciled only on the recovery copy', 
   }
   assert.ok(script.indexOf('connect_matrix > "$WORK_DIR/connect-matrix-before.tsv"') < script.indexOf('db_exec pg_dumpall -U "$BACKUP_ROLE"'));
   assert.doesNotMatch(script, /production.*GRANT CONNECT/i);
+});
+
+test('remote object count includes all 27 dumps and three metadata objects', () => {
+  assert.match(script, /REMOTE_OBJECT_COUNT.*EXPECTED_REMOTE_OBJECT_COUNT/);
+  assert.doesNotMatch(script, /REMOTE_OBJECT_COUNT.*== 29/);
+  assert.match(script, /globals\.sql/);
+  assert.match(script, /recovery-manifest\.tsv/);
+  assert.match(script, /sha256sums\.txt/);
 });
 
 test('CONNECT reconciliation preserves shell dollar-quote and catalog backslash arguments', () => {

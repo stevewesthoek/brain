@@ -35,6 +35,7 @@ STORAGE_ACCOUNT_NAME="${AZURE_RECOVERY_STORAGE_ACCOUNT_NAME:-}"
 PROOFLY_HEALTH_URL="${PROOFLY_CANONICAL_HEALTH_URL:-https://getproofly.app/api/health}"
 JPV_SERVICE_NAME="${JPV_PRODUCTION_SERVICE_NAME:-clients-jpv-bootcamp-app-tp9xrk}"
 EXPECTED_DATABASE_COUNT=27
+EXPECTED_REMOTE_OBJECT_COUNT=$((EXPECTED_DATABASE_COUNT + 3))
 BACKUP_ROLE="${SUPABASE_BACKUP_ROLE:-postgres}"
 RUN_ID=""
 MODE="dry-run"
@@ -738,7 +739,7 @@ REMOTE_WRAPPER
     log "BACKUP_RESULT=FAIL run_id=$RUN_ID error=$remote_error dumps=${REMOTE_DUMP_COUNT:-0} validations=${REMOTE_VALIDATION_COUNT:-0} objects=${REMOTE_OBJECT_COUNT:-0} bytes=${REMOTE_TOTAL_BYTES:-0} remote_crypto=${REMOTE_CRYPTO:-NOT_EXECUTED}" >&2
     fail "$ERROR_CODE"
   fi
-  [[ "$REMOTE_OBJECT_COUNT" == 29 ]] || fail isolated_object_count_not_29
+  [[ "$REMOTE_OBJECT_COUNT" == "$EXPECTED_REMOTE_OBJECT_COUNT" ]] || fail "isolated_object_count_not_${EXPECTED_REMOTE_OBJECT_COUNT}"
   [[ "$REMOTE_CRYPTO" == PASS || "$REMOTE_CRYPTO" == PARTIAL ]] || fail remote_crypto_result_missing
 
   log "BACKUP_RESULT=PASS run_id=$RUN_ID recovery_point=$RECOVERY_POINT_ID dumps=${#expected_databases[@]} validations=${#expected_databases[@]} objects=$REMOTE_OBJECT_COUNT bytes=$REMOTE_TOTAL_BYTES remote_crypto=$REMOTE_CRYPTO temp_cleanup=pending"
