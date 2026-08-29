@@ -13,6 +13,8 @@ export const TASK_TYPES = {
   SUBTITLE_GENERATION: 'subtitle_generation',
   BACKGROUND_IMAGE: 'background_image',
   DESCRIPTION_QUALITY_REVIEW: 'description_quality_review',
+  VIDEO_FRAME_ANALYSIS: 'video_frame_analysis',
+  VIDEO_SUMMARY_GENERATION: 'video_summary_generation',
 } as const;
 
 export type TaskType = typeof TASK_TYPES[keyof typeof TASK_TYPES];

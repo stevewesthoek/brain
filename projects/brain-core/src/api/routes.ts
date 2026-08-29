@@ -1,7 +1,6 @@
 import { spawn } from 'node:child_process';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { existsSync } from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { approveScript, approveVideoReview, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, requestVideoReviewChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, getVideoReview, runControlledYouTubePublish, getVideoJobThumbnail, resolveDownloadableVideo } from '../providers/video-orchestrator-provider.js';
@@ -305,7 +304,8 @@ import { createProjectionEnvelope } from '../adapters/projection-envelope.js';
 import { readContractsProjection, readServicesProjection, readSystemHealthProjection, readTopologyProjection } from '../adapters/system-projections.js';
 import { readInfiniteBrainProjection } from '../adapters/infinite-brain-intelligence-projections.js';
 import { readInfiniteBrainEvolutionProjection } from '../adapters/infinite-brain-evolution-projections.js';
-import type { VideoAnalysisResult } from '../adapters/research-video.js';
+import type { VideoAnalysisResult, VideoSource } from '../adapters/research-video.js';
+import { analyzeVideo } from '../adapters/video-analysis-service.js';
 import { readVideoAnalysisHistory, recordVideoAnalysisHistory } from '../adapters/research-video-history.js';
 import { defaultAlertManager } from '../adapters/alerting.js';
 import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-orchestrator-planner.js';
@@ -2549,7 +2549,7 @@ export async function routeRequest(
           sendJson(response, 200, await getInfraPipelinesStatus());
           return;
         }
-        if (url.pathname === '/research/video-analyze/history') {
+        if (url.pathname === '/research/video-analysis/history' || url.pathname === '/research/video-analyze/history') {
           const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '12', 10), 12);
           sendJson(response, 200, await readVideoAnalysisHistory(limit));
           return;
@@ -5684,53 +5684,48 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
-  if (url.pathname === '/research/video-analyze') {
+  if (url.pathname === '/research/video-analysis') {
     const body = await readJsonBody(request);
-    const youtubeUrl = body?.url as string | undefined;
+    const source: string | VideoSource | undefined = typeof body?.source === 'string'
+      ? body.source
+      : typeof body?.source === 'object' && body.source !== null
+        ? body.source as VideoSource
+      : typeof body?.url === 'string'
+        ? body.url
+        : typeof body?.path === 'string'
+          ? body.path
+          : undefined;
     const focus = body?.focus as string | undefined;
 
-    if (!youtubeUrl) {
-      sendJson(response, 400, { error: { code: 'missing_url', message: 'url is required' } });
+    if (!source) {
+      sendJson(response, 400, { error: { code: 'missing_source', message: 'source (URL or configured local-file path) is required' } });
       return;
     }
-
-    const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-    const analyzerPath = path.resolve(moduleDir, '..', '..', 'services', 'video-analyzer', 'analyze.py');
-    const venvPython = path.join(os.homedir(), '.local', 'video-orchestrator', 'venv', 'bin', 'python3');
-    const spawnArgs = [analyzerPath, youtubeUrl, ...(focus ? ['--focus', focus] : [])];
-
-    const result = await new Promise<string>((resolve, reject) => {
-      const proc = spawn(venvPython, spawnArgs, { timeout: 1800000 });
-      let stdout = '';
-      let stderr = '';
-      proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-      proc.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
-      proc.on('close', (code: number | null) => {
-        if (code === 0) {
-          resolve(stdout);
-        } else {
-          reject(new Error(`analyzer exited ${code}: ${stderr.slice(-500)}`));
-        }
-      });
-      proc.on('error', reject);
-    });
-
-    let parsed: VideoAnalysisResult;
     try {
-      parsed = JSON.parse(result) as VideoAnalysisResult;
-    } catch {
-      sendJson(response, 500, { ok: false, error: 'analyzer produced invalid JSON', raw: result.slice(0, 500) });
-      return;
+      const result = await analyzeVideo({
+        source,
+        ...(focus ? { focus } : {}),
+        caller: 'brain-console',
+        ...(typeof body?.persist_to_mind === 'boolean' ? { persist_to_mind: body.persist_to_mind } : {}),
+        ...(typeof body?.correlation_id === 'string' ? { correlation_id: body.correlation_id } : {}),
+        ...(typeof body?.frame_budget === 'number' ? { frame_budget: body.frame_budget } : {}),
+        ...(typeof body?.paid_vision_frame_budget === 'number' ? { paid_vision_frame_budget: body.paid_vision_frame_budget } : {}),
+        ...(body?.transcript_provider === 'captions' || body?.transcript_provider === 'groq' || body?.transcript_provider === 'openai' || body?.transcript_provider === 'none'
+          ? { transcript_provider: body.transcript_provider } : {}),
+        ...(body?.allow_external_transcription === true ? { allow_external_transcription: true } : {}),
+      });
+      recordVideoAnalysisHistory(typeof source === 'string' ? source : source.uri, focus, result);
+      sendJson(response, result.ok ? 200 : 422, result satisfies VideoAnalysisResult);
+    } catch (error) {
+      sendJson(response, 500, { ok: false, error: error instanceof Error ? error.message : 'video analysis failed', step: 'brain-core-service' });
     }
-    recordVideoAnalysisHistory(youtubeUrl, focus, parsed);
-    sendJson(response, parsed.ok ? 200 : 500, parsed);
     return;
   }
 
   sendJson(response, 404, {
     error: {
       code: 'not_found',
-          message: 'POST route not found. Available POST routes: /actions/request, /execution/on-demand-runs/:kind/request, /ops/brain-core/restart, /actions/:id/request-approval, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject, /infra/video-orchestrator/jobs/:id/approve, /infra/video-orchestrator/jobs/:id/reject, /research/video-analyze.',
+          message: 'POST route not found. Available POST routes: /actions/request, /execution/on-demand-runs/:kind/request, /ops/brain-core/restart, /actions/:id/request-approval, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject, /infra/video-orchestrator/jobs/:id/approve, /infra/video-orchestrator/jobs/:id/reject, /research/video-analysis.',
     },
   } satisfies BrainCoreErrorResponse);
 }

@@ -23,8 +23,10 @@ import {
   refreshMindStewardInboxQueue,
   enforceMindStewardInboxQueuePolicy,
   recordMindStewardInboxQueueFailure,
+  recordMindStewardInboxQueueVideoOutcome,
   type MindStewardInboxQueueItem,
 } from './mind-steward-inbox-queue.js';
+import { dispatchMindStewardVideoCapture } from './mind-steward-video-dispatcher.js';
 import {
   isExecutionKillSwitchEnabled,
   isMindStewardInboxQueueDryRunExecutionFlagEnabled,
@@ -142,6 +144,29 @@ export function createContinuousProcessingService(
       if (!policy.canStartRun) {
         // Not an error — just not ready yet
         return;
+      }
+
+      // Video captures use the same queue lifecycle but dispatch through the
+      // canonical Brain video operation. Persistence produces a reviewed
+      // Apply-one preview; it does not write to Mind from this worker.
+      const videoItem = policy.selectedItems.find((item) => /\.(?:md|txt|mp4|webm|mov|mkv|m4v|avi|flv|wmv)$/i.test(item.path));
+      if (videoItem) {
+        const dispatched = await dispatchMindStewardVideoCapture(videoItem, { mindRoot: queueState.mindRoot });
+        if (dispatched.kind === 'video' && dispatched.result) {
+          const persistenceStatus = dispatched.result.persistence?.status;
+          const canMarkDone = persistenceStatus === 'already_applied' || persistenceStatus === 'applied';
+          recordMindStewardInboxQueueVideoOutcome({
+            capturePath: videoItem.path,
+            jobId: dispatched.result.job_id,
+            status: canMarkDone ? 'done' : 'blocked',
+            error: canMarkDone ? null : 'video_analysis_result_requires_mind_apply_one_approval',
+            ...(statePath !== undefined ? { statePath } : {}),
+          });
+          runCount += 1;
+          consecutiveFailures = 0;
+          lastRunAt = new Date().toISOString();
+          return;
+        }
       }
 
       // Run the dry-run report shell script

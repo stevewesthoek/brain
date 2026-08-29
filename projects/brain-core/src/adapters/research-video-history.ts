@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import type { VideoAnalysisResult } from './research-video.js';
 
@@ -34,6 +35,24 @@ export interface BrainCoreVideoAnalysisHistoryEntry {
   mindPath: string | null;
   error: string | null;
   step: string | null;
+  jobId?: string | null;
+  sourceKind?: string | null;
+  visualObservations?: Array<{
+    timestamp_seconds: number;
+    timestamp: string;
+    label: string;
+    observation: string;
+    confidence?: string | number | null;
+  }>;
+  processing?: {
+    transcript_provider: string | null;
+    vision_provider: string | null;
+    vision_model: string | null;
+    frames_extracted: number;
+    frames_sent_to_paid_vision: number;
+    approximate_cost: number | null;
+  } | undefined;
+  warnings?: string[] | undefined;
 }
 
 export interface BrainCoreVideoAnalysisHistoryResponse {
@@ -145,14 +164,14 @@ function toHistoryEntry(
   result: VideoAnalysisResult,
 ): BrainCoreVideoAnalysisHistoryEntry {
   return normalizeEntry({
-    id: buildHistoryId(url, result.title, result.channel),
+    id: buildHistoryId(url, result.title, result.channel, result.job_id),
     analyzedAt: new Date().toISOString(),
     url,
     focus: focus?.trim() ? focus.trim() : null,
     ok: result.ok === true,
     title: result.title?.trim() || null,
     channel: result.channel?.trim() || null,
-    transcript: result.transcript?.trim() || null,
+    transcript: result.transcript?.text?.trim() || result.transcript_text?.trim() || null,
     humanSummary: result.human_summary?.trim() || null,
     aiSummary: result.ai_summary
       ? {
@@ -167,6 +186,28 @@ function toHistoryEntry(
     mindPath: result.mind_path?.trim() || null,
     error: result.error?.trim() || null,
     step: result.step?.trim() || null,
+    jobId: result.job_id || null,
+    sourceKind: result.source?.kind || null,
+    visualObservations: Array.isArray(result.visual_observations)
+      ? result.visual_observations.map((finding) => ({
+          timestamp_seconds: finding.timestamp_seconds,
+          timestamp: finding.timestamp,
+          label: finding.label,
+          observation: finding.observation,
+          confidence: finding.confidence ?? null,
+        }))
+      : [],
+    processing: result.processing
+      ? {
+          transcript_provider: result.processing.transcript_provider,
+          vision_provider: result.processing.vision_provider,
+          vision_model: result.processing.vision_model,
+          frames_extracted: result.processing.frames_extracted,
+          frames_sent_to_paid_vision: result.processing.frames_sent_to_paid_vision,
+          approximate_cost: result.processing.approximate_cost,
+        }
+      : undefined,
+    warnings: [...result.warnings],
   });
 }
 
@@ -185,6 +226,22 @@ function normalizeEntry(entry: BrainCoreVideoAnalysisHistoryEntry): BrainCoreVid
     mindPath: typeof entry.mindPath === 'string' && entry.mindPath.length > 0 ? entry.mindPath : null,
     error: typeof entry.error === 'string' && entry.error.length > 0 ? entry.error : null,
     step: typeof entry.step === 'string' && entry.step.length > 0 ? entry.step : null,
+    jobId: typeof entry.jobId === 'string' && entry.jobId.length > 0 ? entry.jobId : null,
+    sourceKind: typeof entry.sourceKind === 'string' && entry.sourceKind.length > 0 ? entry.sourceKind : null,
+    visualObservations: Array.isArray(entry.visualObservations)
+      ? entry.visualObservations.filter((finding) => finding && typeof finding.timestamp_seconds === 'number' && typeof finding.timestamp === 'string' && typeof finding.label === 'string' && typeof finding.observation === 'string')
+      : [],
+    processing: entry.processing
+      ? {
+          transcript_provider: typeof entry.processing.transcript_provider === 'string' ? entry.processing.transcript_provider : null,
+          vision_provider: typeof entry.processing.vision_provider === 'string' ? entry.processing.vision_provider : null,
+          vision_model: typeof entry.processing.vision_model === 'string' ? entry.processing.vision_model : null,
+          frames_extracted: typeof entry.processing.frames_extracted === 'number' ? entry.processing.frames_extracted : 0,
+          frames_sent_to_paid_vision: typeof entry.processing.frames_sent_to_paid_vision === 'number' ? entry.processing.frames_sent_to_paid_vision : 0,
+          approximate_cost: typeof entry.processing.approximate_cost === 'number' ? entry.processing.approximate_cost : null,
+        }
+      : undefined,
+    warnings: Array.isArray(entry.warnings) ? entry.warnings.filter((warning): warning is string => typeof warning === 'string') : [],
   };
 }
 
@@ -192,6 +249,12 @@ async function hydrateMissingMetadata(entry: BrainCoreVideoAnalysisHistoryEntry)
   if (entry.title && entry.channel) {
     return entry;
   }
+
+  const hostname = (() => {
+    try { return new URL(entry.url).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; }
+  })();
+  if (entry.sourceKind && entry.sourceKind !== 'youtube-url') return entry;
+  if (hostname && hostname !== 'youtube.com' && hostname !== 'm.youtube.com' && hostname !== 'youtu.be' && !hostname.endsWith('.youtube.com')) return entry;
 
   const cached = YOUTUBE_OEMBED_CACHE.get(entry.url);
   if (cached) {
@@ -245,9 +308,9 @@ function normalizeAiSummary(value: BrainCoreVideoAnalysisHistoryAiSummary | null
   };
 }
 
-function buildHistoryId(url: string, title: string | null | undefined, channel: string | null | undefined): string {
-  const seed = `${url}|${title ?? ''}|${channel ?? ''}|${Date.now()}`;
-  return `video-analysis-${Buffer.from(seed).toString('base64url').slice(0, 24)}`;
+function buildHistoryId(url: string, title: string | null | undefined, channel: string | null | undefined, jobId?: string | null): string {
+  const seed = jobId ? `job:${jobId}` : `${url}|${title ?? ''}|${channel ?? ''}`;
+  return `video-analysis-${crypto.createHash('sha256').update(seed).digest('hex').slice(0, 20)}`;
 }
 
 function normalizeLimit(limit: number): number {

@@ -46,8 +46,10 @@ execution path.
 
 ## Mind boundary
 
-Do not copy the report into Mind automatically. If a user later requests
-Save-to-Mind, hand the report to the existing approved ingestion/queue
-boundary after that boundary is explicitly located and validated. Until then,
-leave the report in Brain runtime state and state that video-to-Mind wiring is
-not enabled.
+Do not copy the report into Mind automatically. For canonical analysis used by
+Console, Codex, Claude Code, or Save-to-Mind, call Brain Core's shared
+`video-analysis` operation (documented at
+`operations/specs/brain-video-analysis-v1.md`) rather than calling the vendored
+script from a consumer. Save-to-Mind dispatch remains asynchronous through the
+existing inbox queue; its Apply-one artifact writer is exact-path and approval
+gated.

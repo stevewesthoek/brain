@@ -78,3 +78,16 @@ test('unsafe output root fails closed', () => {
   const f = fixture();
   assert.throws(() => scanMindInbox({ mindRoot: f.mindRoot, repoRoot: f.repoRoot, outputRoot: path.join(f.root, 'outside') }), /unsafe_ingestion_output/);
 });
+
+test('admits YouTube references, direct video references, and bounded raw video files', () => {
+  const f = fixture();
+  fs.writeFileSync(path.join(f.inbox, 'youtube.md'), 'Watch https://youtu.be/example123\n');
+  fs.writeFileSync(path.join(f.inbox, 'direct.md'), 'Source: https://cdn.example.test/clip.mp4?download=1\n');
+  fs.writeFileSync(path.join(f.inbox, 'raw.mp4'), Buffer.from('video-fixture'));
+  const report = scanMindInbox({ mindRoot: f.mindRoot, repoRoot: f.repoRoot });
+  const byName = new Map(report.envelopes.map((envelope) => [envelope.content.metadata.filename, envelope]));
+  assert.equal(byName.get('youtube.md')?.identity.source_type, 'youtube');
+  assert.equal(byName.get('direct.md')?.identity.source_type, 'video');
+  assert.equal(byName.get('raw.mp4')?.identity.source_type, 'video');
+  assert.equal(report.writes_to_mind, false);
+});

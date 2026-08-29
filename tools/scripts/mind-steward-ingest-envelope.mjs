@@ -11,8 +11,17 @@ const SUPPORTED_EXTENSIONS = new Map([
   ['.md', 'markdown'],
   ['.txt', 'text'],
   ['.pdf', 'pdf'],
+  ['.mp4', 'video'],
+  ['.webm', 'video'],
+  ['.mov', 'video'],
+  ['.mkv', 'video'],
+  ['.m4v', 'video'],
+  ['.avi', 'video'],
+  ['.flv', 'video'],
+  ['.wmv', 'video'],
 ]);
 const MAX_PDF_BYTES = 25 * 1024 * 1024;
+const VIDEO_URL_PATTERN = /https?:\/\/[^\s<>()]+/gi;
 
 function isoFromStat(stat) {
   return new Date(stat.mtimeMs).toISOString();
@@ -29,6 +38,23 @@ function readGitHubReferences(filePath, sourceReference, sourceHash, ingestionId
   return extractGitHubRepositoryUrls(text).map((url) => buildGitHubRepositoryEvidence({
     url, sourceReference, sourceHash, ingestionId, retrievedAt: capturedAt,
   }));
+}
+
+function detectVideoReference(filePath) {
+  const extension = path.extname(filePath).toLowerCase();
+  const directVideo = SUPPORTED_EXTENSIONS.get(extension) === 'video';
+  if (directVideo) return { sourceType: 'video', detectedFormat: `video/${extension.slice(1)}`, source: null };
+  if (!['.md', '.txt'].includes(extension)) return null;
+  const text = fs.readFileSync(filePath, 'utf8').slice(0, 200_000);
+  const source = text.match(VIDEO_URL_PATTERN)?.[0]?.replace(/[),.;]+$/, '') ?? null;
+  if (!source) return null;
+  const host = (new URL(source).hostname || '').toLowerCase().replace(/^www\./, '');
+  const sourceType = host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be' || host.endsWith('.youtube.com')
+    ? 'youtube'
+    : /\.(mp4|webm|mov|mkv|m4v|avi|flv|wmv)(?:$|\?)/i.test(source)
+      ? 'video'
+      : null;
+  return sourceType ? { sourceType, detectedFormat: 'text/markdown', source } : null;
 }
 
 function safeOutputRoot(repoRoot, outputRoot) {
@@ -133,14 +159,16 @@ export function scanMindInbox({ mindRoot, repoRoot = process.cwd(), outputRoot, 
 
   for (const filePath of listInboxFiles(inboxRoot)) {
     const relative = path.relative(inboxRoot, filePath).replaceAll(path.sep, '/');
-    const sourceType = SUPPORTED_EXTENSIONS.get(path.extname(filePath).toLowerCase());
+    let sourceType = SUPPORTED_EXTENSIONS.get(path.extname(filePath).toLowerCase());
     if (!sourceType) {
-      failures.push({ file: relative, code: 'unsupported_file_type', message: 'Only Markdown, plain text, and bounded PDF text extraction are active.' });
+      failures.push({ file: relative, code: 'unsupported_file_type', message: 'Only Markdown, plain text, bounded PDF text extraction, and bounded video references/files are active.' });
       continue;
     }
     try {
       const stat = fs.statSync(filePath);
       const digest = hashFile(filePath);
+      const videoReference = detectVideoReference(filePath);
+      if (videoReference) sourceType = videoReference.sourceType;
       let extraction;
       let extractedContentReferences;
       if (sourceType === 'pdf') {
@@ -154,8 +182,10 @@ export function scanMindInbox({ mindRoot, repoRoot = process.cwd(), outputRoot, 
       }
       const envelope = makeEnvelope({
         filePath, inboxRoot, stat, digest, sourceType, createdAt, extractedContentReferences,
-        detectedFormat: sourceType === 'pdf' ? 'application/pdf' : undefined,
-        metadata: sourceType === 'pdf' ? { filename: relative, size_bytes: stat.size, modified_at: isoFromStat(stat), extraction: 'embedded-text-limited' } : undefined,
+        detectedFormat: videoReference?.detectedFormat ?? (sourceType === 'pdf' ? 'application/pdf' : undefined),
+        metadata: videoReference
+          ? { filename: relative, size_bytes: stat.size, modified_at: isoFromStat(stat), video_source: videoReference.source, source_kind: videoReference.sourceType }
+          : sourceType === 'pdf' ? { filename: relative, size_bytes: stat.size, modified_at: isoFromStat(stat), extraction: 'embedded-text-limited' } : undefined,
         confidence: extraction?.confidence,
         uncertainty: extraction ? [...extraction.uncertainty, 'meaning and destination require human review'] : undefined,
         evidenceUncertainty: extraction?.uncertainty,

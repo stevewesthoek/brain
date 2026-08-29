@@ -56,9 +56,10 @@ The upstream Obsidian auto-save path is intentionally not copied into the
 adapter. Do not use `obsidian://`, `$WATCH_VAULT_DIR`, hooks, or plugin
 installation in Brain.
 
-Save-to-Mind remains a separate, human-reviewed action. The current Brain
-ingestion envelope is explicitly bounded to Markdown, text, and limited local
-PDF extraction; it does not expose a validated video queue/dispatcher. Do not
-create a second video-to-Mind ingestion framework. If a future approved queue
-is located, hand off the report at that existing source-type dispatch boundary
-and keep promotion/write gates unchanged.
+Save-to-Mind remains an asynchronous, human-reviewed action through the
+existing inbox queue. The canonical video operation is
+`operations/specs/brain-video-analysis-v1.md`; it owns the adapter call,
+transcript/visual result, and processing-cost evidence. Do not create a second
+video-to-Mind ingestion framework. The enriched-video Apply-one writer targets
+only `mind/inbox/processed/video-analysis/<job-id>.md` and requires concrete
+preview/hash/path approval plus a second confirmation before applying.

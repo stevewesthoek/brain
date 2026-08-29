@@ -16,6 +16,7 @@ import {
   enforceMindStewardInboxQueuePolicy,
   readMindStewardInboxQueueState,
   recordMindStewardInboxQueueFailure,
+  recordMindStewardInboxQueueVideoOutcome,
   refreshMindStewardInboxQueue,
 } from '../adapters/mind-steward-inbox-queue.js';
 
@@ -76,6 +77,37 @@ test('persistent inbox queue writes Brain-owned state without changing Mind capt
 
     const persisted = readMindStewardInboxQueueState(fixture.statePath);
     assert.equal(persisted?.items[0]?.firstSeenAt, state.items[0]?.firstSeenAt);
+  } finally {
+    rmSync(fixture.tempDir, { recursive: true, force: true });
+  }
+});
+
+test('video queue outcomes remain asynchronous and Brain-runtime-owned', () => {
+  const fixture = createMindFixture('mind-inbox-queue-video-outcome-');
+  const now = new Date('2026-06-18T12:00:00Z');
+  const capturePath = path.join(fixture.inboxDir, 'video.md');
+  writeFileSync(capturePath, 'https://youtu.be/example\n');
+  ageFile(capturePath, 120, now);
+
+  try {
+    const state = refreshMindStewardInboxQueue({ mindRoot: fixture.mindRoot, statePath: fixture.statePath, now });
+    const outcome = recordMindStewardInboxQueueVideoOutcome({
+      statePath: fixture.statePath,
+      capturePath: state.items[0]!.path,
+      jobId: 'video-analysis-0123456789abcdef0123',
+      status: 'blocked',
+      error: 'video_analysis_result_requires_mind_apply_one_approval',
+      now,
+    });
+
+    assert.equal(outcome.status, 'video-blocked');
+    assert.equal(outcome.safety.writesToMind, false);
+    assert.equal(outcome.safety.movesCaptures, false);
+    assert.equal(readFileSync(capturePath, 'utf8'), 'https://youtu.be/example\n');
+    const persisted = readMindStewardInboxQueueState(fixture.statePath);
+    assert.equal(persisted?.items[0]?.processingKind, 'video-analysis');
+    assert.equal(persisted?.items[0]?.videoJobId, 'video-analysis-0123456789abcdef0123');
+    assert.equal(persisted?.items[0]?.status, 'blocked');
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
   }

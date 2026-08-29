@@ -92,12 +92,17 @@ function toSelection(
     ok: result.ok,
     title: result.title?.trim() || null,
     channel: result.channel?.trim() || null,
-    transcript: result.transcript?.trim() || null,
+    transcript: (typeof result.transcript === 'string' ? result.transcript : result.transcript?.text ?? result.transcript_text)?.trim() || null,
     humanSummary: result.human_summary?.trim() || null,
     aiSummary: normalizeSummary(result.ai_summary),
     mindPath: result.mind_path?.trim() || null,
     error: result.error?.trim() || null,
     step: result.step?.trim() || null,
+    jobId: result.job_id?.trim() || null,
+    sourceKind: result.source?.kind ?? null,
+    visualObservations: Array.isArray(result.visual_observations) ? result.visual_observations : [],
+    processing: result.processing,
+    warnings: Array.isArray(result.warnings) ? result.warnings : [],
     source,
   };
 }
@@ -106,12 +111,13 @@ export function VideoAnalyzerDashboard() {
   const queryClient = useQueryClient();
   const [url, setUrl] = useState('');
   const [focus, setFocus] = useState('');
+  const [saveToMind, setSaveToMind] = useState(false);
   const [selectedAnalysis, setSelectedAnalysis] = useState<VideoAnalyzerSelection | null>(null);
   const [copied, setCopied] = useState(false);
 
   const history = useQuery({
     queryKey: ['research-video-analysis-history'],
-    queryFn: () => brainCoreRequest('/research/video-analyze/history?limit=12', videoAnalysisHistoryResponseSchema, { timeoutMs: 12_000 }),
+    queryFn: () => brainCoreRequest('/research/video-analysis/history?limit=12', videoAnalysisHistoryResponseSchema, { timeoutMs: 12_000 }),
     refetchInterval: 20_000,
   });
 
@@ -121,19 +127,20 @@ export function VideoAnalyzerDashboard() {
   const transcript = currentSelection?.transcript ?? '';
 
   const analyze = useMutation({
-    mutationFn: async (input: { url: string; focus: string }) => {
+    mutationFn: async (input: { source: string; focus: string; saveToMind: boolean }) => {
       return postBrainCoreAction(
-        '/research/video-analyze',
+        '/research/video-analysis',
         videoAnalysisResponseSchema,
         {
-          url: input.url,
+          source: input.source,
+          persist_to_mind: input.saveToMind,
           ...(input.focus ? { focus: input.focus } : {}),
         },
         1_800_000,
       );
     },
     onSuccess: (result, variables) => {
-      setSelectedAnalysis(toSelection(variables.url, variables.focus, result, 'live'));
+      setSelectedAnalysis(toSelection(variables.source, variables.focus, result, 'live'));
       void queryClient.invalidateQueries({ queryKey: ['research-video-analysis-history'] });
     },
   });
@@ -173,7 +180,7 @@ export function VideoAnalyzerDashboard() {
         <div>
           <div className="eyebrow">Research</div>
           <h1>Video Analyzer</h1>
-          <p>Brain Core runs the YouTube analyzer, returns the transcript and summaries, and keeps a recent history of past analyses for quick recall and copyable output.</p>
+          <p>Brain Core analyzes speech and selected video frames for YouTube URLs, direct video URLs, and approved local files.</p>
         </div>
         <div className="compact-actions">
           <StatusBadge status={overallTone} label={overallLabel} />
@@ -186,7 +193,7 @@ export function VideoAnalyzerDashboard() {
 
       {history.isError ? (
         <div className="compact-error">
-          <strong>Video analysis history failed to load.</strong> Brain Core could not read `/research/video-analyze/history`.
+          <strong>Video analysis history failed to load.</strong> Brain Core could not read `/research/video-analysis/history`.
         </div>
       ) : null}
 
@@ -200,19 +207,19 @@ export function VideoAnalyzerDashboard() {
         <article className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Analyze a YouTube URL</div>
-              <div className="card-description">Paste a YouTube link and optionally add a focus prompt for the analyzer.</div>
+              <div className="card-title">Analyze a video source</div>
+              <div className="card-description">Paste a public URL or an approved local-file path, then optionally add a focus prompt.</div>
             </div>
             <StatusBadge status={analyze.isPending ? 'stale' : 'fresh'} label={analyze.isPending ? 'Processing' : 'Ready'} />
           </div>
           <div className="stack" style={{ marginTop: 14 }}>
             <label className="stack" style={{ gap: 8 }}>
-              <span className="meta">YouTube URL</span>
+              <span className="meta">Video URL or local path</span>
               <input
                 className="input"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
-                placeholder="https://www.youtube.com/watch?v=…"
+                placeholder="https://…/video.mp4 or /approved/video.mp4"
                 autoComplete="off"
                 spellCheck={false}
               />
@@ -226,24 +233,28 @@ export function VideoAnalyzerDashboard() {
                 placeholder="Ask the analyzer to focus on a theme, claim, or section."
               />
             </label>
+            <label className="meta" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="checkbox" checked={saveToMind} onChange={(event) => setSaveToMind(event.target.checked)} />
+              Request Save to Mind Apply-one preview
+            </label>
             <button
               className="button secondary"
               disabled={url.trim().length === 0 || analyze.isPending}
               onClick={() => {
-                void analyze.mutateAsync({ url: url.trim(), focus: focus.trim() });
+                void analyze.mutateAsync({ source: url.trim(), focus: focus.trim(), saveToMind });
               }}
             >
-              <Sparkles size={14} /> {analyze.isPending ? 'Processing…' : 'Process URL'}
+              <Sparkles size={14} /> {analyze.isPending ? 'Processing…' : 'Process video'}
             </button>
-            <p className="meta">Brain Core keeps the transcript, summary, and research hooks. The browser only sends the URL and reads the API response.</p>
+            <p className="meta">Brain Core keeps the transcript, summary, timestamped visual findings, and cost evidence. Mind persistence remains approval-gated.</p>
           </div>
         </article>
 
         <article className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Recent transcriptions</div>
-              <div className="card-description">Click an entry to reopen a previous transcript and summary.</div>
+              <div className="card-title">Recent analyses</div>
+              <div className="card-description">Click an entry to reopen a previous analysis and summary.</div>
             </div>
             <StatusBadge
               status={history.isError ? 'error' : history.data?.status === 'ok' ? 'fresh' : history.data?.status === 'invalid' ? 'error' : 'warning'}
@@ -264,7 +275,7 @@ export function VideoAnalyzerDashboard() {
                   <div className="meta">{entry.channel ?? 'Unknown channel'}</div>
                   <div className="job-progress">
                     <span>{timeAgo(entry.analyzedAt)}</span>
-                    <StatusBadge status={entry.ok ? 'fresh' : 'error'} label={entry.ok ? 'Transcribed' : 'Error'} />
+                    <StatusBadge status={entry.ok ? 'fresh' : 'error'} label={entry.ok ? 'Analyzed' : 'Error'} />
                   </div>
                   <div className="meta truncate">{summarizeTranscript(entry.transcript)}</div>
                 </button>
@@ -272,7 +283,7 @@ export function VideoAnalyzerDashboard() {
             })}
             {historyEntries.length === 0 ? (
               <div className="compact-error" style={{ marginTop: 0 }}>
-                <strong>No transcript history yet.</strong> Run an analysis and Brain Core will store the recent output here.
+                <strong>No analysis history yet.</strong> Run an analysis and Brain Core will store the recent output here.
               </div>
             ) : null}
           </div>
@@ -330,11 +341,15 @@ export function VideoAnalyzerDashboard() {
               <div className="card-title">Analysis details</div>
               {currentSelection ? (
                 <ul className="compact-list" style={{ marginTop: 10 }}>
-                  <li>URL: <code>{currentSelection.url}</code></li>
+                  <li>Source: <code>{currentSelection.url}</code></li>
+                  <li>Source kind: {currentSelection.sourceKind ?? 'unknown'}</li>
+                  <li>Job: {currentSelection.jobId ?? 'not provided'}</li>
                   <li>Channel: {currentSelection.channel ?? 'unknown'}</li>
                   <li>Mind path: {currentSelection.mindPath ?? 'not provided'}</li>
                   <li>Step: {currentSelection.step ?? 'not provided'}</li>
                   <li>Analyzed: {timeAgo(currentSelection.analyzedAt)}</li>
+                  <li>Frames: {currentSelection.processing?.frames_extracted ?? 0} extracted · {currentSelection.processing?.frames_sent_to_paid_vision ?? 0} sent to paid vision</li>
+                  <li>Providers: {currentSelection.processing?.transcript_provider ?? 'none'} / {currentSelection.processing?.vision_provider ?? 'none'}</li>
                 </ul>
               ) : (
                 <p className="meta" style={{ marginTop: 10 }}>No analysis selected yet.</p>
@@ -342,9 +357,31 @@ export function VideoAnalyzerDashboard() {
             </article>
 
             <article className="card" style={{ boxShadow: 'none' }}>
+              <div className="card-title">Timestamped visual findings</div>
+              {currentSelection?.visualObservations && currentSelection.visualObservations.length > 0 ? (
+                <ul className="compact-list" style={{ marginTop: 10 }}>
+                  {currentSelection.visualObservations.map((finding) => (
+                    <li key={`${finding.timestamp_seconds}-${finding.label}`}><strong>{finding.timestamp}</strong> — {finding.label}: {finding.observation}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="meta" style={{ marginTop: 10 }}>No timestamped visual findings returned.</p>
+              )}
+            </article>
+
+            <article className="card" style={{ boxShadow: 'none' }}>
               <div className="card-title">Human summary</div>
               <p className="meta" style={{ marginTop: 10, whiteSpace: 'pre-wrap' }}>{currentSelection?.humanSummary ?? 'No human summary returned.'}</p>
             </article>
+
+            {currentSelection?.warnings && currentSelection.warnings.length > 0 ? (
+              <article className="card" style={{ boxShadow: 'none' }}>
+                <div className="card-title">Processing warnings</div>
+                <ul className="compact-list" style={{ marginTop: 10 }}>
+                  {currentSelection.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                </ul>
+              </article>
+            ) : null}
 
             <article className="card" style={{ boxShadow: 'none' }}>
               <div className="card-title">AI summary</div>

@@ -58,7 +58,7 @@ docs/system/brain-console-design-system.md
 - New Relic uptime from `/infra/monitoring`
 - Office nightly scheduler status from `/infra/scheduler`
 - Cloudflare Tunnels from `/infra/tunnels`
-- Video Analyzer from `/research/video-analyze` and `/research/video-analyze/history`
+- Video Analyzer from `/research/video-analysis` and `/research/video-analysis/history`
 - AWS Video Pipeline from the current Brain Core AWS Video endpoints
 
 The Overview surface also shows the read-only Infinite Brain review queue from `/projections/review`, including items needing attention and terminal decision counts. It is a visibility aid only: review decisions remain in the Mind Steward workflow, and the Console does not approve, promote, or write Mind.

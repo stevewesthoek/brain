@@ -2,7 +2,7 @@
 
 ## Status
 
-MRU0-P3.11 activates the first bounded ingestion capability: an explicit scan of Mind `inbox/new/` for Markdown and plain-text captures. It creates provider-neutral ingestion envelopes and a review report under Brain runtime state.
+MRU0-P3.11 activates the first bounded ingestion capability: an explicit scan of Mind `inbox/new/` for Markdown, plain-text, and video captures. It creates provider-neutral ingestion envelopes and a review report under Brain runtime state. Video URLs in text captures are admitted as `youtube` or `video` evidence for the existing queue dispatcher; this scanner still does not process or promote them.
 
 This is not an always-on watcher. PDF support is bounded to local embedded-text extraction; OCR, compressed-stream/layout interpretation, and external providers are not used.
 
@@ -28,8 +28,13 @@ The report contains the raw envelope JSON plus a per-item human review projectio
 - `.md` → `markdown`
 - `.txt` → `text`
 - `.pdf` → `pdf` with limited embedded-text extraction
+- `.mp4`, `.webm`, `.mov`, `.mkv`, `.m4v`, `.avi`, `.flv`, `.wmv` → `video`
+- YouTube URLs in Markdown/text → `youtube`; direct downloadable video URLs → `video`
 
-DOCX, XLSX, images, audio, video, URLs, YouTube, GitHub repositories, and AI sessions remain future capabilities. Invalid, scanned, compressed/unextractable, or oversized PDFs are reported as failures rather than treated as ingested.
+The envelope is evidence only. Canonical processing is documented in
+`operations/specs/brain-video-analysis-v1.md`; the queue invokes that shared
+Brain operation asynchronously. Invalid, scanned, compressed/unextractable,
+or oversized PDFs are reported as failures rather than treated as ingested.
 
 ## Review boundary
 

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.prochat.local/brain/video-analysis-v1.schema.json",
+  "title": "Brain Video Analysis v1",
+  "type": "object",
+  "required": ["schema_version", "job_id", "status", "ok", "source", "metadata", "transcript", "visual_observations", "summary", "key_points", "selected_frames", "processing", "provenance", "warnings"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "job_id": { "type": "string", "pattern": "^video-analysis-[a-f0-9]{20}$" },
+    "status": { "enum": ["succeeded", "partial", "failed", "blocked"] },
+    "ok": { "type": "boolean" },
+    "source": { "$ref": "#/$defs/source" },
+    "metadata": { "type": "object", "required": ["title", "channel", "duration_seconds"], "properties": { "title": { "type": ["string", "null"] }, "channel": { "type": ["string", "null"] }, "duration_seconds": { "type": ["number", "null"] }, "width": { "type": ["integer", "null"] }, "height": { "type": ["integer", "null"] } }, "additionalProperties": false },
+    "transcript": { "type": "object", "required": ["text", "segments", "provider"], "properties": { "text": { "type": "string" }, "segments": { "type": "array", "items": { "$ref": "#/$defs/segment" } }, "provider": { "type": ["string", "null"] }, "provenance": { "type": ["string", "null"] } }, "additionalProperties": false },
+    "visual_observations": { "type": "array", "items": { "$ref": "#/$defs/observation" } },
+    "summary": { "type": "string" },
+    "key_points": { "type": "array", "items": { "type": "string" } },
+    "selected_frames": { "type": "array", "items": { "$ref": "#/$defs/frame" } },
+    "processing": { "type": "object", "required": ["processor", "frames_extracted", "frames_sent_to_paid_vision", "asynchronous"], "properties": { "processor": { "type": "string" }, "watch_video_output": { "type": ["string", "null"] }, "frames_extracted": { "type": "integer", "minimum": 0 }, "frames_sent_to_paid_vision": { "type": "integer", "minimum": 0 }, "transcript_provider": { "type": ["string", "null"] }, "vision_provider": { "type": ["string", "null"] }, "vision_model": { "type": ["string", "null"] }, "approximate_cost": { "type": ["number", "null"], "minimum": 0 }, "asynchronous": { "type": "boolean" } }, "additionalProperties": false },
+    "provenance": { "type": "object", "required": ["source_reference", "source_sha256", "created_at"], "properties": { "source_reference": { "type": "string" }, "source_sha256": { "type": "string" }, "created_at": { "type": "string", "format": "date-time" } }, "additionalProperties": false },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "error": { "type": ["string", "null"] },
+    "step": { "type": ["string", "null"] },
+    "persistence": { "type": "object" }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "source": { "type": "object", "required": ["kind", "uri"], "properties": { "kind": { "enum": ["youtube-url", "remote-video-url", "local-file"] }, "uri": { "type": "string", "minLength": 1 }, "provider": { "type": ["string", "null"] }, "original_capture_reference": { "type": ["string", "null"] } }, "additionalProperties": false },
+    "segment": { "type": "object", "required": ["start_seconds", "text"], "properties": { "start_seconds": { "type": "number", "minimum": 0 }, "end_seconds": { "type": ["number", "null"], "minimum": 0 }, "text": { "type": "string" } }, "additionalProperties": false },
+    "frame": { "type": "object", "required": ["timestamp_seconds", "path", "role"], "properties": { "timestamp_seconds": { "type": "number", "minimum": 0 }, "path": { "type": "string" }, "role": { "type": "string" } }, "additionalProperties": false },
+    "observation": { "type": "object", "required": ["timestamp_seconds", "timestamp", "label", "observation"], "properties": { "timestamp_seconds": { "type": "number", "minimum": 0 }, "timestamp": { "type": "string" }, "label": { "type": "string" }, "observation": { "type": "string" }, "confidence": { "type": ["string", "number", "null"] }, "frame_path": { "type": ["string", "null"] } }, "additionalProperties": false }
+  }
+}
