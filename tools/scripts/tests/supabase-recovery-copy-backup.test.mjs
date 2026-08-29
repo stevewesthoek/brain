@@ -53,10 +53,11 @@ test('canonical database inventory contains exactly the proven 27 names', () => 
   assert.match(script, /expected_databases=\(/);
 });
 
-test('archive validation preserves stdin for pg_restore', () => {
-  assert.match(script, /db_exec_with_stdin\(\) \{ sudo docker exec -i supabase-db/);
-  assert.match(script, /cat \"\$dump_file\" \| db_exec_with_stdin pg_restore --list/);
-  assert.doesNotMatch(script, /cat \"\$dump_file\" \| db_exec pg_restore --list/);
+test('archive validation stays file-native inside the database container', () => {
+  assert.match(script, /--file=\"\$container_dump_file\"/);
+  assert.match(script, /db_exec pg_restore --list \"\$container_dump_file\"/);
+  assert.match(script, /docker cp \"supabase-db:\$\{container_dump_file\}\" \"\$dump_file\"/);
+  assert.doesNotMatch(script, /cat \"\$dump_file\" \| db_exec(?:_with_stdin)? pg_restore --list/);
 });
 
 test('runner keeps the approved secret and legacy boundaries', () => {

@@ -364,9 +364,13 @@ db_exec pg_dumpall -U postgres --globals-only > "$WORK_DIR/globals/globals.sql" 
 for database_name in "${expected_databases[@]}"; do
   encoded_name="$(hex_name "$database_name")"
   dump_file="$WORK_DIR/databases/${encoded_name}.dump"
-  db_exec pg_dump -U postgres -d "$database_name" --format=custom --no-owner --no-privileges > "$dump_file" || die "dump_failed_${encoded_name}"
+  container_dump_file="/var/tmp/supabase-recovery-${RUN_ID_INPUT}-${encoded_name}.dump"
+  db_exec pg_dump -U postgres -d "$database_name" --format=custom --no-owner --no-privileges --file="$container_dump_file" || die "dump_failed_${encoded_name}"
   LOCAL_DUMP_COUNT=$((LOCAL_DUMP_COUNT + 1))
-  cat "$dump_file" | db_exec_with_stdin pg_restore --list >/dev/null || die "pg_restore_list_failed_${encoded_name}"
+  db_exec pg_restore --list "$container_dump_file" >/dev/null || die "pg_restore_list_failed_${encoded_name}"
+  db_exec sh -c "stat -c '%s' '$container_dump_file' >/dev/null" || die "dump_file_stat_failed_${encoded_name}"
+  docker cp "supabase-db:${container_dump_file}" "$dump_file" >/dev/null || die "dump_copy_failed_${encoded_name}"
+  db_exec rm -f "$container_dump_file" || die "dump_cleanup_failed_${encoded_name}"
   LOCAL_VALIDATION_COUNT=$((LOCAL_VALIDATION_COUNT + 1))
 done
 
