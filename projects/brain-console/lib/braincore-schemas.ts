@@ -460,6 +460,19 @@ export const videoAnalysisAiSummarySchema = z.object({
   research_hooks: z.array(z.string()).default([]),
 }).passthrough();
 
+export const videoAnalysisTranscriptSegmentSchema = z.object({
+  start_seconds: z.number(),
+  end_seconds: z.number().nullable().optional(),
+  text: z.string(),
+});
+
+export const videoAnalysisTranscriptSchema = z.object({
+  text: z.string(),
+  segments: z.array(videoAnalysisTranscriptSegmentSchema),
+  provider: z.string().nullable(),
+  provenance: z.string().nullable().optional(),
+}).passthrough();
+
 export const videoAnalysisResponseSchema = z.object({
   ok: z.boolean(),
   schema_version: z.string().optional(),
@@ -506,7 +519,7 @@ export const videoAnalysisResponseSchema = z.object({
   persistence: z.record(z.unknown()).optional(),
   title: z.string().nullable().optional(),
   channel: z.string().nullable().optional(),
-  transcript: z.string().nullable().optional(),
+  transcript: z.union([videoAnalysisTranscriptSchema, z.string().nullable()]).optional(),
   human_summary: z.string().nullable().optional(),
   ai_summary: videoAnalysisAiSummarySchema.nullable().optional(),
   mind_path: z.string().nullable().optional(),
