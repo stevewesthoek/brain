@@ -8,8 +8,12 @@ import { prepareVideoAnalysisApplyOnePreview } from './infinite-brain-writers/vi
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(MODULE_DIR, '..', '..');
-const ANALYZER_PATH = path.join(PACKAGE_ROOT, 'services', 'video-analyzer', 'analyze.py');
 const BRAIN_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
+const ANALYZER_RELATIVE_PATH = path.join('projects', 'brain-core', 'services', 'video-analyzer', 'analyze.py');
+const ANALYZER_PATH = [
+  path.join(PACKAGE_ROOT, 'services', 'video-analyzer', 'analyze.py'),
+  path.join(BRAIN_ROOT, ANALYZER_RELATIVE_PATH),
+].find((candidate) => existsSync(candidate)) ?? path.join(BRAIN_ROOT, ANALYZER_RELATIVE_PATH);
 
 export interface VideoAnalysisServiceOptions {
   analyzerPath?: string;
