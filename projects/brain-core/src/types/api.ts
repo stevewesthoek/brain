@@ -11090,6 +11090,7 @@ export interface BrainCoreInfraSchedulerJob {
   runbook: string;
   tags: string[];
   humanAction: string;
+  reviewCategory: 'ACTIVE' | 'BLOCKED' | 'NEEDS REVIEW' | 'OBSOLETE';
   evidenceState: string;
   recentHistory: Array<Record<string, unknown>>;
 }

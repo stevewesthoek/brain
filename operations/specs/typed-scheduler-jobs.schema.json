@@ -36,7 +36,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "description", "owner", "entrypoint", "fixedArguments", "dependencies", "scheduleType", "schedule", "lifecycle", "mode", "authority", "networkAccess", "credentialSensitive", "destructive", "mindWrite", "timeoutSeconds", "retries", "concurrency", "idempotency", "receipt", "outputArtifacts", "policyReason", "runbook", "tags", "humanAction", "evidenceState", "externalActivation"],
+        "required": ["id", "name", "description", "owner", "entrypoint", "fixedArguments", "dependencies", "scheduleType", "schedule", "lifecycle", "mode", "authority", "networkAccess", "credentialSensitive", "destructive", "mindWrite", "timeoutSeconds", "retries", "concurrency", "idempotency", "receipt", "outputArtifacts", "policyReason", "runbook", "tags", "humanAction", "reviewCategory", "evidenceState", "externalActivation"],
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
           "name": { "type": "string", "minLength": 1 },
@@ -64,6 +64,7 @@
           "runbook": { "type": "string", "minLength": 1 },
           "tags": { "type": "array", "items": { "type": "string" } },
           "humanAction": { "type": "string", "minLength": 1 },
+          "reviewCategory": { "type": "string", "enum": ["ACTIVE", "BLOCKED", "NEEDS REVIEW", "OBSOLETE"] },
           "evidenceState": { "type": "string", "enum": ["repository-configured", "historical-only", "live-observed"] },
           "externalActivation": { "type": "string", "const": "unknown" }
         }

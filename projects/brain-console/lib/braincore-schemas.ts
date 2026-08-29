@@ -295,6 +295,7 @@ export const infraOfficeSchedulerJobSchema = z.object({
   runbook: z.string(),
   tags: z.array(z.string()),
   humanAction: z.string(),
+  reviewCategory: z.enum(['ACTIVE', 'BLOCKED', 'NEEDS REVIEW', 'OBSOLETE']),
   evidenceState: z.string(),
   recentHistory: z.array(z.record(z.string(), z.unknown())),
 });

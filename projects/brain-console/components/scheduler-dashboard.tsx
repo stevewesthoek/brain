@@ -48,6 +48,7 @@ function JobDetail({ job, onClose }: { job: InfraOfficeSchedulerJob; onClose: ()
         <dt>Receipt</dt><dd><code>{job.receiptPath}</code></dd>
         <dt>Artifacts</dt><dd>{job.artifactPaths.join(', ') || 'None recorded'}</dd>
         <dt>Policy</dt><dd>{job.policyReason}</dd>
+        <dt>Human review</dt><dd><StatusBadge status={job.reviewCategory === 'ACTIVE' ? 'success' : job.reviewCategory === 'OBSOLETE' ? 'disabled' : job.reviewCategory === 'BLOCKED' ? 'blocked' : 'warning'} label={job.reviewCategory} /></dd>
         <dt>Human action</dt><dd>{job.humanAction}</dd>
         <dt>Runbook</dt><dd><code>{job.runbook}</code></dd>
         {job.latestError ? <><dt>Latest error</dt><dd>{job.latestError}</dd></> : null}
@@ -86,9 +87,9 @@ export function SchedulerDashboard() {
       {data ? <section className="card"><div className="card-title">Launch and authority</div><p>{data.launchMechanism} · <code>{data.launchAgentLabel}</code> · {data.schedule}</p><div className="meta">Manifest: {String(data.manifest.valid)} · {String(data.manifest.jobCount)} jobs · lock: {data.lock.held ? 'held' : data.lock.stale ? 'stale' : 'free'} · report: {data.report.available ? 'available' : 'missing'}</div></section> : null}
       {selectedJob ? <JobDetail job={selectedJob} onClose={() => setSelectedJobId(null)} /> : null}
 
-      <section className="table-wrap"><table><thead><tr><th>Job / purpose</th><th>Schedule</th><th>Lifecycle</th><th>Mode</th><th>Last run</th><th>Result</th><th>Duration</th><th>Next / trigger</th><th>Human action</th></tr></thead><tbody>
-        {(data?.jobs ?? []).map((job) => <tr key={job.id}><td><button className="button-link" onClick={() => setSelectedJobId(job.id)}>{job.name}</button><div className="meta">{job.id} · {job.description}</div></td><td className="meta">{job.schedule}</td><td><StatusBadge status={job.lifecycle} label={job.lifecycle} /></td><td className="meta">{job.mode}</td><td className="meta">{dateLabel(job.lastRunAt)}</td><td><StatusBadge status={jobTone(job)} label={resultLabel(job)} /><div className="meta">{job.exitCode !== null ? `exit ${job.exitCode}` : ''}</div></td><td className="meta">{durationLabel(job.durationSeconds)}</td><td className="meta">{dateLabel(job.nextRunAt)}{job.trigger ? ` · ${job.trigger}` : ''}</td><td className="meta">{job.humanAction}</td></tr>)}
-        {(data?.jobs ?? []).length === 0 ? <tr><td colSpan={9}><div className="meta">No canonical scheduler jobs were returned.</div></td></tr> : null}
+      <section className="table-wrap"><table><thead><tr><th>Job / purpose</th><th>Schedule</th><th>Lifecycle</th><th>Human review</th><th>Mode</th><th>Last run</th><th>Result</th><th>Duration</th><th>Next / trigger</th><th>Human action</th></tr></thead><tbody>
+        {(data?.jobs ?? []).map((job) => <tr key={job.id}><td><button className="button-link" onClick={() => setSelectedJobId(job.id)}>{job.name}</button><div className="meta">{job.id} · {job.description}</div></td><td className="meta">{job.schedule}</td><td><StatusBadge status={job.lifecycle} label={job.lifecycle} /></td><td><StatusBadge status={job.reviewCategory === 'ACTIVE' ? 'success' : job.reviewCategory === 'OBSOLETE' ? 'disabled' : job.reviewCategory === 'BLOCKED' ? 'blocked' : 'warning'} label={job.reviewCategory} /></td><td className="meta">{job.mode}</td><td className="meta">{dateLabel(job.lastRunAt)}</td><td><StatusBadge status={jobTone(job)} label={resultLabel(job)} /><div className="meta">{job.exitCode !== null ? `exit ${job.exitCode}` : ''}</div></td><td className="meta">{durationLabel(job.durationSeconds)}</td><td className="meta">{dateLabel(job.nextRunAt)}{job.trigger ? ` · ${job.trigger}` : ''}</td><td className="meta">{job.humanAction}</td></tr>)}
+        {(data?.jobs ?? []).length === 0 ? <tr><td colSpan={10}><div className="meta">No canonical scheduler jobs were returned.</div></td></tr> : null}
       </tbody></table></section>
     </div>
   );
