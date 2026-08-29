@@ -7,13 +7,13 @@
 
     <key>ProgramArguments</key>
     <array>
-      <string>/Users/Office/Repos/stevewesthoek/brain/tools/scripts/supabase-recovery-copy-backup.sh</string>
+      <string>/Users/Office/.config/workbench/phase3x-supabase-recovery-copy-automation/tools/scripts/supabase-recovery-copy-backup.sh</string>
       <string>--run</string>
       <string>--scheduled</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/Office/Repos/stevewesthoek/brain</string>
+    <string>/Users/Office/.config/workbench/phase3x-supabase-recovery-copy-automation</string>
 
     <key>EnvironmentVariables</key>
     <dict>
@@ -23,9 +23,12 @@
       <string>/Users/Office</string>
     </dict>
 
-    <!-- Prepared only. Installation and recurring activation require a later explicit cutover. -->
+    <!-- Activated after the accepted run, idempotency proof, and health gates. -->
     <key>Disabled</key>
-    <true/>
+    <false/>
+
+    <key>TimeOut</key>
+    <integer>14400</integer>
 
     <key>StartCalendarInterval</key>
     <dict>

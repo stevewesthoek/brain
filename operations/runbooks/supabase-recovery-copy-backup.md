@@ -20,8 +20,9 @@ Azure VM Backup recovery point
 The runner is `tools/scripts/supabase-recovery-copy-backup.sh`. It defaults to
 read-only dry-run mode; `--run` is required for temporary Azure resources and
 Blob writes. `--scheduled` is reserved for the prepared scheduler artifact.
-The scheduler artifact remains disabled until the complete Phase 3X cutover
-gate is explicitly authorized.
+The scheduler artifact is enabled only after the complete Phase 3X cutover
+gate is proven. The current accepted run is `20260829T213246Z`, with remote
+prefix `phase3x/20260829T213246Z/`, 30 objects, and 150983181 bytes.
 
 ## Safety contract
 
@@ -79,8 +80,24 @@ manifest/checksum, remote verification, and exact cleanup all pass. A remote
 Content-MD5 omission is reported as `PARTIAL` cryptographic verification, not
 silently promoted to full cryptographic proof.
 
-The proposed recurring schedule is `05:30` local Europe/Lisbon, after the
-normal Azure VM Backup window. The prepared LaunchAgent is
-`com.office.supabase-recovery-copy-backup` and contains `Disabled=true`.
+The recurring schedule is `05:30` Europe/Lisbon, after the normal Azure VM
+Backup window. The LaunchAgent is
+`com.office.supabase-recovery-copy-backup`, targets the preserved Phase 3X
+feature worktree, has `TimeOut=14400`, and keeps `RunAtLoad=false`. Its live
+installation and enabled state are verified separately with:
+
+```bash
+launchctl print gui/$(id -u)/com.office.supabase-recovery-copy-backup
+launchctl print-disabled gui/$(id -u) | grep com.office.supabase-recovery-copy-backup
+```
+
+The receipt is
+`runtime/local/infrastructure/backup-runtime-state.json`; failures write a
+`FAILED` receipt and the runner performs exact temporary-resource cleanup.
+The job has no retry and does not trigger an immediate catch-up. To disable
+the recurring job, use `launchctl disable` and unload the named LaunchAgent;
+never invoke the runner manually as a scheduler test. Production `pg_dump`
+remains prohibited.
+
 `pgdump-upload.timer` remains disabled and inactive until a separately
 authorized legacy-retirement phase.
