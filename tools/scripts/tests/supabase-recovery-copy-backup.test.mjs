@@ -89,6 +89,31 @@ test('remote object count includes all 27 dumps and three metadata objects', () 
   assert.match(script, /sha256sums\.txt/);
 });
 
+test('finalization reports the initialized database count under set -u', () => {
+  const finalizationLine = script.split('\n').find((line) => line.includes('log "BACKUP_RESULT=PASS'));
+  assert.ok(finalizationLine);
+  assert.match(finalizationLine, /dumps=\$EXPECTED_DATABASE_COUNT validations=\$EXPECTED_DATABASE_COUNT/);
+  assert.doesNotMatch(finalizationLine, /expected_databases/);
+
+  const shellPreamble = String.raw`set -Eeuo pipefail
+EXPECTED_DATABASE_COUNT=27
+RUN_ID=synthetic
+RECOVERY_POINT_ID=synthetic-recovery-point
+REMOTE_OBJECT_COUNT=30
+REMOTE_TOTAL_BYTES=150983181
+REMOTE_CRYPTO=PARTIAL
+log() { printf '%s\n' "$*"; }
+`;
+  const oldFinalizationLine = finalizationLine.replace(
+    'dumps=$EXPECTED_DATABASE_COUNT validations=$EXPECTED_DATABASE_COUNT',
+    'dumps=${#expected_databases[@]} validations=${#expected_databases[@]}',
+  );
+  assert.throws(() => execFileSync('/bin/bash', ['-c', `${shellPreamble}${oldFinalizationLine.trim()}`], { encoding: 'utf8' }));
+
+  const fixedOutput = execFileSync('/bin/bash', ['-c', `${shellPreamble}${finalizationLine.trim()}`], { encoding: 'utf8' });
+  assert.match(fixedOutput, /dumps=27 validations=27/);
+});
+
 test('CONNECT reconciliation preserves shell dollar-quote and catalog backslash arguments', () => {
   const oldShell = String.raw`old="DO \\$\\$;"; test "$old" = 'DO $$;'`;
   assert.throws(() => execFileSync('/bin/bash', ['-c', oldShell], { encoding: 'utf8' }));

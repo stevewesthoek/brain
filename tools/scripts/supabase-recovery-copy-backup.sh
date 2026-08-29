@@ -742,7 +742,7 @@ REMOTE_WRAPPER
   [[ "$REMOTE_OBJECT_COUNT" == "$EXPECTED_REMOTE_OBJECT_COUNT" ]] || fail "isolated_object_count_not_${EXPECTED_REMOTE_OBJECT_COUNT}"
   [[ "$REMOTE_CRYPTO" == PASS || "$REMOTE_CRYPTO" == PARTIAL ]] || fail remote_crypto_result_missing
 
-  log "BACKUP_RESULT=PASS run_id=$RUN_ID recovery_point=$RECOVERY_POINT_ID dumps=${#expected_databases[@]} validations=${#expected_databases[@]} objects=$REMOTE_OBJECT_COUNT bytes=$REMOTE_TOTAL_BYTES remote_crypto=$REMOTE_CRYPTO temp_cleanup=pending"
+  log "BACKUP_RESULT=PASS run_id=$RUN_ID recovery_point=$RECOVERY_POINT_ID dumps=$EXPECTED_DATABASE_COUNT validations=$EXPECTED_DATABASE_COUNT objects=$REMOTE_OBJECT_COUNT bytes=$REMOTE_TOTAL_BYTES remote_crypto=$REMOTE_CRYPTO temp_cleanup=pending"
 }
 
 main "$@"
