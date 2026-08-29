@@ -82,10 +82,15 @@ Passed:
 
     node --test tools/n8n-save-to-mind-bedrock-candidate.test.mjs tools/n8n-save-to-mind-route-proof.test.mjs tools/n8n-save-to-mind-bedrock-transport-v2.test.mjs
     node tools/validate-save-to-mind-bedrock-transport-v2.mjs
+    PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s ai/skills/vendors/taoufik123-collab/claude-watch/scripts/tests -p 'test_*.py' -v
+    JSON.parse validation for all 7 migration/workflow/rollback artifacts
+    Python AST validation for the custom watch-video script and 9 vendored scripts
     git diff --check
 
-Result: 20/20 tests passed, candidate validation passed, route proof passed,
-and protectedTopologyPreserved=true.
+Result: 20/20 Save-to-Mind tests passed, 7/7 vendored claude-watch tests passed,
+all 7 JSON artifacts parsed successfully, all 10 changed Python scripts passed
+AST validation, candidate validation passed, route proof passed, and
+protectedTopologyPreserved=true.
 
 The wrapper initially rejected an incomplete update payload before transmission
 with PAYLOAD_WORKFLOW_ID_MISMATCH. The one bounded local payload repair added

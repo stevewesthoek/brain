@@ -50,6 +50,9 @@
   },
   "validation": {
     "nodeTests": "pass; 20/20",
+    "vendoredClaudeWatchTests": "pass; 7/7",
+    "jsonSyntax": "pass; 7 migration/workflow/rollback artifacts",
+    "pythonSyntax": "pass; 10 changed scripts",
     "candidateValidator": "pass",
     "routeProof": "pass; native model ai_languageModel edge present",
     "gitDiffCheck": "pass",
