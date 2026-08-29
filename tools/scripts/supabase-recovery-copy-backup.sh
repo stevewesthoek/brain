@@ -270,6 +270,7 @@ RUN_ID_INPUT="${3:-}"
 [[ -n "$SAS_FILE_INPUT" && -n "$BLOB_PREFIX_INPUT" && -n "$RUN_ID_INPUT" ]] || exit 2
 [[ "$BLOB_PREFIX_INPUT" =~ ^phase3x/[0-9]{8}T[0-9]{6}Z/$ ]] || exit 2
 [[ -f "$SAS_FILE_INPUT" && -r "$SAS_FILE_INPUT" ]] || exit 2
+BACKUP_ROLE="postgres"
 BLOB_SAS_INPUT="$(cat "$SAS_FILE_INPUT")"
 [[ -n "$BLOB_SAS_INPUT" ]] || exit 2
 
