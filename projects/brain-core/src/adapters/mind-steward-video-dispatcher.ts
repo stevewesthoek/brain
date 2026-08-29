@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { MindStewardInboxQueueItem } from './mind-steward-inbox-queue.js';
-import { analyzeVideo } from './video-analysis-service.js';
-import type { VideoSourceKind } from './video-analysis-types.js';
+import { analyzeVideo, normalizeVideoAnalysisRequest } from './video-analysis-service.js';
+import type { VideoAnalysisRequest, VideoSourceKind } from './video-analysis-types.js';
 
 function isWithin(root: string, candidate: string): boolean {
   const relative = path.relative(path.resolve(root), path.resolve(candidate));
@@ -17,6 +17,14 @@ export interface DetectedMindVideoSource {
   kind: VideoSourceKind;
   uri: string;
 }
+
+/**
+ * Analysis dimensions are deliberately separate from queue/caller metadata.
+ * The canonical service normalizes these fields once before the Python
+ * processor derives its semantic cache identity.
+ */
+export type MindStewardVideoAnalysisOptions = Pick<VideoAnalysisRequest,
+  'focus' | 'frame_budget' | 'paid_vision_frame_budget' | 'transcript_provider' | 'allow_external_transcription'>;
 
 export function detectVideoSourceFromCapture(capturePath: string, content?: string): DetectedMindVideoSource | null {
   if (DIRECT_VIDEO_PATTERN.test(capturePath)) return { kind: 'local-file', uri: path.resolve(capturePath) };
@@ -41,23 +49,40 @@ export function detectVideoSourceFromCapture(capturePath: string, content?: stri
   return null;
 }
 
-export async function dispatchMindStewardVideoCapture(
+export interface BuildMindStewardVideoAnalysisRequestOptions {
+  mindRoot?: string;
+  analysis?: MindStewardVideoAnalysisOptions;
+}
+
+export function buildMindStewardVideoAnalysisRequest(
   item: MindStewardInboxQueueItem,
-  options: { mindRoot?: string } = {},
-) {
+  options: BuildMindStewardVideoAnalysisRequestOptions = {},
+): VideoAnalysisRequest | null {
   const absoluteCapturePath = options.mindRoot ? path.resolve(options.mindRoot, item.path) : item.path;
   const source = detectVideoSourceFromCapture(absoluteCapturePath);
-  if (!source) return { kind: 'not-video' as const, result: null };
+  if (!source) return null;
+
   const rawCaptureIsSafe = source.kind === 'local-file'
     && path.resolve(source.uri) === path.resolve(absoluteCapturePath)
     && (options.mindRoot ? isWithin(path.join(options.mindRoot, 'inbox', 'new'), source.uri) : false);
-  const result = await analyzeVideo({
+
+  return normalizeVideoAnalysisRequest({
     source: { ...source, original_capture_reference: item.path },
     caller: 'save-to-mind',
     persist_to_mind: true,
+    ...(options.analysis ?? {}),
     ...(rawCaptureIsSafe ? { allow_local_file: true } : {}),
     correlation_id: item.id,
     idempotency_key: `mind-video-${item.contentSha256}`,
   });
+}
+
+export async function dispatchMindStewardVideoCapture(
+  item: MindStewardInboxQueueItem,
+  options: BuildMindStewardVideoAnalysisRequestOptions = {},
+) {
+  const request = buildMindStewardVideoAnalysisRequest(item, options);
+  if (!request) return { kind: 'not-video' as const, result: null };
+  const result = await analyzeVideo(request, options.mindRoot ? { mindRoot: options.mindRoot } : {});
   return { kind: 'video' as const, result };
 }

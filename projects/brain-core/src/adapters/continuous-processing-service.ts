@@ -26,7 +26,10 @@ import {
   recordMindStewardInboxQueueVideoOutcome,
   type MindStewardInboxQueueItem,
 } from './mind-steward-inbox-queue.js';
-import { dispatchMindStewardVideoCapture } from './mind-steward-video-dispatcher.js';
+import {
+  dispatchMindStewardVideoCapture,
+  type MindStewardVideoAnalysisOptions,
+} from './mind-steward-video-dispatcher.js';
 import {
   isExecutionKillSwitchEnabled,
   isMindStewardInboxQueueDryRunExecutionFlagEnabled,
@@ -53,6 +56,7 @@ export interface ContinuousProcessingServiceOptions {
   pollingIntervalMs?: number;
   mindRoot?: string;
   statePath?: string;
+  videoAnalysis?: MindStewardVideoAnalysisOptions;
 }
 
 export interface ContinuousProcessingServiceStatus {
@@ -83,6 +87,7 @@ export function createContinuousProcessingService(
   const pollingIntervalMs = options.pollingIntervalMs ?? 60_000;
   const mindRoot = options.mindRoot ?? process.env.BRAIN_CORE_MIND_STEWARD_MIND_ROOT;
   const statePath = options.statePath ?? process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_STATE_PATH;
+  const videoAnalysis = options.videoAnalysis;
 
   // Mutable service state
   let running = false;
@@ -154,7 +159,10 @@ export function createContinuousProcessingService(
       // finds a video source; choosing the first `.md`/`.txt` path would skip a
       // later capture that actually contains a YouTube or direct-video URL.
       for (const candidate of policy.selectedItems) {
-        const dispatched = await dispatchMindStewardVideoCapture(candidate, { mindRoot: queueState.mindRoot });
+        const dispatched = await dispatchMindStewardVideoCapture(candidate, {
+          mindRoot: queueState.mindRoot,
+          ...(videoAnalysis !== undefined ? { analysis: videoAnalysis } : {}),
+        });
         if (dispatched.kind !== 'video' || !dispatched.result) continue;
 
         const persistenceStatus = dispatched.result.persistence?.status;

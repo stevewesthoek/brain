@@ -2,9 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { routeRequest } from '../api/routes.js';
-import { detectVideoSourceFromCapture } from '../adapters/mind-steward-video-dispatcher.js';
+import {
+  buildMindStewardVideoAnalysisRequest,
+  detectVideoSourceFromCapture,
+} from '../adapters/mind-steward-video-dispatcher.js';
 import { inferVideoSource, normalizeVideoAnalysisRequest } from '../adapters/video-analysis-service.js';
 import {
   applyVideoAnalysisApplyOne,
@@ -94,6 +97,50 @@ test('Save-to-Mind capture detection routes URL and raw-file inputs to the canon
     { kind: 'remote-video-url', uri: 'https://cdn.example.test/video.mp4?download=1' },
   );
   assert.deepEqual(detectVideoSourceFromCapture('/tmp/recording.mov'), { kind: 'local-file', uri: '/tmp/recording.mov' });
+});
+
+test('queue and direct callers share semantic request identity while caller and persistence stay incidental', () => {
+  const tempDir = mkdtempSync(path.join('/tmp', 'brain-video-request-identity-'));
+  const mindRoot = path.join(tempDir, 'mind');
+  const capturePath = path.join(mindRoot, 'inbox', 'new', 'video.md');
+  mkdirSync(path.dirname(capturePath), { recursive: true });
+  writeFileSync(capturePath, 'https://www.youtube.com/watch?v=abc\n');
+  const item = {
+    id: 'mind-inbox-request-identity', path: 'inbox/new/video.md', status: 'pending' as const, sizeBytes: 1,
+    contentSha256: 'capture-hash', modifiedAt: null, firstSeenAt: '2026-08-29T00:00:00.000Z',
+    lastCheckedAt: '2026-08-29T00:00:00.000Z', stableFile: true, stableAt: null, debounceSeconds: 30,
+    debounceUntil: null, attemptCount: 0, lastError: null, nextRetryAfter: null, failureRoute: null,
+    largeFile: false, selectedForSample: true, selectorStatus: 'unknown' as const,
+    processingKind: null, videoJobId: null,
+  };
+  try {
+    const queueRequest = buildMindStewardVideoAnalysisRequest(item, {
+      mindRoot,
+      analysis: {
+        focus: 'visual changes', frame_budget: 19, paid_vision_frame_budget: 3, transcript_provider: 'captions',
+      },
+    });
+    assert.ok(queueRequest);
+    const directRequest = normalizeVideoAnalysisRequest({
+      source: queueRequest.source,
+      caller: 'codex',
+      persist_to_mind: false,
+      ...(queueRequest.focus !== undefined ? { focus: queueRequest.focus } : {}),
+      ...(queueRequest.frame_budget !== undefined ? { frame_budget: queueRequest.frame_budget } : {}),
+      ...(queueRequest.paid_vision_frame_budget !== undefined ? { paid_vision_frame_budget: queueRequest.paid_vision_frame_budget } : {}),
+      ...(queueRequest.transcript_provider !== undefined ? { transcript_provider: queueRequest.transcript_provider } : {}),
+    });
+    assert.deepEqual(
+      { source: queueRequest.source, focus: queueRequest.focus, frame_budget: queueRequest.frame_budget, paid_vision_frame_budget: queueRequest.paid_vision_frame_budget, transcript_provider: queueRequest.transcript_provider },
+      { source: directRequest.source, focus: directRequest.focus, frame_budget: directRequest.frame_budget, paid_vision_frame_budget: directRequest.paid_vision_frame_budget, transcript_provider: directRequest.transcript_provider },
+    );
+    assert.equal(queueRequest.caller, 'save-to-mind');
+    assert.equal(queueRequest.persist_to_mind, true);
+    assert.equal(directRequest.caller, 'codex');
+    assert.equal(directRequest.persist_to_mind, false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test('canonical HTTP route is report-only and rejects missing source before provider execution', async () => {

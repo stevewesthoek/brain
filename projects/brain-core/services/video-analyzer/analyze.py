@@ -121,6 +121,52 @@ def normalize_request(payload: dict) -> dict:
     }
 
 
+def analysis_cache_key(source_hash: str, request: dict) -> str:
+    """Return identity for analysis semantics, excluding caller/write metadata.
+
+    Source URI and normalized focus define the semantic job. Caller, persistence,
+    correlation, idempotency, and capture-reference fields are post-processing
+    or provenance metadata and must not fragment the analysis cache. Coverage
+    dimensions are validated against the completed result before reuse below.
+    """
+    return sha256_text(f"{source_hash}|{request.get('focus', '')}")
+
+
+def analysis_job_id(source_hash: str, request: dict) -> str:
+    return f"video-analysis-{analysis_cache_key(source_hash, request)[:20]}"
+
+
+def _cached_nonnegative_int(value: object) -> int:
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return -1
+
+
+def completed_cache_satisfies(result: object, request: dict) -> bool:
+    """Accept only a successful result with at least the requested coverage."""
+    if not isinstance(result, dict) or result.get("status") != "succeeded" or result.get("ok") is not True:
+        return False
+    processing = result.get("processing")
+    if not isinstance(processing, dict):
+        return False
+    if _cached_nonnegative_int(processing.get("frames_extracted")) < request["frame_budget"]:
+        return False
+    if _cached_nonnegative_int(processing.get("frames_sent_to_paid_vision")) < request["paid_vision_frame_budget"]:
+        return False
+    if not isinstance(result.get("selected_frames"), list) or len(result["selected_frames"]) < request["paid_vision_frame_budget"]:
+        return False
+    if not isinstance(result.get("visual_observations"), list) or len(result["visual_observations"]) < request["paid_vision_frame_budget"]:
+        return False
+    transcript = result.get("transcript")
+    if not isinstance(transcript, dict):
+        return False
+    expected_transcript_provider = request.get("transcript_provider")
+    if expected_transcript_provider == "none":
+        return True
+    return transcript.get("provider") == expected_transcript_provider
+
+
 def run_cmd(command: list[str], *, timeout: int = 600, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, capture_output=True, text=True, shell=False, timeout=timeout, cwd=cwd)
 
@@ -550,8 +596,7 @@ def analyze(request: dict) -> dict:
         source_hash = sha256_file(source_path)
     else:
         source_hash = sha256_text(str(source["uri"]))
-    seed = f"{source_hash}|{request.get('focus', '')}"
-    job_id = f"video-analysis-{sha256_text(seed)[:20]}"
+    job_id = analysis_job_id(source_hash, request)
     job_dir = RUNTIME_ROOT / "jobs" / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
     cached = job_dir / "result.json"
@@ -563,7 +608,7 @@ def analyze(request: dict) -> dict:
         if cached.exists() and os.environ.get("BRAIN_VIDEO_FORCE_RERUN") != "1":
             try:
                 cached_result = json.loads(cached.read_text(encoding="utf-8"))
-                if isinstance(cached_result, dict):
+                if completed_cache_satisfies(cached_result, request):
                     cached_processing = cached_result.get("processing") if isinstance(cached_result.get("processing"), dict) else {}
                     cached_result["processing"] = {
                         **cached_processing,
@@ -575,7 +620,7 @@ def analyze(request: dict) -> dict:
                             **cached_result.get("source", {}),
                             "original_capture_reference": original_capture,
                         }
-                return cached_result
+                    return cached_result
             except json.JSONDecodeError:
                 pass
         report_path, metadata, segments, frames, warnings = run_watch_video(source, job_dir, request)
