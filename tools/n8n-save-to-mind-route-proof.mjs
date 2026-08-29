@@ -5,17 +5,26 @@ import process from 'node:process';
 
 export const DEPLOYMENT_CANDIDATE = 'operations/automations/n8n/workflows/mind-inbox-controlled-deployment-v1.json';
 
-const EXPECTED_NODE_IDS = new Set([
+const LEGACY_NODE_IDS = new Set([
   'webhook-trigger', 'build-gemini-body', 'gemini-classify', 'build-processed-note',
   'check-github-file', 'handle-file-check', 'file-exists-check',
   'save-to-github-create', 'save-to-github-update', 'respond-webhook'
 ]);
-const EXPECTED_NODE_TYPES = new Map([
+const LEGACY_NODE_TYPES = new Map([
   ['webhook-trigger', 'n8n-nodes-base.webhook'], ['build-gemini-body', 'n8n-nodes-base.code'],
   ['gemini-classify', ['n8n-nodes-base.httpRequest', 'n8n-nodes-base.code']], ['build-processed-note', 'n8n-nodes-base.code'],
   ['check-github-file', 'n8n-nodes-base.httpRequest'], ['handle-file-check', 'n8n-nodes-base.code'],
   ['file-exists-check', 'n8n-nodes-base.if'], ['save-to-github-create', 'n8n-nodes-base.httpRequest'],
   ['save-to-github-update', 'n8n-nodes-base.httpRequest'], ['respond-webhook', 'n8n-nodes-base.respondToWebhook'],
+]);
+const TRANSPORT_V2_NODE_IDS = new Set([
+  ...LEGACY_NODE_IDS,
+  'bedrock-chat-model',
+]);
+const TRANSPORT_V2_NODE_TYPES = new Map([
+  ...LEGACY_NODE_TYPES,
+  ['gemini-classify', '@n8n/n8n-nodes-langchain.chainLlm'],
+  ['bedrock-chat-model', '@n8n/n8n-nodes-langchain.lmChatAwsBedrock'],
 ]);
 const WRITE_BOUNDARIES = new Set(['save-to-github-create', 'save-to-github-update']);
 const RETIRED_PATHS = ['capture/inbox', 'capture/failed'];
@@ -51,14 +60,24 @@ function reachable(start, graph) {
 }
 
 function assertExactTopology(nodes, graph) {
-  if (nodes.size !== EXPECTED_NODE_IDS.size || [...nodes.keys()].some(id => !EXPECTED_NODE_IDS.has(id))) fail('unexpected_node_set');
-  if ([...EXPECTED_NODE_TYPES].some(([id, expected]) => {
+  const transportV2 = nodes.has('bedrock-chat-model');
+  const expectedNodeIds = transportV2 ? TRANSPORT_V2_NODE_IDS : LEGACY_NODE_IDS;
+  const expectedNodeTypes = transportV2 ? TRANSPORT_V2_NODE_TYPES : LEGACY_NODE_TYPES;
+  if (nodes.size !== expectedNodeIds.size || [...nodes.keys()].some(id => !expectedNodeIds.has(id))) fail('unexpected_node_set');
+  if ([...expectedNodeTypes].some(([id, expected]) => {
     const allowed = Array.isArray(expected) ? expected : [expected];
     return !allowed.includes(nodes.get(id)?.type);
   })) fail('unlisted_node_type_change');
   if ([...nodes.values()].filter(node => String(node.type).toLowerCase().includes('webhook')).length !== 2) fail('webhook_boundary_count_invalid');
   if ([...nodes.values()].some(node => /schedule|cron/i.test(String(node.type)))) fail('schedule_trigger_present');
   if (graph.some(edge => !nodes.has(edge.sourceNodeId) || !nodes.has(edge.targetNodeId))) fail('invalid_graph_edge');
+  if (transportV2) {
+    const modelEdges = graph.filter(edge => edge.sourceNodeId === 'bedrock-chat-model'
+      && edge.targetNodeId === 'gemini-classify'
+      && edge.sourceOutput === 'ai_languageModel'
+      && edge.targetInput === 'ai_languageModel');
+    if (modelEdges.length !== 1) fail('bedrock_model_connection_invalid');
+  }
 }
 
 function assertDestinationProgram(node) {
@@ -86,7 +105,12 @@ export function verifySaveToMindRouteProof(workflow) {
   const writes = graph.filter(edge => WRITE_BOUNDARIES.has(edge.targetNodeId));
   if (writes.length !== 2 || writes.some(edge => edge.sourceNodeId !== 'file-exists-check')) fail('extra_or_bypass_external_write_branch');
   if (graph.some(edge => edge.sourceNodeId === 'webhook-trigger' && edge.targetNodeId !== 'build-gemini-body')) fail('second_webhook_route_present');
-  return { ok: true, requiredRoutes: ['webhook-trigger→build-processed-note→GitHub write', 'forceFailure→build-processed-note→GitHub write'], forbiddenDestinations: RETIRED_PATHS };
+  return {
+    ok: true,
+    requiredRoutes: ['webhook-trigger→build-processed-note→GitHub write', 'forceFailure→build-processed-note→GitHub write'],
+    forbiddenDestinations: RETIRED_PATHS,
+    transport: nodes.has('bedrock-chat-model') ? 'native-bedrock-chat-model' : 'legacy-classifier',
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
