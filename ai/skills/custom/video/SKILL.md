@@ -70,7 +70,7 @@ Classify directly from the user's message. Three dimensions: **Workflow** (what 
 | Workflow | Signals |
 |----------|---------|
 | **STRATEGY** | "find topics", "trending", "angles for", "hooks for", "discover", "what should I create" → routes to `/viral-flow` |
-| **MEDIA_ACQUISITION** | "analyze this YouTube video", "get transcript", "download subtitles", "use this video as reference", "find hooks from these videos", "extract audio", "collect thumbnails" → routes to dormant `/media-acquisition` |
+| **MEDIA_ACQUISITION** | "analyze this YouTube video", "watch this video", "get transcript", "download subtitles", "use this video as reference", "find hooks from these videos", "extract audio", "collect thumbnails" → analysis routes to the canonical Brain video operation; acquisition-only work routes to dormant `/media-acquisition` |
 | **A: WRITE** | "script", "narration", "story", "write", "create dialogue", "outline" → with STRATEGY first (topic → angles → hooks → script) |
 | **B: VOICE** | "voiceover", "TTS", "generate audio", "narrate", "speech synthesis" |
 | **C: COMPOSE** | "render", "video", "reel", "compose", "combine audio + image", "make MP4" |
@@ -186,7 +186,22 @@ After script generation:
 
 **Trigger:** User wants to analyze, research, cite, reference, clip, remix, or extract subtitles/audio/metadata from online media.
 
-Use dormant `/media-acquisition` automatically. The user should not need to name `yt-dlp`.
+For analysis, watching, transcript-plus-visual research, or hook extraction, use
+the single Brain-owned operation. The user should not need to name `yt-dlp`, a
+provider, or a consumer-specific workflow:
+
+```bash
+node projects/brain-core/dist/bin/brain-agent.js video analyze \
+  '<url-or-path>' [--focus 'what to inspect'] [--save-to-mind]
+```
+
+Brain Console, Codex, Claude Code, and Save-to-Mind all converge on this same
+operation and result contract. The `watch-video` skill is its lower-level
+media/caption/frame adapter, not a separate consumer implementation.
+
+For acquisition-only work such as downloading subtitles/audio or preparing a
+clip, use dormant `/media-acquisition` automatically. The user should not need
+to name `yt-dlp`.
 
 Default acquisition level:
 
@@ -198,8 +213,14 @@ reference / remix / clipping → metadata first, full media only if rights/permi
 Route:
 
 ```text
+/video → canonical Brain video analysis for analysis/research
 /video → /web for discovery if needed → /media-acquisition → /ffmpeg if clipping/conversion is needed → /video production or synthesis
 ```
+
+The canonical operation invokes the `watch-video` adapter for captions,
+metadata, scene-aware frames, and timestamp preservation. It must not write
+directly to Mind or an Obsidian vault; Save-to-Mind remains an asynchronous
+approved ingestion step.
 
 Required safeguards:
 - Preserve source URL, title, channel/uploader, access date, and rights notes.
@@ -1165,4 +1186,3 @@ You excel at:
 The `/video` orchestrator is invisible by design. You don't think about it — you just talk to your AI about making videos, and the right toolchain runs automatically. No skill names (unless you want them), no tool knowledge needed.
 
 **Just describe what you need.** The orchestrator handles the rest.
-

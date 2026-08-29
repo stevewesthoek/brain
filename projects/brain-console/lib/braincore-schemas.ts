@@ -518,11 +518,66 @@ export const videoAnalysisAiSummarySchema = z.object({
   research_hooks: z.array(z.string()).default([]),
 }).passthrough();
 
+export const videoAnalysisTranscriptSegmentSchema = z.object({
+  start_seconds: z.number(),
+  end_seconds: z.number().nullable().optional(),
+  text: z.string(),
+});
+
+export const videoAnalysisTranscriptSchema = z.object({
+  text: z.string(),
+  segments: z.array(videoAnalysisTranscriptSegmentSchema),
+  provider: z.string().nullable(),
+  provenance: z.string().nullable().optional(),
+}).passthrough();
+
 export const videoAnalysisResponseSchema = z.object({
   ok: z.boolean(),
+  schema_version: z.string().optional(),
+  job_id: z.string().optional(),
+  status: z.enum(['succeeded', 'partial', 'failed', 'blocked']).optional(),
+  source: z.object({
+    kind: z.enum(['youtube-url', 'remote-video-url', 'local-file']),
+    uri: z.string(),
+    provider: z.string().nullable().optional(),
+    original_capture_reference: z.string().nullable().optional(),
+  }).optional(),
+  metadata: z.object({
+    title: z.string().nullable(),
+    channel: z.string().nullable(),
+    duration_seconds: z.number().nullable(),
+    width: z.number().nullable().optional(),
+    height: z.number().nullable().optional(),
+  }).optional(),
+  transcript_detail: z.record(z.unknown()).optional(),
+  visual_observations: z.array(z.object({
+    timestamp_seconds: z.number(),
+    timestamp: z.string(),
+    label: z.string(),
+    observation: z.string(),
+    confidence: z.union([z.string(), z.number()]).nullable().optional(),
+    frame_path: z.string().nullable().optional(),
+  })).optional().default([]),
+  summary: z.string().optional(),
+  key_points: z.array(z.string()).optional().default([]),
+  selected_frames: z.array(z.object({ timestamp_seconds: z.number(), path: z.string(), role: z.string() })).optional().default([]),
+  processing: z.object({
+    processor: z.string(),
+    watch_video_output: z.string().nullable().optional(),
+    frames_extracted: z.number(),
+    frames_sent_to_paid_vision: z.number(),
+    transcript_provider: z.string().nullable(),
+    vision_provider: z.string().nullable(),
+    vision_model: z.string().nullable(),
+    approximate_cost: z.number().nullable(),
+    asynchronous: z.boolean(),
+  }).optional(),
+  provenance: z.object({ source_reference: z.string(), source_sha256: z.string(), created_at: z.string() }).optional(),
+  warnings: z.array(z.string()).optional().default([]),
+  persistence: z.record(z.unknown()).optional(),
   title: z.string().nullable().optional(),
   channel: z.string().nullable().optional(),
-  transcript: z.string().nullable().optional(),
+  transcript: z.union([videoAnalysisTranscriptSchema, z.string().nullable()]).optional(),
   human_summary: z.string().nullable().optional(),
   ai_summary: videoAnalysisAiSummarySchema.nullable().optional(),
   mind_path: z.string().nullable().optional(),
@@ -553,6 +608,24 @@ export const videoAnalysisHistoryEntrySchema = z.object({
   mindPath: z.string().nullable(),
   error: z.string().nullable(),
   step: z.string().nullable(),
+  jobId: z.string().nullable().optional(),
+  sourceKind: z.string().nullable().optional(),
+  visualObservations: z.array(z.object({
+    timestamp_seconds: z.number(),
+    timestamp: z.string(),
+    label: z.string(),
+    observation: z.string(),
+    confidence: z.union([z.string(), z.number()]).nullable().optional(),
+  })).optional().default([]),
+  processing: z.object({
+    transcript_provider: z.string().nullable(),
+    vision_provider: z.string().nullable(),
+    vision_model: z.string().nullable(),
+    frames_extracted: z.number(),
+    frames_sent_to_paid_vision: z.number(),
+    approximate_cost: z.number().nullable(),
+  }).optional(),
+  warnings: z.array(z.string()).optional().default([]),
 });
 
 export const videoAnalysisHistoryResponseSchema = z.object({

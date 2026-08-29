@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 2,
+  "kind": "n8n-controlled-workflow-migration",
+  "status": "deployed-and-validated",
+  "workflowId": "FwP5INe9qoo1OwGC",
+  "workflowName": "Save to Mind — Capture for Mind Steward",
+  "transportDiscovery": {
+    "n8nVersion": "2.4.7",
+    "n8nImage": "n8nio/n8n:2.4.7",
+    "nativeBedrockNodeAvailable": true,
+    "nativeBedrockNodeType": "@n8n/n8n-nodes-langchain.lmChatAwsBedrock",
+    "chainNodeType": "@n8n/n8n-nodes-langchain.chainLlm",
+    "awsSdkClient": "@aws-sdk/client-bedrock-runtime",
+    "langchainAws": "@langchain/aws@1.0.3",
+    "httpRequestExplicitBedrockSigningService": false,
+    "decision": "native-first-party-bedrock-chat-model"
+  },
+  "freshRollback": {
+    "artifactPath": "operations/reports/artifacts/save-to-mind-live-pre-transport-v2-2026-08-29.json",
+    "sha256": "526a63910c1f2e57717c20f711f17fe6fb3cabe39dbe568c2b6adbc7dc3e8b9c",
+    "active": true,
+    "versionId": "3398e289-19ba-4684-978f-fd2bd3cb4474",
+    "nodeCount": 10,
+    "webhookId": "e26dfdb3-670d-4ea1-973b-694ec97347eb",
+    "webhookPath": "mind-inbox",
+    "protectedDriftAgainstRestoredRollback": []
+  },
+  "candidate": {
+    "artifactPath": "operations/automations/n8n/workflows/save-to-mind-bedrock-haiku-transport-v2-2026-08-29.json",
+    "sha256": "880c11ca854069320a22d71ba91464f430a03c371bfef134c804db47f6d13061",
+    "active": false,
+    "nodeCount": 11,
+    "classifierNodeType": "@n8n/n8n-nodes-langchain.chainLlm",
+    "modelNodeType": "@n8n/n8n-nodes-langchain.lmChatAwsBedrock",
+    "modelSource": "inferenceProfile",
+    "modelId": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "region": "us-east-1",
+    "credentialDisplayName": "AWS Bedrock - Brain",
+    "credentialReferencePresent": true,
+    "protectedTopologyPreserved": true
+  },
+  "providerChange": {
+    "oldProvider": "Google Gemini HTTP API",
+    "oldFailure": "execution 1030 used endpoint-derived SigV4 service bedrock-runtime instead of required service bedrock",
+    "repairFailure": "execution 1031 used unsupported helpers.httpRequestWithAuthentication in n8n 2.4.7 Code Node",
+    "newProvider": "Amazon Bedrock native Chat Model",
+    "newModel": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "requestBoundary": "native @langchain/aws ChatBedrockConverse",
+    "parserBoundary": "Build Processed Note accepts native Basic LLM Chain text output"
+  },
+  "validation": {
+    "nodeTests": "pass; 20/20",
+    "vendoredClaudeWatchTests": "pass; 7/7",
+    "jsonSyntax": "pass; 7 migration/workflow/rollback artifacts",
+    "pythonSyntax": "pass; 10 changed scripts",
+    "candidateValidator": "pass",
+    "routeProof": "pass; native model ai_languageModel edge present",
+    "gitDiffCheck": "pass",
+    "liveMutationPerformed": true
+  },
+  "deployment": {
+    "attempted": true,
+    "method": "documented n8n Public API wrapper",
+    "initialPreTransmissionRejection": "PAYLOAD_WORKFLOW_ID_MISMATCH",
+    "boundedRepair": "added required id and active fields to wrapper payload",
+    "updateHttpStatus": 200,
+    "result": "succeeded",
+    "readbackVersionId": "52568ad1-7f14-472e-bab3-0d9de609e279",
+    "readbackActive": true,
+    "readbackNodeCount": 11,
+    "protectedDrift": []
+  },
+  "liveTest": {
+    "executionId": "1032",
+    "status": "success",
+    "bedrockClassificationSucceeded": true,
+    "inboxNewSucceeded": true,
+    "resultingPath": "inbox/new/2026-08-29-save-to-mind-bedrock-transport-v2-verification-save-to-mind-bedrock-transport-v2.md",
+    "githubCommit": "28fc95b375ec8dbf551c69b8803af31259678326",
+    "webhookResponse": "saved/file_committed",
+    "geminiRequestObserved": false
+  },
+  "rollback": {
+    "needed": false,
+    "artifactPath": "operations/reports/artifacts/save-to-mind-live-pre-transport-v2-2026-08-29.json",
+    "zeroProtectedDrift": true
+  },
+  "preservedBoundaries": {
+    "workflowIdentity": true,
+    "activation": true,
+    "webhookIdAndPath": true,
+    "settings": true,
+    "githubRepositoryAndPathLogic": true,
+    "createUpdateBranching": true,
+    "inboxNew": true,
+    "inboxFailed": true,
+    "responseBehavior": true
+  }
+}

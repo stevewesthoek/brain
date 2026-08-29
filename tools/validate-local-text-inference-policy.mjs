@@ -40,9 +40,13 @@ for (const forbiddenPattern of ['local_only', 'ollama', '/chat/completions', '12
 assert(activeVideoAnalyzer.includes('claude-bedrock'), 'active video analyzer must support the Bedrock-primary text route');
 assert(activeVideoAnalyzer.includes('codex-cli'), 'active video analyzer must support the Codex-secondary text route');
 assert(activeVideoAnalyzer.includes('"fallback_policy": "ordered_strict"'), 'active video analyzer must not widen beyond Bedrock and Codex');
-assert(activeVideoAnalyzer.includes('previous_failures'), 'active video analyzer must retry only through selector-declared failures');
+assert(activeVideoAnalyzer.includes('preferred_providers'), 'active video analyzer must use selector-declared provider preferences');
 assert(activeVideoAnalyzer.includes('report-failure'), 'active video analyzer must report failed managed execution');
-assert(activeVideoAnalyzer.includes("'inbox' / 'new'"), 'active video analyzer must write only to canonical Mind inbox/new');
+assert(activeVideoAnalyzer.includes('runtime" / "local" / "brain-core" / "video-analysis'), 'active video analyzer must keep results in Brain runtime');
+assert(activeVideoAnalyzer.includes('video_frame_analysis'), 'active video analyzer must use the admitted visual task route');
+assert(activeVideoAnalyzer.includes('brain_video_local_root'), 'active video analyzer must enforce the configured local-video boundary');
+const activeVideoAnalyzerMain = activeVideoAnalyzer.slice(activeVideoAnalyzer.indexOf('def main'));
+assert(!activeVideoAnalyzerMain.includes('save_transcript_to_mind'), 'canonical video analyzer main must not write directly to Mind');
 assert(!activeVideoAnalyzer.includes("'capture' / 'inbox'"), 'active video analyzer must not recreate the retired Mind capture/inbox path');
 
 const managedTextExecutor = fs.readFileSync(path.join(ROOT, 'projects/brain-core/src/adapters/managed-text-executor.ts'), 'utf8').toLowerCase();

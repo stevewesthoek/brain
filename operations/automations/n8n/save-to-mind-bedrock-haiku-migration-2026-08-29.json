@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "kind": "n8n-controlled-workflow-migration",
+  "status": "blocked-live-bedrock-validation-failed-rolled-back",
+  "workflowId": "FwP5INe9qoo1OwGC",
+  "workflowName": "Save to Mind — Capture for Mind Steward",
+  "liveEvidence": {
+    "exportPath": "operations/reports/artifacts/save-to-mind-live-pre-bedrock-deploy-2026-08-29.json",
+    "sha256": "301fc583e33a174581eb1ba98bfd2bf235d4158cd0161e43e3fa2bfe257eb77f",
+    "active": true,
+    "versionId": "3398e289-19ba-4684-978f-fd2bd3cb4474",
+    "updatedAt": "2026-08-29T10:18:34.325Z",
+    "nodeCount": 10,
+    "webhookId": "e26dfdb3-670d-4ea1-973b-694ec97347eb",
+    "webhookPath": "mind-inbox",
+    "state": "rolled-back-to-pre-bedrock-graph",
+    "protectedDrift": []
+  },
+  "rollback": {
+    "artifactPath": "operations/reports/artifacts/save-to-mind-live-pre-bedrock-deploy-2026-08-29.json",
+    "sha256": "301fc583e33a174581eb1ba98bfd2bf235d4158cd0161e43e3fa2bfe257eb77f",
+    "credentialValuesPrinted": false,
+    "performed": true,
+    "result": "succeeded",
+    "readbackVersionId": "3398e289-19ba-4684-978f-fd2bd3cb4474",
+    "readbackUpdatedAt": "2026-08-29T10:18:34.325Z",
+    "protectedDrift": []
+  },
+  "candidate": {
+    "artifactPath": "operations/automations/n8n/workflows/save-to-mind-bedrock-haiku-candidate-2026-08-29.json",
+    "sha256": "61356604403855fe01b268aa2c300648ce03af467100e0126d64dd56f77799f6",
+    "active": false,
+    "nodeCount": 10,
+    "credentialReferencePresent": true,
+    "credentialReference": {
+      "type": "aws",
+      "id": "SneiWxlJXSzYmwtF",
+      "name": "AWS Bedrock - Brain"
+    }
+  },
+  "preservedBoundaries": {
+    "workflowId": true,
+    "workflowName": true,
+    "activation": true,
+    "webhookIdAndPath": true,
+    "settings": true,
+    "sharing": true,
+    "tags": true,
+    "staticData": true,
+    "githubRepositoryAndPathLogic": true,
+    "createUpdateBranching": true,
+    "responseBehavior": true,
+    "canonicalSuccessPath": "inbox/new",
+    "canonicalFailurePath": "inbox/failed"
+  },
+  "providerChange": {
+    "changedNodeIds": ["build-gemini-body", "gemini-classify", "build-processed-note"],
+    "old": {
+      "provider": "Google Gemini HTTP API",
+      "secretReference": "$env.GEMINI_API_KEY"
+    },
+    "new": {
+      "provider": "Amazon Bedrock InvokeModel",
+      "modelId": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "regionExpression": "$env.BEDROCK_REGION || $env.AWS_REGION || us-east-1",
+      "n8nCredentialType": "aws",
+      "authentication": "n8n AWS credential reference",
+      "requestSchema": "anthropic-claude-messages-bedrock-2023-05-31",
+      "credentialReference": {
+        "id": "SneiWxlJXSzYmwtF",
+        "name": "AWS Bedrock - Brain"
+      },
+      "sigv4SigningName": "bedrock",
+      "endpoint": "bedrock-runtime.{region}.amazonaws.com"
+    }
+  },
+  "validation": {
+    "candidateBuilder": "tools/build-save-to-mind-bedrock-candidate.mjs",
+    "structuralValidator": "tools/validate-save-to-mind-bedrock-candidate.mjs",
+    "nodeTests": "tools/n8n-save-to-mind-bedrock-candidate.test.mjs",
+    "routeProof": "tools/n8n-save-to-mind-route-proof.mjs",
+    "nodeTestsResult": "pass; 14/14",
+    "structuralResult": "pass",
+    "deploymentReady": true,
+    "liveMutationPerformed": true,
+    "liveMutationMethod": "documented n8n Public API wrapper fallback",
+    "workbenchMutation": "blocked; active session unavailable",
+    "liveReadback": "candidate graph read back active with protected boundaries intact",
+    "liveEndToEndFixture": {
+      "executionId": "1030",
+      "result": "failed-and-routed-to-inbox/failed",
+      "failure": "AWS rejected the signature scope because the native n8n HTTP Request path signed the bedrock-runtime host with the wrong signing service"
+    },
+    "boundedRepair": {
+      "executionId": "1031",
+      "result": "failed-and-routed-to-inbox/failed",
+      "failure": "n8n 2.4.7 Code Node rejects helpers.httpRequestWithAuthentication as unsupported"
+    },
+    "rollbackResult": "succeeded; current live workflow is active on the pre-Bedrock graph",
+    "failureArtifacts": [
+      {
+        "path": "inbox/failed/2026-08-29-save-to-mind-bedrock-migration-smoke-test.md",
+        "commitSha": "118cbb0a353d505a8ec8b73be710adbba8e65e2e"
+      },
+      {
+        "path": "inbox/failed/2026-08-29-save-to-mind-bedrock-migration-smoke-test-v2.md",
+        "commitSha": "4aeeffecbbe4aee4a46c865dccaa8b50590dc838"
+      }
+    ]
+  },
+  "deploymentBlockers": [
+    "The candidate was not left live: native n8n HTTP Request signing uses the endpoint hostname as the SigV4 service, but Amazon Bedrock Runtime requires signing name bedrock.",
+    "The one bounded repair path was not supported by the live n8n Code Node task runner: helpers.httpRequestWithAuthentication is rejected as unsupported.",
+    "A supported native/custom n8n signing override or compatible n8n runtime change is required before another live migration attempt; no further repair was guessed or attempted.",
+    "Workbench prepare/execute could not be used because the current session was unavailable; the documented wrapper fallback performed the bounded update and rollback."
+  ]
+}

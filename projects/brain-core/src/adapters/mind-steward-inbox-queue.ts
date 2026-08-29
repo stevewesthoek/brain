@@ -54,6 +54,8 @@ export interface MindStewardInboxQueueItem {
   largeFile: boolean;
   selectedForSample: boolean;
   selectorStatus: 'unknown' | 'not-required' | 'blocked' | 'ready' | 'failed';
+  processingKind?: 'video-analysis' | null;
+  videoJobId?: string | null;
 }
 
 export interface MindStewardInboxQueueState {
@@ -394,6 +396,8 @@ export function refreshMindStewardInboxQueue(
       largeFile,
       selectedForSample: canSelect,
       selectorStatus: previousItem?.selectorStatus ?? 'unknown',
+      processingKind: previousItem?.processingKind ?? null,
+      videoJobId: previousItem?.videoJobId ?? null,
     };
   });
 
@@ -548,5 +552,83 @@ export function recordMindStewardInboxQueueFailure(
     item: updatedItem,
     blockers: [],
     safety,
+  };
+}
+
+export interface RecordMindStewardInboxQueueVideoOutcomeOptions {
+  statePath?: string;
+  capturePath: string;
+  jobId: string;
+  status: 'done' | 'blocked';
+  error?: string | null;
+  now?: Date;
+}
+
+export interface MindStewardInboxQueueVideoOutcomeResult {
+  status: 'video-completed' | 'video-blocked' | 'blocked';
+  item: MindStewardInboxQueueItem | null;
+  blockers: string[];
+  safety: {
+    writesToMind: false;
+    movesCaptures: false;
+    deletesCaptures: false;
+    writesKanban: false;
+    failureRouteOwnedBy: 'brain-runtime';
+  };
+}
+
+/** Record a canonical video dispatch outcome in Brain runtime state only. */
+export function recordMindStewardInboxQueueVideoOutcome(
+  options: RecordMindStewardInboxQueueVideoOutcomeOptions,
+): MindStewardInboxQueueVideoOutcomeResult {
+  const statePath = resolveStatePath(options.statePath);
+  const state = readExistingState(statePath);
+  const nowIso = (options.now ?? new Date()).toISOString();
+  const item = state?.items.find(entry => entry.path === options.capturePath) ?? null;
+  if (!state || !item) {
+    return {
+      status: 'blocked',
+      item: null,
+      blockers: [!state ? 'queueStateUnavailable' : 'queueItemUnavailable'],
+      safety: {
+        writesToMind: false,
+        movesCaptures: false,
+        deletesCaptures: false,
+        writesKanban: false,
+        failureRouteOwnedBy: 'brain-runtime',
+      },
+    };
+  }
+
+  const updatedItem: MindStewardInboxQueueItem = {
+    ...item,
+    status: options.status,
+    selectedForSample: false,
+    selectorStatus: options.status === 'done' ? 'ready' : 'blocked',
+    processingKind: 'video-analysis',
+    videoJobId: options.jobId,
+    lastCheckedAt: nowIso,
+    lastError: options.error ?? null,
+    nextRetryAfter: null,
+    failureRoute: options.status === 'blocked' ? 'brain-runtime-queue-status' : null,
+  };
+  const updatedState: MindStewardInboxQueueState = {
+    ...state,
+    generatedAt: nowIso,
+    items: state.items.map(entry => entry.path === options.capturePath ? updatedItem : entry),
+  };
+  updatedState.summary = summarize(updatedState.items);
+  writeJsonAtomically(statePath, updatedState);
+  return {
+    status: options.status === 'done' ? 'video-completed' : 'video-blocked',
+    item: updatedItem,
+    blockers: [],
+    safety: {
+      writesToMind: false,
+      movesCaptures: false,
+      deletesCaptures: false,
+      writesKanban: false,
+      failureRouteOwnedBy: 'brain-runtime',
+    },
   };
 }

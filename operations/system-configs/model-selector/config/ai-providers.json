@@ -50,7 +50,7 @@
       "type": "bedrock",
       "cost_per_1k_tokens": 0.0,
       "priority": 1,
-      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch", "image/analyze"],
       "max_context_tokens": 200000,
       "health_check": { "binary_exists": "aws" },
       "timeout_connect_sec": 5,

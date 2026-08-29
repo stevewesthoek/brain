@@ -88,6 +88,18 @@ const AGENT_CAPABILITIES: AgentCapabilitySummary[] = [
     verification: ['render preview', 'artifact inspection', 'git diff --check'],
     enabled: true,
   },
+  {
+    id: 'service.video-analysis',
+    kind: 'service',
+    label: 'Canonical Video Analysis',
+    source: 'operations/specs/brain-video-analysis-v1.md',
+    description: 'Analyzes YouTube URLs, direct video URLs, and approved local video files with captions plus bounded visual frame analysis.',
+    safetyClass: 'external_state',
+    requiresApprovalFor: ['external_state', 'save_to_mind', 'external_transcription', 'paid_vision'],
+    preferredAiTaskTypes: ['video_frame_analysis', 'transcript_summarization', 'video_summary_generation'],
+    verification: ['canonical result envelope', 'timestamped visual observations', 'processing cost evidence'],
+    enabled: true,
+  },
 ];
 
 export async function listAgentCapabilities(skillsRoot = getSkillsRoot()): Promise<AgentCapabilitySummary[]> {

@@ -158,11 +158,14 @@ notebooklm auth check --test  # Verify pass
 
 ### Brain Console — Video Analyzer
 
-The video analyzer script (`brain/projects/brain-core/services/video-analyzer/analyze.py`) calls NotebookLM CLI automatically:
+The canonical video analyzer does not require NotebookLM. When explicitly
+enabled with `BRAIN_VIDEO_ENABLE_NOTEBOOKLM=1`, it may use NotebookLM only as a
+YouTube text-transcript fallback; it never counts that fallback as visual
+watching:
 
 ```python
-# Inside analyze.py:
-notebooklm auth check --test        # Fail fast if not authenticated
+# Inside analyze.py, only when BRAIN_VIDEO_ENABLE_NOTEBOOKLM=1:
+notebooklm auth check --test        # Check authentication
 notebooklm create "Brain Video Analyzer"  # Get/create notebook
 notebooklm source add <url> --json  # Add YouTube source
 notebooklm source wait <source_id>  # Wait for processing
@@ -170,9 +173,11 @@ notebooklm source fulltext <source_id>  # Extract transcript
 notebooklm source remove <source_id>  # Cleanup
 ```
 
-If auth fails at any step, the Python script returns a clear error:
+If the explicitly enabled fallback cannot authenticate, the analyzer records a
+warning and continues with the canonical result contract (typically partial if
+no other transcript source is available):
 ```json
-{"ok": false, "error": "NotebookLM auth expired — run: notebooklm login", "step": "auth"}
+{"ok": true, "status": "partial", "warnings": ["notebooklm_auth_unavailable"]}
 ```
 
 ### n8n Workflows
