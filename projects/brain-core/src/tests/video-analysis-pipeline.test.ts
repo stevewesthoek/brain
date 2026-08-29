@@ -128,6 +128,12 @@ test('video Apply-one preview is exact-path, hash-bound, and requires second con
     const approval: VideoAnalysisApplyOneApproval = {
       approval_id: 'approval-test', proposal_id: preview.proposal_id, approved_by: 'operator', approved_at: '2026-08-29T00:00:00.000Z', expires_at: '2999-01-01T00:00:00.000Z', source_commit: preview.source_commit, idempotency_key: preview.idempotency_key, target_relative_path: preview.target_relative_path, expected_before_hash: null, preview_hash: preview.preview_hash, after_hash: preview.after_hash, manual_confirmation: true, confirmation_token: previewResult.confirmation_token!, reason: 'bounded video evidence apply-one test',
     };
+    const tampered = applyVideoAnalysisApplyOne({ ...preview, content: `${preview.content}\nTAMPERED` }, approval, { mindRoot, receiptRoot: runtimeRoot });
+    assert.equal(tampered.status, 'blocked');
+    assert(tampered.blockers.includes('preview_content_hash_mismatch'));
+    assert.equal(tampered.wrote_to_mind, false);
+    assert.equal(existsSync(preview.target_path), false);
+
     const applied = applyVideoAnalysisApplyOne(preview, approval, { mindRoot, receiptRoot: runtimeRoot });
     assert.equal(applied.status, 'applied');
     assert.equal(applied.wrote_to_mind, true);

@@ -198,6 +198,15 @@ function confirmationToken(preview: Pick<VideoAnalysisApplyOnePreview, 'preview_
   return `confirm-${sha256(`${preview.preview_id}|${preview.after_hash}|${preview.target_relative_path}`).slice(0, 24)}`;
 }
 
+function computePreviewHash(preview: Pick<VideoAnalysisApplyOnePreview, 'target_relative_path' | 'expected_before_hash' | 'after_hash' | 'content'>): string {
+  return sha256(JSON.stringify({
+    target: preview.target_relative_path,
+    expectedBeforeHash: preview.expected_before_hash,
+    afterHash: preview.after_hash,
+    content: preview.content,
+  }));
+}
+
 export function prepareVideoAnalysisApplyOnePreview(
   result: VideoAnalysisResult,
   options: { mindRoot?: string; sourceCommit?: string; previewRoot?: string } = {},
@@ -248,7 +257,7 @@ export function prepareVideoAnalysisApplyOnePreview(
   const idempotencyKey = `video-apply-${result.job_id}`;
   const proposalId = `video-proposal-${sha256(`${result.job_id}|${afterHash}`).slice(0, 20)}`;
   const previewId = `video-preview-${sha256(`${proposalId}|${target.relative}`).slice(0, 20)}`;
-  const previewHash = sha256(JSON.stringify({ target: target.relative, expectedBeforeHash, afterHash, content }));
+  const previewHash = computePreviewHash({ target_relative_path: target.relative, expected_before_hash: expectedBeforeHash, after_hash: afterHash, content });
   const preview: VideoAnalysisApplyOnePreview = {
     schema_version: '1.0.0', kind: 'video-analysis-apply-one-preview', preview_id: previewId,
     proposal_id: proposalId, idempotency_key: idempotencyKey, generated_at: new Date().toISOString(),
@@ -281,6 +290,8 @@ export function applyVideoAnalysisApplyOne(
     rollback_artifact: null, receipt_path: null, changed_paths: [], wrote_to_mind: false, applied: false,
   };
   const blockers: string[] = [];
+  if (computePreviewHash(preview) !== preview.preview_hash) blockers.push('preview_content_hash_mismatch');
+  if (sha256(preview.content) !== preview.after_hash) blockers.push('after_hash_content_mismatch');
   if (approval.proposal_id !== preview.proposal_id) blockers.push('proposal_id_mismatch');
   if (approval.idempotency_key !== preview.idempotency_key) blockers.push('idempotency_key_mismatch');
   if (approval.target_relative_path !== preview.target_relative_path) blockers.push('target_path_mismatch');
@@ -293,6 +304,7 @@ export function applyVideoAnalysisApplyOne(
   if (blockers.length > 0) return { ...base, status: 'blocked', ok: false, blockers };
 
   const targetRoot = resolveMindRoot(options.mindRoot);
+  let createdTargetIdentity: { dev: number; ino: number } | null = null;
   try {
     const expectedTarget = canonicalTarget(targetRoot, preview.job_id);
     if (expectedTarget.relative !== preview.target_relative_path || expectedTarget.absolute !== preview.target_path) throw new Error('canonical_target_mismatch');
@@ -337,6 +349,8 @@ export function applyVideoAnalysisApplyOne(
       // A hard link is create-only: unlike rename, it cannot replace a target
       // that appeared after the preflight check.
       linkSync(temporary, preview.target_path);
+      const createdTarget = statSync(preview.target_path);
+      createdTargetIdentity = { dev: createdTarget.dev, ino: createdTarget.ino };
     } finally {
       if (existsSync(temporary)) unlinkSync(temporary);
     }
@@ -360,6 +374,16 @@ export function applyVideoAnalysisApplyOne(
     writeRuntimeJson(receiptPath, receipt);
     return { ...base, status: 'applied', ok: true, rollback_artifact: rollbackPath, receipt_path: receiptPath, changed_paths: [preview.target_relative_path], wrote_to_mind: true, applied: true, blockers: [] };
   } catch (error) {
+    if (createdTargetIdentity && existsSync(preview.target_path)) {
+      try {
+        if (!lstatSync(preview.target_path).isSymbolicLink()) {
+          const current = statSync(preview.target_path);
+          if (current.dev === createdTargetIdentity.dev && current.ino === createdTargetIdentity.ino) unlinkSync(preview.target_path);
+        }
+      } catch {
+        // Preserve the original failure; cleanup is best-effort and identity-bound.
+      }
+    }
     return { ...base, status: 'failed', ok: false, blockers: [error instanceof Error ? error.message : 'apply_failed'] };
   }
 }
