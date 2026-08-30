@@ -30,7 +30,27 @@ test('Google Ads remains disabled and is human-classified as blocked pending har
     result[job.reviewCategory] = (result[job.reviewCategory] ?? 0) + 1;
     return result;
   }, {});
-  assert.deepEqual(counts, { ACTIVE: 4, BLOCKED: 10, 'NEEDS REVIEW': 1, OBSOLETE: 2 });
+  assert.deepEqual({
+    ACTIVE: counts.ACTIVE ?? 0,
+    BLOCKED: counts.BLOCKED ?? 0,
+    'NEEDS REVIEW': counts['NEEDS REVIEW'] ?? 0,
+    OBSOLETE: counts.OBSOLETE ?? 0,
+  }, { ACTIVE: 4, BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 3 });
+});
+
+test('skill prune is obsolete, disabled, and an explicit deletion candidate', () => {
+  const source = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+  const skillPrune = source.jobs.find((job) => job.id === 'skill-prune');
+  assert.equal(skillPrune.reviewCategory, 'OBSOLETE');
+  assert.equal(skillPrune.lifecycle, 'disabled');
+  assert.equal(skillPrune.mode, 'disabled');
+  assert.equal(skillPrune.scheduleType, 'disabled');
+  assert.equal(skillPrune.schedule, 'not scheduled');
+  assert.equal(skillPrune.destructive, true);
+  assert.match(skillPrune.policyReason, /automated pruning responsibility is retired/);
+  assert.match(skillPrune.humanAction, /DELETE CANDIDATE/);
+  assert.ok(skillPrune.tags.includes('obsolete'));
+  assert.ok(skillPrune.tags.includes('delete-candidate'));
 });
 
 test('memory context refresh is retained for manual use but blocked from automation', () => {

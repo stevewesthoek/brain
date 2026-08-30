@@ -81,7 +81,7 @@ jobs in a report-only or dry-run-report-only mode. It performs no retries.
 | `mind-compile-loop` | active | report-only | Generate inbox proposals only; no Mind moves or writes. |
 | `graphify-nightly` | policy-blocked | disabled | Event-driven semantic gate only; structural Graphify remains frozen. |
 | `ing-bank-statement-download` | policy-blocked | disabled | Financial/credential-sensitive; never enable from this scheduler. |
-| `skill-prune` | disabled | disabled | Automatic skill modification is not scheduler-authorized. |
+| `skill-prune` | disabled | disabled | OBSOLETE / DELETE CANDIDATE; curated skills are intentionally maintained manually. Keep non-runnable until a dedicated deletion removes the compatibility row and obsolete surface. |
 
 ## Adding, changing, or retiring a job
 

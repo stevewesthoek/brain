@@ -33,6 +33,11 @@ test('dry-run emits one receipt for every registry job and spawns nothing', asyn
     assert.equal(memoryRefresh.lifecycle, 'disabled');
     assert.equal(memoryRefresh.mode, 'disabled');
     assert.deepEqual(memoryRefresh.artifacts, ['~/.brain/memory-context.md']);
+    const skillPrune = JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'skill-prune.json')));
+    assert.equal(skillPrune.status, 'disabled');
+    assert.equal(skillPrune.lifecycle, 'disabled');
+    assert.equal(skillPrune.mode, 'disabled');
+    assert.equal(skillPrune.skippedReason, 'disabled');
   } finally { cleanup(directory); }
 });
 
