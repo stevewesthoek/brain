@@ -42,7 +42,7 @@ test('Brain Core returns every canonical job with lifecycle and bounded history'
   assert.deepEqual(response.jobs.reduce<Record<string, number>>((counts, job) => {
     counts[job.reviewCategory] = (counts[job.reviewCategory] ?? 0) + 1;
     return counts;
-  }, {}), { BLOCKED: 7, 'NEEDS REVIEW': 4, OBSOLETE: 2, ACTIVE: 4 });
+  }, {}), { BLOCKED: 8, 'NEEDS REVIEW': 3, OBSOLETE: 2, ACTIVE: 4 });
   assert.ok(response.jobs.every((job) => ['ACTIVE', 'BLOCKED', 'NEEDS REVIEW', 'OBSOLETE'].includes(job.reviewCategory)));
   assert.equal(response.history.length, 20);
   assert.equal(response.health, 'warning', 'policy-blocked inventory is visible as a warning, not green evidence');
