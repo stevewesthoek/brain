@@ -1,11 +1,11 @@
 # Mind Context Provider Activation
 
-**State:** repository repin prepared; existing live approval/registration remains on the prior verified pin until Host Activation
+**State:** owner-authorized repository and live runtime repin to the current Mind HEAD
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
 **Provider source lock:** `076b9f97030e1c90bc66ffbb61d29456b41ed69f`
-**Repository candidate Mind source lock:** `c3dcefdd808501a7ead7ffc4671eb5ef3822c268` (prepared 2026-08-13; descendant of `f9aa1cef5d5449dac34db74069427f528d620caf` with only an out-of-scope `inbox/failed/` capture added)
-**Live approval before Host Activation:** `91ae8ce55c6daf67b728ef9b8d841504f24a97c9`; do not claim the candidate pin is active until the canonical checkout, approval, registrations, and health/readback are updated together.
+**Repository candidate Mind source lock:** `c2f7f65f98497521553e23bc58730e96552c7e56` (owner-authorized 2026-08-30; fast-forward from the prior approved `c3dcefdd808501a7ead7ffc4671eb5ef3822c268`)
+**Live approved Mind source lock:** `c2f7f65f98497521553e23bc58730e96552c7e56`; the canonical checkout, approval, registrations, and health/readback must remain aligned.
 
 ## Boundary
 
@@ -54,7 +54,7 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
   "providerRevision": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
-  "mindCommit": "c3dcefdd808501a7ead7ffc4671eb5ef3822c268",
+  "mindCommit": "c2f7f65f98497521553e23bc58730e96552c7e56",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
 ```

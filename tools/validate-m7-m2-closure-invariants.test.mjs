@@ -93,10 +93,10 @@ test('M2.4: provider revision is 076b9f97 (live approved)', () => {
   );
 });
 
-test('M2.4: repository repin candidate targets current Mind HEAD c3dcefdd', () => {
+test('M2.4: repository repin candidate targets current Mind HEAD c2f7f65f', () => {
   assert.equal(
     mcAdmission.scope.fixedEnvironment.MIND_CONTEXT_EXPECTED_HEAD,
-    'c3dcefdd808501a7ead7ffc4671eb5ef3822c268'
+    'c2f7f65f98497521553e23bc58730e96552c7e56'
   );
 });
 
