@@ -124,6 +124,18 @@ function isDryRun(env) {
   return env.BRAIN_SCHEDULER_DRY_RUN === '1';
 }
 
+function assertDryRunIsolation(env, paths) {
+  if (!isDryRun(env)) return;
+  const missing = ['OFFICE_SCHEDULER_STATE_DIR', 'OFFICE_SCHEDULER_LOG_DIR', 'OFFICE_SCHEDULER_REPORT_FILE']
+    .filter((name) => !(env[name] && env[name].trim()));
+  if (missing.length > 0) {
+    throw new Error(`dry-run-requires-isolated-paths: ${missing.join(', ')}`);
+  }
+  if (paths.stateDir === DEFAULT_STATE_DIR || paths.logDir === DEFAULT_LOG_DIR || paths.reportPath === DEFAULT_REPORT) {
+    throw new Error('dry-run-requires-isolated-paths: production scheduler path supplied');
+  }
+}
+
 function parseKeyValueState(filePath) {
   const values = {};
   for (const line of readText(filePath).split('\n')) {
@@ -230,9 +242,23 @@ function runGuard(registry, now, env, paths) {
   const parts = lisbonParts(now);
   const hour = Number(parts.hour) % 24;
   if (!force && hour < registry.scheduler.hour) return { status: 'skipped', reason: 'before-lisbon-schedule' };
-  const lastCompleted = readText(path.join(paths.stateDir, 'last_completed_lisbon_date')).trim();
+  const statePath = path.join(paths.stateDir, 'last_completed_lisbon_date');
+  if (!fs.existsSync(statePath)) return null;
+  const raw = readText(statePath);
+  const lastCompleted = raw.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(lastCompleted)) return { status: 'blocked', reason: 'invalid-last-completed-state' };
+  const [year, month, day] = lastCompleted.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) return { status: 'blocked', reason: 'invalid-last-completed-state' };
+  if (lastCompleted > lisbonDate(now)) return { status: 'blocked', reason: 'invalid-last-completed-state' };
   if (!force && lastCompleted === lisbonDate(now)) return { status: 'skipped', reason: 'already-completed-for-lisbon-day' };
   return null;
+}
+
+function manifestIdentity(manifestPath) {
+  const resolved = path.resolve(manifestPath);
+  const relative = path.relative(ROOT_DIR, resolved);
+  return relative && !relative.startsWith('..') && !path.isAbsolute(relative) ? relative : resolved;
 }
 
 function appendHistory(filePath, entry) {
@@ -267,7 +293,9 @@ export function renderSchedulerReport(registry, { stateDir, reportPath, now = ne
 
 export async function runScheduler({ env = process.env, now = nowFrom(env), spawnImpl = defaultSpawn } = {}) {
   const paths = pathsFor(env);
+  assertDryRunIsolation(env, paths);
   const { registry, manifestPath } = loadAndValidateRegistry({ checkEntrypoints: true, manifestPath: env.BRAIN_SCHEDULER_MANIFEST_PATH || undefined });
+  const manifest = manifestIdentity(manifestPath);
   ensureDir(paths.stateDir);
   ensureDir(paths.logDir);
   appendLog(path.join(paths.logDir, 'nightly.log'), `scheduler start=${now.toISOString()} trigger=${env.BRAIN_SCHEDULER_TRIGGER || 'launchd'}`);
@@ -276,7 +304,7 @@ export async function runScheduler({ env = process.env, now = nowFrom(env), spaw
     fs.mkdirSync(lockDir, { recursive: false, mode: 0o700 });
   } catch (error) {
     const status = error?.code === 'EEXIST' ? 'running' : 'blocked';
-    const overall = { schemaVersion: '1.0.0', schedulerId: registry.scheduler.id, status, reason: error?.code === 'EEXIST' ? 'lock-held' : 'lock-unavailable', createdAt: now.toISOString(), manifestPath };
+    const overall = { schemaVersion: '1.0.0', schedulerId: registry.scheduler.id, status, reason: error?.code === 'EEXIST' ? 'lock-held' : 'lock-unavailable', createdAt: now.toISOString(), manifestPath: manifest };
     writeJson(path.join(paths.stateDir, 'scheduler-latest.json'), overall);
     appendHistory(path.join(paths.stateDir, 'history.jsonl'), overall);
     renderSchedulerReport(registry, { stateDir: paths.stateDir, reportPath: paths.reportPath, now });
@@ -287,7 +315,7 @@ export async function runScheduler({ env = process.env, now = nowFrom(env), spaw
     writeAtomic(path.join(lockDir, 'started_at'), `${now.toISOString()}\n`);
     const guard = runGuard(registry, now, env, paths);
     if (guard) {
-      const overall = { schemaVersion: '1.0.0', schedulerId: registry.scheduler.id, status: 'skipped', reason: guard.reason, createdAt: now.toISOString(), manifestPath, trigger: env.BRAIN_SCHEDULER_TRIGGER || 'launchd' };
+      const overall = { schemaVersion: '1.0.0', schedulerId: registry.scheduler.id, status: guard.status, reason: guard.reason, createdAt: now.toISOString(), manifestPath: manifest, trigger: env.BRAIN_SCHEDULER_TRIGGER || 'launchd', executedJobIds: [] };
       writeJson(path.join(paths.stateDir, 'scheduler-latest.json'), overall);
       appendHistory(path.join(paths.stateDir, 'history.jsonl'), overall);
       renderSchedulerReport(registry, { stateDir: paths.stateDir, reportPath: paths.reportPath, now });
@@ -339,7 +367,7 @@ export async function runScheduler({ env = process.env, now = nowFrom(env), spaw
     const overall = {
       schemaVersion: '1.0.0', schedulerId: registry.scheduler.id, status: overallStatus, createdAt: now.toISOString(),
       startedAt: now.toISOString(), endedAt: new Date().toISOString(), trigger: env.BRAIN_SCHEDULER_TRIGGER || 'launchd',
-      dryRun: isDryRun(env), manifestPath, jobCount: registry.jobs.length,
+      dryRun: isDryRun(env), manifestPath: manifest, jobCount: registry.jobs.length,
       executedJobIds: receipts.filter((receipt) => receipt.startedAt).map((receipt) => receipt.jobId),
       failedJobIds: receipts.filter((receipt) => receipt.status === 'failed' || receipt.status === 'timeout').map((receipt) => receipt.jobId),
       receipts: receipts.map(({ jobId, status, endedAt, durationSeconds }) => ({ jobId, status, endedAt, durationSeconds })),

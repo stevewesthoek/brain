@@ -56,7 +56,7 @@ function registryError(): InfraSchedulerStatus {
   const fallbackReport: InfraSchedulerReport = { available: false, path: REPORT_PATH, summary: 'scheduler manifest unavailable', generatedAt: null, failureCount: 0 };
   return {
     status: 'error', displayName: 'Brain Scheduler', health: 'failed', launchMechanism: 'macOS launchd LaunchAgent', launchAgentLabel: 'com.office.nightly-scheduler',
-    timezone: 'Europe/Lisbon', scheduleType: 'daily', schedule: 'daily at 03:00 Europe/Lisbon', runAtLoad: true, launch: { configured: false },
+    timezone: 'Europe/Lisbon', scheduleType: 'daily', schedule: 'daily at 03:00 Europe/Lisbon', runAtLoad: false, launch: { configured: false },
     manifest: { path: MANIFEST_PATH, valid: false, jobCount: 0 }, lock: { present: false, held: false, stale: false }, lastRun: null, latestOverallResult: null,
     nextRunAt: null, counts: {}, jobs: [], history: [], totalJobs: 0, plannedJobs: 0, executedJobs: 0, runningJobs: 0, successfulJobs: 0, failedJobs: 0,
     timeoutJobs: 0, neverRunJobs: 0, skippedJobs: 0, blockedJobs: 0, disabledJobs: 0, report: fallbackReport, error: 'Canonical Brain Scheduler manifest could not be read.'
@@ -71,7 +71,7 @@ function loadRegistry(): { registry: Registry; error: null } | { registry: null;
   const validLifecycle = new Set(['active', 'manual-only', 'policy-blocked', 'disabled', 'deprecated']);
   const validSchedule = new Set(['daily', 'event-driven', 'manual', 'disabled']);
   const requiredJobFields = ['id', 'name', 'description', 'owner', 'entrypoint', 'fixedArguments', 'dependencies', 'scheduleType', 'schedule', 'lifecycle', 'mode', 'authority', 'networkAccess', 'credentialSensitive', 'destructive', 'mindWrite', 'timeoutSeconds', 'retries', 'concurrency', 'idempotency', 'receipt', 'outputArtifacts', 'policyReason', 'runbook', 'tags', 'humanAction', 'reviewCategory', 'evidenceState', 'externalActivation'];
-  if (registry.registryVersion !== '2.0.0' || registry.authority !== 'canonical-job-registry' || registry.jobs.length === 0 || scheduler.id !== 'brain-scheduler' || scheduler.launchAgentLabel !== 'com.office.nightly-scheduler' || scheduler.timezone !== 'Europe/Lisbon' || scheduler.hour !== 3 || scheduler.minute !== 0 || scheduler.runAtLoad !== true) return { registry: null, error: registryError() };
+  if (registry.registryVersion !== '2.0.0' || registry.authority !== 'canonical-job-registry' || registry.jobs.length === 0 || scheduler.id !== 'brain-scheduler' || scheduler.launchAgentLabel !== 'com.office.nightly-scheduler' || scheduler.timezone !== 'Europe/Lisbon' || scheduler.hour !== 3 || scheduler.minute !== 0 || scheduler.runAtLoad !== false || scheduler.runner !== 'tools/scripts/brain-scheduler-runner.mjs' || scheduler.bootstrap !== 'tools/scripts/brain-scheduler-runner.mjs') return { registry: null, error: registryError() };
   const ids = new Set<string>();
   const invalid = registry.jobs.some((job) => {
     const unknownJob = job as unknown as Record<string, unknown>;

@@ -50,6 +50,12 @@ identity by realpath. The historical
 compatibility and rollback reference only; it is not the installed launch
 target.
 
+Mind Steward's unattended report uses the repository-local `tsx` binary from
+the locked `projects/mind-steward/package-lock.json`. Provision it with
+`npm ci --omit=dev --ignore-scripts` from `projects/mind-steward`; the wrapper
+never uses `npx --yes`, global `tsx`, or automatic package download. A missing
+local binary fails closed.
+
 ## Timing, lock, and receipts
 
 - The schedule is daily at 03:00 in `Europe/Lisbon`.
@@ -62,11 +68,19 @@ target.
   lock is a health failure and is not silently removed by Brain Core.
 - Successful completion writes `last_completed_lisbon_date`. A failed run
   never advances it.
+- If `last_completed_lisbon_date` exists, it must be one strict, possible
+  Lisbon calendar date that is not in the future. Empty, malformed,
+  impossible, multiline, and future state blocks before any child process is
+  started; operators must inspect and repair the state explicitly.
 - `receipts/<job-id>.json` is the per-job runtime receipt. The stable job
   statuses are `success`, `failed`, `running`, `skipped`, `disabled`,
   `blocked`, and `never-run`.
 - `scheduler-latest.json` is the overall receipt and `history.jsonl` is bounded
   to the latest 100 overall records.
+- Dry-runs require explicit isolated state, log, and report paths. They never
+  write the production completion marker, receipts, history, or latest-run
+  slot. `scheduler-latest.json` represents actual production scheduler
+  execution; temporary worktrees cannot become its authoritative provenance.
 - Captured child output is bounded and redacted before it is written. Brain
   Core exposes errors and artifact paths, never raw logs.
 

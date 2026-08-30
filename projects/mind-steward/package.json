@@ -10,9 +10,11 @@
     "test": "npm run build && node --test dist/tests/*.test.js",
     "ci": "npm run typecheck && npm test"
   },
+  "dependencies": {
+    "tsx": "^4.19.4"
+  },
   "devDependencies": {
     "@types/node": "^22.15.3",
-    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
 }

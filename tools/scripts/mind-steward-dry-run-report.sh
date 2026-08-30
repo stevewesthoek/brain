@@ -22,15 +22,22 @@ if [[ ! -d "$ROUTER_DIR" ]]; then
   EXIT_CODE=1
 else
   if [[ -f "$CLI_PATH" ]]; then
-    CLI_ARGS=(npx --yes --prefix "$ROUTER_DIR" tsx "$CLI_PATH")
-    if [[ -n "${MIND_STEWARD_MIND_ROOT:-}" ]]; then
-      CLI_ARGS+=(--mind-root "$MIND_STEWARD_MIND_ROOT")
-    fi
-    CLI_ARGS+=(--output-json "$JSON_OUTPUT" --output-md "$MD_OUTPUT")
-    if ! "${CLI_ARGS[@]}" >/tmp/mind-steward-dry-run-report.log 2>&1; then
+    TSX_BIN="$ROUTER_DIR/node_modules/.bin/tsx"
+    if [[ ! -x "$TSX_BIN" ]]; then
       STATUS="failed"
-      MESSAGE="mind-steward dry-run report failed; see /tmp/mind-steward-dry-run-report.log"
+      MESSAGE="mind-steward local tsx runtime dependency is missing; run npm ci --omit=dev --ignore-scripts in projects/mind-steward"
       EXIT_CODE=1
+    else
+      CLI_ARGS=("$TSX_BIN" "$CLI_PATH")
+      if [[ -n "${MIND_STEWARD_MIND_ROOT:-}" ]]; then
+        CLI_ARGS+=(--mind-root "$MIND_STEWARD_MIND_ROOT")
+      fi
+      CLI_ARGS+=(--output-json "$JSON_OUTPUT" --output-md "$MD_OUTPUT")
+      if ! "${CLI_ARGS[@]}" >/tmp/mind-steward-dry-run-report.log 2>&1; then
+        STATUS="failed"
+        MESSAGE="mind-steward dry-run report failed; see /tmp/mind-steward-dry-run-report.log"
+        EXIT_CODE=1
+      fi
     fi
   elif ! npm --prefix "$ROUTER_DIR" run ci >/tmp/mind-steward-dry-run-report.log 2>&1; then
     STATUS="failed"

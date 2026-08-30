@@ -72,3 +72,47 @@ test('before-cutoff, duplicate-day, and held-lock guards are explicit', async ()
     const held = await runScheduler({ env: { ...first.env, FORCE_RUN: '1' }, spawnImpl: () => child() }); assert.equal(held.status, 'running');
   } finally { cleanup(first.directory); }
 });
+
+test('invalid completion state blocks before any child process starts', async (t) => {
+  const fixtures = [
+    ['malformed text', 'not-a-date'],
+    ['empty file', ''],
+    ['impossible calendar date', '2026-02-31\n'],
+    ['future date', '2026-08-30\n'],
+    ['multiline date', '2026-08-28\n2026-08-27\n'],
+  ];
+  for (const [label, value] of fixtures) {
+    await t.test(label, async () => {
+      const { directory, env } = tempEnv(); let calls = 0;
+      try {
+        fs.mkdirSync(path.join(directory, 'state'), { recursive: true });
+        fs.writeFileSync(path.join(directory, 'state', 'last_completed_lisbon_date'), value);
+        const result = await runScheduler({ env: { ...env, FORCE_RUN: '' }, spawnImpl: () => { calls += 1; return child(); } });
+        assert.equal(result.status, 'blocked');
+        assert.equal(result.reason, 'invalid-last-completed-state');
+        assert.deepEqual(result.executedJobIds, []);
+        assert.equal(calls, 0);
+        assert.equal(fs.readFileSync(path.join(directory, 'state', 'last_completed_lisbon_date'), 'utf8'), value);
+      } finally { cleanup(directory); }
+    });
+  }
+});
+
+test('completion state accepts absent, prior, and current dates', async () => {
+  for (const state of [null, '2026-08-28\n', '2026-08-29\n']) {
+    const { directory, env } = tempEnv(); let calls = 0;
+    try {
+      if (state !== null) { fs.mkdirSync(path.join(directory, 'state'), { recursive: true }); fs.writeFileSync(path.join(directory, 'state', 'last_completed_lisbon_date'), state); }
+      const result = await runScheduler({ env: { ...env, FORCE_RUN: state === '2026-08-29\n' ? '' : '1' }, spawnImpl: () => { calls += 1; return child(); } });
+      if (state === '2026-08-29\n') { assert.equal(result.status, 'skipped'); assert.equal(calls, 0); }
+      else { assert.equal(result.status, 'success'); assert.equal(calls, 4); }
+    } finally { cleanup(directory); }
+  }
+});
+
+test('dry-run requires explicitly isolated state, log, and report paths', async () => {
+  const { directory, env } = tempEnv();
+  try {
+    await assert.rejects(() => runScheduler({ env: { ...env, BRAIN_SCHEDULER_DRY_RUN: '1', OFFICE_SCHEDULER_STATE_DIR: undefined }, spawnImpl: () => child() }), /dry-run-requires-isolated-paths/);
+  } finally { cleanup(directory); }
+});
