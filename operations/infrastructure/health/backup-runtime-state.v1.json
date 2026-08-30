@@ -1,31 +1,43 @@
 {
   "schemaVersion": "1.0.0",
-  "generatedAt": "2026-08-26T23:00:00Z",
+  "generatedAt": "2026-08-30T11:34:06Z",
   "sourceKind": "observed-runtime-evidence",
   "states": [
     {
       "backupJobId": "backup_job:dokploy-aws-recovery",
-      "state": "UNKNOWN",
-      "reason": "No canonical recurring backup has been proven after the AWS cutover.",
-      "lastAttemptAt": null,
-      "lastSuccessAt": null,
-      "sourceRef": "operations/reports/infrastructure-estate-reconciliation-2026-08-17.md"
+      "state": "HEALTHY",
+      "reason": "Seven consecutive successful AWS Lightsail automatic snapshots were observed for the single 320 GiB system disk; provider retention is seven snapshots. Application-consistent database capture and isolated restore remain unverified.",
+      "lastAttemptAt": "2026-08-30T03:44:17Z",
+      "lastSuccessAt": "2026-08-30T03:44:17Z",
+      "sourceRef": "operations/reports/aws-lightsail-backup-evidence-2026-08-30.md"
     },
     {
       "backupJobId": "backup_job:cloudpanel-aws-recovery",
-      "state": "UNKNOWN",
-      "reason": "A scheduled CloudPanel backup exists, but a successful artifact has not been verified.",
-      "lastAttemptAt": null,
-      "lastSuccessAt": null,
-      "sourceRef": "operations/infrastructure/infra.md"
+      "state": "HEALTHY",
+      "reason": "Seven consecutive successful AWS Lightsail automatic snapshots were observed for the single 160 GiB system disk; provider retention is seven snapshots. Application-consistent database capture and isolated restore remain unverified.",
+      "lastAttemptAt": "2026-08-30T03:36:14Z",
+      "lastSuccessAt": "2026-08-30T03:36:14Z",
+      "sourceRef": "operations/reports/aws-lightsail-backup-evidence-2026-08-30.md"
     },
     {
       "backupJobId": "backup_job:supabase-recovery",
-      "state": "FAILED",
-      "reason": "The latest pgdump-upload run failed: Tenant or user not found.",
-      "lastAttemptAt": "2026-08-26T02:20:00Z",
-      "lastSuccessAt": null,
-      "sourceRef": "operations/reports/infrastructure-estate-reconciliation-2026-08-17.md"
+      "state": "HEALTHY",
+      "status": "SUCCESS",
+      "reason": "Authoritative Phase 3X natural run 20260830T043005Z completed 27/27 database dumps and local validations with 30 remote objects; remote cryptographic verification is PARTIAL because Content-MD5 was unavailable. The retired pgdump-upload.service failure remains historical evidence and is not current backup health.",
+      "lastAttemptAt": "2026-08-30T04:30:17Z",
+      "lastSuccessAt": "2026-08-30T04:45:57Z",
+      "sourceRef": "operations/reports/phase3x-natural-run-evidence-2026-08-30.md",
+      "runId": "20260830T043005Z",
+      "recoveryPointId": "8016713176182211506",
+      "recoveryPointTime": "2026-08-30T03:04:51.387746+00:00",
+      "blobPrefix": "phase3x/20260830T043005Z/",
+      "objectCount": 30,
+      "totalBytes": 151018087,
+      "localValidation": "PASS",
+      "remoteVerification": "PARTIAL",
+      "tempResourcesCleaned": true,
+      "productionLogicalDumpUsed": false,
+      "productionTouched": false
     }
   ]
 }

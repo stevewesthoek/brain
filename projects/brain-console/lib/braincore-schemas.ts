@@ -199,10 +199,22 @@ const canonicalHostStateSchema = z.enum(['HEALTHY', 'WARNING', 'CRITICAL', 'STAL
 const backupTelemetrySchema = z.object({
   jobId: z.string(),
   state: z.enum(['HEALTHY', 'WARNING', 'FAILED', 'UNKNOWN']),
+  status: z.enum(['SUCCESS', 'FAILED', 'NOOP', 'RUNNING', 'UNKNOWN']),
   reason: z.string(),
   lastAttemptAt: z.string().nullable(),
   lastSuccessAt: z.string().nullable(),
   sourceRef: z.string().nullable(),
+  runId: z.string().nullable(),
+  recoveryPointId: z.string().nullable(),
+  recoveryPointTime: z.string().nullable(),
+  blobPrefix: z.string().nullable(),
+  objectCount: z.number().nullable(),
+  totalBytes: z.number().nullable(),
+  localValidation: z.enum(['PASS', 'NOT_EXECUTED', 'UNKNOWN']),
+  remoteVerification: z.enum(['PASS', 'PARTIAL', 'NOT_EXECUTED', 'UNKNOWN']),
+  tempResourcesCleaned: z.boolean().nullable(),
+  productionLogicalDumpUsed: z.boolean().nullable(),
+  productionTouched: z.boolean().nullable(),
 });
 const canonicalInfrastructureHostSchema = z.object({
   resourceId: z.string(),

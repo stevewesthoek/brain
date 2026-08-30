@@ -26,12 +26,12 @@
       "resourceId": "host:dokploy-aws",
       "backupSystemId": "backup_system:dokploy-aws-recovery",
       "backupJobId": "backup_job:dokploy-aws-recovery",
-      "cadence": "unknown: ongoing cadence not verified after cutover",
-      "retentionRef": "unknown: post-cutover retention not verified",
-      "destinationRef": "reference://aws-dokploy-recovery-evidence",
+      "cadence": "daily; AWS Lightsail AutoSnapshot provider schedule 03:00",
+      "retentionRef": "seven most recent automatic snapshots (Lightsail default)",
+      "destinationRef": "AWS Lightsail provider-managed snapshots in eu-west-2",
       "restoreVerificationCadenceDays": null,
-      "recoveryClass": "unknown",
-      "provenance": {"sourceRef":"operations/reports/infrastructure-estate-reconciliation-2026-08-17.md","classification":"UNKNOWN","verifiedAt":"2026-08-18T01:25:00Z","freshnessDeadline":"2026-08-25T01:25:00Z","owner":"brain/infrastructure","evidenceRefs":["operations/migrations/dokploy-azure-to-lightsail/azure-to-aws-dokploy-migration-lessons-learned-2026-08-17.md"]}
+      "recoveryClass": "important",
+      "provenance": {"sourceRef":"operations/reports/aws-lightsail-backup-evidence-2026-08-30.md","classification":"OBSERVED-VERIFIED","verifiedAt":"2026-08-30T10:49:44Z","freshnessDeadline":"2026-09-06T10:49:44Z","owner":"brain/infrastructure","evidenceRefs":["operations/architecture/prochat-infrastructure-architecture.md","operations/migrations/dokploy-azure-to-lightsail/azure-to-aws-dokploy-migration-lessons-learned-2026-08-17.md"]}
     },
     {
       "backupPolicyId": "backup_policy:supabase",
@@ -50,12 +50,12 @@
       "resourceId": "host:cloudpanel-aws",
       "backupSystemId": "backup_system:cloudpanel-aws-recovery",
       "backupJobId": "backup_job:cloudpanel-aws-recovery",
-      "cadence": "unknown: CloudPanel backup cadence not verified",
-      "retentionRef": "unknown: CloudPanel retention not verified",
-      "destinationRef": "reference://cloudpanel-aws-recovery-evidence",
+      "cadence": "daily; AWS Lightsail AutoSnapshot provider schedule 03:00",
+      "retentionRef": "seven most recent automatic snapshots (Lightsail default)",
+      "destinationRef": "AWS Lightsail provider-managed snapshots in eu-west-2",
       "restoreVerificationCadenceDays": null,
-      "recoveryClass": "unknown",
-      "provenance": {"sourceRef":"operations/reports/infrastructure-estate-reconciliation-2026-08-17.md","classification":"UNKNOWN","verifiedAt":"2026-08-18T01:25:00Z","freshnessDeadline":"2026-08-25T01:25:00Z","owner":"brain/infrastructure","evidenceRefs":["operations/infrastructure/infra.md"]}
+      "recoveryClass": "important",
+      "provenance": {"sourceRef":"operations/reports/aws-lightsail-backup-evidence-2026-08-30.md","classification":"OBSERVED-VERIFIED","verifiedAt":"2026-08-30T10:49:44Z","freshnessDeadline":"2026-09-06T10:49:44Z","owner":"brain/infrastructure","evidenceRefs":["operations/architecture/prochat-infrastructure-architecture.md","operations/infrastructure/infra.md"]}
     }
   ]
 }

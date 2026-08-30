@@ -1271,10 +1271,19 @@ storage 80%; critical starting points are CPU 95%, memory 95%, and storage
 from historical application policies.
 
 Backup state is derived from the bounded runtime evidence file
-`operations/infrastructure/health/backup-runtime-state.v1.json`: Dokploy is
-UNKNOWN, CloudPanel is UNKNOWN/UNVERIFIED, and Supabase is FAILED because the
-latest `pgdump-upload` run failed. This observability work does not repair
-backup jobs or alter Supabase backup configuration.
+`operations/infrastructure/health/backup-runtime-state.v1.json`: current AWS
+Lightsail automatic snapshots make Dokploy and CloudPanel HEALTHY for
+provider-level system-disk protection, and the authoritative Phase 3X natural
+run makes Supabase HEALTHY for the completed logical-backup set. The AWS
+evidence report records the exact host binding, successful artifact sequence,
+seven-snapshot retention, and the fact that application-consistent database
+capture and isolated restore remain unverified. The Phase 3X evidence records
+27/27 database dumps and local validations, with remote cryptographic
+verification explicitly PARTIAL because Content-MD5 was unavailable. The
+retired `pgdump-upload` failure remains historical evidence and does not
+override current Phase 3X health. This observability work does not repair
+backup jobs, create or restore snapshots, or alter Supabase backup
+configuration.
 
 New Relic installation and alert policy configuration are now complete for
 coverage. Runtime/service telemetry combines New Relic metrics with a bounded,

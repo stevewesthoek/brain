@@ -10,6 +10,7 @@ export const CANONICAL_HOST_IDS = ['host:dokploy-aws', 'host:cloudpanel-aws', 'h
 export type CanonicalHostState = 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'STALE' | 'UNKNOWN';
 
 type BackupState = 'HEALTHY' | 'WARNING' | 'FAILED' | 'UNKNOWN';
+type BackupRunStatus = 'SUCCESS' | 'FAILED' | 'NOOP' | 'RUNNING' | 'UNKNOWN';
 
 interface CanonicalHostDefinition {
   resourceId: (typeof CANONICAL_HOST_IDS)[number];
@@ -109,10 +110,22 @@ export interface CanonicalInfrastructureHost {
   backup: {
     jobId: string;
     state: BackupState;
+    status: BackupRunStatus;
     reason: string;
     lastAttemptAt: string | null;
     lastSuccessAt: string | null;
     sourceRef: string | null;
+    runId: string | null;
+    recoveryPointId: string | null;
+    recoveryPointTime: string | null;
+    blobPrefix: string | null;
+    objectCount: number | null;
+    totalBytes: number | null;
+    localValidation: 'PASS' | 'NOT_EXECUTED' | 'UNKNOWN';
+    remoteVerification: 'PASS' | 'PARTIAL' | 'NOT_EXECUTED' | 'UNKNOWN';
+    tempResourcesCleaned: boolean | null;
+    productionLogicalDumpUsed: boolean | null;
+    productionTouched: boolean | null;
   };
 }
 
@@ -273,7 +286,7 @@ function buildHost(definition: CanonicalHostDefinition, entities: NewRelicEntity
   const lastSeenMs = latestTimestamp([system, ...storage, ...network, container]);
   const ageSeconds = lastSeenMs === null ? null : Math.max(0, Math.floor((now.getTime() - lastSeenMs) / 1000));
   const freshness = ageSeconds === null ? 'unknown' : ageSeconds <= FRESHNESS_SECONDS ? 'fresh' : 'stale';
-  const backup = backups.get(definition.backupJobId) ?? { jobId: definition.backupJobId, state: 'UNKNOWN' as const, reason: 'No machine-readable current backup evidence is available.', lastAttemptAt: null, lastSuccessAt: null, sourceRef: null };
+  const backup = backups.get(definition.backupJobId) ?? unknownBackup(definition.backupJobId, 'No machine-readable current backup evidence is available.');
   const metrics = {
     cpuPercent: numberValue(system, 'latest.cpuPercent'), loadAverageOneMinute: numberValue(system, 'latest.loadAverageOneMinute'),
     memoryUsedPercent: numberValue(system, 'latest.memoryUsedPercent') ?? ratioPercent(system, 'latest.memoryUsedBytes', 'latest.memoryTotalBytes'),
@@ -301,7 +314,7 @@ function buildHost(definition: CanonicalHostDefinition, entities: NewRelicEntity
 }
 
 function unknownHost(definition: CanonicalHostDefinition, reason: string): CanonicalInfrastructureHost {
-  return { resourceId: definition.resourceId, name: definition.name, state: 'UNKNOWN', stateReason: reason, entity: { guid: null, name: null, reporting: false, alertSeverity: null, continuityAlias: null }, telemetry: { freshness: 'unknown', lastSeenAt: null, ageSeconds: null, agentVersion: null }, metrics: { cpuPercent: null, loadAverageOneMinute: null, memoryUsedPercent: null, memoryUsedBytes: null, memoryAvailableBytes: null, memoryTotalBytes: null, swapUsedBytes: null, swapTotalBytes: null, uptimeSeconds: null, storage: [], network: [], processCount: null }, runtime: { docker: 'unknown', runningContainers: null, nonRunningContainers: null, unhealthyContainers: null, restartCount: null, systemd: 'unknown', activeServices: null, failedServices: null, serviceStatuses: [] }, backup: { jobId: definition.backupJobId, state: 'UNKNOWN', reason: 'Backup state not evaluated because New Relic is unavailable.', lastAttemptAt: null, lastSuccessAt: null, sourceRef: null } };
+  return { resourceId: definition.resourceId, name: definition.name, state: 'UNKNOWN', stateReason: reason, entity: { guid: null, name: null, reporting: false, alertSeverity: null, continuityAlias: null }, telemetry: { freshness: 'unknown', lastSeenAt: null, ageSeconds: null, agentVersion: null }, metrics: { cpuPercent: null, loadAverageOneMinute: null, memoryUsedPercent: null, memoryUsedBytes: null, memoryAvailableBytes: null, memoryTotalBytes: null, swapUsedBytes: null, swapTotalBytes: null, uptimeSeconds: null, storage: [], network: [], processCount: null }, runtime: { docker: 'unknown', runningContainers: null, nonRunningContainers: null, unhealthyContainers: null, restartCount: null, systemd: 'unknown', activeServices: null, failedServices: null, serviceStatuses: [] }, backup: unknownBackup(definition.backupJobId, 'Backup state not evaluated because New Relic is unavailable.') };
 }
 
 function hostState(entity: NewRelicEntity | undefined, freshness: string, cpu: number | null, memory: number | null, disk: number, backup: BackupState, failedServices: number): CanonicalHostState {
@@ -323,17 +336,52 @@ function stateReason(state: CanonicalHostState, entity: NewRelicEntity | undefin
 }
 
 function readBackupStates(root: string): Map<string, CanonicalInfrastructureHost['backup']> {
-  const filePath = path.resolve(root, 'operations/infrastructure/health/backup-runtime-state.v1.json');
-  if (!fs.existsSync(filePath)) return new Map();
-  try {
-    const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as { states?: Array<Record<string, unknown>> };
-    return new Map((data.states ?? []).map((policy) => [String(policy.backupJobId ?? ''), {
-      jobId: String(policy.backupJobId ?? ''), state: normalizeBackupState(policy.state), reason: String(policy.reason ?? 'Current backup state is unknown.'), lastAttemptAt: typeof policy.lastAttemptAt === 'string' ? policy.lastAttemptAt : null, lastSuccessAt: typeof policy.lastSuccessAt === 'string' ? policy.lastSuccessAt : null, sourceRef: typeof policy.sourceRef === 'string' ? policy.sourceRef : null,
-    } satisfies CanonicalInfrastructureHost['backup']]));
-  } catch { return new Map(); }
+  const generatedPath = path.resolve(root, 'runtime/local/infrastructure/backup-runtime-state.json');
+  const trackedPath = path.resolve(root, 'operations/infrastructure/health/backup-runtime-state.v1.json');
+  const candidates = [generatedPath, trackedPath].filter((filePath) => fs.existsSync(filePath));
+  for (const filePath of candidates) {
+    try {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8')) as { states?: Array<Record<string, unknown>> };
+      if (!Array.isArray(data.states)) throw new Error('states must be an array');
+      return new Map(data.states.map((policy) => [String(policy.backupJobId ?? ''), parseBackupEvidence(policy)]));
+    } catch {
+      if (filePath === generatedPath) return new Map(HOSTS.map((host) => [host.backupJobId, unknownBackup(host.backupJobId, 'Generated backup runtime state is malformed; telemetry failed closed.')]))
+    }
+  }
+  return new Map();
 }
 
-function normalizeBackupState(value: unknown): BackupState { return value === 'HEALTHY' || value === 'WARNING' || value === 'FAILED' ? value : 'UNKNOWN'; }
+function parseBackupEvidence(policy: Record<string, unknown>): CanonicalInfrastructureHost['backup'] {
+  const status = normalizeBackupRunStatus(policy.status);
+  const state = normalizeBackupState(policy.state, status);
+  return {
+    jobId: String(policy.backupJobId ?? ''), state, status,
+    reason: String(policy.reason ?? 'Current backup state is unknown.'),
+    lastAttemptAt: typeof policy.lastAttemptAt === 'string' ? policy.lastAttemptAt : null,
+    lastSuccessAt: typeof policy.lastSuccessAt === 'string' ? policy.lastSuccessAt : null,
+    sourceRef: typeof policy.sourceRef === 'string' ? policy.sourceRef : null,
+    runId: typeof policy.runId === 'string' ? policy.runId : null,
+    recoveryPointId: typeof policy.recoveryPointId === 'string' ? policy.recoveryPointId : null,
+    recoveryPointTime: typeof policy.recoveryPointTime === 'string' ? policy.recoveryPointTime : null,
+    blobPrefix: typeof policy.blobPrefix === 'string' ? policy.blobPrefix : null,
+    objectCount: numberOrNull(policy.objectCount), totalBytes: numberOrNull(policy.totalBytes),
+    localValidation: normalizeLocalValidation(policy.localValidation),
+    remoteVerification: normalizeRemoteVerification(policy.remoteVerification),
+    tempResourcesCleaned: booleanOrNull(policy.tempResourcesCleaned),
+    productionLogicalDumpUsed: booleanOrNull(policy.productionLogicalDumpUsed),
+    productionTouched: booleanOrNull(policy.productionTouched),
+  };
+}
+
+function unknownBackup(jobId: string, reason: string): CanonicalInfrastructureHost['backup'] {
+  return { jobId, state: 'UNKNOWN', status: 'UNKNOWN', reason, lastAttemptAt: null, lastSuccessAt: null, sourceRef: null, runId: null, recoveryPointId: null, recoveryPointTime: null, blobPrefix: null, objectCount: null, totalBytes: null, localValidation: 'UNKNOWN', remoteVerification: 'UNKNOWN', tempResourcesCleaned: null, productionLogicalDumpUsed: null, productionTouched: null };
+}
+function normalizeBackupState(value: unknown, status: BackupRunStatus = 'UNKNOWN'): BackupState { if (value === 'HEALTHY' || value === 'WARNING' || value === 'FAILED') return value; if (status === 'SUCCESS' || status === 'NOOP') return 'HEALTHY'; if (status === 'FAILED') return 'FAILED'; if (status === 'RUNNING') return 'WARNING'; return 'UNKNOWN'; }
+function normalizeBackupRunStatus(value: unknown): BackupRunStatus { return value === 'SUCCESS' || value === 'FAILED' || value === 'NOOP' || value === 'RUNNING' ? value : 'UNKNOWN'; }
+function normalizeLocalValidation(value: unknown): 'PASS' | 'NOT_EXECUTED' | 'UNKNOWN' { return value === 'PASS' || value === 'NOT_EXECUTED' ? value : 'UNKNOWN'; }
+function normalizeRemoteVerification(value: unknown): 'PASS' | 'PARTIAL' | 'NOT_EXECUTED' | 'UNKNOWN' { return value === 'PASS' || value === 'PARTIAL' || value === 'NOT_EXECUTED' ? value : 'UNKNOWN'; }
+function numberOrNull(value: unknown): number | null { return typeof value === 'number' && Number.isFinite(value) ? value : null; }
+function booleanOrNull(value: unknown): boolean | null { return typeof value === 'boolean' ? value : null; }
 function alertingAudited(alerts?: { policiesSearch?: { totalCount?: number; policies?: Array<{ id?: string; name?: string; incidentPreference?: string }> }; nrqlConditionsSearch?: { totalCount?: number } }): CanonicalInfrastructureTelemetry['alerting'] {
   const canonical = alerts?.policiesSearch?.policies?.find((policy) => policy.name === 'Production Infrastructure - Host Telemetry');
   return {
