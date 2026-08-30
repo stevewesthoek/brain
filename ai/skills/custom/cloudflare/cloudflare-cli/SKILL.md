@@ -6,7 +6,8 @@ description: Use when the user asks to manage Cloudflare DNS records, zones, or 
 # Cloudflare CLI
 
 ## What this skill is for
-Help Claude and Codex manage Cloudflare safely and consistently through stable local wrappers instead of ad hoc raw commands.
+Help any supported agent manage Cloudflare safely and consistently through
+Brain-owned wrappers instead of ad hoc raw commands or MCP.
 
 Primary targets:
 - DNS records
@@ -33,7 +34,10 @@ The wrappers use token-based auth stored outside the repo and follow the same op
 - Operations that could cause downtime without a rollback plan
 
 ## Safety rules
-1. **Use the wrapper, not the raw CLI, by default.** Prefer the guarded `~/.local/bin/cloudflare-*` entrypoints over direct `wrangler` or `cloudflared`.
+1. **Use the generic read-only API wrapper for inspection.** Prefer
+   `~/.local/bin/cloudflare-api` for generic REST reads. Use the guarded
+   account-specific `~/.local/bin/cloudflare-*` entrypoints for explicitly
+   approved DNS/tunnel mutations, not direct raw API calls.
 2. **Provisioner first.** Use the `*-provisioner` wrappers for reads, inspection, DNS upserts, and tunnel routing.
 3. **Destroyer only for explicit teardown.** Use the `*-destroyer` wrapper only when the user has clearly asked to delete or tear down Cloudflare resources.
 4. **State changes out loud.** For any mutation, describe the exact DNS or tunnel change before execution.
@@ -44,6 +48,7 @@ The wrappers use token-based auth stored outside the repo and follow the same op
 ## Stable local entrypoints
 
 ```bash
+~/.local/bin/cloudflare-api
 ~/.local/bin/cloudflare-cli
 ~/.local/bin/cloudflare-prochat-provisioner
 ~/.local/bin/cloudflare-prochat-destroyer
@@ -54,6 +59,7 @@ The wrappers use token-based auth stored outside the repo and follow the same op
 Repo-managed wrapper sources:
 
 ```bash
+operations/system-configs/bin/cloudflare-api
 operations/system-configs/bin/cloudflare-cli
 operations/system-configs/bin/cloudflare-account-wrapper
 operations/system-configs/bin/cloudflare-prochat-provisioner
@@ -67,6 +73,16 @@ Credential storage:
 ```bash
 ~/.config/cloudflare-ai/credentials/
 ```
+
+The generic wrapper does not read account-specific profile files. Callers pass
+`CLOUDFLARE_API_TOKEN` or a protected token-only
+`CLOUDFLARE_API_TOKEN_FILE`; account-token verification additionally requires
+`CLOUDFLARE_ACCOUNT_ID`. The CloudPanel Certbot INI remains on the remote host
+and is never copied into Brain.
+
+Cloudflare MCP is not a required or canonical route. The Brain Cloudflare API
+wrapper is the provider-agnostic command surface; Wrangler and cloudflared
+retain their narrower product and tunnel roles.
 
 ## Account model
 

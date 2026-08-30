@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-exec /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/bin/cloudflare-account-wrapper prochat-provisioner "$@"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+exec "${script_dir}/cloudflare-account-wrapper" prochat-provisioner "$@"
