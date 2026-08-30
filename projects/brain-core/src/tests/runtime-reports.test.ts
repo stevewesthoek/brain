@@ -146,6 +146,32 @@ test('runtime reports honor configured video and local-apps JSON paths', () => {
       queue: [{ id: 'video-1', title: 'Example', status: 'queued' }],
       writesToMind: false,
       executableActions: false,
+      storage: {
+        schemaVersion: '1.0.0',
+        status: 'partial',
+        generatedAt: '2026-05-18T00:00:00.000Z',
+        roots: [{
+          id: 'legacy-video',
+          classification: 'UNKNOWN',
+          status: 'partial',
+          exists: true,
+          bytes: 42,
+          fileCount: 1,
+          directoryCount: 1,
+          oldestModifiedAt: null,
+          newestModifiedAt: null,
+          ageBuckets: { unknown: 1 },
+          warnings: ['legacy-video:permission-denied'],
+        }],
+        totals: { bytes: 42, files: 1, directories: 1, temporaryBytes: 0, durableBytes: 0, legacyBytes: 0, unknownBytes: 42 },
+        ageBuckets: { unknown: 1 },
+        warningThresholds: { staleAgeDays: 30, unknownBytes: 1, legacyBytes: 1 },
+        bounds: { maxDepth: 4, maxFilesPerRoot: 5000, maxDirectoriesPerRoot: 1000, timeoutSeconds: 2 },
+        warnings: ['unknown-storage-present'],
+        collectionErrors: ['legacy-video:permission-denied'],
+        candidateCount: 0,
+        safety: { reportOnly: true, writesToMind: false, executableActions: false, deletesFiles: false, movesFiles: false, archivesFiles: false, networkAccess: false, privateContentNames: false },
+      },
     }),
   );
   fs.writeFileSync(
@@ -166,6 +192,13 @@ test('runtime reports honor configured video and local-apps JSON paths', () => {
     const localApps = reports.find((report) => report.id === 'local-apps');
 
     assert.equal(video?.status, 'available');
+    assert.equal(video?.storage?.status, 'partial');
+    assert.equal(video?.storage?.totals.unknownBytes, 42);
+    const unsafeReport = JSON.parse(fs.readFileSync(videoPath, 'utf8')) as { storage: { safety: { deletesFiles: boolean } } };
+    unsafeReport.storage.safety.deletesFiles = true;
+    fs.writeFileSync(videoPath, JSON.stringify(unsafeReport));
+    const unsafeVideo = listRuntimeReports().find((report) => report.id === 'video');
+    assert.equal(unsafeVideo?.storage, undefined, 'Brain Core must not expose storage telemetry with unsafe flags');
     assert.equal(localApps?.status, 'available');
     assert.equal(reports.every((report) => report.writesToMind === false), true);
     assert.equal(reports.every((report) => report.executableActions === false), true);

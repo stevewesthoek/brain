@@ -132,7 +132,7 @@ Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` in `name:/absolute/path` format
 
 Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Steward, and Brain Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`, `runtimeReportsSupported: true`, and `runtimeReportEndpoint: /runtime/reports`, plus read-only metadata for Mind cleanup state and Brain Console scaffold status.
 
-Current `/runtime/reports` returns read-only runtime report summaries for the mind-steward dry-run report, approval audit JSONL health, video runtime status, and local-app runtime status. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
+Current `/runtime/reports` returns read-only runtime report summaries for the mind-steward dry-run report, approval audit JSONL health, video runtime status, and local-app runtime status. The video summary may include bounded storage telemetry from `video-runtime-report` (root IDs, classifications, aggregate bytes/counts, age buckets, warnings, and scan bounds) after validating its report-only safety flags. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
 
 Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only scheduler surfaces. They report placeholder state until a runtime report is available. When `runtime/local/mind-steward/latest.json` exists, or when `BRAIN_CORE_MIND_STEWARD_REPORT_PATH` points to a safe JSON report, `/scheduler/status` and `/scheduler/latest-run` expose that report as read-only scheduler state. `/scheduler/jobs` also surfaces the report-only `mind-steward-inbox-dry-run`, `mind-steward-inbox-classifier-dry-run`, and `mind-steward-inbox-queue-dry-run` candidates from `runtime/local/mind-steward/inbox-latest.json`, `runtime/local/mind-steward/inbox-classifier-latest.json`, and `runtime/local/mind-steward/inbox-queue-latest.json` when available. They do not inspect logs, run jobs, or mutate scheduler state.
 
@@ -150,7 +150,7 @@ artifact metadata without exposing shell control, raw logs, or mutation paths.
 
 Current `/infra/tunnels` is a read-only report-backed list of Cloudflare tunnels and their hostnames. It reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, then checks tunnel route reachability without exposing secrets or mutating tunnel config.
 
-Current `/video/status` and `/video/queue` are read-only placeholder or report-backed surfaces for the future Video Orchestrator adapter. When `runtime/local/video/latest.json` exists, or when `BRAIN_CORE_VIDEO_REPORT_PATH` points to a safe JSON report, the endpoint returns read-only queue/status summaries. They do not inspect media folders, start renders, upload files, or trigger workflow execution.
+Current `/video/status` and `/video/queue` are read-only placeholder or report-backed surfaces for the future Video Orchestrator adapter. When `runtime/local/video/latest.json` exists, or when `BRAIN_CORE_VIDEO_REPORT_PATH` points to a safe JSON report, the endpoint returns read-only queue/status summaries; `/video/status` also exposes validated storage telemetry when present. They do not inspect media folders, start renders, upload files, or trigger workflow execution.
 
 Those report-backed local app and video surfaces were live-verified over `http://127.0.0.1:4877` during the current roadmap pass.
 

@@ -5,6 +5,7 @@ import type {
   BrainCoreRuntimeReportSummary,
   BrainCoreRuntimeReportStatus,
 } from '../types/api.js';
+import { normalizeVideoStorageTelemetry } from './video.js';
 
 const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build'];
 
@@ -124,9 +125,11 @@ function readJsonRuntimeReport(input: {
           warningCount?: number;
         };
       };
+      storage?: unknown;
     };
     const latestRunStatus = body.status === 'success' ? 'ok' : body.status === 'failed' ? 'failed' : 'unknown';
     const wikiHealth = normalizeWikiHealth(body.wikiHealth);
+    const storage = input.id === 'video' ? normalizeVideoStorageTelemetry(body.storage) : undefined;
     return {
       id: input.id,
       status: 'available',
@@ -135,6 +138,7 @@ function readJsonRuntimeReport(input: {
       message: body.message || 'Runtime report is available.',
       writesToMind: false,
       executableActions: false,
+      ...(storage ? { storage } : {}),
       ...(wikiHealth ? { wikiHealth } : {}),
     };
   } catch {

@@ -1360,6 +1360,66 @@ export interface BrainCoreVideoStatus {
   latestRunAt?: string;
   source: 'placeholder' | 'runtime-report';
   message: string;
+  storage?: BrainCoreVideoStorageTelemetry;
+}
+
+export type BrainCoreVideoStorageClassification = 'CURRENT_DURABLE' | 'CURRENT_TEMPORARY' | 'LEGACY' | 'UNKNOWN';
+export type BrainCoreVideoStorageScanStatus = 'ok' | 'missing' | 'partial' | 'unavailable';
+
+export interface BrainCoreVideoStorageRoot {
+  id: string;
+  classification: BrainCoreVideoStorageClassification;
+  status: BrainCoreVideoStorageScanStatus;
+  exists: boolean;
+  bytes: number;
+  fileCount: number;
+  directoryCount: number;
+  oldestModifiedAt: string | null;
+  newestModifiedAt: string | null;
+  ageBuckets: Record<string, number>;
+  warnings: string[];
+}
+
+export interface BrainCoreVideoStorageTelemetry {
+  schemaVersion: string;
+  status: BrainCoreVideoStorageScanStatus;
+  generatedAt: string | null;
+  rootCount: number;
+  roots: BrainCoreVideoStorageRoot[];
+  totals: {
+    bytes: number;
+    files: number;
+    directories: number;
+    temporaryBytes: number;
+    durableBytes: number;
+    legacyBytes: number;
+    unknownBytes: number;
+  };
+  ageBuckets: Record<string, number>;
+  warningThresholds: {
+    staleAgeDays: number;
+    unknownBytes: number;
+    legacyBytes: number;
+  };
+  bounds: {
+    maxDepth: number;
+    maxFilesPerRoot: number;
+    maxDirectoriesPerRoot: number;
+    timeoutSeconds: number;
+  };
+  warnings: string[];
+  collectionErrors: string[];
+  candidateCount: number;
+  safety: {
+    reportOnly: true;
+    writesToMind: false;
+    executableActions: false;
+    deletesFiles: false;
+    movesFiles: false;
+    archivesFiles: false;
+    networkAccess: false;
+    privateContentNames: false;
+  };
 }
 
 export interface BrainCoreVideoQueueItem {
@@ -6412,6 +6472,7 @@ export interface BrainCoreRuntimeReportSummary {
   message: string;
   writesToMind: false;
   executableActions: false;
+  storage?: BrainCoreVideoStorageTelemetry;
   wikiHealth?: {
     status: 'available' | 'unavailable';
     ok: boolean;

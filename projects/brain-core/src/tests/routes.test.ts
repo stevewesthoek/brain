@@ -1264,13 +1264,39 @@ test('GET /video/status and /video/queue read from safe video runtime report whe
       queue: [{ id: 'video-1', title: 'Example', status: 'queued' }],
       writesToMind: false,
       executableActions: false,
+      storage: {
+        schemaVersion: '1.0.0',
+        status: 'ok',
+        generatedAt: '2026-05-18T00:00:00.000Z',
+        roots: [{
+          id: 'video-report',
+          classification: 'CURRENT_DURABLE',
+          status: 'ok',
+          exists: true,
+          bytes: 12,
+          fileCount: 1,
+          directoryCount: 1,
+          oldestModifiedAt: '2026-05-17T00:00:00.000Z',
+          newestModifiedAt: '2026-05-18T00:00:00.000Z',
+          ageBuckets: { lt_1d: 1 },
+          warnings: [],
+        }],
+        totals: { bytes: 12, files: 1, directories: 1, temporaryBytes: 0, durableBytes: 12, legacyBytes: 0, unknownBytes: 0 },
+        ageBuckets: { lt_1d: 1 },
+        warningThresholds: { staleAgeDays: 30, unknownBytes: 1, legacyBytes: 1 },
+        bounds: { maxDepth: 4, maxFilesPerRoot: 5000, maxDirectoriesPerRoot: 1000, timeoutSeconds: 2 },
+        warnings: [],
+        collectionErrors: [],
+        candidateCount: 0,
+        safety: { reportOnly: true, writesToMind: false, executableActions: false, deletesFiles: false, movesFiles: false, archivesFiles: false, networkAccess: false, privateContentNames: false },
+      },
     }),
   );
   process.env.BRAIN_CORE_VIDEO_REPORT_PATH = reportPath;
 
   try {
     const statusResponse = await exercise({ method: 'GET', url: '/video/status' });
-    const statusBody = JSON.parse(statusResponse.body) as { status: string; enabled: boolean; queueDepth: number; source: string };
+    const statusBody = JSON.parse(statusResponse.body) as { status: string; enabled: boolean; queueDepth: number; source: string; storage?: { totals?: { unknownBytes?: number } } };
     const queueResponse = await exercise({ method: 'GET', url: '/video/queue' });
     const queueBody = JSON.parse(queueResponse.body) as { queue: Array<{ id: string; title: string; status: string; source: string }> };
 
@@ -1279,6 +1305,7 @@ test('GET /video/status and /video/queue read from safe video runtime report whe
     assert.equal(statusBody.enabled, true);
     assert.equal(statusBody.queueDepth, 1);
     assert.equal(statusBody.source, 'runtime-report');
+    assert.equal(statusBody.storage?.totals?.unknownBytes, 0);
     assert.equal(queueBody.queue.length, 1);
     assert.equal(queueBody.queue[0]?.id, 'video-1');
     assert.equal(queueBody.queue[0]?.source, 'runtime-report');
