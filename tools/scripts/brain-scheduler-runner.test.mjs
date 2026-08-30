@@ -32,6 +32,7 @@ test('dry-run emits one receipt for every registry job and spawns nothing', asyn
     assert.equal(memoryRefresh.status, 'disabled');
     assert.equal(memoryRefresh.lifecycle, 'disabled');
     assert.equal(memoryRefresh.mode, 'disabled');
+    assert.deepEqual(memoryRefresh.artifacts, ['~/.brain/memory-context.md']);
   } finally { cleanup(directory); }
 });
 

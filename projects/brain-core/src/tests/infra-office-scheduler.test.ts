@@ -52,6 +52,7 @@ test('Brain Core returns every canonical job with lifecycle and bounded history'
   assert.equal(memoryRefresh?.mode, 'disabled');
   assert.equal(memoryRefresh?.enabled, false);
   assert.equal(memoryRefresh?.status, 'disabled');
+  assert.deepEqual(memoryRefresh?.artifacts, ['~/.brain/memory-context.md']);
   assert.match(memoryRefresh?.policyReason ?? '', /manual \/ on-demand only/);
   assert.match(memoryRefresh?.humanAction ?? '', /must not run automatically/);
   assert.deepEqual(response.jobs.reduce<Record<string, number>>((counts, job) => {

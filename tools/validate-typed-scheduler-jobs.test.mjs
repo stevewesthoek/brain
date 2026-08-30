@@ -41,7 +41,7 @@ test('memory context refresh is retained for manual use but blocked from automat
   assert.equal(memoryRefresh.mode, 'disabled');
   assert.equal(memoryRefresh.scheduleType, 'disabled');
   assert.equal(memoryRefresh.schedule, 'not scheduled');
-  assert.equal(memoryRefresh.outputArtifacts.length, 0);
+  assert.deepEqual(memoryRefresh.outputArtifacts, ['~/.brain/memory-context.md']);
   assert.ok(memoryRefresh.tags.includes('local-derived'));
   assert.ok(memoryRefresh.tags.includes('local-write'));
   assert.match(memoryRefresh.policyReason, /manual \/ on-demand only/);
