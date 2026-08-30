@@ -106,7 +106,7 @@ Secrets remain inside owner-only backups and are never printed.
    only from `/Users/Steve/Repos/stevewesthoek/brain`, preserve existing runtime
    roots, and do not manufacture an absent Claude root.
 7. **Activate bridge:** reverify Mind at
-   `c3dcefdd808501a7ead7ffc4671eb5ef3822c268`; atomically repin the mode-0600
+   `c2f7f65f98497521553e23bc58730e96552c7e56`; atomically repin the mode-0600
    owner approval and Mind-local Claude registration; require healthy/read-only,
    exact `health`/`resolve`/`explain` tools, `mutationPathExposed=false`, and a
    bounded cited resolve.
