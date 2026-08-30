@@ -41,24 +41,14 @@ All design skills read `DESIGN.md` and `brand-spec.md` for consistency.
 
 ## Maintenance
 
-The skill library is pruned monthly to prevent token overhead and signal dilution.
+Brain skills are deliberately curated. Skills are not automatically pruned
+based on age, inactivity, or heuristic scoring. Removing a skill is an explicit
+intentional maintenance decision.
 
-**Automated (Monthly on 7th):**
-- Scheduler runs `tools/scripts/skill-prune-report.sh` (REPORT-only, no file modifications)
-- Generates candidate report: `runtime/local/skill-prune/latest.md` and `.json`
-- Optional email delivery to configured address via GWS Gmail API
-- Never quarantines or deletes automatically — REPORT mode only
-
-**Manual Actions (Optional):**
-- Quarantine: `bash tools/scripts/skill-prune-quarantine.sh <skill-name>` (symlink-only, source preserved, requires confirmation)
-- Delete: `bash tools/scripts/skill-prune-delete.sh <skill-name>` (requires prior quarantine + 30-day age threshold)
-- Keep: `bash tools/scripts/skill-prune-keep.sh <skill-name> [reason]` (audit log only, non-destructive)
-
-**Quality Gate:** Every learned skill must pass all three: (1) not Googleable, (2) codebase/stack-specific, (3) describes a recurring problem. Fail on any one → deletion candidate.
-
-**Target Size:** < 20 learned gotcha skills. Operational tools (`dokploy`, `gh`, `aws`, etc.) and workflow process skills are exempt from the count.
-
-**Workflow Guide:** See `custom/learned/skill-prune/SKILL.md` for complete documentation.
+The `active/` directory remains the curated canonical export surface. Use the
+skill index, capability discovery, and the general active-surface safety checks
+to find and validate skills; no automated pruning, quarantine, delete, or keep
+workflow is maintained.
 
 ## Sync / Export to AI Tools
 

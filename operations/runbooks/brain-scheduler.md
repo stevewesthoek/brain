@@ -38,8 +38,10 @@ Brain Console /scheduler (read-only Control Center)
 ```
 
 The registry is the sole job inventory truth. No shell function list, report
-table, duplicate JSON inventory, or UI ordering may define jobs. The runner
-loads the registry on every invocation and executes only `lifecycle: active`
+table, duplicate JSON inventory, or UI ordering may define jobs. The current
+canonical inventory is 16 jobs: ACTIVE 4, BLOCKED 10, NEEDS REVIEW 0, and
+OBSOLETE 2. The runner loads the registry on every invocation and executes
+only `lifecycle: active`
 jobs in a report-only or dry-run-report-only mode. It performs no retries.
 
 ## Timing, lock, and receipts
@@ -81,7 +83,6 @@ jobs in a report-only or dry-run-report-only mode. It performs no retries.
 | `mind-compile-loop` | active | report-only | Generate inbox proposals only; no Mind moves or writes. |
 | `graphify-nightly` | policy-blocked | disabled | Event-driven semantic gate only; structural Graphify remains frozen. |
 | `ing-bank-statement-download` | policy-blocked | disabled | Financial/credential-sensitive; never enable from this scheduler. |
-| `skill-prune` | disabled | disabled | OBSOLETE / DELETE CANDIDATE; curated skills are intentionally maintained manually. Keep non-runnable until a dedicated deletion removes the compatibility row and obsolete surface. |
 
 ## Adding, changing, or retiring a job
 

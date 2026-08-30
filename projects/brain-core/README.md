@@ -145,7 +145,7 @@ Current `/infra/monitoring` remains the compatibility view for New Relic servers
 Current `/infra/scheduler` is the read-only Brain Scheduler overview. It reads
 the canonical typed registry, launchd configuration evidence, per-job receipts,
 the overall receipt, bounded history, and the generated report. It returns all
-17 registry jobs with lifecycle, safety, schedule, status, human-action, and
+16 registry jobs with lifecycle, safety, schedule, status, human-action, and
 artifact metadata without exposing shell control, raw logs, or mutation paths.
 
 Current `/infra/tunnels` is a read-only report-backed list of Cloudflare tunnels and their hostnames. It reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, then checks tunnel route reachability without exposing secrets or mutating tunnel config.

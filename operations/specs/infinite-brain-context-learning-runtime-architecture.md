@@ -79,7 +79,7 @@ small bootstrap envelope
 | `projects/brain-core/src/adapters/infinite-brain-proposal-approval-store.ts` | Seed for Decision Core records; currently report-only and execution-blocked. |
 | Brain Core `/infinite-brain/proposals*` APIs | Seed for proposal/decision API surface. |
 | Brain Console in Obsidian | Steve's preferred Decision Center UI adapter. |
-| `docs/skills/profiles/*` + skill pruning | Existing bounded-skill/context-cost mechanism. |
+| `docs/skills/profiles/*` + explicit skill curation | Existing bounded-skill/context-cost mechanism. |
 | `docs/product/prochat-os-cli-plan.md` | Packaging/CLI direction for installable product surfaces. |
 | `docs/product/prochat-os-managed-plan.md` | Single-tenant managed deployment direction. |
 
@@ -341,7 +341,7 @@ The runtime must become more efficient as it learns.
 - Expire context caches aggressively.
 - Rebuild derived indexes instead of indefinitely migrating obsolete internal formats.
 - Preserve compact transaction/decision receipts after bulky intermediate proposals are pruned.
-- Use the existing skill-pruning philosophy for learned Brain content.
+- Use the explicit skill curation policy for learned Brain content.
 
 ### 6.3 Required growth metrics
 
@@ -773,7 +773,7 @@ This architecture is ready to enter implementation planning only when:
 
 1. Mind authority charter is approved and linked.
 2. No P1-P8 history is reopened or rewritten.
-3. Existing Context Gateway, proposal approvals, memory, learner, rule-onboarding, skill pruning, Brain Console, and productization plans are explicitly reused.
+3. Existing Context Gateway, proposal approvals, memory, learner, rule-onboarding, explicit skill curation, Brain Console, and productization plans are explicitly reused.
 4. Canonical vs evidence vs derived layers are unambiguous.
 5. Freshness/supersession and relation models are defined.
 6. Storage/compaction principles prevent naive transcript accumulation.

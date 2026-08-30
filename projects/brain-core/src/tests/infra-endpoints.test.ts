@@ -114,14 +114,14 @@ test('GET /infra/scheduler exposes the canonical registry overview', async () =>
 
   if (body.status === 'ok') {
     assert.ok(Array.isArray(body.jobs), 'ok status must include jobs array');
-    assert.equal(body.jobs.length, 17, 'canonical registry must expose every configured job');
+    assert.equal(body.jobs.length, 16, 'canonical registry must expose every configured job');
     assert.ok(body.jobs.every((job) => typeof job.planned === 'boolean' && typeof job.executed === 'boolean' && typeof job.status === 'string'), 'jobs must include planned, executed, and status fields');
     assert.ok(body.jobs.every((job) => typeof job.lifecycle === 'string'), 'jobs must include lifecycle state');
     assert.ok(body.jobs.every((job) => ['ACTIVE', 'BLOCKED', 'NEEDS REVIEW', 'OBSOLETE'].includes(job.reviewCategory ?? '')), 'jobs must include human review category');
     assert.equal(body.displayName, 'Brain Scheduler');
     assert.ok(['healthy', 'warning', 'failed', 'disabled'].includes(body.health ?? ''), 'health must be explicit');
     assert.equal(body.manifest?.valid, true);
-    assert.equal(body.manifest?.jobCount, 17);
+    assert.equal(body.manifest?.jobCount, 16);
     assert.equal(body.schedule, 'daily at 03:00 Europe/Lisbon');
     assert.ok(typeof body.report?.summary === 'string', 'ok status must include report summary');
   }

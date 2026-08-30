@@ -255,7 +255,6 @@ rm -f \
   operations/system-configs/kiro/skills/playwright \
   operations/system-configs/kiro/skills/setup-deploy \
   operations/system-configs/kiro/skills/skill-creator \
-  operations/system-configs/kiro/skills/skill-prune \
   operations/system-configs/kiro/skills/spark \
   operations/system-configs/kiro/skills/video
 

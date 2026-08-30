@@ -29,8 +29,8 @@ test('Brain Core returns every canonical job with lifecycle and bounded history'
   const response = await getInfraOfficeScheduler();
   assert.equal(response.status, 'ok');
   assert.equal(response.manifest.valid, true);
-  assert.equal(response.manifest.jobCount, 17);
-  assert.equal(response.jobs.length, 17);
+  assert.equal(response.manifest.jobCount, 16);
+  assert.equal(response.jobs.length, 16);
   assert.equal(response.jobs.find((job) => job.id === 'ing-bank-statement-download')?.status, 'blocked');
   assert.equal(response.jobs.find((job) => job.id === 'stb-pipeline-batch')?.status, 'disabled');
   assert.equal(response.jobs.filter((job) => job.status === 'success').length, 4);
@@ -39,13 +39,6 @@ test('Brain Core returns every canonical job with lifecycle and bounded history'
   assert.match(response.jobs.find((job) => job.id === 'video-orchestrator-storage-cleanup')?.policyReason ?? '', /video-runtime-report/);
   assert.match(response.jobs.find((job) => job.id === 'video-orchestrator-storage-cleanup')?.humanAction ?? '', /Do not enable/);
   assert.equal(response.jobs.find((job) => job.id === 'video-orchestrator-storage-cleanup')?.status, 'disabled');
-  const skillPrune = response.jobs.find((job) => job.id === 'skill-prune');
-  assert.equal(skillPrune?.reviewCategory, 'OBSOLETE');
-  assert.equal(skillPrune?.lifecycle, 'disabled');
-  assert.equal(skillPrune?.mode, 'disabled');
-  assert.equal(skillPrune?.enabled, false);
-  assert.equal(skillPrune?.status, 'disabled');
-  assert.match(skillPrune?.humanAction ?? '', /DELETE CANDIDATE/);
   const googleAds = response.jobs.find((job) => job.id === 'google-ads-sync');
   assert.equal(googleAds?.reviewCategory, 'BLOCKED');
   assert.equal(googleAds?.lifecycle, 'disabled');
@@ -71,7 +64,7 @@ test('Brain Core returns every canonical job with lifecycle and bounded history'
     BLOCKED: reviewCategoryCounts.BLOCKED ?? 0,
     'NEEDS REVIEW': reviewCategoryCounts['NEEDS REVIEW'] ?? 0,
     OBSOLETE: reviewCategoryCounts.OBSOLETE ?? 0,
-  }, { BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 3, ACTIVE: 4 });
+  }, { BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 2, ACTIVE: 4 });
   assert.ok(response.jobs.every((job) => ['ACTIVE', 'BLOCKED', 'NEEDS REVIEW', 'OBSOLETE'].includes(job.reviewCategory)));
   assert.equal(response.history.length, 20);
   assert.equal(response.health, 'warning', 'policy-blocked inventory is visible as a warning, not green evidence');

@@ -7,5 +7,5 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 test('legacy scheduler inventory validator delegates to the canonical typed registry', () => {
   const validator = path.join(root, 'tools/validate-infinite-brain-scheduler-inventory.mjs');
-  assert.match(execFileSync(process.execPath, [validator], { encoding: 'utf8' }), /compatibility=typed-registry jobs=17/);
+  assert.match(execFileSync(process.execPath, [validator], { encoding: 'utf8' }), /compatibility=typed-registry jobs=16/);
 });

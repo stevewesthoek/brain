@@ -11,9 +11,9 @@ const node = process.execPath;
 const validator = path.join(root, 'tools/validate-typed-scheduler-jobs.mjs');
 const manifest = path.join(root, 'operations/specs/typed-scheduler-jobs.json');
 
-test('typed registry is the sole 17-job inventory and reports lifecycle counts', () => {
+test('typed registry is the sole canonical inventory and reports lifecycle counts', () => {
   const output = execFileSync(node, [validator], { encoding: 'utf8' });
-  assert.match(output, /jobs=17/);
+  assert.match(output, /jobs=16/);
   assert.match(output, /"active":4/);
   assert.match(output, /"policy-blocked":4/);
 });
@@ -35,22 +35,7 @@ test('Google Ads remains disabled and is human-classified as blocked pending har
     BLOCKED: counts.BLOCKED ?? 0,
     'NEEDS REVIEW': counts['NEEDS REVIEW'] ?? 0,
     OBSOLETE: counts.OBSOLETE ?? 0,
-  }, { ACTIVE: 4, BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 3 });
-});
-
-test('skill prune is obsolete, disabled, and an explicit deletion candidate', () => {
-  const source = JSON.parse(fs.readFileSync(manifest, 'utf8'));
-  const skillPrune = source.jobs.find((job) => job.id === 'skill-prune');
-  assert.equal(skillPrune.reviewCategory, 'OBSOLETE');
-  assert.equal(skillPrune.lifecycle, 'disabled');
-  assert.equal(skillPrune.mode, 'disabled');
-  assert.equal(skillPrune.scheduleType, 'disabled');
-  assert.equal(skillPrune.schedule, 'not scheduled');
-  assert.equal(skillPrune.destructive, true);
-  assert.match(skillPrune.policyReason, /automated pruning responsibility is retired/);
-  assert.match(skillPrune.humanAction, /DELETE CANDIDATE/);
-  assert.ok(skillPrune.tags.includes('obsolete'));
-  assert.ok(skillPrune.tags.includes('delete-candidate'));
+  }, { ACTIVE: 4, BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 2 });
 });
 
 test('memory context refresh is retained for manual use but blocked from automation', () => {

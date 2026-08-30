@@ -100,7 +100,6 @@ setup-browser-cookies
 setup-deploy
 ship
 skill-creator
-skill-prune
 soft-skill
 stable-diffusion-local
 stb-pipeline
