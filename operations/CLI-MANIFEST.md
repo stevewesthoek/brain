@@ -66,6 +66,7 @@ manifest consumed by capability discovery.
 |-----|------|------|-------------|
 <!-- BEGIN REGISTERED CLI ENTRIES -->
 | `newrelic` | `/opt/homebrew/bin/newrelic` | managed | New Relic CLI for EU-region telemetry, NerdGraph, and NRQL read access |
+| `cloudflare-api` | `/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/bin/cloudflare-api` | managed | Read-only provider-agnostic Cloudflare REST API wrapper |
 <!-- END REGISTERED CLI ENTRIES -->
 
 ### System & Core Tools

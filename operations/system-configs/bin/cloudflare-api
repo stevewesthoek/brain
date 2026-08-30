@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Provider-agnostic, read-only Cloudflare API surface.
+#
+# Authentication is deliberately supplied by the caller rather than a client,
+# IDE, MCP server, or repository credential. Use CLOUDFLARE_API_TOKEN or point
+# CLOUDFLARE_API_TOKEN_FILE at a mode-0600 file containing only the token.
+
+script_name="${0##*/}"
+api_base="${CLOUDFLARE_API_BASE:-https://api.cloudflare.com/client/v4}"
+
+die() {
+  printf '%s: %s\n' "${script_name}" "$1" >&2
+  exit 1
+}
+
+usage() {
+  cat >&2 <<'EOF'
+usage: cloudflare-api <command> [args...]
+
+Read-only commands:
+  auth [--account-id <id>]       Verify a user or account API token
+  zones list [<zone-name>]       List zones, optionally by exact name
+  zones get <zone-name-or-id>    Read one zone
+  dns list <zone-name-or-id>     List DNS records for one zone
+  api get <path>                 Read a supported Cloudflare API path
+
+Authentication:
+  CLOUDFLARE_API_TOKEN           Token value supplied by the caller
+  CLOUDFLARE_API_TOKEN_FILE      Mode-0600 file containing only the token
+  CLOUDFLARE_ACCOUNT_ID          Account ID for account-token auth verification
+  CLOUDFLARE_API_BASE            Optional API base URL for tests or approved use
+
+This command surface never issues POST, PUT, PATCH, or DELETE requests.
+EOF
+}
+
+[[ $# -ge 1 ]] || { usage; exit 1; }
+
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
+token="${CLOUDFLARE_API_TOKEN:-}"
+if [[ -z "${token}" && -n "${CLOUDFLARE_API_TOKEN_FILE:-}" ]]; then
+  token_file="${CLOUDFLARE_API_TOKEN_FILE}"
+  [[ -f "${token_file}" ]] || die "token file not found: ${token_file}"
+  [[ -r "${token_file}" ]] || die "token file is not readable: ${token_file}"
+  token_file_mode="$(stat -c '%a' "${token_file}" 2>/dev/null || stat -f '%Lp' "${token_file}")"
+  [[ "${token_file_mode}" == "600" ]] || die "token file must have mode 0600: ${token_file}"
+  token="$(tr -d '\r' < "${token_file}")"
+  [[ "${token}" != *$'\n'* ]] || die "token file must contain exactly one token line"
+  [[ "${token}" != *[[:space:]]* ]] || die "token file must not contain token whitespace"
+fi
+[[ -n "${token}" ]] || die "set CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_TOKEN_FILE"
+
+command_name="$1"
+shift
+
+urlencode() {
+  jq -rn --arg value "$1" '$value | @uri'
+}
+
+api_get() {
+  local path="$1"
+  [[ "${path}" == /* && "${path}" != //* ]] || die "API path must begin with one slash"
+  local response
+  response="$(printf 'header = "Authorization: Bearer %s"\nheader = "Accept: application/json"\n' "${token}" \
+    | curl -fsS --config - "${api_base}${path}")" || return 1
+
+  if ! jq -e '.success == true' >/dev/null <<<"${response}"; then
+    jq '.' <<<"${response}" >&2 || printf '%s\n' "${response}" >&2
+    return 1
+  fi
+
+  jq '.' <<<"${response}"
+}
+
+resolve_zone_id() {
+  local zone_ref="$1"
+  if [[ "${zone_ref}" =~ ^[0-9a-fA-F]{32}$ ]]; then
+    printf '%s\n' "${zone_ref}"
+    return 0
+  fi
+
+  local response
+  response="$(api_get "/zones?name=$(urlencode "${zone_ref}")&status=active&per_page=2")" || return 1
+  local count
+  count="$(jq -r '.result | length' <<<"${response}")"
+  [[ "${count}" == "1" ]] || die "expected exactly one active zone for ${zone_ref}; found ${count}"
+  jq -er '.result[0].id' <<<"${response}"
+}
+
+case "${command_name}" in
+  auth|verify)
+    account_id="${CLOUDFLARE_ACCOUNT_ID:-}"
+    if [[ "${1:-}" == "--account-id" ]]; then
+      account_id="${2:?missing account ID}"
+      shift 2
+    fi
+    [[ $# -eq 0 ]] || die "usage: cloudflare-api auth [--account-id <id>]"
+    if [[ -n "${account_id}" ]]; then
+      [[ "${account_id}" =~ ^[0-9a-fA-F]{32}$ ]] || die "CLOUDFLARE_ACCOUNT_ID must be a 32-character ID"
+      api_get "/accounts/${account_id}/tokens/verify"
+    else
+      api_get "/user/tokens/verify"
+    fi
+    ;;
+
+  zones)
+    subcommand="${1:-}"
+    shift || true
+    case "${subcommand}" in
+      list)
+        if [[ $# -gt 0 ]]; then
+          api_get "/zones?name=$(urlencode "$1")&status=active&per_page=100"
+        else
+          api_get "/zones?status=active&per_page=100"
+        fi
+        ;;
+      get)
+        zone_id="$(resolve_zone_id "${1:?missing zone name or ID}")"
+        api_get "/zones/${zone_id}"
+        ;;
+      *)
+        usage
+        exit 1
+        ;;
+    esac
+    ;;
+
+  dns)
+    subcommand="${1:-}"
+    shift || true
+    case "${subcommand}" in
+      list)
+        zone_id="$(resolve_zone_id "${1:?missing zone name or ID}")"
+        api_get "/zones/${zone_id}/dns_records?per_page=100"
+        ;;
+      *)
+        usage
+        exit 1
+        ;;
+    esac
+    ;;
+
+  api)
+    [[ "${1:-}" == "get" ]] || die "only 'api get' is supported"
+    [[ $# -eq 2 ]] || die "usage: cloudflare-api api get <path>"
+    api_get "$2"
+    ;;
+
+  *)
+    usage
+    exit 1
+    ;;
+esac

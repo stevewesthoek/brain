@@ -17,4 +17,5 @@ fi
 profile_name="$1"
 shift
 
-exec /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/bin/cloudflare-account-wrapper "${profile_name}" "$@"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+exec "${script_dir}/cloudflare-account-wrapper" "${profile_name}" "$@"

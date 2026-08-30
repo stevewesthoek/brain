@@ -35,6 +35,11 @@ Keep only durable Codex config in Git.
 - App-build hashes, marketplace refresh timestamps, cache locations, and other
   upgrade-derived fields stay local and must not be copied back into this baseline
 
+The Cloudflare API MCP is intentionally not part of the Brain baseline. Use the
+provider-agnostic `cloudflare-api` command documented in
+`operations/runbooks/cloudflare.md`; Cloudflare Skills remain available through
+the shared skill sources and profile system.
+
 ## Managed live layout
 
 The standard live layout is:
