@@ -331,8 +331,10 @@ Evidence: live `http://127.0.0.1:4877/infra/scheduler` metadata-only response;
 ## 14. Git
 
 - Review branch: `codex/n8n-backup-review-20260830`
-- Review commit: to be recorded after report-only validation
-- Pushed: to be recorded after normal dedicated-branch push
+- Review commit: `9d42be8d` introduced this report; the final metadata
+  follow-up is recorded in the branch history.
+- Pushed: yes, after the final metadata follow-up on the dedicated review
+  branch.
 - Review worktree: expected clean after commit
 - Shared dirty Brain checkout: preserved and untouched
 
