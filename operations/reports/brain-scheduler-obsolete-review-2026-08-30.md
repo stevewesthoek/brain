@@ -256,7 +256,7 @@ Video Orchestrator file was changed.
 
 - Branch: `codex/brain-scheduler-obsolete-review-20260830`
 - Base: exact `origin/main` SHA `8c92eeab85b3995f995bbcec87e37c6491b6013e`
-- Commits: `e47096c2` (report) and `4f05afda` (report delivery metadata).
+- Report commit: `e47096c2`; follow-up commits `4f05afda` and the final metadata-only update preserve delivery provenance.
 - Push: initial report push succeeded normally to `origin/codex/brain-scheduler-obsolete-review-20260830`; this metadata update is also pushed normally.
 - Feature worktree: isolated at `/tmp/brain-scheduler-obsolete-review-20260830`.
 - Shared dirty Brain checkout: untouched; no scheduler-scoped status change was introduced.
