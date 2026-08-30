@@ -19,15 +19,21 @@ of another NEEDS REVIEW job was performed.
 - Review branch tip: `11bb485083f2d45b67c2c7e9957bc73e7d0bcfb8`
 - Exact review commit contained in `origin/main`: **NO**. The report was
   integrated by clean cherry-picks with equivalent content.
-- `origin/main` after reconciliation:
+- Source-reconciliation mainline SHA:
   `8dd671db3bad48700a972ed61614e5a5ce23cf68`
-- Deployed clean runtime SHA after source reconciliation:
-  `8dd671db3bad48700a972ed61614e5a5ce23cf68`
-- Mainline changes were bounded to the completed review report and the single
-  canonical registry category/reason change.
+- Final `origin/main` after the bounded test-expectation repair:
+  `02757f17abd1aa9721d13bbdc7e718d8c3ba31bb`
+- Final deployed clean runtime SHA:
+  `02757f17abd1aa9721d13bbdc7e718d8c3ba31bb`
+- Mainline changes were bounded to the completed review report, the single
+  canonical registry category/reason change, and one stale Core category-count
+  test expectation.
 
 The shared dirty Brain checkout, dirty `brain-console-launcher` checkout, and
-the legacy n8n scripts/plist were not changed.
+the legacy n8n scripts/plist were not changed. At final audit the protected
+shared checkout was already at `e7f807642ec76fef7536e4a057b02713464dc7f9`
+(its dirty-entry count remained 80); the legacy plist still matched that
+checkout's HEAD blob.
 
 ## 2. N8N SCHEDULER STATE
 
@@ -88,7 +94,7 @@ Agent: `com.office.n8n-backup`
 | Last exit | Unavailable; no loaded service |
 | stdout | `/Users/Office/Library/Logs/com.office.n8n-backup.log` in repository source |
 | stderr | `/Users/Office/Library/Logs/com.office.n8n-backup.log` in repository source |
-| Actual target | Shared Brain checkout script path above; the target file exists and matches the shared checkout’s `41e122dac70ada5757adb065b2b5895a1cd56d45` HEAD blob |
+| Actual target | Shared Brain checkout script path above; the target file exists and matches the shared checkout’s `e7f807642ec76fef7536e4a057b02713464dc7f9` HEAD blob |
 | Installed/source match | Not applicable; installed plist absent |
 | Currently capable of automatic execution | **NO** |
 
@@ -187,7 +193,20 @@ process; no claim of persistent supervision is made.
 - Historical backups deleted: **NO**
 - Other NEEDS REVIEW jobs reviewed: **NO**
 
-## 10. OPERATOR ACTION
+## 10. VALIDATION
+
+- Required runtime: Node `v20.20.2`
+- `node tools/validate-typed-scheduler-jobs.mjs`: **PASS**, 17 jobs
+- `node --test tools/validate-typed-scheduler-jobs.test.mjs tools/scripts/brain-scheduler-runner.test.mjs`: **PASS**, 7/7
+- Focused Core tests (`infra-office-scheduler` and `scheduler-manual-success-gate`): **PASS**, 7/7
+- Brain Core typecheck: **PASS**
+- Brain Console typecheck: **PASS**
+- `git diff --check`: **PASS** on the integrated clean worktree and final runtime
+- Remote `main`, clean runtime, and integrated worktree all resolve to
+  `02757f17abd1aa9721d13bbdc7e718d8c3ba31bb`; the review branch remains at
+  `11bb485083f2d45b67c2c7e9957bc73e7d0bcfb8`.
+
+## 11. OPERATOR ACTION
 
 No live standalone agent requires action: the repository plist exists only as
 historical source; the installed plist is absent, the launchd service is
@@ -200,7 +219,7 @@ actual installed plist, label, domain, and whether `bootout` and/or
 `launchctl disable` is required; it is not part of this closeout and no such
 command was issued.
 
-## 11. NEXT REVIEW
+## 12. NEXT REVIEW
 
 The next remaining NEEDS REVIEW jobs are:
 
