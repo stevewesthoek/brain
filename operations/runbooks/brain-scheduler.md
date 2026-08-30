@@ -77,7 +77,7 @@ jobs in a report-only or dry-run-report-only mode. It performs no retries.
 | `local-apps-report` | active | report-only | Generate local application status; remediation is separate. |
 | `video-runtime-report` | active | report-only | Generate video runtime and aggregate storage telemetry; no queue or video mutation. |
 | `video-orchestrator-storage-cleanup` | disabled | disabled | Retired legacy deletion responsibility; storage visibility is owned by `video-runtime-report`; remove later after historical retention. |
-| `memory-context-refresh` | disabled | disabled | Derived-memory write scope requires separate review. |
+| `memory-context-refresh` | disabled | disabled | Manual / on-demand only; legacy derived context snapshot must not run automatically. |
 | `mind-compile-loop` | active | report-only | Generate inbox proposals only; no Mind moves or writes. |
 | `graphify-nightly` | policy-blocked | disabled | Event-driven semantic gate only; structural Graphify remains frozen. |
 | `ing-bank-statement-download` | policy-blocked | disabled | Financial/credential-sensitive; never enable from this scheduler. |

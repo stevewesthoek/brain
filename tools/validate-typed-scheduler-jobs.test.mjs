@@ -30,7 +30,24 @@ test('Google Ads remains disabled and is human-classified as blocked pending har
     result[job.reviewCategory] = (result[job.reviewCategory] ?? 0) + 1;
     return result;
   }, {});
-  assert.deepEqual(counts, { ACTIVE: 4, BLOCKED: 9, 'NEEDS REVIEW': 2, OBSOLETE: 2 });
+  assert.deepEqual(counts, { ACTIVE: 4, BLOCKED: 10, 'NEEDS REVIEW': 1, OBSOLETE: 2 });
+});
+
+test('memory context refresh is retained for manual use but blocked from automation', () => {
+  const source = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+  const memoryRefresh = source.jobs.find((job) => job.id === 'memory-context-refresh');
+  assert.equal(memoryRefresh.reviewCategory, 'BLOCKED');
+  assert.equal(memoryRefresh.lifecycle, 'disabled');
+  assert.equal(memoryRefresh.mode, 'disabled');
+  assert.equal(memoryRefresh.scheduleType, 'disabled');
+  assert.equal(memoryRefresh.schedule, 'not scheduled');
+  assert.equal(memoryRefresh.outputArtifacts.length, 0);
+  assert.ok(memoryRefresh.tags.includes('local-derived'));
+  assert.ok(memoryRefresh.tags.includes('local-write'));
+  assert.match(memoryRefresh.policyReason, /manual \/ on-demand only/);
+  assert.match(memoryRefresh.policyReason, /automatic scheduling/);
+  assert.match(memoryRefresh.humanAction, /Manual \/ on-demand only/);
+  assert.match(memoryRefresh.humanAction, /must not run automatically/);
 });
 
 test('unsafe active changes fail closed through the schema and invariants', () => {

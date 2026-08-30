@@ -46,10 +46,18 @@ test('Brain Core returns every canonical job with lifecycle and bounded history'
   assert.equal(googleAds?.enabled, false);
   assert.equal(googleAds?.status, 'disabled');
   assert.match(googleAds?.policyReason ?? '', /replacement\/hardening/);
+  const memoryRefresh = response.jobs.find((job) => job.id === 'memory-context-refresh');
+  assert.equal(memoryRefresh?.reviewCategory, 'BLOCKED');
+  assert.equal(memoryRefresh?.lifecycle, 'disabled');
+  assert.equal(memoryRefresh?.mode, 'disabled');
+  assert.equal(memoryRefresh?.enabled, false);
+  assert.equal(memoryRefresh?.status, 'disabled');
+  assert.match(memoryRefresh?.policyReason ?? '', /manual \/ on-demand only/);
+  assert.match(memoryRefresh?.humanAction ?? '', /must not run automatically/);
   assert.deepEqual(response.jobs.reduce<Record<string, number>>((counts, job) => {
     counts[job.reviewCategory] = (counts[job.reviewCategory] ?? 0) + 1;
     return counts;
-  }, {}), { BLOCKED: 9, 'NEEDS REVIEW': 2, OBSOLETE: 2, ACTIVE: 4 });
+  }, {}), { BLOCKED: 10, 'NEEDS REVIEW': 1, OBSOLETE: 2, ACTIVE: 4 });
   assert.ok(response.jobs.every((job) => ['ACTIVE', 'BLOCKED', 'NEEDS REVIEW', 'OBSOLETE'].includes(job.reviewCategory)));
   assert.equal(response.history.length, 20);
   assert.equal(response.health, 'warning', 'policy-blocked inventory is visible as a warning, not green evidence');

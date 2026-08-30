@@ -28,6 +28,10 @@ test('dry-run emits one receipt for every registry job and spawns nothing', asyn
     assert.equal(fs.readdirSync(path.join(directory, 'state', 'receipts')).length, 17);
     const blocked = JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'ing-bank-statement-download.json')));
     assert.equal(blocked.status, 'blocked');
+    const memoryRefresh = JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'memory-context-refresh.json')));
+    assert.equal(memoryRefresh.status, 'disabled');
+    assert.equal(memoryRefresh.lifecycle, 'disabled');
+    assert.equal(memoryRefresh.mode, 'disabled');
   } finally { cleanup(directory); }
 });
 
