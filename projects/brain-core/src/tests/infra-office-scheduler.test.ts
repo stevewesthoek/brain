@@ -39,10 +39,17 @@ test('Brain Core returns every canonical job with lifecycle and bounded history'
   assert.match(response.jobs.find((job) => job.id === 'video-orchestrator-storage-cleanup')?.policyReason ?? '', /video-runtime-report/);
   assert.match(response.jobs.find((job) => job.id === 'video-orchestrator-storage-cleanup')?.humanAction ?? '', /Do not enable/);
   assert.equal(response.jobs.find((job) => job.id === 'video-orchestrator-storage-cleanup')?.status, 'disabled');
+  const googleAds = response.jobs.find((job) => job.id === 'google-ads-sync');
+  assert.equal(googleAds?.reviewCategory, 'BLOCKED');
+  assert.equal(googleAds?.lifecycle, 'disabled');
+  assert.equal(googleAds?.mode, 'disabled');
+  assert.equal(googleAds?.enabled, false);
+  assert.equal(googleAds?.status, 'disabled');
+  assert.match(googleAds?.policyReason ?? '', /replacement\/hardening/);
   assert.deepEqual(response.jobs.reduce<Record<string, number>>((counts, job) => {
     counts[job.reviewCategory] = (counts[job.reviewCategory] ?? 0) + 1;
     return counts;
-  }, {}), { BLOCKED: 8, 'NEEDS REVIEW': 3, OBSOLETE: 2, ACTIVE: 4 });
+  }, {}), { BLOCKED: 9, 'NEEDS REVIEW': 2, OBSOLETE: 2, ACTIVE: 4 });
   assert.ok(response.jobs.every((job) => ['ACTIVE', 'BLOCKED', 'NEEDS REVIEW', 'OBSOLETE'].includes(job.reviewCategory)));
   assert.equal(response.history.length, 20);
   assert.equal(response.health, 'warning', 'policy-blocked inventory is visible as a warning, not green evidence');

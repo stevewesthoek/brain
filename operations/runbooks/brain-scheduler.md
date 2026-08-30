@@ -71,7 +71,7 @@ jobs in a report-only or dry-run-report-only mode. It performs no retries.
 | `dance-of-life-sync` | disabled | disabled | External media sync/rescan; keep out of scheduler. |
 | `bible-studies-pipeline` | policy-blocked | disabled | Mind-write-capable implementation; Mind safety review and approval required. |
 | `gemini-cleanup` | deprecated | disabled | No canonical entrypoint; do not restore. |
-| `google-ads-sync` | disabled | disabled | External advertising and credentials; separate provider approval required. |
+| `google-ads-sync` | disabled | disabled | Blocked pending replacement/hardening before unattended scheduling; keep the current implementation disabled. |
 | `gws-token-refresh` | policy-blocked | disabled | Credential-sensitive; use a secret-safe provider procedure first. |
 | `mind-steward-dry-run` | active | dry-run-report-only | Run report-only validation; review findings, never apply changes. |
 | `local-apps-report` | active | report-only | Generate local application status; remediation is separate. |

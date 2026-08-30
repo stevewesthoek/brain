@@ -18,6 +18,21 @@ test('typed registry is the sole 17-job inventory and reports lifecycle counts',
   assert.match(output, /"policy-blocked":4/);
 });
 
+test('Google Ads remains disabled and is human-classified as blocked pending hardening', () => {
+  const source = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+  const googleAds = source.jobs.find((job) => job.id === 'google-ads-sync');
+  assert.equal(googleAds.reviewCategory, 'BLOCKED');
+  assert.equal(googleAds.lifecycle, 'disabled');
+  assert.equal(googleAds.mode, 'disabled');
+  assert.match(googleAds.policyReason, /replacement\/hardening/);
+
+  const counts = source.jobs.reduce((result, job) => {
+    result[job.reviewCategory] = (result[job.reviewCategory] ?? 0) + 1;
+    return result;
+  }, {});
+  assert.deepEqual(counts, { ACTIVE: 4, BLOCKED: 9, 'NEEDS REVIEW': 2, OBSOLETE: 2 });
+});
+
 test('unsafe active changes fail closed through the schema and invariants', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'typed-scheduler-'));
   try {
