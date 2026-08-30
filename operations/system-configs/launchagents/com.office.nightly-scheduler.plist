@@ -7,13 +7,12 @@
 
     <key>ProgramArguments</key>
     <array>
-      <string>/bin/zsh</string>
-      <string>-lc</string>
-      <string>/Users/Office/Repos/stevewesthoek/brain/tools/scripts/office-nightly-scheduler.sh</string>
+      <string>/opt/homebrew/bin/node</string>
+      <string>/Users/Office/Repos/stevewesthoek/brain-runtime/tools/scripts/brain-scheduler-runner.mjs</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/Office/Repos/stevewesthoek/brain</string>
+    <string>/Users/Office/Repos/stevewesthoek/brain-runtime</string>
 
     <key>EnvironmentVariables</key>
     <dict>
@@ -30,7 +29,7 @@
     </dict>
 
     <key>RunAtLoad</key>
-    <true/>
+    <false/>
 
     <key>StandardOutPath</key>
     <string>/Users/Office/Library/Logs/office-scheduler/nightly.log</string>

@@ -15,13 +15,10 @@ launchd label and filesystem compatibility paths.
 ```text
 macOS launchd
   com.office.nightly-scheduler
-  daily 03:00 Europe/Lisbon + RunAtLoad
+  daily 03:00 Europe/Lisbon + RunAtLoad=false
           |
           v
-office-nightly-scheduler.sh  (thin bootstrap only)
-          |
-          v
-brain-scheduler-runner.mjs
+/opt/homebrew/bin/node brain-runtime/tools/scripts/brain-scheduler-runner.mjs
   validate registry -> cutoff -> once/day -> single lock
   -> active report-only jobs -> receipts/history/report
           |
@@ -44,11 +41,21 @@ OBSOLETE 2. The runner loads the registry on every invocation and executes
 only `lifecycle: active`
 jobs in a report-only or dry-run-report-only mode. It performs no retries.
 
+Production launch identity is the clean, detached
+`/Users/Office/Repos/stevewesthoek/brain-runtime` checkout. The installed
+`~/Library/LaunchAgents/com.office.nightly-scheduler.plist` is a symlink to
+that runtime's canonical plist, so Brain Core can verify source/deployment
+identity by realpath. The historical
+`tools/scripts/office-nightly-scheduler.sh` wrapper remains retained for
+compatibility and rollback reference only; it is not the installed launch
+target.
+
 ## Timing, lock, and receipts
 
 - The schedule is daily at 03:00 in `Europe/Lisbon`.
-- `RunAtLoad` is intentionally guarded: a launch before 03:00 is recorded as
-  `skipped`, not executed.
+- The deployed plist uses `RunAtLoad=false` so bootstrap/reload cannot invoke
+  the production runner immediately. The runner retains its before-03:00 and
+  once-per-Lisbon-day guards as defense in depth.
 - `FORCE_RUN=1` is an explicit operator/test override for the time and
   once-per-Lisbon-day guards. It does not enable inactive jobs.
 - `nightly.lock` is a single-run lock. A held lock returns `running`; a stale
@@ -119,6 +126,23 @@ jobs in a report-only or dry-run-report-only mode. It performs no retries.
 - Launchd source/install mismatch: compare the source plist, installed link,
   label, calendar, and working directory. A repository branch is not live
   deployment evidence.
+
+## Production migration and rollback
+
+1. Verify `origin/main`, the detached clean runtime, the typed registry, and
+   the four active report-only jobs. Run the supported dry-run with temporary
+   state, log, and report directories; never invoke the production runner as a
+   validation shortcut.
+2. Capture the exact installed plist, hash, realpath, launchd arguments,
+   working directory, calendar, RunAtLoad, run count, and last exit in a
+   bounded rollback artifact under the runtime's local operational storage.
+3. Install/update only `com.office.nightly-scheduler` with the canonical plist
+   above, then bootstrap that label. Do not kickstart, force-run, enable
+   blocked jobs, or invoke the runner manually. The first natural trigger is
+   the next 03:00 Europe/Lisbon calendar event after migration.
+4. If bootstrap or Core identity acceptance fails, restore the captured plist
+   for this label only and bootstrap it again. Do not improvise a production
+   invocation after rollback.
 
 ## Never enable automatically
 
