@@ -10,6 +10,10 @@ sandbox_mode = "danger-full-access"
 notify = ["/Users/Office/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 service_tier = "default"
 
+# Workbench and Mind Context are project-scoped MCP registrations generated
+# from their Brain admission contracts; they do not belong in this global
+# Codex runtime config.
+
 [mcp_servers.stitch]
 command = "npx"
 args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
@@ -24,6 +28,9 @@ command = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl"
 startup_timeout_sec = 120
 
 [mcp_servers.node_repl.env]
+# Codex Desktop persists these browser/CUA settings under the MCP server
+# environment. Do not duplicate them in shell_environment_policy.set: the
+# application-owned serializer removes that unsupported duplicate on restart.
 NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
 NODE_REPL_NODE_MODULE_DIRS = "/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
 NODE_REPL_NODE_PATH = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node"
@@ -210,7 +217,3 @@ code = "JetBrainsMono Nerd Font"
 diffAdded = "#40c977"
 diffRemoved = "#fa423e"
 skill = "#ad7bf9"
-
-[shell_environment_policy.set]
-BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
-NODE_REPL_TRUSTED_CODE_PATHS = "/Users/Office/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
