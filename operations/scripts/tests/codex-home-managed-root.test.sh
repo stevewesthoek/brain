@@ -426,6 +426,28 @@ pass "generated Codex config renders absolute home paths for the target host"
 
 printf '\n[app_upgrade_state]\nversion = "fixture-upgrade"\n' >> "$REPAIR_ROOT/home/.codex/config.toml"
 printf '\n[marketplaces.fixture-runtime]\nsource_type = "local"\nsource = "%s"\n' "$REPAIR_ROOT/home/.codex/.tmp/fixture-marketplace" >> "$REPAIR_ROOT/home/.codex/config.toml"
+python3 - "$REPAIR_ROOT/home/.codex/config.toml" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+lines = text.splitlines(keepends=True)
+for index, line in enumerate(lines):
+    if line.startswith('NODE_REPL_TRUSTED_CODE_PATHS = '):
+        lines[index:index + 1] = [
+            line,
+            'BROWSER_USE_CODEX_APP_VERSION = "fixture-app-version"\n',
+            'BROWSER_USE_TINYSKY_ENABLED = "0"\n',
+            'NODE_REPL_TRUSTED_SERVICES = "fixture-trusted-services"\n',
+        ]
+        break
+else:
+    raise SystemExit('trusted code path fixture key not found')
+text = ''.join(lines)
+text += '\n[plugins."sites@openai-bundled"]\nenabled = true\n'
+path.write_text(text)
+PY
 sed -i '' 's/conversationDetailMode = "managed-default"/conversationDetailMode = "app-local"/' "$REPAIR_ROOT/home/.codex/config.toml"
 sed -i '' 's/fixtureAccent = "managed-default"/fixtureAccent = "app-local-nested"/' "$REPAIR_ROOT/home/.codex/config.toml"
 run_manager "$REPAIR_ROOT" check >/dev/null
@@ -445,6 +467,10 @@ grep -Fq 'BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"' \
 grep -Fq "NODE_REPL_TRUSTED_CODE_PATHS = \"$REPAIR_ROOT/home/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules\"" \
   "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the supported trusted code path setting"
 grep -Fq '[marketplaces.fixture-runtime]' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped approved app-local marketplace registration"
+grep -Fq 'BROWSER_USE_CODEX_APP_VERSION = "fixture-app-version"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped app-local Codex app version"
+grep -Fq 'BROWSER_USE_TINYSKY_ENABLED = "0"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped app-local TinySky setting"
+grep -Fq 'NODE_REPL_TRUSTED_SERVICES = "fixture-trusted-services"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped app-local trusted services"
+grep -Fq '[plugins."sites@openai-bundled"]' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the installed app-local Sites plugin"
 grep -Fq 'conversationDetailMode = "app-local"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped an app-local desktop override"
 grep -Fq 'fixtureAccent = "app-local-nested"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped a nested app-local desktop override"
 UPGRADE_BACKUP_COUNT="$(find "$REPAIR_ROOT/home/.brain-configs-backups" -type f -path '*/replaced-managed-entries/config.toml' | wc -l | tr -d ' ')"

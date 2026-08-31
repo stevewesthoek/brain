@@ -194,6 +194,33 @@ staged_data = tomllib.loads(staged_text)
 def is_desktop_section(name):
     return name == 'desktop' or name.startswith('desktop.')
 
+APP_LOCAL_NODE_REPL_ENV_KEYS = {
+    'BROWSER_USE_CODEX_APP_VERSION',
+    'BROWSER_USE_TINYSKY_ENABLED',
+    'NODE_REPL_TRUSTED_SERVICES',
+}
+APP_LOCAL_PLUGIN_SECTION_NAMES = {
+    'plugins."sites@openai-bundled"',
+}
+
+def assignment_lines(block):
+    assignments = {}
+    for line in block.splitlines():
+        match = re.match(r'^\s*([A-Za-z0-9_-]+)\s*=', line)
+        if match:
+            assignments[match.group(1)] = line
+    return assignments
+
+def append_to_section(text, section_name, lines):
+    if not lines:
+        return text
+    for name, block in sections(text):
+        if name != section_name:
+            continue
+        replacement = block.rstrip('\n') + '\n' + '\n'.join(lines) + '\n'
+        return text.replace(block, replacement, 1)
+    return text
+
 current_desktop = (
     [block for name, block in sections(current_text) if is_desktop_section(name)]
     if current_data.get('desktop') != staged_data.get('desktop')
@@ -206,10 +233,30 @@ if current_desktop:
     staged_text = staged_text.rstrip() + '\n\n# Preserved app-local desktop state; not Git-owned.\n' + '\n'.join(
         block.rstrip() for block in current_desktop
     ) + '\n'
+current_node_repl_env = current_data.get('mcp_servers', {}).get('node_repl', {}).get('env', {})
+staged_node_repl_env = staged_data.get('mcp_servers', {}).get('node_repl', {}).get('env', {})
+if isinstance(current_node_repl_env, dict) and isinstance(staged_node_repl_env, dict):
+    current_env_block = next(
+        (block for name, block in sections(current_text) if name == 'mcp_servers.node_repl.env'),
+        '',
+    )
+    current_assignments = assignment_lines(current_env_block)
+    missing_node_repl_env = [
+        current_assignments[key]
+        for key in current_assignments
+        if key in APP_LOCAL_NODE_REPL_ENV_KEYS
+        and key in current_node_repl_env
+        and key not in staged_node_repl_env
+    ]
+    staged_text = append_to_section(staged_text, 'mcp_servers.node_repl.env', missing_node_repl_env)
 staged_names = {name for name, _ in sections(staged_text)}
 preserved = [
     block for name, block in sections(current_text)
-    if (name.startswith('marketplaces.') or name == 'tui.model_availability_nux')
+    if (
+        name.startswith('marketplaces.')
+        or name == 'tui.model_availability_nux'
+        or name in APP_LOCAL_PLUGIN_SECTION_NAMES
+    )
     and name not in staged_names
 ]
 if preserved:
