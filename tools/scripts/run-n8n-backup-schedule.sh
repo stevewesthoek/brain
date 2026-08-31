@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Manual/approved backup wrapper; the production Brain Scheduler entry is blocked/disabled.
 set -euo pipefail
 
 STATE_DIR="${N8N_BACKUP_STATE_DIR:-$HOME/.local/state/n8n-backup}"

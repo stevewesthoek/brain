@@ -46,7 +46,7 @@ npx playwright install                       # Install browser binaries
 
 ## Integration with brain
 
-- **Nightly scheduler**: Use in shell scripts executed by `office-nightly-scheduler.plist`
+- **Scheduler boundary**: Use a separately approved automation surface; do not add Playwright jobs directly to the Brain Scheduler plist
 - **Bank automation**: See `ING bank statement downloader` (in projects, reference pattern)
 - **Project-specific**: Add to individual repo `CLAUDE.md` if project needs browser automation
 
@@ -62,7 +62,7 @@ npx playwright install                       # Install browser binaries
 1. **Generate scripts** — describe what you want (e.g., "log into bank, download statements as CSV")
 2. **Fix bugs** — paste error, ask for diagnosis
 3. **Test generation** — describe the flow, Claude writes `.spec.ts`
-4. **Integration help** — connect Playwright scripts to your nightly scheduler or n8n workflows
+4. **Integration help** — connect Playwright scripts to a separately approved scheduler or n8n workflow
 
 ## References
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Nightly Google Ads sync scheduler
-# Called by office-nightly-scheduler.sh
+# Google Ads sync wrapper; the registry entry is blocked/disabled.
+# Not called by the production Brain Scheduler; use a separately approved procedure.
 
 set -euo pipefail
 

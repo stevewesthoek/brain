@@ -287,9 +287,9 @@ nice -n 10 python ~/pipeline/generate_batch.py
 # fi
 ```
 
-### Option 2: Via Office Nightly Scheduler
+### Option 2: Not a Brain Scheduler path
 
-Add to `~/.local/state/office-scheduler/jobs.json`:
+Do not add arbitrary jobs to `~/.local/state/office-scheduler/jobs.json`. The production scheduler has one typed registry and admits only bounded local report-only jobs. A video-generation batch requires a separately owned, explicitly reviewed automation surface:
 
 ```json
 {
@@ -306,6 +306,10 @@ Add to `~/.local/state/office-scheduler/jobs.json`:
 ---
 
 ## Longevity & Thermal Management
+
+The configuration above is an illustrative manual/isolated batch shape only;
+it is not a supported production scheduler configuration and must not be
+installed under the Brain Scheduler state directory.
 
 ### Sustained Load Impact
 

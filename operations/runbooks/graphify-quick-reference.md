@@ -27,12 +27,14 @@ Do not run broad Graphify repository extraction, phased nightly graph generation
 tools/graphify-semantic-event.mjs
 ```
 
-The Office Nightly Scheduler evaluates semantic freshness through this entrypoint. No model runner is configured by default.
+The daily Brain Scheduler does not execute this entry. The registry retains
+Graphify as a policy-blocked, event-driven boundary. No model runner is
+configured by default.
 
-## Scheduler Mode
+## Explicit event-gate mode (not the daily scheduler)
 
 ```bash
-node tools/graphify-semantic-event.mjs --mode=scheduler
+node tools/graphify-semantic-event.mjs --mode=manual --scope=brain-architecture-docs --changed-file=docs/system/graphify-context-standard.md
 ```
 
 Expected behavior:
@@ -59,7 +61,7 @@ Add an explicit `--runner=/absolute/path/to/approved-bounded-runner` only when s
 ## Disable
 
 ```bash
-GRAPHIFY_SEMANTIC_DISABLED=1 node tools/graphify-semantic-event.mjs --mode=scheduler
+GRAPHIFY_SEMANTIC_DISABLED=1 node tools/graphify-semantic-event.mjs --mode=manual --scope=brain-architecture-docs --changed-file=docs/system/graphify-context-standard.md
 ```
 
 The disabled path is fail-closed.

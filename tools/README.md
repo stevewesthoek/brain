@@ -9,9 +9,9 @@ Utility scripts and wrappers for local workflows on this machine.
 - `n8n-api.sh` — wrapper for the live `n8n.prochat.tools` Public API using local credentials from `~/.config/n8n/.env`
 - `../operations/system-configs/bin/hetzner-cli` — wrapper for the Hetzner Cloud CLI using local credentials from `~/.config/hetzner/.env` or native `hcloud` contexts
 - `scripts/backup-n8n.sh` — exports live n8n credentials and workflows from the Dokploy-hosted container into the gitignored local backup path
-- `scripts/run-n8n-backup-schedule.sh` — daily scheduler guard for the n8n backup job using Europe/Lisbon cutoff logic
-- `scripts/office-nightly-scheduler.sh` — launchd-compatible Brain Scheduler bootstrap; the canonical registry-backed runner owns inventory, safety, timing, locks, and receipts
-- `scripts/brain-scheduler-runner.mjs` — executes only active report-only jobs from `operations/specs/typed-scheduler-jobs.json`
+- `scripts/run-n8n-backup-schedule.sh` — manual/approved n8n backup wrapper; the registry entry is blocked/disabled
+- `scripts/office-nightly-scheduler.sh` — retained legacy compatibility/rollback wrapper; it is not the installed LaunchAgent target
+- `scripts/brain-scheduler-runner.mjs` — canonical LaunchAgent runner; executes only Active report-only jobs from `operations/specs/typed-scheduler-jobs.json`
 - `scripts/render-office-scheduler-report.sh` — renders the Brain Scheduler markdown snapshot to `runtime/local/office-scheduler/latest-run.md`
 - `scripts/brain-compress.mjs` — explicit reversible compression for large JSON, logs, and text; stores originals under `~/.brain/cache/compression/`
 - `scripts/brain-learn-failures.mjs` — dry-run report generator for recurring session failures; supports `/learner` promotion without writing agent config
@@ -21,6 +21,10 @@ Utility scripts and wrappers for local workflows on this machine.
 ## Rule
 
 `scripts/` contains machine-specific helpers and should not be deleted without checking whether they are still in active use. See `brain/CLAUDE.md` under "Do not break".
+
+For scheduler identity, lifecycle, receipts, troubleshooting, and deployment
+procedure, use [the canonical runbook](../operations/runbooks/brain-scheduler.md)
+and [the current production state](../operations/runbooks/brain-scheduler-current-state.md).
 
 
 

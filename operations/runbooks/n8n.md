@@ -47,10 +47,8 @@ cd ~/Repos/stevewesthoek/brain
 tools/scripts/run-n8n-backup-schedule.sh
 ```
 
-Forced run:
-```bash
-FORCE_RUN=1 tools/scripts/run-n8n-backup-schedule.sh
-```
+The blocked backup must not be force-run through the Brain Scheduler. Use the
+manual/approved wrapper only after the separate credential and retention review.
 
 ## Schedule
 
@@ -64,14 +62,14 @@ Repo source:
 brain/operations/system-configs/launchagents/com.office.nightly-scheduler.plist
 ```
 
-Behavior:
-- The Office nightly scheduler starts at `03:00` local Mac time
-- `RunAtLoad` also triggers the nightly scheduler after login / reboot
-- The nightly scheduler checks `Europe/Lisbon` time and runs at most once per Lisbon day
-- The `n8n` backup runs inside that ordered nightly chain after the STB batch lane
-- If the machine was off at `03:00` and later boots or logs in after `03:00`, the nightly scheduler catches up automatically
+Current scheduler boundary (n8n backup blocked):
+- `com.office.nightly-scheduler` runs the canonical registry runner at `03:00` Europe/Lisbon with `RunAtLoad=false`.
+- `n8n-backup` is currently blocked/disabled in the typed registry; it is not in the active nightly chain.
+- The backup wrapper is a separate manual/approved procedure; do not force-run it through the Brain Scheduler.
+- Do not add a second LaunchAgent or infer catch-up after login/reboot.
+See `operations/runbooks/brain-scheduler-current-state.md` and the typed registry for current lifecycle and receipt truth.
 
-This keeps the job light while still catching up after reboot or downtime.
+The blocked job has no automatic scheduler catch-up behavior.
 
 ## Restore procedure
 
@@ -122,7 +120,7 @@ Nightly scheduler log:
 ~/Library/Logs/office-scheduler/nightly.log
 ```
 
-n8n backup job log inside the nightly scheduler lane:
+n8n backup wrapper log (manual/approved procedure):
 ```bash
 ~/Library/Logs/office-scheduler/n8n-backup.log
 ```
@@ -136,5 +134,5 @@ Last successful Lisbon-day backup marker:
 
 - The Public API does not currently expose full credential listing on this live build/key, so credential recovery uses the server-side `n8n export:*` path.
 - Existing OAuth credentials already stored in n8n are included in the backup.
-- New OAuth credentials added later will be captured automatically by the next scheduled backup.
-- This is installed as part of a user `LaunchAgent` nightly chain, so it runs when the `Office` user session is active. After reboot, it resumes automatically once that user session starts.
+- New OAuth credentials added later are not captured by an automatic Brain Scheduler backup.
+- This runbook is not evidence that the blocked backup is deployed or active. Any future unattended backup requires a separate credential and retention review.

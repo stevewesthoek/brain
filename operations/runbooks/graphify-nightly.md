@@ -1,24 +1,25 @@
-# Graphify Nightly — Bounded Semantic Event Gate
+# Graphify Semantic Event Gate — Manual/Event-Driven Boundary
 
-**Status:** Active compatibility runbook; structural Graphify frozen
+**Status:** Manual/event-driven compatibility runbook; daily scheduler path blocked
 **Last updated:** 2026-08-12
-**Scheduler:** `tools/scripts/office-nightly-scheduler.sh`
+**Scheduler registry entry:** `graphify-nightly` (policy-blocked, event-driven)
 **Canonical semantic entrypoint:** `tools/graphify-semantic-event.mjs`
 
 ## Current Operating Model
 
 The old phased nightly Graphify workflow is retired. Structural code/repository graph generation remains frozen under B8.5. Codebase Memory MCP is the structural navigation layer when fresh, and exact current source remains authoritative.
 
-The Office Nightly Scheduler now runs only the bounded semantic event gate:
+The daily Brain Scheduler does not execute this entry. The registry retains the
+event-driven metadata as a policy-blocked boundary. Use the semantic event gate
+only through an explicitly admitted manual/event-driven procedure:
 
 ```text
-tools/scripts/office-nightly-scheduler.sh
-  -> node tools/graphify-semantic-event.mjs --mode=scheduler
+node tools/graphify-semantic-event.mjs --mode=manual ...
 ```
 
 The historical `tools/scripts/graphify-nightly.sh` path is a fail-closed compatibility stub. Do not use it to generate graphs.
 
-## Scheduler Behavior
+## Event-gate Behavior
 
 The semantic event gate evaluates changes against the explicit Brain allowlist in `operations/specs/graphify-operational-profile.json`.
 
@@ -30,7 +31,7 @@ The semantic event gate evaluates changes against the explicit Brain allowlist i
 - No local model server is started automatically.
 - No repository is mutated.
 
-Default scheduler timeout is 300 seconds and remains bounded by the operational profile.
+The event-gate timeout is 300 seconds and remains bounded by the operational profile.
 
 ## Manual Semantic Regeneration
 

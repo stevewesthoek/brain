@@ -1,4 +1,6 @@
 # MTPLX Qwen 3.6 Configuration — Dry Run Test Report
+**Classification:** Historical report; its Graphify/LaunchAgent claims describe the 2026-06-23 state and are superseded by the current scheduler and Graphify runbooks.
+**Classification:** Historical report; its Graphify/LaunchAgent claims describe the 2026-06-23 state and are superseded by the current scheduler and Graphify runbooks.
 **Date:** 2026-06-23  
 **Result:** ✅ **ALL SYSTEMS GO — 100% VERIFIED**
 

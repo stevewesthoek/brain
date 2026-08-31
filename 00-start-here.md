@@ -84,6 +84,7 @@ operations/decision-log.md
 ```
 
 Use runbooks for procedures, standards for durable rules, and decision-log for confirmed operational/architecture decisions.
+The current Brain Scheduler entrypoint is [the current production state](operations/runbooks/brain-scheduler-current-state.md); use its linked runbook, troubleshooting matrix, lessons, and change checklist for scheduler work.
 
 ### Tools
 

@@ -9,14 +9,14 @@ NotebookLM CLI (v0.3.4) is installed globally via pipx. Use for:
 - **Content generation** — audio overviews, videos, slides, quizzes, flashcards, mind maps, infographics
 - **Data extraction** — export quiz JSON, mind map hierarchies, data tables as CSV
 - **Batch operations** — download all artifacts of a type, manage multiple notebooks
-- **Automation** — integrate with nightly scheduler for recurring research tasks
+- **Automation** — use a separately approved automation surface for recurring research; do not assume the Brain Scheduler is available
 
 ## Key advantages over web UI
 
 - **Batch downloads** — download all artifacts at once
 - **Structured exports** — JSON for mind maps, CSV for data tables, PPTX for slides
 - **Programmatic control** — manage notebooks and permissions via CLI
-- **Headless automation** — perfect for nightly scheduler and workflows
+- **Headless automation** — suitable for explicitly approved workflows with their own credentials and safety review
 - **Beyond UI** — features not available in the web interface
 
 ## Common patterns
@@ -127,7 +127,7 @@ notebooklm download data-table ./data.csv
 
 ## Integration with brain
 
-- **Nightly scheduler**: Use for recurring research tasks (e.g., weekly research synthesis)
+- **Scheduler boundary**: Recurring research needs a separately approved automation surface; do not assume the Brain Scheduler
 - **n8n workflows**: Add sources, generate content, download artifacts as part of automation
 - **Data export**: Generate structured outputs (JSON, CSV) for downstream processing
 
@@ -142,7 +142,7 @@ notebooklm download data-table ./data.csv
 
 1. **Generate scripts** — describe research workflow, Claude writes automation
 2. **Batch operations** — e.g., "download all quizzes from these 5 notebooks"
-3. **Integration help** — connect to n8n, nightly scheduler, or other tools
+3. **Integration help** — connect to n8n or another separately approved automation surface
 4. **Data analysis** — process exported CSV/JSON outputs
 
 ## References

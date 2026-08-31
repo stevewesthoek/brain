@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # mind-compile-loop.sh — Report-only inbox classification for Mind
 #
-# Run nightly by office-nightly-scheduler.sh.
+# Run by the canonical registry runner as the active report-only job.
 #
 # Reads inbox/new/, classifies each file by its frontmatter and content, and
 # prints proposals to stdout. It does not move, rename, append, or otherwise

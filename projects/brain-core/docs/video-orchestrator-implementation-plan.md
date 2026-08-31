@@ -1,7 +1,7 @@
 # Video Orchestrator — Implementation Plan
 
 **Document type:** Executable implementation plan  
-**Status:** Active  
+**Status:** Historical implementation-plan snapshot; current scheduler truth is in `operations/runbooks/brain-scheduler-current-state.md`.
 **Last updated:** 2026-06-14 (current AI Model Selector provider policy; Gemini disabled)
 **Roadmap reference:** `video-orchestrator-roadmap.md`  
 **Strategy reference:** `video-orchestrator-strategy.md`  

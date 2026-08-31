@@ -207,7 +207,7 @@ browse resume
 ### C4. If this task will recur → save profile + upgrade to Workflow D
 1. **Save the auth profile now** (don't wait): `web-auth save <name>` — next run starts from Option D (instant restore)
 2. **Offer to write a Playwright script** (Workflow D) that calls `web-auth restore <name>` at the start
-3. Suggest wiring to nightly scheduler or n8n if truly recurring
+3. Suggest a separately reviewed automation surface if truly recurring; consult the Brain Scheduler change checklist before proposing its typed registry
 
 ---
 
@@ -220,7 +220,7 @@ Use `/playwright` to generate a durable, reusable script. One-off exploration in
 ### D1. Clarify the trigger
 Ask (if not already clear):
 - Manual: user runs the script themselves when needed
-- Scheduled: runs on a cron/nightly (use nightly scheduler)
+- Scheduled: runs on an explicitly approved scheduler or automation surface
 - Event-driven: triggered by n8n workflow
 
 ### D2. Generate base script (if interactive site)
@@ -269,7 +269,7 @@ Common patterns by use case:
 | Social media posting | Login → navigate to compose → fill text → click post |
 | Data extraction | Navigate → `page.evaluate()` → return structured data |
 | E2E test | `npx playwright test` with `expect()` assertions |
-| Scheduled job | Wrap in script, add to nightly scheduler plist |
+| Scheduled job | Wrap in a bounded script and propose it through the owning automation's review/registry contract |
 
 ### D3.5 Anti-Bot Techniques (for third-party sites)
 
@@ -348,7 +348,7 @@ console.log(`Done. Processed ${state.results.length} items.`);
 
 ### D4. Wire to scheduler or n8n (if recurring)
 
-**Nightly scheduler:** Add to `~/Library/LaunchAgents/com.office.nightly-scheduler.plist`
+**Scheduler boundary:** Do not add directly to a LaunchAgent; use the owning automation's registry and change checklist.
 **n8n workflow:** Trigger via Execute Command node → pass output to next node
 
 ### D5. Save the script

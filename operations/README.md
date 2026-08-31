@@ -7,7 +7,7 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
 - `automations/` — workflow exports and higher-level automations
 - `deploy/` — real deployment configs only
 - `infrastructure/` — infrastructure and architecture docs
-- `runbooks/` — repeatable procedures
+- `runbooks/` — repeatable procedures; start scheduler work with `runbooks/brain-scheduler-current-state.md`
   - **`human-writing-guardrails-adoption.md`** — why human-writing polish is a shared final-stage standard, not a separate always-on humanizer skill; lists which orchestrators use it and why.
   - **`media-acquisition-yt-dlp.md`** — install, safety boundaries, commands, folder layout, and natural-language routing for dormant yt-dlp media acquisition.
   - **`scripture-source-stack.md`** — source architecture for Bible passage retrieval, API.Bible, original-language data, Strong's-style lookup, and Scripture proof maps.

@@ -14,13 +14,9 @@ Canonical semantic gate:
 tools/graphify-semantic-event.mjs
 ```
 
-The Office Nightly Scheduler invokes:
-
-```text
-node tools/graphify-semantic-event.mjs --mode=scheduler
-```
-
-No model runner is configured by default. An approved bounded runner must be supplied explicitly when semantic regeneration is intentionally requested.
+The daily Brain Scheduler does not invoke this entrypoint. The registry retains
+Graphify as a policy-blocked, event-driven job. An approved bounded runner must
+be supplied explicitly when semantic regeneration is intentionally requested.
 
 Legacy package-script IDs are preserved for compatibility:
 

@@ -2,24 +2,28 @@
 
 ## Purpose
 
-This runbook documents the active recurring Mind jobs. Mind automation runs through the local nightly scheduler, not through per-minute cron routing jobs.
+This runbook documents the active recurring Mind report jobs. Mind automation
+runs through the canonical local Brain Scheduler, not through per-minute cron
+routing jobs. The scheduler is report-only for Mind.
 
 ## Scheduler
 
 ```text
-brain/tools/scripts/office-nightly-scheduler.sh
+brain/tools/scripts/brain-scheduler-runner.mjs
 ```
 
-The scheduler runs on this computer after the nightly cutoff. Mind jobs are part of that scheduler chain.
+The scheduler runs on this computer daily at `03:00` Europe/Lisbon. Only the
+two report jobs in the table below are admitted as Mind jobs in that chain;
+the operator procedures remain manual-only.
 
-## Active Mind Jobs
+## Mind jobs and operator procedures
 
-| Job | Script | Purpose | Writes to Mind |
+| Job or procedure | Script | Purpose | Scheduler admission / Mind writes |
 |---|---|---|---|
-| Mind Steward inbox sync | `tools/scripts/mind-steward-sync-inbox.mjs` | Operator-only sync; defaults to dry-run and copies only missing `inbox/new/*.md` in explicitly approved apply mode | no in default mode |
-| Mind Steward classification | `tools/scripts/mind-steward-classify-captures.sh` | Operator-only private Bedrock classifier; defaults to dry-run and apply is disabled | no |
-| Mind compile loop | `tools/scripts/mind-compile-loop.sh --mode=report-only` | Emit review suggestions to scheduler output | no |
-| Mind Steward dry-run report | `tools/scripts/mind-steward-dry-run-report.sh` | Write Brain runtime report for maintenance findings | no Mind writes |
+| Mind Steward inbox sync | `tools/scripts/mind-steward-sync-inbox.mjs` | Operator-only sync; defaults to dry-run and copies only missing `inbox/new/*.md` in explicitly approved apply mode | Manual-only; no Mind writes in default mode |
+| Mind Steward classification | `tools/scripts/mind-steward-classify-captures.sh` | Operator-only private Bedrock classifier; defaults to dry-run and apply is disabled | Manual-only; no Mind writes in default mode |
+| Mind compile loop | `tools/scripts/mind-compile-loop.sh --mode=report-only` | Emit review suggestions to scheduler output | Active scheduler job; no Mind writes |
+| Mind Steward dry-run report | `tools/scripts/mind-steward-dry-run-report.sh` | Write Brain runtime report for maintenance findings | Active scheduler job; no Mind writes |
 
 ## Nightly Order
 
@@ -29,7 +33,11 @@ mind-steward-dry-run-report
 -> mind-compile-loop --mode=report-only
 ```
 
-Unsafe sync, classification, and memory-refresh scheduler jobs remain quiesced.
+This is the Mind subset of the canonical four-job scheduler run; the video
+runtime report runs in the same scheduler but is not a Mind job.
+
+Unsafe sync, classification, and memory-refresh jobs remain quiesced. There is
+no separate automatic Mind scheduler lane.
 
 ## Private AI Requirement
 

@@ -26,9 +26,10 @@
  *    already in state.transcribed.
  *  - FAILED LIST: videos that fail transcription are added to state.failed and skipped
  *    on subsequent runs. Re-run with FORCE_RESCAN=1 to clear the failed list and retry.
- *  - NIGHTLY SCHEDULE: triggered automatically by office-nightly-scheduler.sh after
- *    dance-of-life-sync completes (new videos first, then transcribe). The nightly job
- *    has a 4-hour timeout; any remaining videos are picked up the following night.
+ *  - SCHEDULER STATUS: policy-blocked/disabled; use an explicit approved session after
+ *    reviewing the source and destination. The production Brain Scheduler does not call it.
+ *    Historical unattended-run notes are retained only as context; they do not define
+ *    a current schedule or automatic retry contract.
  *
  * Dynamic growth:
  *  - New series folders in Bible Studies/ are auto-detected every run (logged as 🆕).

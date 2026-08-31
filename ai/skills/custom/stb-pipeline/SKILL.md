@@ -13,7 +13,7 @@ description: Says the Bible — monthly episode generation and pipeline executio
 ## Current state
 
 - Episodes **001–013** — fully produced and live on YouTube
-- Episodes **014–040** — SSML ready, registered in run.mjs, and registered with the Office nightly scheduler
+- Episodes **014–040** — SSML ready and registered in run.mjs; the scheduler batch remains policy-blocked/disabled
 - **Next batch starts at 041**
 
 ---
@@ -23,12 +23,12 @@ description: Says the Bible — monthly episode generation and pipeline executio
 Episodes are generated in bulk, but YouTube enforces a **~10 videos/day channel cap** (separate from the API quota). The pipeline handles this automatically:
 
 1. **SSML + episode files** are generated upfront (all at once, CPU-only)
-2. **`npm run pipeline:schedule`** registers the STB batch with the Office nightly scheduler
-3. The **Office nightly scheduler** starts at **3:00 AM local time** and runs `batch-run.mjs` first in the heavy batch lane
+2. A scheduler registration is not part of the current Brain Scheduler workflow; any batch run needs a separate approved automation
+3. The Brain Scheduler does not run this external-write batch; use an explicitly approved manual or separately owned workflow
 4. Already-uploaded episodes are **skipped automatically** (idempotent DB check)
 5. You can **close the terminal completely** — the scheduler runs independently of Claude or any open session
 
-**You never need to think about batching or timing. Run `pipeline:schedule` once, done.**
+**Do not assume unattended batching or scheduler ownership.** The current registry keeps this external-write pipeline blocked.
 
 ---
 
@@ -221,32 +221,32 @@ Add the new episodes to `SLUG_TO_SSML_FOLDER` and `STORY_METADATA` in:
 },
 ```
 
-### Step 7 — Register the nightly batch
+### Step 7 — Historical/blocked scheduler registration
 
-After all SSML is generated and run.mjs is updated, register the batch with the Office nightly scheduler with one command:
+The former scheduler-registration design is retained below only as historical context. Do not use it as a current Brain Scheduler deployment instruction:
 
 ```bash
 cd /Users/Office/Repos/prochattools/web/says-the-bible
-npm run pipeline:schedule -- --slugs 041-genesis-rebekah-30m,042-...,043-...
+# Not a current Brain Scheduler operation; obtain separate approval for any batch automation.
 ```
 
-This writes the STB batch configuration used by the Office nightly scheduler, which starts at **3:00 AM local time**. The nightly batch:
+The old design wrote a scheduler batch configuration. The current typed registry keeps `stb-pipeline-batch` disabled/policy-blocked; no 03:00 batch is admitted:
 - Runs `batch-run.mjs` with all the slugs
 - Uploads up to 10 videos per day (YouTube's channel-level cap)
 - Skips already-uploaded episodes automatically
 - Stops cleanly when today's limit is reached, resumes tomorrow
 - Logs everything to `/tmp/stb-pipeline-batch.log`
 
-**After running `pipeline:schedule`, you can close the terminal. The Mac handles everything through the centralized nightly scheduler.**
+**Do not treat this path as deployed or active.**
 
 Monitor progress anytime:
 ```bash
 tail -f /tmp/stb-pipeline-batch.log
 ```
 
-Disable the nightly batch (if needed):
+No scheduler disable command is needed; the registry entry is already blocked/disabled:
 ```bash
-rm -f ~/.local/state/office-scheduler/stb-pipeline-batch.env
+# Do not mutate scheduler state to manage this blocked job.
 ```
 
 ### Step 8 — Verify on YouTube Studio
@@ -264,7 +264,7 @@ rm -f ~/.local/state/office-scheduler/stb-pipeline-batch.env
 - [ ] All episode `.md` files written in `production/episodes/`
 - [ ] All SSML sets generated (12 files each) in `production/ssml/stories/`
 - [ ] `run.mjs` updated — `SLUG_TO_SSML_FOLDER` and `STORY_METADATA`
-- [ ] `npm run pipeline:schedule -- --slugs ...` run → nightly scheduler registration updated
+- [ ] Do not register this batch in the Brain Scheduler; complete a separate safety/authority review if automation is proposed
 - [ ] YouTube Studio: videos appearing as Scheduled over the following days
 - [ ] `episodes/` folder committed to brain repo
 
@@ -301,6 +301,6 @@ npm run pipeline:run:no-upload -- --slug NNN-slug-30m
 | Assets (noise, fonts, template) | `production/input/assets/` |
 | Pipeline orchestrator | `scripts/pipeline/run.mjs` |
 | Batch runner | `scripts/pipeline/batch-run.mjs` |
-| Nightly scheduler registrar | `scripts/pipeline/install-cron.mjs` |
+| Historical scheduler registrar | `scripts/pipeline/install-cron.mjs` (not the production Brain Scheduler authority) |
 | Batch log | `/tmp/stb-pipeline-batch.log` |
 | SSML gold standard | `production/ssml/stories/006_jonah_whale/` |

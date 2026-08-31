@@ -27,6 +27,7 @@ Use this before answering AI-system, tooling, skill, config, runbook, automation
 | AI policy / guardrails | `ai/policy/` | global configs |
 | Human writing guardrails | `operations/standards/human-writing-guardrails.md` | `operations/runbooks/human-writing-guardrails-adoption.md`, `docs/skills/skill-index.md` |
 | Runbooks/procedures | `operations/runbooks/` | `operations/standards/` |
+| Brain Scheduler current state and operations | `operations/runbooks/brain-scheduler-current-state.md`, `operations/runbooks/brain-scheduler.md` | `operations/runbooks/brain-scheduler-report-index.md`, `operations/runbooks/brain-scheduler-change-checklist.md` |
 | Operational decisions | `operations/decision-log.md` | relevant runbook/spec |
 | Scripts/tools | `tools/README.md`, `tools/scripts/` | tool-specific folder |
 | Infrastructure/deploy | `operations/infrastructure/`, `operations/deploy/` | `operations/runbooks/` |

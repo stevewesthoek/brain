@@ -152,7 +152,7 @@ CREATE TABLE generation_jobs (
 );
 ```
 
-**Location:** Replace `office-nightly-scheduler.sh` with job queue runner.
+**Historical location:** This proposed replacement was superseded by the canonical typed Brain Scheduler runner; video job-queue work remains separate.
 
 **Benefit:** Resumable, auditable, scalable batch processing.
 

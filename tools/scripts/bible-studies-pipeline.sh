@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bible-studies-pipeline.sh — Nightly transcription + NotebookLM sync for Dance of Life Bible Studies
+# bible-studies-pipeline.sh — Manual transcription + NotebookLM sync for Dance of Life Bible Studies
 #
 # Phases (only with --mode=apply):
 #   1. Scan Bible Studies/ for new audio/video files
@@ -10,7 +10,7 @@
 #   6. Regenerate README index
 #   7. Git commit new notes to brain repo
 #
-# Scheduler status: quiesced by BS0.2; this wrapper is report-only by default.
+# Scheduler status: policy-blocked/disabled; this wrapper is not a production scheduler lane.
 # Script:    tools/scripts/bible-studies/pipeline.mjs
 # State:     ~/.local/state/bible-studies/state.json
 # Log:       ~/Library/Logs/office-scheduler/bible-studies.log

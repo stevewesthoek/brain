@@ -12,7 +12,7 @@ Canonical Graphify policy:
 - The only supported semantic entrypoint is tools/graphify-semantic-event.mjs.
 - No default local or external model runner is configured or auto-started.
 
-Scheduler-owned semantic checks run through the event gate. Manual semantic regeneration requires an approved scope and an explicitly supplied bounded runner.
+The daily Brain Scheduler does not invoke this retired stub. Manual semantic regeneration uses the supported event gate and requires an approved scope plus an explicitly supplied bounded runner.
 EOF
 
 exit 78

@@ -52,14 +52,11 @@ Current boundaries are defined by `operations/specs/graphify-operational-profile
 - repository mutation forbidden;
 - generated output non-authoritative.
 
-The Office Nightly Scheduler runs only the semantic event gate:
-
-```text
-tools/scripts/office-nightly-scheduler.sh
-  -> node tools/graphify-semantic-event.mjs --mode=scheduler
-```
-
-When no explicit runner is supplied, the gate records freshness/receipts only.
+The typed scheduler registry retains Graphify as a policy-blocked,
+event-driven entry; the daily 03:00 scheduler does not execute it. Use the
+semantic event gate only through an explicitly admitted manual/event-driven
+procedure. When no explicit runner is supplied, the gate records
+freshness/receipts only.
 
 ## Legacy Structural Graphify
 

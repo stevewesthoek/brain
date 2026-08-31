@@ -10,6 +10,10 @@ has one typed job registry, one registry-backed runner, one receipt contract,
 and one Brain Core overview. The older Office naming remains only in the
 launchd label and filesystem compatibility paths.
 
+For the accepted live snapshot and links to the lessons, report index,
+troubleshooting matrix, and future change gate, read [Brain Scheduler current
+production state](brain-scheduler-current-state.md).
+
 ## Architecture
 
 ```text
@@ -105,6 +109,11 @@ local binary fails closed.
 | `graphify-nightly` | policy-blocked | disabled | Event-driven semantic gate only; structural Graphify remains frozen. |
 | `ing-bank-statement-download` | policy-blocked | disabled | Financial/credential-sensitive; never enable from this scheduler. |
 
+The four Active jobs are the only jobs admitted to child execution:
+`mind-steward-dry-run`, `local-apps-report`, `video-runtime-report`, and
+`mind-compile-loop`. The registry currently has 16 jobs in total: 4 Active, 10
+Blocked, 0 Needs Review, and 2 Obsolete.
+
 ## Adding, changing, or retiring a job
 
 1. Update the typed registry and schema-compatible metadata in one change.
@@ -119,6 +128,8 @@ local binary fails closed.
    credential-sensitive, destructive, or Mind-mutating job must remain
    disabled or policy-blocked.
 5. Run `node tools/validate-typed-scheduler-jobs.mjs`, the scheduler tests,
+   `node tools/validate-brain-scheduler-documentation.mjs`, and its focused
+   `node --test tools/validate-brain-scheduler-documentation.test.mjs`.
    Brain Core and Console typechecks, and a dry-run acceptance with temporary
    state/log/report directories.
 6. Update this decision table and preserve a receipt-compatible migration
@@ -126,20 +137,11 @@ local binary fails closed.
 
 ## Troubleshooting
 
-- `health: failed` with a stale lock: preserve the lock evidence, identify the
-  owner, and remove it only through an explicitly approved bounded operator
-  action. Do not make the runner guess.
-- `health: warning` with missing receipts: inspect the scheduler log and
-  report paths, then rerun a bounded dry-run. Missing evidence is not success.
-- A job is `blocked` or `disabled`: this is intentional policy state, not an
-  invitation to pass an argument or call the entrypoint directly from the
-  scheduler.
-- A report is stale: verify the overall receipt, per-job receipt, and Lisbon
-  date before deciding whether a run is needed. Do not retry a failed external
-  operation from this runbook.
-- Launchd source/install mismatch: compare the source plist, installed link,
-  label, calendar, and working directory. A repository branch is not live
-  deployment evidence.
+Use the [concise troubleshooting matrix](brain-scheduler-troubleshooting.md).
+Preserve evidence before repair. In particular, do not force-run, kickstart,
+reload, enable a blocked job, or silently delete a lock as a first diagnostic
+step. A blocked or disabled job is intentional policy state, not an invitation
+to invoke its entrypoint directly.
 
 ## Production migration and rollback
 
@@ -157,6 +159,10 @@ local binary fails closed.
 4. If bootstrap or Core identity acceptance fails, restore the captured plist
    for this label only and bootstrap it again. Do not improvise a production
    invocation after rollback.
+
+Repository-only documentation, registry metadata, or test changes do not
+reload launchd and do not require a scheduler rerun. A live identity change
+requires its own approval and bounded launchd evidence.
 
 ## Never enable automatically
 

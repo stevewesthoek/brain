@@ -375,19 +375,19 @@ spark-cli team "Team Name"            # team info
 - Docker CLI commands work identically under OrbStack
 - Production uses self-hosted Supabase server on Tailscale (100.71.31.88) — not replicated locally
 
-## Local inference: MTPLX + Qwen 3.6 27B
+## Retired local inference reference: MTPLX + Qwen 3.6 27B
 
-**MTPLX** is the local inference engine on this Mac. It accelerates Qwen 3.6 27B using native MTP (Multi-Token Prediction) speculative decoding on Apple Silicon.
+**MTPLX/Qwen is a retired local-inference setup. It is not a current Brain Scheduler or Graphify execution path.
 
 **Key constraints:**
 - Model + runtime requires ~21-22 GB unified memory (16.4 GB weights + 4-5 GB KV cache + buffers)
 - M4 Pro has 24 GB total; **MTPLX and Ollama cannot coexist** with large models
-- All entry points (`qwen`, `graphify-nightly`, graphify scripts) auto-stop Ollama before starting MTPLX
+- No current Brain Scheduler entrypoint starts MTPLX, Ollama, Qwen, or another local text model.
 
 **Entry points:**
 - Terminal coding: `qwen` (runs Aider with MTPLX backend)
-- Graphify extraction: Custom "mtplx" backend registered in `~/.graphify/providers.json`
-- Nightly scheduler: `graphify-nightly.sh` runs 6 graphify phases on MTPLX
+- Graphify: use the bounded semantic event gate; structural Graphify is frozen and the scheduler registry entry is policy-blocked/event-driven
+- Nightly scheduler: `com.office.nightly-scheduler` invokes `tools/scripts/brain-scheduler-runner.mjs`; Graphify is not in the Active set
 
 **See:** `operations/runbooks/mtplx-qwen-integration.md` for full setup, troubleshooting, and memory management.
 
@@ -471,7 +471,7 @@ Machine tasks integrate with your main workflow — same kanban, same priorities
 - `~/.codex` is a real local directory; its managed config files point into `machine-brain/operations/system-configs/codex`
 - `~/.kiro` → `machine-brain/operations/system-configs/kiro`
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are symlinks → machine-brain
-- `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may symlink into machine-brain
+- `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` symlinks to the clean detached `brain-runtime` plist
 
 **If you touch these symlink folders, it breaks everything:**
 - NEVER move `operations/system-configs/`

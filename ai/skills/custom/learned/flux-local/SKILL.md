@@ -264,7 +264,7 @@ image = pipe(prompt="...", num_inference_steps=30).images[0]  # More detail
 # Cron job: 2 AM daily
 0 2 * * * /usr/bin/nice -n 10 python ~/pipeline/generate_flux_batch.py
 
-# Or via Office nightly scheduler
+# Do not use the Brain Scheduler for this resource-intensive batch; see the separate automation boundary in local-video-generation-setup.md
 # See: operations/runbooks/local-video-generation-setup.md → "Scheduling for Night Batch Processing"
 ```
 

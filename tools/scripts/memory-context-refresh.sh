@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # memory-context-refresh.sh — Generate ~/.brain/memory-context.md for passive AI injection
 #
-# Run nightly by office-nightly-scheduler.sh.
+# Manual/on-demand only; the production scheduler entry is disabled.
 # Output: a compact, always-current summary of the shared memory index + recent facts.
 #
 # Purpose: Codex and Gemini have no UserPromptSubmit hook mechanism. This file is included

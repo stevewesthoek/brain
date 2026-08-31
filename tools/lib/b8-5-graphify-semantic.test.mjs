@@ -170,10 +170,15 @@ test('manual unapproved scope fails closed', async () => {
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
-test('Office scheduler uses semantic gate and legacy structural runner remains fail-closed', () => {
+test('Brain Scheduler blocks Graphify while the legacy structural runner remains fail-closed', () => {
   const scheduler = fs.readFileSync(path.join(ROOT, 'tools/scripts/office-nightly-scheduler.sh'), 'utf8');
   const legacy = fs.readFileSync(path.join(ROOT, 'tools/scripts/graphify-nightly.sh'), 'utf8');
-  assert.match(scheduler, /graphify-semantic-event\.mjs/);
+  const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'operations/specs/typed-scheduler-jobs.json'), 'utf8'));
+  const graphifyJob = registry.jobs.find((job) => job.id === 'graphify-nightly');
+  assert.equal(graphifyJob?.scheduleType, 'event-driven');
+  assert.equal(graphifyJob?.lifecycle, 'policy-blocked');
+  assert.equal(graphifyJob?.mode, 'disabled');
+  assert.match(scheduler, /brain-scheduler-runner\.mjs/);
   assert.doesNotMatch(scheduler, /GRAPHIFY_PHASES=%q/);
   assert.match(legacy, /GRAPHIFY_CONTAINED_EXECUTION/);
 });

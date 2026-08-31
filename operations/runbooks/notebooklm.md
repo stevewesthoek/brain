@@ -54,7 +54,7 @@ notebooklm download data-table ./data.csv
 
 ## Common use cases
 
-### 1. Weekly research synthesis (nightly scheduler)
+### 1. Weekly research synthesis (manual or separately approved automation)
 ```bash
 #!/bin/bash
 
@@ -113,11 +113,13 @@ notebooklm download quiz --format json ./quiz.json
 notebooklm download data-table ./timeline.csv
 ```
 
-## Nightly scheduler integration
+## Scheduler boundary
 
-To run NotebookLM CLI via nightly scheduler:
+NotebookLM is not a current Brain Scheduler job. This section describes a
+separately approved automation shape only; it is not an instruction to edit
+the Brain Scheduler or its LaunchAgent.
 
-1. Create script (e.g., `scripts/research-synthesis.sh`):
+1. Create script (e.g., `scripts/research-synthesis.sh`) only after that separate review:
 ```bash
 #!/bin/bash
 set -e
@@ -141,7 +143,7 @@ notebooklm download report "/tmp/news-$(date +%Y%m%d).md"
 # Optional: upload to cloud storage, send via email, etc.
 ```
 
-2. Add to `office-nightly-scheduler.sh`:
+2. Keep this script outside `office-nightly-scheduler.sh` and the typed registry unless a separate safety and credential review approves an automation owner:
 ```bash
 # Run NotebookLM research synthesis
 bash ~/Repos/stevewesthoek/brain/scripts/research-synthesis.sh

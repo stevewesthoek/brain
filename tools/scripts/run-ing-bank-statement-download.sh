@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# ING Bank Statement Download — Monthly Scheduler
+# ING Bank Statement Download — Manual/approved financial wrapper
 #
 # Purpose: Downloads bank statements from ING Business Banking for all 3 accounts
-#          (2 current + 1 savings), runs once per month on the 1st
+#          (2 current + 1 savings); not an unattended scheduler job
 #
-# Triggered by: office-nightly-scheduler.sh (runs every night, checks date before executing)
+# Triggered by: explicit human-approved invocation only
 # Logs to: ~/Library/Logs/office-scheduler/ing-bank-statement-download.log
 # State: ~/.local/state/office-scheduler/ing-bank-statement-download.last
 

@@ -12,7 +12,7 @@ Canonical entrypoint:
 tools/graphify-semantic-event.mjs
 ```
 
-The Office Nightly Scheduler uses scheduler mode. Manual semantic evaluation requires an approved scope and changed files. A model runner is optional and must be supplied explicitly when semantic regeneration is intentionally desired.
+The scheduler registry retains Graphify as a policy-blocked/event-driven boundary; the daily Brain Scheduler does not execute it. Manual semantic evaluation requires an approved scope and changed files. A model runner is optional and must be supplied explicitly when semantic regeneration is intentionally desired.
 
 ## Package Script Compatibility
 

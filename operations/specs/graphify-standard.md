@@ -30,14 +30,12 @@ The only supported semantic entrypoint is:
 tools/graphify-semantic-event.mjs
 ```
 
-The Office Nightly Scheduler invokes it as an event gate:
-
-```text
-tools/scripts/office-nightly-scheduler.sh
-  -> node tools/graphify-semantic-event.mjs --mode=scheduler
-```
-
-When `GRAPHIFY_SEMANTIC_RUNNER` is supplied explicitly, the scheduler may pass that bounded runner to the event gate. Without an explicit runner, the event gate records freshness/receipts but does not invoke a model.
+The typed scheduler registry retains Graphify as a policy-blocked,
+event-driven entry. The daily 03:00 scheduler does not execute it. An
+event-driven or manual invocation requires explicit admission and, when
+semantic model execution is desired, an explicitly supplied bounded runner.
+Without a runner, the event gate records freshness/receipts but does not invoke
+a model.
 
 Manual regeneration requires:
 
@@ -69,9 +67,10 @@ Brain does not own an always-on Ollama, MTPLX, Qwen, or other local text-LLM ser
 
 Current caps are defined in `operations/specs/graphify-operational-profile.json`, including maximum documents, bytes, estimated tokens, runtime, and output size.
 
-## Scheduler Contract
+## Scheduler Boundary
 
-The Office Nightly Scheduler is the single recurring Graphify scheduler surface. It may execute only the semantic event gate described above.
+The Brain Scheduler is not a current Graphify execution surface. The registry
+entry is retained to document the blocked event-driven boundary.
 
 The scheduler must never:
 

@@ -1,7 +1,7 @@
 # Obsidian Mind + Mind Steward Implementation Plan
 
 **Date:** 2026-05-16
-**Status:** ready for execution planning
+**Status:** Historical planning snapshot; current scheduler truth is in `operations/runbooks/brain-scheduler-current-state.md`.
 **Roadmap:** `docs/system/obsidian-mind-steward-roadmap.md`
 
 ## Objective
@@ -208,7 +208,7 @@ Recommended order:
 Exit criteria:
 
 - Jobs are registered in `operations/infrastructure/scheduler-inventory.md`.
-- `tools/scripts/office-nightly-scheduler.sh` runs each job with timeouts and state files.
+- Historical scheduler plan: `tools/scripts/office-nightly-scheduler.sh` ran the then-proposed chain; it is now a compatibility wrapper only.
 - `tools/scripts/render-office-scheduler-report.sh` includes the new job states.
 - Reports are exposed by Brain Core later.
 

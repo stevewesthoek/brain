@@ -41,8 +41,7 @@ if (profile.safety?.exactSourceAuthority !== true || profile.safety?.cbmStructur
 if (profile.safety?.graphifyMayReadMind !== false) errors.push('Graphify Mind reads forbidden');
 if (profile.safety?.externalOrLocalModelRequired !== false) errors.push('profile cannot require a model runtime');
 if (!legacyScript.includes('GRAPHIFY_CONTAINED_EXECUTION')) errors.push('legacy structural entrypoint is not fail-closed');
-if (!scheduler.includes('graphify-semantic-event.mjs')) errors.push('scheduler must call semantic event gate');
-if (scheduler.includes("GRAPHIFY_PHASES=%q")) errors.push('legacy phased Graphify scheduler still active');
+if (scheduler.includes('GRAPHIFY_PHASES=%q')) errors.push('legacy phased Graphify scheduler still active');
 const job = typedJobs.jobs.find((item) => item.id === 'graphify-nightly');
 if (!job || job.entrypoint !== 'tools/graphify-semantic-event.mjs' || job.scheduleType !== 'event-driven' || job.lifecycle !== 'policy-blocked' || job.mode !== 'disabled') errors.push('typed Graphify job is not a blocked event-driven semantic gate');
 

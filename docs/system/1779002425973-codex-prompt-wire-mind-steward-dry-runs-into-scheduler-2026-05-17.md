@@ -1,6 +1,7 @@
-# Codex Prompt — Wire Mind Steward Dry Runs Into Office Nightly Scheduler
+# Historical Codex Prompt — Wire Mind Steward Dry Runs Into Office Nightly Scheduler
 
 ## Repo / source
+**Classification:** Historical implementation prompt; current scheduler identity and active-set truth are in `operations/runbooks/brain-scheduler-current-state.md`.
 
 Work from the `brain` repo. Verify `mind` only through safe explicit paths.
 

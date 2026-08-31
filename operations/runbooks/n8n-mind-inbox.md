@@ -149,7 +149,7 @@ mind_steward_model: us.anthropic.claude-sonnet-4-6
 ```text
 brain/tools/scripts/mind-steward-sync-inbox.mjs
 brain/tools/scripts/mind-steward-classify-captures.sh
-brain/tools/scripts/office-nightly-scheduler.sh
+brain/tools/scripts/brain-scheduler-runner.mjs
 ```
 
 ## Manual Verification

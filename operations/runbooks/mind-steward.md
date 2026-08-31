@@ -45,15 +45,24 @@ Mind Steward requests one exact route through the AI Model Selector:
 The selected route must be the approved Bedrock model. Classification fails
 closed if it is unavailable; Codex is never a fallback for private Mind content.
 
-## Active Scripts
+## Available scripts
 
 ```text
 tools/scripts/mind-steward-sync-inbox.mjs
 tools/scripts/mind-steward-classify-captures.sh
 tools/scripts/mind-steward-dry-run-report.sh
 tools/scripts/mind-compile-loop.sh
-tools/scripts/office-nightly-scheduler.sh
+tools/scripts/brain-scheduler-runner.mjs
 ```
+
+Only `mind-steward-dry-run-report.sh` and `mind-compile-loop.sh` are active
+Brain Scheduler jobs. Inbox sync and capture classification are explicit
+operator procedures; they are not automatic scheduler entries.
+
+`tools/scripts/office-nightly-scheduler.sh` is retained as a compatibility
+wrapper only; it is not the installed LaunchAgent target. The scheduler's
+accepted current state is documented in
+`operations/runbooks/brain-scheduler-current-state.md`.
 
 ## Writes
 

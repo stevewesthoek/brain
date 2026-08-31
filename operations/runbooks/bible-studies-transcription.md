@@ -1,8 +1,10 @@
 # Bible Studies Transcription Pipeline
 
+**Classification:** Historical automation design; the current typed registry keeps `bible-studies-pipeline` policy-blocked/disabled and the Brain Scheduler does not call it.
+
 ## Overview
 
-Automated transcription pipeline for Dance of Life Bible Studies. Watches Google Drive for new audio/video files, transcribes them with MLX Whisper (local, on-device), formats as timestamped Markdown, syncs to NotebookLM, and commits notes to the brain repo.
+Historical pipeline description. The implementation can be run only through a separately approved manual procedure; it is not an unattended Brain Scheduler job.
 
 **Source code:**
 - Shell entry point: `tools/scripts/bible-studies-pipeline.sh`
@@ -88,22 +90,24 @@ FORCE_RESCAN=1 ./tools/scripts/bible-studies-pipeline.sh && tail -f ~/Library/Lo
 
 ## Automation
 
-The pipeline is **automatically triggered every night** by the office nightly scheduler:
+Historical automation description (not current): this pipeline is not automatically triggered by the production Brain Scheduler:
 
-**Caller:** `tools/scripts/office-nightly-scheduler.sh`  
-**Trigger:** Last content job, after `dance-of-life-sync` completes  
-**Schedule:** Daily via `~/Library/LaunchAgents/com.office.nightly-scheduler.plist`  
-**Timeout:** 4 hours per video; any remaining videos picked up the following night
+**Historical caller:** `tools/scripts/office-nightly-scheduler.sh`
+**Historical trigger claim:** Last content job, after `dance-of-life-sync` completes
+**Historical schedule claim:** Daily via the then-current LaunchAgent design
+**Historical implementation note:** the old design allowed a four-hour run and
+described remaining videos as being picked up on a later run. This is not a
+current scheduler retry or deployment contract.
 
 ### How automation works
 
 1. New videos appear in Google Drive (`Bible Study/Dance of Life/Bible Studies/[Series]/`)
-2. Nightly scheduler runs `dance-of-life-sync` to pull them locally
-3. Then runs `bible-studies-pipeline.sh` to transcribe them
+2. An approved manual session may run the sync step when explicitly reviewed
+3. The approved manual session may then run the transcription wrapper
 4. Pipeline checks state: skips already-transcribed files, transcribes new ones
-5. New notes are committed to brain repo
+5. Any repository write or commit requires separate explicit approval
 
-**Automation is independent and runs on schedule.** Manual runs don't affect the nightly job; they just update state for the next automated run.
+This historical description does not establish current deployment, scheduling, or receipt evidence. Manual use requires a separate approved procedure.
 
 ## Status Messages
 
@@ -276,7 +280,7 @@ MLX Whisper loads the 3 GB model into RAM. Running 100+ models back-to-back with
 
 ## Related
 
-- **Automation:** `tools/scripts/office-nightly-scheduler.sh` (calls this pipeline nightly)
+- **Historical automation:** `tools/scripts/office-nightly-scheduler.sh` (the old design called this pipeline nightly; it is not current)
 - **Sync to local:** `tools/scripts/dance-of-life-sync.sh` (pulls videos from Google Drive to `Bible Studies/` folder)
 - **Notes destination:** `personal/bible-studies/dance-of-life/` (organized by series, then sub-series)
 - **NotebookLM:** `operations/runbooks/notebooklm.md` (manual notebook management)

@@ -1,7 +1,7 @@
 # Video Orchestrator — Roadmap
 
 **Document type:** Phased roadmap  
-**Status:** Active  
+**Status:** Historical roadmap snapshot; current scheduler truth is in `operations/runbooks/brain-scheduler-current-state.md`.
 **Last updated:** 2026-06-14 (next-phase implementation + thumbnail studio + winner-driven thumbnail replacement)
 **Strategy reference:** `video-orchestrator-strategy.md`
 

@@ -63,7 +63,7 @@ To add a new local app, edit `local-apps.json` — the Brain Console "Local Apps
 
 | Node | Role | Specs | Access | Notes |
 | --- | --- | --- | --- | --- |
-| `Office` | Primary operator machine / local control plane | Mac mini `Mac16,11`, Apple M4 Pro, 12 cores, 24 GB RAM | Local machine, Tailscale `100.86.124.66`, SSH alias `office` | Runs local AI tooling, CLI auth state, and the serialized nightly scheduler via `launchd`. |
+| `Office` | Primary operator machine / local control plane | Mac mini `Mac16,11`, Apple M4 Pro, 12 cores, 24 GB RAM | Local machine, Tailscale `100.86.124.66`, SSH alias `office` | Runs local AI tooling, CLI auth state, and the serialized `com.office.nightly-scheduler` report lane via `launchd`. |
 
 ## Cloud Accounts
 
@@ -330,9 +330,9 @@ Critical invariant: postgres MUST NOT be on any shared Docker network where anot
 Automation and recovery:
 - API wrapper: `~/.local/bin/n8n-api`
 - Local auth file: `~/.config/n8n/.env`
-- Backup root: [n8n backup](/Users/Office/Repos/stevewesthoek/brain/operations/automations/n8n/n8n_backup)
+- Backup root: `operations/automations/n8n/n8n_backup/` (gitignored local runtime data)
 - Runbook: [n8n runbook](/Users/Office/Repos/stevewesthoek/brain/operations/runbooks/n8n.md)
-- Nightly scheduler: macOS `launchd` daily at `03:00` with `RunAtLoad` catch-up
+- Brain Scheduler: macOS `launchd` label `com.office.nightly-scheduler`, daily at `03:00` Europe/Lisbon with `RunAtLoad=false`; see the canonical scheduler runbook
 - Incident history: `operations/migrations/dokploy-azure-to-lightsail/n8n-post-migration-permission-fix-2026-08-19.md`
 
 Latest verified backup state on 2026-04-03:

@@ -1,18 +1,18 @@
 # ING Bank Statement Automation — Runbook
 
-**Status:** ✅ Active  
-**Deployed:** Nightly Scheduler (LaunchAgent)  
-**Frequency:** 1st of each month (runs at 3:00 AM Lisbon time via nightly scheduler)  
+**Status:** Policy-blocked; manual human-approved procedure only
+**Deployed:** Not deployed as an active Brain Scheduler job
+**Frequency:** No automatic frequency
 **Scripts:** 
 - `brain/tools/scripts/bank-statement-login.js` (Playwright automation)
 - `brain/tools/scripts/run-ing-bank-statement-download.sh` (Scheduler wrapper)
-- `brain/tools/scripts/office-nightly-scheduler.sh` (Main nightly scheduler)
+- `brain/tools/scripts/brain-scheduler-runner.mjs` (canonical runner; this job is blocked)
 
 ---
 
 ## Overview
 
-**Purpose:** Automatically download monthly bank statements from ING Business Banking.
+**Purpose:** Provide a manual procedure for downloading monthly bank statements from ING Business Banking. This financial/credential-sensitive workflow is not an unattended Brain Scheduler job.
 
 **Accounts downloaded:**
 1. **Yeshua Academy** (Current Account) — NL89 INGB 0006 3699 60
@@ -26,31 +26,31 @@
 - Location: `~/Downloads/`
 
 **Flow:**
-1. Nightly scheduler runs at 3 AM Lisbon time (every night)
-2. Checks if today is the 1st of the month
-3. If yes: launches Playwright script
-4. Script logs in, handles 2FA via iOS notification
-5. Downloads statements from all 3 accounts
-6. Logs out and exits
+1. A human explicitly starts the reviewed wrapper, observes the credential and 2FA boundary, verifies the downloaded files, and logs out.
+2. The typed registry entry `ing-bank-statement-download` remains `policy-blocked`/`disabled`; the Brain Scheduler never launches it.
+3. The wrapper validates local prerequisites and launches the Playwright script.
+4. The script logs in and waits for explicit 2FA approval.
+5. The human verifies the downloaded statements.
+6. The script logs out and exits; no scheduler receipt is created.
 
 ---
 
 ## Architecture
 
 ```
-LaunchAgent (macOS)
+Human-approved manual session
     ↓
-office-nightly-scheduler.sh (every night, 3 AM Lisbon)
-    ├─ Checks: Is it the 1st of the month?
-    ├─ YES → run-ing-bank-statement-download.sh
-    │         ├─ Validates credentials and script
-    │         └─ Calls bank-statement-login.js
+run-ing-bank-statement-download.sh
+    ├─ validates local prerequisites
+    ├─ waits for explicit human approval
+    │         ├─ validates credentials and script
+    │         └─ calls bank-statement-login.js
     │             ├─ Chromium browser (headless=false)
-    │             ├─ Logs in to mijnzakelijk.ing.nl
-    │             ├─ Waits for 2FA approval on phone
-    │             ├─ Downloads statements (CSV, last month, all 3 accounts)
-    │             └─ Logs out
-    └─ NO → skips (logs: "not first of month")
+    │             ├─ logs in to mijnzakelijk.ing.nl
+    │             ├─ waits for 2FA approval on phone
+    │             ├─ downloads statements after verification
+    │             └─ logs out
+    └─ no scheduler receipt is created
 ```
 
 ---
@@ -94,19 +94,19 @@ Already in place: `brain/tools/scripts/bank-statement-login.js`
 
 Playwright is installed via n8n dependencies.
 
-### 4. Nightly Scheduler
+### 4. Brain Scheduler boundary
 
 Already integrated:
-- LaunchAgent: `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` (symlink → brain)
-- Runs nightly at 3 AM Lisbon time
-- Executes `brain/tools/scripts/office-nightly-scheduler.sh`
-- ING download runs **only on the 1st of the month**
+- Brain Scheduler: `com.office.nightly-scheduler` is not a caller of this job
+- No automatic nightly run
+- Use only the reviewed manual wrapper
+- Any future unattended proposal requires separate financial/credential approval
 
 ---
 
 ## Logs & Monitoring
 
-### Nightly Scheduler Logs
+### Manual-run logs
 
 ```bash
 tail -f ~/Library/Logs/office-scheduler/nightly.log
@@ -174,12 +174,12 @@ Exit codes:
 bash ~/Repos/stevewesthoek/brain/tools/scripts/run-ing-bank-statement-download.sh
 ```
 
-### Test the Full Nightly Scheduler
+### Scheduler boundary
 
-Force the nightly scheduler to run:
+There is no supported full-scheduler test for this blocked financial job. Do not use `FORCE_RUN`, kickstart, or the legacy scheduler wrapper to invoke it.
 
 ```bash
-FORCE_RUN=1 bash ~/Repos/stevewesthoek/brain/tools/scripts/office-nightly-scheduler.sh
+# No scheduler invocation is supported for this blocked job.
 ```
 
 Check logs:
@@ -197,8 +197,8 @@ tail -f ~/Library/Logs/office-scheduler/nightly.log
 | "2FA timeout" | You didn't approve in time | Check iOS notifications, try manual run |
 | "Exit code 1: Login failed" | Wrong credentials or network issue | Verify username/password, check internet |
 | "No download buttons found" | ING UI changed | Update Playwright selectors in script |
-| Nightly scheduler doesn't run | LaunchAgent not loaded | Check: `launchctl list \| grep nightly` |
-| Nightly scheduler runs but skips ING | Not the 1st of month | Job only runs on the 1st; check logs |
+| The scheduler does not run ING | Intentional policy state | Confirm the registry entry remains `policy-blocked`/`disabled`; use an approved manual procedure only |
+| An old monthly marker exists | Legacy evidence only | Do not treat it as a canonical receipt or activation proof |
 | Files not in Downloads | Script error or wrong path | Check logs and Playwright output |
 
 ---
@@ -207,8 +207,8 @@ tail -f ~/Library/Logs/office-scheduler/nightly.log
 
 ### Scripts
 - `brain/tools/scripts/bank-statement-login.js` — Main Playwright automation
-- `brain/tools/scripts/run-ing-bank-statement-download.sh` — Scheduler wrapper
-- `brain/tools/scripts/office-nightly-scheduler.sh` — Main nightly scheduler
+- `brain/tools/scripts/run-ing-bank-statement-download.sh` — manual/approved wrapper; not called by the scheduler
+- `brain/tools/scripts/office-nightly-scheduler.sh` — retained compatibility wrapper; not the production launch target
 
 ### Configuration
 - `~/.config/ing/.env` — Credentials (local, not in git)
@@ -221,7 +221,7 @@ tail -f ~/Library/Logs/office-scheduler/nightly.log
 - `~/Library/Logs/office-scheduler/ing-bank-statement-download.log` — ING-specific log
 
 ### State
-- `~/.local/state/office-scheduler/ing-bank-statement-download.last` — Last run status
+- `~/.local/state/office-scheduler/ing-bank-statement-download.last` — legacy marker; not canonical scheduler evidence
 
 ### Downloads
 - `~/Downloads/*.csv` — Downloaded statements (semicolon-separated, last month)
@@ -231,7 +231,7 @@ tail -f ~/Library/Logs/office-scheduler/nightly.log
 ## Decision Log
 
 Key decisions made:
-1. **Nightly scheduler vs. n8n:** Using nightly scheduler because it's lightweight, runs locally, and handles monthly scheduling elegantly via simple date check
+1. **Current boundary:** The older nightly-scheduler design is historical; the current typed registry keeps this financial workflow blocked and manual-only.
 2. **No n8n workflow:** ING automation is too simple (single script) and too frequent-per-month-specific (1st only) for n8n overhead
 3. **Playwright over RPA:** Playwright handles modern web components, JavaScript rendering, and shadow DOM better than older tools
 4. **JavaScript evaluation for form interaction:** ING uses web components with shadow DOM; can't use Locator API; JavaScript evaluation is the fallback
@@ -243,6 +243,6 @@ Key decisions made:
 ## Related
 
 - Credentials Index: `brain/operations/accounts/credentials-index.md`
-- Nightly Scheduler: `brain/tools/scripts/office-nightly-scheduler.sh`
+- Brain Scheduler status: `brain/operations/runbooks/brain-scheduler-current-state.md`
 - LaunchAgent Config: `brain/operations/system-configs/launchagents/com.office.nightly-scheduler.plist`
 - Decision Log: `brain/operations/decision-log.md`
