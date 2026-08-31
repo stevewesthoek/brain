@@ -32,7 +32,7 @@ create_brain_fixture() {
     "$configs_dir/codex/rules" \
     "$brain_ai_dir/skills/active"
   printf 'fixture agents\n' > "$configs_dir/codex/AGENTS.md"
-  printf '[shell_environment_policy.set]\nCODEX_HOME = "/Users/Office/.codex"\n\n[desktop]\nconversationDetailMode = "managed-default"\n\n[desktop.appearanceLightChromeTheme]\nfixtureAccent = "managed-default"\n' > "$configs_dir/codex/config.toml"
+  printf '[mcp_servers.node_repl.env]\nBROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"\nNODE_REPL_TRUSTED_CODE_PATHS = "/Users/Office/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"\n\n[shell_environment_policy.set]\nCODEX_HOME = "/Users/Office/.codex"\n\n[desktop]\nconversationDetailMode = "managed-default"\n\n[desktop.appearanceLightChromeTheme]\nfixtureAccent = "managed-default"\n' > "$configs_dir/codex/config.toml"
   printf 'fixture rtk\n' > "$configs_dir/codex/RTK.md"
   printf 'fixture rules\n' > "$configs_dir/codex/rules/default.rules"
   printf 'fixture skill\n' > "$brain_ai_dir/skills/active/example.md"
@@ -415,6 +415,10 @@ assert_generated_copy \
   "$REPAIR_ROOT/home/.codex/config.toml" \
   "$REPAIR_ROOT/brain/operations/system-configs/codex/config.toml" \
   "600"
+grep -Fq 'BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"' \
+  "$REPAIR_ROOT/home/.codex/config.toml" || fail "generated config dropped the supported browser backend setting"
+grep -Fq "NODE_REPL_TRUSTED_CODE_PATHS = \"$REPAIR_ROOT/home/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules\"" \
+  "$REPAIR_ROOT/home/.codex/config.toml" || fail "generated config dropped the supported trusted code path setting"
 assert_portable_generated_copy \
   "$REPAIR_ROOT/home/.codex/config.toml" \
   "$REPAIR_ROOT/home"
@@ -436,6 +440,10 @@ run_manager "$REPAIR_ROOT" repair >/dev/null
 run_manager "$REPAIR_ROOT" check >/dev/null
 [ "$(stat -f '%Lp' "$REPAIR_ROOT/home/.codex/config.toml")" = "600" ] || fail "repaired generated config lost mode 0600"
 assert_portable_generated_copy "$REPAIR_ROOT/home/.codex/config.toml" "$REPAIR_ROOT/home"
+grep -Fq 'BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"' \
+  "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the supported browser backend setting"
+grep -Fq "NODE_REPL_TRUSTED_CODE_PATHS = \"$REPAIR_ROOT/home/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules\"" \
+  "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the supported trusted code path setting"
 grep -Fq '[marketplaces.fixture-runtime]' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped approved app-local marketplace registration"
 grep -Fq 'conversationDetailMode = "app-local"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped an app-local desktop override"
 grep -Fq 'fixtureAccent = "app-local-nested"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped a nested app-local desktop override"
