@@ -39,9 +39,9 @@ Exact Active jobs: `mind-steward-dry-run`, `local-apps-report`, `video-runtime-r
 | `mind-steward-dry-run` | yes | success | 0 | 2s | `/Users/Office/.local/state/office-scheduler/receipts/mind-steward-dry-run.json` | `runtime/local/mind-steward/latest.json` | yes; mtime `2026-08-31T02:00:07.665Z` |
 | `local-apps-report` | yes | success | 0 | 0s | `/Users/Office/.local/state/office-scheduler/receipts/local-apps-report.json` | `runtime/local/local-apps/latest.json`, `latest.md` | yes; mtimes `02:00:07.708Z`, `02:00:07.712Z` |
 | `video-runtime-report` | yes | success | 0 | 0s | `/Users/Office/.local/state/office-scheduler/receipts/video-runtime-report.json` | `runtime/local/video/latest.json`, `latest.md` | yes; mtimes `02:00:07.781Z`, `02:00:07.805Z` |
-| `mind-compile-loop` | yes | success | 0 | 0s | `/Users/Office/.local/state/office-scheduler/receipts/mind-compile-loop.json` | `scheduler-state/receipts/mind-compile-loop.json` | **no; artifact absent** |
+| `mind-compile-loop` | yes | success | 0 | 0s | `/Users/Office/.local/state/office-scheduler/receipts/mind-compile-loop.json` | stdout/report-only; scheduler receipt | yes; stdout captured in receipt |
 
-Exactly four Active jobs were admitted and executed. The scheduler receipt and per-job receipts report success for all four. The missing `mind-compile-loop` declared output prevents the full output-freshness acceptance criterion from passing.
+Exactly four Active jobs were admitted and executed. The scheduler receipt and per-job receipts report success for all four. The original automated acceptance check reported the `mind-compile-loop` declared artifact absent; closeout inspection proved this was a registry contract error, not a missing job-produced artifact. The script is intentionally stdout-only, and the scheduler captured that output in its canonical receipt.
 
 ## NON-ACTIVE CONTAINMENT
 
@@ -98,8 +98,19 @@ Console was not independently observed; no new Console service was started.
 - Obsolete jobs executed: 0
 - Runtime scheduler state modified during acceptance: NO
 
+## CLOSEOUT FINDING
+
+`mind-compile-loop` successfully executed as a stdout/report-only job. Its
+`outputArtifacts` metadata was corrected from `["scheduler-state/receipts/mind-compile-loop.json"]` to `[]`; the dedicated `receipt` field remains the scheduler-owned evidence. No scheduler rerun was necessary.
+
 ## FINAL VERDICT
 
-Brain Scheduler first natural run acceptance failed.
+Brain Scheduler is fully production-active and accepted.
 
-The scheduler itself ran naturally and safely, with the canonical runner, four successful Active jobs, zero non-active execution, correct completion state, released lock, canonical provenance, and Core recognition. Full acceptance remains open because the registry-declared `mind-compile-loop` output artifact was absent. The observer defect is non-blocking and was not repaired or rerun.
+This acceptance is based on the already observed natural run, not a new run.
+The scheduler ran naturally and safely with the canonical runner, four
+successful Active jobs, zero non-active execution, correct completion state,
+released lock, canonical provenance, and Core recognition.
+
+All scheduler implementation, production migration, first-natural-run
+acceptance, and temporary observer cleanup are complete.

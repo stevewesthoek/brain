@@ -55,6 +55,23 @@ test('memory context refresh is retained for manual use but blocked from automat
   assert.match(memoryRefresh.humanAction, /must not run automatically/);
 });
 
+test('stdout-only mind compile loop keeps scheduler receipt separate from job outputs', () => {
+  const source = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+  const compileLoop = source.jobs.find((job) => job.id === 'mind-compile-loop');
+  assert.deepEqual(compileLoop.outputArtifacts, []);
+  assert.equal(compileLoop.receipt, 'scheduler-state/receipts/mind-compile-loop.json');
+  assert.equal(compileLoop.lifecycle, 'active');
+  assert.equal(compileLoop.mode, 'report-only');
+
+  const script = fs.readFileSync(path.join(root, 'tools/scripts/mind-compile-loop.sh'), 'utf8');
+  assert.match(script, /prints proposals to stdout/);
+  assert.match(script, /no Mind writes/);
+  assert.doesNotMatch(script, /(?:>|tee|cp|mv)\s+[^>]*mind-compile-loop/);
+
+  const runner = fs.readFileSync(path.join(root, 'tools/scripts/brain-scheduler-runner.mjs'), 'utf8');
+  assert.match(runner, /writeJson\(path\.join\(paths\.stateDir, 'receipts', `\$\{job\.id\}\.json`\), result\.receipt\)/);
+});
+
 test('unsafe active changes fail closed through the schema and invariants', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'typed-scheduler-'));
   try {
