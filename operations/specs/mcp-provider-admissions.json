@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "reviewedAt": "2026-08-09",
+  "reviewedAt": "2026-08-31",
   "admissions": [
     {
       "admissionId": "codebase-memory-mcp-brain",
@@ -122,26 +122,26 @@
       "provider": {
         "providerId": "workbench",
         "repository": "prochattools/workbench-private",
-        "revision": "ae917311b32d78cafd6372cba44d57fc491f102b",
+        "revision": "6eae80fc4a1e30d6d7b46ce4bc7bd300c8fd7ea2",
         "sourceState": "reproducible-build",
         "version": "1.3.12-beta",
         "entrypoint": "packages/mcp/dist/server.js",
         "runtimeProvenanceManifest": "packages/mcp/runtime-provenance.json",
         "artifacts": [
           { "path": "packages/mcp/dist/server.js", "sha256": "5a29fe32973b5e63b8906d5470beaf6656501db26debcf33d0ed8429125fb91d", "note": "gitignored runtime entrypoint verified through the committed reproducible-build manifest" },
-          { "path": "packages/mcp/runtime-provenance.json", "sha256": "08750839fe783890e585365fe226da78b94f090766ee01b0582760b2b64758cf" },
-          { "path": "packages/shared/src/workbench-command-contract.ts", "sha256": "b3f7725aa67f4769d809f3b515778beff519c9daeaa1df3ed4739719f356c962" },
-          { "path": "docs/openapi.chatgpt.json", "sha256": "78f1036584411712ba50240bbb4cf81ce877cabf534c6d051e42badd254843dc" },
+          { "path": "packages/mcp/runtime-provenance.json", "sha256": "f538eede3519f653830d08a505aa90eca6f719173e5da4ad05eada0efe39ca0c" },
+          { "path": "packages/shared/src/workbench-command-contract.ts", "sha256": "88b08992639333bb271ac29a638b9ef5157ea535d904e7378c9257d1f637cb02" },
+          { "path": "docs/openapi.chatgpt.json", "sha256": "f8330b6ff05e3d813e5237be3f7484307485ed1dc4d9a33adad2d1d1ad208b74" },
           { "path": "apps/web/src/lib/actionAuth.ts", "sha256": "9709fa857b77a77ab9caea66baa4313d3335f574019f13e6d05ab4b42e3d0ade" },
-          { "path": "apps/web/src/app/api/actions/run-command/route.ts", "sha256": "947f7acaa8a3d34a070198a228497bf60ebb2c932c9c13b90e7c9964119fc384" },
-          { "path": "packages/cli/src/agent/n8n-workflow-migration-command-adapter.ts", "sha256": "6c3b4244862f30c0f577b76c5e33643e7229f5a75e3089eb5dac6545ad855a98" },
+          { "path": "apps/web/src/app/api/actions/run-command/route.ts", "sha256": "bac67037d80a5e9fcb6ca1f52fa8e46bc4e66570b735d619841091e7818fbe4f" },
+          { "path": "packages/cli/src/agent/n8n-workflow-migration-command-adapter.ts", "sha256": "5d0131f908025e8e7577b66a4f983d85cea482fe738e9e5f1e538fc4f4df6c29" },
           { "path": "packages/cli/src/agent/capability-grants.ts", "sha256": "b07a8797b7e2caf4e438689ae01d75600f1e0c73869702e8c5c7fbb8782e3867" },
           { "path": "packages/cli/src/agent/n8n-workflow-migration-capability.ts", "sha256": "ae6185ad2e9300b7dd36dcb35a7e93e7bfd286947a11a47f9437ca2c9634f32b" },
           { "path": "packages/cli/src/agent/n8n-workflow-migration-executor.ts", "sha256": "ca747b5692cae3912b87e4253c61982d0794e430242924c7764956e448650f9b" },
           { "path": "packages/cli/src/agent/capability-operation-store.ts", "sha256": "06df2d83ab4a60678c0914a6f91cdfe2a410fc19749b0cdcb183822e20df54dc" },
-          { "path": "packages/cli/src/agent/config.ts", "sha256": "2a888ca331b84c2a6e2f7004e04b2d3ea5cd9c61744a7f6545c1e3af80b35cd6" },
+          { "path": "packages/cli/src/agent/config.ts", "sha256": "60d0ee4a3b06a15b31f1c2ef307b48e7c72388ca476a606db0c470954c98b8db" },
           { "path": "packages/bridge/src/storage/request-audit.ts", "sha256": "9d1373ab958270f949aff2f513afef2eee04bef373320a8d20fbd4da3fceb57e" },
-          { "path": "packages/mcp/src/configure-codex.ts", "sha256": "26ed3c3a70952ee1b7a34cdf64f7215689e3f59d9a0145d63231579f0a861827" },
+          { "path": "packages/mcp/src/configure-codex.ts", "sha256": "1ab7597ea453d9d531d9c1cc662e5e2b4c669ce53febee1fdf4a7292dfb46bbf" },
           { "path": "pnpm-lock.yaml", "sha256": "46c5fb7bdce0b332de7e49cf7d39e8091b7de970b4f24224241f804c147e130c" }
         ]
       },
@@ -163,6 +163,9 @@
       "scope": {
         "toolAllowlistEnvironmentVariable": "WORKBENCH_MCP_ALLOWED_TOOLS",
         "suboperationAllowlistEnvironmentVariable": "WORKBENCH_MCP_ALLOWED_COMMAND_KINDS",
+        "fixedEnvironment": {
+          "WORKBENCH_MCP_ALLOWED_CLIENT_WORKFLOW_TOOLS": ""
+        },
         "tools": [
           { "name": "getWorkbenchStatus", "risk": "read", "approval": "none", "allowedSuboperations": [] },
           { "name": "readWorkbenchContext", "risk": "read", "approval": "none", "allowedSuboperations": [] },
@@ -192,7 +195,8 @@
           "explicit replacement admission repinned 2026-07-17 at 7e6892ee804d2b22b879e7ab1f93968fe09405cd; current Workbench Private delta adds the Codex-compatible MCP discovery projection in packages/mcp/src/contracts.ts plus matching tests and a docs-only follow-up commit, while runtime validation still uses the strict parser and the Brain-admitted tool scope and two-phase n8n_workflow_migration approval remain unchanged; evidence operations/reports/workbench-mcp-provider-admission-reconciliation-2026-07-17.md",
           "no migration, n8n, webhook, fixture, deployment, or rollback request executed",
           "2026-08-02 repin from be780050a68d4ec95a7f07a1a180881582c57fc0 to aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e; delta reviewed from exported committed tree; 10 source artifact digests changed (session-aware envelope, canonicalization v1 hardening, git metadata cache, brain profile support in configure-codex); 2 source artifacts unchanged (actionAuth.ts, request-audit.ts); 12 dist artifacts retain working-tree-only status (gitignored at both revisions, cannot verify from committed objects); three admitted tools unchanged; n8n_workflow_migration-only command scope unchanged; two-phase confirmation, rollback, and redaction boundaries unchanged; no new command kinds, no shell execution, no credential boundary widening, no network boundary widening; source state updated to mixed; delta admissible",
-          "2026-08-09 replacement admission at 87ce34385277ce5bcbfd45266dbe2d925a536933: Workbench lifecycle recovery retained the exact three-tool Brain scope and n8n_workflow_migration-only suboperation; packages/mcp/runtime-provenance.json binds 54 committed source inputs at 7acdb6f88bcd0db37c1b515dfe627a1594ed1a32 to 32 generated JavaScript runtime artifacts under Node v20.20.2 and pnpm 10.33.0, and the admitted revision differs from that source revision only by the committed manifest; runtime aggregate fe1123c3a0a09a1bb285cca2114863232019af5dd3bb3506f1d1e1ecb24175f0; 194 MCP tests, Workbench MCP auth, and CLI adapter verification passed; no provider mutation executed"
+          "2026-08-09 replacement admission at 87ce34385277ce5bcbfd45266dbe2d925a536933: Workbench lifecycle recovery retained the exact three-tool Brain scope and n8n_workflow_migration-only suboperation; packages/mcp/runtime-provenance.json binds 54 committed source inputs at 7acdb6f88bcd0db37c1b515dfe627a1594ed1a32 to 32 generated JavaScript runtime artifacts under Node v20.20.2 and pnpm 10.33.0, and the admitted revision differs from that source revision only by the committed manifest; runtime aggregate fe1123c3a0a09a1bb285cca2114863232019af5dd3bb3506f1d1e1ecb24175f0; 194 MCP tests, Workbench MCP auth, and CLI adapter verification passed; no provider mutation executed",
+          "2026-08-31 replacement admission at 6eae80fc4a1e30d6d7b46ce4bc7bd300c8fd7ea2: exact candidate is a fast-forward from ae917311b32d78cafd6372cba44d57fc491f102b; clean detached checkout rebuilt under Node v20.20.2 and pnpm 10.33.0; runtime provenance and verification passed; the restricted Brain profile advertises exactly getWorkbenchStatus, readWorkbenchContext, and runWorkbenchCommand, with client-workflow tools explicitly empty; 580 MCP tests excluding the existing hard-coded Node protocol harness passed, Workbench MCP auth passed, and CLI adapter verification passed; the added client-workflow/capability implementation remains unavailable under the Brain profile; no production mutation executed"
         ]
       },
       "revocation": {
