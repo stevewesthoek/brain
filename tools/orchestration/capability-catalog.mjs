@@ -190,9 +190,18 @@ function readPrefix(filePath, stats, maxBytes = SOURCE_PREFIX_BYTES) {
   const fileSize = fs.statSync(filePath).size;
   const fd = fs.openSync(filePath, 'r');
   try {
-    const chunks = [];
-    let totalBytes = 0;
-    let position = 0;
+    const firstBytes = Math.min(fileSize, 4);
+    const first = Buffer.alloc(firstBytes);
+    const firstRead = fs.readSync(fd, first, 0, firstBytes, 0);
+    const firstText = first.subarray(0, firstRead).toString('utf8');
+    if (!firstText.startsWith('---')) {
+      stats.prefixReads += 1;
+      stats.prefixBytes += firstRead;
+      return firstText;
+    }
+    const chunks = [first.subarray(0, firstRead)];
+    let totalBytes = firstRead;
+    let position = firstRead;
     while (totalBytes < Math.min(fileSize, maxBytes)) {
       const bytesToRead = Math.min(4096, fileSize - position, maxBytes - totalBytes);
       if (bytesToRead <= 0) break;
@@ -203,7 +212,11 @@ function readPrefix(filePath, stats, maxBytes = SOURCE_PREFIX_BYTES) {
       totalBytes += bytesRead;
       position += bytesRead;
       const text = Buffer.concat(chunks).toString('utf8');
-      if (/^---\s*\n[\s\S]*?\n---\s*\n/.test(text)) return (stats.prefixReads += 1, stats.prefixBytes += totalBytes, text);
+      if (/^---\s*\n[\s\S]*?\n---\s*\n/.test(text)) {
+        stats.prefixReads += 1;
+        stats.prefixBytes += totalBytes;
+        return text;
+      }
     }
     stats.prefixReads += 1;
     stats.prefixBytes += totalBytes;
