@@ -4,7 +4,7 @@
 
 Phase 1 foundation is complete and remains shadow-only. Brain now has a deterministic, descriptor-first capability catalog and ordinary-language shadow intent router. The implementation does not activate automatic execution, change client profiles, call providers, mutate Mind, or change production orchestration behavior.
 
-The implementation commit is `e48080cbb47a6830d32428b43b896f168af665ee` on `codex/infinite-brain-orchestrator-v2-phase1`. The closeout commit is the commit containing this report. Local `main` is integrated through the audit commit before this implementation is landed; final `main` after integration is recorded by the final integration verification because a commit cannot contain its own resulting SHA.
+The implementation commits are `e48080cbb47a6830d32428b43b896f168af665ee` and the bounded front-matter hardening commit `484a754154c3adacb305e6b677a2607fec94b290` on `codex/infinite-brain-orchestrator-v2-phase1`. The closeout commit is the commit containing this report. Local `main` is integrated through the audit commit before this implementation is landed; final `main` after integration is recorded by the final integration verification because a commit cannot contain its own resulting SHA.
 
 ## Authority and integration
 
@@ -15,7 +15,7 @@ The implementation commit is `e48080cbb47a6830d32428b43b896f168af665ee` on `code
 | Integrated audit commit | `31b655ecaff5e79ff5f790fae9054680b6a62488` |
 | Audit baseline | `origin/main` at `46bec0626b3d61c35f5f7da3b1a538c17978a4e2` |
 | Implementation branch | `codex/infinite-brain-orchestrator-v2-phase1` |
-| Implementation commit | `e48080cbb47a6830d32428b43b896f168af665ee` |
+| Implementation commits | `e48080cbb47a6830d32428b43b896f168af665ee`, `484a754154c3adacb305e6b677a2607fec94b290` |
 | Main after implementation integration | Final integration verification; no force push |
 
 The five audit deliverables remain the canonical authority and were not rewritten. The v2 design specification was not updated because this phase's code is a bounded shadow foundation and the closeout documents the actual implementation truth separately from the aspirational roadmap.
@@ -103,7 +103,7 @@ The evidence compares a deliberately simple naive baseline—loading all 137 tra
 | v2 compact LIST bytes | 482,911 |
 | v2 compact LIST estimated tokens | 120,728 |
 | Measured reduction | 74.64% |
-| Bounded prefix bytes read during catalog construction | 503,600 |
+| Bounded prefix bytes read during catalog construction | 503,956 |
 | Full skill bodies loaded during LIST | 0 |
 | Exact selected inspections during shadow routing | 0 |
 | Planned selected composition nodes across corpus | 31 |
