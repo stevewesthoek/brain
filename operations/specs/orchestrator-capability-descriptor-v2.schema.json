@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/orchestrator-capability-descriptor-v2.schema.json",
+  "title": "Infinite Brain Orchestrator Capability Descriptor v2",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "capabilityId",
+    "kind",
+    "role",
+    "label",
+    "sourceRef",
+    "sourceRevision",
+    "profileRefs",
+    "intents",
+    "domains",
+    "triggers",
+    "excludes",
+    "inputSchemaRefs",
+    "outputSchemaRefs",
+    "requiredContextScopes",
+    "contextCost",
+    "stateModel",
+    "sideEffects",
+    "riskClass",
+    "confirmationClass",
+    "qualityGateRefs",
+    "failureModes",
+    "continuity",
+    "composition",
+    "health",
+    "freshness",
+    "fieldProvenance"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "2.0.0" },
+    "capabilityId": { "type": "string", "pattern": "^[a-z][a-z0-9._:-]*$" },
+    "kind": { "$ref": "#/$defs/kind" },
+    "role": { "$ref": "#/$defs/role" },
+    "label": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "sourceRef": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\./)(?!.*\\\\).+$" },
+    "sourceRevision": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "profileRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "intents": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "domains": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "triggers": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "excludes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "inputSchemaRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "outputSchemaRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "requiredContextScopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "contextCost": { "$ref": "#/$defs/contextCost" },
+    "stateModel": { "$ref": "#/$defs/stateModel" },
+    "sideEffects": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "riskClass": { "$ref": "#/$defs/riskClass" },
+    "confirmationClass": { "$ref": "#/$defs/confirmationClass" },
+    "qualityGateRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "failureModes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "continuity": { "$ref": "#/$defs/continuity" },
+    "composition": { "$ref": "#/$defs/composition" },
+    "health": { "$ref": "#/$defs/health" },
+    "freshness": { "$ref": "#/$defs/freshness" },
+    "fieldProvenance": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/provenance" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "kind": {
+      "enum": ["skill", "orchestrator", "runbook", "named_cli", "validator", "mcp_server", "mcp_tool", "local_app", "workflow", "adapter"]
+    },
+    "role": {
+      "enum": ["router", "specialist", "quality_gate", "safety_gate", "execution", "adapter", "utility"]
+    },
+    "riskClass": { "enum": ["read-only", "low", "medium", "high", "critical"] },
+    "confirmationClass": { "enum": ["none", "policy", "user", "admin"] },
+    "health": { "enum": ["healthy", "degraded", "unavailable", "disabled", "unknown"] },
+    "freshness": { "enum": ["fresh", "review_due", "stale", "superseded", "contradicted", "unknown"] },
+    "contextCost": {
+      "type": "object",
+      "required": ["descriptor", "instruction", "evidence", "max"],
+      "properties": {
+        "descriptor": { "type": "integer", "minimum": 1 },
+        "instruction": { "type": "integer", "minimum": 0 },
+        "evidence": { "type": "integer", "minimum": 0 },
+        "max": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "stateModel": {
+      "type": "object",
+      "required": ["sourcePresent", "indexed", "profileListed", "defaultActive", "exported", "consumerReachable", "runtimeActivated"],
+      "properties": {
+        "sourcePresent": { "type": "boolean" },
+        "indexed": { "type": "boolean" },
+        "profileListed": { "type": "boolean" },
+        "defaultActive": { "type": "boolean" },
+        "exported": { "type": "boolean" },
+        "consumerReachable": {
+          "type": "object",
+          "required": ["claude", "codex", "gemini", "antigravity", "kiro"],
+          "properties": {
+            "claude": { "type": "boolean" },
+            "codex": { "type": "boolean" },
+            "gemini": { "type": "boolean" },
+            "antigravity": { "type": "boolean" },
+            "kiro": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "runtimeActivated": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "continuity": {
+      "type": "object",
+      "required": ["supportsResume", "stateScope", "requiresExplicitHandoff"],
+      "properties": {
+        "supportsResume": { "type": "boolean" },
+        "stateScope": { "type": "string", "minLength": 1 },
+        "requiresExplicitHandoff": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "composition": {
+      "type": "object",
+      "required": ["canBePrimary", "canBeSpecialist", "preferredWith", "maxChildren"],
+      "properties": {
+        "canBePrimary": { "type": "boolean" },
+        "canBeSpecialist": { "type": "boolean" },
+        "preferredWith": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "maxChildren": { "type": "integer", "minimum": 0, "maximum": 8 }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["sourceRef", "sourceRevision", "derivation"],
+      "properties": {
+        "sourceRef": { "type": "string", "minLength": 1 },
+        "sourceRevision": { "type": "string", "minLength": 1 },
+        "derivation": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

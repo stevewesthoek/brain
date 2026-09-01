@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "2.0.0",
+  "corpusId": "infinite-brain-v2-phase1-black-box",
+  "cases": [
+    {
+      "id": "code-ordinary-feature",
+      "prompt": "Build a feature in this repo.",
+      "expected": { "primaryRouteFamily": "code", "specialists": [], "gates": ["gate.review", "gate.qa"], "question": false, "riskClass": "medium", "confirmationClass": "none" }
+    },
+    {
+      "id": "design-vague-page",
+      "prompt": "Make this page look amazing.",
+      "expected": { "primaryRouteFamily": "design", "specialists": ["skill.web-design"], "gates": ["gate.design-review", "gate.visual-qa"], "question": false, "riskClass": "medium", "confirmationClass": "none" }
+    },
+    {
+      "id": "design-premium-landing",
+      "prompt": "Build a premium SaaS landing page.",
+      "expected": { "primaryRouteFamily": "design", "specialists": ["skill.web-design"], "gates": ["gate.design-review", "gate.visual-qa"], "question": false, "riskClass": "medium", "confirmationClass": "none" }
+    },
+    {
+      "id": "web-external-submit",
+      "prompt": "Open this website and submit the contact form.",
+      "expected": { "primaryRouteFamily": "web", "specialists": ["skill.playwright"], "gates": ["gate.browser-evidence", "gate.confirmation", "gate.rollback"], "question": false, "riskClass": "high", "confirmationClass": "user" }
+    },
+    {
+      "id": "research-market",
+      "prompt": "Research the current market for password managers and cite primary sources.",
+      "expected": { "primaryRouteFamily": "research", "specialists": ["skill.web"], "gates": ["gate.source-provenance", "gate.citation-completeness"], "question": false, "riskClass": "low", "confirmationClass": "none" }
+    },
+    {
+      "id": "bible-romans-context",
+      "prompt": "Research Romans 8 in historical and textual context using Scripture sources.",
+      "expected": { "primaryRouteFamily": "research", "specialists": ["skill.bible-research", "skill.scripture-sources"], "gates": ["gate.source-provenance", "gate.citation-completeness"], "question": false, "riskClass": "low", "confirmationClass": "none" }
+    },
+    {
+      "id": "memory-recall-decision",
+      "prompt": "What did we decide about the default profile?",
+      "expected": { "primaryRouteFamily": "memory", "specialists": [], "gates": ["gate.memory-authority"], "question": false, "riskClass": "medium", "confirmationClass": "user" }
+    },
+    {
+      "id": "review-current-diff",
+      "prompt": "Review this diff for risky changes.",
+      "expected": { "primaryRouteFamily": "review", "specialists": [], "gates": [], "question": false, "riskClass": "low", "confirmationClass": "none" }
+    },
+    {
+      "id": "qa-mobile-page",
+      "prompt": "Test whether the new page works on mobile.",
+      "expected": { "primaryRouteFamily": "qa", "specialists": [], "gates": [], "question": false, "riskClass": "low", "confirmationClass": "none" }
+    },
+    {
+      "id": "handoff-tomorrow",
+      "prompt": "Prepare a handoff so another agent can continue tomorrow.",
+      "expected": { "primaryRouteFamily": "handoff", "specialists": [], "gates": ["gate.continuity"], "question": false, "riskClass": "low", "confirmationClass": "none" }
+    },
+    {
+      "id": "careful-production-deploy",
+      "prompt": "Deploy this to production.",
+      "expected": { "primaryRouteFamily": "careful", "specialists": [], "gates": ["gate.confirmation", "gate.rollback"], "question": false, "riskClass": "critical", "confirmationClass": "user" }
+    },
+    {
+      "id": "code-production-database",
+      "prompt": "Fix the production database migration.",
+      "expected": { "primaryRouteFamily": "code", "specialists": ["skill.investigate"], "gates": ["gate.review", "gate.qa", "gate.confirmation", "gate.rollback"], "question": false, "riskClass": "critical", "confirmationClass": "user" }
+    },
+    {
+      "id": "research-ambiguous",
+      "prompt": "Research this.",
+      "expected": { "primaryRouteFamily": "research", "specialists": [], "gates": ["gate.source-provenance", "gate.citation-completeness"], "question": true, "riskClass": "low", "confirmationClass": "none" }
+    },
+    {
+      "id": "ambiguous-build",
+      "prompt": "Build this.",
+      "expected": { "primaryRouteFamily": null, "specialists": [], "gates": [], "question": true, "riskClass": "low", "confirmationClass": "none" }
+    },
+    {
+      "id": "inferable-design-defaults",
+      "prompt": "Make this page look premium.",
+      "expected": { "primaryRouteFamily": "design", "specialists": ["skill.web-design"], "gates": ["gate.design-review", "gate.visual-qa"], "question": false, "riskClass": "medium", "confirmationClass": "none" }
+    },
+    {
+      "id": "video-package",
+      "prompt": "Create a YouTube short with a script, thumbnail, and captions.",
+      "expected": { "primaryRouteFamily": "video", "specialists": ["skill.design", "skill.media-acquisition"], "gates": [], "question": false, "riskClass": "medium", "confirmationClass": "none" }
+    },
+    {
+      "id": "mixed-design-code-quality",
+      "prompt": "Build a premium SaaS landing page, then review and test it.",
+      "expected": { "primaryRouteFamily": "mixed", "specialists": ["skill.web-design", "skill.code"], "gates": ["gate.design-review", "gate.visual-qa", "gate.review", "gate.qa"], "question": false, "riskClass": "medium", "confirmationClass": "none" }
+    }
+  ]
+}
