@@ -1,6 +1,5 @@
 import path from 'node:path';
-import { buildCompositionGraph } from '../orchestration/composition-graph.mjs';
-import { planShadowPacket } from '../orchestration/task-evidence-packets.mjs';
+import { composeShadowRequest } from '../orchestration/composition-graph.mjs';
 import { createCapabilityCatalog } from '../orchestration/capability-catalog.mjs';
 import { routeShadowRequest } from '../orchestration/shadow-intent-router.mjs';
 import { loadJson, stableJsonHash, validateJsonSchema } from './context-learning-core.mjs';
@@ -103,7 +102,7 @@ export function semanticProjection(result) {
   const packet = result?.taskPacket ?? {};
   const graph = result?.compositionGraph ?? {};
   return {
-    route: { family: route.primaryRouteFamily ?? null, owner: route.primaryDescriptorId ?? null, specialists: [...(route.selectedSpecialistDescriptorIds ?? [])].sort(), qualification: route.qualification?.required === true, riskClass: route.riskClass ?? null, confirmationClass: route.confirmationClass ?? null },
+    route: { family: route.primaryRouteFamily ?? null, owner: route.primaryDescriptorId ?? null, specialists: [...(route.selectedSpecialistDescriptorIds ?? [])].sort(), qualification: result?.qualification?.required === true || route.qualification?.required === true, riskClass: route.normalizedRequest?.riskClass ?? route.riskClass ?? null, confirmationClass: route.normalizedRequest?.confirmationClass ?? route.confirmationClass ?? null },
     packet: { status: packet.state?.status ?? null, selected: [...(packet.selectedCapabilityRefs ?? [])].map((item) => `${item.capabilityId}:${item.role}`).sort(), qualityGates: [...(packet.requiredQualityGates ?? [])].map((item) => item.gateRef).sort(), safetyGates: [...(packet.requiredSafetyGates ?? [])].map((item) => item.gateRef).sort(), contextScopes: [...(packet.context?.requiredScopes ?? [])].sort() },
     graph: { owner: graph.primaryOwner?.capabilityId ?? null, nodes: [...(graph.nodes ?? [])].map((item) => `${item.role}:${item.capabilityRef?.capabilityId}`).sort(), qualityGates: [...(graph.qualityGateNodes ?? [])].sort(), safetyGates: [...(graph.safetyGateNodes ?? [])].sort() },
     continuity: { state: result?.continuation?.state ?? null, automaticResumeAllowed: result?.continuation?.automaticResumeAllowed === true },
@@ -111,7 +110,7 @@ export function semanticProjection(result) {
   };
 }
 
-function buildReceipt({ request, route, packet, graph, negotiation, continuation, evidencePackets, resultStatus }) {
+function buildReceipt({ request, route, qualification, packet, graph, negotiation, continuation, evidencePackets, resultStatus }) {
   const projection = semanticProjection({ route, taskPacket: packet, compositionGraph: graph, continuation, safety: { providerCalls: 0, writesPerformed: 0, executionReady: false } });
   const capabilityReport = bounded(request.environment.capabilities).map((item) => ({
     capabilityId: item.capabilityId,
@@ -129,7 +128,7 @@ function buildReceipt({ request, route, packet, graph, negotiation, continuation
     requestHash: hash(request.intent),
     sourceRevision: packet.sourceRevision,
     route: projection.route,
-    qualification: { required: route.qualification?.required === true },
+    qualification: { required: qualification?.required === true },
     semantic: projection,
     capabilities: negotiation.selections.map((item) => ({ capabilityId: item.capabilityId, selectedCapabilityId: item.selectedCapabilityId, required: item.required, outcome: item.outcome })),
     taskPacket: { taskId: packet.taskId, status: packet.state?.status ?? null, ref: `task://${packet.taskId}` },
@@ -154,22 +153,23 @@ function buildReceipt({ request, route, packet, graph, negotiation, continuation
 export function orchestrateBrainRequest(request, { catalog = createCapabilityCatalog(), repoRoot: root = repoRoot, currentState = {}, generatedAt = '2026-09-02T00:00:00Z' } = {}) {
   if (!request?.intent || request.schemaVersion !== UNIVERSAL_CONTRACT_VERSION || request.contractId !== UNIVERSAL_CONTRACT_ID || request.environment?.contractVersion !== UNIVERSAL_CONTRACT_VERSION) throw new Error('brain_request:unsupported_contract');
   const negotiation = negotiateCapabilities({ required: request.requiredCapabilities, optional: request.optionalCapabilities, reported: request.environment.capabilities });
-  const route = routeShadowRequest(request.intent, { catalog, generatedAt });
-  const packetPlan = planShadowPacket(request.intent, { catalog, repoRoot: root, currentState, generatedAt });
-  const graph = buildCompositionGraph({ taskPacket: packetPlan.taskPacket, evidencePackets: packetPlan.evidencePackets, route: packetPlan.route, normalized: packetPlan.route.normalizedRequest, catalog });
-  const continuation = packetPlan.continuationPacket;
+  const composition = composeShadowRequest(request.intent, { catalog, repoRoot: root, currentState: currentState ?? {}, generatedAt });
+  const route = composition.route;
+  const packet = composition.taskPacket;
+  const graph = composition.graph;
+  const continuation = composition.continuationPacket;
   const resultStatus = negotiation.status === 'BLOCKED'
     ? 'BLOCKED'
-    : packetPlan.route.qualification.required
+    : composition.qualification.required
       ? 'NEEDS_QUALIFICATION'
-      : packetPlan.taskPacket.state.status === 'CONFIRMATION_REQUIRED'
+      : packet.state.status === 'CONFIRMATION_REQUIRED'
         ? 'CONFIRMATION_REQUIRED'
-        : packetPlan.continuity.state !== 'CURRENT'
+        : composition.taskPacket.state.status !== 'PLANNED' && composition.taskPacket.state.status !== 'CURRENT'
           ? 'BLOCKED'
-          : packetPlan.validation.valid ? 'READY' : 'BLOCKED';
+          : composition.validation.valid ? 'READY' : 'BLOCKED';
   const safety = { providerCalls: 0, writesPerformed: 0, executionReady: false, automaticResumeAllowed: false, clientConfigChanges: 0, mindWrites: 0 };
-  const result = { schemaVersion: UNIVERSAL_CONTRACT_VERSION, status: resultStatus, route, taskPacket: packetPlan.taskPacket, compositionGraph: graph, contextRequests: packetPlan.contextRequestPlan, capabilitySelections: negotiation.selections, gateSelections: [...packetPlan.taskPacket.requiredQualityGates, ...packetPlan.taskPacket.requiredSafetyGates], evidencePackets: packetPlan.evidencePackets, continuation, safety, sourceRevisions: packetPlan.sourceRevisions, validation: packetPlan.validation, budget: packetPlan.budget, atomicity: packetPlan.atomicity, degradation: negotiation.blocking.length ? { status: 'BLOCKED', reasons: negotiation.blocking } : { status: negotiation.status, reasons: [] } };
-  result.receipt = buildReceipt({ request, route, packet: packetPlan.taskPacket, graph, negotiation, continuation, evidencePackets: packetPlan.evidencePackets, resultStatus });
+  const result = { schemaVersion: UNIVERSAL_CONTRACT_VERSION, status: resultStatus, route, qualification: composition.qualification, taskPacket: packet, compositionGraph: graph, contextRequests: packet.contextRequests, capabilitySelections: negotiation.selections, gateSelections: [...packet.requiredQualityGates, ...packet.requiredSafetyGates], evidencePackets: composition.evidencePackets, continuation, safety, sourceRevisions: composition.sourceRevisions, validation: composition.validation, budget: composition.budget, atomicity: composition.atomicity, degradation: negotiation.blocking.length ? { status: 'BLOCKED', reasons: negotiation.blocking } : { status: negotiation.status, reasons: [] } };
+  result.receipt = buildReceipt({ request, route, qualification: composition.qualification, packet, graph, negotiation, continuation, evidencePackets: composition.evidencePackets, resultStatus });
   return result;
 }
 
