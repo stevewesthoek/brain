@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectionId": "kiro-active-entry-symlinks",
+  "consumer": "kiro",
+  "canonicalRoot": "ai/skills/active",
+  "targetRoot": "operations/system-configs/kiro/skills",
+  "mode": "entry-symlinks",
+  "repositoryProjection": "MANIFESTED",
+  "liveActivation": "NOT_PERFORMED",
+  "entries": [
+    { "id": "KIRO-01", "name": "careful", "canonicalSource": "ai/skills/active/careful", "expectedTarget": "operations/system-configs/kiro/skills/careful", "sourceKind": "active-skill-directory" },
+    { "id": "KIRO-02", "name": "code", "canonicalSource": "ai/skills/active/code", "expectedTarget": "operations/system-configs/kiro/skills/code", "sourceKind": "active-skill-directory" },
+    { "id": "KIRO-03", "name": "handoff", "canonicalSource": "ai/skills/active/handoff", "expectedTarget": "operations/system-configs/kiro/skills/handoff", "sourceKind": "active-skill-directory" },
+    { "id": "KIRO-04", "name": "memory", "canonicalSource": "ai/skills/active/memory", "expectedTarget": "operations/system-configs/kiro/skills/memory", "sourceKind": "active-skill-directory" },
+    { "id": "KIRO-05", "name": "qa", "canonicalSource": "ai/skills/active/qa", "expectedTarget": "operations/system-configs/kiro/skills/qa", "sourceKind": "active-skill-directory" },
+    { "id": "KIRO-06", "name": "research", "canonicalSource": "ai/skills/active/research", "expectedTarget": "operations/system-configs/kiro/skills/research", "sourceKind": "active-skill-directory" },
+    { "id": "KIRO-07", "name": "review", "canonicalSource": "ai/skills/active/review", "expectedTarget": "operations/system-configs/kiro/skills/review", "sourceKind": "active-skill-directory" }
+  ],
+  "safety": {
+    "ignoredClientStateMayNotBeMutated": true,
+    "missingEntrySymlinksAreExpectedUntilExplicitClientAuthorization": true,
+    "deletingCapabilitiesToSatisfyProjectionIsForbidden": true
+  }
+}

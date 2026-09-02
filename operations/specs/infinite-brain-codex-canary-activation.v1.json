@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0.0",
+  "activationId": "codex-v2-first-domain-canary",
+  "consumer": "codex",
+  "status": "PREPARED_NOT_ENABLED",
+  "selectedDomain": "code",
+  "allowedRouteClasses": ["read-only-analysis", "read-only-plan"],
+  "entryCondition": "Explicit Codex canary invocation with current source and passing preflight",
+  "routing": "Only the selected consumer, domain, and allowlisted route classes may select v2",
+  "fallback": "Legacy Codex current entry path",
+  "states": ["OFF", "CANARY", "DEGRADED", "FALLBACK"],
+  "stateTransitions": {
+    "OFF": ["CANARY"],
+    "CANARY": ["DEGRADED", "FALLBACK"],
+    "DEGRADED": ["FALLBACK", "CANARY"],
+    "FALLBACK": ["OFF", "CANARY"]
+  },
+  "stopConditions": [
+    "unsafe_route",
+    "safety_gate_miss",
+    "stale_or_conflicted_current_source",
+    "projection_drift",
+    "context_explosion",
+    "unexpected_profile_activation",
+    "rollback_failure",
+    "legacy_path_unavailable",
+    "unexpected_write",
+    "route_or_gate_regression"
+  ],
+  "rollback": {
+    "mechanism": "Disable the bounded canary switch and restore legacy path selection",
+    "manualConfigSurgeryRequired": false,
+    "targetTimeSeconds": 60,
+    "validation": "Legacy path is selected and v2 is not selected after rollback"
+  },
+  "activationPerformed": false,
+  "productionActive": false
+}

@@ -37,15 +37,26 @@ function textOf(route, taskPacket) { return String(route?.normalizedRequest?.nor
 function outputRef(taskId, nodeId, source) { return ref('output', `shadow://output/${taskId}/${nodeId}`, source); }
 function contextLifetime(phase, inputs, maxTokens) { return { phase, inputRefs: inputs.map((item) => id(item)), maxTokens: Math.min(4000, Math.max(1, maxTokens)), rawContextLoaded: 0 }; }
 
-function isMeaningfulCode(text) { return CODE_WORDS.test(text) && !/^make sure it works\b/i.test(text); }
+function isMeaningfulCode(text) { return /\b(build|building|feature|fix|debug|bug|implement|refactor|change|ship|publish|make|improve|authentication)\b/i.test(text) && !/\b(read-only|without changing|analyze|explain|plan a)\b/i.test(text); }
 function isMixedResearchBuild(text) { return RESEARCH_WORDS.test(text) && (CODE_WORDS.test(text) || DESIGN_WORDS.test(text)); }
 
 export function selectPrimaryOwner({ normalized = {}, route = {}, taskPacket = {}, catalog = createCapabilityCatalog() } = {}) {
   const text = String(normalized.normalizedText ?? normalized.rawIntent ?? taskPacket.request?.rawIntent ?? '').toLowerCase();
   let capabilityId = route.primaryDescriptorId ?? 'skill.code';
   let rationale = 'Inherited the Phase 3 deterministic route and selected exactly one owner.';
-  if (MUTATION_WORDS.test(text) && !(/\bvideo\b/i.test(text) && !/\b(deploy|database|production|credential|secret)\b/i.test(text))) { capabilityId = 'skill.code'; rationale = 'Technical work owns the requested mutation; Careful is a required safety gate.'; }
-  else if (/\b(review|critique|audit|preflight|diff)\b/i.test(text)) { capabilityId = 'skill.review'; rationale = 'The requested outcome is a review report, so Review owns the graph.'; }
+  // Code/Web/Mixed route ownership is authoritative. Re-inferring ownership
+  // from outcome words there caused verification words such as "test" to
+  // steal the domain owner and made graph gates disagree with the packet.
+  // Research/design legacy mixed composition keeps its established final-
+  // artifact owner until the router itself is deliberately revised.
+  if (route.primaryRouteFamily === 'careful' || capabilityId === 'skill.careful') {
+    capabilityId = 'skill.code';
+    rationale = 'Careful guards the technical mutation but does not own its domain work.';
+  } else if (route.primaryDescriptorId && ['code', 'web', 'mixed'].includes(route.primaryRouteFamily)) {
+    rationale = `Inherited the routed owner ${route.primaryDescriptorId}; specialists and gates remain separate graph roles.`;
+  } else if (MUTATION_WORDS.test(text) && !(/\bvideo\b/i.test(text) && !/\b(deploy|database|production|credential|secret)\b/i.test(text))) {
+    capabilityId = 'skill.code'; rationale = 'Technical work owns the requested mutation; Careful is a required safety gate.';
+  } else if (/\b(review|critique|audit|preflight|diff)\b/i.test(text)) { capabilityId = 'skill.review'; rationale = 'The requested outcome is a review report, so Review owns the graph.'; }
   else if (/\b(make sure it works|run qa|qa|test|verify)\b/i.test(text)) { capabilityId = 'skill.qa'; rationale = 'The requested outcome is verification, so QA owns the graph.'; }
   else if (MEMORY_WORDS.test(text) && CODE_WORDS.test(text)) { capabilityId = 'skill.code'; rationale = 'Memory supplies read-only continuity context; Code owns the requested build outcome.'; }
   else if (MEMORY_WORDS.test(text) && RESEARCH_WORDS.test(text)) { capabilityId = 'skill.research'; rationale = 'Memory supplies read-only continuity context; Research owns the requested evidence outcome.'; }
@@ -54,11 +65,8 @@ export function selectPrimaryOwner({ normalized = {}, route = {}, taskPacket = {
     capabilityId = DESIGN_WORDS.test(text) ? 'skill.design' : 'skill.code';
     rationale = 'The final desired outcome determines the owner; research is a bounded specialist branch.';
   } else if (RESEARCH_WORDS.test(text) && !CODE_WORDS.test(text) && !DESIGN_WORDS.test(text)) {
-    capabilityId = 'skill.research';
-    rationale = 'The requested outcome is evidence acquisition or synthesis, so Research owns the graph.';
+    capabilityId = 'skill.research'; rationale = 'The requested outcome is evidence acquisition or synthesis, so Research owns the graph.';
   } else if (BIBLE_WORDS.test(text)) { capabilityId = 'skill.research'; rationale = 'Bible work is research-owned with Bible and Scripture source specialists.'; }
-  else if (route.primaryRouteFamily === 'careful') { capabilityId = 'skill.code'; rationale = 'Careful guards the technical mutation but does not own its domain work.'; }
-  else if (route.primaryRouteFamily === 'mixed') capabilityId = 'skill.design';
   if (!descriptor(catalog, capabilityId)) capabilityId = 'skill.code';
   return { capabilityId, ...capabilityRef(catalog, capabilityId, taskPacket.sourceRevision ?? 'unknown'), rationale };
 }
@@ -78,12 +86,13 @@ function gateCapability(gateRef) { return gateRef; }
 function requiredGateRefs(text, owner, riskClass) {
   const quality = [];
   if (owner === 'skill.code' && isMeaningfulCode(text)) quality.push('gate.review', 'gate.qa');
+  if (owner === 'skill.review') quality.push('gate.review');
   if (owner === 'skill.design' || DESIGN_WORDS.test(text)) quality.push('gate.design-review', 'gate.visual-qa');
   if (owner === 'skill.research' || RESEARCH_WORDS.test(text)) quality.push('gate.source-provenance', 'gate.citation-completeness');
   if (owner === 'skill.web') quality.push('gate.browser-evidence');
   if (owner === 'skill.memory') quality.push('gate.memory-authority');
   if (owner === 'skill.handoff') quality.push('gate.continuity');
-  if (owner === 'skill.video') quality.push('gate.qa');
+  if (owner === 'skill.video' && /\b(render|edit|compose|produce|publish|script)\b/i.test(text)) quality.push('gate.qa');
   if (riskClass === 'high' || riskClass === 'critical') if (/\bdeploy\b/i.test(text)) quality.push('gate.qa');
   return { quality: unique(quality), safety: riskClass === 'high' || riskClass === 'critical' ? ['gate.rollback', 'gate.confirmation'] : [] };
 }
@@ -119,7 +128,12 @@ export function buildCompositionGraph({ taskPacket, evidencePackets = [], route 
   const source = sourceRevision(taskPacket);
   const text = textOf(route, taskPacket);
   const mutationRequested = MUTATION_WORDS.test(text);
-  const riskClass = mutationRequested ? (['critical', 'delete', 'destroy', 'production'].some((x) => text.includes(x)) ? 'critical' : 'high') : (taskPacket.permissions?.riskClass === 'read-only' ? 'read-only' : 'medium');
+  const routedRisk = normalized.riskClass ?? taskPacket.permissions?.riskClass;
+  const riskClass = ['high', 'critical'].includes(routedRisk)
+    ? routedRisk
+    : mutationRequested
+      ? (['critical', 'delete', 'destroy', 'production'].some((x) => text.includes(x)) ? 'critical' : 'high')
+      : (taskPacket.permissions?.riskClass === 'read-only' ? 'read-only' : 'medium');
   const primary = selectPrimaryOwner({ normalized, route, taskPacket, catalog });
   const nodes = [];
   const edges = [];
@@ -147,7 +161,17 @@ export function buildCompositionGraph({ taskPacket, evidencePackets = [], route 
     codeId = add({ nodeId: 'task-code', role: 'SPECIALIST', capabilityId: 'skill.code', branch: 'implementation-task', dependsOn: [designEvidence], maxTokens: 650, riskClass: 'medium', authorityReads: ['git'], authorityWrites: ['repository'] });
     addDependency(edges, dependencies, designEvidence, codeId, 'EVIDENCE', 'Design evidence is an input to the bounded Code task.');
   }
-  const gateRefs = requiredGateRefs(text, primary.capabilityId, riskClass);
+  const policyGateRefs = requiredGateRefs(text, primary.capabilityId, riskClass);
+  const packetGateRefs = {
+    quality: (taskPacket.requiredQualityGates ?? []).map((gate) => gate.gateRef),
+    safety: (taskPacket.requiredSafetyGates ?? []).map((gate) => gate.gateRef)
+  };
+  // Task-packet gates are the routed policy contract. The local graph policy
+  // may add an applicable domain gate, but it cannot drop a declared gate.
+  const gateRefs = {
+    quality: unique([...packetGateRefs.quality, ...policyGateRefs.quality]),
+    safety: unique([...packetGateRefs.safety, ...policyGateRefs.safety])
+  };
   if (designCode) gateRefs.quality = unique(['gate.design-review', 'gate.visual-qa', 'gate.review', 'gate.qa', ...(RESEARCH_WORDS.test(text) ? ['gate.source-provenance', 'gate.citation-completeness'] : [])]);
   const gateIds = [];
   const implementationTail = codeId ?? mergeId ?? branchIds.at(-1) ?? ownerId;
@@ -385,11 +409,16 @@ export function composeShadowRequest(input, { catalog = createCapabilityCatalog(
   const mergedEvidence = graph.mergeNodes.length ? mergeEvidencePackets({ taskId: graph.taskId, packets: packetPlan.evidencePackets, mergeNodeId: graph.mergeNodes[0], sourceRevision: graph.sourceRevision }) : null;
   const synthesis = buildSynthesisPacket({ graph, evidencePackets: packetPlan.evidencePackets, mergedEvidence, successCriteria: packetPlan.route.normalizedRequest.outputExpectations ?? [], gateResults: graph.qualityGateNodes.concat(graph.safetyGateNodes).map((nodeId) => ({ gateRef: graphNodes(graph).get(nodeId)?.capabilityRef.capabilityId, status: 'NOT_RUN', blocking: true, evidenceRefs: [], reason: 'Shadow graph declaration; no gate executed.' })) });
   const normalizedText = packetPlan.route.normalizedRequest.normalizedText;
-  const materialRiskQuestion = MUTATION_WORDS.test(normalizedText) && /\b(this|old|production|the)\b/i.test(normalizedText);
+  const materialRiskQuestion = packetPlan.route.primaryRouteFamily !== 'web'
+    && ['high', 'critical'].includes(packetPlan.route.normalizedRequest.riskClass)
+    && /\b(this|old|production|the)\b/i.test(normalizedText);
   const qaTargetQuestion = graph.primaryOwner.capabilityId === 'skill.qa' && !/\b(on|against|the|this)\s+[a-z0-9]/i.test(normalizedText);
+  const combinedBuildVerificationQuestion = packetPlan.route.primaryRouteFamily === 'code'
+    && /\b(build|create|implement)\b.*\b(test|verify)\b/i.test(normalizedText)
+    && !/\b(this|the|my|repo|repository)\b/i.test(normalizedText);
   const memoryPayloadQuestion = graph.primaryOwner.capabilityId === 'skill.memory' && /\bremember this\b/i.test(normalizedText);
   const inferableSafeQualification = packetPlan.route.qualification.required && /\b(authentication|auth|market demand|demand for this product|primary sources?|greek phrase|continue building|map the architecture|safe code analysis)\b/i.test(normalizedText) && !materialRiskQuestion;
-  const qualification = (packetPlan.route.qualification.required && !inferableSafeQualification) || materialRiskQuestion || qaTargetQuestion || memoryPayloadQuestion ? { required: true, question: packetPlan.route.qualification.question ?? (memoryPayloadQuestion ? 'What exact decision or fact should I remember, and should it be durable? Why: the memory payload and authority are material.' : 'What exact target and safe outcome should I use? Why: the target is material to a bounded or safe plan.'), count: 1 } : { required: false, question: null, reason: inferableSafeQualification ? 'The target is inferable and the next step is bounded, read-only, or locally reversible.' : packetPlan.route.qualification.reason };
+  const qualification = (packetPlan.route.qualification.required && !inferableSafeQualification) || materialRiskQuestion || qaTargetQuestion || combinedBuildVerificationQuestion || memoryPayloadQuestion ? { required: true, question: packetPlan.route.qualification.question ?? (memoryPayloadQuestion ? 'What exact decision or fact should I remember, and should it be durable? Why: the memory payload and authority are material.' : 'What exact target and safe outcome should I use? Why: the target is material to a bounded or safe plan.'), count: 1 } : { required: false, question: null, reason: inferableSafeQualification ? 'The target is inferable and the next step is bounded, read-only, or locally reversible.' : packetPlan.route.qualification.reason };
   graph.metadata.qualificationRequired = qualification.required;
   return { operation: 'shadow_composition_plan', executionExposed: false, providerCalls: 0, externalMutations: 0, mindWrites: 0, profileActivations: 0, clientConfigChanges: 0, automaticResumeAllowed: false, route: packetPlan.route, qualification, taskPacket: packetPlan.taskPacket, evidencePackets: packetPlan.evidencePackets, selectedInstructionInspection: packetPlan.selectedInstructionInspection, budget: packetPlan.budget, graph, mergedEvidence, synthesis, validation: { phase3: packetPlan.validation, graphErrors, valid: packetPlan.validation.valid && graphErrors.length === 0 }, parallelGroups: buildParallelGroups(graph), continuity: { ref: graph.continuationRef, errors: validateContinuationRef(graph, { currentSourceRevision: graph.sourceRevision, contextState: packetPlan.continuity.state, explicitResume: false }) }, metrics: compositionMetrics({ graph, packetPlan, synthesis }) };
 }

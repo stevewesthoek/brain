@@ -1,8 +1,8 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 5 accepted for the Codex read-only pilot; Phase 6 is blocked pending explicit Kiro projection conformance
+**Status:** Phase 6A accepted for activation readiness hardening; Phase 6B remains unactivated and bounded to a prepared Codex Code canary
 **Date:** 2026-09-02
-**Baseline:** `origin/main` `d41cecc688ff1b1b59d119536c218e549990e487`
+**Baseline:** `origin/main` `3f02bc547cea341fddef8fed47455ca922f4d335`
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
 **Safety boundary:** This roadmap does not authorize production orchestration, profile, client, provider, database, scheduler, deployment, or external-state changes.
 
@@ -166,7 +166,19 @@ Required controls:
 
 **Exit gate:** the existing universal-entry, conformance, continuity, and Broker tests remain green; pilot evidence records zero mutation/provider activity; user explicitly authorizes any client activation.
 
-### Phase 6 — Risk-aware gate policy and measured activation
+### Phase 6A — Activation readiness hardening (complete)
+
+**Status:** accepted as readiness evidence; no activation occurred.
+
+**Evidence:** seven Kiro entries are individually accounted for in the canonical repository manifest with valid active sources, repository projection `PASS`, unexplained drift `0`, and live activation `NOT_PERFORMED`. Claude, Codex, Gemini, Cursor, and Antigravity projections are green; Workbench is not applicable. Phase 3, Phase 4, and Phase 5 validators pass. The six Phase 5 gate mismatches are corrected at the route-owner/risk/task-packet graph boundary, raising required-gate correctness from 95.2% to 100%.
+
+The expanded readiness suite covers 38 dedicated proportional gate-edge fixtures and a 288-case activation benchmark (including the 128-case Phase 5 corpus and 92 Code scenarios). Routing is 280/280 routable cases; all required gates are 284/284; safety gates are 15/15 with zero unsafe execution-ready results; quality gates are 161/161; and safety/quality mandatory misses are zero. Bootstrap remains bounded at 419 tokens, descriptor LIST full-body reads remain zero, unrelated full-body reads remain zero, context packs remain bounded at 41 tokens, and maximum simultaneous relevant context remains 1,400 tokens.
+
+The first activation candidate is Codex Code, restricted to read-only analysis and read-only planning route classes. The canary is prepared but disabled; OFF selects the legacy path, simulated ON selects v2 only inside the allowlist, injected failure selects legacy, and rollback restores legacy without manual configuration surgery. Telemetry and the ten stop conditions are defined in the canonical canary spec.
+
+**Exit gate:** PASS. The next phase may activate only this bounded Codex canary with fresh authorization and measured comparison; it must stop or roll back on any defined regression.
+
+### Phase 6B — Risk-aware gate policy and measured activation
 
 **Priority:** P1/P2, high blast radius
 **Mode:** one client/profile and one bounded domain at a time

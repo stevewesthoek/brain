@@ -33,6 +33,9 @@ function descriptorById(catalog, id) {
 }
 
 function normalizeRisk(text) {
+  const readOnlyRequest = containsAny(text, ['read-only', 'without changing', 'analyze', 'explain', 'inspect', 'review', 'audit', 'plan a'])
+    && !containsAny(text, ['deploy', 'delete', 'destroy', 'submit', 'send', 'publish', 'provision', 'rotate', 'drop database']);
+  if (readOnlyRequest) return { riskClass: 'low', indicators: [], confirmationClass: 'none' };
   const hits = HIGH_RISK_PATTERNS.filter(([term]) => text.includes(term));
   const indicators = unique(hits.map(([, indicator]) => indicator));
   const riskClass = indicators.length >= 2 || containsAny(text, ['production', 'prod', 'delete', 'destroy', 'drop database']) ? 'critical' : indicators.length ? 'high' : 'low';
@@ -185,10 +188,11 @@ function selectSpecialists(family, normalized, catalog) {
 
 function gateRefs(family, normalized, text) {
   const gates = [];
+  const readOnlyIntent = containsAny(text, ['read-only', 'without changing', 'analyze', 'explain', 'plan a']) && !containsAny(text, ['implement', 'build', 'create', 'fix', 'refactor', 'ship']);
   if (family === 'mixed') {
     gates.push({ ref: 'gate.design-review', reason: 'The design portion needs a visual/design quality check.' }, { ref: 'gate.visual-qa', reason: 'The interface output needs visual verification.' }, { ref: 'gate.review', reason: 'The implementation portion needs adversarial review.' }, { ref: 'gate.qa', reason: 'The implementation portion needs targeted verification.' });
   }
-  if (family === 'code' && meaningfulChange(text)) {
+  if (family === 'code' && meaningfulChange(text) && !readOnlyIntent) {
     gates.push({ ref: 'gate.review', reason: 'Meaningful repository changes need adversarial review before shipping.' });
     if (containsAny(text, ['feature', 'fix', 'frontend', 'ui', 'app', 'build', 'implement', 'change'])) gates.push({ ref: 'gate.qa', reason: 'Behavioral changes need targeted verification evidence.' });
   }

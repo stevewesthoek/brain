@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schemaVersion", "activationId", "consumer", "status", "selectedDomain", "allowedRouteClasses", "states", "stopConditions", "rollback", "activationPerformed", "productionActive"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "activationId": { "type": "string", "minLength": 1 },
+    "consumer": { "const": "codex" },
+    "status": { "enum": ["PREPARED_NOT_ENABLED", "ENABLED", "DEGRADED", "ROLLED_BACK"] },
+    "selectedDomain": { "type": "string", "minLength": 1 },
+    "allowedRouteClasses": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "states": { "type": "array", "items": { "enum": ["OFF", "CANARY", "DEGRADED", "FALLBACK"] } },
+    "stopConditions": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "rollback": { "type": "object", "required": ["mechanism", "manualConfigSurgeryRequired", "targetTimeSeconds", "validation"], "properties": { "mechanism": { "type": "string" }, "manualConfigSurgeryRequired": { "const": false }, "targetTimeSeconds": { "type": "number", "exclusiveMinimum": 0 }, "validation": { "type": "string" } } },
+    "activationPerformed": { "const": false },
+    "productionActive": { "const": false }
+  },
+  "additionalProperties": true
+}
