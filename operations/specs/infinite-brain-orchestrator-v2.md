@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2
 
-**Status:** Proposed design; no implementation or activation authorized by this document
+**Status:** Phase 3 shadow implementation complete; no client activation or execution authorized by this document
 **Date:** 2026-09-01
 **Predecessor evidence:** `operations/reports/infinite-brain-orchestrator-audit-2026-09-01.md`
 **Authority boundary:** Brain owns capability, routing, policy, validation, and orchestration knowledge; Mind remains authoritative for human meaning, strategy, preferences, commitments, and personal/business context.
@@ -80,6 +80,18 @@ user intent
 ```
 
 The first implementation should be shadow-only: it may explain this lifecycle and expose what it would select, but must not activate profiles, alter client configuration, call providers, write files, or execute capabilities.
+
+## Phase 3 implementation truth
+
+The Phase 3 shadow implementation is now present at:
+
+- `operations/specs/infinite-brain-task-packet.v1.schema.json`
+- `operations/specs/infinite-brain-evidence-packet.v1.schema.json`
+- `tools/orchestration/task-evidence-packets.mjs`
+- `tools/orchestration/domain-adapters.mjs`
+- `tools/validate-orchestrator-v2-phase3.mjs`
+
+It creates bounded task/evidence envelopes, Context Requests, gate declarations, thin Code/Research/Design/Memory/Review/QA/Handoff/Careful adapter traces, and revision-aware continuation pointers from the existing shadow router. Selected source inspection is exact-source and reference-only. The implementation remains shadow-only: no providers, external systems, Mind writes, profile activation, client configuration changes, execution, or automatic resume are exposed.
 
 ## Capability descriptor v2
 
