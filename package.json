@@ -63,7 +63,9 @@
     "validate:universal-consumer-conformance": "node tools/validate-universal-consumer-conformance.mjs",
     "test:universal-consumer-conformance": "node --test tools/context-learning/universal-consumer-contract.test.mjs",
     "test:phase8a": "node --test tools/context-learning/phase8a-research-canary.test.mjs",
-    "validate:phase8a": "node tools/context-learning/run-phase8a-codex-research-canary.mjs --summary"
+    "validate:phase8a": "node tools/context-learning/run-phase8a-codex-research-canary.mjs --summary",
+    "test:phase8b": "node --test tools/context-learning/phase8b-research-readiness.test.mjs",
+    "validate:phase8b": "node tools/context-learning/run-phase8b-research-promotion-readiness.mjs --summary"
   },
   "keywords": [
     "claude",

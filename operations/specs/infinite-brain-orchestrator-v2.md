@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2
 
-**Status:** Phase 7B accepted for Claude Code + Code canary; Codex Code is the only v2 default; no production execution authorized by this document
+**Status:** Phase 8B evaluated; Claude Code + Code and Codex + Research canaries accepted; Codex Code is the only v2 default; Codex Research promotion deferred for more evidence; no production execution authorized by this document
 **Date:** 2026-09-01
 **Predecessor evidence:** `operations/reports/infinite-brain-orchestrator-audit-2026-09-01.md`
 **Authority boundary:** Brain owns capability, routing, policy, validation, and orchestration knowledge; Mind remains authoritative for human meaning, strategy, preferences, commitments, and personal/business context.
@@ -676,3 +676,33 @@ covered passage context, original-language caution, lexical/syntax discipline,
 historical/cultural context, canonical/cross-reference context, scholarly
 disagreement, and theological synthesis without preloading unrelated layers.
 The canary did not activate Claude Research or any other consumer/domain.
+
+## Phase 8B Codex Research promotion-readiness truth — 2026-09-02
+
+Phase 8B revalidated the Phase 8A foundation and added 150 new unique
+Research-path routing cases, bringing the comparable cohort to 250. It also
+ran 50 new substantive read-only source-backed outputs across general/deep,
+business/company/market, technical/product/comparative, outdoor/location,
+Bible specialist, and contradiction/fact-check classes. Evidence packets now
+record the question and subquestions, citation resolution and evidence-bound
+checks, source authority and independence groups, retrieval method, freshness,
+and explicit insufficiency behavior. Research-to-Code handoffs are refs-and-
+claims-only and retain Review/QA gates; Research-to-Design cases remain shadow
+preparation only.
+
+The measured result is `MORE_RESEARCH_EVIDENCE_REQUIRED`. Routing, mandatory
+evidence gates, citation checks (136/136), source independence, contradiction
+retention, stale/unavailable degradation, 22 atomic deepening cases, stopping,
+business/technical/Bible/outdoor minimums, qualification, 75-case Claude
+shadow parity, 30 prior-path comparisons, failure visibility, rollback,
+atomic-context, and no-mutation gates pass. Codex Research remains
+`CANARY_ACTIVE`/`CANARY_ACCEPTED`; `defaultActive=false` and
+`productionActive=false`. No default promotion, Claude Research activation,
+Design/Web activation, profile expansion, Mind write, provider call, or
+external mutation occurred.
+
+The blocking follow-up is source authority, not routing or citation
+correctness: all 12 new Bible outputs use translation and secondary lexical
+witnesses, without a peer-reviewed or critical-edition source in this bounded
+canary. The promotion contract is defined but not executed. The full report
+is `operations/reports/infinite-brain-orchestrator-v2-phase8b-research-promotion-readiness-2026-09-02.md`.

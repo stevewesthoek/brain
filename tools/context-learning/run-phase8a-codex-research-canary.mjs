@@ -13,7 +13,7 @@ import { runResearchOutput, RESEARCH_SOURCE_CATALOG, sourceQualityMetrics } from
 const repoRoot = process.cwd();
 const SOURCE_REVISION = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' }).trim();
 const ORIGIN_MAIN = execFileSync('git', ['rev-parse', 'origin/main'], { cwd: repoRoot, encoding: 'utf8' }).trim();
-const BASELINE = '5a386cfd4704302680d693c3e7685169f50c8ba4';
+const BASELINE = 'ffe6b0caae15ab2525709ecaddbdc92bd5c6cb16';
 const NOW = '2026-09-02T00:00:00.000Z';
 
 function hash(value) { return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, 24); }

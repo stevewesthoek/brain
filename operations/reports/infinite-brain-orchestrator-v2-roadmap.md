@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 8A accepted; Codex Code is the only v2 default; Claude Code + Code and Codex + Research canaries accepted; no production execution
+**Status:** Phase 8B evaluated; Codex Code is the only v2 default; Claude Code + Code and Codex + Research canaries accepted; Codex Research default promotion deferred for more evidence; no production execution
 **Date:** 2026-09-02
 **Baseline:** Phase 7B integration baseline `origin/main` `6aacb3ab73bb8124f26c84968d9c5ffd05a183bd`; canary source `87809d17df3affc9e3b245e45a706564795f0674`
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
@@ -220,6 +220,26 @@ the canonical Research owner; no competing universal router was created. The
 recommendation is to gather more Research evidence before any default
 promotion because the bounded corpus is intentionally limited and Bible
 original-language source quality remains a follow-up area.
+
+### Phase 8B — Codex Research promotion-readiness evidence (deferred)
+
+Phase 8B revalidated Phase 8A and added 150 new unique Research-path cases
+(250 comparable total), 50 substantive source-backed outputs, 136/136
+bounded citation checks, 5 contradiction cases, 10 explicit insufficiency
+cases, 5 stale rejection/downgrade cases, 22 one-request deepening cases,
+75 Claude shadow parity cases (100%), 30 prior-path comparisons, 8 bounded
+Research→Code handoffs, and 5 Research→Design shadow preparations. Business,
+technical, Bible, outdoor, qualification, atomic-context, failure, rollback,
+safety, and broad-drift classification gates were exercised. No default
+promotion or other consumer/domain activation occurred.
+
+The verdict is `MORE_RESEARCH_EVIDENCE_REQUIRED`. Citation correctness and
+operational gates pass, but all 12 Bible substantive outputs still rely on
+translation and secondary lexical witnesses; the cohort does not yet provide
+the peer-reviewed or critical-edition authority needed to treat specialist
+Bible research as promotion-complete. The promotion contract is defined but
+not executed. Design/Web remains the next archetype only after this evidence
+gap is closed and a fresh gate review passes.
 
 ### Phase 6A — Activation readiness hardening (complete)
 
