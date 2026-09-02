@@ -36,14 +36,17 @@ function normalizeCapabilityReport(report) {
   const values = Array.isArray(report)
     ? report
     : Object.entries(report ?? {}).map(([capabilityId, value]) => ({ capabilityId, ...(typeof value === 'object' ? value : { available: value }) }));
-  return values.map((item) => ({
-    capabilityId: String(item.capabilityId ?? item.id ?? ''),
-    available: item.available !== false && item.status !== 'UNAVAILABLE' && item.status !== 'BLOCKED',
-    outcome: CAPABILITY_OUTCOMES.includes(item.outcome) ? item.outcome : null,
-    alternativeFor: item.alternativeFor ? String(item.alternativeFor) : null,
-    evidenceRef: item.evidenceRef ? String(item.evidenceRef) : null,
-    mode: item.mode ? String(item.mode) : 'native'
-  })).filter((item) => item.capabilityId);
+  return values.map((item) => {
+    const outcome = CAPABILITY_OUTCOMES.includes(item.outcome) ? item.outcome : null;
+    return {
+      capabilityId: String(item.capabilityId ?? item.id ?? ''),
+      available: item.available !== false && item.status !== 'UNAVAILABLE' && item.status !== 'BLOCKED' && (!outcome || outcome === 'SUPPORTED'),
+      outcome,
+      alternativeFor: item.alternativeFor ? String(item.alternativeFor) : null,
+      evidenceRef: item.evidenceRef ? String(item.evidenceRef) : null,
+      mode: item.mode ? String(item.mode) : 'native'
+    };
+  }).filter((item) => item.capabilityId);
 }
 
 export function normalizeEnvironment(environment = {}) {
@@ -62,8 +65,10 @@ export function createBrainRequest({ intent = '', nativeInput = null, environmen
   const resolvedIntent = textOf(intent) || textOf(nativeInput);
   if (!resolvedIntent || resolvedIntent.length > 2000) throw new Error('brain_request:bounded_intent_required');
   const normalizedEnvironment = normalizeEnvironment({ ...environment, session: session ?? environment.session, workspace: workspace ?? environment.workspace });
+  if (normalizedEnvironment.contractVersion !== UNIVERSAL_CONTRACT_VERSION) throw new Error('brain_request:unsupported_environment_contract');
   return {
     schemaVersion: UNIVERSAL_CONTRACT_VERSION,
+    contractId: UNIVERSAL_CONTRACT_ID,
     requestId: id('brain-request', { resolvedIntent, session: normalizedEnvironment.session?.sessionId ?? null, workspace: normalizedEnvironment.workspace?.boundary ?? null }),
     intent: resolvedIntent,
     nativeInputPresent: nativeInput !== null,
@@ -125,7 +130,7 @@ function buildReceipt({ request, route, packet, graph, negotiation, continuation
 }
 
 export function orchestrateBrainRequest(request, { catalog = createCapabilityCatalog(), repoRoot: root = repoRoot, currentState = {}, generatedAt = '2026-09-02T00:00:00Z' } = {}) {
-  if (!request?.intent || request.schemaVersion !== UNIVERSAL_CONTRACT_VERSION) throw new Error('brain_request:unsupported_contract');
+  if (!request?.intent || request.schemaVersion !== UNIVERSAL_CONTRACT_VERSION || request.contractId !== UNIVERSAL_CONTRACT_ID || request.environment?.contractVersion !== UNIVERSAL_CONTRACT_VERSION) throw new Error('brain_request:unsupported_contract');
   const negotiation = negotiateCapabilities({ required: request.requiredCapabilities, optional: request.optionalCapabilities, reported: request.environment.capabilities });
   const route = routeShadowRequest(request.intent, { catalog, generatedAt });
   const packetPlan = planShadowPacket(request.intent, { catalog, repoRoot: root, currentState, generatedAt });
@@ -148,12 +153,24 @@ export function orchestrateBrainRequest(request, { catalog = createCapabilityCat
 
 export function createReferenceEnvironmentAdapter({ adapterId = 'adapter.reference-environment.v1', environmentId = 'reference-environment', capabilities = null } = {}) {
   const defaultCapabilities = [...canonicalCapabilityIds, ...optionalCapabilityIds].map((capabilityId) => ({ capabilityId, available: true, outcome: 'SUPPORTED', mode: 'reference' }));
+  const translate = (nativeInput, metadata = {}) => {
+    const nativeObject = nativeInput && typeof nativeInput === 'object' ? nativeInput : {};
+    const nativeEnvironment = nativeObject.environment && typeof nativeObject.environment === 'object' ? nativeObject.environment : {};
+    const nativeSession = nativeObject.session && typeof nativeObject.session === 'object' ? nativeObject.session : null;
+    const nativeWorkspace = nativeObject.workspace && typeof nativeObject.workspace === 'object' ? nativeObject.workspace : null;
+    return createBrainRequest({
+      nativeInput,
+      environment: { environmentId, capabilities: capabilities ?? defaultCapabilities, ...nativeEnvironment, ...metadata.environment },
+      session: metadata.session ?? nativeSession,
+      workspace: metadata.workspace ?? nativeWorkspace
+    });
+  };
   return Object.freeze({
     adapterId,
     contractVersion: UNIVERSAL_CONTRACT_VERSION,
     environmentId,
-    translate(nativeInput, metadata = {}) { return createBrainRequest({ nativeInput, environment: { environmentId, capabilities: capabilities ?? defaultCapabilities, ...metadata.environment }, session: metadata.session, workspace: metadata.workspace }); },
-    consume(nativeInput, metadata = {}, options = {}) { return orchestrateBrainRequest(this.translate(nativeInput, metadata), options); },
+    translate,
+    consume(nativeInput, metadata = {}, options = {}) { return orchestrateBrainRequest(translate(nativeInput, metadata), options); },
     render(result) { return { status: result.status, semantic: semanticProjection(result), receiptId: result.receipt.receiptId, continuationId: result.continuation?.continuationId ?? null }; },
     capabilities() { return clone(capabilities ?? defaultCapabilities); }
   });

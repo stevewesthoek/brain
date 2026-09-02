@@ -16,6 +16,7 @@
       "type": "array",
       "minItems": 10,
       "maxItems": 10,
+      "uniqueItems": true,
       "items": { "enum": ["BrainRequest", "BrainRoute", "TaskPacket", "CompositionGraph", "ContextRequest[]", "CapabilitySelection[]", "GateSelection[]", "EvidencePacket[]", "BrainResult", "Continuation"] }
     },
     "authority": {

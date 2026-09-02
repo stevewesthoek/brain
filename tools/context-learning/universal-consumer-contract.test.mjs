@@ -35,6 +35,9 @@ test('universal contract is versioned, Brain-owned, and schema-valid', () => {
   const matrix = loadJson(path.join(repoRoot, 'operations/specs/infinite-brain-universal-consumer-adapter-matrix.v1.json'));
   assert.equal(matrix.adapters.length, 7);
   assert(matrix.onboardingChecklist.length >= 8);
+  const duplicateStages = loadJson(path.join(repoRoot, 'operations/specs/infinite-brain-universal-consumer-contract.v1.json'));
+  duplicateStages.stages = [...duplicateStages.stages.slice(0, -1), duplicateStages.stages[0]];
+  assert(validateUniversalConsumerContract(duplicateStages).some((error) => error.includes('array items must be unique')));
 });
 
 test('thin adapters preserve the same semantic Brain route across 200+ scenarios and consumers', () => {
@@ -82,6 +85,8 @@ test('capability negotiation is explicit for alternatives, external requirements
   const alternative = negotiateCapabilities({ required: ['workspace.resolve'], reported: [{ capabilityId: 'workspace.resolve.v2', alternativeFor: 'workspace.resolve', available: true }] });
   assert.equal(alternative.selections[0].outcome, 'SUPPORTED_WITH_ALTERNATIVE');
   assert.equal(alternative.selections[0].selectedCapabilityId, 'workspace.resolve.v2');
+  const unavailableAlternative = negotiateCapabilities({ required: ['workspace.resolve'], reported: [{ capabilityId: 'workspace.resolve.v2', alternativeFor: 'workspace.resolve', available: true, outcome: 'UNAVAILABLE' }] });
+  assert.equal(unavailableAlternative.selections[0].outcome, 'UNAVAILABLE');
 
   const external = negotiateCapabilities({ required: ['browser'], reported: [{ capabilityId: 'browser', outcome: 'REQUIRES_EXTERNAL_CAPABILITY' }] });
   assert.equal(external.status, 'BLOCKED');
@@ -107,6 +112,8 @@ test('model/provider swaps and session metadata do not change semantic routing',
   const routeB = routeShadowRequest(second.intent, { catalog });
   assert.deepEqual({ family: routeA.primaryRouteFamily, owner: routeA.primaryDescriptorId, gates: routeA.predictedQualitySafetyGates.map((item) => item.ref) }, { family: routeB.primaryRouteFamily, owner: routeB.primaryDescriptorId, gates: routeB.predictedQualitySafetyGates.map((item) => item.ref) });
   assert.equal(normalizeEnvironment({ model: { family: 'model-a' } }).model.family, 'model-a');
+  assert.equal(first.contractId, 'infinite-brain-universal-consumer.v1');
+  assert.throws(() => createBrainRequest({ intent: 'Review the current diff for correctness', environment: { contractVersion: '99.0.0' } }), /unsupported_environment_contract/);
 });
 
 test('stale continuation and unavailable required capability fail closed without transcript replay', () => {
@@ -121,6 +128,8 @@ test('stale continuation and unavailable required capability fail closed without
   assert.equal(unavailable.status, 'BLOCKED');
   assert(unavailable.degradation.reasons.includes('brain.contract.v1'));
   assert.equal(unavailable.safety.writesPerformed, 0);
+  const embedded = createReferenceEnvironmentAdapter().translate({ intent: 'Review the current diff for correctness', session: { id: 'embedded-session', resumable: true } });
+  assert.equal(embedded.environment.session.sessionId, 'embedded-session');
 });
 
 test('canonical consumer code has no client-conditioned orchestration policy', () => {
