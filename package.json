@@ -9,6 +9,8 @@
   "scripts": {
     "test:phase7a": "node --test tools/context-learning/codex-code-default.test.mjs tools/context-learning/phase6c-isolated-code-tasks.test.mjs",
     "validate:phase7a": "node tools/context-learning/run-phase7a-codex-code-default.mjs --summary",
+    "test:phase7b": "node --test tools/context-learning/claude-code-canary.test.mjs tools/context-learning/universal-consumer-contract.test.mjs tools/context-learning/cross-session-continuity-pilot.test.mjs",
+    "validate:phase7b": "node tools/context-learning/run-phase7b-claude-code-canary.mjs --summary",
     "models:sync:bedrock": "bash tools/scripts/models-sync-bedrock.sh",
     "models:validate": "bash tools/scripts/models-validate.sh",
     "sync-ai-skills": "node tools/scripts/sync-ai-skills.mjs",

@@ -1,7 +1,7 @@
 import { stableJsonHash } from './context-learning-core.mjs';
 
 const VERSION = '1.0.0';
-const CLIENTS = new Set(['claude', 'codex', 'workbench', 'future-agent']);
+const CLIENTS = new Set(['claude', 'claude-code', 'codex', 'workbench', 'future-agent']);
 const STALE = new Set(['stale', 'superseded', 'contradicted', 'unknown']);
 function gate(id, passed, detail) { return { id, passed, detail }; }
 

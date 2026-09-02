@@ -1,7 +1,7 @@
 import { stableJsonHash } from './context-learning-core.mjs';
 
 const VERSION = '1.0.0';
-const CLIENTS = new Set(['claude', 'codex', 'workbench', 'future-agent']);
+const CLIENTS = new Set(['claude', 'claude-code', 'codex', 'workbench', 'future-agent']);
 const REQUIRED_IMMEDIATE = ['identity', 'authority_boundaries', 'navigation', 'operating_status', 'continuity'];
 const REQUIRED_UNTOUCHED = ['full_repository', 'full_conversations', 'secrets', 'client_configuration'];
 

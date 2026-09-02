@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "activationId": "claude-code-v2-code-canary",
+  "consumer": "claude-code",
+  "domain": "code",
+  "mode": "CANARY",
+  "status": "CANARY_ACCEPTED",
+  "universalConsumerContractVersion": "1.0.0",
+  "adapterId": "adapter.claude-code.v1",
+  "adapterRevision": "claude-code-adapter@1.0.0",
+  "legacyPath": "claude-code-current-entry",
+  "selectedCanary": "claude-code",
+  "defaultActive": false,
+  "productionActive": false,
+  "activationPerformed": true,
+  "scope": { "consumerOnly": "claude-code", "domainOnly": "code", "otherConsumersActivated": 0, "otherDomainsActivated": 0 },
+  "fallback": { "path": "claude-code-current-entry", "manualConfigSurgeryRequired": false, "silentFallbacks": 0 },
+  "rollback": { "mechanism": "disable canary and restore claude-code-current-entry", "targetTimeSeconds": 60, "validation": "legacy path selected, v2 not replayed, packets inert" },
+  "states": ["CONFORMANT", "CANARY_ACTIVE", "CANARY_ACCEPTED", "DEGRADED", "ROLLED_BACK"]
+}
