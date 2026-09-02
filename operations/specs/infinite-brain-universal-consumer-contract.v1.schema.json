@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-universal-consumer-contract.v1.schema.json",
+  "title": "Infinite Brain Universal Consumer Contract v1",
+  "description": "One Brain-owned, provider-neutral contract consumed by thin environment adapters.",
+  "type": "object",
+  "required": ["schemaVersion", "contractId", "stages", "authority", "adapterRules", "capabilityOutcomes", "receipt", "continuity"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$id": { "type": "string" },
+    "title": { "type": "string" },
+    "status": { "type": "string" },
+    "schemaVersion": { "const": "1.0.0" },
+    "contractId": { "const": "infinite-brain-universal-consumer.v1" },
+    "stages": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": { "enum": ["BrainRequest", "BrainRoute", "TaskPacket", "CompositionGraph", "ContextRequest[]", "CapabilitySelection[]", "GateSelection[]", "EvidencePacket[]", "BrainResult", "Continuation"] }
+    },
+    "authority": {
+      "type": "object",
+      "required": ["owner", "routing", "qualification", "specialists", "context", "gates", "continuity", "conversation"],
+      "properties": {
+        "owner": { "const": "brain" },
+        "routing": { "const": "brain" },
+        "qualification": { "const": "brain" },
+        "specialists": { "const": "brain" },
+        "context": { "const": "brain" },
+        "gates": { "const": "brain" },
+        "continuity": { "const": "brain" },
+        "conversation": { "const": "non_canonical" }
+      },
+      "additionalProperties": false
+    },
+    "adapterRules": {
+      "type": "object",
+      "required": ["may", "mustNot"],
+      "properties": {
+        "may": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "mustNot": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "capabilityOutcomes": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": { "enum": ["SUPPORTED", "SUPPORTED_WITH_ALTERNATIVE", "DEGRADED", "REQUIRES_EXTERNAL_CAPABILITY", "UNAVAILABLE", "BLOCKED"] }
+    },
+    "receipt": {
+      "type": "object",
+      "required": ["schemaVersion", "semanticFields", "rawPromptStored", "transcriptCanonical", "providerCalls", "writesPerformed"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "semanticFields": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "rawPromptStored": { "const": false },
+        "transcriptCanonical": { "const": false },
+        "providerCalls": { "const": 0 },
+        "writesPerformed": { "const": 0 }
+      },
+      "additionalProperties": false
+    },
+    "continuity": {
+      "type": "object",
+      "required": ["canonicalState", "automaticResume", "transcriptReplay"],
+      "properties": {
+        "canonicalState": { "const": "continuation_packet" },
+        "automaticResume": { "const": false },
+        "transcriptReplay": { "const": false }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

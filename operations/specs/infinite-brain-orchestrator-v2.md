@@ -526,3 +526,44 @@ Phase 6B executed the explicitly authorized first activation candidate from the 
 The clean-revision acceptance run is recorded in `operations/reports/infinite-brain-orchestrator-v2-phase6b-codex-canary-2026-09-02.md` at source revision `63e3ad95d442b6637fdbd191e3439c1401c7e06d`. It passed a serial five-case burn-in and a 45-case cohort (20 normal, 10 vague/edge, 5 stale/conflict/continuation, 5 high-risk, and 5 controlled-fallback cases). Routing, safety, quality, scope, stale-current, rollback, legacy availability, consumer projections, dormant behavior, and output checks all passed. No provider calls, writes, Mind writes, credential/financial/destructive actions, profile activation, client configuration change, automatic resume/takeover, or production routing occurred.
 
 The canary is `CANARY_ACCEPTED`, not a production default. The prior Codex path remains available; high-risk, out-of-domain, stale/conflicted, descriptor-stale, and injected-failure cases select the legacy path or fail closed. The acceptance does not authorize another consumer, another domain, Kiro live projection changes, active-skill expansion, provider admission, external state, or production execution.
+
+## Phase 6D universal consumer contract — 2026-09-02
+
+Phase 6D defines one Brain-owned, versioned, provider-neutral and IDE-neutral
+consumer contract:
+
+```text
+BrainRequest → BrainRoute → TaskPacket → CompositionGraph
+  → ContextRequest[] → CapabilitySelection[] → GateSelection[]
+  → EvidencePacket[] → BrainResult → Continuation
+```
+
+The canonical machine-readable contract is
+`operations/specs/infinite-brain-universal-consumer-contract.v1.json` with its
+schema beside it. Brain remains the authority for routing, qualification,
+specialist selection, context budgets, packet decomposition, composition,
+quality/safety gates, evidence semantics, receipts, and continuity. Conversation
+transcripts are not canonical state, and continuation never automatically
+resumes a task.
+
+Environment adapters are deliberately thin. They translate native input and
+session metadata, report capabilities, resolve a workspace boundary, execute
+only already-approved actions, translate observations into evidence references,
+render results, expose continuation identifiers, and respect canary/fallback
+decisions. They do not choose domain methods, models, providers, gates,
+specialists, context budgets, or packet structure.
+
+Capability negotiation is explicit and capability-driven rather than
+consumer-name-driven. Every required capability produces one of
+`SUPPORTED`, `SUPPORTED_WITH_ALTERNATIVE`, `DEGRADED`,
+`REQUIRES_EXTERNAL_CAPABILITY`, `UNAVAILABLE`, or `BLOCKED`; required omissions
+never disappear silently. Equivalent environment capabilities receive the same
+semantic route. The universal receipt schema is shared by all consumers and
+records semantic references, revisions, degradation, safety, and bounded
+metrics without storing the raw prompt or transcript.
+
+The reference adapter matrix covers Codex, Claude Code, Cursor, Kiro,
+Antigravity, Gemini, and Workbench. This phase assesses each consumer's
+contract/readiness boundary but does not activate any client, profile, domain,
+provider, default route, or live projection. Codex Code retains its existing
+`CANARY_ACCEPTED`/promotion-ready status only.

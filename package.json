@@ -55,7 +55,9 @@
     "infinite-brain:conformance": "node tools/scripts/validate-infinite-brain-conformance.mjs",
     "infinite-brain:cross-repo-contract": "node tools/scripts/validate-cross-repo-contract.mjs",
     "validate:orchestrator-v2": "node tools/validate-orchestrator-v2.mjs",
-    "test:orchestrator-v2": "node --test tools/orchestration/capability-catalog.test.mjs tools/orchestration/shadow-intent-router.test.mjs"
+    "test:orchestrator-v2": "node --test tools/orchestration/capability-catalog.test.mjs tools/orchestration/shadow-intent-router.test.mjs",
+    "validate:universal-consumer-conformance": "node tools/validate-universal-consumer-conformance.mjs",
+    "test:universal-consumer-conformance": "node --test tools/context-learning/universal-consumer-contract.test.mjs"
   },
   "keywords": [
     "claude",

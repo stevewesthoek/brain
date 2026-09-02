@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-universal-consumer-contract.v1",
+  "contractId": "infinite-brain-universal-consumer.v1",
+  "schemaVersion": "1.0.0",
+  "title": "Infinite Brain Universal Consumer Contract",
+  "status": "accepted_phase6d_conformance_contract",
+  "stages": ["BrainRequest", "BrainRoute", "TaskPacket", "CompositionGraph", "ContextRequest[]", "CapabilitySelection[]", "GateSelection[]", "EvidencePacket[]", "BrainResult", "Continuation"],
+  "authority": {
+    "owner": "brain",
+    "routing": "brain",
+    "qualification": "brain",
+    "specialists": "brain",
+    "context": "brain",
+    "gates": "brain",
+    "continuity": "brain",
+    "conversation": "non_canonical"
+  },
+  "adapterRules": {
+    "may": [
+      "translate native input and session metadata into BrainRequest",
+      "report environment capabilities and availability",
+      "execute only already-approved Brain actions",
+      "resolve the selected workspace boundary",
+      "translate observations into EvidencePacket references",
+      "render BrainResult and expose continuation identifiers",
+      "respect canary, fallback, and fail-closed decisions"
+    ],
+    "mustNot": [
+      "decide routing, qualification, specialists, context budgets, packet decomposition, or gates",
+      "choose research, Bible, design, web, video, review, QA, or safety methods",
+      "load full skills, repositories, Mind, or transcripts by default",
+      "create client-specific semantic skill forks or canonical state",
+      "silently omit unavailable required capabilities or downgrade safety"
+    ]
+  },
+  "capabilityOutcomes": ["SUPPORTED", "SUPPORTED_WITH_ALTERNATIVE", "DEGRADED", "REQUIRES_EXTERNAL_CAPABILITY", "UNAVAILABLE", "BLOCKED"],
+  "receipt": {
+    "schemaVersion": "1.0.0",
+    "semanticFields": ["contractVersion", "requestHash", "sourceRevision", "route", "qualification", "capabilities", "context", "gates", "evidence", "continuation", "safety", "degradation"],
+    "rawPromptStored": false,
+    "transcriptCanonical": false,
+    "providerCalls": 0,
+    "writesPerformed": 0
+  },
+  "continuity": {
+    "canonicalState": "continuation_packet",
+    "automaticResume": false,
+    "transcriptReplay": false
+  }
+}

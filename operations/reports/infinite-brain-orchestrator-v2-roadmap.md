@@ -206,6 +206,50 @@ Add measured thresholds for:
 
 Never activate broad default behavior until route accuracy, question rate, context cost, gate coverage, and failure behavior are measured against the shadow baseline.
 
+### Phase 6D — Universal consumer contract and cross-client conformance
+
+**Priority:** P1/P2, architecture boundary
+**Mode:** deterministic conformance and rollout-readiness assessment; no client activation
+**Status:** implementation in isolated Phase 6D worktree
+
+Phase 6D establishes one Brain-owned, versioned, LLM-agnostic and IDE-agnostic
+contract for every consumer:
+
+```text
+BrainRequest → BrainRoute → TaskPacket → CompositionGraph
+  → ContextRequest[] → CapabilitySelection[] → GateSelection[]
+  → EvidencePacket[] → BrainResult → Continuation
+```
+
+The contract is `operations/specs/infinite-brain-universal-consumer-contract.v1.json`.
+Thin adapters may translate native input/session data, report environment
+capabilities, resolve workspace boundaries, render results, translate evidence,
+and expose continuation references. They may not duplicate Brain routing,
+qualification, specialist/method selection, context budgets, packet
+decomposition, composition, quality gates, safety gates, or continuity policy.
+
+The deterministic corpus contains 228 semantic scenarios and exercises Codex,
+Claude Code, Cursor, Kiro, Antigravity, Gemini, and Workbench through the same
+reference adapter shape. It includes Code, Research, Bible, Design, Web,
+Memory, Review, QA, Handoff, Careful, Video, mixed, high-risk, ambiguous,
+stale/continuation, dormant-specialist, capability-unavailable, and model-swap
+cases. Semantic parity compares route/owner/specialist/qualification/risk/gate/
+context/continuity meaning, not client serialization.
+
+Capability negotiation returns explicit `SUPPORTED`,
+`SUPPORTED_WITH_ALTERNATIVE`, `DEGRADED`, `REQUIRES_EXTERNAL_CAPABILITY`,
+`UNAVAILABLE`, or `BLOCKED` outcomes. Required omissions cannot be silent.
+Universal receipts are bounded and provider-neutral; raw prompts and transcripts
+are not canonical state. No consumer, profile, domain default, provider,
+projection, or production path is activated by this phase.
+
+**Exit gate:** the universal schema validates; all supported consumer adapters
+produce equivalent semantic routes; safety and context parity remain within the
+contract; dormant discovery stays lazy; model/provider swaps do not change
+semantic routing; adapter independence and thinness checks pass; the existing
+Phase 3–6C validators remain green; and all activation/default-promotion flags
+remain false.
+
 ### Phase 7 — Consolidation and de-duplication
 
 **Priority:** P2

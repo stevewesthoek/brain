@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-universal-consumer-adapter-matrix.v1",
+  "schemaVersion": "1.0.0",
+  "contractRef": "operations/specs/infinite-brain-universal-consumer-contract.v1.json",
+  "status": "reference_conformance_only_no_activation",
+  "adapters": [
+    { "consumer": "codex", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "CANARY_ACCEPTED_CODE_ONLY" },
+    { "consumer": "claude-code", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
+    { "consumer": "cursor", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
+    { "consumer": "kiro", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
+    { "consumer": "antigravity", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
+    { "consumer": "gemini", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
+    { "consumer": "workbench", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" }
+  ],
+  "onboardingChecklist": [
+    "discover the canonical contract and selected descriptor metadata",
+    "translate native input/session into BrainRequest without adding policy",
+    "report all environment capabilities and explicit negotiation outcomes",
+    "resolve only the named workspace boundary",
+    "consume Brain-owned route, packet, graph, context, gate, evidence, result, and continuation stages",
+    "render semantic BrainResult and expose continuation references",
+    "verify receipt, safety, context, freshness, and no-transcript-replay invariants",
+    "run the universal conformance corpus and consumer-specific supplemental checks",
+    "obtain separate activation authorization and preserve canary/fallback/rollback"
+  ],
+  "forbiddenAdapterResponsibilities": [
+    "client-conditioned routing or qualification",
+    "client-specific domain-method selection",
+    "client-specific context budgets or packet decomposition",
+    "silent capability omission or safety downgrade",
+    "transcript-as-state, automatic resume, or implicit activation"
+  ]
+}

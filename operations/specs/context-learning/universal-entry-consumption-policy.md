@@ -1,7 +1,12 @@
 # Infinite Brain Universal Entry Consumption Policy
 
-**Status:** MRU0-P2.7 provider-neutral consumption contract
+**Status:** Phase 6D universal consumer contract v1; provider-neutral consumption contract
 **Runtime status:** read-only contract and pure consumer only; no client activation is authorized
+
+The versioned Brain-owned consumer envelope is
+`operations/specs/infinite-brain-universal-consumer-contract.v1.json`. It is
+consumed through a thin environment adapter; the adapter is not a second
+orchestrator.
 
 ## Purpose
 
@@ -12,6 +17,13 @@ The Universal Infinite Brain Entry Point is a bounded navigation contract. A cli
 A consumer must locate the entry contract, verify its schema mode, Brain revision, authority-registry reference, provider-neutral marker, and navigation pointers. The immediate bootstrap contains only identity, authority boundaries, Brain/Mind/context/session navigation, current operating status, freshness, and continuity status.
 
 The consumer must not load the full repository, conversation history, secrets, or client configuration as part of bootstrap.
+
+After bootstrap, the universal progression is
+`BrainRequest → BrainRoute → TaskPacket → CompositionGraph → ContextRequest[]
+→ CapabilitySelection[] → GateSelection[] → EvidencePacket[] → BrainResult →
+Continuation`. All stages remain Brain-owned and versioned; an adapter may only
+translate native input/session data, report capabilities, render results, and
+expose references.
 
 ## Progressive retrieval
 
@@ -25,7 +37,12 @@ Retrieval remains bounded, cited, freshness-visible, and subject to the existing
 
 ## Environment boundary
 
-Claude, Codex, Workbench, and future clients are replaceable environment adapters. Claude and Codex retain their session behavior; Workbench retains its MCP/tool and execution boundary. The Brain entry contract supplies shared navigation and safety semantics but never selects a client model, changes a session, grants execution authority, or becomes an environment's source of truth.
+Claude Code, Codex, Cursor, Kiro, Antigravity, Gemini, Workbench, and future
+clients are replaceable environment adapters. The Brain entry contract supplies
+shared navigation and safety semantics but never selects a client model, changes
+a session, grants execution authority, or becomes an environment's source of
+truth. Capability equivalence, rather than client identity, determines whether a
+route is supported, degraded, externally dependent, unavailable, or blocked.
 
 ## Fail-closed behavior
 
