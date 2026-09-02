@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 6B accepted as one bounded Codex Code canary; not a production default
+**Status:** Phase 6D accepted; Codex Code remains promotion-ready; no production default
 **Date:** 2026-09-02
 **Baseline:** Phase 6A integration baseline `origin/main` `6fb99aba00954db464d8d6ea9a5be68de63d937c`; canary source `63e3ad95d442b6637fdbd191e3439c1401c7e06d`
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
@@ -210,7 +210,7 @@ Never activate broad default behavior until route accuracy, question rate, conte
 
 **Priority:** P1/P2, architecture boundary
 **Mode:** deterministic conformance and rollout-readiness assessment; no client activation
-**Status:** implementation in isolated Phase 6D worktree
+**Status:** `ACCEPTED`; no consumer or domain default activated
 
 Phase 6D establishes one Brain-owned, versioned, LLM-agnostic and IDE-agnostic
 contract for every consumer:
@@ -243,12 +243,14 @@ Universal receipts are bounded and provider-neutral; raw prompts and transcripts
 are not canonical state. No consumer, profile, domain default, provider,
 projection, or production path is activated by this phase.
 
+**Evidence:** `operations/reports/infinite-brain-orchestrator-v2-phase6d-client-agnostic-conformance-2026-09-02.md` and `tools/validate-universal-consumer-conformance.mjs`.
+
 **Exit gate:** the universal schema validates; all supported consumer adapters
 produce equivalent semantic routes; safety and context parity remain within the
 contract; dormant discovery stays lazy; model/provider swaps do not change
 semantic routing; adapter independence and thinness checks pass; the existing
 Phase 3–6C validators remain green; and all activation/default-promotion flags
-remain false.
+remain false. **PASS.**
 
 ### Phase 7 — Consolidation and de-duplication
 
