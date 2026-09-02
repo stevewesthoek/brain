@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-composition-graph.v1.schema.json",
+  "title": "Infinite Brain Composition Graph v1",
+  "description": "A bounded, provider-neutral composition graph that extends the Phase 3 Task Packet without granting execution authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "graphId", "taskId", "sourceRevision", "primaryOwner", "nodes", "edges", "dependencies", "parallelGroups", "mergeNodes", "qualityGateNodes", "safetyGateNodes", "terminalNode", "failureEdges", "continuationRef", "bounds", "execution"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "graphId": { "$ref": "#/$defs/id" },
+    "taskId": { "$ref": "#/$defs/id" },
+    "sourceRevision": { "$ref": "#/$defs/revision" },
+    "primaryOwner": { "$ref": "#/$defs/capabilityRef" },
+    "nodes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/node" } },
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+    "dependencies": { "type": "array", "items": { "$ref": "#/$defs/dependency" } },
+    "parallelGroups": { "type": "array", "items": { "$ref": "#/$defs/parallelGroup" } },
+    "mergeNodes": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+    "qualityGateNodes": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+    "safetyGateNodes": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+    "terminalNode": { "$ref": "#/$defs/id" },
+    "failureEdges": { "type": "array", "items": { "$ref": "#/$defs/failureEdge" } },
+    "continuationRef": { "$ref": "#/$defs/ref" },
+    "bounds": { "$ref": "#/$defs/bounds" },
+    "execution": { "$ref": "#/$defs/execution" },
+    "metadata": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9._:-]*$", "minLength": 1, "maxLength": 180 },
+    "revision": { "type": "string", "minLength": 1, "maxLength": 180 },
+    "ref": {
+      "type": "object", "additionalProperties": false,
+      "required": ["refId", "refType", "value", "sourceRevision"],
+      "properties": {
+        "refId": { "$ref": "#/$defs/id" },
+        "refType": { "type": "string", "minLength": 1 },
+        "value": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "sourceRevision": { "$ref": "#/$defs/revision" }
+      }
+    },
+    "capabilityRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["capabilityId", "sourceRef", "sourceRevision"],
+      "properties": {
+        "capabilityId": { "$ref": "#/$defs/id" },
+        "sourceRef": { "type": "string", "minLength": 1 },
+        "sourceRevision": { "$ref": "#/$defs/revision" }
+      }
+    },
+    "taskRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["taskId", "subtaskId", "packetRef", "sourceRevision"],
+      "properties": {
+        "taskId": { "$ref": "#/$defs/id" },
+        "subtaskId": { "$ref": "#/$defs/id" },
+        "packetRef": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "sourceRevision": { "$ref": "#/$defs/revision" }
+      }
+    },
+    "contextLifetime": {
+      "type": "object", "additionalProperties": false,
+      "required": ["phase", "inputRefs", "maxTokens", "rawContextLoaded"],
+      "properties": {
+        "phase": { "enum": ["PLANNING", "NODE_EXECUTION", "REVIEW", "SYNTHESIS", "CONTINUATION"] },
+        "inputRefs": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "maxTokens": { "type": "integer", "minimum": 1, "maximum": 4000 },
+        "rawContextLoaded": { "const": 0 }
+      }
+    },
+    "node": {
+      "type": "object", "additionalProperties": false,
+      "required": ["nodeId", "role", "taskRef", "capabilityRef", "inputs", "outputs", "authorityReads", "authorityWrites", "contextBudget", "contextLifetime", "riskClass", "failureBehavior", "confirmationRequired", "status"],
+      "properties": {
+        "nodeId": { "$ref": "#/$defs/id" },
+        "role": { "enum": ["PRIMARY_OWNER", "SPECIALIST", "CONTEXT_ACQUISITION", "EXECUTION", "QUALITY_GATE", "SAFETY_GATE", "MERGE", "SYNTHESIS", "CONTINUATION"] },
+        "taskRef": { "$ref": "#/$defs/taskRef" },
+        "capabilityRef": { "$ref": "#/$defs/capabilityRef" },
+        "branch": { "type": ["string", "null"], "maxLength": 120 },
+        "inputs": { "type": "array", "items": { "$ref": "#/$defs/ref" } },
+        "outputs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 },
+        "authorityReads": { "type": "array", "items": { "type": "string" } },
+        "authorityWrites": { "type": "array", "items": { "type": "string" } },
+        "contextBudget": { "type": "integer", "minimum": 1, "maximum": 4000 },
+        "contextLifetime": { "$ref": "#/$defs/contextLifetime" },
+        "riskClass": { "enum": ["read-only", "low", "medium", "high", "critical"] },
+        "failureBehavior": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "confirmationRequired": { "type": "boolean" },
+        "executionReady": { "type": "boolean" },
+        "mergePolicy": { "type": ["string", "null"] },
+        "status": { "enum": ["PLANNED", "READY", "BLOCKED", "FAILED", "SKIPPED", "COMPLETE", "CONFLICTED"] }
+      }
+    },
+    "edge": {
+      "type": "object", "additionalProperties": false,
+      "required": ["edgeId", "from", "to", "type", "semantics", "required"],
+      "properties": {
+        "edgeId": { "$ref": "#/$defs/id" },
+        "from": { "$ref": "#/$defs/id" },
+        "to": { "$ref": "#/$defs/id" },
+        "type": { "enum": ["DEPENDENCY", "GATE", "EVIDENCE", "CONFIRMATION", "FAILURE"] },
+        "semantics": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "required": { "type": "boolean" }
+      }
+    },
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["from", "to", "reason"],
+      "properties": { "from": { "$ref": "#/$defs/id" }, "to": { "$ref": "#/$defs/id" }, "reason": { "type": "string", "minLength": 1 } }
+    },
+    "parallelGroup": {
+      "type": "object", "additionalProperties": false,
+      "required": ["groupId", "nodeIds", "eligibility", "reason", "mergeNodeId"],
+      "properties": {
+        "groupId": { "$ref": "#/$defs/id" },
+        "nodeIds": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } },
+        "eligibility": { "enum": ["ELIGIBLE", "INELIGIBLE"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "mergeNodeId": { "type": ["string", "null"] }
+      }
+    },
+    "failureEdge": {
+      "type": "object", "additionalProperties": false,
+      "required": ["from", "to", "outcome", "semantics"],
+      "properties": {
+        "from": { "$ref": "#/$defs/id" }, "to": { "$ref": "#/$defs/id" },
+        "outcome": { "type": "string", "minLength": 1 }, "semantics": { "type": "string", "minLength": 1 }
+      }
+    },
+    "bounds": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maxDepth", "maxNodes", "maxSpecialistsPerPhase", "maxParallelWidth", "maxRepairEdges", "maxMergeFanIn"],
+      "properties": {
+        "maxDepth": { "type": "integer", "minimum": 1 }, "maxNodes": { "type": "integer", "minimum": 1 },
+        "maxSpecialistsPerPhase": { "type": "integer", "minimum": 0 }, "maxParallelWidth": { "type": "integer", "minimum": 1 },
+        "maxRepairEdges": { "type": "integer", "minimum": 0 }, "maxMergeFanIn": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "execution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "providerCalls", "externalMutations", "mindWrites", "profileActivations", "clientConfigChanges", "automaticResumeAllowed", "executionReady"],
+      "properties": {
+        "mode": { "const": "shadow" }, "providerCalls": { "const": 0 }, "externalMutations": { "const": 0 },
+        "mindWrites": { "const": 0 }, "profileActivations": { "const": 0 }, "clientConfigChanges": { "const": 0 },
+        "automaticResumeAllowed": { "const": false }, "executionReady": { "const": false }
+      }
+    }
+  }
+}

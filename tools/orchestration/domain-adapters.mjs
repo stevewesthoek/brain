@@ -9,6 +9,8 @@ const MODES = Object.freeze({
   code: ['MAP', 'PLAN', 'FIX', 'BUILD', 'REVIEW', 'SHIP'],
   research: ['QUICK', 'WEB', 'DEEP', 'ACADEMIC', 'COMPARATIVE', 'FACT_CHECK', 'DOMAIN_SPECIALIST'],
   design: ['NEW', 'MIMIC', 'UPGRADE'],
+  web: ['READ', 'RESEARCH', 'SCRAPE', 'AUTOMATE', 'TEST'],
+  video: ['PLAN', 'SCRIPT', 'RENDER', 'PUBLISH'],
   memory: ['RECALL', 'CAPTURE', 'FACTS', 'REVIEW', 'MAINTENANCE'],
   review: ['REPORT_ONLY', 'FIX_ENABLED'],
   qa: ['QUICK', 'STANDARD', 'EXHAUSTIVE'],
@@ -20,6 +22,8 @@ const ADAPTERS = Object.freeze({
   code: { adapterId: 'adapter.code', domain: 'code', sourceRef: ADAPTER_SOURCE, ownerCapabilityId: 'skill.code', modes: MODES.code, defaultMode: 'BUILD' },
   research: { adapterId: 'adapter.research', domain: 'research', sourceRef: ADAPTER_SOURCE, ownerCapabilityId: 'skill.research', modes: MODES.research, defaultMode: 'QUICK' },
   design: { adapterId: 'adapter.design', domain: 'design', sourceRef: ADAPTER_SOURCE, ownerCapabilityId: 'skill.design', modes: MODES.design, defaultMode: 'NEW' },
+  web: { adapterId: 'adapter.web', domain: 'web', sourceRef: ADAPTER_SOURCE, ownerCapabilityId: 'skill.web', modes: MODES.web, defaultMode: 'READ' },
+  video: { adapterId: 'adapter.video', domain: 'video', sourceRef: ADAPTER_SOURCE, ownerCapabilityId: 'skill.video', modes: MODES.video, defaultMode: 'PLAN' },
   memory: { adapterId: 'adapter.memory', domain: 'memory', sourceRef: ADAPTER_SOURCE, ownerCapabilityId: 'skill.memory', modes: MODES.memory, defaultMode: 'RECALL' },
   review: { adapterId: 'adapter.review', domain: 'review', sourceRef: ADAPTER_SOURCE, ownerCapabilityId: 'skill.review', modes: MODES.review, defaultMode: 'REPORT_ONLY' },
   qa: { adapterId: 'adapter.qa', domain: 'qa', sourceRef: ADAPTER_SOURCE, ownerCapabilityId: 'skill.qa', modes: MODES.qa, defaultMode: 'STANDARD' },
@@ -28,7 +32,7 @@ const ADAPTERS = Object.freeze({
 });
 
 export const ADAPTER_ROLE_METADATA = Object.freeze({
-  code: 'DOMAIN_OWNER', research: 'DOMAIN_OWNER', design: 'DOMAIN_OWNER',
+  code: 'DOMAIN_OWNER', research: 'DOMAIN_OWNER', design: 'DOMAIN_OWNER', web: 'DOMAIN_OWNER', video: 'DOMAIN_OWNER',
   memory: 'CONTEXT_SERVICE', review: 'QUALITY_GATE', qa: 'QUALITY_GATE',
   handoff: 'CONTINUITY_SERVICE', careful: 'SAFETY_GATE'
 });
@@ -66,6 +70,19 @@ export function selectAdapterMode(domain, normalized, routeFamily = domain) {
     if (/\b(mimic|inspired by|screenshot|reference|like)\b/.test(text)) return 'MIMIC';
     if (/\b(redesign|upgrade|existing|outdated|improve)\b/.test(text)) return 'UPGRADE';
     return 'NEW';
+  }
+  if (domain === 'web') {
+    if (/\b(scrape|crawl)\b/.test(text)) return 'SCRAPE';
+    if (/\b(click|fill|submit|automate|browser)\b/.test(text)) return 'AUTOMATE';
+    if (/\b(test|qa|check)\b/.test(text)) return 'TEST';
+    if (/\b(research|current|competitors)\b/.test(text)) return 'RESEARCH';
+    return 'READ';
+  }
+  if (domain === 'video') {
+    if (/\b(script|write)\b/.test(text)) return 'SCRIPT';
+    if (/\b(render|edit)\b/.test(text)) return 'RENDER';
+    if (/\b(publish|youtube|post)\b/.test(text)) return 'PUBLISH';
+    return 'PLAN';
   }
   if (domain === 'memory') {
     if (/\b(what did we decide|recall|remind|do you remember)\b/.test(text)) return 'RECALL';
