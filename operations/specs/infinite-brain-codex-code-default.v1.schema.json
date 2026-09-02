@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schemaVersion", "activationId", "consumer", "domain", "mode", "status", "universalConsumerContractVersion", "priorPath", "defaultActive", "productionActive", "activationPerformed", "scope", "fallback", "rollback", "states"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "activationId": { "type": "string", "minLength": 1 },
+    "consumer": { "const": "codex" },
+    "domain": { "const": "code" },
+    "mode": { "const": "DEFAULT" },
+    "status": { "enum": ["CANARY_ACCEPTED", "CODE_V2_DEFAULT_FOR_CODEX", "ROLLED_BACK"] },
+    "universalConsumerContractVersion": { "const": "1.0.0" },
+    "adapterRevision": { "type": "string", "minLength": 1 },
+    "priorPath": { "const": "codex-current-entry" },
+    "defaultActive": { "type": "boolean" },
+    "productionActive": { "const": false },
+    "activationPerformed": { "type": "boolean" },
+    "scope": { "type": "object", "required": ["consumerOnly", "domainOnly", "otherConsumersActivated", "otherDomainsActivated"] },
+    "fallback": { "type": "object", "required": ["path", "trigger", "manualConfigSurgeryRequired"] },
+    "rollback": { "type": "object", "required": ["mechanism", "targetTimeSeconds", "validation"] },
+    "states": { "type": "array", "items": { "enum": ["CANARY_ACCEPTED", "CODE_V2_DEFAULT_FOR_CODEX", "ROLLED_BACK"] } }
+  },
+  "additionalProperties": true
+}

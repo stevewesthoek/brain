@@ -567,3 +567,38 @@ Antigravity, Gemini, and Workbench. This phase assesses each consumer's
 contract/readiness boundary but does not activate any client, profile, domain,
 provider, default route, or live projection. Codex Code retains its existing
 `CANARY_ACCEPTED`/promotion-ready status only.
+
+## Phase 7A Codex Code default truth — 2026-09-02
+
+Phase 7A promotes exactly one consumer/domain pair: Codex + Code. The canonical
+promotion contract is `operations/specs/infinite-brain-codex-code-default.v1.json`
+with its adjacent schema. The accepted transition is:
+
+```text
+CANARY_ACCEPTED → CODE_V2_DEFAULT_FOR_CODEX
+```
+
+The active default entry remains a thin Codex adapter around the Brain-owned
+universal consumer contract. It invokes the existing Universal Entry, catalog,
+Context Broker, packet, composition-graph, gate, continuity, and receipt path;
+it does not duplicate routing, qualification, specialist, model, context, or
+gate policy. The prior `codex-current-entry` path remains available and is
+selected for disabled/default-rolled-back state, high or critical risk,
+out-of-domain requests, stale/conflicted context, projection drift, controlled
+failures, or any safety/validation regression.
+
+Phase 7A's default evidence requires a serial ten-request Code burn-in, a
+100-plus default-path cohort, at least 25 disposable isolated Code tasks with a
+bounded repair cycle, high-risk and stale/conflict checks, dormant capability
+checks, atomic-context bounds, proportional Review/QA selection, controlled
+fallbacks, receipt privacy, model-swap invariance, and a live rollback/restore
+drill. Default activation is not production execution: productionActive remains
+false, providers remain unavailable, no client configuration or active-skill
+projection changes are made, and no other consumer or domain is activated.
+
+The Phase 7A closeout report records the activation timestamp, activation source
+revision, Universal Consumer Contract version, adapter revision, mechanism,
+prior path, rollback result, thresholds, cohort evidence, non-regression gates,
+and exactly one recommended next domain canary plus one first non-Codex consumer
+canary. Any future domain or consumer canary requires its own explicit
+authorization and must not be inferred from this Code default.

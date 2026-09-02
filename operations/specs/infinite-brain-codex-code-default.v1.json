@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0.0",
+  "activationId": "codex-code-v2-default",
+  "consumer": "codex",
+  "domain": "code",
+  "mode": "DEFAULT",
+  "status": "CODE_V2_DEFAULT_FOR_CODEX",
+  "universalConsumerContractVersion": "1.0.0",
+  "adapterRevision": "codex-canary-contract@1.0.0",
+  "priorPath": "codex-current-entry",
+  "defaultActive": true,
+  "productionActive": false,
+  "activationPerformed": true,
+  "scope": {
+    "consumerOnly": "codex",
+    "domainOnly": "code",
+    "otherConsumersActivated": 0,
+    "otherDomainsActivated": 0
+  },
+  "fallback": {
+    "path": "codex-current-entry",
+    "trigger": "disabled_default_or_any_safety_freshness_projection_route_or_gate_failure",
+    "manualConfigSurgeryRequired": false
+  },
+  "rollback": {
+    "mechanism": "transition to ROLLED_BACK and select codex-current-entry",
+    "targetTimeSeconds": 60,
+    "validation": "legacy path selected, v2 not invoked, then explicit preflight is required before restore"
+  },
+  "states": ["CANARY_ACCEPTED", "CODE_V2_DEFAULT_FOR_CODEX", "ROLLED_BACK"]
+}
