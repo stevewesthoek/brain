@@ -1,14 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { createCapabilityCatalog } from '../orchestration/capability-catalog.mjs';
 import { createCodexCodeDefaultController, promoteCodexCodeDefault, rollbackCodexCodeDefault, restoreCodexCodeDefault, runCodexCodeDefaultInvocation, validateCodexCodeDefaultSpec } from './codex-code-default.mjs';
 
 const repoRoot = new URL('../../', import.meta.url).pathname;
 const catalog = createCapabilityCatalog({ repoRoot });
 const preflight = { passed: true };
+const sourceRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' }).trim();
 
 function activeController() {
-  return promoteCodexCodeDefault(createCodexCodeDefaultController({ sourceRevision: 'test-revision' }), { preflight, timestamp: '2026-09-02T00:00:00.000Z' });
+  return promoteCodexCodeDefault(createCodexCodeDefaultController({ sourceRevision }), { preflight, timestamp: '2026-09-02T00:00:00.000Z' });
 }
 
 test('Phase 7A contract is Codex Code DEFAULT and validates', () => {

@@ -1,13 +1,13 @@
 # Infinite Brain Orchestrator v2 Phase 7A — Codex Code Default Promotion and Stability
 
-**Date:** 2026-09-02  
-**Activation timestamp:** `2026-09-02T00:00:01.000Z`  
-**Activation source revision:** `2fec45d753b857827648b083dd87a25c3585fdb7` (pre-change `origin/main`: `16dcba61c9b2995a52c0b869147bb431459d50e0`)  
-**Consumer/domain:** Codex / Code only  
-**Universal Consumer Contract:** `1.0.0`  
-**Adapter revision:** `codex-canary-contract@1.0.0`  
-**Activation mechanism:** `codex-code-default` state machine plus default Codex entry selector  
-**Prior path:** `codex-current-entry`  
+**Date:** 2026-09-02
+**Activation timestamp:** `2026-09-02T00:00:01.000Z`
+**Activation source revision:** `2fec45d753b857827648b083dd87a25c3585fdb7` (pre-change `origin/main`: `16dcba61c9b2995a52c0b869147bb431459d50e0`)
+**Consumer/domain:** Codex / Code only
+**Universal Consumer Contract:** `1.0.0`
+**Adapter revision:** `codex-canary-contract@1.0.0`
+**Activation mechanism:** `codex-code-default` state machine plus default Codex entry selector
+**Prior path:** `codex-current-entry`
 **Production execution:** not enabled; `productionActive: false`
 
 ## 1. Decision
@@ -162,10 +162,10 @@ default evidence path. Isolated task writes were confined to disposable roots.
 
 ## 21. Canonical implementation and rollback
 
-Implementation: `tools/context-learning/codex-code-default.mjs`  
-Runner: `tools/context-learning/run-phase7a-codex-code-default.mjs`  
-Contract/schema: `operations/specs/infinite-brain-codex-code-default.v1.json` and adjacent `.schema.json`  
-Focused tests: `tools/context-learning/codex-code-default.test.mjs`  
+Implementation: `tools/context-learning/codex-code-default.mjs`
+Runner: `tools/context-learning/run-phase7a-codex-code-default.mjs`
+Contract/schema: `operations/specs/infinite-brain-codex-code-default.v1.json` and adjacent `.schema.json`
+Focused tests: `tools/context-learning/codex-code-default.test.mjs`
 Canonical v2 spec: `operations/specs/infinite-brain-orchestrator-v2.md`
 
 Rollback is deterministic: disable the default state, select
