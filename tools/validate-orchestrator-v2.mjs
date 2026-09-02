@@ -36,8 +36,13 @@ if (unsafeHighRisk !== 0) errors.push(`unsafe high-risk routes: ${unsafeHighRisk
 if (userChoiceQuestions !== 0) errors.push(`internal-choice questions: ${userChoiceQuestions}`);
 if (unnecessaryClarifications !== 0) errors.push(`unnecessary clarifications: ${unnecessaryClarifications}`);
 if (catalog.metrics().fullBodyReads !== 0) errors.push('catalog construction loaded full skill bodies');
-const knownReconciliationCodes = ['duplicate_profile_entry', 'profile_no_source', 'profile_source_divergence', 'stale_projection', 'consumer_projection_divergence'];
-for (const code of knownReconciliationCodes) if (!catalog.reconciliation.summary[code]) errors.push(`reconciliation did not surface known code: ${code}`);
+// These three codes are resolved-state assertions after the Phase 5 repairs;
+// requiring them to be present made the umbrella validator fail on a healthy
+// catalog. Keep the assertion explicit so a regression becomes visible.
+const expectedZeroReconciliationCodes = ['duplicate_profile_entry', 'profile_no_source', 'profile_source_divergence'];
+for (const code of expectedZeroReconciliationCodes) if (catalog.reconciliation.summary[code]) errors.push(`reconciliation regression: expected zero ${code}`);
+const expectedObservedReconciliationCodes = ['stale_projection', 'consumer_projection_divergence'];
+for (const code of expectedObservedReconciliationCodes) if (!catalog.reconciliation.summary[code]) errors.push(`reconciliation did not surface expected code: ${code}`);
 if (errors.length) {
   console.error(errors.join('\n'));
   process.exit(1);
@@ -50,7 +55,7 @@ console.log(JSON.stringify({
   catalog: { ...catalog.metrics(), listFullBodyReads: 0, provenance: 'field-level', sourceAgnostic: true },
   contextEvidence,
   profileHealth: catalog.profileHealth,
-  reconciliation: catalog.reconciliation.summary,
+  reconciliation: { summary: catalog.reconciliation.summary, expectedZeroCodes: expectedZeroReconciliationCodes, expectedObservedCodes: expectedObservedReconciliationCodes },
   router: { fixtureCount: results.length, primaryCorrectnessPercent: (primaryCorrect / results.length) * 100, expectedQuestions, actualQuestions, unnecessaryClarifications, unsafeHighRisk, userChoiceQuestions },
   productionSafety: { executionExposed: false, providerCalls: 0, externalMutations: 0, runtimeActivated: false },
 }, null, 2));
