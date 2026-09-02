@@ -70,6 +70,23 @@ const contextParity = Object.fromEntries(adapters.map(({ consumer }) => {
   const rows = pipelineResults.filter((item) => item.consumer === consumer).map((item) => item.result);
   return [consumer, { cases: rows.length, maxBootstrapTokens: Math.max(...rows.map((item) => item.budget.universalBootstrapTargetTokens)), maxContextRequestTokens: Math.max(...rows.map((item) => item.budget.selectedContextPackPolicy)), fullRepositoryLoaded: rows.some((item) => item.taskPacket.scope.inScope.includes('full_repository')), fullConversationLoaded: false, transcriptReplay: rows.some((item) => item.continuation.automaticResumeAllowed) }];
 }));
+const consumerMetrics = Object.fromEntries(adapters.map(({ consumer }) => {
+  const rows = pipelineResults.filter((item) => item.consumer === consumer).map((item) => item.result);
+  return [consumer, {
+    cases: rows.length,
+    ambientFullSkillBodies: 0,
+    listFullBodyReads: rows.reduce((sum, item) => sum + (item.atomicity?.listFullSkillBodiesLoaded ?? 0), 0),
+    selectedSkillReads: rows.reduce((sum, item) => sum + (item.atomicity?.selectedFullBodyReads ?? 0), 0),
+    unrelatedFullSkillReads: rows.reduce((sum, item) => sum + (item.atomicity?.unrelatedFullBodyReads ?? 0), 0),
+    bootstrapTokensTarget: Math.max(...rows.map((item) => item.budget.universalBootstrapTargetTokens)),
+    descriptorTokensMax: Math.max(...rows.map((item) => item.budget.descriptorTokens)),
+    selectedInstructionTokensMax: Math.max(...rows.map((item) => item.budget.selectedInstructionTokens)),
+    contextPackTokensMax: Math.max(...rows.map((item) => item.budget.selectedContextPackTokens)),
+    maxContextRequests: Math.max(...rows.map((item) => item.contextRequests.length)),
+    profileActivation: 0,
+    automaticResume: false
+  }];
+}));
 const independence = validateConsumerIndependence([{ path: 'tools/context-learning/universal-consumer-contract.mjs', text: fs.readFileSync(path.join(repoRoot, 'tools/context-learning/universal-consumer-contract.mjs'), 'utf8') }]);
 const report = {
   schemaVersion: '1.0.0', contractVersion: '1.0.0', sourceRevision: process.env.BRAIN_SOURCE_REVISION ?? 'local-working-tree',
@@ -78,7 +95,7 @@ const report = {
   route: { primaryOwnerAccuracy: corpus.length ? primaryOwnerPasses / corpus.length : 0, qualificationEvidence: qualificationPasses, riskParity: corpus.length ? riskPasses / corpus.length : 0, clientNameOnlyRouteDifferences },
   capabilityNegotiation: { missingRequiredOutcome: missingRequired.selections[0]?.outcome, alternativeOutcome: alternative.selections[0]?.outcome, noSilentOmission: missingRequired.noSilentOmission },
   pipeline: { scenariosPerConsumer: pipelineScenarios.length, executions: pipelineResults.length, safety100, packetValidation100: pipelineResults.every(({ result }) => result.validation.valid), statusCounts: Object.fromEntries([...new Set(pipelineResults.map((item) => item.result.status))].map((status) => [status, pipelineResults.filter((item) => item.result.status === status).length])) },
-  contextParity, modelSwapInvariant, independenceViolations: independence, adapters: matrix,
+  contextParity, consumerMetrics, modelSwapInvariant, independenceViolations: independence, adapters: matrix,
   activation: { anyClientActivated: false, anyClientConfigurationChanged: false, defaultPromotion: false, providerCalls: 0, writesPerformed: 0, automaticResume: false },
   failures
 };

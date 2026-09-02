@@ -68,6 +68,11 @@ test('full contract consumption works through every thin adapter without activat
     assert.equal(result.status, 'READY', consumer);
     assert.equal(result.receipt.rawPromptStored, false, consumer);
     assert.equal(result.receipt.transcriptCanonical, false, consumer);
+    assert.equal(result.receipt.consumer, consumer, consumer);
+    assert.equal(result.receipt.brainRevision, result.taskPacket.sourceRevision, consumer);
+    assert.equal(result.receipt.taskPacket.taskId, result.taskPacket.taskId, consumer);
+    assert.equal(result.receipt.compositionGraph.graphId, result.compositionGraph.graphId, consumer);
+    assert.equal(result.receipt.outcome, result.status, consumer);
     assert.equal(result.safety.providerCalls, 0, consumer);
     assert.equal(result.safety.writesPerformed, 0, consumer);
     assert.equal(result.safety.executionReady, false, consumer);
@@ -116,6 +121,21 @@ test('model/provider swaps and session metadata do not change semantic routing',
   assert.throws(() => createBrainRequest({ intent: 'Review the current diff for correctness', environment: { contractVersion: '99.0.0' } }), /unsupported_environment_contract/);
 });
 
+test('capability-equivalent model swaps preserve routes while one missing capability fails explicitly', () => {
+  const reference = createReferenceEnvironmentAdapter();
+  const capabilities = [...reference.capabilities(), { capabilityId: 'browser', available: true, outcome: 'SUPPORTED', mode: 'native' }];
+  const browser = createReferenceEnvironmentAdapter({ environmentId: 'browser-capable', capabilities });
+  const noBrowser = createReferenceEnvironmentAdapter({ environmentId: 'browser-unavailable', capabilities: reference.capabilities() });
+  const catalog = createCapabilityCatalog({ repoRoot });
+  const intent = 'Use the browser to test the signup form';
+  const supported = browser.consume(intent, { requiredCapabilities: ['browser'] }, { catalog, repoRoot });
+  const unavailable = noBrowser.consume(intent, { requiredCapabilities: ['browser'] }, { catalog, repoRoot });
+  assert.deepEqual(semanticProjection(supported).route, semanticProjection(unavailable).route);
+  assert.equal(supported.status, 'READY');
+  assert.equal(unavailable.status, 'BLOCKED');
+  assert.equal(unavailable.receipt.capabilities.find((item) => item.capabilityId === 'browser').outcome, 'UNAVAILABLE');
+});
+
 test('stale continuation and unavailable required capability fail closed without transcript replay', () => {
   const catalog = createCapabilityCatalog({ repoRoot });
   const adapter = createReferenceEnvironmentAdapter({ capabilities: [{ capabilityId: 'brain.contract.v1', available: true }, { capabilityId: 'brain.route', available: true }, { capabilityId: 'brain.packet', available: true }, { capabilityId: 'brain.context', available: true }, { capabilityId: 'brain.receipt', available: true }, { capabilityId: 'brain.continuity', available: true }] });
@@ -130,6 +150,19 @@ test('stale continuation and unavailable required capability fail closed without
   assert.equal(unavailable.safety.writesPerformed, 0);
   const embedded = createReferenceEnvironmentAdapter().translate({ intent: 'Review the current diff for correctness', session: { id: 'embedded-session', resumable: true } });
   assert.equal(embedded.environment.session.sessionId, 'embedded-session');
+});
+
+test('continuation is consumer-independent and does not require transcript replay', () => {
+  const catalog = createCapabilityCatalog({ repoRoot });
+  const prompt = 'Fix the login bug in the repository';
+  const codex = createReferenceEnvironmentAdapter({ environmentId: 'codex' }).consume(prompt, {}, { catalog, repoRoot });
+  const claude = createReferenceEnvironmentAdapter({ environmentId: 'claude-code' }).consume(prompt, {}, { catalog, repoRoot });
+  assert.equal(codex.taskPacket.taskId, claude.taskPacket.taskId);
+  assert.equal(codex.continuation.continuationId, claude.continuation.continuationId);
+  assert.equal(codex.continuation.sourceRevision, claude.continuation.sourceRevision);
+  assert.equal(codex.continuation.automaticResumeAllowed, false);
+  assert.equal(codex.receipt.transcriptCanonical, false);
+  assert.equal(claude.receipt.transcriptCanonical, false);
 });
 
 test('canonical consumer code has no client-conditioned orchestration policy', () => {

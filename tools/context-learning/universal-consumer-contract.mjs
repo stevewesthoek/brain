@@ -18,6 +18,7 @@ export const UNIVERSAL_STAGES = Object.freeze([
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
 const contractSchema = loadJson(path.join(repoRoot, 'operations/specs/infinite-brain-universal-consumer-contract.v1.schema.json'));
+const adapterMatrixSpec = loadJson(path.join(repoRoot, 'operations/specs/infinite-brain-universal-consumer-adapter-matrix.v1.json'));
 const canonicalCapabilityIds = Object.freeze([
   'brain.contract.v1', 'brain.route', 'brain.packet', 'brain.context', 'brain.receipt', 'brain.continuity'
 ]);
@@ -110,16 +111,37 @@ export function semanticProjection(result) {
   };
 }
 
-function buildReceipt({ request, route, packet, graph, negotiation, continuation, resultStatus }) {
+function buildReceipt({ request, route, packet, graph, negotiation, continuation, evidencePackets, resultStatus }) {
   const projection = semanticProjection({ route, taskPacket: packet, compositionGraph: graph, continuation, safety: { providerCalls: 0, writesPerformed: 0, executionReady: false } });
+  const capabilityReport = bounded(request.environment.capabilities).map((item) => ({
+    capabilityId: item.capabilityId,
+    available: item.available,
+    outcome: item.outcome ?? (item.available ? 'SUPPORTED' : 'UNAVAILABLE'),
+    mode: item.mode
+  }));
   return {
     schemaVersion: UNIVERSAL_CONTRACT_VERSION,
     receiptId: id('brain-receipt', { requestId: request.requestId, sourceRevision: packet.sourceRevision, resultStatus }),
     contractVersion: UNIVERSAL_CONTRACT_VERSION,
+    consumer: request.environment.environmentId,
+    consumerCapabilities: capabilityReport,
+    brainRevision: packet.sourceRevision,
     requestHash: hash(request.intent),
     sourceRevision: packet.sourceRevision,
+    route: projection.route,
+    qualification: { required: route.qualification?.required === true },
     semantic: projection,
     capabilities: negotiation.selections.map((item) => ({ capabilityId: item.capabilityId, selectedCapabilityId: item.selectedCapabilityId, required: item.required, outcome: item.outcome })),
+    taskPacket: { taskId: packet.taskId, status: packet.state?.status ?? null, ref: `task://${packet.taskId}` },
+    compositionGraph: { graphId: graph.graphId, ref: `graph://${graph.graphId}` },
+    contextRefs: bounded(packet.context?.contextPackRefs ?? packet.contextRequests?.map((item) => item.contextPackRef) ?? []),
+    evidenceRefs: bounded((evidencePackets ?? []).map((item) => `evidence://${item.evidenceId}`)),
+    gates: { quality: bounded(packet.requiredQualityGates?.map((item) => item.gateRef) ?? []), safety: bounded(packet.requiredSafetyGates?.map((item) => item.gateRef) ?? []) },
+    risk: { riskClass: route.riskClass ?? null, confirmationClass: route.confirmationClass ?? null },
+    freshness: { continuity: continuation?.state ?? 'UNAVAILABLE', sourceRevision: packet.sourceRevision },
+    continuity: { continuationId: continuation?.continuationId ?? null, state: continuation?.state ?? 'UNAVAILABLE', automaticResumeAllowed: continuation?.automaticResumeAllowed === true },
+    sideEffects: { providerCalls: 0, writesPerformed: 0, executionReady: false },
+    outcome: resultStatus,
     degradation: negotiation.blocking.length ? { status: 'BLOCKED', reasons: negotiation.blocking } : { status: negotiation.status, reasons: [] },
     rawPromptStored: false,
     transcriptCanonical: false,
@@ -146,8 +168,8 @@ export function orchestrateBrainRequest(request, { catalog = createCapabilityCat
           ? 'BLOCKED'
           : packetPlan.validation.valid ? 'READY' : 'BLOCKED';
   const safety = { providerCalls: 0, writesPerformed: 0, executionReady: false, automaticResumeAllowed: false, clientConfigChanges: 0, mindWrites: 0 };
-  const result = { schemaVersion: UNIVERSAL_CONTRACT_VERSION, status: resultStatus, route, taskPacket: packetPlan.taskPacket, compositionGraph: graph, contextRequests: packetPlan.contextRequestPlan, capabilitySelections: negotiation.selections, gateSelections: [...packetPlan.taskPacket.requiredQualityGates, ...packetPlan.taskPacket.requiredSafetyGates], evidencePackets: packetPlan.evidencePackets, continuation, safety, sourceRevisions: packetPlan.sourceRevisions, validation: packetPlan.validation, budget: packetPlan.budget, degradation: negotiation.blocking.length ? { status: 'BLOCKED', reasons: negotiation.blocking } : { status: negotiation.status, reasons: [] } };
-  result.receipt = buildReceipt({ request, route, packet: packetPlan.taskPacket, graph, negotiation, continuation, resultStatus });
+  const result = { schemaVersion: UNIVERSAL_CONTRACT_VERSION, status: resultStatus, route, taskPacket: packetPlan.taskPacket, compositionGraph: graph, contextRequests: packetPlan.contextRequestPlan, capabilitySelections: negotiation.selections, gateSelections: [...packetPlan.taskPacket.requiredQualityGates, ...packetPlan.taskPacket.requiredSafetyGates], evidencePackets: packetPlan.evidencePackets, continuation, safety, sourceRevisions: packetPlan.sourceRevisions, validation: packetPlan.validation, budget: packetPlan.budget, atomicity: packetPlan.atomicity, degradation: negotiation.blocking.length ? { status: 'BLOCKED', reasons: negotiation.blocking } : { status: negotiation.status, reasons: [] } };
+  result.receipt = buildReceipt({ request, route, packet: packetPlan.taskPacket, graph, negotiation, continuation, evidencePackets: packetPlan.evidencePackets, resultStatus });
   return result;
 }
 
@@ -162,7 +184,9 @@ export function createReferenceEnvironmentAdapter({ adapterId = 'adapter.referen
       nativeInput,
       environment: { environmentId, capabilities: capabilities ?? defaultCapabilities, ...nativeEnvironment, ...metadata.environment },
       session: metadata.session ?? nativeSession,
-      workspace: metadata.workspace ?? nativeWorkspace
+      workspace: metadata.workspace ?? nativeWorkspace,
+      requiredCapabilities: metadata.requiredCapabilities ?? nativeObject.requiredCapabilities ?? [],
+      optionalCapabilities: metadata.optionalCapabilities ?? nativeObject.optionalCapabilities ?? []
     });
   };
   return Object.freeze({
@@ -177,7 +201,7 @@ export function createReferenceEnvironmentAdapter({ adapterId = 'adapter.referen
 }
 
 export function consumerAdapterMatrix() {
-  return ['codex', 'claude-code', 'cursor', 'kiro', 'antigravity', 'gemini', 'workbench'].map((consumer) => ({ consumer, adapter: 'adapter.reference-environment.v1', contractVersion: UNIVERSAL_CONTRACT_VERSION, capabilityDriven: true, routingOwner: 'brain', runtimeActivation: 'NOT_PERFORMED', configurationChanged: false, canConsume: true, rollout: consumer === 'codex' ? 'CANARY_ACCEPTED_CODE_ONLY' : 'READY_FOR_SEPARATE_ROLLOUT_EVALUATION' }));
+  return clone(adapterMatrixSpec.adapters).map((entry) => ({ ...entry, adapter: entry.adapterRef, contractVersion: UNIVERSAL_CONTRACT_VERSION, capabilityDriven: true, routingOwner: 'brain', configurationChanged: false }));
 }
 
 export function validateUniversalConsumerContract(contract = loadJson(path.join(repoRoot, 'operations/specs/infinite-brain-universal-consumer-contract.v1.json'))) {

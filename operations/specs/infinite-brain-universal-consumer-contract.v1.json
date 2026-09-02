@@ -37,7 +37,7 @@
   "capabilityOutcomes": ["SUPPORTED", "SUPPORTED_WITH_ALTERNATIVE", "DEGRADED", "REQUIRES_EXTERNAL_CAPABILITY", "UNAVAILABLE", "BLOCKED"],
   "receipt": {
     "schemaVersion": "1.0.0",
-    "semanticFields": ["contractVersion", "requestHash", "sourceRevision", "route", "qualification", "capabilities", "context", "gates", "evidence", "continuation", "safety", "degradation"],
+    "semanticFields": ["consumer", "consumerCapabilities", "contractVersion", "requestHash", "sourceRevision", "brainRevision", "route", "qualification", "capabilities", "taskPacket", "compositionGraph", "contextRefs", "gates", "evidenceRefs", "risk", "freshness", "continuity", "sideEffects", "outcome", "safety", "degradation"],
     "rawPromptStored": false,
     "transcriptCanonical": false,
     "providerCalls": 0,

@@ -5,13 +5,83 @@
   "contractRef": "operations/specs/infinite-brain-universal-consumer-contract.v1.json",
   "status": "reference_conformance_only_no_activation",
   "adapters": [
-    { "consumer": "codex", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "CANARY_ACCEPTED_CODE_ONLY" },
-    { "consumer": "claude-code", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
-    { "consumer": "cursor", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
-    { "consumer": "kiro", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
-    { "consumer": "antigravity", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
-    { "consumer": "gemini", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" },
-    { "consumer": "workbench", "adapterRef": "adapter.reference-environment.v1", "canConsume": true, "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED" }
+    {
+      "consumer": "codex", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
+      "entrypoint": "operations/system-configs/codex/AGENTS.md", "configProjectionSource": "operations/system-configs/codex/config.toml; operations/system-configs/codex/skills/user",
+      "skillExposure": "canonical ai/skills/active through user projection; dormant descriptors remain catalog-owned", "contextMechanism": "Universal Brain Entry + Context Broker",
+      "toolMechanism": "shell, browser/computer-use, MCP, native subagents", "sessionContinuity": "session-continuity contract + explicit continuation packet",
+      "hookPolicyMechanism": "Codex AGENTS/config/rules; no Phase6D semantic routing branch", "currentOrchestrationLogic": "Phase6C bounded Code canary plus legacy fallback",
+      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "transport/session/canary mechanics only", "currentV2Support": "CANARY_ACCEPTED_CODE_ONLY",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "NOT_PERFORMED",
+      "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "observed", "browser": "observed", "mcp": "observed", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "host_dependent", "other": ["native_subagents", "parallel_tasks", "tool_confirmation"] },
+      "runtimeActivation": "NOT_PERFORMED", "rollout": "CANARY_ACCEPTED_CODE_ONLY"
+    },
+    {
+      "consumer": "claude-code", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
+      "entrypoint": "operations/system-configs/claude/CLAUDE.md", "configProjectionSource": "operations/system-configs/claude/settings.json; operations/system-configs/claude/hooks; operations/system-configs/claude/skills",
+      "skillExposure": "canonical skill projection plus Claude hooks; descriptor authority remains Brain", "contextMechanism": "Universal Brain Entry + Context Broker bridge",
+      "toolMechanism": "shell, filesystem, MCP/runtime tools", "sessionContinuity": "handoff/session-continuity contracts; explicit continuation only",
+      "hookPolicyMechanism": "Claude CLAUDE.md/settings/hooks", "currentOrchestrationLogic": "legacy Claude session/hooks; Phase6D reference consumption only",
+      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "hooks, model/session, and transport mechanics only", "currentV2Support": "REFERENCE_CONSUMPTION_ONLY",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "NOT_PERFORMED",
+      "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "host_dependent", "browser": "host_dependent", "mcp": "host_dependent", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "host_dependent", "other": ["native_subagents", "tool_confirmation"] },
+      "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED"
+    },
+    {
+      "consumer": "cursor", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
+      "entrypoint": "operations/system-configs/cursor/README.md", "configProjectionSource": "operations/system-configs/cursor/skills-cursor; host Cursor settings are outside this repository",
+      "skillExposure": "Cursor projection; canonical descriptor/catalog remains Brain-owned", "contextMechanism": "Universal Brain Entry + Context Broker bridge",
+      "toolMechanism": "filesystem/shell/IDE tools; host MCP/browser support is capability-declared", "sessionContinuity": "explicit continuation packet; host session bridge required",
+      "hookPolicyMechanism": "Cursor skill/rule tooling; no semantic route authority", "currentOrchestrationLogic": "Cursor-native transport and IDE mechanics; Phase6D reference consumption only",
+      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "IDE serialization/tool mechanics only", "currentV2Support": "REFERENCE_CONSUMPTION_ONLY",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "NOT_PERFORMED",
+      "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "host_dependent", "browser": "host_dependent", "mcp": "host_dependent", "workbench": "not_applicable", "structuredOutput": "host_dependent", "continuation": "host_dependent", "interactiveQualification": "host_dependent", "visual": "host_dependent", "other": ["IDE_rules", "host_subagents"] },
+      "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED"
+    },
+    {
+      "consumer": "kiro", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
+      "entrypoint": "operations/system-configs/kiro/steering/brain-mind-context.md", "configProjectionSource": "operations/specs/infinite-brain-kiro-projection.v1.json; operations/system-configs/kiro/{argv.json,extensions,powers}",
+      "skillExposure": "canonical manifest accounts for seven expected entry symlinks; ignored live projection deferred", "contextMechanism": "steering context + Universal Brain Entry/Context Broker bridge",
+      "toolMechanism": "Kiro IDE/filesystem/shell; host MCP/browser support is capability-declared", "sessionContinuity": "explicit continuation packet; live bridge not activated",
+      "hookPolicyMechanism": "Kiro steering/powers/extensions", "currentOrchestrationLogic": "Kiro host mechanics and repository projection accounting; Phase6D reference consumption only",
+      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "ignored symlink/projection and IDE mechanics only", "currentV2Support": "REPOSITORY_PROJECTION_MANIFESTED",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER; LIVE_PROJECTION_DEFERRED", "activationStatus": "NOT_PERFORMED",
+      "capabilities": { "filesystem": "observed", "git": "host_dependent", "shell": "host_dependent", "web": "host_dependent", "browser": "host_dependent", "mcp": "host_dependent", "workbench": "not_applicable", "structuredOutput": "host_dependent", "continuation": "host_dependent", "interactiveQualification": "host_dependent", "visual": "host_dependent", "other": ["steering", "powers", "extensions"] },
+      "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED"
+    },
+    {
+      "consumer": "antigravity", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
+      "entrypoint": "operations/system-configs/antigravity/README.md", "configProjectionSource": "operations/system-configs/gemini/antigravity/{mcp_config.json,skills}; operations/system-configs/antigravity/mcp.template.json",
+      "skillExposure": "tracked Antigravity projection from canonical active sources; catalog remains authoritative", "contextMechanism": "Universal Brain Entry + Context Broker bridge",
+      "toolMechanism": "IDE/filesystem/shell/MCP; visual/browser support is capability-declared", "sessionContinuity": "explicit continuation packet; host bridge required",
+      "hookPolicyMechanism": "Antigravity/MCP configuration projection", "currentOrchestrationLogic": "Antigravity transport and projection mechanics; Phase6D reference consumption only",
+      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "projection and IDE serialization only", "currentV2Support": "TRACKED_PROJECTION",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "NOT_PERFORMED",
+      "capabilities": { "filesystem": "observed", "git": "host_dependent", "shell": "host_dependent", "web": "host_dependent", "browser": "host_dependent", "mcp": "observed", "workbench": "not_applicable", "structuredOutput": "host_dependent", "continuation": "host_dependent", "interactiveQualification": "host_dependent", "visual": "host_dependent", "other": ["IDE_projection"] },
+      "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED"
+    },
+    {
+      "consumer": "gemini", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
+      "entrypoint": "operations/system-configs/gemini/GEMINI.md", "configProjectionSource": "operations/system-configs/gemini/config/{config.json,mcp_config.json,skills}",
+      "skillExposure": "Gemini projection; no Brain semantic authority is duplicated", "contextMechanism": "Universal Brain Entry + Context Broker bridge",
+      "toolMechanism": "shell/filesystem/MCP; web/search capabilities are environment-declared", "sessionContinuity": "explicit continuation packet; host bridge required",
+      "hookPolicyMechanism": "Gemini config and RTK hook", "currentOrchestrationLogic": "Gemini runtime/model mechanics; Phase6D reference consumption only",
+      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "model/config/hook mechanics only", "currentV2Support": "REFERENCE_CONSUMPTION_ONLY",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "NOT_PERFORMED",
+      "capabilities": { "filesystem": "observed", "git": "host_dependent", "shell": "observed", "web": "host_dependent", "browser": "host_dependent", "mcp": "observed", "workbench": "not_applicable", "structuredOutput": "host_dependent", "continuation": "host_dependent", "interactiveQualification": "host_dependent", "visual": "host_dependent", "other": ["model_provider_external"] },
+      "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED"
+    },
+    {
+      "consumer": "workbench", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
+      "entrypoint": "operations/system-configs/mcp/workbench", "configProjectionSource": "operations/system-configs/mcp/workbench/{setup-workbench-all-ides.sh,verify-workbench-mcp.sh}; external Workbench source",
+      "skillExposure": "not a skill-export consumer; Brain descriptors remain canonical", "contextMechanism": "Brain Context Broker/provider bridge",
+      "toolMechanism": "MCP/action boundary; provider and execution authority remain separately controlled", "sessionContinuity": "explicit continuation packet; provider bridge required",
+      "hookPolicyMechanism": "Workbench MCP/provider admission boundary", "currentOrchestrationLogic": "Workbench action/provider mechanics; Phase6D reference consumption only",
+      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "MCP/action transport only", "currentV2Support": "PROVIDER_ACTION_BOUNDARY",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER; RUNTIME_NA", "activationStatus": "NOT_PERFORMED",
+      "capabilities": { "filesystem": "host_dependent", "git": "host_dependent", "shell": "host_dependent", "web": "host_dependent", "browser": "host_dependent", "mcp": "observed", "workbench": "observed", "structuredOutput": "host_dependent", "continuation": "host_dependent", "interactiveQualification": "host_dependent", "visual": "host_dependent", "other": ["provider_action_boundary"] },
+      "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED"
+    }
   ],
   "onboardingChecklist": [
     "discover the canonical contract and selected descriptor metadata",
