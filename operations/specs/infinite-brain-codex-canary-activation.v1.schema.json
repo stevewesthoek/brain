@@ -6,7 +6,7 @@
     "schemaVersion": { "const": "1.0.0" },
     "activationId": { "type": "string", "minLength": 1 },
     "consumer": { "const": "codex" },
-    "status": { "enum": ["PREPARED_NOT_ENABLED", "ENABLED", "DEGRADED", "ROLLED_BACK"] },
+    "status": { "enum": ["PREPARED_NOT_ENABLED", "ENABLED", "CANARY_ACCEPTED", "DEGRADED", "ROLLED_BACK"] },
     "selectedDomain": { "type": "string", "minLength": 1 },
     "allowedRouteClasses": { "type": "array", "minItems": 1, "items": { "type": "string" } },
     "states": { "type": "array", "items": { "enum": ["OFF", "CANARY", "DEGRADED", "FALLBACK"] } },

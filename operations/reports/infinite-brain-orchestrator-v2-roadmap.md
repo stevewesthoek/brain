@@ -1,8 +1,8 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 6A accepted for activation readiness hardening; Phase 6B remains unactivated and bounded to a prepared Codex Code canary
+**Status:** Phase 6B accepted as one bounded Codex Code canary; not a production default
 **Date:** 2026-09-02
-**Baseline:** `origin/main` `3f02bc547cea341fddef8fed47455ca922f4d335`
+**Baseline:** Phase 6A integration baseline `origin/main` `6fb99aba00954db464d8d6ea9a5be68de63d937c`; canary source `63e3ad95d442b6637fdbd191e3439c1401c7e06d`
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
 **Safety boundary:** This roadmap does not authorize production orchestration, profile, client, provider, database, scheduler, deployment, or external-state changes.
 
@@ -182,6 +182,18 @@ The first activation candidate is Codex Code, restricted to read-only analysis a
 
 **Priority:** P1/P2, high blast radius
 **Mode:** one client/profile and one bounded domain at a time
+
+**Status:** `CANARY_ACCEPTED` for Codex Code only; `PRODUCTION_DEFAULT` is not active.
+
+**Evidence:** `operations/reports/infinite-brain-orchestrator-v2-phase6b-codex-canary-2026-09-02.md` and `tools/context-learning/run-phase6b-codex-canary.mjs`.
+
+The first activation candidate named by Phase 6A was authorized and exercised through the real repository-supported Codex consumer path. The serial burn-in was 5/5 v2 selections. The cohort was 45 cases: 20 normal, 10 vague/edge, 5 stale/conflict/continuation, 5 high-risk, and 5 controlled fallback injections. The canary selected v2 for 19 cohort cases and retained the legacy path for 26; this is expected because only Code read-only analysis/planning is in scope.
+
+Measured hard checks passed: routing `100%`, safety `100%`, quality `100%`, mandatory safety misses `0`, mandatory quality misses `0`, scope leakage `0`, stale/conflicted current treatment `0`, unsafe execution-ready results `0`, provider calls `0`, writes `0`, Mind writes `0`, credential/financial/destructive actions `0`, active-skill expansion `0`, other consumer/domain activation `0`, and legacy fallback availability `PASS`. Bootstrap maximum was 407 tokens; context-pack maximum 41; maximum simultaneous relevant context 650; descriptor LIST full-body reads 0; unrelated full-body reads 0; full repository/conversation/secrets were not loaded.
+
+The side-by-side baseline covered 20 prompts. The prior path was available and execution-free for all 20, averaging 1,397 bootstrap bytes and 15 context pointers with zero writes/providers. V2 produced task packets and graphs for all 20, selected v2 for 17, and emitted 37 evidence packets. Because the legacy path does not expose equivalent route/task/evidence instrumentation, the comparison is structural-only; no unsupported quality-delta claim is made.
+
+Rollback was exercised while active: `CANARY_ACTIVE` → `ROLLED_BACK` selected legacy with no v2 invocation, then `READY` → `CANARY_ACTIVE` re-enabled selection without packet replay. The final state is `CANARY_ACCEPTED`; `productionActive` and production-default activation remain false. No other client, domain, provider, profile, skill, external system, or production surface was activated.
 
 Add measured thresholds for:
 

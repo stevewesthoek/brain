@@ -2,7 +2,7 @@
   "schemaVersion": "1.0.0",
   "activationId": "codex-v2-first-domain-canary",
   "consumer": "codex",
-  "status": "PREPARED_NOT_ENABLED",
+  "status": "CANARY_ACCEPTED",
   "selectedDomain": "code",
   "allowedRouteClasses": ["read-only-analysis", "read-only-plan"],
   "entryCondition": "Explicit Codex canary invocation with current source and passing preflight",
@@ -32,6 +32,16 @@
     "manualConfigSurgeryRequired": false,
     "targetTimeSeconds": 60,
     "validation": "Legacy path is selected and v2 is not selected after rollback"
+  },
+  "canaryActivation": {
+    "performed": true,
+    "state": "CANARY_ACCEPTED",
+    "sourceRevision": "63e3ad95d442b6637fdbd191e3439c1401c7e06d",
+    "report": "operations/reports/infinite-brain-orchestrator-v2-phase6b-codex-canary-2026-09-02.md",
+    "burnInCases": 5,
+    "cohortCases": 45,
+    "selectedDomainOnly": true,
+    "productionDefault": false
   },
   "activationPerformed": false,
   "productionActive": false
