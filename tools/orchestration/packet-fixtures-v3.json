@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "3.0.0",
+  "fixtureId": "infinite-brain-v2-phase3-packet-flows",
+  "cases": [
+    { "id": "code-build", "prompt": "Build this feature.", "expected": { "family": "code", "adapter": "adapter.code", "mode": "BUILD", "question": false, "risk": "medium", "specialists": [], "gates": ["gate.review", "gate.qa"] } },
+    { "id": "code-fix-login", "prompt": "Fix login.", "expected": { "family": "code", "adapter": "adapter.code", "mode": "FIX", "question": true, "risk": "medium", "specialists": ["skill.investigate"], "gates": ["gate.review", "gate.qa"] } },
+    { "id": "code-improve", "prompt": "Make this code much better.", "expected": { "family": "code", "adapter": "adapter.code", "mode": "BUILD", "question": false, "risk": "medium", "specialists": [], "gates": ["gate.review"] } },
+    { "id": "design-beautiful", "prompt": "Make this page beautiful.", "expected": { "family": "design", "adapter": "adapter.design", "mode": "NEW", "question": false, "specialists": ["skill.web-design"], "gates": ["gate.design-review", "gate.visual-qa"] } },
+    { "id": "design-dashboard", "prompt": "Redesign this dashboard.", "expected": { "family": "design", "adapter": "adapter.design", "mode": "UPGRADE", "question": false, "specialists": ["skill.web-design"], "gates": ["gate.design-review", "gate.visual-qa"] } },
+    { "id": "research-company", "prompt": "Research this company.", "expected": { "family": "research", "adapter": "adapter.research", "mode": "WEB", "question": false, "specialists": ["skill.web"], "gates": ["gate.source-provenance", "gate.citation-completeness"] } },
+    { "id": "research-market", "prompt": "Should I enter this market?", "expected": { "family": "research", "adapter": "adapter.research", "mode": "COMPARATIVE", "question": false, "specialists": ["skill.web"], "gates": ["gate.source-provenance", "gate.citation-completeness"] } },
+    { "id": "bible-study", "prompt": "Study Romans 8.", "expected": { "family": "research", "adapter": "adapter.research", "mode": "DOMAIN_SPECIALIST", "question": false, "specialists": ["skill.bible-research"], "gates": ["gate.source-provenance", "gate.citation-completeness"] } },
+    { "id": "bible-meaning", "prompt": "What does this passage mean?", "expected": { "family": "research", "adapter": "adapter.research", "mode": "DOMAIN_SPECIALIST", "question": false, "specialists": ["skill.bible-research"], "gates": ["gate.source-provenance", "gate.citation-completeness"] } },
+    { "id": "memory-recall", "prompt": "What did we decide?", "expected": { "family": "memory", "adapter": "adapter.memory", "mode": "RECALL", "question": false, "gates": ["gate.memory-authority"] } },
+    { "id": "memory-capture", "prompt": "Remember this.", "expected": { "family": "memory", "adapter": "adapter.memory", "mode": "CAPTURE", "question": true, "gates": ["gate.memory-authority"] } },
+    { "id": "review", "prompt": "Review this.", "expected": { "family": "review", "adapter": "adapter.review", "mode": "REPORT_ONLY", "question": false, "gates": [] } },
+    { "id": "qa", "prompt": "Make sure it works.", "expected": { "family": "qa", "adapter": "adapter.qa", "mode": "QUICK", "question": false, "gates": [] } },
+    { "id": "handoff", "prompt": "Continue this tomorrow.", "expected": { "family": "handoff", "adapter": "adapter.handoff", "mode": "PAUSE", "question": false, "gates": ["gate.continuity"] } },
+    { "id": "careful", "prompt": "Delete the old production setup.", "expected": { "family": "careful", "adapter": "adapter.code", "safetyAdapter": "adapter.careful", "mode": "BUILD", "question": false, "risk": "critical", "gates": ["gate.confirmation", "gate.rollback"] } },
+    { "id": "mixed", "prompt": "Build a polished SaaS dashboard.", "expected": { "family": "design", "adapter": "adapter.design", "mode": "NEW", "question": false, "specialists": ["skill.web-design"], "gates": ["gate.design-review", "gate.visual-qa"] } },
+    { "id": "mixed-explicit", "prompt": "Build a polished SaaS dashboard, then review and test it.", "expected": { "family": "mixed", "adapter": "adapter.design", "mode": "NEW", "question": false, "specialists": ["skill.web-design", "skill.code"], "gates": ["gate.design-review", "gate.visual-qa", "gate.review", "gate.qa"] } }
+  ]
+}
