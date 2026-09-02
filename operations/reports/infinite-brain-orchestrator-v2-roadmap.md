@@ -141,11 +141,11 @@ Use `orchestrate` internally for bounded parallel work where its cost/merge cond
 **Priority:** P1, separately authorized
 **Mode:** read-only client pilot first
 
-**Status:** accepted for the Codex read-only pilot on the Phase 5 branch; no production activation, provider calls, Mind writes, routed repository writes, automatic resume, or client takeover.
+**Status:** accepted for the Codex read-only pilot on the Phase 5 audit branch; no production activation, provider calls, Mind writes, routed repository writes, automatic resume, or client takeover.
 
 **Implementation:** `tools/context-learning/codex-read-only-pilot.mjs`, `tools/context-learning/codex-read-only-pilot.test.mjs`, `tools/orchestration/codex-pilot-corpus-v5.json`, `tools/validate-orchestrator-v2-phase5.mjs`, `operations/specs/infinite-brain-codex-read-only-pilot.v1.schema.json`, `operations/specs/infinite-brain-activation-state.v1.schema.json`, and `operations/specs/profile-unavailable-allowlist.json`.
 
-**Evidence:** 120-prompt corpus; 100% primary-owner accuracy; 29/29 material questions; 0 unnecessary questions; 100% high-risk safety coverage; bootstrap maximum 419 tokens; context-pack maximum 41 tokens; descriptor LIST full-body reads 0; unrelated full-body reads 0; provider calls, execution, writes, automatic resume, and production routing all 0. Codex reports `CONFORMANT` plus `PILOT-ACTIVE`, while `productionActive` and activation performed remain false.
+**Evidence:** 128-case corpus (120 routable + 8 explicit fallback/edge cases); 100% primary-owner accuracy; 29/29 material questions; 0 unnecessary questions; 95.2% required-gate correctness; 100% high-risk safety coverage; 8/8 fallback correctness; bootstrap maximum 419 tokens; context-pack maximum 41 tokens; maximum simultaneous relevant context 1,400 tokens; descriptor LIST full-body reads 0; unrelated full-body reads 0; provider calls, execution, writes, automatic resume, and production routing all 0. Codex reports `CONFORMANT` plus `PILOT-ACTIVE`, while `productionActive` and activation performed remain false.
 
 **Reconciliation:** profile aliases and nested/file-backed sources are explicit; duplicate `brain-nightly-scheduler-new-job` membership was reduced to one entry and its historical absence is allowlisted; Antigravity now points through the tracked relative projection to the active source; Workbench is explicitly `NOT_APPLICABLE`; Kiro's seven ignored entry-symlink changes remain deferred and are not silently applied.
 
