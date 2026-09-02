@@ -41,7 +41,7 @@ function normalizeRisk(text) {
 
 function inferDomains(text) {
   const domains = [];
-  if (containsAny(text, ['code', 'bug', 'feature', 'repository', 'repo', 'app', 'api', 'backend', 'frontend', 'refactor', 'debug', 'database', 'migration', 'sql', 'auth'])) domains.push('code');
+  if (containsAny(text, ['code', 'bug', 'feature', 'repository', 'repo', 'app', 'api', 'backend', 'frontend', 'refactor', 'debug', 'database', 'migration', 'sql', 'auth', 'login'])) domains.push('code');
   if (containsAny(text, ['design', 'visual', 'page', 'website', 'landing', 'dashboard', 'ui', 'brand', 'beautiful', 'premium', 'layout'])) domains.push('design');
   if (containsAny(text, ['browser', 'scrape', 'crawl', 'url', 'website', 'form', 'login', 'web'])) domains.push('web');
   if (containsAny(text, ['research', 'investigate', 'compare', 'verify', 'evidence', 'market', 'company', 'current', 'source'])) domains.push('research');
@@ -127,10 +127,10 @@ function routeFamily(normalized) {
   const text = normalized.normalizedText;
   if (normalized.domains.includes('design') && (normalized.domains.includes('code') || meaningfulChange(text)) && containsAny(text, ['review', 'test', 'qa', 'verify'])) return 'mixed';
   if (normalized.domains.includes('web') && containsAny(text, ['open', 'submit', 'form', 'browser', 'scrape', 'crawl'])) return 'web';
-  if (containsAny(text, ['handoff', 'continue tomorrow', 'pause this', 'resume', 'another agent', 'pick this up'])) return 'handoff';
+  if (containsAny(text, ['handoff', 'continue tomorrow', 'continue this tomorrow', 'pause this', 'resume', 'another agent', 'pick this up'])) return 'handoff';
   if (containsAny(text, ['remember', 'recall', 'what did we decide', 'save this'])) return 'memory';
   if (containsAny(text, ['review', 'critique', 'audit', 'preflight', 'diff'])) return 'review';
-  if (/^(test|run|perform|check)\b/.test(text) || containsAny(text, ['test this', 'run qa', 'qa this', 'does it work', 'regression', 'acceptance test'])) return 'qa';
+  if (/^(test|run|perform|check)\b/.test(text) || containsAny(text, ['test this', 'run qa', 'qa this', 'does it work', 'make sure it works', 'regression', 'acceptance test'])) return 'qa';
   if (normalized.domains.includes('bible')) return 'research';
   if (normalized.domains.includes('video')) return 'video';
   if (containsAny(text, ['open the website', 'browse', 'scrape', 'crawl', 'fill the form', 'submit the form', 'browser automation'])) return 'web';
@@ -227,7 +227,8 @@ function qualification(family, normalized) {
   const text = normalized.normalizedText;
   const vagueDesign = family === 'design' && containsAny(text, ['make this page look amazing', 'make it beautiful', 'make this look premium', 'redesign this']);
   const needsSubject = normalized.unknowns.includes('subject_or_target') || normalized.unknowns.includes('research_question') || normalized.unknowns.includes('memory_payload');
-  const materiallyAmbiguous = !family || (needsSubject && !vagueDesign && family !== 'handoff' && family !== 'careful');
+  const explicitBibleTarget = family === 'research' && normalized.domains.includes('bible') && containsAny(text, ['bible', 'scripture', 'passage', 'romans', 'psalm', 'john', 'matthew']);
+  const materiallyAmbiguous = !family || (needsSubject && !vagueDesign && !explicitBibleTarget && !['handoff', 'careful', 'review', 'qa'].includes(family));
   if (!materiallyAmbiguous) return { required: false, question: null, reason: vagueDesign ? 'Safe design defaults are sufficient for a shadow route.' : 'The target and next safe route are inferable from the ordinary request.' };
   let question = 'What outcome or target should I use, and what should the finished result look like?';
   if (family === 'research') question = 'What specific subject or decision should the research answer, and do you want a brief, comparison, or source-backed deep dive?';

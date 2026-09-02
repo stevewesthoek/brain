@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { adapterDescriptorDefinitions } from './domain-adapters.mjs';
 
 export const DESCRIPTOR_SCHEMA_VERSION = '2.0.0';
 export const CONSUMERS = Object.freeze(['claude', 'codex', 'gemini', 'antigravity', 'kiro']);
@@ -135,6 +136,7 @@ const ROUTING_OVERRIDES = Object.freeze({
 });
 
 const SUPPLEMENTAL_SOURCES = Object.freeze([
+  ...adapterDescriptorDefinitions(),
   { capabilityId: 'adapter.context-broker', kind: 'adapter', role: 'adapter', label: 'Context Broker Adapter', sourceRef: 'tools/context-learning/context-broker.mjs', domains: ['context', 'broker'], intents: ['capability_discovery', 'context_resolution'], triggers: ['context broker', 'capability list', 'capability inspect'], summary: 'Read-only broker contracts for context and capability discovery.', riskClass: 'read-only', confirmationClass: 'none', qualityGateRefs: [] },
   { capabilityId: 'workflow.universal-brain-entry', kind: 'workflow', role: 'router', label: 'Universal Brain Entry', sourceRef: 'tools/context-learning/universal-brain-entry.mjs', domains: ['routing', 'context'], intents: ['ordinary_intent_entry'], triggers: ['brain entry', 'ordinary request'], summary: 'Existing universal entry boundary; Phase 1 shadow routing does not replace or activate it.', riskClass: 'read-only', confirmationClass: 'none', qualityGateRefs: [] },
   { capabilityId: 'adapter.brain-core-agent-capabilities', kind: 'adapter', role: 'adapter', label: 'Brain Core Agent Capability Adapter', sourceRef: 'projects/brain-core/src/adapters/agent-capabilities.ts', domains: ['capability_catalog'], intents: ['capability_projection'], triggers: ['agent capability', 'capability adapter'], summary: 'Existing Brain Core capability summaries projected into the Phase 1 catalog.', riskClass: 'read-only', confirmationClass: 'none', qualityGateRefs: [] },
