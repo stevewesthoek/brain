@@ -56,6 +56,13 @@ test('world-class dashboard has Design → evidence → Code → visual review �
   assert.ok(edge('gate-gate.review', 'gate-gate.qa'));
 });
 
+test('implementation prompts that preserve a public API still receive proportional review and QA gates', () => {
+  const result = plan('Improve the security of this rendering code without changing its API.');
+  assert.equal(result.graph.primaryOwner.capabilityId, 'skill.code');
+  assert.ok(result.graph.nodes.some((node) => node.capabilityRef.capabilityId === 'gate.review'));
+  assert.ok(result.graph.nodes.some((node) => node.capabilityRef.capabilityId === 'gate.qa'));
+});
+
 test('market research uses four safe independent branches and a conflict-preserving merge', () => {
   const result = plan('Research whether we should enter this market.');
   const group = result.parallelGroups.find((item) => item.eligibility === 'ELIGIBLE');

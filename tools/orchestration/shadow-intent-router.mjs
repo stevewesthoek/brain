@@ -5,6 +5,7 @@ const HIGH_RISK_PATTERNS = Object.freeze([
   ['production', 'production'], ['prod', 'production'], ['delete', 'destructive'], ['destroy', 'destructive'], ['drop database', 'database'], ['database', 'database'],
   ['credential', 'credentials'], ['secret', 'credentials'], ['token', 'credentials'], ['payment', 'financial'], ['billing', 'financial'], ['financial', 'financial'],
   ['deploy', 'deployment'], ['publish', 'public publishing'], ['send', 'external write'], ['submit', 'external write'], ['provision', 'infrastructure'],
+  ['push', 'repository mutation'], ['main branch', 'repository mutation'],
 ]);
 
 function unique(values) {
@@ -45,7 +46,7 @@ function normalizeRisk(text) {
 function inferDomains(text) {
   const domains = [];
   if (containsAny(text, ['code', 'bug', 'feature', 'repository', 'repo', 'app', 'api', 'backend', 'frontend', 'refactor', 'debug', 'database', 'migration', 'sql', 'auth', 'login'])) domains.push('code');
-  if (containsAny(text, ['design', 'visual', 'page', 'website', 'landing', 'dashboard', 'ui', 'brand', 'beautiful', 'premium', 'layout'])) domains.push('design');
+  if (containsAny(text, ['design', 'visual', 'page', 'website', 'landing', 'dashboard', 'ui', 'brand', 'beautiful', 'premium', 'layout', 'mobile'])) domains.push('design');
   if (containsAny(text, ['browser', 'scrape', 'crawl', 'url', 'website', 'form', 'login', 'web'])) domains.push('web');
   if (containsAny(text, ['research', 'investigate', 'compare', 'verify', 'evidence', 'market', 'company', 'current', 'source'])) domains.push('research');
   if (containsAny(text, ['bible', 'scripture', 'passage', 'romans', 'torah', 'covenant', 'yeshua', 'theology'])) domains.push('bible');
