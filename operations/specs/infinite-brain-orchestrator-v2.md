@@ -488,3 +488,25 @@ Before activation, a v2 implementation must pass deterministic fixtures for:
 ## Acceptance definition for a future implementation
 
 Orchestrator v2 is ready for bounded activation only when the shadow router, catalog projection, packet validators, route corpus, profile checks, and consumer conformance results are reproducible from a clean revision; every route has source/freshness/risk/gate evidence; the current read-only Broker and universal-entry tests remain green; and a separately authorized activation packet names exact clients, rollback, permissions, and success thresholds.
+
+## Phase 5 implementation truth — 2026-09-02
+
+Phase 5 adds a real Codex consumer-shaped, read-only pilot. The path is:
+
+```text
+Codex request
+  → Universal Entry descriptor bootstrap
+  → descriptor-first qualification
+  → bounded Context Broker bootstrap and selected pack
+  → task/evidence/continuity packet pointers
+  → Phase 4 composition shadow graph
+  → bounded receipt and prior-path fallback
+```
+
+The pilot is explicitly identified as `CODEX_READ_ONLY_PILOT_MODE`. It consumes exact Brain source and projection references without exposing full client configuration, full conversation history, secrets, provider/model settings, or unselected skill bodies. It does not execute, call providers, write to Mind or repositories, activate profiles, resume automatically, take over a client, or mutate authority. `enabled=false` returns the exact prior-path result with `pilot_disabled`.
+
+The pilot records separate conformance and activation states. A successful run is `CONFORMANT` and `PILOT-ACTIVE` while `activated`, `productionActive`, and `activationPerformed` remain false. Freshness states remain distinct: `CURRENT`, `STALE`, `CONFLICTED`, and `UNAVAILABLE`. Failure and fallback receipts preserve the reason and prior path rather than silently selecting stale or missing authority.
+
+Phase 5 also reconciles profile source resolution and tracked consumer projections. Exact nested/file-backed skill sources are recognized; unavailable historical entries are governed by `operations/specs/profile-unavailable-allowlist.json`; duplicate full-current membership is deterministic; and the tracked Antigravity projection uses the active source through a relative repository link. Workbench is recorded as not applicable because it is not a skill-export consumer. Kiro is intentionally not mutated: its seven missing entry symlinks (`careful`, `code`, `handoff`, `memory`, `qa`, `research`, `review`) remain a separately authorized client boundary and block Phase 6 readiness only.
+
+The reproducible Phase 5 closeout evidence is `operations/reports/infinite-brain-orchestrator-v2-phase5-closeout-2026-09-02.md`. The validator is `tools/validate-orchestrator-v2-phase5.mjs`; its passing result is a conformance/pilot result, not permission for production activation.

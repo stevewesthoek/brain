@@ -1,8 +1,8 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 4 implemented in a shadow-only Brain branch; Phase 5 remains separately authorized
-**Date:** 2026-09-01
-**Baseline:** `origin/main` `8a239d5293000e38ec8fbc81c1c31d4d0745cb23`
+**Status:** Phase 5 accepted for the Codex read-only pilot; Phase 6 is blocked pending explicit Kiro projection conformance
+**Date:** 2026-09-02
+**Baseline:** `origin/main` `d41cecc688ff1b1b59d119536c218e549990e487`
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
 **Safety boundary:** This roadmap does not authorize production orchestration, profile, client, provider, database, scheduler, deployment, or external-state changes.
 
@@ -33,8 +33,8 @@ bounded task + evidence + continuity packets
 - Accepted universal entry and continuity contracts; client activation and automatic resume remain explicitly unclaimed.
 - Agent capability manifests already contain useful safety class, approval, task-type, and verification fields.
 - Research, video, design, review, and QA contain strong domain logic but are too large or side-effectful to be universal adapters.
-- Research, video, deploy, power, and full-current profile checks fail for unresolved or duplicate entries.
-- Source projection check fails for Antigravity and Kiro on clean `origin/main`.
+- Research, video, deploy, power, and full-current profile checks were reconciled: exact nested/file-backed sources now resolve, and the remaining historical unavailable entries are explicit allowlisted exceptions.
+- Antigravity projection drift was repaired in the tracked repository projection; Kiro remains a separate deferred client projection with exactly seven missing entry symlinks.
 
 ## Phase plan
 
@@ -140,6 +140,16 @@ Use `orchestrate` internally for bounded parallel work where its cost/merge cond
 
 **Priority:** P1, separately authorized
 **Mode:** read-only client pilot first
+
+**Status:** accepted for the Codex read-only pilot on the Phase 5 branch; no production activation, provider calls, Mind writes, routed repository writes, automatic resume, or client takeover.
+
+**Implementation:** `tools/context-learning/codex-read-only-pilot.mjs`, `tools/context-learning/codex-read-only-pilot.test.mjs`, `tools/orchestration/codex-pilot-corpus-v5.json`, `tools/validate-orchestrator-v2-phase5.mjs`, `operations/specs/infinite-brain-codex-read-only-pilot.v1.schema.json`, `operations/specs/infinite-brain-activation-state.v1.schema.json`, and `operations/specs/profile-unavailable-allowlist.json`.
+
+**Evidence:** 120-prompt corpus; 100% primary-owner accuracy; 29/29 material questions; 0 unnecessary questions; 100% high-risk safety coverage; bootstrap maximum 419 tokens; context-pack maximum 41 tokens; descriptor LIST full-body reads 0; unrelated full-body reads 0; provider calls, execution, writes, automatic resume, and production routing all 0. Codex reports `CONFORMANT` plus `PILOT-ACTIVE`, while `productionActive` and activation performed remain false.
+
+**Reconciliation:** profile aliases and nested/file-backed sources are explicit; duplicate `brain-nightly-scheduler-new-job` membership was reduced to one entry and its historical absence is allowlisted; Antigravity now points through the tracked relative projection to the active source; Workbench is explicitly `NOT_APPLICABLE`; Kiro's seven ignored entry-symlink changes remain deferred and are not silently applied.
+
+**Phase 6 readiness:** `BLOCKED` only for the exact Kiro projection boundary: `careful`, `code`, `handoff`, `memory`, `qa`, `research`, and `review` need explicit client activation authorization before their Kiro entry symlinks may be created. This does not block Codex Phase 5 conformance.
 
 Connect the router’s bootstrap and packet pointers to the existing universal entry and Context Broker contracts for one consumer at a time. Start with a read-only Codex or future-agent fixture, then evaluate Claude/Gemini/Workbench adapters independently.
 

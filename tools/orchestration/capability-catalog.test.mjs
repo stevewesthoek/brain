@@ -59,22 +59,23 @@ test('catalog order and source projection are deterministic', () => {
   assert.deepEqual(left.list({ query: 'code', maxItems: 20 }), right.list({ query: 'code', maxItems: 20 }));
 });
 
-test('reconciliation surfaces known profile and consumer drift without repairing it', () => {
+test('reconciliation makes profile and consumer drift explicit after Phase 5 repairs', () => {
   const catalog = createCapabilityCatalog({ repoRoot });
   const codes = new Set(catalog.reconciliation.issues.map((issue) => issue.code));
-  assert.ok(codes.has('duplicate_profile_entry'));
-  assert.ok(codes.has('profile_no_source'));
-  assert.ok(codes.has('profile_source_divergence'));
+  assert.equal(codes.has('duplicate_profile_entry'), false);
+  assert.equal(codes.has('profile_no_source'), false);
+  assert.equal(codes.has('profile_source_divergence'), false);
   assert.ok(codes.has('stale_projection'));
   assert.ok(codes.has('consumer_projection_divergence'));
   assert.deepEqual(catalog.profileHealth.default.unresolved, []);
-  assert.ok(catalog.profileHealth.research.unresolved.includes('gemini'));
-  assert.ok(catalog.profileHealth.video.unresolved.includes('n8n'));
-  assert.ok(catalog.profileHealth.deploy.unresolved.includes('aws'));
-  assert.ok(catalog.profileHealth.deploy.unresolved.includes('hetzner'));
-  assert.ok(catalog.profileHealth.power.unresolved.includes('n8n'));
-  assert.ok(catalog.profileHealth['full-current'].duplicates.includes('brain-nightly-scheduler-new-job'));
-  assert.equal(fs.existsSync(path.join(repoRoot, 'operations/system-configs/antigravity/skills')), false);
+  assert.deepEqual(catalog.profileHealth.research.unresolved, []);
+  assert.deepEqual(catalog.profileHealth.video.unresolved, []);
+  assert.deepEqual(catalog.profileHealth.deploy.unresolved, []);
+  assert.deepEqual(catalog.profileHealth.power.unresolved, []);
+  assert.deepEqual(catalog.profileHealth['full-current'].duplicates, []);
+  assert.ok(catalog.profileHealth.research.allowlistedUnavailable.some((entry) => entry.name === 'gemini'));
+  assert.ok(catalog.profileHealth['full-current'].allowlistedUnavailable.some((entry) => entry.name === 'brain-nightly-scheduler-new-job'));
+  assert.equal(fs.existsSync(path.join(repoRoot, 'operations/system-configs/gemini/antigravity/skills')), true);
   assert.equal(fs.existsSync(path.join(repoRoot, 'operations/system-configs/kiro/skills')), false);
 });
 
