@@ -3,8 +3,8 @@
 **Date:** 2026-09-02  
 **Source before:** `origin/main` `d41cecc688ff1b1b59d119536c218e549990e487`  
 **Implementation branch:** `codex/infinite-brain-orchestrator-v2-phase5-audit`
-**Implementation commits:** `88f4ecaa`, `35fc9ac1`, `186ae6b1`, `c46d2662`  
-**Main after:** `c46d2662` (audit implementation integration target; final `origin/main` verification follows)  
+**Implementation commits:** `88f4ecaa`, `35fc9ac1`, `186ae6b1`, `c46d2662`, `62f6a3e5`
+**Main after:** `62f6a3e5` (audit implementation integration target; final `origin/main` verification follows)
 **Mode:** `CODEX_READ_ONLY_PILOT_MODE`
 
 ## Verdict
@@ -105,7 +105,7 @@ The fixed corpus is `tools/orchestration/codex-pilot-corpus-v5.json` with 128 ca
 | Fallback correctness | 8/8 (100%) | 100% |
 | Freshness edge cases treated as current | 0/4 | 0 |
 | Bootstrap maximum | 419 tokens | ≤800 |
-| Descriptor routing maximum | 3,648 tokens | measured |
+| Descriptor routing maximum | 3,678 tokens | measured |
 | Selected instruction maximum | 28,121 tokens total corpus metric | selected only |
 | Context pack maximum | 41 tokens | ≤4,000 |
 | Maximum simultaneous relevant context | 1,400 tokens | bounded |
