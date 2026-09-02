@@ -1,8 +1,8 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 6D accepted; Codex Code remains promotion-ready; no production default
+**Status:** Phase 7B accepted; Codex Code is the only v2 default; Claude Code + Code canary accepted; no production execution
 **Date:** 2026-09-02
-**Baseline:** Phase 6A integration baseline `origin/main` `6fb99aba00954db464d8d6ea9a5be68de63d937c`; canary source `63e3ad95d442b6637fdbd191e3439c1401c7e06d`
+**Baseline:** Phase 7B integration baseline `origin/main` `6aacb3ab73bb8124f26c84968d9c5ffd05a183bd`; canary source `87809d17df3affc9e3b245e45a706564795f0674`
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
 **Safety boundary:** This roadmap does not authorize production orchestration, profile, client, provider, database, scheduler, deployment, or external-state changes.
 
@@ -165,6 +165,40 @@ Required controls:
 - activation status distinguishable from conformance status.
 
 **Exit gate:** the existing universal-entry, conformance, continuity, and Broker tests remain green; pilot evidence records zero mutation/provider activity; user explicitly authorizes any client activation.
+
+### Phase 7A — Codex Code default (accepted)
+
+Phase 7A promotes Codex + Code to the only v2 default. The accepted state is
+`CODE_V2_DEFAULT_FOR_CODEX`; the legacy Codex path remains available for
+disabled, high-risk, out-of-domain, stale, conflicted, projection-drift, and
+controlled-failure cases. Its acceptance evidence is the Phase 7A closeout
+report and includes the required burn-in, cohort, isolated-task, safety,
+quality, continuity, fallback, and rollback checks. No other consumer or
+domain became active.
+
+### Phase 7B — Claude Code second-consumer Code canary (accepted)
+
+Phase 7B followed Phase 7A's exact first non-Codex recommendation: Claude Code.
+The canary is limited to Claude Code + Code and consumes the same Brain-owned
+Universal Contract and canonical composition pipeline. The serial burn-in is
+10/10; the selected-consumer cohort is 100 cases across vague/exact, bug,
+feature, frontend, backend/API, configuration, performance, security, testing,
+refactor, continuation, stale, high-risk, dormant, and out-of-domain classes.
+The side-by-side parity set is 50 identical Code prompts against the Codex v2
+default: semantic parity 100%, qualification parity 100%, mandatory
+Review/QA-gate parity 100%, safety parity 100%, risk parity 100%, and context
+scope parity 100%. Fifteen isolated bounded coding fixtures completed
+implementation, tests, Review, QA, Evidence Packet, and completion checks;
+critical defects and production writes were zero.
+
+The live rollback drill disabled the canary, selected
+`claude-code-current-entry` with no v2 invocation or packet replay, then
+re-enabled the canary after successful validation. Final state is
+`CANARY_ACCEPTED`; `defaultActive=false`, `productionActive=false`, Codex's
+Code default remains preserved, and other consumers/domains remain inactive.
+Browser/MCP/visual host-dependent capability differences are recorded as
+alternatives, not hidden. Exact broad-conformance drift is documented in the
+Phase 7B report and does not suppress targeted acceptance.
 
 ### Phase 6A — Activation readiness hardening (complete)
 

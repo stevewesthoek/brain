@@ -3,29 +3,29 @@
   "$id": "https://brain.local/specs/infinite-brain-universal-consumer-adapter-matrix.v1",
   "schemaVersion": "1.0.0",
   "contractRef": "operations/specs/infinite-brain-universal-consumer-contract.v1.json",
-  "status": "reference_conformance_only_no_activation",
+  "status": "one_second_consumer_code_canary_accepted_no_default",
   "adapters": [
     {
       "consumer": "codex", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
       "entrypoint": "operations/system-configs/codex/AGENTS.md", "configProjectionSource": "operations/system-configs/codex/config.toml; operations/system-configs/codex/skills/user",
       "skillExposure": "canonical ai/skills/active through user projection; dormant descriptors remain catalog-owned", "contextMechanism": "Universal Brain Entry + Context Broker",
       "toolMechanism": "shell, browser/computer-use, MCP, native subagents", "sessionContinuity": "session-continuity contract + explicit continuation packet",
-      "hookPolicyMechanism": "Codex AGENTS/config/rules; no Phase6D semantic routing branch", "currentOrchestrationLogic": "Phase6C bounded Code canary plus legacy fallback",
-      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "transport/session/canary mechanics only", "currentV2Support": "CANARY_ACCEPTED_CODE_ONLY",
-      "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "NOT_PERFORMED",
+      "hookPolicyMechanism": "Codex AGENTS/config/rules; no Phase6D semantic routing branch", "currentOrchestrationLogic": "Brain-owned Code v2 default plus legacy fallback",
+      "duplicatedPolicy": "none admitted by Phase6D/7A independence audit", "clientSpecificLogic": "transport/session/default mechanics only", "currentV2Support": "DEFAULT_ACTIVE_CODE_ONLY",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "DEFAULT_ACTIVE_CODE_ONLY",
       "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "observed", "browser": "observed", "mcp": "observed", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "host_dependent", "other": ["native_subagents", "parallel_tasks", "tool_confirmation"] },
-      "runtimeActivation": "NOT_PERFORMED", "rollout": "CANARY_ACCEPTED_CODE_ONLY"
+      "runtimeActivation": "DEFAULT_ACTIVE_CODE_ONLY", "rollout": "DEFAULT_ACTIVE_CODE_ONLY"
     },
     {
-      "consumer": "claude-code", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
+      "consumer": "claude-code", "adapterRef": "adapter.claude-code.v1", "canConsume": true,
       "entrypoint": "operations/system-configs/claude/CLAUDE.md", "configProjectionSource": "operations/system-configs/claude/settings.json; operations/system-configs/claude/hooks; operations/system-configs/claude/skills",
       "skillExposure": "canonical skill projection plus Claude hooks; descriptor authority remains Brain", "contextMechanism": "Universal Brain Entry + Context Broker bridge",
       "toolMechanism": "shell, filesystem, MCP/runtime tools", "sessionContinuity": "handoff/session-continuity contracts; explicit continuation only",
-      "hookPolicyMechanism": "Claude CLAUDE.md/settings/hooks", "currentOrchestrationLogic": "legacy Claude session/hooks; Phase6D reference consumption only",
-      "duplicatedPolicy": "none admitted by Phase6D independence audit", "clientSpecificLogic": "hooks, model/session, and transport mechanics only", "currentV2Support": "REFERENCE_CONSUMPTION_ONLY",
-      "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "NOT_PERFORMED",
+      "hookPolicyMechanism": "Claude CLAUDE.md/settings/hooks", "currentOrchestrationLogic": "Brain-owned Code v2 canary; legacy Claude path remains fallback",
+      "duplicatedPolicy": "none admitted by Phase6D/7B independence audit", "clientSpecificLogic": "native input, hooks, model/session, rendering, and transport mechanics only", "currentV2Support": "CANARY_ACCEPTED_CODE_ONLY",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER; PASS_PHASE7B_CODE_CANARY", "activationStatus": "CANARY_ACCEPTED_CODE_ONLY",
       "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "host_dependent", "browser": "host_dependent", "mcp": "host_dependent", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "host_dependent", "other": ["native_subagents", "tool_confirmation"] },
-      "runtimeActivation": "NOT_PERFORMED", "rollout": "SEPARATE_EVALUATION_REQUIRED"
+      "runtimeActivation": "CANARY_ACCEPTED_CODE_ONLY", "rollout": "CANARY_ACCEPTED_CODE_ONLY; CLAUDE_CODE_DEFAULT_REMAINS_FALSE"
     },
     {
       "consumer": "cursor", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,

@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2
 
-**Status:** Phase 4 bounded composition shadow implementation complete; no client activation or execution authorized by this document
+**Status:** Phase 7B accepted for Claude Code + Code canary; Codex Code is the only v2 default; no production execution authorized by this document
 **Date:** 2026-09-01
 **Predecessor evidence:** `operations/reports/infinite-brain-orchestrator-audit-2026-09-01.md`
 **Authority boundary:** Brain owns capability, routing, policy, validation, and orchestration knowledge; Mind remains authoritative for human meaning, strategy, preferences, commitments, and personal/business context.
@@ -602,3 +602,43 @@ prior path, rollback result, thresholds, cohort evidence, non-regression gates,
 and exactly one recommended next domain canary plus one first non-Codex consumer
 canary. Any future domain or consumer canary requires its own explicit
 authorization and must not be inferred from this Code default.
+
+## Phase 7B second-consumer Code canary truth — 2026-09-02
+
+Phase 7B activates exactly one additional consumer/domain pair: Claude Code +
+Code. Phase 7A's exact recommendation was followed because Claude Code has a
+locally reachable runtime and equivalent filesystem, Git, shell, testing,
+qualification, receipt, and continuity capabilities. The canonical activation
+packet is `operations/specs/infinite-brain-claude-code-canary.v1.json`.
+
+The Claude Code adapter is `adapter.claude-code.v1`. It translates native
+message/workspace/session input, reports capabilities, renders the universal
+result, and exposes the prior path. Brain remains the owner of routing,
+qualification, specialist selection, context budgets, task/evidence packets,
+composition graphs, quality/safety gates, fallback, receipts, and continuity.
+No Claude-specific Code orchestrator or semantic policy fork was added.
+
+The clean Phase 7B acceptance source is recorded in
+`operations/reports/infinite-brain-orchestrator-v2-phase7b-second-consumer-code-canary-2026-09-02.md`.
+It records a 10/10 serial burn-in, a 100-case selected-consumer cohort, 50/50
+semantic parity against the Codex v2 default, 100% qualification parity,
+15/15 isolated bounded coding fixtures with implementation, Review, QA, and
+Evidence Packet completion, dormant-specialist parity, atomic-context bounds,
+bidirectional continuity, explicit failure fallback, and a live rollback and
+re-enable drill. Safety parity and mandatory quality-gate parity are both
+100%; providers, execution, repository/Mind writes, production effects, and
+automatic resume remain at zero.
+
+The final canary state is `CANARY_ACCEPTED`, but Claude Code is not a default:
+`defaultActive=false` and `productionActive=false`. Codex Code remains the only
+v2 default. Other consumers and domains remain inactive. Browser, MCP, and
+visual capabilities remain host-dependent alternatives for Claude Code and are
+not silently treated as equivalent in this bounded Code canary.
+
+The broad conformance recheck still reports exact pre-existing drift outside
+this canary: Workbench revision/artifact/provenance digest drift, unavailable
+scheduler inventory and typed-job validators, and unavailable Workbench provider
+admission validation. These findings remain visible and are not suppressed;
+they do not block the targeted Claude Code + Code contract because its clean
+Universal Contract, projection, capability handshake, Code route, safety,
+continuity, receipt, fallback, and rollback gates pass.
