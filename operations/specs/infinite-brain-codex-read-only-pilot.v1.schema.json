@@ -20,7 +20,22 @@
       },
       "additionalProperties": false
     },
-    "metrics": { "type": "object" },
+    "metrics": {
+      "type": "object",
+      "required": ["bootstrapTokens", "descriptorRoutingTokens", "selectedInstructionTokens", "selectedInstructionFullBodyReads", "contextPackTokens", "taskPacketTokens", "graphTokens", "evidencePacketTokens", "maxSimultaneousActiveContext", "totalReferencedContext"],
+      "properties": {
+        "bootstrapTokens": { "type": "integer", "minimum": 0 },
+        "descriptorRoutingTokens": { "type": "integer", "minimum": 0 },
+        "selectedInstructionTokens": { "type": "integer", "minimum": 0 },
+        "selectedInstructionFullBodyReads": { "type": "integer", "minimum": 0 },
+        "contextPackTokens": { "type": "integer", "minimum": 0 },
+        "taskPacketTokens": { "type": "integer", "minimum": 0 },
+        "graphTokens": { "type": "integer", "minimum": 0 },
+        "evidencePacketTokens": { "type": "integer", "minimum": 0 },
+        "maxSimultaneousActiveContext": { "type": "integer", "minimum": 0 },
+        "totalReferencedContext": { "type": "integer", "minimum": 0 }
+      }
+    },
     "receipt": { "type": "object", "required": ["receiptId", "brainRevision", "consumer", "mode", "requestHash", "privacy", "safety", "activation"] }
   },
   "additionalProperties": true

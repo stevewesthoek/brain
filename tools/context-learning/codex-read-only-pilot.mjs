@@ -196,7 +196,7 @@ function failureResult({ fixtureId, prompt, priorPath, reason, consumer, sourceR
     details: bounded(details, 8),
     consumerConformance: consumerInspection,
     safety: { executionAttempts: 0, providerCalls: 0, writes: 0, mindWrites: 0, profileActivations: 0, clientConfigurationChanges: 0, automaticResume: false, automaticTakeover: false, activationPerformed: false },
-    metrics: { bootstrapTokens: 0, descriptorListFullBodyReads: 0, selectedInstructionFullBodyReads: 0, contextPackTokens: 0, taskPacketTokens: 0, graphNodes: 0, maxSimultaneousActiveContext: 0, totalReferencedContext: 0, fullRepositoryLoaded: false, fullConversationLoaded: false, secretsLoaded: false }
+    metrics: { bootstrapTokens: 0, descriptorRoutingTokens: 0, selectedInstructionTokens: 0, descriptorListFullBodyReads: 0, selectedInstructionFullBodyReads: 0, contextPackTokens: 0, taskPacketTokens: 0, graphTokens: 0, evidencePacketTokens: 0, graphNodes: 0, maxSimultaneousActiveContext: 0, totalReferencedContext: 0, fullRepositoryLoaded: false, fullConversationLoaded: false, secretsLoaded: false }
   };
   result.receipt = receipt({ result, prompt, fixtureId, sourceRevision, consumerInspection, failure: reason });
   return result;
@@ -288,10 +288,14 @@ export function runCodexReadOnlyPilot({ repoRoot = process.cwd(), prompt = '', f
   if (selectedCapability && contextFreshness === 'fresh') activeBroker.capabilitiesInspect({ providerId: 'brain-capability-catalog', capabilityId: selectedCapability, includeInstructions: false, relevance: 'metadata' });
   const metrics = {
     bootstrapTokens: bootstrap.budget.usedTokens,
+    descriptorRoutingTokens: estimateTokens(JSON.stringify(descriptorList.descriptors)),
+    selectedInstructionTokens: composition.budget?.selectedInstructionTokens ?? 0,
     descriptorListFullBodyReads: descriptorList.telemetry.fullBodyReadsDuringList,
     selectedInstructionFullBodyReads: composition.metrics.fullBodies,
     contextPackTokens: brokerPack.budget.usedTokens,
     taskPacketTokens: composition.metrics.taskPacketTokens,
+    graphTokens: estimateTokens(JSON.stringify(composition.graph)),
+    evidencePacketTokens: (composition.budget?.evidencePacketTokens ?? []).reduce((sum, tokens) => sum + tokens, 0),
     graphNodes: composition.graph.nodes.length,
     maxSimultaneousActiveContext: composition.metrics.maxSimultaneousActiveContext,
     totalReferencedContext: composition.metrics.totalReferencedContext,

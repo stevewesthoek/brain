@@ -121,6 +121,14 @@
     {"id":"mixed-07","category":"mixed","prompt":"Fix login and deploy","expected":{"family":"code","owner":"skill.code","risk":"high"}},
     {"id":"mixed-08","category":"mixed","prompt":"Create a video thumbnail and publish","expected":{"family":"video","owner":"skill.video","risk":"high"}},
     {"id":"mixed-09","category":"mixed","prompt":"Research demand","expected":{"family":"research","owner":"skill.research","question":true}},
-    {"id":"mixed-10","category":"mixed","prompt":"Make the page premium and verify it","expected":{"family":"mixed","owner":"skill.design","question":true}}
+    {"id":"mixed-10","category":"mixed","prompt":"Make the page premium and verify it","expected":{"family":"mixed","owner":"skill.design","question":true}},
+    {"id":"edge-continuation-01","category":"continuation","prompt":"Continue the feature from yesterday","expected":{"family":"handoff","owner":"skill.handoff"},"pilot":{"currentState":{"repositoryRevision":"old-revision","worktreeClean":true},"expectFallback":true,"fallbackReason":"continuity_stale"}},
+    {"id":"edge-stale-01","category":"stale","prompt":"Use the stale research pack","expected":{"family":"research","owner":"skill.research"},"pilot":{"failureMode":"stale_pack","expectFallback":true,"fallbackReason":"continuity_stale"}},
+    {"id":"edge-conflict-01","category":"conflict","prompt":"Resolve the conflicting source context","expected":{"family":"research","owner":"skill.research"},"pilot":{"failureMode":"continuity_conflict","expectFallback":true,"fallbackReason":"continuity_conflicted"}},
+    {"id":"edge-unavailable-01","category":"unavailable","prompt":"Research this with unavailable context","expected":{"family":"research","owner":"skill.research"},"pilot":{"currentState":{"sourceAvailable":false},"expectFallback":true,"fallbackReason":"continuity_unavailable"}},
+    {"id":"edge-profile-01","category":"profile-unavailable","prompt":"Research this while the profile is unresolved","expected":{"family":"research","owner":"skill.research"},"pilot":{"failureMode":"profile_unresolved","expectFallback":true,"fallbackReason":"profile_unresolved"}},
+    {"id":"edge-source-01","category":"source-missing","prompt":"Inspect the selected source that is missing","expected":{"family":"review","owner":"skill.review"},"pilot":{"failureMode":"selected_source_missing","expectFallback":true,"fallbackReason":"selected_source_missing"}},
+    {"id":"edge-broker-01","category":"broker-unavailable","prompt":"Research this without the Context Broker","expected":{"family":"research","owner":"skill.research"},"pilot":{"failureMode":"broker_unavailable","expectFallback":true,"fallbackReason":"broker_unavailable"}},
+    {"id":"edge-disabled-01","category":"rollback","prompt":"Return to the current Codex path","expected":{"family":"review","owner":"skill.review"},"pilot":{"enabled":false,"expectFallback":true,"fallbackReason":"pilot_disabled"}}
   ]
 }
