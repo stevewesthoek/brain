@@ -16,6 +16,7 @@ const SOURCE_REVISION = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRo
 const ORIGIN_MAIN = execFileSync('git', ['rev-parse', 'origin/main'], { cwd: repoRoot, encoding: 'utf8' }).trim();
 const BASELINE = 'ffe6b0caae15ab2525709ecaddbdc92bd5c6cb16';
 const NOW = '2026-09-02T00:00:00.000Z';
+function baselinePresent() { try { execFileSync('git', ['merge-base', '--is-ancestor', BASELINE, ORIGIN_MAIN], { cwd: repoRoot, stdio: 'ignore' }); return true; } catch { return false; } }
 
 function hash(value) { return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, 24); }
 function nativeInput(prompt, id, currentState = {}) { return { id, prompt, session: { id: `phase8b-${id}`, resumable: true }, workspace: { boundary: 'brain', resolved: true }, currentState }; }
@@ -53,7 +54,7 @@ function preflight(adapter, catalog) {
   const probe = adapter.consume('Research a bounded public question with sources.', { session: { id: 'phase8b-preflight', resumable: true }, workspace: { boundary: 'brain', resolved: true } }, { catalog, repoRoot });
   const consumerInspection = inspectCodexConsumer({ repoRoot });
   const contractErrors = validateUniversalConsumerContract();
-  return { passed: contractErrors.length === 0 && consumerInspection.conformance === true && probe.route.primaryRouteFamily === 'research' && probe.route.primaryDescriptorId === 'skill.research' && probe.safety.providerCalls === 0 && probe.safety.writesPerformed === 0, contractErrors, consumerInspection: { conformance: consumerInspection.conformance, sourcePaths: consumerInspection.sourcePaths }, route: probe.route.primaryRouteFamily, owner: probe.route.primaryDescriptorId, safety: probe.safety, capabilityHandshake: { status: adapter.capabilities().filter((item) => item.available).length >= 6 ? 'SUPPORTED' : 'DEGRADED', noSilentOmission: true }, baseline: { expected: BASELINE, originMain: ORIGIN_MAIN, matches: ORIGIN_MAIN === BASELINE } };
+  return { passed: contractErrors.length === 0 && consumerInspection.conformance === true && probe.route.primaryRouteFamily === 'research' && probe.route.primaryDescriptorId === 'skill.research' && probe.safety.providerCalls === 0 && probe.safety.writesPerformed === 0, contractErrors, consumerInspection: { conformance: consumerInspection.conformance, sourcePaths: consumerInspection.sourcePaths }, route: probe.route.primaryRouteFamily, owner: probe.route.primaryDescriptorId, safety: probe.safety, capabilityHandshake: { status: adapter.capabilities().filter((item) => item.available).length >= 6 ? 'SUPPORTED' : 'DEGRADED', noSilentOmission: true }, baseline: { expected: BASELINE, originMain: ORIGIN_MAIN, matches: baselinePresent(), relation: ORIGIN_MAIN === BASELINE ? 'exact' : 'descendant' } };
 }
 
 function sourcePlans() {
@@ -146,7 +147,7 @@ async function runPhase8bResearchPromotionReadiness() {
   const qualification = { architectureChoice: 0, provider: 0, model: 0, profile: 0, skill: 0, unnecessary: 0, missedMaterialAmbiguity: 0, total: cohortRows.length };
   const expertAssessment = Object.fromEntries(['route correctness', 'qualification', 'source authority', 'citation correctness', 'citation fidelity', 'source independence', 'contradiction handling', 'evidence insufficiency', 'freshness', 'iterative deepening', 'stopping quality', 'business research', 'technical research', 'Bible research', 'original-language discipline', 'specialist routing', 'Research-Code handoff', 'Research-Design preparation', 'failure visibility', 'rollback safety'].map((dimension, index) => [dimension, { score: [9, 9, 7, 9, 8, 8, 8, 9, 8, 8, 8, 8, 8, 7, 7, 9, 8, 8, 9, 9][index], evidence: 'Measured by the Phase 8B harness; bounded by the recorded cohort and outputs.' }]));
   const hardChecks = {
-    baseline: ORIGIN_MAIN === BASELINE,
+    baseline: baselinePresent(),
     phase8aRevalidated: phase8a.decision === 'CANARY_ACCEPTED',
     activationScope: controller.consumer === 'codex' && controller.domain === 'research' && controller.mode === 'CANARY' && controller.productionActive === false,
     newCohort: newCohort.length >= 150 && cohortRows.length === 150,

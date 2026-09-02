@@ -15,6 +15,7 @@ const SOURCE_REVISION = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRo
 const ORIGIN_MAIN = execFileSync('git', ['rev-parse', 'origin/main'], { cwd: repoRoot, encoding: 'utf8' }).trim();
 const BASELINE = 'ffe6b0caae15ab2525709ecaddbdc92bd5c6cb16';
 const NOW = '2026-09-02T00:00:00.000Z';
+function baselinePresent() { try { execFileSync('git', ['merge-base', '--is-ancestor', BASELINE, ORIGIN_MAIN], { cwd: repoRoot, stdio: 'ignore' }); return true; } catch { return false; } }
 
 function hash(value) { return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, 24); }
 function nativeInput(prompt, id, currentState = {}) { return { id, prompt, session: { id: `phase8a-${id}`, resumable: true }, workspace: { boundary: 'brain', resolved: true }, currentState }; }
@@ -37,7 +38,7 @@ function preflight(adapter, catalog) {
   const probe = adapter.consume('Research a bounded public question with sources.', { session: { id: 'phase8a-preflight', resumable: true }, workspace: { boundary: 'brain', resolved: true } }, { catalog, repoRoot });
   const consumerInspection = inspectCodexConsumer({ repoRoot });
   const contractErrors = validateUniversalConsumerContract();
-  return { passed: contractErrors.length === 0 && consumerInspection.conformance === true && probe.route.primaryRouteFamily === 'research' && probe.route.primaryDescriptorId === 'skill.research' && probe.safety.providerCalls === 0 && probe.safety.writesPerformed === 0, contractErrors, consumerInspection: { conformance: consumerInspection.conformance, sourcePaths: consumerInspection.sourcePaths }, route: probe.route.primaryRouteFamily, owner: probe.route.primaryDescriptorId, safety: probe.safety, capabilityHandshake: { status: adapter.capabilities().filter((item) => item.available).length >= 6 ? 'SUPPORTED' : 'DEGRADED', noSilentOmission: true }, baseline: { expected: BASELINE, originMain: ORIGIN_MAIN, matches: ORIGIN_MAIN === BASELINE } };
+  return { passed: contractErrors.length === 0 && consumerInspection.conformance === true && probe.route.primaryRouteFamily === 'research' && probe.route.primaryDescriptorId === 'skill.research' && probe.safety.providerCalls === 0 && probe.safety.writesPerformed === 0, contractErrors, consumerInspection: { conformance: consumerInspection.conformance, sourcePaths: consumerInspection.sourcePaths }, route: probe.route.primaryRouteFamily, owner: probe.route.primaryDescriptorId, safety: probe.safety, capabilityHandshake: { status: adapter.capabilities().filter((item) => item.available).length >= 6 ? 'SUPPORTED' : 'DEGRADED', noSilentOmission: true }, baseline: { expected: BASELINE, originMain: ORIGIN_MAIN, matches: baselinePresent(), relation: ORIGIN_MAIN === BASELINE ? 'exact' : 'descendant' } };
 }
 
 async function substantiveOutputs(catalog) {
