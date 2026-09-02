@@ -94,15 +94,12 @@ test('B8.1–B8.6 tasks are parsed from the Brain implementation plan', () => {
   }
 });
 
-test('B8.1–B8.6 tasks are all in planned state (not complete or active)', () => {
+test('B8.1–B8.6 tasks match the canonical accepted implementation state', () => {
   const snapshot = buildMetadataSnapshot({ brainRoot, mindRoot });
   const b8Tasks = snapshot.tasks.brain.filter((task) => /^B8\.\d+$/.test(task.id));
   assert.equal(b8Tasks.length, 6, 'exactly 6 B8 tasks must be present');
   for (const task of b8Tasks) {
-    assert.ok(
-      task.state === 'planned' || task.state === 'blocked',
-      `${task.id} must remain planned or blocked, not ${task.state}`,
-    );
+    assert.equal(task.state, 'complete', `${task.id} must match the canonical accepted implementation plan state`);
   }
 });
 
