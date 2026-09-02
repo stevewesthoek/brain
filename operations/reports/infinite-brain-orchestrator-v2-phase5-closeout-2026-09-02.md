@@ -4,7 +4,7 @@
 **Source before:** `origin/main` `d41cecc688ff1b1b59d119536c218e549990e487`  
 **Implementation branch:** `codex/infinite-brain-orchestrator-v2-phase5`  
 **Implementation commit:** `88f4ecaa` (`feat(orchestration): add Codex read-only Phase 5 pilot`)  
-**Main after:** recorded by the final fast-forward integration verification  
+**Main after:** `35fc9ac1` (fast-forward integration target; final `origin/main` verification follows)  
 **Mode:** `CODEX_READ_ONLY_PILOT_MODE`
 
 ## Verdict
