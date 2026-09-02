@@ -100,11 +100,12 @@
         "exported": { "type": "boolean" },
         "consumerReachable": {
           "type": "object",
-          "required": ["claude", "codex", "gemini", "antigravity", "kiro"],
+          "required": ["claude", "codex", "gemini", "cursor", "antigravity", "kiro"],
           "properties": {
             "claude": { "type": "boolean" },
             "codex": { "type": "boolean" },
             "gemini": { "type": "boolean" },
+            "cursor": { "type": "boolean" },
             "antigravity": { "type": "boolean" },
             "kiro": { "type": "boolean" }
           },

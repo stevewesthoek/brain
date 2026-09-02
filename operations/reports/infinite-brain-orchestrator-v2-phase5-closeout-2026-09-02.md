@@ -57,6 +57,7 @@ Profile/projection acceptance status:
 | power profile | PASS |
 | full-current profile | ALLOWLISTED (historical `gemini` and scheduler name) |
 | Codex projection | PASS |
+| Cursor projection | PASS |
 | Antigravity repository projection | PASS |
 | Kiro projection | DEFERRED — exact seven entries above |
 

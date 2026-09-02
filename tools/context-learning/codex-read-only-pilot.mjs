@@ -349,6 +349,7 @@ export function auditConsumerProjections({ repoRoot = process.cwd(), activeNames
     claude: 'operations/system-configs/claude/skills',
     codex: 'operations/system-configs/codex/skills/user',
     gemini: 'operations/system-configs/gemini/skills',
+    cursor: 'operations/system-configs/cursor/skills',
     antigravity: 'operations/system-configs/gemini/antigravity/skills',
     kiro: 'operations/system-configs/kiro/skills'
   };

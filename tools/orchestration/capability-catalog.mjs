@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { adapterDescriptorDefinitions } from './domain-adapters.mjs';
 
 export const DESCRIPTOR_SCHEMA_VERSION = '2.0.0';
-export const CONSUMERS = Object.freeze(['claude', 'codex', 'gemini', 'antigravity', 'kiro']);
+export const CONSUMERS = Object.freeze(['claude', 'codex', 'gemini', 'cursor', 'antigravity', 'kiro']);
 export const DEFAULT_ACTIVE_PROFILE = 'default';
 
 const KINDS = new Set(['skill', 'orchestrator', 'runbook', 'named_cli', 'validator', 'mcp_server', 'mcp_tool', 'local_app', 'workflow', 'adapter']);
@@ -331,6 +331,7 @@ function projectionNames(root, consumer) {
   const locations = {
     claude: path.join(root, 'operations', 'system-configs', 'claude', 'skills'),
     gemini: path.join(root, 'operations', 'system-configs', 'gemini', 'skills'),
+    cursor: path.join(root, 'operations', 'system-configs', 'cursor', 'skills'),
     antigravity: path.join(root, 'operations', 'system-configs', 'gemini', 'antigravity', 'skills'),
     kiro: path.join(root, 'operations', 'system-configs', 'kiro', 'skills'),
     codex: path.join(root, 'operations', 'system-configs', 'codex', 'skills', 'user'),

@@ -122,6 +122,7 @@ test('Codex source/projection and prior-path evidence are repository-scoped', ()
   assert.equal(buildCodexPriorPath({ repoRoot }).mode, 'NORMAL_CURRENT');
   const projections = auditConsumerProjections({ repoRoot, activeNames: ['careful', 'code', 'handoff', 'memory', 'qa', 'research', 'review'] });
   assert.equal(projections.codex.healthy, true);
+  assert.equal(projections.cursor.healthy, true);
   assert.equal(projections.antigravity.healthy, true);
   assert.equal(projections.kiro.healthy, false);
   assert.equal(projections.workbench.status, 'NOT_APPLICABLE');
