@@ -113,7 +113,7 @@ The fixed corpus is `tools/orchestration/codex-pilot-corpus-v5.json` with 128 ca
 | Unrelated full-body reads | 0 | 0 |
 | Selected instruction reads | 304 | selected only |
 | Task packets / graphs | 124 / 124 routable or exercised fallback | 1 per executable plan |
-| Task packet / graph / evidence tokens | 366,707 / 328,261 / 237,491 total | measured |
+| Task packet / graph / evidence tokens | 366,637 / 328,261 / 237,491 total | measured |
 | Evidence packets | 349 | bounded and referenced |
 | Provider calls / writes / execution | 0 / 0 / 0 | 0 |
 | Mind writes / profile activation | 0 / 0 | 0 |
