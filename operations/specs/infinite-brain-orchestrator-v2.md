@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2
 
-**Status:** Phase 3 shadow implementation complete; no client activation or execution authorized by this document
+**Status:** Phase 4 bounded composition shadow implementation complete; no client activation or execution authorized by this document
 **Date:** 2026-09-01
 **Predecessor evidence:** `operations/reports/infinite-brain-orchestrator-audit-2026-09-01.md`
 **Authority boundary:** Brain owns capability, routing, policy, validation, and orchestration knowledge; Mind remains authoritative for human meaning, strategy, preferences, commitments, and personal/business context.
@@ -92,6 +92,18 @@ The Phase 3 shadow implementation is now present at:
 - `tools/validate-orchestrator-v2-phase3.mjs`
 
 It creates bounded task/evidence envelopes, Context Requests, gate declarations, thin Code/Research/Design/Memory/Review/QA/Handoff/Careful adapter traces, and revision-aware continuation pointers from the existing shadow router. Selected source inspection is exact-source and reference-only. The implementation remains shadow-only: no providers, external systems, Mind writes, profile activation, client configuration changes, execution, or automatic resume are exposed.
+
+## Phase 4 implementation truth
+
+Phase 4 extends the Phase 3 Task/Evidence Packet architecture with a bounded composition graph. The contract is defined in `operations/specs/infinite-brain-composition-graph.v1.schema.json`; its local shadow runtime is `tools/orchestration/composition-graph.mjs`, with regression coverage in `tools/orchestration/composition-graph.test.mjs` and `tools/orchestration/composition-fixtures-v4.json`.
+
+The graph has exactly one `PRIMARY_OWNER`, references an existing atomic Phase 3 subtask from every node, and keeps specialists, context acquisition, execution placeholders, quality gates, safety gates, merges, synthesis, and continuation as explicit bounded nodes. Defaults are max depth 10, 24 nodes, 6 specialists per phase, parallel width 4, 2 repair edges, and merge fan-in 8. Exceeding a bound, introducing a cycle, unknown capability, implicit dependency, unsafe parallel group, missing conflict policy, missing required gate, stale source, or execution-ready confirmation-dependent mutation fails closed.
+
+Safe parallelism is an eligibility decision only. It requires independent inputs and unresolved outputs, no overlapping authority writes, bounded context, deterministic failure behavior, a merge policy, and risk compatible with parallel work. The implementation does not spawn agents or call providers. `orchestrate` is reused as an internal policy reference for bounded independent work; it is not replaced by a second executor. `forge` remains an explicitly scoped sequential zero-to-production workflow and is never selected by vague composition prompts.
+
+Evidence merges preserve packet provenance, source revisions, claims, uncertainties, gate results, and failures. Contradictory claims and revision mismatches remain visible as open or blocking conflicts. Synthesis consumes selected Evidence Packet references, success criteria, gate results, decisions, conflicts, and uncertainty—not raw graph context or full skill bodies. Continuation remains explicit and stale/conflicted state blocks resume.
+
+The canonical Phase 3 conformance test that required B8.1–B8.6 to remain planned was obsolete: the implementation plan records all six tasks as complete and accepted. Phase 4 replaces that assertion with an exact complete-state reconciliation assertion; the authoritative conformance suite passes. This changes no client activation or provider admission.
 
 ## Capability descriptor v2
 

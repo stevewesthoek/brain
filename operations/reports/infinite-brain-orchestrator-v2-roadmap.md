@@ -1,8 +1,8 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Proposed roadmap; documentation and planning only
+**Status:** Phase 4 implemented in a shadow-only Brain branch; Phase 5 remains separately authorized
 **Date:** 2026-09-01
-**Baseline:** `origin/main` `46bec0626b3d61c35f5f7da3b1a538c17978a4e2`
+**Baseline:** `origin/main` `8a239d5293000e38ec8fbc81c1c31d4d0745cb23`
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
 **Safety boundary:** This roadmap does not authorize production orchestration, profile, client, provider, database, scheduler, deployment, or external-state changes.
 
@@ -130,7 +130,11 @@ Add composition rules for genuinely mixed requests such as “build a polished d
 
 Use `orchestrate` internally for bounded parallel work where its cost/merge conditions are met. Do not expose `forge` as a universal default; retain it as an explicitly scoped launch workflow pending a separate risk review.
 
-**Exit gate:** mixed-domain fixtures produce deterministic graph ordering, bounded node count, explicit merge/failure behavior, and no skipped gate.
+**Implementation:** `operations/specs/infinite-brain-composition-graph.v1.schema.json`, `tools/orchestration/composition-graph.mjs`, `tools/orchestration/composition-graph.test.mjs`, `tools/orchestration/composition-fixtures-v4.json`, and `tools/validate-orchestrator-v2-phase4.mjs`.
+
+**Evidence:** 53 mixed-domain fixtures; exactly one owner in 100%; required gate coverage 100%; 10 safe parallel groups; zero unsafe parallel acceptance; conflict-preserving merge fixtures; explicit failure propagation; bounded context lifetime metrics; zero provider calls, writes, profile activation, client changes, and automatic resume. The B8 planned-state assertion was reconciled to the accepted canonical complete state and the conformance suite passes.
+
+**Exit gate:** passed locally in shadow mode. Mixed-domain fixtures produce deterministic graph ordering, bounded node count, explicit merge/failure behavior, and no skipped required gate. Client activation, provider execution, Mind mutation, and production routing remain unclaimed.
 
 ### Phase 5 — Universal entry and consumer conformance pilot
 
