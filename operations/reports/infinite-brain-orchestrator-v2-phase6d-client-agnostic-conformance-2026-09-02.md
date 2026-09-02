@@ -50,7 +50,7 @@ Workbench remains a provider/action boundary and was not activated.
 | Main before | `f07baa74014cea0b5654187881245f99f0554bc1` (accepted Phase 6C) |
 | Implementation branch | `codex/infinite-brain-orchestrator-v2-phase6d-client-agnostic` |
 | Implementation commits | `87793a29`, `172091af`, `7b78362a`, `20f6fc63`, `78b764fb`, `28f72393` |
-| Main after | `8aadba873c5fd19824d1326f698b50e2d6579f17` before this completion-proof follow-up; final remote SHA is recorded after integration |
+| Main after | `963e5c3ebed55a6973a45c18b672485947914456` verified integration point; the final report-only metadata commit is pushed immediately afterward |
 | Current Brain authority | `operations/specs/infinite-brain-orchestrator-v2.md`, descriptor catalog, router, packet/graph/gate contracts, Context Broker, continuity contracts |
 
 The exact inventory and capability columns are machine-readable in
