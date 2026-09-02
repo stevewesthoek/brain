@@ -642,3 +642,37 @@ admission validation. These findings remain visible and are not suppressed;
 they do not block the targeted Claude Code + Code contract because its clean
 Universal Contract, projection, capability handshake, Code route, safety,
 continuity, receipt, fallback, and rollback gates pass.
+
+## Phase 8A Codex Research canary truth — 2026-09-02
+
+Phase 8A activates exactly one additional pair: Codex + Research, in `CANARY`
+mode. The activation packet is
+`operations/specs/infinite-brain-codex-research-canary.v1.json`; the adapter is
+`adapter.codex-research.v1`; and the prior path is
+`codex-current-research-entry`. Codex Code remains the only v2 default.
+
+The canary uses the same universal Brain-owned request, route, Task Packet,
+composition graph, Context Requests, capability negotiation, quality gates,
+Evidence Packets, receipt, and continuation contract. The thin adapter only
+translates Codex input and capabilities. Research source acquisition is a
+bounded read-only layer that records source identity, publisher, URL,
+retrieval timestamp, source class, content digest, claim relation, confidence,
+uncertainty, and contradiction state. It preserves SOURCE,
+EXTRACTED_EVIDENCE, INTERPRETATION, CONCLUSION, and UNCERTAINTY as separate
+layers and performs at most one atomic deepening request after Round 1.
+
+The accepted canary evidence is recorded in
+`operations/reports/infinite-brain-orchestrator-v2-phase8a-research-canary-2026-09-02.md`.
+It includes a 10-request serial burn-in, a 100-case Research cohort, 24
+substantive read-only source-backed outputs, 7 Bible specialist outputs, 50
+Codex-versus-Claude shadow comparisons with Claude Research inactive, 20
+prior-path comparisons, explicit source-unavailable/weak/disagreement/tool/
+Broker/specialist/citation/stale degradation, and a rollback/re-enable drill.
+All hard checks passed. The final state is `CANARY_ACCEPTED`; `defaultActive`
+and `productionActive` remain false. No Research default promotion is implied.
+
+The Bible specialist remains subordinate to Research. Its bounded validation
+covered passage context, original-language caution, lexical/syntax discipline,
+historical/cultural context, canonical/cross-reference context, scholarly
+disagreement, and theological synthesis without preloading unrelated layers.
+The canary did not activate Claude Research or any other consumer/domain.

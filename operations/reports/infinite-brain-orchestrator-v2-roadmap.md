@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 7B accepted; Codex Code is the only v2 default; Claude Code + Code canary accepted; no production execution
+**Status:** Phase 8A accepted; Codex Code is the only v2 default; Claude Code + Code and Codex + Research canaries accepted; no production execution
 **Date:** 2026-09-02
 **Baseline:** Phase 7B integration baseline `origin/main` `6aacb3ab73bb8124f26c84968d9c5ffd05a183bd`; canary source `87809d17df3affc9e3b245e45a706564795f0674`
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
@@ -199,6 +199,27 @@ Code default remains preserved, and other consumers/domains remain inactive.
 Browser/MCP/visual host-dependent capability differences are recorded as
 alternatives, not hidden. Exact broad-conformance drift is documented in the
 Phase 7B report and does not suppress targeted acceptance.
+
+### Phase 8A — Codex Research real-path canary (accepted)
+
+Phase 8A activates exactly Codex × Research in `CANARY` mode and leaves every
+other Research consumer/domain inactive. The clean acceptance report is
+`operations/reports/infinite-brain-orchestrator-v2-phase8a-research-canary-2026-09-02.md`.
+The canary passed a 10/10 serial burn-in, 100-case Research cohort, 24
+substantive source-backed outputs, 7 Bible specialist outputs, 50/50 Codex /
+Claude shadow semantic parity, 20 prior-path comparisons, source-quality and
+provenance gates, contradiction retention, one-request iterative deepening,
+failure degradation, atomic-context bounds, and rollback/re-enable. Public
+source acquisition was read-only and recorded identity, retrieval time, class,
+digest, claim relationship, confidence, uncertainty, and contradiction state.
+
+Codex Research is `CANARY_ACCEPTED_NO_DEFAULT`; Codex Code's default is
+unchanged. Claude Research was shadow-compared only and was not activated.
+The Bible Research and Scripture Sources capabilities remain specialists under
+the canonical Research owner; no competing universal router was created. The
+recommendation is to gather more Research evidence before any default
+promotion because the bounded corpus is intentionally limited and Bible
+original-language source quality remains a follow-up area.
 
 ### Phase 6A — Activation readiness hardening (complete)
 

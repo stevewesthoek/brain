@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-codex-research-canary.v1",
+  "schemaVersion": "1.0.0",
+  "contractRef": "operations/specs/infinite-brain-universal-consumer-contract.v1.json",
+  "status": "CANARY_ACCEPTED_NO_DEFAULT",
+  "consumer": "codex",
+  "domain": "research",
+  "mode": "CANARY",
+  "defaultActive": false,
+  "productionActive": false,
+  "adapter": { "adapterId": "adapter.codex-research.v1", "revision": "codex-research-adapter@1.0.0" },
+  "priorPath": "codex-current-research-entry",
+  "scope": { "included": ["Codex × Research"], "excluded": ["Codex × Code default", "Claude × Research", "all other consumers", "Mind", "publishing", "financial", "credentials", "automatic resume"] },
+  "states": ["CONFORMANT", "CANARY_ACTIVE", "CANARY_ACCEPTED", "DEGRADED", "ROLLED_BACK"],
+  "activation": { "authorization": "Phase 8A explicit canary authorization", "brainOwnedRouting": true, "readOnlySourceAcquisition": true, "rollback": "disable canary, restore codex-current-research-entry, require fresh preflight" }
+}

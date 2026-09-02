@@ -14,10 +14,10 @@ function hash(value) { return crypto.createHash('sha256').update(String(value ??
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function now(timestamp) { return timestamp ?? new Date().toISOString(); }
 
-export function createUniversalConsumerCanaryController({ consumer, domain = 'code', adapterId, sourceRevision = 'unknown', activationTimestamp = null, priorPath = `${consumer}-current-entry` } = {}) {
+export function createUniversalConsumerCanaryController({ consumer, domain = 'code', adapterId, sourceRevision = 'unknown', activationTimestamp = null, priorPath = `${consumer}-current-entry`, activationReason = `separate consumer ${domain} canary authorization`, failureNamespace = 'universal.canary', outOfScopeReason = `outside_bounded_${domain}_canary_scope` } = {}) {
   if (!consumer || !adapterId) throw new Error('universal_canary:consumer_and_adapter_required');
   return {
-    consumer, domain, mode: 'CANARY', adapterId, sourceRevision, universalContractVersion: UNIVERSAL_CONTRACT_VERSION,
+    consumer, domain, mode: 'CANARY', adapterId, sourceRevision, activationReason, failureNamespace, outOfScopeReason, universalContractVersion: UNIVERSAL_CONTRACT_VERSION,
     state: 'CONFORMANT', enabled: false, activationPerformed: false, productionActive: false, priorPath,
     history: [{ from: null, to: 'CONFORMANT', reason: 'reference_adapter_conformance_passed', timestamp: activationTimestamp }]
   };
@@ -31,7 +31,7 @@ export function transitionUniversalConsumerCanary(controller, nextState, { reaso
 
 export function activateUniversalConsumerCanary(controller, { preflight = null, timestamp = null } = {}) {
   if (!preflight?.passed) throw new Error('universal_canary:preflight_required');
-  return transitionUniversalConsumerCanary(controller, 'CANARY_ACTIVE', { reason: 'separate consumer Code canary authorization', timestamp });
+  return transitionUniversalConsumerCanary(controller, 'CANARY_ACTIVE', { reason: controller.activationReason ?? `separate consumer ${controller.domain} canary authorization`, timestamp });
 }
 
 export function acceptUniversalConsumerCanary(controller, { evidence = null, timestamp = null } = {}) {
@@ -61,8 +61,8 @@ function failureReceipt({ controller, fixtureId, selectedPath, reason, requestHa
   };
 }
 
-function failureModeCapabilities(failureMode = null) {
-  return failureMode && failureMode !== 'consumer_adapter_failure' ? [`phase7b.injected.${failureMode}`] : [];
+function failureModeCapabilities(failureMode = null, namespace = 'universal.canary') {
+  return failureMode && failureMode !== 'consumer_adapter_failure' ? [`${namespace}.${failureMode}`] : [];
 }
 
 export function runUniversalConsumerCanaryInvocation({ controller, adapter, nativeInput, fixtureId = 'unlabeled', currentState = {}, failureMode = null, catalog, repoRoot, generatedAt = '2026-09-02T00:00:00Z', model = null } = {}) {
@@ -75,7 +75,7 @@ export function runUniversalConsumerCanaryInvocation({ controller, adapter, nati
     const receipt = failureReceipt({ controller, fixtureId, selectedPath: 'legacy', reason: 'consumer_adapter_failure' });
     return { fixtureId, selectedPath: 'legacy', state: 'DEGRADED', reason: 'consumer_adapter_failure', v2: null, receipt, priorPath: controller.priorPath };
   }
-  const metadata = { session: nativeInput?.session ?? null, workspace: nativeInput?.workspace ?? null, requiredCapabilities: failureModeCapabilities(failureMode) };
+  const metadata = { session: nativeInput?.session ?? null, workspace: nativeInput?.workspace ?? null, requiredCapabilities: failureModeCapabilities(failureMode, controller.failureNamespace) };
   const request = adapter.translate(nativeInput, metadata);
   const v2 = orchestrateBrainRequest(request, { catalog, repoRoot, currentState: currentState ?? {}, generatedAt });
   const route = v2.route;
@@ -85,7 +85,7 @@ export function runUniversalConsumerCanaryInvocation({ controller, adapter, nati
   else if (['high', 'critical'].includes(risk)) reason = 'high_risk_legacy_boundary';
   else if (v2.status === 'BLOCKED') reason = 'universal_result_blocked';
   else if (v2.continuation?.state !== 'CURRENT') reason = `continuity_${String(v2.continuation?.state ?? 'unavailable').toLowerCase()}`;
-  else if (route?.primaryRouteFamily !== controller.domain) reason = 'outside_bounded_code_canary_scope';
+  else if (route?.primaryRouteFamily !== controller.domain) reason = controller.outOfScopeReason ?? `outside_bounded_${controller.domain}_canary_scope`;
   else if (v2.safety?.providerCalls !== 0 || v2.safety?.writesPerformed !== 0 || v2.safety?.executionReady) reason = 'safety_boundary_failure';
   const selectedPath = reason ? 'legacy' : 'v2';
   const receipt = failureReceipt({ controller, fixtureId, selectedPath, reason, requestHash: v2.receipt.requestHash, result: v2 });
@@ -93,5 +93,5 @@ export function runUniversalConsumerCanaryInvocation({ controller, adapter, nati
 }
 
 export function universalConsumerCanarySnapshot(controller) {
-  return { consumer: controller.consumer, domain: controller.domain, mode: controller.mode, adapterId: controller.adapterId, sourceRevision: controller.sourceRevision, universalContractVersion: controller.universalContractVersion, status: controller.state, activationPerformed: controller.activationPerformed, productionActive: controller.productionActive, priorPath: controller.priorPath, history: clone(controller.history) };
+  return { consumer: controller.consumer, domain: controller.domain, mode: controller.mode, adapterId: controller.adapterId, sourceRevision: controller.sourceRevision, activationReason: controller.activationReason, failureNamespace: controller.failureNamespace, outOfScopeReason: controller.outOfScopeReason, universalContractVersion: controller.universalContractVersion, status: controller.state, activationPerformed: controller.activationPerformed, productionActive: controller.productionActive, priorPath: controller.priorPath, history: clone(controller.history) };
 }

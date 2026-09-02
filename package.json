@@ -61,7 +61,9 @@
     "validate:orchestrator-v2": "node tools/validate-orchestrator-v2.mjs",
     "test:orchestrator-v2": "node --test tools/orchestration/capability-catalog.test.mjs tools/orchestration/shadow-intent-router.test.mjs",
     "validate:universal-consumer-conformance": "node tools/validate-universal-consumer-conformance.mjs",
-    "test:universal-consumer-conformance": "node --test tools/context-learning/universal-consumer-contract.test.mjs"
+    "test:universal-consumer-conformance": "node --test tools/context-learning/universal-consumer-contract.test.mjs",
+    "test:phase8a": "node --test tools/context-learning/phase8a-research-canary.test.mjs",
+    "validate:phase8a": "node tools/context-learning/run-phase8a-codex-research-canary.mjs --summary"
   },
   "keywords": [
     "claude",

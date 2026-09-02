@@ -11,7 +11,7 @@
       "skillExposure": "canonical ai/skills/active through user projection; dormant descriptors remain catalog-owned", "contextMechanism": "Universal Brain Entry + Context Broker",
       "toolMechanism": "shell, browser/computer-use, MCP, native subagents", "sessionContinuity": "session-continuity contract + explicit continuation packet",
       "hookPolicyMechanism": "Codex AGENTS/config/rules; no Phase6D semantic routing branch", "currentOrchestrationLogic": "Brain-owned Code v2 default plus legacy fallback",
-      "duplicatedPolicy": "none admitted by Phase6D/7A independence audit", "clientSpecificLogic": "transport/session/default mechanics only", "currentV2Support": "DEFAULT_ACTIVE_CODE_ONLY",
+      "duplicatedPolicy": "none admitted by Phase6D/7A independence audit", "clientSpecificLogic": "transport/session/default mechanics only", "currentV2Support": "DEFAULT_ACTIVE_CODE_ONLY; CANARY_ACCEPTED_RESEARCH_NO_DEFAULT",
       "conformanceStatus": "PASS_REFERENCE_ADAPTER", "activationStatus": "DEFAULT_ACTIVE_CODE_ONLY",
       "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "observed", "browser": "observed", "mcp": "observed", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "host_dependent", "other": ["native_subagents", "parallel_tasks", "tool_confirmation"] },
       "runtimeActivation": "DEFAULT_ACTIVE_CODE_ONLY", "rollout": "DEFAULT_ACTIVE_CODE_ONLY"
@@ -22,7 +22,7 @@
       "skillExposure": "canonical skill projection plus Claude hooks; descriptor authority remains Brain", "contextMechanism": "Universal Brain Entry + Context Broker bridge",
       "toolMechanism": "shell, filesystem, MCP/runtime tools", "sessionContinuity": "handoff/session-continuity contracts; explicit continuation only",
       "hookPolicyMechanism": "Claude CLAUDE.md/settings/hooks", "currentOrchestrationLogic": "Brain-owned Code v2 canary; legacy Claude path remains fallback",
-      "duplicatedPolicy": "none admitted by Phase6D/7B independence audit", "clientSpecificLogic": "native input, hooks, model/session, rendering, and transport mechanics only", "currentV2Support": "CANARY_ACCEPTED_CODE_ONLY",
+      "duplicatedPolicy": "none admitted by Phase6D/7B independence audit", "clientSpecificLogic": "native input, hooks, model/session, rendering, and transport mechanics only", "currentV2Support": "CANARY_ACCEPTED_CODE_ONLY; RESEARCH_SHADOW_ONLY",
       "conformanceStatus": "PASS_REFERENCE_ADAPTER; PASS_PHASE7B_CODE_CANARY", "activationStatus": "CANARY_ACCEPTED_CODE_ONLY",
       "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "host_dependent", "browser": "host_dependent", "mcp": "host_dependent", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "host_dependent", "other": ["native_subagents", "tool_confirmation"] },
       "runtimeActivation": "CANARY_ACCEPTED_CODE_ONLY", "rollout": "CANARY_ACCEPTED_CODE_ONLY; CLAUDE_CODE_DEFAULT_REMAINS_FALSE"
@@ -94,6 +94,16 @@
     "run the universal conformance corpus and consumer-specific supplemental checks",
     "obtain separate activation authorization and preserve canary/fallback/rollback"
   ],
+  "phase8aResearchRollout": {
+    "codex": "CANARY_ACCEPTED_NO_DEFAULT",
+    "claude-code": "SHADOW_ONLY_NOT_ACTIVATED",
+    "cursor": "NOT_PERFORMED",
+    "kiro": "NOT_PERFORMED",
+    "antigravity": "NOT_PERFORMED",
+    "gemini": "NOT_PERFORMED",
+    "workbench": "NOT_PERFORMED",
+    "codeDefault": "CODEX_DEFAULT_UNCHANGED"
+  },
   "forbiddenAdapterResponsibilities": [
     "client-conditioned routing or qualification",
     "client-specific domain-method selection",
