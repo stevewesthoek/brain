@@ -1,7 +1,7 @@
 # Infinite Brain Orchestrator v2 Phase 6D — Client-Agnostic Conformance
 
 **Date:** 2026-09-02  
-**Source revision:** `87793a29a692bfa39c69dde9c11d7ab2a421bb07`  
+**Source revision:** `7b78362af49d407e42450b18003f819c2863fc3a`  
 **Baseline:** accepted Phase 6C `origin/main` `f07baa74014cea0b5654187881245f99f0554bc1`  
 **Branch:** `codex/infinite-brain-orchestrator-v2-phase6d-client-agnostic`  
 **Production/default activation:** not performed
