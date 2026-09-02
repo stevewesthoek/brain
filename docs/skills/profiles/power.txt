@@ -16,7 +16,7 @@ gh
 firecrawl
 playwright
 ffmpeg
-n8n
+n8n-cli
 autoresearch
 spark
 orchestrate

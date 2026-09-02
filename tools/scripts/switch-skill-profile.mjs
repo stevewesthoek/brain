@@ -27,6 +27,7 @@ const vendorsDir = path.join(repoRoot, 'ai/skills/vendors');
 const profileDir = path.join(repoRoot, 'docs/skills/profiles');
 const backupDir = path.join(repoRoot, 'runtime/local/skill-profiles/backups');
 const syncScript = path.join(repoRoot, 'tools/scripts/sync-ai-skills.mjs');
+const unavailableAllowlistPath = path.join(repoRoot, 'operations/specs/profile-unavailable-allowlist.json');
 
 const args = process.argv.slice(2);
 const profileName = args.find((arg) => !arg.startsWith('--'));
@@ -83,6 +84,12 @@ function readProfile(name) {
   }
 
   return { profilePath, skills };
+}
+
+function readUnavailableAllowlist() {
+  if (!fs.existsSync(unavailableAllowlistPath)) return new Map();
+  const document = JSON.parse(fs.readFileSync(unavailableAllowlistPath, 'utf8'));
+  return new Map((document.entries ?? []).map((entry) => [`${entry.profile}:${entry.name}`, entry]));
 }
 
 function listProfiles() {
@@ -200,11 +207,15 @@ function resolveSkillSource(skill) {
 function validateProfileSkills(skills) {
   const resolved = new Map();
   const missing = [];
+  const unavailable = [];
+  const allowlist = readUnavailableAllowlist();
 
   for (const skill of skills) {
     const source = resolveSkillSource(skill);
     if (!source) {
-      missing.push(skill);
+      const exception = allowlist.get(`${profileName}:${skill}`);
+      if (exception?.status === 'UNAVAILABLE') unavailable.push({ name: skill, reason: exception.reason, authority: exception.authority, migration: exception.migration });
+      else missing.push(skill);
     } else {
       resolved.set(skill, source);
     }
@@ -214,7 +225,7 @@ function validateProfileSkills(skills) {
     fail(`Profile references missing/unresolvable skills: ${missing.join(', ')}`);
   }
 
-  return resolved;
+  return { resolved, unavailable };
 }
 
 function backupActiveSet() {
@@ -260,7 +271,7 @@ function relativeSymlinkTarget(fromPath, toPath) {
   return path.relative(path.dirname(fromPath), toPath);
 }
 
-function applyProfile(skills, resolved) {
+function applyProfile(skills, resolved, unavailable = []) {
   ensureActiveIsSafeToSwitch();
   const { entries, backupPath } = backupActiveSet();
 
@@ -269,7 +280,8 @@ function applyProfile(skills, resolved) {
   if (dryRun) log('[DRY-RUN] No filesystem changes will be made.');
   if (apply) ok(`Backup will be written to ${path.relative(repoRoot, backupPath)}`);
 
-  const targetSet = new Set(skills);
+  const targetSet = new Set(skills.filter((skill) => !unavailable.some((entry) => entry.name === skill)));
+  for (const entry of unavailable) warn(`Allowlisted unavailable skill is not activated: ${entry.name} (${entry.reason})`);
 
   for (const entry of entries) {
     if (targetSet.has(entry)) continue;
@@ -288,6 +300,7 @@ function applyProfile(skills, resolved) {
   }
 
   for (const skill of skills) {
+    if (unavailable.some((entry) => entry.name === skill)) continue;
     const activePath = path.join(activeDir, skill);
     const sourcePath = resolved.get(skill);
     const stat = lstatSafe(activePath);
@@ -307,10 +320,10 @@ function applyProfile(skills, resolved) {
   }
 }
 
-function checkProfile(skills) {
+function checkProfile(skills, unavailable = []) {
   const active = getActiveEntries();
   const activeSet = new Set(active);
-  const profileSet = new Set(skills);
+  const profileSet = new Set(skills.filter((skill) => !unavailable.some((entry) => entry.name === skill)));
   const missing = skills.filter((skill) => !activeSet.has(skill));
   const extra = active.filter((skill) => !profileSet.has(skill));
 
@@ -357,15 +370,16 @@ function main() {
   log(`Path:    ${path.relative(repoRoot, profilePath)}`);
   log(`Skills:  ${skills.length}`);
 
-  const resolved = validateProfileSkills(skills);
+  const { resolved, unavailable } = validateProfileSkills(skills);
   ok('All profile skills resolved to source paths');
+  for (const entry of unavailable) warn(`Allowlisted unavailable skill: ${entry.name} — ${entry.reason}`);
 
   if (check) {
-    checkProfile(skills);
+    checkProfile(skills, unavailable);
     return;
   }
 
-  applyProfile(skills, resolved);
+  applyProfile(skills, resolved, unavailable);
 
   if (dryRun) {
     ok('Dry run complete');

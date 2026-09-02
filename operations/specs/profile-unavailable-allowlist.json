@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": "1.0.0",
+  "description": "Explicit source-resolution exceptions for curated profiles. An allowlisted entry is visible and never silently activated.",
+  "entries": [
+    {
+      "profile": "research",
+      "name": "gemini",
+      "status": "UNAVAILABLE",
+      "reason": "No Brain-owned Gemini skill source exists in this revision; large-context preprocessing remains an external/runtime capability and is not activated by profile switching.",
+      "authority": "operations/CLI-MANIFEST.md",
+      "migration": "Add an exact Brain-owned skill source or a separately reviewed runtime adapter before activation."
+    },
+    {
+      "profile": "full-current",
+      "name": "gemini",
+      "status": "UNAVAILABLE",
+      "reason": "Historical full-current snapshot names a Gemini runtime capability without a Brain-owned skill source.",
+      "authority": "operations/CLI-MANIFEST.md",
+      "migration": "Keep unavailable until an exact repository source is admitted."
+    },
+    {
+      "profile": "full-current",
+      "name": "brain-nightly-scheduler-new-job",
+      "status": "UNAVAILABLE",
+      "reason": "Historical snapshot entry has no current Brain-owned skill source; the duplicate profile line was removed and the remaining historical name is retained only for audit visibility.",
+      "authority": "docs/skills/profiles/full-current.txt",
+      "migration": "Retire the historical name after the scheduler capability is represented by its current runbook or descriptor."
+    }
+  ]
+}

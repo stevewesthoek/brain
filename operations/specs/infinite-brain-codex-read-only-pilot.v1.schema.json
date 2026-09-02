@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-codex-read-only-pilot.v1.schema.json",
+  "title": "Infinite Brain Codex Read-Only Pilot v1",
+  "type": "object",
+  "required": ["schemaVersion", "mode", "consumer", "fixtureId", "requestHash", "sourceRevision", "activationState", "safety", "metrics", "receipt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "mode": { "const": "CODEX_READ_ONLY_PILOT_MODE" },
+    "consumer": { "const": "codex" },
+    "fixtureId": { "type": "string", "minLength": 1 },
+    "requestHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "sourceRevision": { "type": "string", "minLength": 1 },
+    "activationState": { "$ref": "infinite-brain-activation-state.v1.schema.json#/$defs/status" },
+    "safety": {
+      "type": "object",
+      "required": ["executionAttempts", "providerCalls", "writes", "mindWrites", "profileActivations", "clientConfigurationChanges", "automaticResume", "automaticTakeover", "activationPerformed"],
+      "properties": {
+        "executionAttempts": { "const": 0 }, "providerCalls": { "const": 0 }, "writes": { "const": 0 }, "mindWrites": { "const": 0 }, "profileActivations": { "const": 0 }, "clientConfigurationChanges": { "const": 0 }, "automaticResume": { "const": false }, "automaticTakeover": { "const": false }, "activationPerformed": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "metrics": { "type": "object" },
+    "receipt": { "type": "object", "required": ["receiptId", "brainRevision", "consumer", "mode", "requestHash", "privacy", "safety", "activation"] }
+  },
+  "additionalProperties": true
+}

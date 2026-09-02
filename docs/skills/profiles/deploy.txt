@@ -14,10 +14,10 @@ dokploy-swarm-deploy-stale
 docker-desktop-broken-symlink-crash-loop
 docker-postgresql-client-pgdg
 cloudflare
-hetzner
-aws
-azure
-supabase
+hetzner-cli
+aws-cli
+azure-cli
+supabase-cli
 tailscale
 orbstack
 gh

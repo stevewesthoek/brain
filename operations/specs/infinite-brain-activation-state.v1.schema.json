@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-activation-state.v1.schema.json",
+  "title": "Infinite Brain Activation State v1",
+  "type": "object",
+  "required": ["schemaVersion", "consumer", "conformance", "status", "activated", "productionActive"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "consumer": { "type": "string", "minLength": 1 },
+    "conformance": { "$ref": "#/$defs/status" },
+    "status": { "$ref": "#/$defs/status" },
+    "activated": { "type": "boolean" },
+    "productionActive": { "const": false }
+  },
+  "additionalProperties": false,
+  "$defs": { "status": { "enum": ["CONFORMANT", "PILOT-READY", "PILOT-ACTIVE", "PRODUCTION-ACTIVE", "DEGRADED", "BLOCKED"] } }
+}

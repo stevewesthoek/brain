@@ -87,7 +87,6 @@ plan-ceo-review
 plan-design-review
 plan-eng-review
 playwright
-brain-nightly-scheduler-new-job
 qa
 qa-only
 redesign-skill

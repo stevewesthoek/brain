@@ -283,6 +283,18 @@ function loadProfiles(root) {
   return fs.readdirSync(profileRoot).filter((name) => name.endsWith('.txt')).sort().map((name) => parseProfileFile(path.join(profileRoot, name)));
 }
 
+function loadUnavailableProfileAllowlist(root) {
+  const filePath = path.join(root, 'operations', 'specs', 'profile-unavailable-allowlist.json');
+  if (!fs.existsSync(filePath)) return new Map();
+  const document = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const result = new Map();
+  for (const entry of document.entries ?? []) {
+    if (!entry.profile || !entry.name || entry.status !== 'UNAVAILABLE' || !entry.reason || !entry.authority || !entry.migration) continue;
+    result.set(`${entry.profile}:${entry.name}`, { ...entry });
+  }
+  return result;
+}
+
 function sourceNameFromRef(sourceRef) {
   const parts = sourceRef.split('/');
   return parts.at(-2) ?? '';
@@ -319,7 +331,7 @@ function projectionNames(root, consumer) {
   const locations = {
     claude: path.join(root, 'operations', 'system-configs', 'claude', 'skills'),
     gemini: path.join(root, 'operations', 'system-configs', 'gemini', 'skills'),
-    antigravity: path.join(root, 'operations', 'system-configs', 'antigravity', 'skills'),
+    antigravity: path.join(root, 'operations', 'system-configs', 'gemini', 'antigravity', 'skills'),
     kiro: path.join(root, 'operations', 'system-configs', 'kiro', 'skills'),
     codex: path.join(root, 'operations', 'system-configs', 'codex', 'skills', 'user'),
   };
@@ -347,6 +359,9 @@ function deriveSemanticDefaults(sourceName, label, summary) {
 
 function profileSourceExists(root, profileName) {
   const candidates = [
+    path.join(root, 'ai', 'skills', 'active', profileName),
+    path.join(root, 'ai', 'skills', 'custom', profileName),
+    path.join(root, 'ai', 'skills', 'vendors', profileName),
     path.join(root, 'ai', 'skills', 'custom', profileName, 'SKILL.md'),
     path.join(root, 'ai', 'skills', 'vendors', profileName, 'SKILL.md'),
   ];
@@ -358,7 +373,28 @@ function profileSourceExists(root, profileName) {
       candidates.push(path.join(sourceRoot, owner.name, profileName, 'SKILL.md'));
     }
   }
-  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+  const isMatch = (candidate) => {
+    if (!fs.existsSync(candidate)) return false;
+    const stat = fs.statSync(candidate);
+    return stat.isFile() ? profileName.endsWith('.md') : fs.existsSync(path.join(candidate, 'SKILL.md'));
+  };
+  const direct = candidates.find(isMatch);
+  if (direct) return direct;
+  for (const sourceRoot of [path.join(root, 'ai', 'skills', 'custom'), path.join(root, 'ai', 'skills', 'vendors')]) {
+    if (!fs.existsSync(sourceRoot)) continue;
+    const stack = [sourceRoot];
+    while (stack.length) {
+      const current = stack.pop();
+      for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+        if (entry.name === '.git' || entry.name === 'node_modules') continue;
+        const candidate = path.join(current, entry.name);
+        if (entry.isDirectory() && isMatch(candidate) && path.basename(candidate) === profileName) return candidate;
+        if (entry.isDirectory()) stack.push(candidate);
+        if (entry.isFile() && entry.name === profileName && profileName.endsWith('.md')) return candidate;
+      }
+    }
+  }
+  return null;
 }
 
 function makeProvenance(fields, sourceRef, sourceRevision, derivation, routingFields = new Set(), routingRevision = sourceRevision) {
@@ -585,17 +621,22 @@ function validateDescriptor(descriptor) {
   return errors;
 }
 
-function profileHealth(profiles, root) {
+function profileHealth(profiles, root, unavailableAllowlist = new Map()) {
   return Object.fromEntries(profiles.map((profile) => {
     const seen = new Set();
     const duplicates = [];
     const unresolved = [];
+    const allowlistedUnavailable = [];
     for (const entry of profile.entries) {
       if (seen.has(entry.name)) duplicates.push(entry.name);
       seen.add(entry.name);
-      if (!profileSourceExists(root, entry.name)) unresolved.push(entry.name);
+      if (!profileSourceExists(root, entry.name)) {
+        const exception = unavailableAllowlist.get(`${profile.profileName}:${entry.name}`);
+        if (exception) allowlistedUnavailable.push({ name: entry.name, reason: exception.reason, authority: exception.authority, migration: exception.migration });
+        else unresolved.push(entry.name);
+      }
     }
-    return [profile.profileName, { entries: profile.entries.length, duplicates: sortStrings(duplicates), unresolved: sortStrings(unresolved), resolved: profile.entries.length - unresolved.length, healthy: duplicates.length === 0 && unresolved.length === 0 }];
+    return [profile.profileName, { entries: profile.entries.length, duplicates: sortStrings(duplicates), unresolved: sortStrings(unresolved), allowlistedUnavailable, resolved: profile.entries.length - unresolved.length - allowlistedUnavailable.length, healthy: duplicates.length === 0 && unresolved.length === 0 }];
   }));
 }
 
@@ -610,7 +651,7 @@ function projectionHealth(root, defaultNames) {
   return result;
 }
 
-function reconcile({ root, descriptors, profiles, activeNames, indexNames, projectionMap }) {
+function reconcile({ root, descriptors, profiles, activeNames, indexNames, projectionMap, unavailableAllowlist = new Map() }) {
   const issues = [];
   const byId = new Map();
   for (const descriptor of descriptors) {
@@ -618,7 +659,7 @@ function reconcile({ root, descriptors, profiles, activeNames, indexNames, proje
     byId.set(descriptor.capabilityId, descriptor);
     for (const error of validateDescriptor(descriptor)) issues.push({ code: error.replaceAll(' ', '_'), capabilityId: descriptor.capabilityId, detail: error });
   }
-  const profileStatus = profileHealth(profiles, root);
+  const profileStatus = profileHealth(profiles, root, unavailableAllowlist);
   for (const [profileName, status] of Object.entries(profileStatus)) {
     for (const name of status.duplicates) issues.push({ code: 'duplicate_profile_entry', profile: profileName, detail: `${profileName}:${name}` });
     for (const name of status.unresolved) {
@@ -657,7 +698,8 @@ export function createCapabilityCatalog({ repoRoot = defaultRepoRoot(), sourceRe
   const runbookDescriptors = parseRunbookDescriptors(root, revisionCache);
   stats.runbooksScanned = runbookDescriptors.length;
   const descriptors = sortDescriptors([...sourceDescriptors, ...supplementalDescriptors, ...cliDescriptors, ...runbookDescriptors]);
-  const reconciliation = reconcile({ root, descriptors, profiles, activeNames, indexNames, projectionMap });
+  const unavailableAllowlist = loadUnavailableProfileAllowlist(root);
+  const reconciliation = reconcile({ root, descriptors, profiles, activeNames, indexNames, projectionMap, unavailableAllowlist });
   const fixedSourceRevision = sourceRevision ?? null;
 
   function list({ query = '', maxItems = 100, kind = null } = {}) {
@@ -681,6 +723,7 @@ export function createCapabilityCatalog({ repoRoot = defaultRepoRoot(), sourceRe
     descriptors: clone(descriptors),
     profiles: clone(profiles),
     profileHealth: clone(reconciliation.profileHealth),
+    unavailableProfileAllowlist: clone(Object.fromEntries(unavailableAllowlist)),
     reconciliation,
     list,
     inspect,

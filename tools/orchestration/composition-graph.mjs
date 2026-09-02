@@ -15,7 +15,7 @@ export const GRAPH_AUTHORITY_MODEL = Object.freeze({ task: 'task_packet', eviden
 
 const QUALITY_GATES = new Set(['gate.review', 'gate.qa', 'gate.design-review', 'gate.visual-qa', 'gate.source-provenance', 'gate.citation-completeness', 'gate.browser-evidence', 'gate.continuity', 'gate.memory-authority']);
 const SAFETY_GATES = new Set(['gate.confirmation', 'gate.rollback']);
-const MUTATION_WORDS = /\b(deploy|production|delete|destroy|clean up|publish|credential|secret|database|billing|payment|merge|push)\b/i;
+const MUTATION_WORDS = /\b(deploy|production|delete|destroy|clean up|publish|credential(?:s)?|secret(?:s)?|database|billing|payment(?:s)?|merge|push)\b/i;
 const RESEARCH_WORDS = /\b(research|market|competitor|demand|enter this market|sources?|study|investigate)\b/i;
 const DESIGN_WORDS = /\b(design|beautiful|amazing|premium|dashboard|website|landing page|redesign|visual|ui|page)\b/i;
 const CODE_WORDS = /\b(build|building|feature|code|fix|debug|bug|login|auth|authentication|implement|refactor|backend|api|repository|app)\b/i;

@@ -6,7 +6,7 @@ viral-flow
 ffmpeg
 stb-pipeline
 design
-n8n
+n8n-cli
 stable-diffusion-local
 wave-local
 flux-local
