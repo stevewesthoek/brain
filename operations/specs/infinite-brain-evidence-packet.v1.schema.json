@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-evidence-packet.v1.schema.json",
+  "title": "Infinite Brain Evidence Packet v1",
+  "description": "Bounded evidence for one atomic task step. It records what is known without becoming canonical knowledge or an execution receipt.",
+  "type": "object",
+  "required": ["schemaVersion", "evidenceId", "taskId", "subtaskId", "producerCapability", "sourceRevision", "inputRefs", "outputRefs", "evidenceRefs", "validationRefs", "claims", "uncertainties", "conflicts", "gateResults", "sideEffectsObserved", "continuationRefs", "status", "execution"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "evidenceId": { "$ref": "#/$defs/id" },
+    "taskId": { "$ref": "#/$defs/id" },
+    "subtaskId": { "$ref": "#/$defs/id" },
+    "producerCapability": { "type": "object", "required": ["capabilityId", "sourceRef", "sourceRevision"], "properties": { "capabilityId": { "$ref": "#/$defs/id" }, "sourceRef": { "type": "string", "minLength": 1 }, "sourceRevision": { "$ref": "#/$defs/revision" } }, "additionalProperties": false },
+    "sourceRevision": { "$ref": "#/$defs/revision" },
+    "inputRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 },
+    "outputRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 },
+    "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 },
+    "validationRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" } },
+    "claims": { "type": "array", "items": { "$ref": "#/$defs/claim" }, "minItems": 1 },
+    "uncertainties": { "type": "array", "items": { "type": "string" } },
+    "conflicts": { "type": "array", "items": { "type": "object", "required": ["summary", "sourceRefs", "resolutionState"], "properties": { "summary": { "type": "string", "minLength": 1 }, "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 2 }, "resolutionState": { "enum": ["OPEN", "RECONCILED", "BLOCKING"] } }, "additionalProperties": false } },
+    "gateResults": { "type": "array", "items": { "$ref": "#/$defs/gateResult" } },
+    "sideEffectsObserved": { "type": "object", "required": ["declared", "observed", "evidenceRefs", "noneObserved"], "properties": { "declared": { "type": "array", "items": { "type": "string" } }, "observed": { "type": "array", "items": { "type": "string" } }, "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" } }, "noneObserved": { "type": "boolean" } }, "additionalProperties": false },
+    "continuationRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 },
+    "status": { "enum": ["PLANNED", "OBSERVED", "VALIDATED", "PARTIAL", "FAILED", "BLOCKED", "CONFLICTED", "INCOMPLETE"] },
+    "execution": { "type": "object", "required": ["mode", "providerCalls", "writesPerformed", "mindWrites", "externalMutations"], "properties": { "mode": { "const": "shadow_fixture" }, "providerCalls": { "const": 0 }, "writesPerformed": { "const": 0 }, "mindWrites": { "const": 0 }, "externalMutations": { "const": 0 } }, "additionalProperties": false }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9._:-]*$", "minLength": 1, "maxLength": 180 },
+    "revision": { "type": "string", "minLength": 1, "maxLength": 180 },
+    "ref": { "type": "object", "required": ["refId", "refType", "value"], "properties": { "refId": { "$ref": "#/$defs/id" }, "refType": { "enum": ["capability", "adapter", "source", "context_pack", "context_request", "task", "evidence", "validation", "artifact", "continuation", "gate", "mind"] }, "value": { "type": "string", "minLength": 1, "maxLength": 500 }, "sourceRevision": { "anyOf": [{ "$ref": "#/$defs/revision" }, { "type": "null" }] } }, "additionalProperties": false },
+    "claim": { "type": "object", "required": ["claimId", "type", "statement", "sourceRefs", "evidenceRefs", "confidence"], "properties": { "claimId": { "$ref": "#/$defs/id" }, "type": { "enum": ["FACT", "SOURCE_EVIDENCE", "EXTRACTED_CLAIM", "INTERPRETATION", "CONCLUSION", "UNCERTAINTY", "CONFLICT", "FAILURE", "FOLLOW_UP_REQUIREMENT", "OUTPUT", "REPO_EVIDENCE", "IMPLEMENTATION_RESULT", "TEST_EVIDENCE", "REVIEW_EVIDENCE", "MEMORY_SOURCE", "PROVENANCE", "FACT_STATUS", "DECISION"] }, "statement": { "type": "string", "minLength": 1, "maxLength": 1000 }, "sourceRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" } }, "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 } }, "additionalProperties": false },
+    "gateResult": { "type": "object", "required": ["gateRef", "status", "blocking", "evidenceRefs", "reason"], "properties": { "gateRef": { "type": "string", "minLength": 1 }, "status": { "enum": ["PASS", "FAIL", "ADVISORY", "NOT_RUN"] }, "blocking": { "type": "boolean" }, "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" } }, "reason": { "type": "string", "minLength": 1, "maxLength": 500 } }, "additionalProperties": false }
+  }
+}
