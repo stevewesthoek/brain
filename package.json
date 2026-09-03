@@ -72,7 +72,9 @@
     "validate:phase8d": "node tools/context-learning/run-phase8d-research-default.mjs --summary",
     "test:phase9a": "node --test tools/context-learning/phase9a-design-web-canary.test.mjs",
     "validate:phase9a": "node tools/context-learning/run-phase9a-design-web-canary.mjs --summary",
-    "validate:phase9a:report": "node tools/context-learning/run-phase9a-design-web-canary.mjs --summary --write-report"
+    "validate:phase9a:report": "node tools/context-learning/run-phase9a-design-web-canary.mjs --summary --write-report",
+    "test:phase9b": "node --test tools/context-learning/phase9b-design-web-default.test.mjs",
+    "validate:phase9b": "node tools/context-learning/run-phase9b-design-web-default.mjs --summary"
   },
   "keywords": [
     "claude",

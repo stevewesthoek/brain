@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2
 
-**Status:** Phase 9A accepted; Codex Code and Codex Research remain v2 defaults and Codex Design/Web is canary-only; Claude Research and all other consumer/domain defaults remain inactive; no production execution authorized by this document
+**Status:** Phase 9B accepted; Codex Code, Codex Research, and Codex Design/Web are v2 defaults; core orchestration architecture complete; remaining work is standardized rollout and maintenance; no production execution authorized by this document
 **Date:** 2026-09-03
 **Predecessor evidence:** `operations/reports/infinite-brain-orchestrator-audit-2026-09-01.md`
 **Authority boundary:** Brain owns capability, routing, policy, validation, and orchestration knowledge; Mind remains authoritative for human meaning, strategy, preferences, commitments, and personal/business context.
@@ -784,3 +784,33 @@ The canary is not a Design/Web default. Codex Code and Codex Research remain
 consumer/domain remain inactive. Global profiles and `ai/skills/active` are
 unchanged. Mind writes, production website writes, publishing, deployments,
 provider calls, and external mutations remain zero.
+
+## Phase 9B final core closeout truth — 2026-09-03
+
+Phase 9A was revalidated as `CANARY_ACCEPTED` and `PROMOTION_READY` against
+accepted `origin/main` `f6fb519943498e5fc99e1569da6b339ce9768ba3`. Exactly
+`Codex × Design/Web` was promoted through the canonical
+`DESIGN_WEB_V2_DEFAULT_FOR_CODEX` selector. The prior
+`codex-current-design-web-entry` path remains the automatic fallback and was
+validated by disable → legacy selection → preflight-gated restore; no packets
+or artifacts were replayed.
+
+The final closeout report is
+`operations/reports/infinite-brain-orchestrator-v2-phase9b-final-closeout-2026-09-03.md`.
+It records 10/10 default burn-in, a 120-case default cohort, 20 new rendered
+default-path implementations, 20/20 visual QA, 20/20 distinct functional QA,
+zero critical defects and false passes, bounded repairs, atomic context,
+Research→Design→Code composition, parity, degradation, safety, and rollback.
+Codex Code, Research, and Design/Web are the three proven default execution
+archetypes. `CORE_ORCHESTRATOR_V2_COMPLETE` is the final core decision.
+
+The architecture is universal, descriptor-first, capability-driven,
+LLM-agnostic, IDE-agnostic, and consumer-independent. Brain owns routing,
+qualification, packets, context, composition, gates, safety, continuity, and
+evidence; clients translate environment mechanics only. Future work uses the
+reusable lifecycle and rollout template in
+`operations/specs/infinite-brain-rollout-template.v1.md`; it does not create
+new router, catalog, gate, or context architecture. Claude Research,
+Claude Design/Web, Cursor, Kiro, Antigravity, Gemini, and Workbench receive no
+new activation. Profiles remain unchanged and production execution remains
+disabled.

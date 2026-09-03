@@ -1,8 +1,8 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 9A accepted; Codex Code and Codex Research are v2 defaults; Codex Design/Web canary accepted and remains canary-only; no production execution
+**Status:** Phase 9B accepted; Codex Code, Codex Research, and Codex Design/Web are v2 defaults; core orchestration architecture complete; no production execution
 **Date:** 2026-09-02
-**Baseline:** Phase 9A baseline `origin/main` `10e25f6d24051b48d997731ba8108dabc9a305a4`; canary source is the clean Phase 9A worktree HEAD
+**Baseline:** Phase 9B accepted baseline `origin/main` `f6fb519943498e5fc99e1569da6b339ce9768ba3`; source is the clean Phase 9B worktree
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
 **Safety boundary:** This roadmap does not authorize production orchestration, profile, client, provider, database, scheduler, deployment, or external-state changes.
 
@@ -455,3 +455,21 @@ Rollback is “disable the new consumer/router projection and restore the prior 
 Phase 9A records an A5 client-activation gate pass for exactly Codex × Design/Web
 in canary-only mode. A6 external/production behavior remains a future
 authorization boundary, and no production execution is authorized here.
+
+## Phase 9B — Codex Design/Web default and core closeout (accepted)
+
+Phase 9A was revalidated as `CANARY_ACCEPTED` + `PROMOTION_READY`, then exactly
+Codex Design/Web was promoted to `DEFAULT_ACTIVE` using
+`DESIGN_WEB_V2_DEFAULT_FOR_CODEX`. Evidence includes 10/10 default burn-in,
+120 default-path cohort cases, 20 new rendered default implementations,
+20/20 visual QA, 20/20 distinct functional QA, zero critical defects/false
+passes, bounded repair, atomic context, cross-domain composition, 100% parity,
+safe degradation, safety, and rollback.
+
+This closes the core architecture: Code, Research, and Design/Web are proven
+default execution archetypes through the same universal Brain-owned contract.
+Future consumer/domain work follows
+`operations/specs/infinite-brain-rollout-template.v1.md` and is rollout,
+monitoring, maintenance, or incremental capability improvement—not a new
+numbered architecture phase. Legacy fallbacks remain until stable retirement
+criteria are met.

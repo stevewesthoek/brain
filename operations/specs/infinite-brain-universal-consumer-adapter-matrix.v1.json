@@ -3,18 +3,18 @@
   "$id": "https://brain.local/specs/infinite-brain-universal-consumer-adapter-matrix.v1",
   "schemaVersion": "1.0.0",
   "contractRef": "operations/specs/infinite-brain-universal-consumer-contract.v1.json",
-  "status": "codex_code_and_research_defaults_active_design_web_canary_active",
+  "status": "core_archetypes_proven_codex_code_research_design_web_defaults_active",
   "adapters": [
     {
       "consumer": "codex", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
       "entrypoint": "operations/system-configs/codex/AGENTS.md", "configProjectionSource": "operations/system-configs/codex/config.toml; operations/system-configs/codex/skills/user",
       "skillExposure": "canonical ai/skills/active through user projection; dormant descriptors remain catalog-owned", "contextMechanism": "Universal Brain Entry + Context Broker",
       "toolMechanism": "shell, browser/computer-use, MCP, native subagents", "sessionContinuity": "session-continuity contract + explicit continuation packet",
-      "hookPolicyMechanism": "Codex AGENTS/config/rules; no Phase6D semantic routing branch", "currentOrchestrationLogic": "Brain-owned Code and Research v2 defaults plus Codex Design/Web canary and retained legacy fallbacks",
-      "duplicatedPolicy": "none admitted by Phase6D/7A/8D/9A independence audit", "clientSpecificLogic": "transport/session/default mechanics only", "currentV2Support": "DEFAULT_ACTIVE_CODE_AND_RESEARCH; DESIGN_WEB_CANARY",
-      "conformanceStatus": "PASS_REFERENCE_ADAPTER; PASS_PHASE9A_DESIGN_WEB_CANARY", "activationStatus": "DEFAULT_ACTIVE_CODE_AND_RESEARCH; DESIGN_WEB_CANARY_ONLY",
+      "hookPolicyMechanism": "Codex AGENTS/config/rules; no Phase6D semantic routing branch", "currentOrchestrationLogic": "Brain-owned Code, Research, and Design/Web v2 defaults with retained legacy fallbacks",
+      "duplicatedPolicy": "none admitted by Phase6D/7A/8D/9A/9B independence audit", "clientSpecificLogic": "transport/session/default mechanics only", "currentV2Support": "DEFAULT_ACTIVE_CODE_RESEARCH_DESIGN_WEB",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER; PASS_PHASE9B_CORE_CLOSEOUT", "activationStatus": "DEFAULT_ACTIVE_CODE_RESEARCH_DESIGN_WEB",
       "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "observed", "browser": "observed", "mcp": "observed", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "observed_codex_in_app_browser", "other": ["native_subagents", "parallel_tasks", "tool_confirmation", "rendered_visual_qa", "functional_qa"] },
-      "runtimeActivation": "DEFAULT_ACTIVE_CODE_AND_RESEARCH; DESIGN_WEB_CANARY_ONLY", "rollout": "DEFAULT_ACTIVE_CODE_AND_RESEARCH; DESIGN_WEB_CANARY_ONLY"
+      "runtimeActivation": "DEFAULT_ACTIVE_CODE_RESEARCH_DESIGN_WEB", "rollout": "DEFAULT_ACTIVE_CODE_RESEARCH_DESIGN_WEB; FUTURE_CONSUMERS_USE_STANDARD_TEMPLATE"
     },
     {
       "consumer": "claude-code", "adapterRef": "adapter.claude-code.v1", "canConsume": true,
