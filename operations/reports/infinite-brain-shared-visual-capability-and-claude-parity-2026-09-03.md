@@ -2,7 +2,7 @@
 
 ## 1. Baseline
 
-main before: 2c1d3759f513c38fc5e3b208c134a9ba88f7b0aa; implementation head: 2c1d3759f513c38fc5e3b208c134a9ba88f7b0aa; core and Wave 2 baseline are present.
+main before: 2c1d3759f513c38fc5e3b208c134a9ba88f7b0aa; implementation head: 5ca482f6c58362c6f9996a16b2401e8b6fd72cf2; core and Wave 2 baseline are present.
 ## 2. Wave 2 blocker reproduction
 
 Previous Claude Code × Design/Web state: BLOCKED_CAPABILITY because the consumer reported no native browser/rendered-visual execution capability.
@@ -94,8 +94,8 @@ USER_TRANSPARENT_PARITY_COMPLETE
 SOURCE
 
 - main before: 2c1d3759f513c38fc5e3b208c134a9ba88f7b0aa
-- implementation commits: 2c1d3759f513c38fc5e3b208c134a9ba88f7b0aa
-- main after: 2c1d3759f513c38fc5e3b208c134a9ba88f7b0aa
+- implementation commits: 5ca482f6c58362c6f9996a16b2401e8b6fd72cf2
+- main after: 5ca482f6c58362c6f9996a16b2401e8b6fd72cf2
 
 CLAUDE VISUAL BLOCKER
 
