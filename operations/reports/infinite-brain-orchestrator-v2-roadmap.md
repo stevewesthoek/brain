@@ -1,8 +1,8 @@
 # Infinite Brain Orchestrator v2 Roadmap
 
-**Status:** Phase 8B evaluated; Codex Code is the only v2 default; Claude Code + Code and Codex + Research canaries accepted; Codex Research default promotion deferred for more evidence; no production execution
+**Status:** Phase 9A accepted; Codex Code and Codex Research are v2 defaults; Codex Design/Web canary accepted and remains canary-only; no production execution
 **Date:** 2026-09-02
-**Baseline:** Phase 7B integration baseline `origin/main` `6aacb3ab73bb8124f26c84968d9c5ffd05a183bd`; canary source `87809d17df3affc9e3b245e45a706564795f0674`
+**Baseline:** Phase 9A baseline `origin/main` `10e25f6d24051b48d997731ba8108dabc9a305a4`; canary source is the clean Phase 9A worktree HEAD
 **Related specification:** [Infinite Brain Orchestrator v2](../specs/infinite-brain-orchestrator-v2.md)
 **Safety boundary:** This roadmap does not authorize production orchestration, profile, client, provider, database, scheduler, deployment, or external-state changes.
 
@@ -404,6 +404,27 @@ Q8 is deliberately not included in the audit implementation: it would change con
 - Failed optional accelerators produce visible fallback records.
 - Packet references and source revisions remain resolvable after a repository change.
 
+## Phase 9A — Codex combined Design/Web canary (accepted)
+
+Phase 9A proves the third major execution archetype through the same universal
+Brain-owned runtime. Exactly Codex × canonical combined Design/Web is
+`CANARY_ACCEPTED`; it is not a Design/Web default. The measured evidence is in
+`operations/reports/infinite-brain-orchestrator-v2-phase9a-design-web-canary-2026-09-03.md`.
+
+The acceptance gates pass: 10/10 serial burn-in, 120/120 routed cohort,
+30 substantive outputs, 20 rendered frontend artifacts, 20/20 screenshot
+visual QA, 20/20 distinct functional QA, bounded repair, 100% shadow parity,
+25 prior-path comparisons, explicit degradation, rollback/re-enable, and zero
+provider calls, writes, publishing, deployment, or production website changes.
+Design remains the primary owner; Web/Design and design-system specialists are
+dormant/selectively discovered; Code remains the frontend implementation
+handoff; visual QA and functional QA are separate gates.
+
+Code and Research remain `DEFAULT_ACTIVE`. Claude Code is unchanged. Claude
+Research, other consumers/domains, global profiles, and `ai/skills/active`
+remain inactive/unchanged. Remaining work is controlled rollout and eventual
+default-promotion evidence, not core orchestration architecture.
+
 ## Stop/rollback rules
 
 Stop the phase and do not continue activation when:
@@ -431,4 +452,6 @@ Rollback is “disable the new consumer/router projection and restore the prior 
 | A5 | client activation | explicit user authorization, exact client/profile, pilot evidence |
 | A6 | external/production behavior | dedicated risk, approval, credential, rollback, and deployment gates |
 
-Only A0 is represented by this audit work. All later gates remain future authorization boundaries.
+Phase 9A records an A5 client-activation gate pass for exactly Codex × Design/Web
+in canary-only mode. A6 external/production behavior remains a future
+authorization boundary, and no production execution is authorized here.

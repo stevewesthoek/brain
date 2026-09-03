@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "PASS",
+  "browser": "Codex In-app Browser",
+  "fixture": "http://127.0.0.1:8765/index.html",
+  "renderedArtifacts": 20,
+  "screenshots": 20,
+  "viewports": ["desktop 1280x720", "tablet 768x900", "mobile 390x844"],
+  "screenshotBytes": {
+    "desktop": 43011,
+    "tablet": 37505,
+    "mobile": 26298
+  },
+  "visualQaRequired": 20,
+  "visualQaPassed": 20,
+  "visualObservations": [
+    "hierarchy and typography remained legible across all three viewport classes",
+    "layout had no horizontal overflow across all 20 captures",
+    "navigation, CTA, section grouping, state contrast, and focus treatment were visible",
+    "mobile navigation collapsed and expanded as an accessible menu",
+    "the visual rubric was applied to rendered screenshots, not source or DOM alone"
+  ],
+  "functionalQaRequired": 20,
+  "functionalQaPassed": 20,
+  "functionalChecks": [
+    "mobile menu toggles aria-expanded and visible navigation",
+    "invalid email produces aria-invalid and an actionable error message",
+    "valid email produces success status without external submission",
+    "keyboard/focus semantics and skip link are present",
+    "console errors: 0",
+    "network failures: 0"
+  ],
+  "sideEffects": {
+    "providerCalls": 0,
+    "writes": 0,
+    "publishing": 0,
+    "deployments": 0,
+    "websiteWrites": 0,
+    "externalSubmissions": 0
+  },
+  "capturedBy": "Codex browser real-path observation",
+  "capturedAt": "2026-09-03T00:12:00.000Z"
+}

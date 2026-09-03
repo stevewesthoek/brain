@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schemaVersion", "activationId", "consumer", "domain", "mode", "status", "adapterRevision", "universalConsumerContractVersion", "allowedRouteFamilies", "primaryOwner", "priorPath", "defaultActive", "productionActive", "states"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "activationId": { "type": "string" },
+    "consumer": { "const": "codex" },
+    "domain": { "const": "design-web" },
+    "mode": { "const": "CANARY" },
+    "status": { "enum": ["CONFORMANT", "CANARY_ACTIVE", "CANARY_ACCEPTED", "DEGRADED", "ROLLED_BACK"] },
+    "adapterRevision": { "type": "string" },
+    "universalConsumerContractVersion": { "const": "1.0.0" },
+    "allowedRouteFamilies": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "enum": ["design", "mixed"] } },
+    "primaryOwner": { "const": "skill.design" },
+    "priorPath": { "type": "string" },
+    "defaultActive": { "const": false },
+    "productionActive": { "const": false },
+    "externalMutations": { "const": 0 },
+    "mindWrites": { "const": 0 },
+    "publishing": { "const": 0 },
+    "states": { "type": "array", "contains": { "const": "CANARY_ACTIVE" } }
+  },
+  "additionalProperties": true
+}

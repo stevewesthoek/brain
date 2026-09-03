@@ -1,6 +1,6 @@
 # Infinite Brain Orchestrator v2
 
-**Status:** Phase 8D accepted; Codex Code and Codex Research are the only v2 defaults; Claude Research and all other consumer/domain defaults remain inactive; no production execution authorized by this document
+**Status:** Phase 9A accepted; Codex Code and Codex Research remain v2 defaults and Codex Design/Web is canary-only; Claude Research and all other consumer/domain defaults remain inactive; no production execution authorized by this document
 **Date:** 2026-09-03
 **Predecessor evidence:** `operations/reports/infinite-brain-orchestrator-audit-2026-09-01.md`
 **Authority boundary:** Brain owns capability, routing, policy, validation, and orchestration knowledge; Mind remains authoritative for human meaning, strategy, preferences, commitments, and personal/business context.
@@ -757,3 +757,30 @@ records the preflight, 10-request burn-in, 100-case default cohort, substantive
 outputs, Bible regression, source/citation regression, fallback and rollback,
 Research/Code composition, prior-path comparison, Claude shadow parity,
 cross-consumer checks, and the next Design/Web canary recommendation.
+
+## Phase 9A Codex combined Design/Web canary truth — 2026-09-03
+
+Phase 9A activates exactly `Codex × canonical combined Design/Web` through
+`adapter.codex-design-web.v1` in `CANARY` mode. Brain remains the sole owner of
+intent interpretation, qualification, route selection, Task Packets, Context
+Broker references, Composition Graphs, specialist discovery, risk, gates,
+continuity, and Evidence Packets. The canonical relationship is `skill.design`
+as primary owner, selective `skill.web-design`/`skill.design-system`/
+`skill.design-review` specialists, `skill.code` for bounded frontend
+implementation, rendered visual QA for presentation, and functional QA for
+behavior.
+
+The acceptance report is
+`operations/reports/infinite-brain-orchestrator-v2-phase9a-design-web-canary-2026-09-03.md`.
+It records a 10/10 serial burn-in, 120-case Design/Web cohort, 30 substantive
+outputs, 20 rendered artifacts across desktop/tablet/mobile, screenshot-based
+visual QA, distinct functional QA, bounded repair, vague-intent qualification,
+50/50 cross-consumer parity, 25 prior-path comparisons, explicit degradation,
+safe high-risk handling, and rollback/re-enable. All hard checks pass and the
+decision is `CANARY_ACCEPTED`; promotion readiness is `PROMOTION_READY`.
+
+The canary is not a Design/Web default. Codex Code and Codex Research remain
+`DEFAULT_ACTIVE`; Claude Code remains unchanged; Claude Research and every other
+consumer/domain remain inactive. Global profiles and `ai/skills/active` are
+unchanged. Mind writes, production website writes, publishing, deployments,
+provider calls, and external mutations remain zero.

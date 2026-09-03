@@ -14,10 +14,10 @@ function hash(value) { return crypto.createHash('sha256').update(String(value ??
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function now(timestamp) { return timestamp ?? new Date().toISOString(); }
 
-export function createUniversalConsumerCanaryController({ consumer, domain = 'code', adapterId, sourceRevision = 'unknown', activationTimestamp = null, priorPath = `${consumer}-current-entry`, activationReason = `separate consumer ${domain} canary authorization`, failureNamespace = 'universal.canary', outOfScopeReason = `outside_bounded_${domain}_canary_scope` } = {}) {
+export function createUniversalConsumerCanaryController({ consumer, domain = 'code', allowedRouteFamilies = null, adapterId, sourceRevision = 'unknown', activationTimestamp = null, priorPath = `${consumer}-current-entry`, activationReason = `separate consumer ${domain} canary authorization`, failureNamespace = 'universal.canary', outOfScopeReason = `outside_bounded_${domain}_canary_scope` } = {}) {
   if (!consumer || !adapterId) throw new Error('universal_canary:consumer_and_adapter_required');
   return {
-    consumer, domain, mode: 'CANARY', adapterId, sourceRevision, activationReason, failureNamespace, outOfScopeReason, universalContractVersion: UNIVERSAL_CONTRACT_VERSION,
+    consumer, domain, allowedRouteFamilies: [...new Set(allowedRouteFamilies ?? [domain])], mode: 'CANARY', adapterId, sourceRevision, activationReason, failureNamespace, outOfScopeReason, universalContractVersion: UNIVERSAL_CONTRACT_VERSION,
     state: 'CONFORMANT', enabled: false, activationPerformed: false, productionActive: false, priorPath,
     history: [{ from: null, to: 'CONFORMANT', reason: 'reference_adapter_conformance_passed', timestamp: activationTimestamp }]
   };
@@ -85,7 +85,7 @@ export function runUniversalConsumerCanaryInvocation({ controller, adapter, nati
   else if (['high', 'critical'].includes(risk)) reason = 'high_risk_legacy_boundary';
   else if (v2.status === 'BLOCKED') reason = 'universal_result_blocked';
   else if (v2.continuation?.state !== 'CURRENT') reason = `continuity_${String(v2.continuation?.state ?? 'unavailable').toLowerCase()}`;
-  else if (route?.primaryRouteFamily !== controller.domain) reason = controller.outOfScopeReason ?? `outside_bounded_${controller.domain}_canary_scope`;
+  else if (!(controller.allowedRouteFamilies ?? [controller.domain]).includes(route?.primaryRouteFamily)) reason = controller.outOfScopeReason ?? `outside_bounded_${controller.domain}_canary_scope`;
   else if (v2.safety?.providerCalls !== 0 || v2.safety?.writesPerformed !== 0 || v2.safety?.executionReady) reason = 'safety_boundary_failure';
   const selectedPath = reason ? 'legacy' : 'v2';
   const receipt = failureReceipt({ controller, fixtureId, selectedPath, reason, requestHash: v2.receipt.requestHash, result: v2 });
@@ -93,5 +93,5 @@ export function runUniversalConsumerCanaryInvocation({ controller, adapter, nati
 }
 
 export function universalConsumerCanarySnapshot(controller) {
-  return { consumer: controller.consumer, domain: controller.domain, mode: controller.mode, adapterId: controller.adapterId, sourceRevision: controller.sourceRevision, activationReason: controller.activationReason, failureNamespace: controller.failureNamespace, outOfScopeReason: controller.outOfScopeReason, universalContractVersion: controller.universalContractVersion, status: controller.state, activationPerformed: controller.activationPerformed, productionActive: controller.productionActive, priorPath: controller.priorPath, history: clone(controller.history) };
+  return { consumer: controller.consumer, domain: controller.domain, allowedRouteFamilies: [...(controller.allowedRouteFamilies ?? [controller.domain])], mode: controller.mode, adapterId: controller.adapterId, sourceRevision: controller.sourceRevision, activationReason: controller.activationReason, failureNamespace: controller.failureNamespace, outOfScopeReason: controller.outOfScopeReason, universalContractVersion: controller.universalContractVersion, status: controller.state, activationPerformed: controller.activationPerformed, productionActive: controller.productionActive, priorPath: controller.priorPath, history: clone(controller.history) };
 }
