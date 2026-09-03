@@ -23,6 +23,32 @@ The goal is to support workflows that need to:
 - build source-backed apologetics responses
 - support Bible stories, studies, sermons, and research notes
 
+## Authority And Access Metadata
+
+The source stack must distinguish what a source is authorized to establish from whether it was reachable. For every source used in a substantive packet, record:
+
+```text
+source_type: critical_edition | critical_text | original_language_text | morphology | peer_reviewed_full_text | scholarly_metadata | translation | lexical_aid | official_reference
+claim_types:
+peer_review_status:
+critical_edition_status:
+access_level: FULL_TEXT_VERIFIED | ABSTRACT/METADATA_ONLY | REFERENCE_IDENTIFIED | UNAVAILABLE
+license_constraint:
+citation_capability:
+language:
+edition_version:
+```
+
+The implemented authority policy is selective:
+
+- textual claims prefer a critical edition or critical text, with peer-reviewed method support where available;
+- Greek/Hebrew claims prefer an original-language text or morphology witness and may use a critical text;
+- lexical aids support a word study but cannot be the sole authority for contextual meaning;
+- scholarly interpretation and historical claims require verified peer-reviewed full text or are explicitly marked metadata-only/insufficient;
+- translations and public study sites remain bounded translation or supplementary witnesses.
+
+No source is preloaded wholesale. Store only bounded excerpts/digests and citation metadata; do not copy apparatuses, manuscript images, commentaries, or copyrighted corpora. A source marked `ABSTRACT/METADATA_ONLY`, `REFERENCE_IDENTIFIED`, or `UNAVAILABLE` must not be represented as full-text evidence.
+
 Users should not need to remember API names or source tools. `/bible-research` and `/research` should infer when Scripture source retrieval is needed.
 
 ---

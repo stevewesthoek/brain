@@ -12,6 +12,23 @@
 
 This skill is intentionally narrower than `/research` and stricter than generic web research. It exists to prevent proof-texting, overconfident language claims, tradition flattening, and unsourced theological assertions.
 
+## Phase 8C Source-Authority Contract
+
+Bible evidence packets record source authority separately from source availability. Each relevant source record may include its source type, supported claim types, peer-review state, critical-edition state, access state, license constraint, citation capability, language, edition/version, and bounded context cost.
+
+Use these access states exactly:
+
+```text
+FULL_TEXT_VERIFIED       = bounded source content was retrieved and inspected
+ABSTRACT/METADATA_ONLY   = only publication metadata or an abstract-level record was accessed
+REFERENCE_IDENTIFIED     = an authoritative source was identified but its content was not fetched
+UNAVAILABLE              = retrieval was attempted or required but content was not available
+```
+
+Availability never upgrades authority. Crossref metadata is not article full text; an interlinear or lexicon is not a critical edition; an openly licensed original-language text is not automatically a critical edition; and a critical text witness does not by itself expose its full apparatus. Do not copy manuscript images, apparatuses, commentaries, or copyrighted corpora into the repository. Retain short bounded excerpts, digests, citation metadata, and explicit uncertainty only.
+
+For claim routing, prefer critical-text/critical-edition evidence for textual claims, original-language text and morphology for language claims, and verified peer-reviewed full text for scholarly interpretation and historical claims. Preserve the specialist boundary: `/bible-research` remains routed by `/research` and is not a default-profile activation.
+
 ---
 
 ## Recommended Research Storage Model
