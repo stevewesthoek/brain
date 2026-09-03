@@ -1,0 +1,51 @@
+{
+  "source": {
+    "originMain": "7ab4d4cb6b8d2eb4a15c2878bb25e1462d93ccfd",
+    "sourceRevision": "43f3eec42ed3dfb2a416e5147fb7fc834447fd35",
+    "branch": "codex/wave3-remaining-consumers"
+  },
+  "adapter": {
+    "id": "adapter.remaining-consumer.v1",
+    "revision": "remaining-consumer-adapter@1.0.0"
+  },
+  "order": [
+    "cursor",
+    "kiro",
+    "antigravity",
+    "gemini",
+    "workbench"
+  ],
+  "gates": {
+    "cursor": true,
+    "kiro": true,
+    "antigravity": true,
+    "gemini": true,
+    "workbench": true
+  },
+  "parity": {
+    "count": 50,
+    "semanticMatches": 50,
+    "consumerNameOnlyDifferences": 0
+  },
+  "rollback": {
+    "target": "ROLLED_BACK",
+    "unrelatedActive": true,
+    "restored": "DEFAULT_ACTIVE",
+    "passed": true
+  },
+  "safety": {
+    "parity": "100%",
+    "unsafeExecutionReady": 0,
+    "unauthorizedSideEffects": 0
+  },
+  "atomicity": {
+    "allSkillsPreload": false,
+    "fullRepositoryPreload": false,
+    "fullMindPreload": false,
+    "unrelatedFullBodyReads": 0
+  },
+  "userTransparency": {
+    "providerQuestions": 0,
+    "consumerSwitchQuestions": 0
+  }
+}

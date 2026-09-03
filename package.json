@@ -77,6 +77,8 @@
     "validate:shared-visual-parity": "node tools/context-learning/run-shared-visual-capability-parity.mjs --summary --write-report",
     "test:operational-rollout-wave2": "node --test tools/context-learning/operational-rollout-wave2.test.mjs",
     "validate:operational-rollout-wave2": "node tools/context-learning/run-operational-rollout-wave2.mjs --summary --write-report",
+    "test:operational-rollout-wave3": "node --test tools/context-learning/operational-rollout-wave3.test.mjs",
+    "validate:operational-rollout-wave3": "node tools/context-learning/run-operational-rollout-wave3.mjs --summary --write-report",
     "test:operational-rollout-wave1": "node --test tools/context-learning/claude-code-default.test.mjs",
     "validate:operational-rollout-wave1": "node tools/context-learning/run-operational-rollout-wave1.mjs --summary --write-report",
     "test:phase9b": "node --test tools/context-learning/phase9b-design-web-default.test.mjs",

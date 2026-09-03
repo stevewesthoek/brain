@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "UNIVERSAL_USER_TRANSPARENCY_COMPLETE",
+  "source": {
+    "originMain": "7ab4d4cb6b8d2eb4a15c2878bb25e1462d93ccfd",
+    "sourceRevision": "43f3eec42ed3dfb2a416e5147fb7fc834447fd35",
+    "branch": "codex/wave3-remaining-consumers"
+  },
+  "adapter": {
+    "id": "adapter.remaining-consumer.v1",
+    "revision": "remaining-consumer-adapter@1.0.0"
+  },
+  "rolloutOrder": [
+    "cursor",
+    "kiro",
+    "antigravity",
+    "gemini",
+    "workbench"
+  ],
+  "supportClassification": {
+    "cursor": "FULLY_SUPPORTED",
+    "kiro": "FULLY_SUPPORTED",
+    "antigravity": "FULLY_SUPPORTED",
+    "gemini": "FULLY_SUPPORTED",
+    "workbench": "FULLY_SUPPORTED"
+  },
+  "domains": [
+    "code",
+    "research",
+    "design-web"
+  ],
+  "sharedVisualProvider": "brain.shared.local-playwright",
+  "workbenchDrift": "UNRELATED_SCHEDULER_TECHNICAL_DEBT",
+  "parity": {
+    "semanticMatches": 50,
+    "comparisons": 50,
+    "consumerNameOnlyDifferences": 0
+  },
+  "rollback": {
+    "target": "ROLLED_BACK",
+    "unrelatedActive": true,
+    "restored": "DEFAULT_ACTIVE",
+    "passed": true
+  },
+  "safety": {
+    "parity": "100%",
+    "unsafeExecutionReady": 0,
+    "unauthorizedSideEffects": 0
+  },
+  "atomicity": {
+    "allSkillsPreload": false,
+    "fullRepositoryPreload": false,
+    "fullMindPreload": false,
+    "unrelatedFullBodyReads": 0
+  }
+}
