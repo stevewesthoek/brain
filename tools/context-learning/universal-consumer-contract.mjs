@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { composeShadowRequest } from '../orchestration/composition-graph.mjs';
 import { createCapabilityCatalog } from '../orchestration/capability-catalog.mjs';
+import { resolveCapabilityProviders } from '../orchestration/capability-providers.mjs';
 import { routeShadowRequest } from '../orchestration/shadow-intent-router.mjs';
 import { loadJson, stableJsonHash, validateJsonSchema } from './context-learning-core.mjs';
 
@@ -8,7 +9,7 @@ export const UNIVERSAL_CONTRACT_VERSION = '1.0.0';
 export const UNIVERSAL_CONTRACT_ID = 'infinite-brain-universal-consumer.v1';
 export const CAPABILITY_OUTCOMES = Object.freeze([
   'SUPPORTED', 'SUPPORTED_WITH_ALTERNATIVE', 'DEGRADED',
-  'REQUIRES_EXTERNAL_CAPABILITY', 'UNAVAILABLE', 'BLOCKED'
+  'SUPPORTED_VIA_SHARED_BRAIN', 'REQUIRES_EXTERNAL_CAPABILITY', 'UNAVAILABLE', 'BLOCKED'
 ]);
 export const UNIVERSAL_STAGES = Object.freeze([
   'BrainRequest', 'BrainRoute', 'TaskPacket', 'CompositionGraph', 'ContextRequest[]',
@@ -80,7 +81,7 @@ export function createBrainRequest({ intent = '', nativeInput = null, environmen
   };
 }
 
-export function negotiateCapabilities({ required = [], optional = [], reported = [] } = {}) {
+export function negotiateCapabilities({ required = [], optional = [], reported = [], providers = [] } = {}) {
   const reports = new Map(normalizeCapabilityReport(reported).map((item) => [item.capabilityId, item]));
   const alternatives = new Map(normalizeCapabilityReport(reported).filter((item) => item.alternativeFor).map((item) => [item.alternativeFor, item]));
   const select = (capabilityId, isRequired) => {
@@ -92,9 +93,12 @@ export function negotiateCapabilities({ required = [], optional = [], reported =
     if (report?.outcome === 'BLOCKED') return { capabilityId, selectedCapabilityId: null, required: isRequired, outcome: 'BLOCKED', evidenceRef: report.evidenceRef };
     return { capabilityId, selectedCapabilityId: null, required: isRequired, outcome: isRequired ? 'UNAVAILABLE' : 'DEGRADED', evidenceRef: report?.evidenceRef ?? null };
   };
-  const selections = [...required.map((item) => select(typeof item === 'string' ? item : item.capabilityId, true)), ...optional.map((item) => select(typeof item === 'string' ? item : item.capabilityId, false))];
-  const blocking = selections.filter((item) => item.required && !['SUPPORTED', 'SUPPORTED_WITH_ALTERNATIVE'].includes(item.outcome));
-  return { selections, status: blocking.length ? 'BLOCKED' : selections.some((item) => item.outcome !== 'SUPPORTED') ? 'DEGRADED' : 'SUPPORTED', blocking: blocking.map((item) => item.capabilityId), noSilentOmission: true };
+  const nativeSelections = [...required.map((item) => select(typeof item === 'string' ? item : item.capabilityId, true)), ...optional.map((item) => select(typeof item === 'string' ? item : item.capabilityId, false))];
+  if (!providers.length) {
+    const blocking = nativeSelections.filter((item) => item.required && !['SUPPORTED', 'SUPPORTED_WITH_ALTERNATIVE'].includes(item.outcome));
+    return { selections: nativeSelections, status: blocking.length ? 'BLOCKED' : nativeSelections.some((item) => item.outcome !== 'SUPPORTED') ? 'DEGRADED' : 'SUPPORTED', blocking: blocking.map((item) => item.capabilityId), noSilentOmission: true, providers: [], resolutionId: null };
+  }
+  return resolveCapabilityProviders({ required, optional, nativeSelections, providers });
 }
 
 export function semanticProjection(result) {
@@ -130,7 +134,7 @@ function buildReceipt({ request, route, qualification, packet, graph, negotiatio
     route: projection.route,
     qualification: { required: qualification?.required === true },
     semantic: projection,
-    capabilities: negotiation.selections.map((item) => ({ capabilityId: item.capabilityId, selectedCapabilityId: item.selectedCapabilityId, required: item.required, outcome: item.outcome })),
+    capabilities: negotiation.selections.map((item) => ({ capabilityId: item.capabilityId, selectedCapabilityId: item.selectedCapabilityId, required: item.required, outcome: item.outcome, resolution: item.resolution ?? null, providerId: item.providerId ?? null, providerRevision: item.providerRevision ?? null })),
     taskPacket: { taskId: packet.taskId, status: packet.state?.status ?? null, ref: `task://${packet.taskId}` },
     compositionGraph: { graphId: graph.graphId, ref: `graph://${graph.graphId}` },
     contextRefs: bounded(packet.context?.contextPackRefs ?? packet.contextRequests?.map((item) => item.contextPackRef) ?? []),
@@ -150,9 +154,9 @@ function buildReceipt({ request, route, qualification, packet, graph, negotiatio
   };
 }
 
-export function orchestrateBrainRequest(request, { catalog = createCapabilityCatalog(), repoRoot: root = repoRoot, currentState = {}, generatedAt = '2026-09-02T00:00:00Z' } = {}) {
+export function orchestrateBrainRequest(request, { catalog = createCapabilityCatalog(), repoRoot: root = repoRoot, currentState = {}, generatedAt = '2026-09-02T00:00:00Z', capabilityProviders = [] } = {}) {
   if (!request?.intent || request.schemaVersion !== UNIVERSAL_CONTRACT_VERSION || request.contractId !== UNIVERSAL_CONTRACT_ID || request.environment?.contractVersion !== UNIVERSAL_CONTRACT_VERSION) throw new Error('brain_request:unsupported_contract');
-  const negotiation = negotiateCapabilities({ required: request.requiredCapabilities, optional: request.optionalCapabilities, reported: request.environment.capabilities });
+  const negotiation = negotiateCapabilities({ required: request.requiredCapabilities, optional: request.optionalCapabilities, reported: request.environment.capabilities, providers: capabilityProviders });
   const composition = composeShadowRequest(request.intent, { catalog, repoRoot: root, currentState: currentState ?? {}, generatedAt });
   const route = composition.route;
   const packet = composition.taskPacket;
@@ -168,7 +172,7 @@ export function orchestrateBrainRequest(request, { catalog = createCapabilityCat
           ? 'BLOCKED'
           : composition.validation.valid ? 'READY' : 'BLOCKED';
   const safety = { providerCalls: 0, writesPerformed: 0, executionReady: false, automaticResumeAllowed: false, clientConfigChanges: 0, mindWrites: 0 };
-  const result = { schemaVersion: UNIVERSAL_CONTRACT_VERSION, status: resultStatus, route, qualification: composition.qualification, taskPacket: packet, compositionGraph: graph, contextRequests: packet.contextRequests, capabilitySelections: negotiation.selections, gateSelections: [...packet.requiredQualityGates, ...packet.requiredSafetyGates], evidencePackets: composition.evidencePackets, continuation, safety, sourceRevisions: composition.sourceRevisions, validation: composition.validation, budget: composition.budget, atomicity: { ...composition.atomicity, maxSimultaneousActiveContext: composition.metrics.maxSimultaneousActiveContext, totalReferencedContext: composition.metrics.totalReferencedContext, selectedInstructionFullBodyReads: composition.metrics.fullBodies, unrelatedFullBodyReads: composition.atomicity.unrelatedFullBodyReads ?? 0 }, degradation: negotiation.blocking.length ? { status: 'BLOCKED', reasons: negotiation.blocking } : { status: negotiation.status, reasons: [] } };
+  const result = { schemaVersion: UNIVERSAL_CONTRACT_VERSION, status: resultStatus, route, qualification: composition.qualification, taskPacket: packet, compositionGraph: graph, contextRequests: packet.contextRequests, capabilitySelections: negotiation.selections, capabilityResolution: { resolutionId: negotiation.resolutionId ?? null, providers: negotiation.providers ?? [] }, gateSelections: [...packet.requiredQualityGates, ...packet.requiredSafetyGates], evidencePackets: composition.evidencePackets, continuation, safety, sourceRevisions: composition.sourceRevisions, validation: composition.validation, budget: composition.budget, atomicity: { ...composition.atomicity, maxSimultaneousActiveContext: composition.metrics.maxSimultaneousActiveContext, totalReferencedContext: composition.metrics.totalReferencedContext, selectedInstructionFullBodyReads: composition.metrics.fullBodies, unrelatedFullBodyReads: composition.atomicity.unrelatedFullBodyReads ?? 0 }, degradation: negotiation.blocking.length ? { status: 'BLOCKED', reasons: negotiation.blocking } : { status: negotiation.status, reasons: [] } };
   result.receipt = buildReceipt({ request, route, qualification: composition.qualification, packet, graph, negotiation, continuation, evidencePackets: composition.evidencePackets, resultStatus });
   return result;
 }

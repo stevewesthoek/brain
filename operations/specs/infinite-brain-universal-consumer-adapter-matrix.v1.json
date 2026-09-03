@@ -3,7 +3,7 @@
   "$id": "https://brain.local/specs/infinite-brain-universal-consumer-adapter-matrix.v1",
   "schemaVersion": "1.0.0",
   "contractRef": "operations/specs/infinite-brain-universal-consumer-contract.v1.json",
-  "status": "core_archetypes_proven_codex_code_research_design_web_defaults_active",
+  "status": "shared_visual_runtime_proven_claude_code_research_design_web_defaults_active",
   "adapters": [
     {
       "consumer": "codex", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,
@@ -21,11 +21,11 @@
       "entrypoint": "operations/system-configs/claude/CLAUDE.md", "configProjectionSource": "operations/system-configs/claude/settings.json; operations/system-configs/claude/hooks; operations/system-configs/claude/skills",
       "skillExposure": "canonical skill projection plus Claude hooks; descriptor authority remains Brain", "contextMechanism": "Universal Brain Entry + Context Broker bridge",
       "toolMechanism": "shell, filesystem, MCP/runtime tools", "sessionContinuity": "handoff/session-continuity contracts; explicit continuation only",
-      "hookPolicyMechanism": "Claude CLAUDE.md/settings/hooks", "currentOrchestrationLogic": "Brain-owned Code and Research v2 defaults; Design/Web blocked by unavailable visual capabilities; legacy Claude paths remain fallback",
-      "duplicatedPolicy": "none admitted by Phase6D/7B/WAVE1 independence audit", "clientSpecificLogic": "native input, hooks, model/session, rendering, and transport mechanics only", "currentV2Support": "DEFAULT_ACTIVE_CODE_RESEARCH; DESIGN_WEB_BLOCKED_VISUAL_CAPABILITY",
-      "conformanceStatus": "PASS_REFERENCE_ADAPTER; PASS_WAVE1_CODE_RESEARCH; DESIGN_WEB_BLOCKED_CAPABILITY", "activationStatus": "DEFAULT_ACTIVE_CODE_RESEARCH; DESIGN_WEB_NOT_ACTIVATED",
-      "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "host_dependent", "browser": "host_dependent", "mcp": "host_dependent", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "host_dependent", "other": ["native_subagents", "tool_confirmation"] },
-      "runtimeActivation": "DEFAULT_ACTIVE_CODE_RESEARCH; DESIGN_WEB_NOT_ACTIVATED", "rollout": "DEFAULT_ACTIVE_CODE_RESEARCH; DESIGN_WEB_BLOCKED_UNTIL_BROWSER_VISUAL_CAPABILITY"
+      "hookPolicyMechanism": "Claude CLAUDE.md/settings/hooks", "currentOrchestrationLogic": "Brain-owned Code, Research, and Design/Web v2 defaults; Claude-native visual capabilities remain unavailable and resolve through the admitted local shared Brain provider",
+      "duplicatedPolicy": "none admitted by Phase6D/7B/WAVE1/SharedVisualRuntime independence audit", "clientSpecificLogic": "native input, hooks, model/session, rendering, and transport mechanics only", "currentV2Support": "DEFAULT_ACTIVE_CODE_RESEARCH_DESIGN_WEB_SHARED_VISUAL",
+      "conformanceStatus": "PASS_REFERENCE_ADAPTER; PASS_WAVE1_CODE_RESEARCH; PASS_SHARED_VISUAL_RUNTIME_CLAUDE_PARITY", "activationStatus": "DEFAULT_ACTIVE_CODE_RESEARCH_DESIGN_WEB_SHARED_VISUAL",
+      "capabilities": { "filesystem": "observed", "git": "observed", "shell": "observed", "web": "host_dependent", "browser": "host_dependent", "mcp": "host_dependent", "workbench": "not_applicable", "structuredOutput": "observed", "continuation": "observed", "interactiveQualification": "observed", "visual": "native_unavailable_shared_brain_local_playwright", "other": ["native_subagents", "tool_confirmation", "shared_rendered_visual_qa", "shared_functional_qa"] },
+      "runtimeActivation": "DEFAULT_ACTIVE_CODE_RESEARCH_DESIGN_WEB_SHARED_VISUAL", "rollout": "DEFAULT_ACTIVE_CODE_RESEARCH_DESIGN_WEB_SHARED_VISUAL; shared provider canary and rollback evidence recorded in the 2026-09-03 completion report"
     },
     {
       "consumer": "cursor", "adapterRef": "adapter.reference-environment.v1", "canConsume": true,

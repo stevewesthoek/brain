@@ -11,6 +11,7 @@
     "taskId": { "$ref": "#/$defs/id" },
     "subtaskId": { "$ref": "#/$defs/id" },
     "producerCapability": { "type": "object", "required": ["capabilityId", "sourceRef", "sourceRevision"], "properties": { "capabilityId": { "$ref": "#/$defs/id" }, "sourceRef": { "type": "string", "minLength": 1 }, "sourceRevision": { "$ref": "#/$defs/revision" } }, "additionalProperties": false },
+    "provider": { "type": "object", "required": ["providerId", "providerRevision", "resolution", "authority"], "properties": { "providerId": { "$ref": "#/$defs/id" }, "providerRevision": { "$ref": "#/$defs/revision" }, "resolution": { "enum": ["NATIVE_CONSUMER", "SHARED_BRAIN", "APPROVED_ALTERNATIVE"] }, "authority": { "const": "brain" } }, "additionalProperties": false },
     "sourceRevision": { "$ref": "#/$defs/revision" },
     "inputRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 },
     "outputRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 },
@@ -24,7 +25,7 @@
     "sideEffectsObserved": { "type": "object", "required": ["declared", "observed", "evidenceRefs", "noneObserved"], "properties": { "declared": { "type": "array", "items": { "type": "string" } }, "observed": { "type": "array", "items": { "type": "string" } }, "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" } }, "noneObserved": { "type": "boolean" } }, "additionalProperties": false },
     "continuationRefs": { "type": "array", "items": { "$ref": "#/$defs/ref" }, "minItems": 1 },
     "status": { "enum": ["PLANNED", "OBSERVED", "VALIDATED", "PARTIAL", "FAILED", "BLOCKED", "CONFLICTED", "INCOMPLETE"] },
-    "execution": { "type": "object", "required": ["mode", "providerCalls", "writesPerformed", "mindWrites", "externalMutations"], "properties": { "mode": { "enum": ["shadow_fixture", "research_read_only"] }, "providerCalls": { "const": 0 }, "writesPerformed": { "const": 0 }, "mindWrites": { "const": 0 }, "externalMutations": { "const": 0 } }, "additionalProperties": false }
+    "execution": { "type": "object", "required": ["mode", "providerCalls", "writesPerformed", "mindWrites", "externalMutations"], "properties": { "mode": { "enum": ["shadow_fixture", "research_read_only", "shared_capability"] }, "providerCalls": { "type": "integer", "minimum": 0 }, "writesPerformed": { "type": "integer", "minimum": 0 }, "mindWrites": { "const": 0 }, "externalMutations": { "const": 0 } }, "additionalProperties": false }
   },
   "additionalProperties": false,
   "$defs": {

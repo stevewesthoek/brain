@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-shared-capability-provider.v1",
+  "specVersion": "1.0.0",
+  "providerContractId": "infinite-brain-shared-capability-provider.v1",
+  "status": "accepted_with_claude_design_web_default_active",
+  "owner": "brain",
+  "purpose": "Execute capability work that a consumer cannot perform natively while preserving Brain-owned routing, QA, evidence, and safety semantics.",
+  "capabilities": [
+    "browser.render",
+    "screenshot.capture",
+    "visual.inspection",
+    "functional.interaction"
+  ],
+  "provider": {
+    "id": "brain.shared.local-playwright",
+    "adapterDescriptor": "adapter.shared-visual-runtime",
+    "providerKind": "shared_brain",
+    "authority": "brain",
+    "revision": "shared-visual-runtime@1.0.0",
+    "workspacePolicy": "local_workspace_only",
+    "execution": "headless_local_browser_with_local_static_server",
+    "externalNetwork": false,
+    "externalUpload": false
+  },
+  "resolution": {
+    "order": ["native_consumer", "shared_brain", "approved_alternative", "unavailable"],
+    "sharedOutcome": "SUPPORTED_VIA_SHARED_BRAIN",
+    "requiredCapabilityFailure": "fail_closed_with_explicit_unavailable_receipt",
+    "silentOmission": false
+  },
+  "workspaceBridge": [
+    "workspaceRoot",
+    "artifactPath",
+    "localEndpoint",
+    "outputPath",
+    "viewport",
+    "interactionState"
+  ],
+  "brainOwnedSemantics": [
+    "routing",
+    "qualification",
+    "task_packet",
+    "composition_graph",
+    "visual_qa_rubric",
+    "functional_qa_gate",
+    "evidence_packet",
+    "canonical_receipt",
+    "canary_default_rollback"
+  ],
+  "providerResponsibilities": [
+    "render_the_named_local_artifact",
+    "capture_a_real_screenshot",
+    "perform_only_declared_safe_interactions",
+    "return_observations_and_artifact_references",
+    "report_provider_identity_and_side_effects"
+  ],
+  "forbidden": [
+    "private_source_upload",
+    "secret_or_env_access",
+    "unbounded_filesystem_access",
+    "git_mutation",
+    "mind_write",
+    "external_mutation",
+    "source_or_dom_only_visual_pass",
+    "provider_defined_qa_semantics"
+  ],
+  "canonicalRefs": {
+    "providerImplementation": "tools/context-learning/shared-visual-capability.mjs",
+    "runtime": "tools/context-learning/shared-capability-runtime.mjs",
+    "visualQa": "tools/context-learning/visual-qa.mjs",
+    "activation": "tools/context-learning/shared-capability-default.mjs",
+    "completionReport": "operations/reports/infinite-brain-shared-visual-capability-and-claude-parity-2026-09-03.md"
+  }
+}

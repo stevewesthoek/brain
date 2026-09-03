@@ -20,6 +20,7 @@
     "may": [
       "translate native input and session metadata into BrainRequest",
       "report environment capabilities and availability",
+      "report and consume Brain-admitted native or shared-provider capability resolutions",
       "execute only already-approved Brain actions",
       "resolve the selected workspace boundary",
       "translate observations into EvidencePacket references",
@@ -34,10 +35,16 @@
       "silently omit unavailable required capabilities or downgrade safety"
     ]
   },
-  "capabilityOutcomes": ["SUPPORTED", "SUPPORTED_WITH_ALTERNATIVE", "DEGRADED", "REQUIRES_EXTERNAL_CAPABILITY", "UNAVAILABLE", "BLOCKED"],
+  "capabilityOutcomes": ["SUPPORTED", "SUPPORTED_WITH_ALTERNATIVE", "SUPPORTED_VIA_SHARED_BRAIN", "DEGRADED", "REQUIRES_EXTERNAL_CAPABILITY", "UNAVAILABLE", "BLOCKED"],
+  "capabilityResolution": {
+    "selectionOrder": ["native_consumer", "shared_brain", "approved_alternative", "unavailable"],
+    "sharedResolutionOutcome": "SUPPORTED_VIA_SHARED_BRAIN",
+    "providerAuthority": "brain",
+    "noSilentOmission": true
+  },
   "receipt": {
     "schemaVersion": "1.0.0",
-    "semanticFields": ["consumer", "consumerCapabilities", "contractVersion", "requestHash", "sourceRevision", "brainRevision", "route", "qualification", "capabilities", "taskPacket", "compositionGraph", "contextRefs", "gates", "evidenceRefs", "risk", "freshness", "continuity", "sideEffects", "outcome", "safety", "degradation"],
+    "semanticFields": ["consumer", "consumerCapabilities", "contractVersion", "requestHash", "sourceRevision", "brainRevision", "route", "qualification", "capabilities", "capabilityResolution", "taskPacket", "compositionGraph", "contextRefs", "gates", "evidenceRefs", "risk", "freshness", "continuity", "sideEffects", "outcome", "safety", "degradation"],
     "rawPromptStored": false,
     "transcriptCanonical": false,
     "providerCalls": 0,

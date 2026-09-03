@@ -73,6 +73,8 @@
     "test:phase9a": "node --test tools/context-learning/phase9a-design-web-canary.test.mjs",
     "validate:phase9a": "node tools/context-learning/run-phase9a-design-web-canary.mjs --summary",
     "validate:phase9a:report": "node tools/context-learning/run-phase9a-design-web-canary.mjs --summary --write-report",
+    "test:shared-visual-parity": "node --test tools/context-learning/shared-capability-runtime.test.mjs",
+    "validate:shared-visual-parity": "node tools/context-learning/run-shared-visual-capability-parity.mjs --summary --write-report",
     "test:operational-rollout-wave2": "node --test tools/context-learning/operational-rollout-wave2.test.mjs",
     "validate:operational-rollout-wave2": "node tools/context-learning/run-operational-rollout-wave2.mjs --summary --write-report",
     "test:operational-rollout-wave1": "node --test tools/context-learning/claude-code-default.test.mjs",
@@ -90,6 +92,7 @@
   "license": "MIT",
   "devDependencies": {
     "ajv": "8.20.0",
-    "ajv-formats": "3.0.1"
+    "ajv-formats": "3.0.1",
+    "playwright": "1.58.1"
   }
 }

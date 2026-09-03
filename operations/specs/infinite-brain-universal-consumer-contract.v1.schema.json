@@ -4,7 +4,7 @@
   "title": "Infinite Brain Universal Consumer Contract v1",
   "description": "One Brain-owned, provider-neutral contract consumed by thin environment adapters.",
   "type": "object",
-  "required": ["schemaVersion", "contractId", "stages", "authority", "adapterRules", "capabilityOutcomes", "receipt", "continuity"],
+  "required": ["schemaVersion", "contractId", "stages", "authority", "adapterRules", "capabilityOutcomes", "capabilityResolution", "receipt", "continuity"],
   "properties": {
     "$schema": { "type": "string" },
     "$id": { "type": "string" },
@@ -47,7 +47,18 @@
       "type": "array",
       "minItems": 6,
       "uniqueItems": true,
-      "items": { "enum": ["SUPPORTED", "SUPPORTED_WITH_ALTERNATIVE", "DEGRADED", "REQUIRES_EXTERNAL_CAPABILITY", "UNAVAILABLE", "BLOCKED"] }
+      "items": { "enum": ["SUPPORTED", "SUPPORTED_WITH_ALTERNATIVE", "SUPPORTED_VIA_SHARED_BRAIN", "DEGRADED", "REQUIRES_EXTERNAL_CAPABILITY", "UNAVAILABLE", "BLOCKED"] }
+    },
+    "capabilityResolution": {
+      "type": "object",
+      "required": ["selectionOrder", "sharedResolutionOutcome", "providerAuthority", "noSilentOmission"],
+      "properties": {
+        "selectionOrder": { "type": "array", "minItems": 4, "items": { "type": "string" } },
+        "sharedResolutionOutcome": { "const": "SUPPORTED_VIA_SHARED_BRAIN" },
+        "providerAuthority": { "const": "brain" },
+        "noSilentOmission": { "const": true }
+      },
+      "additionalProperties": false
     },
     "receipt": {
       "type": "object",
