@@ -338,9 +338,9 @@ export function runCodexReadOnlyPilot({ repoRoot = process.cwd(), prompt = '', f
   return redactPilotValue(result);
 }
 
-export function buildCodexPriorPath({ repoRoot = process.cwd() } = {}) {
+export function buildCodexPriorPath({ repoRoot = process.cwd(), name = 'codex-current-entry' } = {}) {
   const inspection = inspectCodexConsumer({ repoRoot });
-  return { name: 'codex-current-entry', mode: 'NORMAL_CURRENT', sourceRef: CODEX_SOURCE_REFS.entrypoint, available: inspection.sourcePaths.entrypoint.exists, pilotSwitch: 'enabled=false' };
+  return { name, mode: 'NORMAL_CURRENT', sourceRef: CODEX_SOURCE_REFS.entrypoint, available: inspection.sourcePaths.entrypoint.exists, pilotSwitch: 'enabled=false' };
 }
 
 export function auditConsumerProjections({ repoRoot = process.cwd(), activeNames = [] } = {}) {

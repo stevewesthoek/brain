@@ -1,7 +1,7 @@
 # Infinite Brain Orchestrator v2
 
-**Status:** Phase 8B evaluated; Claude Code + Code and Codex + Research canaries accepted; Codex Code is the only v2 default; Codex Research promotion deferred for more evidence; no production execution authorized by this document
-**Date:** 2026-09-01
+**Status:** Phase 8D accepted; Codex Code and Codex Research are the only v2 defaults; Claude Research and all other consumer/domain defaults remain inactive; no production execution authorized by this document
+**Date:** 2026-09-03
 **Predecessor evidence:** `operations/reports/infinite-brain-orchestrator-audit-2026-09-01.md`
 **Authority boundary:** Brain owns capability, routing, policy, validation, and orchestration knowledge; Mind remains authoritative for human meaning, strategy, preferences, commitments, and personal/business context.
 
@@ -706,3 +706,54 @@ correctness: all 12 new Bible outputs use translation and secondary lexical
 witnesses, without a peer-reviewed or critical-edition source in this bounded
 canary. The promotion contract is defined but not executed. The full report
 is `operations/reports/infinite-brain-orchestrator-v2-phase8b-research-promotion-readiness-2026-09-02.md`.
+
+## Phase 8C Bible source-authority hardening truth — 2026-09-03
+
+Phase 8C resolved the Phase 8B Research promotion blocker without changing the
+universal runtime or activating a default. It added explicit Bible source
+authority metadata and policy for critical text, critical-edition reference,
+original-language text, morphology, peer-reviewed full text, scholarly
+metadata, access state, license, citation capability, language, and
+edition/version. The full report is
+`operations/reports/infinite-brain-orchestrator-v2-phase8c-bible-source-authority-2026-09-03.md`.
+
+The Phase 8C bounded benchmark contains 70 new Bible cases: 10
+textual-critical, 15 Greek/Hebrew, 15 scholarly exegesis, 10 scholarly
+disagreement, 10 historical/cultural, and 10 canonical/theological. All 70
+used strengthened authority; all 70 included verified peer-reviewed full-text
+support; 65 included retrieved critical-text authority; and 196/196 citation
+checks passed. Thirty Codex/Claude semantic comparisons matched. Access states,
+critical-text versus apparatus boundaries, metadata-only limits, licensing,
+atomic context, and no-preload controls all passed. The prior Phase 8B result
+remains historically `MORE_RESEARCH_EVIDENCE_REQUIRED`; its isolated Bible
+source-authority gap is recorded as resolved by Phase 8C.
+
+## Phase 8D Codex Research default truth — 2026-09-03
+
+Phase 8D promotes exactly one authorized consumer/domain pair:
+`Codex × Research`. The canonical default contract is
+`operations/specs/infinite-brain-codex-research-default.v1.json` with its
+adjacent schema. The accepted transition is:
+
+```text
+CANARY_ACCEPTED → RESEARCH_V2_DEFAULT_FOR_CODEX
+```
+
+The default entry is a thin Codex state selector around the same Brain-owned
+Universal Entry, Research route, Task Packet, Composition Graph, Context
+Requests, capability negotiation, Evidence Packets, source authority/citation
+gates, contradiction handling, synthesis, receipt, and continuity path used by
+the accepted canary. It adds no Codex-specific Research, Bible, source,
+citation, context-budget, specialist, or model policy. The prior
+`codex-current-research-entry` path remains available for disabled/rolled-back
+state, out-of-domain prompts, stale/conflicted continuity, controlled failure,
+projection drift, or any safety/validation regression.
+
+Default activation is not production execution: `productionActive` remains
+false, providers and external mutations remain disabled, Code remains
+`CODE_V2_DEFAULT_FOR_CODEX`, Claude Research and every other consumer/domain
+remain inactive, and no active profile expansion occurs. The Phase 8D report
+records the preflight, 10-request burn-in, 100-case default cohort, substantive
+outputs, Bible regression, source/citation regression, fallback and rollback,
+Research/Code composition, prior-path comparison, Claude shadow parity,
+cross-consumer checks, and the next Design/Web canary recommendation.

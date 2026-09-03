@@ -67,7 +67,9 @@
     "test:phase8b": "node --test tools/context-learning/phase8b-research-readiness.test.mjs",
     "validate:phase8b": "node tools/context-learning/run-phase8b-research-promotion-readiness.mjs --summary",
     "test:phase8c": "node --test tools/context-learning/phase8c-bible-authority.test.mjs",
-    "validate:phase8c": "node tools/context-learning/run-phase8c-bible-source-authority.mjs --summary"
+    "validate:phase8c": "node tools/context-learning/run-phase8c-bible-source-authority.mjs --summary",
+    "test:phase8d": "node --test tools/context-learning/codex-research-default.test.mjs tools/context-learning/phase8d-research-default.test.mjs",
+    "validate:phase8d": "node tools/context-learning/run-phase8d-research-default.mjs --summary"
   },
   "keywords": [
     "claude",
