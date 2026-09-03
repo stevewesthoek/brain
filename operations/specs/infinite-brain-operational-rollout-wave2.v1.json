@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0.0",
+  "wave": 2,
+  "date": "2026-09-03",
+  "coreStatus": "CORE_ORCHESTRATOR_V2_COMPLETE",
+  "rolloutStatus": "UNIVERSAL_ROLLOUT_COMPLETE",
+  "rolloutMatrix": [
+    { "consumer": "codex", "code": "DEFAULT_ACTIVE", "research": "DEFAULT_ACTIVE", "designWeb": "DEFAULT_ACTIVE" },
+    { "consumer": "claude-code", "code": "DEFAULT_ACTIVE", "research": "DEFAULT_ACTIVE", "designWeb": "BLOCKED_CAPABILITY" },
+    { "consumer": "cursor", "code": "BLOCKED_CONFORMANCE", "research": "BLOCKED_CONFORMANCE", "designWeb": "BLOCKED_CAPABILITY" },
+    { "consumer": "kiro", "code": "BLOCKED_CONFORMANCE", "research": "BLOCKED_CONFORMANCE", "designWeb": "BLOCKED_CAPABILITY" },
+    { "consumer": "antigravity", "code": "BLOCKED_CONFORMANCE", "research": "BLOCKED_CONFORMANCE", "designWeb": "BLOCKED_CAPABILITY" },
+    { "consumer": "gemini", "code": "BLOCKED_CONFORMANCE", "research": "BLOCKED_CONFORMANCE", "designWeb": "BLOCKED_CAPABILITY" },
+    { "consumer": "workbench", "code": "BLOCKED_CONFORMANCE", "research": "BLOCKED_CONFORMANCE", "designWeb": "BLOCKED_CAPABILITY" }
+  ],
+  "capabilityPolicy": "route_by_capability_not_consumer_name",
+  "unsupportedCapabilitiesSilentlySkipped": 0,
+  "falseVisualQaPasses": 0,
+  "falseFunctionalQaPasses": 0,
+  "clientNameOnlySemanticDifferences": 0,
+  "safetyParityPercent": 100,
+  "unrelatedSkillLoads": 0,
+  "transcriptReplay": false,
+  "automaticResume": false,
+  "workbenchDrift": "NONBLOCKING_TECHNICAL_DEBT",
+  "sharedVisualCapabilityProviderFound": false,
+  "nextConsumerRecommendation": "cursor"
+}
