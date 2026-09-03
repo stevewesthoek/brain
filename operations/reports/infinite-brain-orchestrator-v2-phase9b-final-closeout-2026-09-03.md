@@ -4,7 +4,7 @@ Decision: DEFAULT_ACCEPTED
 
 ## 1. Baseline
 
-origin/main: f6fb519943498e5fc99e1569da6b339ce9768ba3; accepted Phase 9A baseline f6fb519943498e5fc99e1569da6b339ce9768ba3 verified as an ancestor.
+origin/main: fb43f1d3006dcc8b3d01fe1f973a17388b0c634f; accepted Phase 9A baseline f6fb519943498e5fc99e1569da6b339ce9768ba3 verified as an ancestor.
 
 ## 2. Phase 9A revalidation
 

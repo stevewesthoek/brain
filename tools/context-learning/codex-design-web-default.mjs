@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { createCapabilityCatalog } from '../orchestration/capability-catalog.mjs';
 import { createCodexDesignWebAdapter, CODEX_DESIGN_WEB_ADAPTER_REVISION } from './codex-design-web-consumer-adapter.mjs';
@@ -11,6 +12,14 @@ export const CODEX_DESIGN_WEB_DEFAULT_SPEC = Object.freeze({
   universalConsumerContractVersion: CODEX_DESIGN_WEB_DEFAULT_CONTRACT_VERSION,
   adapterRevision: CODEX_DESIGN_WEB_ADAPTER_REVISION, priorPath: 'codex-current-design-web-entry'
 });
+
+export function validateCodexDesignWebDefaultSpec(spec) {
+  const schema = JSON.parse(fs.readFileSync(path.join(repoRoot, 'operations/specs/infinite-brain-codex-design-web-default.v1.schema.json'), 'utf8'));
+  const required = schema.required.filter((key) => !(key in spec));
+  const constants = [['schemaVersion', '1.0.0'], ['consumer', 'codex'], ['domain', 'design-web'], ['mode', 'DEFAULT'], ['universalConsumerContractVersion', '1.0.0'], ['productionActive', false]];
+  const constantMismatches = constants.filter(([key, value]) => spec[key] !== value).map(([key]) => key);
+  return { valid: required.length === 0 && constantMismatches.length === 0, required, constantMismatches, schemaVersion: schema.$schema };
+}
 
 function hash(value) { return crypto.createHash('sha256').update(String(value ?? '')).digest('hex').slice(0, 24); }
 function clone(value) { return JSON.parse(JSON.stringify(value)); }

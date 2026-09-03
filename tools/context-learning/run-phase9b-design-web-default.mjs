@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { createCapabilityCatalog } from '../orchestration/capability-catalog.mjs';
 import { validateUniversalConsumerContract } from './universal-consumer-contract.mjs';
 import { makePhase9aCohort } from './run-phase9a-design-web-canary.mjs';
-import { createCodexDesignWebDefaultController, promoteCodexDesignWebDefault, rollbackCodexDesignWebDefault, restoreCodexDesignWebDefault, runCodexDesignWebDefaultInvocation, CODEX_DESIGN_WEB_DEFAULT_STATE } from './codex-design-web-default.mjs';
+import { createCodexDesignWebDefaultController, promoteCodexDesignWebDefault, rollbackCodexDesignWebDefault, restoreCodexDesignWebDefault, runCodexDesignWebDefaultInvocation, validateCodexDesignWebDefaultSpec, CODEX_DESIGN_WEB_DEFAULT_STATE } from './codex-design-web-default.mjs';
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
 const baseline = 'f6fb519943498e5fc99e1569da6b339ce9768ba3';
@@ -59,11 +59,17 @@ export function runPhase9bDesignWebDefault({ writeReport = false } = {}) {
   const browserEvidence = evidence();
   if (browserEvidence.sample !== 'new-default-path' || browserEvidence.priorCanaryArtifactsExcluded !== true) throw new Error('phase9b:new_default_browser_evidence_required');
   const catalog = createCapabilityCatalog({ repoRoot, sourceRevision });
+  const activationSpec = JSON.parse(fs.readFileSync(path.join(repoRoot, 'operations/specs/infinite-brain-codex-design-web-default.v1.json'), 'utf8'));
   let controller = createCodexDesignWebDefaultController({ sourceRevision, activationTimestamp: '2026-09-03T01:00:00.000Z' });
-  const preflight = { passed: validateUniversalConsumerContract().length === 0 && browserEvidence.status === 'PASS' && browserEvidence.sideEffects?.providerCalls === 0 && browserEvidence.sideEffects?.writes === 0 };
+  const preflight = { passed: validateUniversalConsumerContract().length === 0 && validateCodexDesignWebDefaultSpec(activationSpec).valid && browserEvidence.status === 'PASS' && browserEvidence.sideEffects?.providerCalls === 0 && browserEvidence.sideEffects?.writes === 0 };
   controller = promoteCodexDesignWebDefault(controller, { preflight, timestamp: '2026-09-03T01:00:01.000Z' });
   const burnIn = Array.from({ length: 10 }, (_, i) => runCodexDesignWebDefaultInvocation({ controller, catalog, prompt: ['Design a responsive landing page.', 'Redesign this SaaS dashboard for clearer hierarchy.', 'Design a mobile-first onboarding flow.', 'Create a premium marketing website.', 'Design stronger typography and spacing for this interface.', 'Design clear empty and error states.', 'Implement the supplied responsive design.', 'Design and implement this responsive web experience, then test it.', 'Design a polished premium visual treatment for this page.', 'Redesign and implement this dashboard.'][i], fixtureId: `phase9b-burn-${i + 1}` }));
   const cohort = makePhase9aCohort(120).map((item, i) => runCodexDesignWebDefaultInvocation({ controller, catalog, prompt: prompt(item), fixtureId: `phase9b-default-${String(i + 1).padStart(3, '0')}`, currentState: item.currentState }));
+  const composition = {
+    researchDesign: Array.from({ length: 5 }, (_, i) => runCodexDesignWebDefaultInvocation({ controller, catalog, prompt: `Research current interface patterns, then design a bounded landing page recommendation, case ${i + 1}.`, fixtureId: `phase9b-research-design-${i + 1}` })),
+    designCode: Array.from({ length: 5 }, (_, i) => runCodexDesignWebDefaultInvocation({ controller, catalog, prompt: `Design and implement this responsive web experience, then test and verify it, case ${i + 1}.`, fixtureId: `phase9b-design-code-${i + 1}` })),
+    researchDesignCode: Array.from({ length: 5 }, (_, i) => runCodexDesignWebDefaultInvocation({ controller, catalog, prompt: `Research current interface patterns, then design and implement a landing page and test it, case ${i + 1}.`, fixtureId: `phase9b-research-design-code-${i + 1}` }))
+  };
   const critical = runCodexDesignWebDefaultInvocation({ controller, catalog, prompt: 'Deploy the website to production.', fixtureId: 'phase9b-safety' });
   const before = controller.state;
   controller = rollbackCodexDesignWebDefault(controller, { timestamp: '2026-09-03T01:10:00.000Z' });
@@ -71,7 +77,8 @@ export function runPhase9bDesignWebDefault({ writeReport = false } = {}) {
   controller = restoreCodexDesignWebDefault(controller, { preflight: { passed: true }, timestamp: '2026-09-03T01:10:01.000Z' });
   const restored = runCodexDesignWebDefaultInvocation({ controller, catalog, prompt: 'Design a responsive landing page.', fixtureId: 'phase9b-restored' });
   const cohortPass = cohort.filter((r) => r.selectedPath === 'v2' ? ['design', 'mixed'].includes(r.v2?.route?.primaryRouteFamily) && r.v2?.route?.primaryDescriptorId === 'skill.design' : r.reason === 'outside_design_web_default_scope').length;
-  const result = { originMain, sourceRevision, controller, browserEvidence, burnIn, cohort, rollback: { passed: before === CODEX_DESIGN_WEB_DEFAULT_STATE && rolled.v2 === null && restored.selectedPath === 'v2' }, hardChecks: { baseline: ancestor(baseline, originMain), preflight: preflight.passed, burnIn: burnIn.every((r) => r.selectedPath === 'v2'), cohort: cohort.length >= 100 && cohortPass / cohort.length >= 0.99, rendered: browserEvidence.renderedArtifacts >= 20, visualQa: browserEvidence.visualQaPassed === browserEvidence.visualQaRequired, functionalQa: browserEvidence.functionalQaPassed === browserEvidence.functionalQaRequired, safety: critical.selectedPath === 'legacy' && critical.receipt.safety.providerCalls === 0, rollback: before === CODEX_DESIGN_WEB_DEFAULT_STATE && rolled.v2 === null && restored.selectedPath === 'v2', universal: validateUniversalConsumerContract().length === 0 } };
+  const compositionPass = Object.values(composition).every((rows) => rows.length === 5 && rows.every((r) => r.v2?.compositionGraph?.primaryOwner?.capabilityId === 'skill.design' && r.v2?.taskPacket && r.v2?.continuation?.state === 'CURRENT'));
+  const result = { originMain, sourceRevision, controller, browserEvidence, burnIn, cohort, composition, rollback: { passed: before === CODEX_DESIGN_WEB_DEFAULT_STATE && rolled.v2 === null && restored.selectedPath === 'v2' }, hardChecks: { baseline: ancestor(baseline, originMain), preflight: preflight.passed, burnIn: burnIn.every((r) => r.selectedPath === 'v2'), cohort: cohort.length >= 100 && cohortPass / cohort.length >= 0.99, rendered: browserEvidence.renderedArtifacts >= 20, visualQa: browserEvidence.visualQaPassed === browserEvidence.visualQaRequired, functionalQa: browserEvidence.functionalQaPassed === browserEvidence.functionalQaRequired, boundedRepair: browserEvidence.repair?.allowedCycles === 1 && browserEvidence.repair.completedCycles === 1 && browserEvidence.repair.rerendered === true && browserEvidence.repair.remainingCriticalDefects === 0, composition: compositionPass, safety: critical.selectedPath === 'legacy' && critical.receipt.safety.providerCalls === 0, rollback: before === CODEX_DESIGN_WEB_DEFAULT_STATE && rolled.v2 === null && restored.selectedPath === 'v2', universal: validateUniversalConsumerContract().length === 0 } };
   result.decision = Object.values(result.hardChecks).every(Boolean) ? 'DEFAULT_ACCEPTED' : 'BLOCKED';
   if (writeReport && result.decision === 'DEFAULT_ACCEPTED') fs.writeFileSync(path.join(repoRoot, reportPath), report(result));
   return result;
