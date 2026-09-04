@@ -138,12 +138,24 @@ async function evaluate(expression) {
   return result?.result?.value;
 }
 async function navigate(path, expectedText) {
-  const navigation = await cdp('Page.navigate', { url: `${BASE}${path}` });
-  if (navigation?.errorText) throw new Error(`navigation failed for ${path}: ${navigation.errorText}`);
+  const targetUrl = new URL(path, BASE);
+  const clickResult = await evaluate(`(() => {
+    const target = ${JSON.stringify(targetUrl.href)};
+    const link = [...document.querySelectorAll('a')].find((candidate) => candidate.href === target);
+    if (link) { link.click(); return 'existing-link'; }
+    const fallback = document.createElement('a');
+    fallback.href = target;
+    fallback.textContent = 'soak navigation';
+    fallback.style.display = 'none';
+    document.body.appendChild(fallback);
+    fallback.click();
+    return 'fallback-link';
+  })()`);
+  if (!clickResult) throw new Error(`navigation dispatch failed for ${path}`);
   const startedAt = performance.now();
   let found = false;
   for (let attempt = 0; attempt < 600; attempt += 1) {
-    found = await evaluate(`document.body?.innerText?.includes(${JSON.stringify(expectedText)})`);
+    found = await evaluate(`location.pathname + location.search === ${JSON.stringify(targetUrl.pathname + targetUrl.search)} && document.body?.innerText?.includes(${JSON.stringify(expectedText)})`);
     if (found) break;
     await delay(50);
   }
@@ -152,7 +164,7 @@ async function navigate(path, expectedText) {
     const body = await evaluate('document.body?.innerText?.slice(0, 800)');
     throw new Error(`target text not found for ${path}; body=${JSON.stringify(body)}`);
   }
-  await delay(100);
+  await delay(750);
   const batch = events.splice(0, events.length);
   for (const event of batch) {
     if (event.method === 'Runtime.exceptionThrown') exceptions.push({ path, message: event.params?.exceptionDetails?.exception?.description || event.params?.exceptionDetails?.text || 'unknown' });
