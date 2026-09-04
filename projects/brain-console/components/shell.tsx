@@ -44,7 +44,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <div className="app-shell">
+    <div className={cn('app-shell', pathname === '/command-center' && 'command-center-shell')}>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark" aria-hidden="true" />

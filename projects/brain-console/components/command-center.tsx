@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { RefreshCw } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, RefreshCw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getOperationalSnapshot } from '@/lib/braincore-client';
 import type { OperationalSnapshot, OperationalState } from '@/lib/braincore-schemas';
@@ -34,15 +34,15 @@ function SectionHeading({ eyebrow, title, titleId, state }: { eyebrow: string; t
   );
 }
 
-function KpiCard({ label, value, detail, state }: { label: string; value: string; detail: string; state: OperationalState }) {
+function StatusCell({ label, value, detail, state }: { label: string; value: string; detail: string; state: OperationalState }) {
   return (
-    <article className="card command-center-kpi">
-      <div className="split">
-        <div className="card-title">{label}</div>
+    <article className="command-center-status-cell">
+      <div className="eyebrow">{label}</div>
+      <div className="command-center-status-value">
+        <strong>{value}</strong>
         <OperationalStateBadge state={state} />
       </div>
-      <div className="metric">{value}</div>
-      <div className="meta">{detail}</div>
+      <span className="meta">{detail}</span>
     </article>
   );
 }
@@ -55,26 +55,33 @@ function AttentionPanel({ snapshot }: { snapshot: OperationalSnapshot }) {
       {items.length === 0 ? (
         <div className="command-center-empty">
           <OperationalStateBadge state="CURRENT" />
-          <p>No actionable exceptions are currently reported.</p>
+          <p>No items need attention.</p>
         </div>
       ) : (
-        <div className="command-center-list">
-          {items.map((item) => (
-            <article className="command-center-list-item command-center-attention-item" key={item.id}>
-              <div className="split command-center-item-header">
-                <div className="row">
-                  <OperationalStateBadge state={item.state} />
-                  <strong>{item.title}</strong>
+        <div className="command-center-list command-center-bounded-list">
+          {items.slice(0, 3).map((item) => (
+            <details className="command-center-disclosure" key={item.id}>
+              <summary>
+                <span className="command-center-summary-main"><OperationalStateBadge state={item.state} /><strong>{item.title}</strong></span>
+                <span className="command-center-summary-meta"><FreshnessLabel freshness={item.freshness} updatedAt={item.observedAt} /><ChevronDown size={14} aria-hidden="true" /></span>
+              </summary>
+              <div className="command-center-disclosure-body">
+                <p>{item.explanation}</p>
+                <div className="command-center-detail-meta">
+                  <span className="meta">{item.source}{item.entityRef ? ` · ${item.entityRef}` : ''}</span>
+                  {item.safeNextAction ? <span className="meta"><strong>Next:</strong> {item.safeNextAction}</span> : null}
                 </div>
-                <FreshnessLabel freshness={item.freshness} updatedAt={item.observedAt} />
               </div>
-              <p>{item.explanation}</p>
-              <div className="split command-center-item-footer">
-                <span className="meta">{item.source}{item.entityRef ? ` · ${item.entityRef}` : ''}</span>
-                {item.safeNextAction ? <span className="meta">Next: {item.safeNextAction}</span> : null}
-              </div>
-            </article>
+            </details>
           ))}
+          {items.length > 3 ? (
+            <details className="command-center-more">
+              <summary>+ {items.length - 3} more attention {items.length - 3 === 1 ? 'item' : 'items'}</summary>
+              <div className="command-center-more-list">
+                {items.slice(3).map((item) => <div className="command-center-more-row" key={item.id}><OperationalStateBadge state={item.state} /><strong>{item.title}</strong><FreshnessLabel freshness={item.freshness} updatedAt={item.observedAt} /></div>)}
+              </div>
+            </details>
+          ) : null}
         </div>
       )}
     </section>
@@ -92,21 +99,23 @@ function ActiveWorkPanel({ snapshot }: { snapshot: OperationalSnapshot }) {
           <p>No active work is reported. Brain is idle for the instrumented work sources.</p>
         </div>
       ) : (
-        <div className="command-center-list">
+        <div className="command-center-list command-center-bounded-list">
           {items.map((item) => (
-            <article className="command-center-list-item" key={item.id}>
-              <div className="split command-center-item-header">
-                <div className="row"><OperationalStateBadge state={item.state} /><strong>{item.domain}</strong></div>
-                <span className="meta">{item.updatedAt ? `Updated ${new Date(item.updatedAt).toLocaleTimeString()}` : 'Update unknown'}</span>
+            <details className="command-center-disclosure" key={item.id}>
+              <summary>
+                <span className="command-center-summary-main"><OperationalStateBadge state={item.state} /><strong>{item.domain}</strong><span className="meta">{item.currentStage}</span></span>
+                <span className="command-center-summary-meta"><span className="meta">{item.updatedAt ? `Updated ${new Date(item.updatedAt).toLocaleTimeString()}` : 'Update unknown'}</span><ChevronDown size={14} aria-hidden="true" /></span>
+              </summary>
+              <div className="command-center-disclosure-body">
+                <p>{item.nextAction}</p>
+                <div className="command-center-work-meta">
+                  <span>owner: {item.primaryOwner}</span>
+                  <span>consumer: {item.consumer}</span>
+                  <span>route: {item.capabilityRoute}</span>
+                  <span>progress: {item.progress === null ? 'unknown' : `${Math.round(item.progress * 100)}%`}</span>
+                </div>
               </div>
-              <p>{item.nextAction}</p>
-              <div className="command-center-work-meta">
-                <span>{item.currentStage}</span>
-                <span>owner: {item.primaryOwner}</span>
-                <span>route: {item.capabilityRoute}</span>
-                <span>progress: {item.progress === null ? 'unknown' : `${Math.round(item.progress * 100)}%`}</span>
-              </div>
-            </article>
+            </details>
           ))}
         </div>
       )}
@@ -122,29 +131,27 @@ function ActivityPanel({ snapshot }: { snapshot: OperationalSnapshot }) {
       {items.length === 0 ? (
         <div className="command-center-empty"><p>No recent activity is available from the current event source.</p></div>
       ) : (
-        <div className="command-center-list">
-          {items.map((item) => (
-            <article className="command-center-list-item command-center-activity-item" key={item.id}>
-              <div className="split command-center-item-header">
-                <div className="row"><OperationalStateBadge state={item.severity === 'critical' ? 'ERROR' : item.severity === 'warning' ? 'DEGRADED' : 'CURRENT'} /><strong>{item.eventType}</strong></div>
-                <time className="meta" dateTime={item.occurredAt}>{new Date(item.occurredAt).toLocaleString()}</time>
-              </div>
-              <p>{item.summary}</p>
+        <div className="command-center-activity-list">
+          {items.slice(0, 4).map((item) => (
+            <article className="command-center-activity-row" key={item.id}>
+              <time className="meta" dateTime={item.occurredAt}>{new Date(item.occurredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+              <div className="command-center-activity-copy"><div className="row"><OperationalStateBadge state={item.severity === 'critical' ? 'ERROR' : item.severity === 'warning' ? 'DEGRADED' : 'CURRENT'} /><strong>{item.eventType}</strong></div><p>{item.summary}</p></div>
               <span className="meta">{item.domain} · {item.status}</span>
             </article>
           ))}
+          {items.length > 4 ? <details className="command-center-more"><summary>+ {items.length - 4} more events</summary><div className="command-center-more-list">{items.slice(4).map((item) => <div className="command-center-more-row" key={item.id}><time className="meta" dateTime={item.occurredAt}>{new Date(item.occurredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time><strong>{item.eventType}</strong><span className="meta">{item.domain}</span></div>)}</div></details> : null}
         </div>
       )}
     </section>
   );
 }
 
-function PostureRow({ label, state, detail }: { label: string; state: OperationalState; detail: string }) {
+function PostureRow({ label, state, detail, href }: { label: string; state: OperationalState; detail: string; href: string }) {
   return (
-    <div className="command-center-posture-row">
+    <Link className="command-center-posture-row" href={href}>
       <div className="row"><OperationalStateBadge state={state} /><strong>{label}</strong></div>
-      <span className="meta">{detail}</span>
-    </div>
+      <span className="command-center-posture-detail"><span className="meta">{detail}</span><ArrowUpRight size={13} aria-hidden="true" /></span>
+    </Link>
   );
 }
 
@@ -154,17 +161,16 @@ function PosturePanel({ snapshot }: { snapshot: OperationalSnapshot }) {
     <section className="card command-center-panel" aria-labelledby="command-center-posture">
       <SectionHeading eyebrow="System map" title="Domain posture" titleId="command-center-posture" state={snapshot.overall.state} />
       <div className="command-center-posture">
-        <PostureRow label="Brain" state={brain.state} detail={`${brain.data.runtimeStatus} · ${countLabel(brain.data.itemCount, 'orchestrator')} · execution ${brain.data.executionEnabled ? 'enabled' : 'contained'}`} />
-        <PostureRow label="Computer" state={computer.state} detail={`${computer.data.resourceCount} resources · ${computer.data.staleResources} stale · ${computer.data.failedBackups} backup failures`} />
-        <PostureRow label="Scheduler" state={scheduler.state} detail={`${scheduler.data.totalJobs} jobs · ${scheduler.data.runningJobs} running · ${scheduler.data.failedJobs} failed · ${scheduler.data.blockedJobs} blocked`} />
-        <PostureRow label="Index" state={index.state} detail={`${index.data.currentCount}/${index.data.itemCount} sources current`} />
-        <PostureRow label="Consumers" state={consumers.state} detail={consumers.data.domains.join(' · ')} />
+        <PostureRow label="Brain" href="/" state={brain.state} detail={`${brain.data.runtimeStatus} · ${countLabel(brain.data.itemCount, 'orchestrator')} · execution ${brain.data.executionEnabled ? 'enabled' : 'contained'}`} />
+        <PostureRow label="Computer" href="/infrastructure" state={computer.state} detail={`${computer.data.resourceCount} resources · ${computer.data.staleResources} stale · ${computer.data.failedBackups} backup failures`} />
+        <PostureRow label="Scheduler" href="/scheduler" state={scheduler.state} detail={`${scheduler.data.totalJobs} jobs · ${scheduler.data.runningJobs} running · ${scheduler.data.failedJobs} failed · ${scheduler.data.blockedJobs} blocked`} />
+        <PostureRow label="Index" href="/infrastructure" state={index.state} detail={`${index.data.currentCount}/${index.data.itemCount} sources current`} />
+        <PostureRow label="Consumers" href="/ai-models" state={consumers.state} detail={consumers.data.domains.join(' · ')} />
       </div>
-      <div className="command-center-identity">
-        <div className="split"><strong>Runtime identity</strong><OperationalStateBadge state={identity.state} /></div>
-        <div className="meta">{identity.data.runtime.serviceState} · started by {identity.data.runtime.launchMechanism}</div>
-        <div className="meta">source <Revision value={identity.data.canonicalSource.revision} /> · deployed <Revision value={identity.data.deployment.revision} /></div>
-      </div>
+      <details className="command-center-identity">
+        <summary><span><strong>Runtime identity</strong><span className="meta"> · {identity.data.runtime.serviceState} · {identity.data.runtime.launchMechanism}</span></span><span className="command-center-summary-meta"><OperationalStateBadge state={identity.state} /><ChevronDown size={14} aria-hidden="true" /></span></summary>
+        <div className="command-center-identity-detail"><span className="meta">source <Revision value={identity.data.canonicalSource.revision} /> · deployed <Revision value={identity.data.deployment.revision} /></span><span className="meta">{identity.data.canonicalSource.path ?? 'Source path unavailable'} → {identity.data.deployment.runtimePath ?? 'Runtime path unavailable'}</span></div>
+      </details>
     </section>
   );
 }
@@ -204,25 +210,27 @@ export function CommandCenter() {
     <div className="stack command-center">
       <section className="command-center-header">
         <div>
-          <div className="eyebrow">Brain Console 2.0 preview</div>
+          <div className="eyebrow">Operational posture</div>
           <h1>Command Center</h1>
-          <p>One bounded operational view for health, attention, active work, recent activity, and domain posture.</p>
+          <p className="command-center-lede">{data.overall.data.summary}</p>
         </div>
         <div className="command-center-header-meta">
-          <OperationalStateBadge state={data.overall.state} detail={data.overall.data.summary} />
-          <FreshnessLabel freshness={data.overall.freshness} updatedAt={data.generatedAt} detail={data.overall.data.summary} />
+          <div className="command-center-header-state"><OperationalStateBadge state={data.overall.state} detail={data.overall.data.summary} /><FreshnessLabel freshness={data.overall.freshness} updatedAt={data.generatedAt} detail={data.overall.data.summary} /></div>
           <button className="button compact secondary" onClick={() => void snapshot.refetch()} disabled={snapshot.isFetching}><RefreshCw size={14} className={snapshot.isFetching ? 'command-center-spin' : undefined} /> {snapshot.isFetching ? 'Refreshing' : 'Refresh'}</button>
         </div>
       </section>
 
-      {snapshot.isError ? <div className="compact-error" role="status"><strong>Showing the last valid snapshot.</strong> Refresh failed; the displayed posture has not been cleared.</div> : null}
-      {data.errors.length > 0 ? <div className="compact-error" role="status"><strong>Partial snapshot.</strong> {countLabel(data.errors.length, 'source error')} are represented in the affected sections.</div> : null}
+      <div className="command-center-notices">
+        {snapshot.isError ? <div className="compact-error" role="status"><strong>Showing the last valid snapshot.</strong> Refresh failed; the displayed posture has not been cleared.</div> : null}
+        {data.errors.length > 0 ? <div className="compact-error" role="status"><strong>Partial snapshot.</strong> {countLabel(data.errors.length, 'source error')} are represented in the affected sections.</div> : null}
+      </div>
 
-      <section className="command-center-kpis" aria-label="Command Center summary">
-        <KpiCard label="Brain state" value={displayState(data.overall.state)} detail={data.overall.data.summary} state={data.overall.state} />
-        <KpiCard label="Active work" value={String(data.overall.data.activeWorkCount)} detail={data.sections.activeWork.data.items.length === 0 ? 'No work in progress' : countLabel(data.overall.data.activeWorkCount, 'item')} state={data.sections.activeWork.state} />
-        <KpiCard label="Attention" value={String(data.overall.data.attentionCount)} detail={data.overall.data.attentionCount === 0 ? 'Nothing requires action' : 'Review the highest-value exceptions'} state={data.sections.attention.state} />
-        <KpiCard label="Runtime" value={data.sections.identity.data.identityState} detail={`${data.sections.identity.data.runtime.serviceState} · ${data.sections.identity.data.runtime.launchMechanism}`} state={data.sections.identity.state} />
+      <section className="command-center-status-strip" aria-label="Command Center summary">
+        <StatusCell label="Brain" value={displayState(data.overall.state)} detail={data.overall.data.summary} state={data.overall.state} />
+        <StatusCell label="Active" value={String(data.overall.data.activeWorkCount)} detail={data.overall.data.activeWorkCount === 0 ? 'No work in progress' : countLabel(data.overall.data.activeWorkCount, 'item')} state={data.sections.activeWork.state} />
+        <StatusCell label="Attention" value={String(data.overall.data.attentionCount)} detail={data.overall.data.attentionCount === 0 ? 'Nothing requires action' : 'Highest-value exceptions'} state={data.sections.attention.state} />
+        <StatusCell label="Runtime" value={data.sections.identity.data.identityState} detail={`${data.sections.identity.data.runtime.serviceState} · ${data.sections.identity.data.runtime.launchMechanism}`} state={data.sections.identity.state} />
+        <StatusCell label="Scheduler" value={String(schedulerCount(data))} detail={`${data.sections.scheduler.data.blockedJobs} blocked · next run ${data.sections.scheduler.data.nextRunAt ? new Date(data.sections.scheduler.data.nextRunAt).toLocaleString() : 'unknown'}`} state={data.sections.scheduler.state} />
       </section>
 
       <section className="command-center-primary-grid">
@@ -238,4 +246,8 @@ export function CommandCenter() {
       </footer>
     </div>
   );
+}
+
+function schedulerCount(snapshot: OperationalSnapshot): number {
+  return snapshot.sections.scheduler.data.totalJobs;
 }
