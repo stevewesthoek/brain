@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, AppWindow, BrainCircuit, CalendarClock, FileVideo2, Gauge, Globe, ListVideo, Network, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
+import { Activity, AppWindow, BrainCircuit, CalendarClock, FileVideo2, Gauge, Globe, LayoutDashboard, ListVideo, Network, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { brainCoreRequest, BRAIN_CORE_URL } from '@/lib/braincore-client';
 import { brainCoreStatusSchema } from '@/lib/braincore-schemas';
@@ -12,6 +12,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { GlobalPulseStrip } from '@/components/global-pulse-strip';
 
 const nav = [
+  { href: '/command-center', label: 'Command Center', icon: LayoutDashboard },
   { href: '/', label: 'Overview', icon: Gauge },
   { href: '/ai-models', label: 'AI Models', icon: BrainCircuit },
   { href: '/local-apps', label: 'Local Apps', icon: AppWindow },
@@ -93,7 +94,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
           </div>
         </header>
-        <GlobalPulseStrip />
+        {pathname !== '/command-center' ? <GlobalPulseStrip /> : null}
         <div className="content">{children}</div>
       </main>
     </div>
