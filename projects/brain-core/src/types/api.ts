@@ -1,3 +1,6 @@
+import type { DeploymentIdentity } from './deployment-identity.js';
+import type { OperationalSnapshot } from './operational-snapshot.js';
+
 export interface BrainCoreStatus {
   service: 'brain-core';
   mode: 'read-only';
@@ -6483,6 +6486,8 @@ export interface BrainCoreRuntimeReportSummary {
 
 export interface BrainCoreRoutes {
   '/status': BrainCoreStatus;
+  '/runtime/identity': DeploymentIdentity;
+  '/operational-snapshot': OperationalSnapshot;
   '/sessions': {
     sessions: BrainCoreSessionSummary[];
   };

@@ -303,6 +303,8 @@ import { getInfraPipelinesStatus } from '../adapters/infra-pipelines-status.js';
 import { getSystemMetrics } from '../adapters/system-metrics.js';
 import { createProjectionEnvelope } from '../adapters/projection-envelope.js';
 import { readContractsProjection, readServicesProjection, readSystemHealthProjection, readTopologyProjection } from '../adapters/system-projections.js';
+import { readDeploymentIdentity } from '../adapters/deployment-identity.js';
+import { readOperationalSnapshot } from '../adapters/operational-snapshot.js';
 import { readInfiniteBrainProjection } from '../adapters/infinite-brain-intelligence-projections.js';
 import { readInfiniteBrainEvolutionProjection } from '../adapters/infinite-brain-evolution-projections.js';
 import type { VideoAnalysisResult, VideoSource } from '../adapters/research-video.js';
@@ -545,6 +547,29 @@ export async function routeRequest(
       sendJson(response, 200, readSystemHealthProjection({ status: getStatus(), capabilities: getCapabilities(), generatedAt }));
       return;
     }
+    case '/runtime/identity':
+      sendJson(response, 200, readDeploymentIdentity());
+      return;
+    case '/operational-snapshot':
+      sendJson(response, 200, await readOperationalSnapshot({
+        status: getStatus,
+        capabilities: getCapabilities,
+        identity: readDeploymentIdentity,
+        sources: {
+          scheduler: getInfraOfficeScheduler,
+          localApps: readLocalAppsDashboard,
+          computer: readInfrastructureStatus,
+          graphify: getGraphifyStatus,
+          runtimeReports: listRuntimeReports,
+          infiniteBrain: async () => ({
+            runtime: await getInfiniteBrainStatus(),
+            orchestrators: listOrchestrators(),
+          }),
+          activeWork: listAgentRuns,
+          activity: listAgentEvents,
+        },
+      }));
+      return;
     case '/projections/topology':
       sendJson(response, 200, readTopologyProjection({ repos: listRepos(), generatedAt: new Date().toISOString() }));
       return;
