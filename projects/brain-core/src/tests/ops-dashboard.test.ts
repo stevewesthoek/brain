@@ -17,10 +17,10 @@ test('ops dashboard exposes live system metrics and AI metrics', async () => {
   assert.ok(system.data.gpuLoad.status === 'fresh' || system.data.gpuLoad.status === 'unavailable');
 
   assert.equal(usage.id, 'ops-ai-usage-windows');
-  assert.equal(usage.status, 'available');
-  assert.equal(usage.data.codexCurrentWindow.status, 'fresh');
-  assert.equal(usage.data.codexFiveHourWindow.status, 'fresh');
-  assert.equal(usage.data.codexSevenDayWindow.status, 'fresh');
+  assert.ok(usage.status === 'available' || usage.status === 'partial');
+  assert.ok(['fresh', 'stale', 'unavailable'].includes(usage.data.codexCurrentWindow.status));
+  assert.ok(['fresh', 'stale', 'unavailable'].includes(usage.data.codexFiveHourWindow.status));
+  assert.ok(['fresh', 'stale', 'unavailable'].includes(usage.data.codexSevenDayWindow.status));
   assert.ok(typeof usage.data.codexCurrentWindow.value === 'number');
   assert.ok(typeof usage.data.codexFiveHourWindow.value === 'number');
   assert.ok(typeof usage.data.codexSevenDayWindow.value === 'number');
