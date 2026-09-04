@@ -51,6 +51,12 @@ test('cold and warm refreshes are bounded and incremental', async () => {
     assert.equal(warm.diagnostics.cachedFiles, 2);
     assert.equal(warm.diagnostics.bytesRead, 0);
 
+    const persistedReader = createCodexUsageReader({ sessionsDir: fixture.root, cachePath: fixture.cachePath });
+    const persisted = await persistedReader.refresh();
+    assert.equal(persisted.freshness, 'CURRENT');
+    assert.equal(persisted.diagnostics.filesRead, 0);
+    assert.equal(persisted.diagnostics.cachedFiles, 2);
+
     await writeSession(fixture.root, 'new.jsonl', '2026-09-04T20:02:00.000Z', 36);
     const added = await reader.refresh();
     assert.equal(added.fiveHour.usedPercent, 36);
@@ -65,6 +71,30 @@ test('cold and warm refreshes are bounded and incremental', async () => {
     const corrupt = await reader.refresh();
     assert.equal(corrupt.freshness, 'CURRENT');
     assert.equal(corrupt.diagnostics.errorCount, 0);
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test('expired values stay available while one stale-while-revalidate job runs', async () => {
+  const fixture = await makeFixture();
+  let clock = Date.parse('2026-09-04T20:00:00.000Z');
+  try {
+    await writeSession(fixture.root, 'one.jsonl', '2026-09-04T20:00:00.000Z', 12);
+    const reader = createCodexUsageReader({
+      sessionsDir: fixture.root,
+      cachePath: fixture.cachePath,
+      now: () => clock,
+      refreshTtlMs: 100,
+    });
+    await reader.refresh();
+    clock += 101;
+    const stale = reader.getSnapshot();
+    assert.equal(stale.freshness, 'STALE');
+    assert.equal(stale.fiveHour.usedPercent, 12);
+    assert.ok(reader.getInFlightRefresh());
+    await reader.getInFlightRefresh();
+    assert.equal(reader.getSnapshot().freshness, 'CURRENT');
   } finally {
     await fs.rm(fixture.root, { recursive: true, force: true });
   }
