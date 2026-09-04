@@ -10,12 +10,12 @@ The live Brain Console now presents the shell independently of Brain Core readin
 
 | Field | Result |
 |---|---|
-| Origin/main | `8c9814c1af8447b45931e77ae63b82a2e68de111` |
+| Origin/main / final deployed revision | Recorded in the final closeout response; this report is included in that docs-only deployment |
 | Brain Core | `127.0.0.1:4877`, one listener, LaunchAgent running |
 | Brain Console | `127.0.0.1:4881`, one listener, LaunchAgent running |
 | Runtime identity | `matching` |
-| Canonical source revision | `8c9814c1af8447b45931e77ae63b82a2e68de111` |
-| Deployment revision | `8c9814c1af8447b45931e77ae63b82a2e68de111` |
+| Canonical source revision | Exact final SHA verified by `/runtime/identity` and recorded in the final closeout response |
+| Deployment revision | Exact final SHA verified by `/runtime/identity` and recorded in the final closeout response |
 | Console build mode | `production` (`next-server`) |
 | LaunchAgent source diff | none between `d3d3686b...` and `8c9814c1...` |
 
@@ -50,7 +50,7 @@ The default Command Center has no document, body, main-content, sidebar, or nest
 
 Measurements used client-side browser automation at 1141×797. `route` is click-to-URL, `frame` is click-to-first route/skeleton frame, and `usable` is click-to-usable destination UI.
 
-Before: live `d3d3686b...` running Next development mode.
+Before: live `d3d3686b...` running Next development mode. After code: `8c9814c1...` (the final report deployment is docs-only and does not change the built Console assets).
 
 | Route | Before route / frame / usable (ms) | After route / frame / usable (ms) |
 |---|---:|---:|
@@ -78,17 +78,17 @@ The after run was performed against the live production service. Automatic idle 
 
 ## Launch acceptance
 
-An actual `open -na '/Users/Office/Applications/Brain Console.app'` invocation produced:
+The final deployed runtime was also exercised through an actual `open -na '/Users/Office/Applications/Brain Console.app'` invocation at 14:25 Lisbon time:
 
 ```text
-begin                         14:21:24.836Z
-console reused                14:21:25.089Z
-browser opened                14:21:25.169Z
-core reused                   14:21:25.494Z
-complete                      14:21:25.494Z
+begin                         14:25:10.461Z
+console reused                14:25:10.708Z
+browser opened                14:25:10.771Z
+core reused                   14:25:11.026Z
+complete                      14:25:11.027Z
 ```
 
-Measured wrapper wall time was approximately 1.15 seconds; the browser-open marker occurred approximately 333 ms after launcher start. Core readiness did not delay shell presentation.
+Measured wrapper wall time was approximately 919 ms; the browser-open marker occurred approximately 310 ms after launcher start. Core readiness did not delay shell presentation.
 
 ## Validation
 
