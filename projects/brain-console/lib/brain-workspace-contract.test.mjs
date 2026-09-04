@@ -32,8 +32,21 @@ test('Brain workspace is a read-only projection of real Core contracts', () => {
   assert.match(source, /dependsOn/);
   assert.match(source, /View raw task reference/);
   assert.match(source, /No automatic resume/);
-  assert.match(source, /No evidence packet reference/);
+  assert.match(source, /Evidence Packet refs/);
+  assert.match(source, /\?context=/);
+  assert.match(source, /\?evidence=/);
+  assert.match(source, /descriptor only/i);
   assert.doesNotMatch(source, /postBrainCoreAction|brainCoreAction/);
+});
+
+test('reference fixtures cover context-only, evidence-only, both, legacy, stale, and missing states', () => {
+  const fixtures = JSON.parse(read('lib/fixtures/brain-workspace-task-references.json'));
+  assert.deepEqual(Object.keys(fixtures).sort(), ['legacy', 'missing', 'stale', 'withBoth', 'withContextPack', 'withEvidencePacket']);
+  assert.equal(fixtures.withBoth.contextPackRefs[0].type, 'context-pack');
+  assert.equal(fixtures.withBoth.evidencePacketRefs[0].type, 'evidence-packet');
+  assert.equal(fixtures.legacy.contextPackRefs, undefined);
+  assert.equal(fixtures.stale.contextPackRefs[0].status, 'stale');
+  assert.equal(fixtures.missing.evidencePacketRefs[0].status, 'missing');
 });
 
 test('legacy Infinite Brain URL redirects into the workspace', () => {

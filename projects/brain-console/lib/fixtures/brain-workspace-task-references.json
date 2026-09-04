@@ -1,0 +1,47 @@
+{
+  "withContextPack": {
+    "taskId": "fixture-context",
+    "contextPackRefs": [{
+      "packetId": "pack-fixture-context",
+      "type": "context-pack",
+      "revision": "brain-fixture-1",
+      "source": "operations/specs/context-pack.schema.json",
+      "freshness": "fresh",
+      "status": "persisted",
+      "authority": "canonical",
+      "locator": "context-packs/pack-fixture-context.json",
+      "createdAt": "2026-09-04T08:00:00.000Z",
+      "updatedAt": "2026-09-04T08:00:00.000Z"
+    }]
+  },
+  "withEvidencePacket": {
+    "taskId": "fixture-evidence",
+    "evidencePacketRefs": [{
+      "packetId": "evidence-fixture",
+      "type": "evidence-packet",
+      "revision": "evidence-fixture-1",
+      "source": "brain evidence ledger",
+      "freshness": "fresh",
+      "status": "available_by_ref",
+      "authority": "evidence",
+      "locator": "evidence-packets/evidence-fixture.json",
+      "createdAt": "2026-09-04T08:00:00.000Z",
+      "updatedAt": "2026-09-04T08:00:00.000Z",
+      "evidenceIds": ["ev-fixture-1"]
+    }]
+  },
+  "withBoth": {
+    "taskId": "fixture-both",
+    "contextPackRefs": [{"packetId": "pack-fixture-both", "type": "context-pack", "revision": "r1", "source": "mind-context", "freshness": "mixed", "status": "persisted", "authority": "canonical", "locator": "context-packs/pack-fixture-both.json", "createdAt": null, "updatedAt": null}],
+    "evidencePacketRefs": [{"packetId": "evidence-fixture-both", "type": "evidence-packet", "revision": "r1", "source": "evidence-ledger", "freshness": "fresh", "status": "persisted", "authority": "evidence", "locator": "evidence-packets/evidence-fixture-both.json", "createdAt": null, "updatedAt": null}]
+  },
+  "legacy": {"taskId": "fixture-legacy", "title": "No reference fields"},
+  "stale": {
+    "taskId": "fixture-stale",
+    "contextPackRefs": [{"packetId": "pack-fixture-stale", "type": "context-pack", "revision": "old", "source": "mind-context", "freshness": "stale", "status": "stale", "authority": "supporting", "locator": "context-packs/pack-fixture-stale.json", "createdAt": null, "updatedAt": null}]
+  },
+  "missing": {
+    "taskId": "fixture-missing",
+    "evidencePacketRefs": [{"packetId": "evidence-fixture-missing", "type": "evidence-packet", "revision": null, "source": null, "freshness": "unavailable", "status": "missing", "authority": null, "locator": null, "createdAt": null, "updatedAt": null}]
+  }
+}

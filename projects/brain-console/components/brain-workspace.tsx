@@ -9,11 +9,19 @@ import { brainCoreRequest } from '@/lib/braincore-client';
 import { StatusBadge } from '@/components/status-badge';
 import { timeAgo } from '@/lib/utils';
 import { z } from 'zod';
+import {
+  agentEvidencePacketRefSchema,
+  agentTaskGraphSchema,
+  agentTaskStateSchema,
+  agentContextPackRefSchema,
+} from '@/lib/braincore-schemas';
 
 type RecordValue = Record<string, unknown>;
-type Task = RecordValue & { taskId: string; title: string; status: string; dependsOn: string[]; role: string; capabilityIds: string[]; aiTaskType: string; approvalRequired: boolean; notes: string };
+type ContextPackRef = z.infer<typeof agentContextPackRefSchema>;
+type EvidencePacketRef = z.infer<typeof agentEvidencePacketRefSchema>;
+type Task = RecordValue & { taskId: string; title: string; status: string; dependsOn: string[]; role: string; capabilityIds: string[]; aiTaskType: string; approvalRequired: boolean; notes: string; contextPackRefs: ContextPackRef[]; evidencePacketRefs: EvidencePacketRef[] };
 type TaskGraph = RecordValue & { tasks: Task[]; taskCount: number; completedCount: number; blockedCount: number; pendingCount: number; generatedAt: string; nextSafeStep: string };
-type TaskState = RecordValue & { steps: Array<RecordValue & { taskId: string; status: string; note: string }>; currentTaskId: string | null; resumedTaskId: string | null; nextSafeStep: string; generatedAt: string };
+type TaskState = RecordValue & { steps: Array<RecordValue & { taskId: string; status: string; note: string; contextPackRefs: ContextPackRef[]; evidencePacketRefs: EvidencePacketRef[] }>; currentTaskId: string | null; resumedTaskId: string | null; nextSafeStep: string; generatedAt: string };
 type ExecutorPlan = RecordValue & { steps: Array<RecordValue & { taskId: string; executorId: string; providerId: string; reason: string; source: string }>; nextSafeStep: string; generatedAt: string };
 type Capability = RecordValue & { id: string; kind: string; label: string; enabled: boolean; safetyClass: string; description: string; preferredAiTaskTypes: string[] };
 
@@ -47,8 +55,8 @@ async function read<T>(path: string, schema: z.ZodType<T>): Promise<T> {
 
 async function loadWorkspace(): Promise<WorkspaceData> {
   const requests = await Promise.allSettled([
-    read('/agent-task-graph', objectSchema),
-    read('/agent-task-state', objectSchema),
+    read('/agent-task-graph', agentTaskGraphSchema),
+    read('/agent-task-state', agentTaskStateSchema),
     read('/agent-executor-plan', objectSchema),
     read('/agent-approval-gates', objectSchema),
     read('/api/agent/capabilities', capabilityEnvelopeSchema),
@@ -120,6 +128,8 @@ function normalizeTaskGraph(value: RecordValue): TaskGraph {
         aiTaskType: asString(task.aiTaskType),
         approvalRequired: task.approvalRequired === true,
         notes: asString(task.notes, 'No task note recorded.'),
+        contextPackRefs: asArray(task.contextPackRefs).map((item) => agentContextPackRefSchema.safeParse(item)).flatMap((result) => result.success ? [result.data] : []),
+        evidencePacketRefs: asArray(task.evidencePacketRefs).map((item) => agentEvidencePacketRefSchema.safeParse(item)).flatMap((result) => result.success ? [result.data] : []),
       };
     }),
   };
@@ -134,7 +144,14 @@ function normalizeTaskState(value: RecordValue): TaskState {
     nextSafeStep: asString(value.nextSafeStep),
     steps: asArray(value.steps).map((item) => {
       const step = asRecord(item);
-      return { ...step, taskId: asString(step.taskId), status: asString(step.status), note: asString(step.note, 'No continuity note recorded.') };
+      return {
+        ...step,
+        taskId: asString(step.taskId),
+        status: asString(step.status),
+        note: asString(step.note, 'No continuity note recorded.'),
+        contextPackRefs: asArray(step.contextPackRefs).map((item) => agentContextPackRefSchema.safeParse(item)).flatMap((result) => result.success ? [result.data] : []),
+        evidencePacketRefs: asArray(step.evidencePacketRefs).map((item) => agentEvidencePacketRefSchema.safeParse(item)).flatMap((result) => result.success ? [result.data] : []),
+      };
     }),
   };
 }
@@ -280,13 +297,99 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
   return <div className="brain-empty"><span className="eyebrow">No data</span><strong>{title}</strong><p>{detail}</p></div>;
 }
 
+function referenceStatus(status: string): string {
+  if (status === 'persisted' || status === 'available_by_ref') return 'fresh';
+  if (status === 'stale') return 'stale';
+  return 'unavailable';
+}
+
+function referenceLabel(status: string): string {
+  return status.replaceAll('_', ' ').toUpperCase();
+}
+
+function ReferenceCard({
+  taskId,
+  kind,
+  reference,
+  selected,
+}: {
+  taskId: string;
+  kind: 'context' | 'evidence';
+  reference: ContextPackRef | EvidencePacketRef;
+  selected: boolean;
+}) {
+  const parameter = kind === 'context' ? 'context' : 'evidence';
+  const label = kind === 'context' ? 'Context Pack' : 'Evidence Packet';
+  const selectedItemCount = 'selectedItemCount' in reference && typeof reference.selectedItemCount === 'number' ? String(reference.selectedItemCount) : 'Unknown';
+  const evidenceIds = 'evidenceIds' in reference && Array.isArray(reference.evidenceIds)
+    ? reference.evidenceIds.filter((item): item is string => typeof item === 'string').join(', ') || 'Unknown'
+    : 'Unknown';
+  return (
+    <article className={`brain-reference-card${selected ? ' selected' : ''}`}>
+      <Link
+        className="brain-reference-link"
+        href={`/brain/tasks/${encodeURIComponent(taskId)}?${parameter}=${encodeURIComponent(reference.packetId)}`}
+        aria-current={selected ? 'location' : undefined}
+      >
+        <span><strong>{reference.packetId}</strong><small>{label} · {reference.type}</small></span>
+        <StatusBadge status={referenceStatus(reference.status)} label={referenceLabel(reference.status)} />
+      </Link>
+      <div className="brain-reference-meta">
+        <span>freshness <strong>{reference.freshness.toUpperCase()}</strong></span>
+        <span>revision <strong>{reference.revision ?? 'Unknown'}</strong></span>
+        <span>source <strong>{reference.source ?? 'Unknown'}</strong></span>
+      </div>
+      {selected ? (
+        <div className="brain-reference-detail" aria-label={`${label} bounded detail`}>
+          <div className="brain-kv-list">
+            <div><span>Status</span><strong>{referenceLabel(reference.status)}</strong></div>
+            <div><span>Authority</span><strong>{reference.authority ?? 'Unknown'}</strong></div>
+            <div><span>Locator</span><strong>{reference.locator ?? 'Not available'}</strong></div>
+            <div><span>Created / updated</span><strong>{reference.createdAt ?? 'Unknown'} · {reference.updatedAt ?? 'Unknown'}</strong></div>
+            {kind === 'context' && 'selectedItemCount' in reference ? <div><span>Selected items</span><strong>{selectedItemCount}</strong></div> : null}
+            {kind === 'evidence' && 'evidenceIds' in reference ? <div><span>Evidence IDs</span><strong>{evidenceIds}</strong></div> : null}
+          </div>
+          <p className="meta">Descriptor only. The packet body remains unloaded; this view is bounded to persisted reference metadata.</p>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function ReferenceGroup({
+  taskId,
+  kind,
+  references,
+  selectedId,
+}: {
+  taskId: string;
+  kind: 'context' | 'evidence';
+  references: Array<ContextPackRef | EvidencePacketRef>;
+  selectedId?: string;
+}) {
+  const label = kind === 'context' ? 'Context Pack' : 'Evidence Packet';
+  return (
+    <div className="brain-reference-group">
+      <div className="brain-reference-heading"><strong>{label} refs</strong><span className="meta">{references.length} attached</span></div>
+      {references.length ? references.map((reference) => (
+        <ReferenceCard key={`${kind}-${reference.packetId}`} taskId={taskId} kind={kind} reference={reference} selected={reference.packetId === selectedId} />
+      )) : <EmptyState title={`${label} refs unavailable`} detail="NOT_PERSISTED: no canonical reference is attached to this task projection." />}
+    </div>
+  );
+}
+
+function ReferenceCounts({ task }: { task: Task }) {
+  if (!task.contextPackRefs.length && !task.evidencePacketRefs.length) return <span className="meta">No persisted packet refs</span>;
+  return <span className="brain-reference-counts">{task.contextPackRefs.length ? <Link href={`/brain/tasks/${encodeURIComponent(task.taskId)}?context=${encodeURIComponent(task.contextPackRefs[0].packetId)}`}>{task.contextPackRefs.length} context</Link> : <span>0 context</span>}{task.evidencePacketRefs.length ? <Link href={`/brain/tasks/${encodeURIComponent(task.taskId)}?evidence=${encodeURIComponent(task.evidencePacketRefs[0].packetId)}`}>{task.evidencePacketRefs.length} evidence</Link> : <span>0 evidence</span>}</span>;
+}
+
 function TaskRows({ tasks }: { tasks: Task[] }) {
   if (!tasks.length) return <EmptyState title="No tasks available" detail="Brain Core returned an empty task graph." />;
   return <div className="brain-task-list">{tasks.map((task) => <Link className="brain-task-row" href={`/brain/tasks/${encodeURIComponent(task.taskId)}`} key={task.taskId}><State status={task.status} /><span className="brain-task-main"><strong>{task.title}</strong><small>{task.taskId} · {task.role} · {task.aiTaskType}</small></span><span className="brain-task-route">{task.capabilityIds.join(', ') || 'No capability recorded'}</span><ArrowRight size={14} /></Link>)}</div>;
 }
 
 function GraphPanel({ tasks }: { tasks: Task[] }) {
-  return <Panel title="Composition graph" eyebrow="Actual task dependencies" className="brain-graph-panel"><div className="brain-graph">{tasks.length ? tasks.map((task) => <div className="brain-graph-node" key={task.taskId}><div className="brain-graph-card"><State status={task.status} /><strong>{task.title}</strong><code>{task.taskId}</code></div>{task.dependsOn.length ? <div className="brain-graph-edge"><ArrowRight size={14} /><span>depends on {task.dependsOn.join(', ')}</span></div> : <div className="brain-graph-edge root"><span>root task</span></div>}</div>) : <EmptyState title="Graph unavailable" detail="No task graph nodes were returned." />}</div><p className="meta">Nodes and relationships are read from the current Brain task graph. No inferred nodes are added.</p></Panel>;
+  return <Panel title="Composition graph" eyebrow="Actual task dependencies" className="brain-graph-panel"><div className="brain-graph">{tasks.length ? tasks.map((task) => <div className="brain-graph-node" key={task.taskId}><div className="brain-graph-card"><State status={task.status} /><strong>{task.title}</strong><code>{task.taskId}</code><ReferenceCounts task={task} /></div>{task.dependsOn.length ? <div className="brain-graph-edge"><ArrowRight size={14} /><span>depends on {task.dependsOn.join(', ')}</span></div> : <div className="brain-graph-edge root"><span>root task</span></div>}</div>) : <EmptyState title="Graph unavailable" detail="No task graph nodes were returned." />}</div><p className="meta">Nodes, relationships, and attached packet refs are read from the current Brain task graph. No inferred nodes are added.</p></Panel>;
 }
 
 function ActiveWorkView({ data }: { data: WorkspaceData }) {
@@ -298,7 +401,9 @@ function TasksEvidenceView({ data }: { data: WorkspaceData }) {
   const tasks = data.taskGraph?.tasks ?? [];
   const evidenceStore = asRecord(data.infiniteStatus?.infrastructure && asRecord(data.infiniteStatus.infrastructure).evidenceStore);
   const evidenceStats = asRecord(evidenceStore.stats);
-  return <><div className="brain-split-grid"><Panel title="Task Packets" eyebrow="Readable contract projection"><div className="brain-contract-intro"><CheckCircle2 size={18} /><p>Task graph items are presented as bounded task references, owners, capabilities, gates, and next actions. Full task-packet bodies are not connected to this read-only Core surface.</p></div><TaskRows tasks={tasks} /></Panel><Panel title="Evidence Packets" eyebrow="Provenance and receipts"><div className="brain-contract-stat"><strong>{asNumber(evidenceStats.totalRecords)}</strong><span>records available</span></div><Availability available={asNumber(evidenceStats.totalRecords) > 0} label={asNumber(evidenceStats.totalRecords) > 0 ? 'AVAILABLE' : 'UNAVAILABLE'} /><p className="meta">{asNumber(evidenceStats.totalRecords) > 0 ? 'Evidence references can be opened from task detail.' : 'No evidence packet store is connected in the current runtime projection. This is shown explicitly rather than inferred as a pass.'}</p><details className="brain-advanced"><summary>Evidence contract status</summary><p className="meta">Source: Infinite Brain evidence store projection. Raw packet bodies remain unloaded.</p></details></Panel></div><GraphPanel tasks={tasks} /></>;
+  const contextRefs = tasks.reduce((total, task) => total + task.contextPackRefs.length, 0);
+  const packetRefs = tasks.reduce((total, task) => total + task.evidencePacketRefs.length, 0);
+  return <><div className="brain-split-grid"><Panel title="Task Packets" eyebrow="Readable contract projection"><div className="brain-contract-intro"><CheckCircle2 size={18} /><p>Task graph items are presented as bounded task references, owners, capabilities, gates, and next actions. Full task-packet bodies are not connected to this read-only Core surface.</p></div><TaskRows tasks={tasks} /></Panel><Panel title="Context and Evidence refs" eyebrow="Persisted linkage"><div className="brain-contract-stat"><strong>{contextRefs + packetRefs}</strong><span>attached refs</span></div><div className="brain-reference-summary"><span>Context Pack <strong>{contextRefs}</strong></span><span>Evidence Packet <strong>{packetRefs}</strong></span></div><p className="meta">Only references present in the task projection are linked. Missing or unavailable sources remain explicitly labeled; packet bodies are not preloaded.</p><div className="brain-contract-stat"><strong>{asNumber(evidenceStats.totalRecords)}</strong><span>evidence store records</span></div><Availability available={asNumber(evidenceStats.totalRecords) > 0} label={asNumber(evidenceStats.totalRecords) > 0 ? 'AVAILABLE' : 'UNAVAILABLE'} /><details className="brain-advanced"><summary>Evidence contract status</summary><p className="meta">Source: Infinite Brain evidence store projection. Raw packet bodies remain unloaded.</p></details></Panel></div><GraphPanel tasks={tasks} /></>;
 }
 
 function QualitySafetyView({ data }: { data: WorkspaceData }) {
@@ -315,7 +420,7 @@ function ContinuitySummary({ data }: { data: WorkspaceData }) {
 
 function ContinuityView({ data }: { data: WorkspaceData }) {
   const state = data.taskState;
-  return <><div className="brain-split-grid"><Panel title="Continuity status" eyebrow="Sparse task state"><ContinuitySummary data={data} /><div className="brain-safety-note"><LockKeyhole size={15} /><span>No automatic resume is offered. Any stale or conflicted continuation requires explicit review.</span></div></Panel><Panel title="Identity and freshness" eyebrow="Continuation context"><div className="brain-kv-list"><div><span>Task state generated</span><strong>{state?.generatedAt ? timeAgo(state.generatedAt) : 'Unknown'}</strong></div><div><span>Task graph</span><strong>{data.taskGraph?.generatedAt ? timeAgo(data.taskGraph.generatedAt) : 'Unknown'}</strong></div><div><span>Persistence</span><strong>{asRecord(state?.persistence).enabled === true ? 'Enabled' : 'Disabled'}</strong></div></div></Panel></div><Panel title="Continuity steps" eyebrow="Current, pending, and completed nodes">{state?.steps.length ? <div className="brain-step-list">{state.steps.map((step) => <div className="brain-step-row" key={step.taskId}><State status={step.status} /><span><strong>{step.taskId}</strong><small>{step.note}</small></span></div>)}</div> : <EmptyState title="No continuity steps" detail="No session or task continuation records are connected." />}</Panel></>;
+  return <><div className="brain-split-grid"><Panel title="Continuity status" eyebrow="Sparse task state"><ContinuitySummary data={data} /><div className="brain-safety-note"><LockKeyhole size={15} /><span>No automatic resume is offered. Any stale or conflicted continuation requires explicit review.</span></div></Panel><Panel title="Identity and freshness" eyebrow="Continuation context"><div className="brain-kv-list"><div><span>Task state generated</span><strong>{state?.generatedAt ? timeAgo(state.generatedAt) : 'Unknown'}</strong></div><div><span>Task graph</span><strong>{data.taskGraph?.generatedAt ? timeAgo(data.taskGraph.generatedAt) : 'Unknown'}</strong></div><div><span>Persistence</span><strong>{asRecord(state?.persistence).enabled === true ? 'Enabled' : 'Disabled'}</strong></div></div></Panel></div><Panel title="Continuity steps" eyebrow="Current, pending, and completed nodes">{state?.steps.length ? <div className="brain-step-list">{state.steps.map((step) => <div className="brain-step-row" key={step.taskId}><State status={step.status} /><span><strong>{step.taskId}</strong><small>{step.note}</small><ReferenceCounts task={{ taskId: step.taskId, title: step.taskId, status: step.status, dependsOn: [], role: '', capabilityIds: [], aiTaskType: '', approvalRequired: false, notes: step.note, contextPackRefs: step.contextPackRefs, evidencePacketRefs: step.evidencePacketRefs }} /></span></div>)}</div> : <EmptyState title="No continuity steps" detail="No session or task continuation records are connected." />}</Panel></>;
 }
 
 function CapabilityRoutingView({ data }: { data: WorkspaceData }) {
@@ -342,12 +447,12 @@ export function BrainWorkspace({ view = 'overview' }: { view?: string }) {
   return <div className="brain-workspace"><WorkspaceHeader title={title} description={description} query={query} /><WorkspaceNav /><Errors errors={query.data.errors} /><WorkspaceContent view={view} data={query.data} /></div>;
 }
 
-export function BrainTaskDetail({ taskId }: { taskId: string }) {
+export function BrainTaskDetail({ taskId, selectedContextId, selectedEvidenceId }: { taskId: string; selectedContextId?: string; selectedEvidenceId?: string }) {
   const query = useWorkspace();
   const task = query.data?.taskGraph?.tasks.find((item) => item.taskId === taskId);
   const executor = query.data?.executorPlan?.steps.find((item) => item.taskId === taskId);
   const continuity = query.data?.taskState?.steps.find((item) => item.taskId === taskId);
   if (query.isPending && !query.data) return <div className="brain-workspace"><Link className="button-link" href="/brain/active-work">← Active Work</Link><div className="brain-loading"><span className="skeleton skeleton-command-title" /><span className="skeleton skeleton-panel" /></div></div>;
   if (!task) return <div className="brain-workspace"><Link className="button-link" href="/brain/active-work">← Active Work</Link><Panel title="Task unavailable" eyebrow="Task detail"><EmptyState title={`No task ${taskId} in the current graph`} detail="The detail route is stable, but the referenced task is not present in the latest read-only snapshot." /></Panel></div>;
-  return <div className="brain-workspace"><div className="brain-detail-back"><Link className="button-link" href="/brain/active-work">← Active Work</Link><span className="meta">Task detail · {task.taskId}</span></div><WorkspaceHeader title={task.title} description={task.notes} query={query} /><div className="brain-detail-grid"><Panel title="Task Packet" eyebrow="Human-readable contract"><div className="brain-detail-status"><State status={task.status} /><span>{task.role}</span><span>{task.aiTaskType}</span></div><div className="brain-kv-list"><div><span>Task ID</span><strong>{task.taskId}</strong></div><div><span>Primary owner</span><strong>{task.role}</strong></div><div><span>Selected capabilities</span><strong>{task.capabilityIds.join(', ') || 'None recorded'}</strong></div><div><span>Approval</span><strong>{task.approvalRequired ? 'Required' : 'Not required'}</strong></div><div><span>Dependencies</span><strong>{task.dependsOn.join(', ') || 'Root task'}</strong></div></div><details className="brain-advanced"><summary>View raw task reference</summary><pre>{JSON.stringify(task, null, 2)}</pre></details></Panel><Panel title="Capability resolution" eyebrow="Recorded route">{executor ? <div className="brain-resolution"><div><span>Executor</span><strong>{executor.executorId}</strong></div><div><span>Provider</span><strong>{executor.providerId}</strong></div><div><span>Source</span><strong>{executor.source}</strong></div><p>{executor.reason}</p></div> : <EmptyState title="No route recorded" detail="The task has no executor selection in the current plan." />}</Panel><Panel title="Quality and safety gates" eyebrow="Exact current state"><GateRow label="Task execution" value="READ-ONLY" detail="Brain Console does not expose a direct execution action." status="blocked" /><GateRow label="Continuity" value={continuity ? stateLabel(continuity.status) : 'UNAVAILABLE'} detail={continuity?.note ?? 'No continuity step is connected.'} status={continuity?.status ?? 'unavailable'} /><GateRow label="Evidence" value="UNAVAILABLE" detail="No evidence packet reference is attached to this task projection." status="unavailable" /></Panel><Panel title="Context and evidence" eyebrow="Atomic references"><EmptyState title="Context pack refs unavailable" detail="The current agent task projection does not expose selected Context Pack references or Evidence Packet receipts." /><details className="brain-advanced"><summary>Advanced contract boundary</summary><p className="meta">Full context bodies, provider payloads, secrets, and raw transcripts remain intentionally unloaded.</p></details></Panel></div></div>;
+  return <div className="brain-workspace"><div className="brain-detail-back"><Link className="button-link" href="/brain/active-work">← Active Work</Link><span className="meta">Task detail · {task.taskId}</span></div><WorkspaceHeader title={task.title} description={task.notes} query={query} /><div className="brain-detail-grid"><Panel title="Task Packet" eyebrow="Human-readable contract"><div className="brain-detail-status"><State status={task.status} /><span>{task.role}</span><span>{task.aiTaskType}</span></div><div className="brain-kv-list"><div><span>Task ID</span><strong>{task.taskId}</strong></div><div><span>Primary owner</span><strong>{task.role}</strong></div><div><span>Selected capabilities</span><strong>{task.capabilityIds.join(', ') || 'None recorded'}</strong></div><div><span>Approval</span><strong>{task.approvalRequired ? 'Required' : 'Not required'}</strong></div><div><span>Dependencies</span><strong>{task.dependsOn.join(', ') || 'Root task'}</strong></div></div><details className="brain-advanced"><summary>View raw task reference</summary><pre>{JSON.stringify(task, null, 2)}</pre></details></Panel><Panel title="Capability resolution" eyebrow="Recorded route">{executor ? <div className="brain-resolution"><div><span>Executor</span><strong>{executor.executorId}</strong></div><div><span>Provider</span><strong>{executor.providerId}</strong></div><div><span>Source</span><strong>{executor.source}</strong></div><p>{executor.reason}</p></div> : <EmptyState title="No route recorded" detail="The task has no executor selection in the current plan." />}</Panel><Panel title="Quality and safety gates" eyebrow="Exact current state"><GateRow label="Task execution" value="READ-ONLY" detail="Brain Console does not expose a direct execution action." status="blocked" /><GateRow label="Continuity" value={continuity ? stateLabel(continuity.status) : 'UNAVAILABLE'} detail={continuity?.note ?? 'No continuity step is connected.'} status={continuity?.status ?? 'unavailable'} /><GateRow label="Evidence" value={task.evidencePacketRefs.length ? `${task.evidencePacketRefs.length} REF${task.evidencePacketRefs.length === 1 ? '' : 'S'}` : 'NOT_PERSISTED'} detail={task.evidencePacketRefs.length ? 'Evidence Packet refs are attached to this task projection.' : 'No Evidence Packet ref is attached to this task projection.'} status={task.evidencePacketRefs.length ? 'fresh' : 'unavailable'} /></Panel><Panel title="Context and evidence" eyebrow="Bounded persisted references"><ReferenceGroup taskId={task.taskId} kind="context" references={task.contextPackRefs} selectedId={selectedContextId} /><ReferenceGroup taskId={task.taskId} kind="evidence" references={task.evidencePacketRefs} selectedId={selectedEvidenceId} /><details className="brain-advanced"><summary>Advanced contract boundary</summary><p className="meta">Full context bodies, provider payloads, secrets, and raw transcripts remain intentionally unloaded.</p></details></Panel></div></div>;
 }

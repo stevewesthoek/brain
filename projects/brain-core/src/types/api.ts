@@ -1,5 +1,9 @@
 import type { DeploymentIdentity } from './deployment-identity.js';
 import type { OperationalSnapshot } from './operational-snapshot.js';
+import type {
+  BrainCoreAgentContextPackRef,
+  BrainCoreAgentEvidencePacketRef,
+} from './agent-task-references.js';
 
 export interface BrainCoreStatus {
   service: 'brain-core';
@@ -5784,6 +5788,9 @@ export interface BrainCoreAgentTaskSummary {
   aiTaskType: string;
   approvalRequired: boolean;
   notes: string;
+  /** Additive, bounded references; packet bodies are never embedded here. */
+  contextPackRefs?: BrainCoreAgentContextPackRef[];
+  evidencePacketRefs?: BrainCoreAgentEvidencePacketRef[];
 }
 
 export interface BrainCoreAgentTaskGraphSummary {
@@ -5813,6 +5820,8 @@ export interface BrainCoreAgentTaskStateStepSummary {
   selectedProviderId?: string;
   selectedModel?: string;
   note?: string;
+  contextPackRefs?: BrainCoreAgentContextPackRef[];
+  evidencePacketRefs?: BrainCoreAgentEvidencePacketRef[];
 }
 
 export interface BrainCoreAgentTaskStateSummary {

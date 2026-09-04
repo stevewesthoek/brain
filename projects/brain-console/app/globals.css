@@ -2955,6 +2955,22 @@ tr:last-child td {
   font-size: 9px;
 }
 
+.brain-reference-counts {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.brain-reference-counts a:hover,
+.brain-reference-counts a:focus-visible {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
 .brain-graph-edge {
   display: flex;
   align-items: center;
@@ -2989,6 +3005,104 @@ tr:last-child td {
 .brain-contract-stat span {
   color: var(--muted-foreground);
   font-size: 11px;
+}
+
+.brain-reference-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+
+.brain-reference-summary strong {
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+.brain-reference-group {
+  display: grid;
+  gap: 7px;
+}
+
+.brain-reference-group + .brain-reference-group {
+  padding-top: 9px;
+  border-top: 1px solid var(--section-line);
+}
+
+.brain-reference-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.brain-reference-heading strong {
+  color: var(--foreground);
+  font-size: 11px;
+}
+
+.brain-reference-card {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.brain-reference-card.selected {
+  border-color: var(--foreground);
+}
+
+.brain-reference-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 8px;
+}
+
+.brain-reference-link > span {
+  min-width: 0;
+}
+
+.brain-reference-link strong,
+.brain-reference-link small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brain-reference-link strong {
+  color: var(--foreground);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.brain-reference-link small {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: 9px;
+}
+
+.brain-reference-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--muted-foreground);
+  font-size: 9px;
+}
+
+.brain-reference-meta strong {
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.brain-reference-detail {
+  padding-top: 6px;
+  border-top: 1px solid var(--section-line);
 }
 
 .brain-routing-row {

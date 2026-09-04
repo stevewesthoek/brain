@@ -6,6 +6,7 @@ import type {
   BrainCoreAgentTaskStateSummary,
   BrainCoreAgentTaskStatus,
 } from '../types/api.js';
+import { normalizeTaskReferenceFields } from './agent-task-references.js';
 
 const DEFAULT_TASK_STATE_PATH = path.join(
   os.homedir(),
@@ -27,6 +28,7 @@ export function readAgentTaskState(taskGraph: BrainCoreAgentTaskGraphSummary): B
   if (snapshot) {
     return {
       ...snapshot,
+      steps: snapshot.steps.map((step) => normalizeTaskReferenceFields(step as unknown as Record<string, unknown>) as unknown as typeof step),
       source: 'snapshot',
       status: 'snapshot',
       persistence: {
@@ -47,6 +49,8 @@ export function readAgentTaskState(taskGraph: BrainCoreAgentTaskGraphSummary): B
     taskId: task.taskId,
     status: task.status as BrainCoreAgentTaskStatus,
     note: task.notes,
+    ...(task.contextPackRefs ? { contextPackRefs: task.contextPackRefs } : {}),
+    ...(task.evidencePacketRefs ? { evidencePacketRefs: task.evidencePacketRefs } : {}),
   }));
 
   return {

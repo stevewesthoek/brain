@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { listAgentEvents, listAgentRuns } from './agent-runs.js';
 import { listApprovals } from './approvals.js';
+import { normalizeTaskReferenceFields } from './agent-task-references.js';
 import type {
   BrainCoreAgentEventSummary,
   BrainCoreAgentLedgerSummary,
@@ -77,6 +78,7 @@ export function readAgentTaskGraph(): BrainCoreAgentTaskGraphSummary {
   if (snapshot) {
     return {
       ...snapshot,
+      tasks: snapshot.tasks.map((task) => normalizeTaskReferenceFields(task as unknown as Record<string, unknown>) as unknown as typeof task),
       source: 'snapshot',
       status: 'snapshot',
       persistence: {
@@ -101,7 +103,7 @@ export function readAgentTaskGraph(): BrainCoreAgentTaskGraphSummary {
     blockedCount,
     pendingCount,
     tasks: TASK_GRAPH.map((task) => ({
-      ...task,
+      ...normalizeTaskReferenceFields(task as unknown as Record<string, unknown>) as unknown as typeof task,
       dependsOn: [...task.dependsOn],
       capabilityIds: [...task.capabilityIds],
     })),

@@ -2170,3 +2170,52 @@ export const infiniteBrainStatusSchema = z.object({
 });
 
 export type InfiniteBrainStatus = z.infer<typeof infiniteBrainStatusSchema>;
+
+const taskReferenceStatusSchema = z.enum([
+  'persisted',
+  'available_by_ref',
+  'not_persisted',
+  'unavailable',
+  'stale',
+  'missing',
+]);
+const taskReferenceFreshnessSchema = z.enum(['fresh', 'stale', 'mixed', 'unknown', 'unavailable']);
+const taskReferenceBaseSchema = z.object({
+  packetId: z.string().min(1),
+  type: z.enum(['context-pack', 'evidence-packet']),
+  revision: z.string().nullable(),
+  source: z.string().nullable(),
+  freshness: taskReferenceFreshnessSchema,
+  status: taskReferenceStatusSchema,
+  authority: z.string().nullable(),
+  locator: z.string().nullable(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+}).passthrough();
+
+export const agentContextPackRefSchema = taskReferenceBaseSchema.extend({
+  type: z.literal('context-pack'),
+  selectedItemCount: z.number().int().nonnegative().nullable().optional(),
+});
+
+export const agentEvidencePacketRefSchema = taskReferenceBaseSchema.extend({
+  type: z.literal('evidence-packet'),
+  evidenceIds: z.array(z.string()).optional(),
+  relation: z.string().nullable().optional(),
+});
+
+export const agentTaskGraphSchema = z.object({
+  tasks: z.array(z.object({
+    taskId: z.string(),
+    contextPackRefs: z.array(agentContextPackRefSchema).optional(),
+    evidencePacketRefs: z.array(agentEvidencePacketRefSchema).optional(),
+  }).passthrough()).optional(),
+}).passthrough();
+
+export const agentTaskStateSchema = z.object({
+  steps: z.array(z.object({
+    taskId: z.string(),
+    contextPackRefs: z.array(agentContextPackRefSchema).optional(),
+    evidencePacketRefs: z.array(agentEvidencePacketRefSchema).optional(),
+  }).passthrough()).optional(),
+}).passthrough();
