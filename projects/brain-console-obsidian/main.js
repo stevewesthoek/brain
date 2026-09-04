@@ -22,6 +22,23 @@ const {
   safeEvidenceRefs,
 } = core;
 
+const BRAIN_CONSOLE_WIDGET_CONTRACT = Object.freeze({
+  contract: 'brain-console-obsidian-widget-contract-v1',
+  version: 1,
+  widgetIds: Object.freeze([
+    'brain-status',
+    'brain-sessions',
+    'brain-repos',
+    'brain-orchestrators',
+    'brain-capabilities',
+    'brain-scheduler',
+    'brain-local-apps',
+    'brain-video',
+    'brain-approvals',
+    'brain-runtime-reports',
+  ]),
+});
+
 const DEFAULT_SETTINGS = Object.freeze({
   brainCoreUrl: DEFAULT_BRAIN_CORE_URL,
   decidedBy: 'obsidian-owner',
@@ -119,6 +136,7 @@ class BrainConsoleView extends ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass('brain-console-root');
+    container.dataset.brainConsoleWidgetContract = BRAIN_CONSOLE_WIDGET_CONTRACT.contract;
     const header = container.createDiv({ cls: 'brain-console-header' });
     const titleWrap = header.createDiv();
     titleWrap.createEl('h2', { text: title });

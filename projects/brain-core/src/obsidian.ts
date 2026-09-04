@@ -1,36 +1,44 @@
 import type {
   BrainCoreApprovalSummary,
+  BrainCoreCapabilitySummary,
   BrainCoreLocalAppSummary,
+  BrainCoreOrchestratorSummary,
   BrainCoreRepoSummary,
   BrainCoreRoutes,
   BrainCoreSchedulerJobSummary,
   BrainCoreSchedulerStatus,
   BrainCoreSessionSummary,
-  BrainCoreSkillSummary,
   BrainCoreStatus,
   BrainCoreVideoQueueItem,
   BrainCoreVideoStatus,
+  BrainCoreRuntimeReportSummary,
 } from './types/api.js';
+
+export const BRAIN_CONSOLE_OBSIDIAN_CONTRACT = 'brain-console-obsidian-widget-contract-v1' as const;
 
 export type BrainConsoleWidgetId =
   | 'brain-status'
   | 'brain-sessions'
   | 'brain-repos'
-  | 'brain-skills'
+  | 'brain-orchestrators'
+  | 'brain-capabilities'
   | 'brain-scheduler'
   | 'brain-local-apps'
-  | 'brain-video-queue'
-  | 'brain-approvals';
+  | 'brain-video'
+  | 'brain-approvals'
+  | 'brain-runtime-reports';
 
 const EXPECTED_WIDGET_IDS: BrainConsoleWidgetId[] = [
   'brain-status',
   'brain-sessions',
   'brain-repos',
-  'brain-skills',
+  'brain-orchestrators',
+  'brain-capabilities',
   'brain-scheduler',
   'brain-local-apps',
-  'brain-video-queue',
+  'brain-video',
   'brain-approvals',
+  'brain-runtime-reports',
 ];
 
 export interface BrainConsoleWidget<TData> {
@@ -49,15 +57,19 @@ export interface BrainConsoleHealthCheck {
 }
 
 export interface BrainConsoleSnapshot {
+  contract: typeof BRAIN_CONSOLE_OBSIDIAN_CONTRACT;
+  version: 1;
   widgets: Array<
     | BrainConsoleWidget<BrainCoreStatus>
     | BrainConsoleWidget<{ sessions: BrainCoreSessionSummary[] }>
     | BrainConsoleWidget<{ repos: BrainCoreRepoSummary[] }>
-    | BrainConsoleWidget<{ skills: BrainCoreSkillSummary[] }>
+    | BrainConsoleWidget<{ orchestrators: BrainCoreOrchestratorSummary[] }>
+    | BrainConsoleWidget<BrainCoreCapabilitySummary>
     | BrainConsoleWidget<{ status: BrainCoreSchedulerStatus; jobs: BrainCoreSchedulerJobSummary[] }>
     | BrainConsoleWidget<{ apps: BrainCoreLocalAppSummary[] }>
     | BrainConsoleWidget<{ status: BrainCoreVideoStatus; queue: BrainCoreVideoQueueItem[] }>
     | BrainConsoleWidget<{ approvals: BrainCoreApprovalSummary[] }>
+    | BrainConsoleWidget<{ reports: BrainCoreRuntimeReportSummary[] }>
   >;
 }
 
@@ -65,15 +77,19 @@ export function createBrainConsoleSnapshot(input: {
   status: BrainCoreStatus;
   sessions: BrainCoreSessionSummary[];
   repos: BrainCoreRepoSummary[];
-  skills: BrainCoreSkillSummary[];
+  orchestrators: BrainCoreOrchestratorSummary[];
+  capabilities: BrainCoreCapabilitySummary;
   schedulerStatus: BrainCoreSchedulerStatus;
   schedulerJobs: BrainCoreSchedulerJobSummary[];
   localApps: BrainCoreLocalAppSummary[];
   videoStatus: BrainCoreVideoStatus;
   videoQueue: BrainCoreVideoQueueItem[];
   approvals: BrainCoreApprovalSummary[];
+  runtimeReports: BrainCoreRuntimeReportSummary[];
 }): BrainConsoleSnapshot {
   return {
+    contract: BRAIN_CONSOLE_OBSIDIAN_CONTRACT,
+    version: 1,
     widgets: [
       {
         id: 'brain-status',
@@ -97,11 +113,18 @@ export function createBrainConsoleSnapshot(input: {
         data: { repos: input.repos },
       },
       {
-        id: 'brain-skills',
-        title: 'Skills',
-        endpoint: '/skills',
+        id: 'brain-orchestrators',
+        title: 'Orchestrators',
+        endpoint: '/orchestrators',
         phase: 'read-only',
-        data: { skills: input.skills },
+        data: { orchestrators: input.orchestrators },
+      },
+      {
+        id: 'brain-capabilities',
+        title: 'Capabilities',
+        endpoint: '/capabilities',
+        phase: 'read-only',
+        data: input.capabilities,
       },
       {
         id: 'brain-scheduler',
@@ -121,8 +144,8 @@ export function createBrainConsoleSnapshot(input: {
         data: { apps: input.localApps },
       },
       {
-        id: 'brain-video-queue',
-        title: 'Video queue',
+        id: 'brain-video',
+        title: 'Video',
         endpoint: '/video/status',
         phase: 'read-only',
         data: {
@@ -136,6 +159,13 @@ export function createBrainConsoleSnapshot(input: {
         endpoint: '/approvals',
         phase: 'read-only',
         data: { approvals: input.approvals },
+      },
+      {
+        id: 'brain-runtime-reports',
+        title: 'Runtime reports',
+        endpoint: '/runtime/reports',
+        phase: 'read-only',
+        data: { reports: input.runtimeReports },
       },
     ],
   };
