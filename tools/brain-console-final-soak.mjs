@@ -34,9 +34,9 @@ function snapshot(label, profile) {
   const consolePattern = /next-server \(v15\.5\.19\)/;
   return {
     at: now(), label,
-    coreRssMb: Number((processMetric(corePattern, 1) / 1024).toFixed(1)),
-    consoleRssMb: Number((processMetric(consolePattern, 1) / 1024).toFixed(1)),
-    browserRssMb: Number((processMetric(profilePattern, 1) / 1024).toFixed(1)),
+    coreRssMb: Number((processMetric(corePattern, 2) / 1024).toFixed(1)),
+    consoleRssMb: Number((processMetric(consolePattern, 2) / 1024).toFixed(1)),
+    browserRssMb: Number((processMetric(profilePattern, 2) / 1024).toFixed(1)),
     coreCpuPct: Number(processMetric(corePattern, 3).toFixed(1)),
     consoleCpuPct: Number(processMetric(consolePattern, 3).toFixed(1)),
   };
