@@ -1,5 +1,5 @@
 import { getSystemMetrics } from './system-metrics.js';
-import type { CodexUsageFreshness } from './codex-usage-reader.js';
+import type { CodexUsageDiagnostics, CodexUsageFreshness } from './codex-usage-reader.js';
 
 type Freshness = 'fresh' | 'stale' | 'unavailable' | 'not_instrumented';
 
@@ -114,6 +114,7 @@ export async function readOpsSystemMetrics(): Promise<OpsDashboardEnvelope<{
 }
 
 export async function readOpsAiUsageWindows(): Promise<OpsDashboardEnvelope<{
+  diagnostics: CodexUsageDiagnostics & { freshness: CodexUsageFreshness; asOf: string | null };
   codexCurrentWindow: OpsMetric<number>;
   codexFiveHourWindow: OpsMetric<number>;
   codexSevenDayWindow: OpsMetric<number>;
