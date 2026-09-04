@@ -20,7 +20,7 @@ function tokenEvent(timestamp: string, usedPercent: number): string {
 }
 
 async function makeFixture(): Promise<{ root: string; cachePath: string }> {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'brain-codex-usage-'));
+  const root = await fs.mkdtemp(path.join(process.env.TMPDIR ?? '/tmp', 'brain-codex-usage-'));
   return { root, cachePath: path.join(root, 'cache', 'index.json') };
 }
 

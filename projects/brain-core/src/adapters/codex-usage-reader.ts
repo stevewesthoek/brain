@@ -199,7 +199,7 @@ async function collectFileMetadata(
           truncated = true;
           continue;
         }
-        files.push({ filePath: entryPath, mtimeMs: stat.mtimeMs, size: stat.size });
+        files.push({ filePath: entryPath, mtimeMs: stat.mtime.getTime(), size: stat.size });
         if (files.length >= maxFiles) {
           truncated = true;
           break;
