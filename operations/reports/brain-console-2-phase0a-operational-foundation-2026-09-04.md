@@ -40,9 +40,11 @@ The earlier audit also established that the installed Mac app is an `LSUIElement
 
 ## 6. Deployment identity manifest
 
-Implemented `brain-core-deployment-identity-v1` in Core types, adapter, JSON contract, and `GET /runtime/identity`. It reports canonical source path/revision, runtime path/revision, build mode/timestamp, fixed service labels, endpoints, contract versions, and fail-closed identity state (`matching`, `stale`, `unknown`, `development`, or `unavailable`). It reads only non-secret metadata and declares `exposesSecrets: false` and `exposesEnvironmentValues: false`.
+Implemented `brain-core-deployment-identity-v1` in Core types, adapter, JSON contract, and `GET /runtime/identity`. It reports canonical source path/revision, runtime path/revision, build mode/timestamp, fixed service labels, endpoints, service state, startup mechanism, contract versions, and fail-closed identity state (`matching`, `stale`, `unknown`, `development`, or `unavailable`). It reads only non-secret metadata and declares `exposesSecrets: false` and `exposesEnvironmentValues: false`.
 
 Identity tests cover matching, stale, missing metadata, unavailable metadata, and development mode. Unknown and stale identity are visible states; neither is normalized into false health.
+
+The source contract exposes both `runtime.serviceState` and `runtime.launchMechanism`. The implementation branch can therefore report these values without shell inspection; values not supplied by a deployment remain explicitly `unknown` (the Core process defaults its own service state to `running`).
 
 ## 7. Obsidian reconciliation
 
@@ -98,13 +100,24 @@ Optional source failures are captured with source/code/message, rendered as `DEG
 
 The representative live-shaped snapshot measurement completed in approximately **381.46 ms**, produced a **19,299-byte** payload, and composed **8** bounded source loaders. A fixture build measured approximately **2.42 ms**. The route/test measurements remained under one second locally. No high-frequency polling was added; the future home consumer has one shared snapshot request boundary.
 
+## Polling audit
+
+The current Console still has the pre-Command-Center polling pattern and it was intentionally not migrated in this foundation phase:
+
+- `global-pulse-strip.tsx` polls `/ops/system-metrics` every 1 second and `/ops/ai-usage-windows` plus `/ops/ai-costs` every 5 seconds on the shared shell.
+- `shell.tsx` polls Core status every 5 seconds.
+- `overview-dashboard.tsx` polls Graphify and Mind Steward status every 15 seconds; Infinite Brain detail polling remains 30 seconds.
+- Specialist pages retain their existing 5–30 second intervals, including Local Apps, infrastructure/telemetry, scheduler, monitoring, providers, projections, and AWS Video workflow status.
+
+No clearly hidden polling loop was disabled because doing so would alter current visible behavior. Phase B should replace the shared shell/overview status polling with one snapshot request per refresh window and leave specialist workflow polling scoped to detail pages.
+
 ## 18. Compatibility
 
 Existing Core routes remain in place. The new identity and snapshot endpoints are additive GET routes; POST to the snapshot route is rejected. The existing projection envelope remains intact, including authority owner, provenance, freshness, confidence, uncertainty, privacy classification, availability, failure, and safety fields. The existing Console routes and Obsidian Decision Center workflow remain available.
 
 ## 19. Validation
 
-- Core focused contract/route/projection tests: **22 passed, 0 failed**.
+- Core focused contract/route/projection tests: **23 passed, 0 failed**.
 - Console operational snapshot schema tests: **2 passed, 0 failed**.
 - Obsidian checks and widget conformance: **7 passed, 0 failed**.
 - Brain Core typecheck: **passed**.
