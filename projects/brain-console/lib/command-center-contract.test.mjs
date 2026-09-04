@@ -17,6 +17,7 @@ test('Command Center is a real route backed by one bounded operational snapshot 
   assert.match(component, /Brain Core unavailable/);
   assert.match(component, /Showing the last valid snapshot/);
   assert.match(shell, /href: '\/command-center'/);
-  assert.match(shell, /href: '\/', label: 'Overview'/);
-  assert.match(shell, /pathname !== '\/command-center' \? <GlobalPulseStrip \/> : null/);
+  assert.match(shell, /href: '\/computer'/);
+  assert.match(shell, /href: '\/operations'/);
+  assert.match(shell, /!\['\/command-center', '\/computer', '\/operations'\]\.includes\(pathname\)/);
 });

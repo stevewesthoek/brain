@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
-import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
+import { postBrainCoreAction } from '../lib/braincore-client';
+import { optionalBrainCoreRequest } from '../lib/optional-endpoint-cache';
 import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, infiniteBrainMetadataPatchPreviewResponseSchema, infiniteBrainMetadataPatchPreviewGenerateResponseSchema, infiniteBrainMetadataWriterEnablementResponseSchema, infiniteBrainMetadataWriterEnablementGenerateResponseSchema, infiniteBrainMetadataWriterDryRunResponseSchema, infiniteBrainMetadataWriterDryRunGenerateResponseSchema, infiniteBrainMetadataWriterSingleFileWriteResponseSchema, infiniteBrainMetadataWriterSingleFileWriteReportSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord, type InfiniteBrainMetadataPatchPreviewRecord, type InfiniteBrainMetadataWriterEnablementRecord, type InfiniteBrainMetadataWriterDryRunReport, type InfiniteBrainMetadataWriterSingleFileWriteReport } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
@@ -94,7 +95,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchPostWriteVerification() {
     try {
-      const data = await brainCoreRequest('/api/infinite-brain/post-write-verification', infiniteBrainPostWriteVerificationResponseSchema);
+      const data = await optionalBrainCoreRequest('/api/infinite-brain/post-write-verification', infiniteBrainPostWriteVerificationResponseSchema);
       if (data.ok && data.report) {
         setPostWriteVerificationRecord(data.report);
       }
@@ -107,7 +108,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchWriteManifest() {
     try {
-      const data = await brainCoreRequest('/api/infinite-brain/write-manifest', infiniteBrainWriteManifestResponseSchema);
+      const data = await optionalBrainCoreRequest('/api/infinite-brain/write-manifest', infiniteBrainWriteManifestResponseSchema);
       if (data.ok && data.manifest) {
         setWriteManifestRecord(data.manifest);
       }
@@ -120,7 +121,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchMetadataValidation() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/api/infinite-brain/metadata-writer-validation',
         infiniteBrainMetadataValidationResponseSchema
       );
@@ -136,7 +137,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchMetadataPatchPreview() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/api/infinite-brain/metadata-patch-preview',
         infiniteBrainMetadataPatchPreviewResponseSchema
       );
@@ -152,7 +153,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchMetadataWriterEnablement() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/api/infinite-brain/metadata-writer/enablement',
         infiniteBrainMetadataWriterEnablementResponseSchema
       );
@@ -168,7 +169,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchMetadataWriterDryRun() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/api/infinite-brain/metadata-writer/dry-run',
         infiniteBrainMetadataWriterDryRunResponseSchema
       );
@@ -184,7 +185,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchMetadataWriterSingleFileWrite() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/api/infinite-brain/metadata-writer/write',
         z.object({ ok: z.boolean(), report: infiniteBrainMetadataWriterSingleFileWriteReportSchema })
       );
@@ -200,7 +201,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchOperatorApproval() {
     try {
-      const data = await brainCoreRequest('/api/infinite-brain/operator-approval', z.object({
+      const data = await optionalBrainCoreRequest('/api/infinite-brain/operator-approval', z.object({
         ok: z.boolean(),
         record: z.unknown().optional(),
       }));
@@ -216,7 +217,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchProposals() {
     try {
-      const data = await brainCoreRequest('/infinite-brain/proposals', infiniteBrainProposalsResponseSchema);
+      const data = await optionalBrainCoreRequest('/infinite-brain/proposals', infiniteBrainProposalsResponseSchema);
       const top20 = (data.proposals ?? []).slice(0, 20);
       setProposals(top20);
       setError(null);
@@ -1640,7 +1641,7 @@ export function InfiniteBrainApplicationPreview() {
 
   async function fetchPlanSummary() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/infinite-brain/proposals/application-plan/summary',
         infiniteBrainApplicationPlanSummaryResponseSchema
       );
@@ -1816,7 +1817,7 @@ export function InfiniteBrainExecutionReadiness() {
 
   async function fetchReadinessSummary() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/infinite-brain/proposals/execution-readiness/summary',
         z.object({
           ok: z.literal(true),
@@ -1848,7 +1849,7 @@ export function InfiniteBrainExecutionReadiness() {
 
   async function fetchFullReport() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/infinite-brain/proposals/execution-readiness',
         infiniteBrainExecutionReadinessFullReportSchema
       );
@@ -2101,7 +2102,7 @@ export function InfiniteBrainExecutorDryRun() {
 
   async function fetchDryRunSummary() {
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/infinite-brain/proposals/executor-dry-run/summary',
         infiniteBrainExecutorDryRunSummaryResponseSchema
       );
@@ -2117,7 +2118,7 @@ export function InfiniteBrainExecutorDryRun() {
   async function fetchFullDryRunReport() {
     setFetchingFullReport(true);
     try {
-      const data = await brainCoreRequest(
+      const data = await optionalBrainCoreRequest(
         '/infinite-brain/proposals/executor-dry-run',
         infiniteBrainExecutorDryRunReportSchema
       );

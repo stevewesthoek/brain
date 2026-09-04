@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Activity, AppWindow, BrainCircuit, CalendarClock, FileVideo2, Gauge, Globe, LayoutDashboard, ListVideo, Network, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
+import { Activity, AppWindow, BrainCircuit, CalendarClock, ClipboardList, FileVideo2, Gauge, Globe, LayoutDashboard, Laptop, ListVideo, Network, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { brainCoreRequest, BRAIN_CORE_URL } from '@/lib/braincore-client';
 import { brainCoreStatusSchema } from '@/lib/braincore-schemas';
@@ -26,14 +26,29 @@ const nav = [
       { href: '/brain/capability-routing', label: 'Capability Routing', icon: BrainCircuit },
     ],
   },
-  { href: '/', label: 'Overview', icon: Gauge },
+  {
+    href: '/computer',
+    label: 'Computer',
+    icon: Laptop,
+    children: [
+      { href: '/computer', label: 'Overview', icon: Gauge },
+      { href: '/local-apps', label: 'Local Apps', icon: AppWindow },
+      { href: '/tunnels', label: 'Ports & Tunnels', icon: Globe },
+    ],
+  },
+  {
+    href: '/operations',
+    label: 'Operations',
+    icon: ClipboardList,
+    children: [
+      { href: '/operations', label: 'Overview', icon: Gauge },
+      { href: '/scheduler', label: 'Scheduler', icon: CalendarClock },
+      { href: '/infrastructure', label: 'Infrastructure', icon: Network },
+      { href: '/monitoring', label: 'Monitoring', icon: Activity },
+      { href: '/dokploy', label: 'Dokploy', icon: Server },
+    ],
+  },
   { href: '/ai-models', label: 'AI Models', icon: BrainCircuit },
-  { href: '/local-apps', label: 'Local Apps', icon: AppWindow },
-  { href: '/infrastructure', label: 'Infrastructure', icon: Network },
-  { href: '/dokploy', label: 'Dokploy', icon: Server },
-  { href: '/monitoring', label: 'New Relic / Telemetry', icon: Activity },
-  { href: '/tunnels', label: 'Tunnels', icon: Globe },
-  { href: '/scheduler', label: 'Scheduler', icon: CalendarClock },
   { href: '/video-analyzer', label: 'Video Analyzer', icon: FileVideo2 },
   {
     href: '/aws-video',
@@ -60,7 +75,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   });
 
   const prefetch = (href: string) => router.prefetch(href.split('#', 1)[0] || '/');
-  const prefetchTopLevel = (href: string) => href === '/command-center' || href === '/brain';
+  const prefetchTopLevel = (href: string) => ['/command-center', '/brain', '/computer', '/operations'].includes(href);
   const prefetchBrainChild = pathname.startsWith('/brain');
 
   return (
@@ -114,7 +129,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
           </div>
         </header>
-        {!pathname.startsWith('/brain') && pathname !== '/command-center' ? <GlobalPulseStrip /> : null}
+        {!pathname.startsWith('/brain') && !['/command-center', '/computer', '/operations'].includes(pathname) ? <GlobalPulseStrip /> : null}
         <div className="content">{children}</div>
       </main>
     </div>

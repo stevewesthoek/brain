@@ -14,7 +14,7 @@ test('navigation does not idle-prefetch the whole application', () => {
 });
 
 test('Brain navigation keeps normal prefetch and deferred subroute prefetch', () => {
-  assert.match(shell, /href === '\/command-center' \|\| href === '\/brain'/);
+  assert.match(shell, /\['\/command-center', '\/brain', '\/computer', '\/operations'\]\.includes\(href\)/);
   assert.match(shell, /pathname\.startsWith\('\/brain'\)/);
   assert.match(shell, /onMouseEnter=\{\(\) => prefetch\(child\.href\)\}/);
   assert.match(shell, /onFocus=\{\(\) => prefetch\(child\.href\)\}/);
