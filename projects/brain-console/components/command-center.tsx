@@ -188,7 +188,17 @@ function CoreUnavailable({ error, onRetry }: { error: unknown; onRetry: () => vo
 }
 
 function LoadingState() {
-  return <section className="card command-center-loading" aria-live="polite"><div className="eyebrow">Brain Command Center</div><h1>Loading operational posture…</h1><p>Reading one bounded snapshot from Brain Core.</p></section>;
+  return (
+    <div className="stack command-center command-center-loading-state" aria-live="polite" aria-label="Loading Command Center">
+      <section className="command-center-header">
+        <div><div className="eyebrow">Operational posture</div><span className="skeleton skeleton-command-title" /><span className="skeleton skeleton-command-copy" /></div>
+        <div className="command-center-header-meta"><span className="skeleton skeleton-status" /><span className="skeleton skeleton-button" /></div>
+      </section>
+      <section className="command-center-status-strip" aria-hidden="true">{[1, 2, 3, 4, 5].map((item) => <span className="command-center-status-cell" key={item}><span className="skeleton skeleton-status-label" /><span className="skeleton skeleton-status-value" /><span className="skeleton skeleton-status-detail" /></span>)}</section>
+      <section className="command-center-primary-grid" aria-hidden="true">{[1, 2, 3, 4].map((item) => <span className="card command-center-loading-panel" key={item}><span className="skeleton skeleton-panel-heading" /><span className="skeleton skeleton-panel-row" /><span className="skeleton skeleton-panel-row short" /></span>)}</section>
+      <footer className="command-center-footer"><span className="skeleton skeleton-footer" /></footer>
+    </div>
+  );
 }
 
 export function CommandCenter() {

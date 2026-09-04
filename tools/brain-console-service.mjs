@@ -10,6 +10,7 @@ const repoRoot = path.resolve(scriptDir, '..');
 const runtimeRoot = path.resolve(process.env.BRAIN_CONSOLE_RUNTIME_ROOT ?? repoRoot);
 const consoleRoot = path.join(runtimeRoot, 'projects', 'brain-console');
 const nextEntry = path.join(consoleRoot, 'node_modules', 'next', 'dist', 'bin', 'next');
+const productionBuild = path.join(consoleRoot, '.next', 'BUILD_ID');
 const port = process.env.BRAIN_CONSOLE_PORT ?? '4881';
 const host = process.env.BRAIN_CONSOLE_HOST ?? '127.0.0.1';
 const nodePath = '/opt/homebrew/bin/node';
@@ -28,7 +29,8 @@ if (!fs.existsSync(nextEntry)) {
   process.exit(1);
 }
 
-const child = spawn(nodePath, [nextEntry, 'dev', '--hostname', host, '--port', port], {
+const nextMode = fs.existsSync(productionBuild) ? 'start' : 'dev';
+const child = spawn(nodePath, [nextEntry, nextMode, '--hostname', host, '--port', port], {
   cwd: consoleRoot,
   env: {
     ...process.env,

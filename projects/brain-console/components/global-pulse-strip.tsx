@@ -28,21 +28,27 @@ function PulseMetricCard({ metric }: { metric: OpsMetric }) {
   );
 }
 
+const SYSTEM_REFRESH_MS = 15_000;
+const AI_REFRESH_MS = 30_000;
+
 export function GlobalPulseStrip() {
   const system = useQuery({
     queryKey: ['ops-system-metrics'],
     queryFn: () => brainCoreRequest('/ops/system-metrics', opsSystemMetricsSchema),
-    refetchInterval: 1_000,
+    refetchInterval: SYSTEM_REFRESH_MS,
+    refetchIntervalInBackground: false,
   });
   const usage = useQuery({
     queryKey: ['ops-ai-usage-windows'],
     queryFn: () => brainCoreRequest('/ops/ai-usage-windows', opsAiUsageWindowsSchema),
-    refetchInterval: 5_000,
+    refetchInterval: AI_REFRESH_MS,
+    refetchIntervalInBackground: false,
   });
   const costs = useQuery({
     queryKey: ['ops-ai-costs'],
     queryFn: () => brainCoreRequest('/ops/ai-costs', opsAiCostsSchema),
-    refetchInterval: 5_000,
+    refetchInterval: AI_REFRESH_MS,
+    refetchIntervalInBackground: false,
   });
 
   const metrics: OpsMetric[] = [
@@ -60,7 +66,7 @@ export function GlobalPulseStrip() {
         </div>
         <div className="pulse-strip-status">
           <StatusBadge status={system.isError || usage.isError || costs.isError ? 'error' : 'fresh'} label={system.isError || usage.isError || costs.isError ? 'partial' : 'live'} />
-          <span className="meta">System every 1s, AI estimates every 5s</span>
+          <span className="meta">System every 15s, AI estimates every 30s</span>
         </div>
       </div>
 

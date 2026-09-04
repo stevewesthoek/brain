@@ -58,10 +58,10 @@ async function main() {
   try {
     validateRuntimeFiles();
     await withLauncherLock(async () => {
-      await ensureBrainCore();
       await ensureBrainConsole();
       await execFileAsync('/usr/bin/open', [`http://localhost:${CONSOLE_PORT}/command-center`], { timeout: 10_000 });
       writeLog(`browser opened url=http://localhost:${CONSOLE_PORT}/command-center`);
+      await ensureBrainCore();
     });
     writeLog('complete');
   } catch (error) {

@@ -13,7 +13,7 @@ test('Command Center is a real route backed by one bounded operational snapshot 
   assert.match(component, /queryFn: getOperationalSnapshot/);
   assert.match(component, /refetchInterval: REFRESH_INTERVAL_MS/);
   assert.match(component, /const REFRESH_INTERVAL_MS = 10_000/);
-  assert.match(component, /Loading operational posture/);
+  assert.match(component, /skeleton-command-title/);
   assert.match(component, /Brain Core unavailable/);
   assert.match(component, /Showing the last valid snapshot/);
   assert.match(shell, /href: '\/command-center'/);
