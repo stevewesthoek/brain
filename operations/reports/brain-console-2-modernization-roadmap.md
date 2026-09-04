@@ -1,9 +1,9 @@
 # Brain Console 2.0 Modernization Roadmap
 
-**Date:** 2026-09-04  
-**Baseline:** Brain `origin/main` at `33616316369bfa3c1fd1e5a346c1e8f68aa4cdac`  
-**Runtime observed:** `/Users/Office/Repos/stevewesthoek/brain-runtime`, detached at `46bec0626b3d61c35f5f7da3b1a538c17978a4e2`  
-**Strategy:** incremental restructuring, Core-first, reversible migrations  
+**Date:** 2026-09-04
+**Baseline:** Brain `origin/main` at `33616316369bfa3c1fd1e5a346c1e8f68aa4cdac`
+**Runtime observed:** `/Users/Office/Repos/stevewesthoek/brain-runtime`, detached at `46bec0626b3d61c35f5f7da3b1a538c17978a4e2`
+**Strategy:** incremental restructuring, Core-first, reversible migrations
 **Scope:** product architecture, UX, read model, reliability, and Mac operational identity; not a framework rewrite
 
 ## Outcome
@@ -23,7 +23,7 @@ The work is deliberately sequenced. The read model and state vocabulary come bef
 
 ## Phase 0, contract and identity freeze
 
-**Priority:** P0  
+**Priority:** P0
 **Goal:** establish what source, runtime, and product authority are being changed.
 
 ### Scope
@@ -57,9 +57,13 @@ No production mutation is required. If a runtime identity change is attempted an
 - The Obsidian contract has one versioned widget list and a failing test for drift.
 - No new route or UI feature is accepted without naming its IA destination.
 
+### Current progress (2026-09-04)
+
+The contract foundation is implemented on the Phase 0/A branch: deployment identity diagnostics, the canonical state vocabulary, the versioned Obsidian widget contract, and the Core-owned bounded operational snapshot are covered by focused tests. The live `brain-runtime` deployment and LaunchAgents remain unchanged; physical source/runtime migration is still a Phase 0 operational blocker.
+
 ## Phase A, canonical operational read model
 
-**Priority:** P1  
+**Priority:** P1
 **First implementation goal:** **Establish the canonical Brain Console operational read model and state vocabulary.**
 
 ### Why this is first
@@ -117,9 +121,13 @@ Disable the snapshot consumer and return Command Center to the existing overview
 - Current, stale, degraded, unavailable, error, blocked, and pending fixtures are visibly distinct.
 - Source, provenance, privacy, and safety fields survive aggregation.
 
+### Current progress (2026-09-04)
+
+`operational-snapshot-v1` and Console validation/state primitives are implemented. Command Center rendering, shared refresh ownership, and old-card migration have not started; Phase A is contract-ready but not presentation-complete.
+
 ## Phase B, Command Center and shell restructuring
 
-**Priority:** P1  
+**Priority:** P1
 **Dependency:** Phase A
 
 ### Scope
@@ -156,7 +164,7 @@ Feature-flag the shell and home consumer. Re-enable the existing shell and overv
 
 ## Phase C, Brain and Infinite Brain drilldowns
 
-**Priority:** P1  
+**Priority:** P1
 **Dependency:** Phase A; Command Center summary from Phase B recommended
 
 ### Scope
@@ -192,7 +200,7 @@ Restore the previous detail component behind a feature flag. Do not roll back Co
 
 ## Phase D, Computer and Operations consolidation
 
-**Priority:** P1  
+**Priority:** P1
 **Dependency:** Phase A; source identity work from Phase 0
 
 ### Scope
@@ -235,7 +243,7 @@ Keep the existing `/infrastructure`, `/monitoring`, `/dokploy`, `/tunnels`, `/sc
 
 ## Phase E, search, indexing, and Obsidian integration
 
-**Priority:** P1  
+**Priority:** P1
 **Dependency:** Phase A; Phase B palette shell
 
 ### Scope
@@ -267,7 +275,7 @@ Disable indexing and palette commands while retaining direct navigation and exis
 
 ## Phase F, Mac runtime and autostart modernization
 
-**Priority:** P0/P1  
+**Priority:** P0/P1
 **Dependency:** Phase 0; Phase A diagnostics; Phase D Computer view
 
 ### Scope
@@ -307,7 +315,7 @@ Restore the last known pinned service artifact and LaunchAgent configuration. Pr
 
 ## Phase G, design system, accessibility, and performance hardening
 
-**Priority:** P2  
+**Priority:** P2
 **Dependency:** Phases A through D; do not start broad styling before the information model is stable
 
 ### Scope
@@ -403,4 +411,3 @@ The next Codex implementation task should be a bounded Phase A slice:
 > Add `operational-snapshot-v1` as a Core-owned read-only endpoint, define the canonical Console state/freshness schema, and add fixtures for current, stale, degraded, unavailable, error, blocked, and pending states. Do not redesign all pages or change the live Mac LaunchAgents in this task.
 
 This task has a clear blast radius, produces a reusable contract for every later view, and directly reduces the current duplicate polling and inconsistent-state risks.
-

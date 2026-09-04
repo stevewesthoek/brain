@@ -1,8 +1,8 @@
 # Brain Console 2.0 Deep Product Audit
 
-**Date:** 2026-09-04  
-**Repository:** Brain  
-**Mode:** audit, product design, information architecture, runtime modernization blueprint  
+**Date:** 2026-09-04
+**Repository:** Brain
+**Mode:** audit, product design, information architecture, runtime modernization blueprint
 **Implementation status:** audit only; no Console source, LaunchAgent, or live runtime mutation was performed
 
 ## Executive finding
@@ -47,7 +47,7 @@ Scores use a 0 to 10 product scale, where 10 means coherent, dependable, and rea
 | Obsidian integration | 5 | Clear boundary and plugin package, but installation and widget contract are incomplete |
 | Mac operational UX | 6 | Service autostart is present; app launch behavior is opaque and non-native |
 
-**Overall product readiness:** 5/10.  
+**Overall product readiness:** 5/10.
 **Verdict:** `SUBSTANTIALLY RESTRUCTURED`. Keep the stack and Core boundary. Restructure the information architecture, read model, state language, component boundaries, and Mac identity before calling this the primary dashboard.
 
 ## Route inventory
