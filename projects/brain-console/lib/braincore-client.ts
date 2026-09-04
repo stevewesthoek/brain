@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { operationalSnapshotSchema, type OperationalSnapshot } from './braincore-schemas';
 
-export const BRAIN_CORE_URL = (process.env.NEXT_PUBLIC_BRAIN_CORE_URL ?? 'http://localhost:4877').replace(/\/$/, '');
+export const BRAIN_CORE_URL = (process.env.NEXT_PUBLIC_BRAIN_CORE_URL ?? 'http://127.0.0.1:4877').replace(/\/$/, '');
 
 const REQUEST_TIMEOUT_MS = 10_000;
 

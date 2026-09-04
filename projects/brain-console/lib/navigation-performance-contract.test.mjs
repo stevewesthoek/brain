@@ -25,3 +25,9 @@ test('relative-time labels cannot fail hydration on task detail', () => {
   assert.match(shell, /className="meta" suppressHydrationWarning>updated/);
   assert.match(freshness, /aria-label=\{detail \? `\$\{label\}: \$\{detail\}` : label\} suppressHydrationWarning/);
 });
+
+test('the Core URL has one server/client-safe loopback fallback', () => {
+  const client = fs.readFileSync(path.join(root, 'lib', 'braincore-client.ts'), 'utf8');
+  assert.match(client, /NEXT_PUBLIC_BRAIN_CORE_URL \?\? 'http:\/\/127\.0\.0\.1:4877'/);
+  assert.doesNotMatch(client, /NEXT_PUBLIC_BRAIN_CORE_URL \?\? 'http:\/\/localhost:4877'/);
+});
