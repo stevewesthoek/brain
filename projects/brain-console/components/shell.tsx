@@ -14,6 +14,19 @@ import { GlobalPulseStrip } from '@/components/global-pulse-strip';
 
 const nav = [
   { href: '/command-center', label: 'Command Center', icon: LayoutDashboard },
+  {
+    href: '/brain',
+    label: 'Brain',
+    icon: BrainCircuit,
+    children: [
+      { href: '/brain', label: 'Overview', icon: Gauge },
+      { href: '/brain/active-work', label: 'Active Work', icon: Activity },
+      { href: '/brain/tasks-evidence', label: 'Tasks & Evidence', icon: ListVideo },
+      { href: '/brain/quality-safety', label: 'Quality & Safety', icon: Network },
+      { href: '/brain/continuity', label: 'Continuity', icon: CalendarClock },
+      { href: '/brain/capability-routing', label: 'Capability Routing', icon: BrainCircuit },
+    ],
+  },
   { href: '/', label: 'Overview', icon: Gauge },
   { href: '/ai-models', label: 'AI Models', icon: BrainCircuit },
   { href: '/local-apps', label: 'Local Apps', icon: AppWindow },
@@ -36,7 +49,7 @@ const nav = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const IDLE_PREFETCH_ROUTES = ['/command-center', '/', '/scheduler', '/local-apps', '/infrastructure'];
+const IDLE_PREFETCH_ROUTES = ['/command-center', '/brain', '/brain/active-work', '/', '/scheduler', '/local-apps', '/infrastructure'];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -59,7 +72,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const prefetch = (href: string) => router.prefetch(href.split('#', 1)[0] || '/');
 
   return (
-    <div className={cn('app-shell', pathname === '/command-center' && 'command-center-shell')}>
+    <div className={cn('app-shell', pathname === '/command-center' && 'command-center-shell', pathname === '/brain' && 'brain-shell')}>
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark" aria-hidden="true" />
@@ -109,7 +122,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
           </div>
         </header>
-        {pathname !== '/command-center' ? <GlobalPulseStrip /> : null}
+        {!pathname.startsWith('/brain') && pathname !== '/command-center' ? <GlobalPulseStrip /> : null}
         <div className="content">{children}</div>
       </main>
     </div>

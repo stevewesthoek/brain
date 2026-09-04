@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { BrainCircuit } from 'lucide-react';
 import { brainCoreRequest } from '@/lib/braincore-client';
 import { aiModelSelectorHealthMatrixSchema } from '@/lib/braincore-schemas';
@@ -57,13 +58,14 @@ export function AiModelSelectorDashboard() {
     <div className="stack">
       <section className="page-heading">
         <div>
-          <div className="eyebrow">AI Model Selector</div>
-          <h1>Model health matrix</h1>
-          <p>Brain Core reads the selector health matrix. Apps request routes from the selector and do not probe providers directly.</p>
+          <div className="eyebrow">Advanced diagnostics</div>
+          <h1>Selector health matrix</h1>
+          <p>Brain resolves capabilities automatically. This read-only matrix is retained for diagnostics; routine work starts in Capability Routing.</p>
         </div>
         <div className="row">
           <StatusBadge status={matrix.isError ? 'error' : matrix.data?.status === 'ok' ? 'fresh' : 'stale'} label={matrix.isError ? 'unavailable' : matrix.data?.probe_mode ?? 'checking'} />
           <span className="meta">Refreshes every 30 seconds</span>
+          <Link className="button-link" href="/brain/capability-routing">Open Capability Routing</Link>
         </div>
       </section>
 

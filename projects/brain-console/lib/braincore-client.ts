@@ -22,13 +22,14 @@ export async function brainCoreRequest<TSchema extends z.ZodTypeAny>(path: strin
   const timeout = setTimeout(() => controller.abort(), timeoutMs ?? REQUEST_TIMEOUT_MS);
 
   try {
+    const headers = new Headers(requestInit.headers);
+    if (requestInit.body !== undefined || (requestInit.method && requestInit.method.toUpperCase() !== 'GET')) {
+      headers.set('content-type', 'application/json');
+    }
     const response = await fetch(`${BRAIN_CORE_URL}${path}`, {
       ...requestInit,
       signal: controller.signal,
-      headers: {
-        'content-type': 'application/json',
-        ...(requestInit.headers ?? {}),
-      },
+      headers,
     });
     const text = await response.text();
     const payload = text ? JSON.parse(text) : null;
