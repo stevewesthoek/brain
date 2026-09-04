@@ -31,3 +31,7 @@ test('the Core URL has one server/client-safe loopback fallback', () => {
   assert.match(client, /NEXT_PUBLIC_BRAIN_CORE_URL \?\? 'http:\/\/127\.0\.0\.1:4877'/);
   assert.doesNotMatch(client, /NEXT_PUBLIC_BRAIN_CORE_URL \?\? 'http:\/\/localhost:4877'/);
 });
+
+test('the app does not emit a favicon 404 during browser QA', () => {
+  assert.ok(fs.existsSync(path.join(root, 'app', 'favicon.ico', 'route.ts')));
+});
