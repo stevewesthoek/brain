@@ -94,7 +94,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchPostWriteVerification() {
     try {
-      const data = await brainCoreRequest('/infinite-brain/post-write-verification', infiniteBrainPostWriteVerificationResponseSchema);
+      const data = await brainCoreRequest('/api/infinite-brain/post-write-verification', infiniteBrainPostWriteVerificationResponseSchema);
       if (data.ok && data.report) {
         setPostWriteVerificationRecord(data.report);
       }
@@ -107,7 +107,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchWriteManifest() {
     try {
-      const data = await brainCoreRequest('/infinite-brain/write-manifest', infiniteBrainWriteManifestResponseSchema);
+      const data = await brainCoreRequest('/api/infinite-brain/write-manifest', infiniteBrainWriteManifestResponseSchema);
       if (data.ok && data.manifest) {
         setWriteManifestRecord(data.manifest);
       }
@@ -121,7 +121,7 @@ export function InfiniteBrainProposalReview() {
   async function fetchMetadataValidation() {
     try {
       const data = await brainCoreRequest(
-        '/infinite-brain/metadata-writer-validation',
+        '/api/infinite-brain/metadata-writer-validation',
         infiniteBrainMetadataValidationResponseSchema
       );
       if (data.ok && data.report) {
@@ -137,7 +137,7 @@ export function InfiniteBrainProposalReview() {
   async function fetchMetadataPatchPreview() {
     try {
       const data = await brainCoreRequest(
-        '/infinite-brain/metadata-patch-preview',
+        '/api/infinite-brain/metadata-patch-preview',
         infiniteBrainMetadataPatchPreviewResponseSchema
       );
       if (data.ok && data.report) {
@@ -200,7 +200,7 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchOperatorApproval() {
     try {
-      const data = await brainCoreRequest('/infinite-brain/operator-approval', z.object({
+      const data = await brainCoreRequest('/api/infinite-brain/operator-approval', z.object({
         ok: z.boolean(),
         record: z.unknown().optional(),
       }));

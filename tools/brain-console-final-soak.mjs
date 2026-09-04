@@ -139,7 +139,20 @@ const failures = [];
 const consoleErrors = [];
 const exceptions = [];
 const httpFailures = [];
+const expectedHttpFailures = [];
 let responseErrors = 0;
+
+const expectedOptionalNotFoundPaths = new Set([
+  '/infinite-brain/proposals',
+  '/api/infinite-brain/operator-approval',
+  '/api/infinite-brain/post-write-verification',
+  '/api/infinite-brain/write-manifest',
+  '/api/infinite-brain/metadata-writer-validation',
+  '/api/infinite-brain/metadata-patch-preview',
+  '/api/infinite-brain/metadata-writer/enablement',
+  '/api/infinite-brain/metadata-writer/dry-run',
+  '/api/infinite-brain/metadata-writer/write',
+]);
 
 async function evaluate(expression, awaitPromise = false) {
   const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise });
@@ -184,8 +197,14 @@ async function navigate(path, expectedText) {
     if (event.method === 'Network.responseReceived') {
       const status = event.params?.response?.status ?? 200;
       if (status >= 400) {
-        responseErrors += 1;
-        httpFailures.push({ path, url: event.params?.response?.url, status });
+        const url = new URL(event.params?.response?.url ?? BASE);
+        const failure = { path, url: url.href, status };
+        if (status === 404 && expectedOptionalNotFoundPaths.has(url.pathname)) {
+          expectedHttpFailures.push(failure);
+        } else {
+          responseErrors += 1;
+          httpFailures.push(failure);
+        }
       }
     }
     if (event.method === 'Network.requestWillBeSent') {
@@ -212,6 +231,7 @@ try {
         point.heapMb = result.memory ? Number((result.memory.used / 1024 / 1024).toFixed(1)) : null;
         point.requests = [...requestCounts.values()].reduce((sum, count) => sum + count, 0);
         point.failedRequests = failures.length + responseErrors;
+        point.expectedOptionalNotFound = expectedHttpFailures.length;
         point.browserErrors = exceptions.length + consoleErrors.length;
         point.usageDiagnostics = await usageDiagnostics();
         checkpoints.push(point);
@@ -237,11 +257,12 @@ try {
     const point = snapshot(`${CHECKPOINTS[nextCheckpoint] / 60000}m`, profileForSnapshot);
     point.requests = [...requestCounts.values()].reduce((sum, count) => sum + count, 0);
     point.failedRequests = failures.length + responseErrors;
+    point.expectedOptionalNotFound = expectedHttpFailures.length;
     point.browserErrors = exceptions.length + consoleErrors.length;
     point.usageDiagnostics = await usageDiagnostics();
     checkpoints.push(point); console.log(JSON.stringify(point)); nextCheckpoint += 1;
   }
-  console.log(JSON.stringify({ complete: true, startedAt: new Date(startedAt).toISOString(), endedAt: now(), checkpoints, failures, responseErrors, httpFailures, exceptions, consoleErrors, requestCounts: Object.fromEntries(requestCounts) }));
+  console.log(JSON.stringify({ complete: true, startedAt: new Date(startedAt).toISOString(), endedAt: now(), checkpoints, failures, responseErrors, httpFailures, expectedOptionalNotFound: expectedHttpFailures, exceptions, consoleErrors, requestCounts: Object.fromEntries(requestCounts) }));
 } finally {
   socket.close();
   chrome.kill('SIGTERM');
