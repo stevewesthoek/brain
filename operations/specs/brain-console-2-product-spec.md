@@ -1,9 +1,13 @@
 # Brain Console 2.0 Product Specification
 
-**Status:** proposed product contract  
-**Date:** 2026-09-04  
-**Owner:** Brain product and runtime maintainers  
+**Status:** proposed product contract
+**Date:** 2026-09-04
+**Owner:** Brain product and runtime maintainers
 **Implementation posture:** incremental modernization; preserve Brain Core safety boundaries
+
+## Implementation status — Phase 0/A foundation
+
+As of 2026-09-04, the Phase 0/A read-model foundation is implemented in the Brain source tree: deployment identity diagnostics, `operational-snapshot-v1`, the canonical seven-state vocabulary, bounded attention/activity/active-work projections, Console schemas/client/primitives, and the versioned ten-widget Obsidian contract. The implementation is additive and read-only; it does not redesign the UI, mutate LaunchAgents, or switch the live deployment. Physical source/runtime migration and Command Center presentation remain subsequent work.
 
 ## 1. Product mission
 
