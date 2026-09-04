@@ -355,6 +355,7 @@ function writeInstalledPlist(sourcePath, installedPath) {
   const revision = runtimeRevision();
   const rendered = source
     .replaceAll(canonicalRoot, runtimeRoot)
+    .replaceAll('__BRAIN_CANONICAL_SOURCE_PATH__', canonicalRoot)
     .replaceAll('__BRAIN_RELEASE_REVISION__', revision)
     .replaceAll('__BRAIN_RELEASE_TIMESTAMP__', new Date().toISOString());
   fs.mkdirSync(path.dirname(installedPath), { recursive: true });

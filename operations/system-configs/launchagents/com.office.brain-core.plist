@@ -25,7 +25,7 @@
         <key>BRAIN_CORE_PORT</key>
         <string>4877</string>
         <key>BRAIN_CANONICAL_SOURCE_PATH</key>
-        <string>/Users/Office/Repos/stevewesthoek/brain</string>
+        <string>__BRAIN_CANONICAL_SOURCE_PATH__</string>
         <key>BRAIN_RUNTIME_PATH</key>
         <string>/Users/Office/Repos/stevewesthoek/brain</string>
         <key>BRAIN_SOURCE_REVISION</key>
