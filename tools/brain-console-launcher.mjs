@@ -230,7 +230,8 @@ async function serviceState(port, kind) {
   const treeText = processTree.join(' ');
   const canonicalOwner = kind === 'core'
     ? treeText.includes(CORE_PROJECT_ROOT) && treeText.includes('dist/index.js')
-    : treeText.includes(CONSOLE_PROJECT_ROOT) && (treeText.includes('next') || treeText.includes('npm run dev'));
+    : (treeText.includes(CONSOLE_PROJECT_ROOT) || treeText.includes(CONSOLE_SERVICE_ENTRY))
+      && (treeText.includes('next') || treeText.includes('npm run dev'));
   const health = await httpHealth(`http://${CORE_HOST}:${port}${kind === 'core' ? '/status' : '/'}`);
   return { listening: owners.length > 0, pid, command, canonicalOwner, healthy: health.ok };
 }
