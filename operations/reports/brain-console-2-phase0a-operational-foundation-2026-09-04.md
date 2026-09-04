@@ -23,7 +23,7 @@ The Phase 0/A planning artifacts were absent from `origin/main`. The requested a
 
 ## 4. Live runtime identity findings
 
-Read-only inspection at `2026-09-04T09:55:52+0100` found:
+Read-only inspection at `2026-09-04T10:17:03+0100` found:
 
 - Core is listening on `127.0.0.1:4877` and `GET /status` returned HTTP 200.
 - Console is listening on `127.0.0.1:4881` and `/` returned HTTP 200.
@@ -125,6 +125,7 @@ Existing Core routes remain in place. The new identity and snapshot endpoints ar
 - Brain Core production build: **passed**.
 - Brain Console production build: **passed**; Next generated all 14 routes. Existing Autoprefixer warning remains about mixed `flex-end` support.
 - JSON contracts and `git diff --check`: **passed**.
+- No repository-supported browser smoke test is defined in the Console package; live HTTP probes were read-only and returned Core status 200, Console home 200, and the not-yet-deployed snapshot route 404.
 - Full Core suite: **1,955 passed, 6 failed**. The six failures are existing environment-sensitive orchestration/VO metadata tests and are unrelated to the Phase 0/A files; all focused Phase 0/A tests pass.
 
 ## 20. Exact remaining Phase 0 blockers
