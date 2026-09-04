@@ -3,6 +3,8 @@ import type { BrainCoreCapabilitySummary } from '../types/api.js';
 
 export const READ_ENDPOINTS = [
   '/status',
+  '/runtime/identity',
+  '/operational-snapshot',
   '/health/projection',
   '/projections/health',
   '/projections/topology',

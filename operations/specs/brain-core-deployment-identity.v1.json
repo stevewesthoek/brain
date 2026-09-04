@@ -1,0 +1,18 @@
+{
+  "contract": "brain-core-deployment-identity-v1",
+  "version": 1,
+  "authority": "brain-core",
+  "fields": {
+    "canonicalSource": ["repository", "path", "revision"],
+    "deployment": ["runtimePath", "revision", "buildMode", "buildTimestamp"],
+    "services": ["brainCore", "brainConsole", "scheduler"],
+    "endpoints": ["brainCore", "brainConsole"],
+    "contractVersions": ["projection", "operationalSnapshot", "obsidian"]
+  },
+  "identityStates": ["matching", "stale", "unknown", "development", "unavailable"],
+  "safety": {
+    "readOnly": true,
+    "exposesSecrets": false,
+    "exposesEnvironmentValues": false
+  }
+}

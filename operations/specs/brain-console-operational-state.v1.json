@@ -1,0 +1,26 @@
+{
+  "contract": "brain-console-operational-state-v1",
+  "version": 1,
+  "states": [
+    "CURRENT",
+    "STALE",
+    "DEGRADED",
+    "UNAVAILABLE",
+    "ERROR",
+    "BLOCKED",
+    "PENDING"
+  ],
+  "semantics": {
+    "CURRENT": "usable and sufficiently fresh",
+    "STALE": "known value exists but the freshness contract is exceeded",
+    "DEGRADED": "usable with a material limitation",
+    "UNAVAILABLE": "the required source or capability cannot currently provide data",
+    "ERROR": "source or read processing failed",
+    "BLOCKED": "a known gating condition intentionally prevents progress or action",
+    "PENDING": "an expected state or action has not resolved yet"
+  },
+  "authority": "brain-core",
+  "readOnly": true,
+  "writesToMind": false,
+  "executionEnabled": false
+}
