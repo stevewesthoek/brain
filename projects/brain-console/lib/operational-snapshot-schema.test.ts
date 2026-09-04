@@ -18,6 +18,7 @@ const identity = {
   deployment: { runtimePath: '/deploy/brain-runtime', revision: 'revision-1', buildMode: 'production' as const, buildTimestamp: null },
   services: { brainCore: 'com.office.brain-core', brainConsole: 'com.office.brain-console', scheduler: 'com.office.nightly-scheduler' },
   endpoints: { brainCore: 'http://127.0.0.1:4877', brainConsole: 'http://127.0.0.1:4881' },
+  runtime: { serviceState: 'running', launchMechanism: 'launchagent' },
   contractVersions: { projection: 'brain-core-projection-v1', operationalSnapshot: 'operational-snapshot-v1' as const, obsidian: 'brain-console-obsidian-widget-contract-v1' as const },
   safety: { readOnly: true as const, exposesSecrets: false as const, exposesEnvironmentValues: false as const },
 };

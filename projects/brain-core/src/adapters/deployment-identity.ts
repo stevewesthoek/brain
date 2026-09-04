@@ -3,6 +3,8 @@ import { getBindHost, getPort } from '../security/localhost.js';
 import {
   DEPLOYMENT_IDENTITY_CONTRACT,
   type DeploymentBuildMode,
+  type DeploymentLaunchMechanism,
+  type DeploymentServiceState,
   type DeploymentIdentity,
   type DeploymentIdentityState,
 } from '../types/deployment-identity.js';
@@ -25,6 +27,8 @@ export interface DeploymentIdentityInput {
   schedulerServiceLabel?: string;
   brainCoreEndpoint?: string;
   brainConsoleEndpoint?: string;
+  serviceState?: DeploymentServiceState;
+  launchMechanism?: DeploymentLaunchMechanism;
 }
 
 function optionalString(value: string | null | undefined): string | null {
@@ -34,6 +38,16 @@ function optionalString(value: string | null | undefined): string | null {
 
 function buildMode(value: string | undefined): DeploymentBuildMode {
   if (value === 'development' || value === 'production') return value;
+  return 'unknown';
+}
+
+function serviceState(value: string | undefined): DeploymentServiceState {
+  if (value === 'running' || value === 'stopped') return value;
+  return 'unknown';
+}
+
+function launchMechanism(value: string | undefined): DeploymentLaunchMechanism {
+  if (value === 'launchagent' || value === 'manual' || value === 'container' || value === 'process-manager') return value;
   return 'unknown';
 }
 
@@ -84,6 +98,10 @@ export function createDeploymentIdentity(input: DeploymentIdentityInput = {}): D
       brainCore: optionalString(input.brainCoreEndpoint) ?? `http://${getBindHost()}:${getPort()}`,
       brainConsole: optionalString(input.brainConsoleEndpoint) ?? DEFAULT_CONSOLE_ENDPOINT,
     },
+    runtime: {
+      serviceState: input.serviceState ?? 'unknown',
+      launchMechanism: input.launchMechanism ?? 'unknown',
+    },
     contractVersions: {
       projection: 'brain-core-projection-v1',
       operationalSnapshot: 'operational-snapshot-v1',
@@ -109,6 +127,8 @@ export function readDeploymentIdentity(): DeploymentIdentity {
     deploymentRevision: process.env.BRAIN_DEPLOYMENT_REVISION ?? null,
     buildMode: buildMode(inferredBuildMode),
     buildTimestamp: process.env.BRAIN_BUILD_TIMESTAMP ?? null,
+    serviceState: serviceState(process.env.BRAIN_SERVICE_STATE ?? 'running'),
+    launchMechanism: launchMechanism(process.env.BRAIN_LAUNCH_MECHANISM),
   };
   if (process.env.BRAIN_CORE_SERVICE_LABEL !== undefined) input.brainCoreServiceLabel = process.env.BRAIN_CORE_SERVICE_LABEL;
   if (process.env.BRAIN_CONSOLE_SERVICE_LABEL !== undefined) input.brainConsoleServiceLabel = process.env.BRAIN_CONSOLE_SERVICE_LABEL;

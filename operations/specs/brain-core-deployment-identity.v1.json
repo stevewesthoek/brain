@@ -7,6 +7,7 @@
     "deployment": ["runtimePath", "revision", "buildMode", "buildTimestamp"],
     "services": ["brainCore", "brainConsole", "scheduler"],
     "endpoints": ["brainCore", "brainConsole"],
+    "runtime": ["serviceState", "launchMechanism"],
     "contractVersions": ["projection", "operationalSnapshot", "obsidian"]
   },
   "identityStates": ["matching", "stale", "unknown", "development", "unavailable"],

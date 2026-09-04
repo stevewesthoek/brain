@@ -2,6 +2,8 @@ export const DEPLOYMENT_IDENTITY_CONTRACT = 'brain-core-deployment-identity-v1' 
 
 export type DeploymentBuildMode = 'development' | 'production' | 'unknown';
 export type DeploymentIdentityState = 'matching' | 'stale' | 'unknown' | 'development' | 'unavailable';
+export type DeploymentServiceState = 'running' | 'stopped' | 'unknown';
+export type DeploymentLaunchMechanism = 'launchagent' | 'manual' | 'container' | 'process-manager' | 'unknown';
 
 export interface DeploymentIdentity {
   contract: typeof DEPLOYMENT_IDENTITY_CONTRACT;
@@ -27,6 +29,10 @@ export interface DeploymentIdentity {
   endpoints: {
     brainCore: string;
     brainConsole: string;
+  };
+  runtime: {
+    serviceState: DeploymentServiceState;
+    launchMechanism: DeploymentLaunchMechanism;
   };
   contractVersions: {
     projection: string;

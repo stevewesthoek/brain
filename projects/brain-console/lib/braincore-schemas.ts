@@ -73,6 +73,10 @@ export const deploymentIdentitySchema = z.object({
     brainCore: z.string(),
     brainConsole: z.string(),
   }),
+  runtime: z.object({
+    serviceState: z.enum(['running', 'stopped', 'unknown']),
+    launchMechanism: z.enum(['launchagent', 'manual', 'container', 'process-manager', 'unknown']),
+  }),
   contractVersions: z.object({
     projection: z.string(),
     operationalSnapshot: z.literal('operational-snapshot-v1'),
