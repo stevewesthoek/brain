@@ -1,6 +1,209 @@
 import { z } from 'zod';
 
-export const freshnessSchema = z.enum(['fresh', 'stale', 'unavailable', 'not_instrumented']);
+export const freshnessSchema = z.enum(['fresh', 'stale', 'unknown', 'unavailable', 'not_instrumented']);
+
+export const operationalStateSchema = z.enum([
+  'CURRENT',
+  'STALE',
+  'DEGRADED',
+  'UNAVAILABLE',
+  'ERROR',
+  'BLOCKED',
+  'PENDING',
+]);
+
+export const operationalSeveritySchema = z.enum(['info', 'warning', 'critical']);
+
+const operationalFailureSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+});
+
+const operationalProvenanceSchema = z.object({
+  sourceReferences: z.array(z.object({
+    ref: z.string(),
+    kind: z.enum(['file', 'report', 'route', 'contract', 'revision']),
+  })).min(1),
+  adapter: z.string(),
+  capturedAt: z.string(),
+  sourceRevision: z.string().nullable(),
+});
+
+const operationalEvidenceSchema = z.object({
+  authorityOwner: z.enum(['brain', 'mind-reference', 'evidence', 'derived-runtime']),
+  provenance: operationalProvenanceSchema,
+  freshness: freshnessSchema,
+  confidence: z.enum(['verified', 'high', 'medium', 'low', 'unknown']),
+  uncertainty: z.array(z.string()),
+  privacyClassification: z.enum(['public-local', 'private-local', 'sensitive-reference']),
+  availability: z.enum(['available', 'empty', 'unavailable', 'invalid', 'not_instrumented']),
+  failure: operationalFailureSchema.nullable(),
+});
+
+function operationalSectionSchema<T extends z.ZodTypeAny>(data: T) {
+  return operationalEvidenceSchema.extend({
+    state: operationalStateSchema,
+    severity: operationalSeveritySchema,
+    data,
+  });
+}
+
+export const deploymentIdentitySchema = z.object({
+  contract: z.literal('brain-core-deployment-identity-v1'),
+  version: z.literal(1),
+  identityState: z.enum(['matching', 'stale', 'unknown', 'development', 'unavailable']),
+  metadataAvailable: z.boolean(),
+  canonicalSource: z.object({
+    repository: z.literal('brain'),
+    path: z.string().nullable(),
+    revision: z.string().nullable(),
+  }),
+  deployment: z.object({
+    runtimePath: z.string().nullable(),
+    revision: z.string().nullable(),
+    buildMode: z.enum(['development', 'production', 'unknown']),
+    buildTimestamp: z.string().nullable(),
+  }),
+  services: z.object({
+    brainCore: z.string(),
+    brainConsole: z.string(),
+    scheduler: z.string(),
+  }),
+  endpoints: z.object({
+    brainCore: z.string(),
+    brainConsole: z.string(),
+  }),
+  contractVersions: z.object({
+    projection: z.string(),
+    operationalSnapshot: z.literal('operational-snapshot-v1'),
+    obsidian: z.literal('brain-console-obsidian-widget-contract-v1'),
+  }),
+  safety: z.object({
+    readOnly: z.literal(true),
+    exposesSecrets: z.literal(false),
+    exposesEnvironmentValues: z.literal(false),
+  }),
+});
+
+const operationalAttentionItemSchema = z.object({
+  id: z.string(),
+  severity: operationalSeveritySchema,
+  state: operationalStateSchema.exclude(['CURRENT']),
+  title: z.string(),
+  explanation: z.string(),
+  source: z.string(),
+  entityRef: z.string().nullable(),
+  observedAt: z.string(),
+  freshness: freshnessSchema,
+  safeNextAction: z.string().nullable(),
+  receiptRef: z.string().nullable(),
+  evidenceRef: z.string().nullable(),
+});
+
+const operationalActivityItemSchema = z.object({
+  id: z.string(),
+  eventType: z.string(),
+  occurredAt: z.string(),
+  severity: operationalSeveritySchema,
+  domain: z.string(),
+  entityRef: z.string().nullable(),
+  status: z.string(),
+  summary: z.string(),
+  source: z.string(),
+  receiptRef: z.string().nullable(),
+});
+
+const operationalActiveWorkItemSchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  consumer: z.string(),
+  specialist: z.string(),
+  capabilityRoute: z.string(),
+  state: operationalStateSchema,
+  primaryOwner: z.string(),
+  currentStage: z.string(),
+  progress: z.number().min(0).max(1).nullable(),
+  nextAction: z.string(),
+  gateState: operationalStateSchema,
+  continuationState: operationalStateSchema,
+  startedAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  taskRef: z.string(),
+  evidenceRef: z.string().nullable(),
+});
+
+const operationalPostureSummarySchema = z.object({
+  itemCount: z.number().int().nonnegative(),
+  currentCount: z.number().int().nonnegative(),
+  attentionCount: z.number().int().nonnegative(),
+  summary: z.string(),
+});
+
+export const operationalSnapshotSchema = z.object({
+  contract: z.literal('operational-snapshot-v1'),
+  version: z.literal(1),
+  snapshotId: z.string(),
+  generatedAt: z.string(),
+  sourceRevision: z.string().nullable(),
+  overall: operationalSectionSchema(z.object({
+    summary: z.string(),
+    attentionCount: z.number().int().nonnegative(),
+    activeWorkCount: z.number().int().nonnegative(),
+  })),
+  sections: z.object({
+    attention: operationalSectionSchema(z.object({ items: z.array(operationalAttentionItemSchema).max(12) })),
+    activeWork: operationalSectionSchema(z.object({ items: z.array(operationalActiveWorkItemSchema).max(8) })),
+    activity: operationalSectionSchema(z.object({ items: z.array(operationalActivityItemSchema).max(12) })),
+    brain: operationalSectionSchema(operationalPostureSummarySchema.extend({
+      runtimeStatus: z.string(),
+      executionEnabled: z.boolean(),
+    })),
+    computer: operationalSectionSchema(operationalPostureSummarySchema.extend({
+      resourceCount: z.number().int().nonnegative(),
+      activeIncidents: z.number().int().nonnegative(),
+      staleResources: z.number().int().nonnegative(),
+      failedBackups: z.number().int().nonnegative(),
+    })),
+    scheduler: operationalSectionSchema(operationalPostureSummarySchema.extend({
+      totalJobs: z.number().int().nonnegative(),
+      runningJobs: z.number().int().nonnegative(),
+      failedJobs: z.number().int().nonnegative(),
+      blockedJobs: z.number().int().nonnegative(),
+      nextRunAt: z.string().nullable(),
+    })),
+    index: operationalSectionSchema(operationalPostureSummarySchema.extend({
+      sources: z.array(z.object({
+        id: z.string(),
+        state: operationalStateSchema,
+        generatedAt: z.string().nullable(),
+      })),
+    })),
+    consumers: operationalSectionSchema(operationalPostureSummarySchema.extend({ domains: z.array(z.string()) })),
+    identity: operationalSectionSchema(deploymentIdentitySchema),
+  }),
+  dataSources: z.object({
+    status: z.record(z.unknown()),
+    capabilities: z.record(z.unknown()),
+    identity: deploymentIdentitySchema,
+    scheduler: z.object({
+      status: z.string(), health: z.string(), totalJobs: z.number(), runningJobs: z.number(), failedJobs: z.number(), blockedJobs: z.number(), nextRunAt: z.string().nullable(),
+    }),
+    localApps: z.object({ status: z.string(), appCount: z.number(), runningCount: z.number(), stoppedCount: z.number(), unknownCount: z.number() }),
+    computer: z.object({ status: z.string(), resourceCount: z.number(), activeIncidents: z.number(), staleResources: z.number(), failedBackups: z.number() }),
+    index: z.object({ status: z.string(), sources: z.array(z.object({ id: z.string(), status: operationalStateSchema, generatedAt: z.string().nullable() })) }),
+    brain: z.object({ runtimeStatus: z.string(), executionEnabled: z.boolean(), activeOrchestrators: z.number(), unavailableCapabilities: z.number() }),
+  }),
+  errors: z.array(operationalFailureSchema),
+  safety: z.object({
+    readOnly: z.literal(true),
+    writesToMind: z.literal(false),
+    executionEnabled: z.literal(false),
+    externalMutations: z.literal(false),
+  }),
+});
+
+export type OperationalState = z.infer<typeof operationalStateSchema>;
+export type OperationalSnapshot = z.infer<typeof operationalSnapshotSchema>;
 
 export const opsMetricSchema = z.object({
   id: z.string(),
