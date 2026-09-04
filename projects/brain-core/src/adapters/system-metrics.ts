@@ -3,14 +3,11 @@ import { promisify } from 'node:util';
 import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createCodexUsageReader, type CodexUsageSnapshot } from './codex-usage-reader.js';
 
 const execFileAsync = promisify(execFile);
 
-export interface SystemMetricsCodexWindow {
-  remainingPercent: number;
-  usedPercent: number;
-  resetsAt: string | null;
-}
+export type SystemMetricsCodexWindow = CodexUsageSnapshot['fiveHour'];
 
 export interface ClaudeModelUsage {
   inputTokens: number;
@@ -41,15 +38,11 @@ export interface SystemMetrics {
     fiveHour: SystemMetricsCodexWindow;
     sevenDay: SystemMetricsCodexWindow;
     asOf: string | null;
+    freshness: CodexUsageSnapshot['freshness'];
+    diagnostics: CodexUsageSnapshot['diagnostics'];
   };
   claudeApi?: ClaudeApiMetrics;
 }
-
-const FALLBACK_WINDOW: SystemMetricsCodexWindow = {
-  remainingPercent: 100,
-  usedPercent: 0,
-  resetsAt: null,
-};
 
 async function getMemoryFreePercent(): Promise<number | null> {
   try {
@@ -98,75 +91,10 @@ async function getGpuCoreCount(): Promise<number | null> {
   }
 }
 
-interface RateLimitWindow {
-  used_percent: number;
-  window_minutes: number;
-  resets_at: number;
-}
+const codexUsageReader = createCodexUsageReader();
 
-const CODEX_USAGE_CACHE_MS = 30_000;
-let codexUsageCache: { expiresAt: number; value: { fiveHour: SystemMetricsCodexWindow; sevenDay: SystemMetricsCodexWindow; asOf: string | null } } | null = null;
-
-function toCodexWindow(window: RateLimitWindow | undefined): SystemMetricsCodexWindow {
-  if (!window) return FALLBACK_WINDOW;
-  return {
-    usedPercent: Math.round(window.used_percent),
-    remainingPercent: Math.round(Math.max(0, 100 - window.used_percent)),
-    resetsAt: new Date(window.resets_at * 1000).toISOString(),
-  };
-}
-
-function walkJsonl(dir: string, out: string[]): void {
-  try {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walkJsonl(full, out);
-      else if (entry.name.endsWith('.jsonl')) out.push(full);
-    }
-  } catch {
-    // Skip unreadable dirs.
-  }
-}
-
-function readCodexUsage(): { fiveHour: SystemMetricsCodexWindow; sevenDay: SystemMetricsCodexWindow; asOf: string | null } {
-  if (codexUsageCache && codexUsageCache.expiresAt > Date.now()) return codexUsageCache.value;
-
-  const sessionsDir = path.join(os.homedir(), '.codex', 'sessions');
-  const files: string[] = [];
-  walkJsonl(sessionsDir, files);
-
-  let bestTs = 0;
-  let bestFiveHour: SystemMetricsCodexWindow = FALLBACK_WINDOW;
-  let bestSevenDay: SystemMetricsCodexWindow = FALLBACK_WINDOW;
-  let bestAsOf: string | null = null;
-
-  for (const filePath of files) {
-    try {
-      const lines = fs.readFileSync(filePath, 'utf8').split('\n');
-      for (const line of lines) {
-        if (!line.includes('"token_count"')) continue;
-        try {
-          const obj = JSON.parse(line) as { type?: string; timestamp?: string; payload?: { type?: string; rate_limits?: { primary?: RateLimitWindow; secondary?: RateLimitWindow } } };
-          if (obj.type !== 'event_msg' || obj.payload?.type !== 'token_count') continue;
-          if (!obj.payload.rate_limits?.primary) continue;
-          const ts = obj.timestamp ? new Date(obj.timestamp).getTime() : 0;
-          if (!Number.isFinite(ts) || ts <= bestTs) continue;
-          bestTs = ts;
-          bestFiveHour = toCodexWindow(obj.payload.rate_limits.primary);
-          bestSevenDay = toCodexWindow(obj.payload.rate_limits.secondary);
-          bestAsOf = obj.timestamp ?? null;
-        } catch {
-          // Skip malformed lines.
-        }
-      }
-    } catch {
-      // Skip unreadable files.
-    }
-  }
-
-  const value = { fiveHour: bestFiveHour, sevenDay: bestSevenDay, asOf: bestAsOf };
-  codexUsageCache = { expiresAt: Date.now() + CODEX_USAGE_CACHE_MS, value };
-  return value;
+export function readCodexUsage(): CodexUsageSnapshot {
+  return codexUsageReader.getSnapshot();
 }
 
 interface ClaudeUsageFile {

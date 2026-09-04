@@ -1,4 +1,5 @@
 import { getSystemMetrics } from './system-metrics.js';
+import type { CodexUsageFreshness } from './codex-usage-reader.js';
 
 type Freshness = 'fresh' | 'stale' | 'unavailable' | 'not_instrumented';
 
@@ -34,6 +35,17 @@ function metric<T>(input: Omit<OpsMetric<T>, 'generatedAt'> & { generatedAt?: st
     ...input,
     generatedAt: input.generatedAt ?? nowIso(),
   };
+}
+
+function codexMetricStatus(freshness: CodexUsageFreshness): Freshness {
+  if (freshness === 'CURRENT') return 'fresh';
+  if (freshness === 'UNAVAILABLE' || freshness === 'PENDING') return 'unavailable';
+  return 'stale';
+}
+
+function codexMetricMessage(freshness: CodexUsageFreshness, asOf: string | null, filesRead: number, bytesRead: number): string {
+  const age = asOf ? `latest event ${asOf}` : 'no usage event is available yet';
+  return `Codex usage ${freshness.toLowerCase()}; ${age}. Refresh inspected ${filesRead} changed file${filesRead === 1 ? '' : 's'} (${bytesRead} bytes).`;
 }
 
 export async function readOpsSystemMetrics(): Promise<OpsDashboardEnvelope<{
@@ -111,47 +123,49 @@ export async function readOpsAiUsageWindows(): Promise<OpsDashboardEnvelope<{
   const codex = system.codex;
   const fiveHourWindow = codex.fiveHour;
   const sevenDayWindow = codex.sevenDay;
+  const status = codexMetricStatus(codex.freshness);
+  const message = codexMetricMessage(codex.freshness, codex.asOf, codex.diagnostics.filesRead, codex.diagnostics.bytesRead);
 
   return {
     id: 'ops-ai-usage-windows',
     generatedAt,
-    status: 'available',
+    status: status === 'fresh' ? 'available' : 'partial',
     data: {
       codexCurrentWindow: metric<number>({
         id: 'codex-current-window',
         label: 'Codex current window',
         value: round(fiveHourWindow.usedPercent / 100, 4),
         unit: 'ratio',
-        status: 'fresh',
+        status,
         generatedAt,
         source: 'system-metrics.codex.fiveHour',
-        message: fiveHourWindow.resetsAt
+        message: `${fiveHourWindow.resetsAt
           ? `Used in the current 5-hour window, resets at ${fiveHourWindow.resetsAt}`
-          : 'Current Codex window reported by the host.',
+          : 'Current Codex window reported by the host.'} ${message}`,
       }),
       codexFiveHourWindow: metric<number>({
         id: 'codex-five-hour-window',
         label: 'Codex 5-hour window',
         value: round(fiveHourWindow.remainingPercent / 100, 4),
         unit: 'ratio',
-        status: 'fresh',
+        status,
         generatedAt,
         source: 'system-metrics.codex.fiveHour',
-        message: fiveHourWindow.resetsAt
+        message: `${fiveHourWindow.resetsAt
           ? `Remaining in the current 5-hour window, resets at ${fiveHourWindow.resetsAt}`
-          : 'Five-hour Codex window reported by the host.',
+          : 'Five-hour Codex window reported by the host.'} ${message}`,
       }),
       codexSevenDayWindow: metric<number>({
         id: 'codex-seven-day-window',
         label: 'Codex 7-day window',
         value: round(sevenDayWindow.usedPercent / 100, 4),
         unit: 'ratio',
-        status: 'fresh',
+        status,
         generatedAt,
         source: 'system-metrics.codex.sevenDay',
-        message: sevenDayWindow.resetsAt
+        message: `${sevenDayWindow.resetsAt
           ? `Resets at ${sevenDayWindow.resetsAt}`
-          : 'Seven-day Codex window reported by the host.',
+          : 'Seven-day Codex window reported by the host.'} ${message}`,
       }),
     },
   };
