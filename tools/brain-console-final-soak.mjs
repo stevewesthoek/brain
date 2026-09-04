@@ -16,6 +16,14 @@ const routes = [
   ['/brain/quality-safety', 'Quality & Safety'],
   ['/brain/continuity', 'Continuity'],
   ['/brain/capability-routing', 'Capability Routing'],
+  ['/', 'Operational control'],
+  ['/monitoring', 'Infrastructure Telemetry'],
+  ['/scheduler', 'Brain Scheduler'],
+  ['/local-apps', 'Apps'],
+  ['/infrastructure', 'Infrastructure'],
+  ['/dokploy', 'Dokploy'],
+  ['/tunnels', 'Tunnels'],
+  ['/ai-models', 'AI Models'],
 ];
 
 function now() { return new Date().toISOString(); }
@@ -133,9 +141,12 @@ const exceptions = [];
 const httpFailures = [];
 let responseErrors = 0;
 
-async function evaluate(expression) {
-  const result = await cdp('Runtime.evaluate', { expression, returnByValue: true });
+async function evaluate(expression, awaitPromise = false) {
+  const result = await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise });
   return result?.result?.value;
+}
+async function usageDiagnostics() {
+  return evaluate(`fetch('http://127.0.0.1:4877/ops/ai-usage-windows', { cache: 'no-store' }).then((response) => response.json()).then((payload) => payload.data?.diagnostics ?? null).catch((error) => ({ error: String(error) }))`, true);
 }
 async function navigate(path, expectedText) {
   const targetUrl = new URL(path, BASE);
@@ -202,6 +213,7 @@ try {
         point.requests = [...requestCounts.values()].reduce((sum, count) => sum + count, 0);
         point.failedRequests = failures.length + responseErrors;
         point.browserErrors = exceptions.length + consoleErrors.length;
+        point.usageDiagnostics = await usageDiagnostics();
         checkpoints.push(point);
         console.log(JSON.stringify(point));
         nextCheckpoint += 1;
@@ -226,6 +238,7 @@ try {
     point.requests = [...requestCounts.values()].reduce((sum, count) => sum + count, 0);
     point.failedRequests = failures.length + responseErrors;
     point.browserErrors = exceptions.length + consoleErrors.length;
+    point.usageDiagnostics = await usageDiagnostics();
     checkpoints.push(point); console.log(JSON.stringify(point)); nextCheckpoint += 1;
   }
   console.log(JSON.stringify({ complete: true, startedAt: new Date(startedAt).toISOString(), endedAt: now(), checkpoints, failures, responseErrors, httpFailures, exceptions, consoleErrors, requestCounts: Object.fromEntries(requestCounts) }));
