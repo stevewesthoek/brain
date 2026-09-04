@@ -7,6 +7,7 @@
     "dev": "next dev -p 4881",
     "build": "next build",
     "start": "next start -p 4881",
+    "test:command-center": "node --test lib/command-center-contract.test.mjs",
     "test:telemetry": "node --test lib/canonical-infrastructure-telemetry-contract.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
