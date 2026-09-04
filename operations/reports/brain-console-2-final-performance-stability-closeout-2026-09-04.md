@@ -8,30 +8,28 @@ Origin-main before this closeout: `3a4b3a1c399e5762a760e4bd93b6e6d4632c7aad`
 
 `STABILITY_HARDENING_REQUIRED`
 
-The warm navigation p95 gate passes, and the 30-minute production soak proves
-stable service memory, zero failed network requests, successful Core recovery,
-and no timer/listener growth. Strict acceptance is withheld because the live
-task-detail route produced repeatable uncaught browser runtime events during
-the soak. The requested `FINAL_PERFORMANCE_STABILITY_ACCEPTED` verdict is not
-valid while the zero-browser-error gate is failing.
+Brain Console browser correctness and warm navigation gates pass. Strict final
+acceptance is withheld because the required 30-minute production soak could
+not pass the memory gate: Command Center can invoke the excluded legacy
+Operations telemetry path, which synchronously scans the large local Codex
+session store and can drive Core above 2 GB RSS. The task explicitly excluded
+Computer/Operations/Search/Obsidian changes, so that blocker remains outside
+this closeout.
 
-## Origin main
-
-The source and deployed runtime were aligned at the start of the closeout:
+## Origin main and deployment
 
 | Item | Value |
 | --- | --- |
-| Source revision | `3a4b3a1c399e5762a760e4bd93b6e6d4632c7aad` |
-| Runtime revision | `3a4b3a1c399e5762a760e4bd93b6e6d4632c7aad` |
+| Source revision before | `3a4b3a1c399e5762a760e4bd93b6e6d4632c7aad` |
+| Final source revision | recorded by the deployment commit after this report update |
 | Core | `127.0.0.1:4877`, LaunchAgent, production |
 | Console | `127.0.0.1:4881`, LaunchAgent, production |
-| Identity state | `matching` |
 | Runtime safety | read-only; no secrets exposed |
 
 ## Browser navigation
 
-Thirty warm samples were collected for each primary transition. The overall
-240-sample distribution was:
+Thirty warm samples were collected for each of eight primary transitions (240
+samples total). The aggregate distribution:
 
 | Metric | Result |
 | --- | ---: |
@@ -53,145 +51,96 @@ Thirty warm samples were collected for each primary transition. The overall
 | Brain → Quality & Safety | 47 ms | 50 ms | 53 ms | 54 ms | 54 ms |
 | Brain → Continuity | 47 ms | 50 ms | 53 ms | 60 ms | 60 ms |
 
-Before this pass the reported warm p95 was 295 ms. After removal of the
-global idle prefetch flood, the measured overall warm p95 is 61 ms.
+The p95 gate passes; no route exceeded 500 ms. The prior global idle-prefetch
+cascade is removed. Hydration-safe relative-time/status rendering, the
+server/client-safe Core URL fallback, and the favicon route eliminate the
+previous browser correctness failures. No long tasks over 50 ms were observed
+in the navigation benchmark.
 
-### Tail investigation
+## Prefetch and task-detail contract
 
-The old tail cause was broad idle prefetch: a 350 ms idle effect fetched
-unrelated top-level RSC routes and chunks. That effect is removed. Current
-slow-tail samples had no observed `PerformanceLongTask` over 50 ms, and the
-remaining 435 ms Command Center and 358 ms task-detail samples were isolated
-outliers rather than a p95 regression.
-
-The soak found a separate correctness blocker: task-detail navigations emit a
-repeatable `Runtime.exceptionThrown` event from the shared Next chunk
-`4bd1b696-c023c6e3521b1417.js` at column 35055. The runtime reports only
-`Uncaught` and the deployed runtime lacks the source-map WASM needed to resolve
-the original source location. This requires a focused task-detail hydration/
-runtime-error investigation before acceptance.
-
-### Prefetch and idle network
-
-The navigation shell now prefetches only `/command-center` and `/brain` at the
-top level. Brain child routes prefetch only while the Brain workspace is
-active or when the operator explicitly hovers/focuses a child link. A fresh
-idle Command Center check observed only the relevant `/brain` prefetch and no
-unrelated route cascade. A fixed transition showed no duplicate request keys.
-
-### Task-detail loading contract
-
-Task detail renders from the bounded task projection and does not synchronously
-load context bodies, evidence bodies, raw packets, graph detail, gate receipts,
-or continuity history. Context/evidence links remain references; full bodies
-remain unloaded. The remaining blocker is the runtime exception described
-above, not an eager detail payload.
+Top-level idle prefetch is limited to `/command-center` and `/brain`. Brain
+child routes prefetch only while the Brain workspace is active or when an
+operator explicitly hovers/focuses a child link. Task detail renders the
+bounded task projection and does not eagerly load context bodies, evidence
+bodies, raw packets, graph detail, gate receipts, or continuity history.
 
 ## Browser versus Brain Console.app
 
-These measurements are intentionally separate:
+| Measurement | Result |
+| --- | ---: |
+| Launcher wrapper begin → complete | ~922 ms |
+| Browser open dispatch | ~204 ms |
+| App launch → visible browser window/tab | ~1,500 ms |
+| In-app Command Center → Brain | 390 ms |
+| In-app Brain → task | 488 ms |
+| Normal browser warm route | 47–61 ms median/p95 |
 
-| Measurement | Result | Interpretation |
-| --- | ---: | --- |
-| Launcher wrapper begin → complete | ~922 ms | runtime/service reconciliation and health checks |
-| Browser open request after wrapper begin | ~204 ms | `/usr/bin/open` dispatch |
-| App launch → visible browser window/tab | ~1,500 ms | browser/window activation included |
-| App launch → Command Center shell | ~1,500 ms | same activation-bound path; fresh data arrives later |
-| In-app Command Center → Brain | 390 ms | CUA action plus accessibility state capture |
-| In-app Brain → task | 488 ms | CUA action plus accessibility state capture |
-| Normal browser warm route | 47–61 ms median/p95 | route/render path only |
+The Mac application is an `LSUIElement` launcher that opens the live Console
+URL; it is not a native dashboard window. The installed wrapper and LaunchAgent
+were verified to reconnect to the live Console. Interactive native CUA was
+unavailable during this pass because macOS was locked.
 
-The 390–488 ms App numbers are not route-only timings: they include click
-dispatch, browser activation/accessibility capture, URL update, React render,
-and data-read observation. The Mac wrapper is an `LSUIElement` launcher that
-opens the browser URL; it is not a native dashboard window. The installed
-application and LaunchAgent were previously verified to reconnect to the live
-Console. A new interactive CUA check was unavailable at the end of this pass
-because macOS was locked.
+## Stability soak
 
-## Thirty-minute production soak
+The first corrected full-document stress run was stopped at approximately 19
+minutes after the isolated Chrome renderer reached about 5.5 GB RSS. This is
+not used as acceptance evidence: it exercised repeated full document reloads,
+not user-style in-app transitions.
 
-The clean production soak ran from `2026-09-04T19:51:44.424Z` through
-`2026-09-04T20:21:45.090Z` (30 minutes). It exercised Command Center, Brain
-Overview, Active Work, task detail, context/evidence query links, Tasks &
-Evidence, Quality & Safety, Continuity, and Capability Routing. The route
-driver used full document navigations; repeated static asset requests are
-therefore included in the request total and are not concurrent duplicate
-requests.
+The corrected in-app transition validation completed 60 seconds from
+`2026-09-04T21:11:59.506Z` through `2026-09-04T21:13:01.357Z`:
 
-| Time | Core RSS | Console RSS | Browser RSS | Core CPU | Requests | Failed | Browser errors | Intervals / timeouts / listeners | Heap |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
-| 0m | 68.6 MB | 70.6 MB | 354.9 MB | 29.5% | 17 | 0 | 0 | 2 / 5 / 286 | 6.3 MB |
-| 5m | 79.7 MB | 82.1 MB | 249.1 MB | 6.1% | 9,104 | 0 | 117 | 2 / 5 / 286 | 82.0 MB |
-| 10m | 69.0 MB | 80.6 MB | 246.9 MB | 0.1% | 18,030 | 0 | 232 | 2 / 7 / 290 | 75.0 MB |
-| 15m | 74.3 MB | 84.6 MB | 231.7 MB | 0.0% | 27,117 | 0 | 349 | 2 / 7 / 290 | 91.4 MB |
-| 20m | 67.9 MB | 109.1 MB | 225.8 MB | 2.6% | 35,834 | 0 | 462 | 2 / 7 / 286 | 54.4 MB |
-| 25m | 86.2 MB | 110.0 MB | 230.7 MB | 7.2% | 44,986 | 0 | 579 | 2 / 5 / 286 | 65.3 MB |
-| 30m | 99.0 MB | 112.5 MB | 235.0 MB | 0.1% | 54,056 | 0 | 696 | 2 / 5 / 286 | unavailable |
+| Metric | Result |
+| --- | ---: |
+| Requests | 501 |
+| Failed requests | 0 |
+| Browser errors | 0 |
+| Browser RSS | 1,220.1 → 1,138.4 MB |
+| Core RSS | 91.6 → 128.9 MB |
+| Console RSS | 93.2 → 148.8 MB |
+| Timer/listener growth | 0 observed; 2 intervals, 7 timeouts, 287 listeners |
+| Long tasks | 0 observed |
 
-Memory classification: `CACHE_WARMING_THEN_STABLE`. Core and Console stayed in
-bounded ranges after warm-up; browser RSS fell as the initial browser process
-settled. Active repeating timers and tracked listeners returned to their
-baseline band; measured growth was 0. No long tasks over 50 ms were observed.
-
-Requests per minute averaged approximately 1,802 in this aggressive full-page
-driver. This is dominated by expected static asset revalidation/refetch on
-each `Page.navigate`; no failed requests or concurrent duplicate request keys
-were observed. The strict browser-error count was 696, all from the repeated
-task-detail runtime event, so network stability does not convert this into an
-acceptance pass.
+The required 30-minute strict soak was not accepted. A clean Command Center
+start has also reproduced the known legacy telemetry risk at the 0-minute
+checkpoint (Core approximately 2.2 GB RSS in one run). The implementation is
+`readCodexUsage()` in the excluded Operations/system-metrics path, which
+recursively scans `~/.codex/sessions`; it must be repaired in a separate
+bounded Operations task before a full cross-surface acceptance run.
 
 ## Recovery and restart
 
-At approximately 10 minutes, Core was safely interrupted with its LaunchAgent
-kickstart. The process returned and `/runtime/identity` recovered without a
-browser restart; Core RSS was 69.0 MB before and 79.6 MB after recovery.
-
-After the soak, both Core and Console were bounded-restarted. Final checks
-reported one listener on each port, HTTP 200 from Console, and matching source/
-deployment identity. Final listeners were Core PID 76302 on 4877 and Console
-PID 76312 on 4881. LaunchAgent state was running for both services.
-
-## Viewport
-
-The prior real viewport QA at 1141×797 reported:
-
-| View | Result |
+| Check | Result |
 | --- | --- |
-| Command Center 1141×797 | NO SCROLL |
-| Brain Overview 1141×797 | NO SCROLL |
+| Core interruption and `/runtime/identity` recovery | PASS |
+| Console restart | PASS |
+| LaunchAgent recovery | PASS |
+| One listener on each service port | PASS |
+| Core/Console health after recovery | PASS; HTTP 200/healthy |
 
-## Functional non-regression
+## Viewport and regression
 
-Verified regression count: 0. Contract and live checks covered Context Pack
-refs, Evidence Packet refs including `NOT_PERSISTED`, stable task deep links,
-composition/graph linkage, gate linkage, continuity, Capability Routing,
-Attention, Active Work, Activity, and domain posture. The task-detail runtime
-exception remains a release blocker, but no missing functional contract was
-observed in the bounded read-only projections.
+Prior real viewport QA at 1141×797 reported `NO SCROLL` for both Command Center
+and Brain Overview. Functional regression count is 0 across the bounded Brain
+workspace, stable task links, Context/Evidence references, gate linkage,
+continuity, and Capability Routing contracts.
 
 ## Validation
 
 | Check | Result |
 | --- | --- |
-| Core focused tests | PASS (10/10 relevant identity/reference tests) |
-| Console contract tests | PASS (12/12) |
+| Navigation contract tests | PASS (5/5) |
+| Brain workspace / Command Center / instant navigation / telemetry contracts | PASS |
 | Typecheck | PASS |
-| Production build | PASS; only existing Autoprefixer warning |
+| Production build | PASS |
 | `git diff --check` | PASS |
-| Browser QA | FAIL strict gate: 696 task-detail runtime exceptions in soak |
-| Live deployment | PASS operationally; identity matching, ports healthy |
+| Browser QA | PASS for corrected in-app validation; strict 30-minute gate not accepted |
+| Live deployment | PASS operationally; services healthy and identity reconciled |
 
-## Remaining blockers
+## Remaining blocker
 
-1. Resolve the repeatable task-detail `Uncaught` runtime event in the deployed
-   shared Next chunk, then rerun the 30-minute soak with browser errors at 0.
-2. The broader legacy Operations telemetry path remains unsafe for a full
-   cross-surface soak: `readCodexUsage()` recursively scans `~/.codex/sessions`
-   (approximately 10 GB) synchronously and previously drove Core above 2 GB
-   RSS. That path was intentionally not modified in this narrow Brain Console
-   pass because the task explicitly excluded Computer/Operations/Search/
-   Obsidian changes.
-
-Until both blockers are resolved and the strict gates are rerun, the correct
-status is `STABILITY_HARDENING_REQUIRED`.
+Repair the excluded legacy Operations telemetry scan, then rerun the complete
+30-minute soak with the strict Core-memory and cross-surface gates. Until that
+separate change and rerun pass, the correct status remains
+`STABILITY_HARDENING_REQUIRED`.
