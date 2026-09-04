@@ -131,6 +131,20 @@ export async function readOpsAiUsageWindows(): Promise<OpsDashboardEnvelope<{
     generatedAt,
     status: status === 'fresh' ? 'available' : 'partial',
     data: {
+      diagnostics: {
+        freshness: codex.freshness,
+        asOf: codex.asOf,
+        refreshCount: codex.diagnostics.refreshCount,
+        filesInspected: codex.diagnostics.filesInspected,
+        filesRead: codex.diagnostics.filesRead,
+        cachedFiles: codex.diagnostics.cachedFiles,
+        bytesRead: codex.diagnostics.bytesRead,
+        truncated: codex.diagnostics.truncated,
+        inFlight: codex.diagnostics.inFlight,
+        errorCount: codex.diagnostics.errorCount,
+        lastRefreshAt: codex.diagnostics.lastRefreshAt,
+        lastRefreshDurationMs: codex.diagnostics.lastRefreshDurationMs,
+      },
       codexCurrentWindow: metric<number>({
         id: 'codex-current-window',
         label: 'Codex current window',

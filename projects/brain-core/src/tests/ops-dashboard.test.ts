@@ -18,6 +18,9 @@ test('ops dashboard exposes live system metrics and AI metrics', async () => {
 
   assert.equal(usage.id, 'ops-ai-usage-windows');
   assert.ok(usage.status === 'available' || usage.status === 'partial');
+  assert.ok(usage.data.diagnostics.filesInspected >= 0);
+  assert.ok(usage.data.diagnostics.bytesRead >= 0);
+  assert.ok(['CURRENT', 'STALE', 'DEGRADED', 'UNAVAILABLE', 'PENDING'].includes(usage.data.diagnostics.freshness));
   assert.ok(['fresh', 'stale', 'unavailable'].includes(usage.data.codexCurrentWindow.status));
   assert.ok(['fresh', 'stale', 'unavailable'].includes(usage.data.codexFiveHourWindow.status));
   assert.ok(['fresh', 'stale', 'unavailable'].includes(usage.data.codexSevenDayWindow.status));
