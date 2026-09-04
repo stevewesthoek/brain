@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Activity, AppWindow, BrainCircuit, CalendarClock, FileVideo2, Gauge, Globe, LayoutDashboard, ListVideo, Network, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { brainCoreRequest, BRAIN_CORE_URL } from '@/lib/braincore-client';
@@ -49,8 +48,6 @@ const nav = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-const IDLE_PREFETCH_ROUTES = ['/command-center', '/brain', '/brain/active-work', '/', '/scheduler', '/local-apps', '/infrastructure'];
-
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -62,14 +59,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     staleTime: 15_000,
   });
 
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      IDLE_PREFETCH_ROUTES.forEach((href) => router.prefetch(href));
-    }, 350);
-    return () => window.clearTimeout(timeout);
-  }, [router]);
-
   const prefetch = (href: string) => router.prefetch(href.split('#', 1)[0] || '/');
+  const prefetchTopLevel = (href: string) => href === '/command-center' || href === '/brain';
+  const prefetchBrainChild = pathname.startsWith('/brain');
 
   return (
     <div className={cn('app-shell', pathname === '/command-center' && 'command-center-shell', pathname === '/brain' && 'brain-shell')}>
@@ -87,7 +79,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             const Icon = item.icon;
             return (
               <div key={item.href} className="nav-group">
-                <Link href={item.href} prefetch onMouseEnter={() => prefetch(item.href)} onFocus={() => prefetch(item.href)} className={cn('nav-link', active && 'active')}>
+                <Link href={item.href} prefetch={prefetchTopLevel(item.href)} onMouseEnter={() => prefetchTopLevel(item.href) && prefetch(item.href)} onFocus={() => prefetchTopLevel(item.href) && prefetch(item.href)} className={cn('nav-link', active && 'active')}>
                   <Icon size={18} />
                   <span>{item.label}</span>
                 </Link>
@@ -96,7 +88,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     {item.children.map((child) => {
                       const ChildIcon = child.icon;
                       return (
-                        <Link key={child.href} href={child.href} prefetch onMouseEnter={() => prefetch(child.href)} onFocus={() => prefetch(child.href)} className="nav-child-link">
+                        <Link key={child.href} href={child.href} prefetch={prefetchBrainChild} onMouseEnter={() => prefetch(child.href)} onFocus={() => prefetch(child.href)} className="nav-child-link">
                           <ChildIcon size={14} />
                           <span>{child.label}</span>
                         </Link>

@@ -32,7 +32,7 @@ test('Brain workspace is a read-only projection of real Core contracts', () => {
   assert.match(source, /dependsOn/);
   assert.match(source, /View raw task reference/);
   assert.match(source, /No automatic resume/);
-  assert.match(source, /Evidence Packet refs/);
+  assert.match(source, /evidencePacketRefs/);
   assert.match(source, /\?context=/);
   assert.match(source, /\?evidence=/);
   assert.match(source, /descriptor only/i);
