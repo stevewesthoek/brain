@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFile, execFileSync, spawn } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -14,18 +14,21 @@ const runtimeRoot = path.resolve(process.env.BRAIN_CONSOLE_RUNTIME_ROOT ?? repoR
 const home = process.env.HOME ?? os.homedir();
 
 const CORE_LABEL = 'com.office.brain-core';
+const CONSOLE_LABEL = 'com.office.brain-console';
 const CORE_PORT = 4877;
 const CONSOLE_PORT = 4881;
 const CORE_HOST = '127.0.0.1';
+const NODE_BIN = '/opt/homebrew/bin/node';
 const CORE_PROJECT_ROOT = path.join(runtimeRoot, 'projects', 'brain-core');
 const CONSOLE_PROJECT_ROOT = path.join(runtimeRoot, 'projects', 'brain-console');
 const CORE_ENTRY = path.join(CORE_PROJECT_ROOT, 'dist', 'index.js');
+const CONSOLE_SERVICE_ENTRY = path.join(runtimeRoot, 'tools', 'brain-console-service.mjs');
 const SOURCE_PLIST = path.join(repoRoot, 'operations', 'system-configs', 'launchagents', `${CORE_LABEL}.plist`);
+const SOURCE_CONSOLE_PLIST = path.join(repoRoot, 'operations', 'system-configs', 'launchagents', `${CONSOLE_LABEL}.plist`);
 const INSTALLED_PLIST = path.join(home, 'Library', 'LaunchAgents', `${CORE_LABEL}.plist`);
+const INSTALLED_CONSOLE_PLIST = path.join(home, 'Library', 'LaunchAgents', `${CONSOLE_LABEL}.plist`);
 const LOG_DIR = path.join(home, 'Library', 'Logs', 'Brain Console');
 const LAUNCHER_LOG = path.join(LOG_DIR, 'launcher.log');
-const CONSOLE_STDOUT_LOG = path.join(LOG_DIR, 'console.stdout.log');
-const CONSOLE_STDERR_LOG = path.join(LOG_DIR, 'console.stderr.log');
 const LOCK_DIR = path.join(home, 'Library', 'Application Support', 'Brain Console', 'launcher.lock');
 const LOCK_PID = path.join(LOCK_DIR, 'pid');
 const UID = process.getuid?.() ?? 502;
@@ -44,7 +47,7 @@ async function main() {
       consoleProjectRoot: CONSOLE_PROJECT_ROOT,
       sourcePlist: SOURCE_PLIST,
       installedPlist: INSTALLED_PLIST,
-      consoleUrl: `http://localhost:${CONSOLE_PORT}/monitoring`,
+      consoleUrl: `http://localhost:${CONSOLE_PORT}/command-center`,
     }, null, 2)}\n`);
     return;
   }
@@ -57,8 +60,8 @@ async function main() {
     await withLauncherLock(async () => {
       await ensureBrainCore();
       await ensureBrainConsole();
-      await execFileAsync('/usr/bin/open', [`http://localhost:${CONSOLE_PORT}/monitoring`], { timeout: 10_000 });
-      writeLog(`browser opened url=http://localhost:${CONSOLE_PORT}/monitoring`);
+      await execFileAsync('/usr/bin/open', [`http://localhost:${CONSOLE_PORT}/command-center`], { timeout: 10_000 });
+      writeLog(`browser opened url=http://localhost:${CONSOLE_PORT}/command-center`);
     });
     writeLog('complete');
   } catch (error) {
@@ -72,7 +75,7 @@ async function main() {
 }
 
 function validateRuntimeFiles() {
-  for (const file of [SOURCE_PLIST, CORE_ENTRY, path.join(CONSOLE_PROJECT_ROOT, 'package.json')]) {
+  for (const file of [SOURCE_PLIST, SOURCE_CONSOLE_PLIST, CORE_ENTRY, CONSOLE_SERVICE_ENTRY, path.join(CONSOLE_PROJECT_ROOT, 'package.json')]) {
     if (!fs.existsSync(file)) throw new Error(`runtime file missing: ${file}`);
   }
 }
@@ -111,9 +114,9 @@ function lockOwnerAlive() {
 
 async function ensureBrainCore() {
   const current = await serviceState(CORE_PORT, 'core');
-  const installed = readInstalledPlist();
-  const identityCorrect = installed !== null && plistIdentityMatches(installed);
-  const managed = await launchctlPrint();
+  const installed = readPlist(INSTALLED_PLIST);
+  const identityCorrect = installed !== null && plistCoreIdentityMatches(installed);
+  const managed = await launchctlPrint(CORE_LABEL);
   const managedOwnsPort = current.listening && managed.loaded && managed.stdout.includes(processEntryPath(current.command));
 
   if (current.listening && !current.canonicalOwner && !managedOwnsPort) {
@@ -130,7 +133,7 @@ async function ensureBrainCore() {
   }
 
   writeLog(`core reconciliation requested loaded=${managed.loaded} installedIdentity=${identityCorrect}`);
-  writeInstalledPlist();
+  writeInstalledPlist(SOURCE_PLIST, INSTALLED_PLIST);
 
   if (managed.loaded) {
     await execLaunchctl(['bootout', DOMAIN, INSTALLED_PLIST]);
@@ -150,28 +153,45 @@ async function ensureBrainConsole() {
   if (current.listening && !current.canonicalOwner) {
     throw new Error(`Console port ${CONSOLE_PORT} is occupied by an unknown process`);
   }
-  if (current.healthy && current.canonicalOwner) {
+  const installed = readPlist(INSTALLED_CONSOLE_PLIST);
+  const identityCorrect = installed !== null && plistConsoleIdentityMatches(installed);
+  const managed = await launchctlPrint(CONSOLE_LABEL);
+  if (current.healthy && current.canonicalOwner && identityCorrect && managed.loaded) {
     writeLog(`console reused pid=${current.pid}`);
     return;
   }
-  if (current.listening) {
-    throw new Error(`Console port ${CONSOLE_PORT} is occupied but not healthy`);
+
+  writeLog(`console reconciliation requested loaded=${managed.loaded} installedIdentity=${identityCorrect}`);
+  writeInstalledPlist(SOURCE_CONSOLE_PLIST, INSTALLED_CONSOLE_PLIST);
+
+  if (managed.loaded) {
+    await execLaunchctl(['bootout', DOMAIN, INSTALLED_CONSOLE_PLIST]);
+    writeLog(`console LaunchAgent bootout requested label=${CONSOLE_LABEL}`);
+    await waitForPortFree(CONSOLE_PORT, 20_000);
   }
 
-  fs.mkdirSync(LOG_DIR, { recursive: true });
-  rotateLogIfNeeded(CONSOLE_STDOUT_LOG);
-  rotateLogIfNeeded(CONSOLE_STDERR_LOG);
-  const stdout = fs.openSync(CONSOLE_STDOUT_LOG, 'a');
-  const stderr = fs.openSync(CONSOLE_STDERR_LOG, 'a');
-  const child = spawn('/opt/homebrew/bin/npm', ['run', 'dev'], {
-    cwd: CONSOLE_PROJECT_ROOT,
-    detached: true,
-    env: { ...process.env, NEXT_PUBLIC_BRAIN_CORE_URL: `http://${CORE_HOST}:${CORE_PORT}` },
-    stdio: ['ignore', stdout, stderr],
-  });
-  child.unref();
-  writeLog(`console start requested pid=${child.pid ?? 'unknown'} port=${CONSOLE_PORT}`);
+  if (await isPortListening(CONSOLE_PORT)) {
+    const refreshed = await serviceState(CONSOLE_PORT, 'console');
+    if (!refreshed.canonicalOwner) {
+      throw new Error(`Console port ${CONSOLE_PORT} remains occupied by an unknown process`);
+    }
+    await stopCanonicalConsole(refreshed);
+    await waitForPortFree(CONSOLE_PORT, 20_000);
+  }
+
+  await execLaunchctl(['bootstrap', DOMAIN, INSTALLED_CONSOLE_PLIST]);
+  writeLog(`console LaunchAgent bootstrap requested label=${CONSOLE_LABEL}`);
   await waitForConsoleHealthy(60_000);
+}
+
+async function stopCanonicalConsole(current) {
+  if (!current.pid) throw new Error(`Console port ${CONSOLE_PORT} is occupied without a discoverable process`);
+  writeLog(`stopping previous canonical Console pid=${current.pid}`);
+  try {
+    process.kill(current.pid, 'SIGTERM');
+  } catch (error) {
+    if (error?.code !== 'ESRCH') throw error;
+  }
 }
 
 async function waitForCoreHealthy(timeoutMs) {
@@ -275,9 +295,9 @@ function processEntryPath(command) {
   return match?.[0] ?? '__no_managed_process_path__';
 }
 
-async function launchctlPrint() {
+async function launchctlPrint(label) {
   try {
-    const { stdout } = await execFileAsync('/bin/launchctl', ['print', `${DOMAIN}/${CORE_LABEL}`], { timeout: 5_000 });
+    const { stdout } = await execFileAsync('/bin/launchctl', ['print', `${DOMAIN}/${label}`], { timeout: 5_000 });
     return { loaded: true, stdout };
   } catch {
     return { loaded: false, stdout: '' };
@@ -292,18 +312,18 @@ async function execLaunchctl(args) {
   }
 }
 
-function readInstalledPlist() {
-  if (!fs.existsSync(INSTALLED_PLIST)) return null;
+function readPlist(plistPath) {
+  if (!fs.existsSync(plistPath)) return null;
   try {
-    const result = requirePlutilJson();
+    const result = requirePlutilJson(plistPath);
     return result;
   } catch {
     return null;
   }
 }
 
-function requirePlutilJson() {
-  const result = childProcessSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', '--', INSTALLED_PLIST]);
+function requirePlutilJson(plistPath) {
+  const result = childProcessSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', '--', plistPath]);
   return JSON.parse(result);
 }
 
@@ -311,23 +331,47 @@ function childProcessSync(file, args) {
   return execFileSync(file, args, { encoding: 'utf8', timeout: 5_000 });
 }
 
-function plistIdentityMatches(plist) {
+function plistCoreIdentityMatches(plist) {
+  const revision = runtimeRevision();
   return plist.Label === CORE_LABEL
-    && plist.ProgramArguments?.[0] === '/opt/homebrew/bin/node'
+    && plist.ProgramArguments?.[0] === NODE_BIN
     && plist.ProgramArguments?.[1] === CORE_ENTRY
-    && plist.WorkingDirectory === CORE_PROJECT_ROOT;
+    && plist.WorkingDirectory === CORE_PROJECT_ROOT
+    && plist.EnvironmentVariables?.BRAIN_SOURCE_REVISION === revision
+    && plist.EnvironmentVariables?.BRAIN_DEPLOYMENT_REVISION === revision;
 }
 
-function writeInstalledPlist() {
-  const source = fs.readFileSync(SOURCE_PLIST, 'utf8');
+function plistConsoleIdentityMatches(plist) {
+  return plist.Label === CONSOLE_LABEL
+    && plist.ProgramArguments?.[0] === NODE_BIN
+    && plist.ProgramArguments?.[1] === CONSOLE_SERVICE_ENTRY
+    && plist.WorkingDirectory === CONSOLE_PROJECT_ROOT;
+}
+
+function writeInstalledPlist(sourcePath, installedPath) {
+  const source = fs.readFileSync(sourcePath, 'utf8');
   const canonicalRoot = '/Users/Office/Repos/stevewesthoek/brain';
   if (!source.includes(canonicalRoot)) throw new Error('canonical LaunchAgent source root is not recognized');
-  const rendered = source.replaceAll(canonicalRoot, runtimeRoot);
-  fs.mkdirSync(path.dirname(INSTALLED_PLIST), { recursive: true });
-  const tempPath = `${INSTALLED_PLIST}.tmp-${process.pid}`;
+  const revision = runtimeRevision();
+  const rendered = source
+    .replaceAll(canonicalRoot, runtimeRoot)
+    .replaceAll('__BRAIN_RELEASE_REVISION__', revision)
+    .replaceAll('__BRAIN_RELEASE_TIMESTAMP__', new Date().toISOString());
+  fs.mkdirSync(path.dirname(installedPath), { recursive: true });
+  const tempPath = `${installedPath}.tmp-${process.pid}`;
   fs.writeFileSync(tempPath, rendered, { mode: 0o600 });
-  fs.renameSync(tempPath, INSTALLED_PLIST);
-  writeLog(`LaunchAgent plist reconciled path=${INSTALLED_PLIST}`);
+  fs.renameSync(tempPath, installedPath);
+  writeLog(`LaunchAgent plist reconciled path=${installedPath} revision=${revision}`);
+}
+
+function runtimeRevision() {
+  try {
+    const revision = execFileSync('/usr/bin/git', ['-C', runtimeRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8', timeout: 5_000 }).trim();
+    if (!/^[0-9a-f]{7,64}$/i.test(revision)) throw new Error('invalid revision');
+    return revision;
+  } catch {
+    throw new Error(`runtime revision unavailable for ${runtimeRoot}`);
+  }
 }
 
 async function waitForPortFree(port, timeoutMs) {

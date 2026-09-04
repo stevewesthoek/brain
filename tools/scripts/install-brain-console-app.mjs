@@ -11,13 +11,16 @@ const appPath = path.join(process.env.HOME ?? os.homedir(), 'Applications', 'Bra
 const executablePath = path.join(appPath, 'Contents', 'MacOS', 'Brain Console');
 const infoPath = path.join(appPath, 'Contents', 'Info.plist');
 const launcherPath = path.join(repoRoot, 'tools', 'brain-console-launcher.mjs');
+const consoleServicePlistPath = path.join(repoRoot, 'operations', 'system-configs', 'launchagents', 'com.office.brain-console.plist');
+const installedConsoleServicePlistPath = path.join(process.env.HOME ?? os.homedir(), 'Library', 'LaunchAgents', 'com.office.brain-console.plist');
 
 if (process.argv.includes('--dry-run')) {
-  process.stdout.write(`${JSON.stringify({ appPath, launcherPath, action: 'install-or-update-owned-app' }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ appPath, launcherPath, consoleServicePlistPath, installedConsoleServicePlistPath, action: 'install-or-update-owned-app' }, null, 2)}\n`);
   process.exit(0);
 }
 
 if (!fs.existsSync(launcherPath)) throw new Error(`launcher source is missing: ${launcherPath}`);
+if (!fs.existsSync(consoleServicePlistPath)) throw new Error(`Console LaunchAgent source is missing: ${consoleServicePlistPath}`);
 fs.mkdirSync(path.dirname(appPath), { recursive: true });
 
 if (fs.existsSync(appPath)) {
@@ -39,6 +42,21 @@ try {
 }
 
 process.stdout.write(`Installed ${appPath}\n`);
+
+installConsoleServicePlist();
+
+process.stdout.write(`Installed ${installedConsoleServicePlistPath}\n`);
+
+function installConsoleServicePlist() {
+  const canonicalRoot = '/Users/Office/Repos/stevewesthoek/brain';
+  const source = fs.readFileSync(consoleServicePlistPath, 'utf8');
+  if (!source.includes(canonicalRoot)) throw new Error('Console LaunchAgent source root is not recognized');
+  const rendered = source.replaceAll(canonicalRoot, repoRoot);
+  fs.mkdirSync(path.dirname(installedConsoleServicePlistPath), { recursive: true });
+  const temporaryPath = `${installedConsoleServicePlistPath}.tmp-${process.pid}`;
+  fs.writeFileSync(temporaryPath, rendered, { mode: 0o600 });
+  fs.renameSync(temporaryPath, installedConsoleServicePlistPath);
+}
 
 function isOwnedApp() {
   try {

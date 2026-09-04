@@ -24,6 +24,22 @@
         <string>127.0.0.1</string>
         <key>BRAIN_CORE_PORT</key>
         <string>4877</string>
+        <key>BRAIN_CANONICAL_SOURCE_PATH</key>
+        <string>/Users/Office/Repos/stevewesthoek/brain</string>
+        <key>BRAIN_RUNTIME_PATH</key>
+        <string>/Users/Office/Repos/stevewesthoek/brain</string>
+        <key>BRAIN_SOURCE_REVISION</key>
+        <string>__BRAIN_RELEASE_REVISION__</string>
+        <key>BRAIN_DEPLOYMENT_REVISION</key>
+        <string>__BRAIN_RELEASE_REVISION__</string>
+        <key>BRAIN_BUILD_MODE</key>
+        <string>production</string>
+        <key>BRAIN_BUILD_TIMESTAMP</key>
+        <string>__BRAIN_RELEASE_TIMESTAMP__</string>
+        <key>BRAIN_SERVICE_STATE</key>
+        <string>running</string>
+        <key>BRAIN_LAUNCH_MECHANISM</key>
+        <string>launchagent</string>
     </dict>
 
     <key>RunAtLoad</key>

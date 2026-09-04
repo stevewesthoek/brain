@@ -387,7 +387,7 @@
     "databaseName": null,
     "databaseUser": null,
     "startupTimeoutMs": 30000,
-    "notes": "Dashboard web service runs on port 4881. Start is managed by Brain Core when launched from Local Apps; stop is available only for Brain Core-managed process records until a dedicated safe stop helper is added."
+    "notes": "Dashboard web service runs on loopback port 4881 under the com.office.brain-console LaunchAgent. The service starts at user login and is kept alive after unexpected exits; the macOS Brain Console app reconciles its identity and opens /command-center."
   },
   {
     "name": "Video Orchestrator",

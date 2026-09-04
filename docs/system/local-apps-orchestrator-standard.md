@@ -69,4 +69,4 @@ Per-card status badges now combine local mutation state and Brain Core in-flight
 
 The canonical registry now includes Brain Core API on port `4877` and Brain Console on port `4881`.
 
-Full hands-off restart of Brain Console plus Brain Core still requires a supervisor/orchestrator outside the browser and outside the process being restarted. Until that exists, unsupported lifecycle actions must remain disabled or return structured `not_executable` results.
+Brain Console and Brain Core now have external user LaunchAgents, so they start at login and remain available independently of the browser. Full hands-off restart orchestration from the Console UI still requires a supervisor outside the browser and outside the process being restarted; unsupported UI lifecycle actions must remain disabled or return structured `not_executable` results.

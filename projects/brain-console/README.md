@@ -38,17 +38,19 @@ the thin user-facing app with:
 /opt/homebrew/bin/node tools/scripts/install-brain-console-app.mjs
 ```
 
-This installs `~/Applications/Brain Console.app`. The app checks the managed
-Brain Core LaunchAgent on port `4877`, reuses or starts the on-demand Console
-on port `4881`, waits for bounded readiness, and opens `/monitoring`. Repeated
+This installs `~/Applications/Brain Console.app` and registers the
+`com.office.brain-console` user LaunchAgent. The app checks the managed Brain
+Core LaunchAgent on port `4877`, reconciles the always-on Console service on
+port `4881`, waits for bounded readiness, and opens `/command-center`. Repeated
 launches are serialized and reuse healthy canonical processes. An occupied
 port whose owner is not the canonical Brain process is reported and never
 terminated automatically.
 
 Brain Core remains persistent through the existing
-`com.office.brain-core` LaunchAgent. Brain Console remains on-demand; the app
-does not add a login item or alter Dock preferences. Drag the installed app to
-the Dock if desired. Diagnostics are written to
+`com.office.brain-core` LaunchAgent, and Brain Console is kept alive through
+`com.office.brain-console` at login and after unexpected exits. The app does
+not alter Dock preferences. Drag the installed app to the Dock if desired.
+Diagnostics are written to
 `~/Library/Logs/Brain Console/` with bounded rotation and without environment
 or credential dumps.
 
@@ -65,14 +67,16 @@ checks:
 ```bash
 tail -50 "$HOME/Library/Logs/Brain Console/launcher.log"
 launchctl print "gui/$(id -u)/com.office.brain-core"
+launchctl print "gui/$(id -u)/com.office.brain-console"
 lsof -nP -iTCP:4877 -sTCP:LISTEN
 lsof -nP -iTCP:4881 -sTCP:LISTEN
 ```
 
 The startup decision is: healthy canonical Core → reuse; otherwise reconcile
 the existing Core LaunchAgent or stop on an ownership conflict; healthy
-canonical Console → reuse; otherwise start Console and wait up to 60 seconds;
-open `/monitoring` only after readiness succeeds.
+canonical Console LaunchAgent → reuse; otherwise reconcile the Console
+LaunchAgent and wait up to 60 seconds; open `/command-center` only after
+readiness succeeds.
 
 Brain Core must be available at:
 
