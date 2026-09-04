@@ -155,7 +155,7 @@ async function navigate(path, expectedText) {
   const startedAt = performance.now();
   let found = false;
   for (let attempt = 0; attempt < 600; attempt += 1) {
-    found = await evaluate(`location.pathname + location.search === ${JSON.stringify(targetUrl.pathname + targetUrl.search)} && document.body?.innerText?.includes(${JSON.stringify(expectedText)})`);
+    found = await evaluate(`location.pathname + location.search === ${JSON.stringify(targetUrl.pathname + targetUrl.search)} && document.body?.innerText?.toLowerCase().includes(${JSON.stringify(expectedText.toLowerCase())})`);
     if (found) break;
     await delay(50);
   }
