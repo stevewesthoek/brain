@@ -8,6 +8,10 @@ The standalone port-`4881` Brain Console is an optional specialist diagnostics/o
 
 ## Status
 
+**Widget contract:** `brain-console-obsidian-widget-contract-v1` (version 1)
+
+The source adapter and plugin package both carry this contract. The current visible plugin workflow remains Decision Center; the frozen widget list supports parity and future read-only cockpit expansion, not a Phase 0/A UI redesign.
+
 CLR3 recreates the Brain-owned standalone plugin source under `projects/brain-console-obsidian/` as a thin dependency-free Brain Core client and adds the Decision Center source implementation.
 
 Code is **not** written into the live `mind/.obsidian` folder in CLR3. The source package remains outside the live Mind vault until a separate explicit installation/activation task. Existing Mind `.obsidian` plugin state stays protected and uncommitted.

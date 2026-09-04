@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { checkBrainConsoleSnapshotHealth, createBrainConsoleSnapshot } from '../obsidian.js';
+import { getCapabilities } from '../adapters/capabilities.js';
 
 test('createBrainConsoleSnapshot maps Brain Core read-only data into widgets', () => {
   const snapshot = createBrainConsoleSnapshot({
@@ -15,7 +16,8 @@ test('createBrainConsoleSnapshot maps Brain Core read-only data into widgets', (
     },
     sessions: [],
     repos: [],
-    skills: [],
+    orchestrators: [],
+    capabilities: getCapabilities(),
     schedulerStatus: {
       status: 'placeholder',
       enabled: false,
@@ -34,13 +36,19 @@ test('createBrainConsoleSnapshot maps Brain Core read-only data into widgets', (
     },
     videoQueue: [],
     approvals: [],
+    runtimeReports: [],
   });
 
-  assert.equal(snapshot.widgets.length, 8);
+  assert.equal(snapshot.widgets.length, 10);
+  assert.equal(snapshot.version, 1);
+  assert.equal(snapshot.contract, 'brain-console-obsidian-widget-contract-v1');
   assert.equal(snapshot.widgets[0]?.id, 'brain-status');
   assert.equal(snapshot.widgets[0]?.phase, 'read-only');
-  assert.equal(snapshot.widgets.some((widget) => widget.id === 'brain-video-queue'), true);
+  assert.equal(snapshot.widgets.some((widget) => widget.id === 'brain-orchestrators'), true);
+  assert.equal(snapshot.widgets.some((widget) => widget.id === 'brain-capabilities'), true);
+  assert.equal(snapshot.widgets.some((widget) => widget.id === 'brain-video'), true);
   assert.equal(snapshot.widgets.some((widget) => widget.id === 'brain-approvals'), true);
+  assert.equal(snapshot.widgets.some((widget) => widget.id === 'brain-runtime-reports'), true);
 });
 
 test('checkBrainConsoleSnapshotHealth reports complete widget coverage', () => {
@@ -56,7 +64,8 @@ test('checkBrainConsoleSnapshotHealth reports complete widget coverage', () => {
     },
     sessions: [],
     repos: [],
-    skills: [],
+    orchestrators: [],
+    capabilities: getCapabilities(),
     schedulerStatus: {
       status: 'placeholder',
       enabled: false,
@@ -75,12 +84,13 @@ test('checkBrainConsoleSnapshotHealth reports complete widget coverage', () => {
     },
     videoQueue: [],
     approvals: [],
+    runtimeReports: [],
   });
 
   const health = checkBrainConsoleSnapshotHealth(snapshot);
 
   assert.equal(health.ok, true);
-  assert.equal(health.expectedWidgetCount, 8);
-  assert.equal(health.actualWidgetCount, 8);
+  assert.equal(health.expectedWidgetCount, 10);
+  assert.equal(health.actualWidgetCount, 10);
   assert.equal(health.missingWidgetIds.length, 0);
 });
