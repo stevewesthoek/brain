@@ -123,12 +123,16 @@ Disable the snapshot consumer and return Command Center to the existing overview
 
 ### Current progress (2026-09-04)
 
-`operational-snapshot-v1` and Console validation/state primitives are implemented. Command Center rendering, shared refresh ownership, and old-card migration have not started; Phase A is contract-ready but not presentation-complete.
+`operational-snapshot-v1`, Console validation/state primitives, and the first working Command Center vertical slice are implemented. Shared refresh ownership for the full shell, old-card migration, and the broader Command Center/shell restructuring remain incomplete; Phase A is not presentation-complete.
 
 ## Phase B, Command Center and shell restructuring
 
 **Priority:** P1
 **Dependency:** Phase A
+
+### Current progress (2026-09-04)
+
+The first working `/command-center` slice is available as a preview route backed by one operational snapshot request. Full navigation restructuring, global search, legacy-card migration, and shell replacement remain deferred.
 
 ### Scope
 
