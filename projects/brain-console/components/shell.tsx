@@ -110,7 +110,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="row">
             {status.isError ? <StatusBadge status="error" label="offline" /> : <StatusBadge status={status.isSuccess ? 'fresh' : 'stale'} label={status.isSuccess ? 'online' : 'checking'} />}
-            <span className="meta">updated {status.dataUpdatedAt ? timeAgo(new Date(status.dataUpdatedAt).toISOString()) : 'never'}</span>
+            <span className="meta" suppressHydrationWarning>updated {status.dataUpdatedAt ? timeAgo(new Date(status.dataUpdatedAt).toISOString()) : 'never'}</span>
             <ThemeToggle />
           </div>
         </header>

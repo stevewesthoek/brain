@@ -19,5 +19,5 @@ export function formatOperationalAge(updatedAt: string | null | undefined, now =
 export function FreshnessLabel({ freshness, updatedAt, detail }: { freshness: Freshness; updatedAt?: string | null; detail?: string }) {
   const age = formatOperationalAge(updatedAt);
   const label = freshness === 'fresh' ? age : freshness === 'stale' ? `Stale, ${age}` : freshness === 'unknown' ? 'Unknown freshness' : freshness === 'unavailable' ? 'Unavailable' : 'Not instrumented';
-  return <span role="status" aria-label={detail ? `${label}: ${detail}` : label}>{label}</span>;
+  return <span role="status" aria-label={detail ? `${label}: ${detail}` : label} suppressHydrationWarning>{label}</span>;
 }

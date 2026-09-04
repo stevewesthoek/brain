@@ -19,3 +19,9 @@ test('Brain navigation keeps normal prefetch and deferred subroute prefetch', ()
   assert.match(shell, /onMouseEnter=\{\(\) => prefetch\(child\.href\)\}/);
   assert.match(shell, /onFocus=\{\(\) => prefetch\(child\.href\)\}/);
 });
+
+test('relative-time labels cannot fail hydration on task detail', () => {
+  const freshness = fs.readFileSync(path.join(root, 'components', 'freshness-label.tsx'), 'utf8');
+  assert.match(shell, /className="meta" suppressHydrationWarning>updated/);
+  assert.match(freshness, /aria-label=\{detail \? `\$\{label\}: \$\{detail\}` : label\} suppressHydrationWarning/);
+});
