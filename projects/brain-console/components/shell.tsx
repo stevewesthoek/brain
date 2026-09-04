@@ -108,7 +108,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <span className="meta">Brain Core</span>
             <code className="topbar-endpoint">{BRAIN_CORE_URL}</code>
           </div>
-          <div className="row">
+          <div className="row" suppressHydrationWarning>
             {status.isError ? <StatusBadge status="error" label="offline" /> : <StatusBadge status={status.isSuccess ? 'fresh' : 'stale'} label={status.isSuccess ? 'online' : 'checking'} />}
             <span className="meta" suppressHydrationWarning>updated {status.dataUpdatedAt ? timeAgo(new Date(status.dataUpdatedAt).toISOString()) : 'never'}</span>
             <ThemeToggle />
