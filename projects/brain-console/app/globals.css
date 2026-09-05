@@ -109,6 +109,11 @@
   box-sizing: border-box;
 }
 
+:where(a, button, input, select, textarea, summary, [tabindex='0']):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .shell-search-trigger {
   display: inline-flex;
   align-items: center;
@@ -130,6 +135,7 @@
 .command-palette-heading { justify-content: space-between; padding: 13px 16px 8px; color: var(--muted-foreground); font-size: 12px; font-weight: 650; }
 .command-palette-input { margin: 0 12px 10px; padding: 10px 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-subtle); }
 .command-palette-input input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--foreground); font: inherit; }
+.command-palette-input input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .palette-status { color: var(--faint); font-size: 11px; white-space: nowrap; }
 .command-palette-results { max-height: min(450px, calc(100vh - 260px)); overflow-y: auto; padding: 0 8px 8px; }
 .palette-group-title { padding: 9px 9px 5px; color: var(--faint); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
@@ -140,6 +146,10 @@
 .palette-result-main small { overflow: hidden; color: var(--muted-foreground); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 .palette-result-meta { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; color: var(--faint); font-size: 10px; text-transform: uppercase; }
 .palette-empty { padding: 30px 12px; color: var(--muted-foreground); text-align: center; }
+.route-error { display: grid; align-content: start; gap: 10px; max-width: 720px; margin: 10vh auto; padding: 28px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-soft); }
+.route-error h1 { margin: 0; color: var(--foreground); font-size: clamp(24px, 3vw, 34px); letter-spacing: -0.03em; }
+.route-error p { max-width: 60ch; margin: 0; color: var(--muted-foreground); line-height: 1.6; }
+.route-error-actions { margin-top: 6px; }
 .command-palette-footer { padding: 9px 14px; border-top: 1px solid var(--border); color: var(--faint); font-size: 10px; }
 .command-palette-footer span { display: inline-flex; align-items: center; gap: 4px; }
 .command-palette-footer .palette-source { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

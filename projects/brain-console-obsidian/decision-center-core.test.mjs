@@ -97,6 +97,7 @@ test('evidence rendering is bounded', () => {
 
 test('Obsidian and Console deep links use stable, safe identities', () => {
   assert.equal(brainConsoleUrl('/operations'), 'http://127.0.0.1:4881/operations');
+  assert.equal(brainConsoleUrl('/brain/tasks/0C-C'), 'http://127.0.0.1:4881/brain/tasks/0C-C');
   assert.equal(brainConsoleUrl('//unsafe'), 'http://127.0.0.1:4881/command-center');
   assert.equal(obsidianOpenUri('mind', 'system/brain-mind-bridge.md'), 'obsidian://open?vault=mind&file=system%2Fbrain-mind-bridge.md');
   assert.throws(() => obsidianOpenUri('mind', '../private.md'), /safe relative/);

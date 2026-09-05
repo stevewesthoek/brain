@@ -355,6 +355,11 @@ module.exports = class BrainConsolePlugin extends Plugin {
       name: 'Open Brain Computer',
       callback: () => window.open(brainConsoleUrl('/computer'), '_blank'),
     });
+    this.addCommand({
+      id: 'open-brain-task-0c-c',
+      name: 'Open Brain Task 0C-C',
+      callback: () => window.open(brainConsoleUrl('/brain/tasks/0C-C'), '_blank'),
+    });
     this.addSettingTab(new BrainConsoleSettingTab(this.app, this));
 
     if (this.settings.notificationPolling) {
