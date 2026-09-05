@@ -12,9 +12,9 @@
 **Brain Core:** `http://localhost:4877`  
 **Related docs:**
 
-- `docs/system/brain-console-roadmap.md`
-- `docs/system/brain-console-implementation-plan.md`
-- `docs/system/brain-console-phase-1-parity-checklist.md`
+- `projects/brain-console/README.md`
+- `docs/system/brain-console-architecture.md`
+- `operations/runbooks/brain-console-2-operations.md`
 
 ## Purpose
 

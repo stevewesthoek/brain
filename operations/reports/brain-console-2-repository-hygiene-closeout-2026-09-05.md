@@ -41,7 +41,7 @@ The current truth is now consolidated into these paths:
 
 The modernization roadmap is marked closed/complete, the product specification is accepted, the architecture is final for the 2.0 release, and the operations runbook is the single operational authority. Historical reports and dated planning material remain preserved as historical evidence. Four older active-looking runbooks now carry explicit historical/superseded pointers to the canonical runbook.
 
-Bounded documentation search and link verification found and repaired seven stale current-facing references and three broken canonical internal links. True active documentation duplicates consolidated: **4**. Conflicting current truths remaining: **0**. Canonical internal links broken: **0**. `git diff --check`: **PASS**.
+Bounded documentation search and link verification found and repaired eight stale current-facing references and six broken internal links: three canonical architecture-index links plus three links in the preserved historical manual-QA checklist. The only remaining old planning-path mention is inside a dated audit report that explicitly records the historical missing-artifact finding. True active documentation duplicates consolidated: **4**. Conflicting current truths remaining: **0**. Canonical internal links broken: **0**. `git diff --check`: **PASS**.
 
 ## Branch and worktree cleanup
 
