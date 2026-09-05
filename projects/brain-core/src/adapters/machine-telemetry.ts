@@ -6,6 +6,7 @@ const execFileAsync = promisify(execFile);
 export const MACHINE_TELEMETRY_INTERVAL_MS = 10_000;
 const MACHINE_TELEMETRY_STALE_AFTER_MS = MACHINE_TELEMETRY_INTERVAL_MS * 3;
 const MAX_PROCESS_ROWS = 512;
+const MAX_SERVICE_PROCESS_ROWS = 16;
 const MAX_TOP_PROCESSES = 5;
 const MAX_COMMAND_OUTPUT_BYTES = 256 * 1024;
 const DISK_DEGRADED_PERCENT = 85;
@@ -190,7 +191,8 @@ function identifyProcess(command: string, pid: number, brainCorePid: number | un
 
 export function parsePsOutput(stdout: string, sampledAt: string, brainCorePid?: number, maxRows = MAX_PROCESS_ROWS): { processes: ProcessTelemetry[]; totalProcessCount: number; truncated: boolean } {
   const rows = stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const processes: ProcessTelemetry[] = [];
+  const generalProcesses: ProcessTelemetry[] = [];
+  const serviceProcesses: ProcessTelemetry[] = [];
   let totalProcessCount = 0;
   for (const line of rows) {
     const match = line.match(/^(\d+)\s+(\d+(?:\.\d+)?)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.+)$/);
@@ -200,13 +202,12 @@ export function parsePsOutput(stdout: string, sampledAt: string, brainCorePid?: 
     const rssKb = finiteNumber(match[3]!);
     if (!Number.isInteger(pid) || cpuPercent === null || rssKb === null) continue;
     totalProcessCount += 1;
-    if (processes.length >= maxRows) continue;
     const identity = identifyProcess(match[6]!, pid, brainCorePid);
     const rssBytes = Math.round(rssKb * 1024);
     const resourceState = identity.serviceId === 'brain-core'
       ? rssBytes >= CORE_MEMORY_ERROR_BYTES ? 'ERROR' : rssBytes >= CORE_MEMORY_DEGRADED_BYTES ? 'DEGRADED' : 'CURRENT'
       : 'CURRENT';
-    processes.push({
+    const process: ProcessTelemetry = {
       pid,
       displayName: identity.displayName,
       serviceId: identity.serviceId,
@@ -216,9 +217,16 @@ export function parsePsOutput(stdout: string, sampledAt: string, brainCorePid?: 
       state: processState(match[5]!),
       resourceState,
       sampledAt,
-    });
+    };
+    if (process.serviceId !== null) {
+      if (serviceProcesses.length < MAX_SERVICE_PROCESS_ROWS) serviceProcesses.push(process);
+    } else if (generalProcesses.length < maxRows) {
+      generalProcesses.push(process);
+    }
   }
-  return { processes, totalProcessCount, truncated: totalProcessCount > maxRows };
+  const serviceBudget = Math.min(serviceProcesses.length, MAX_SERVICE_PROCESS_ROWS);
+  const processes = [...generalProcesses.slice(0, Math.max(0, maxRows - serviceBudget)), ...serviceProcesses.slice(0, serviceBudget)];
+  return { processes, totalProcessCount, truncated: totalProcessCount > processes.length };
 }
 
 function processProjectionFromRows(input: { processes: ProcessTelemetry[]; totalProcessCount: number; truncated: boolean }, sampledAt: string, sampleLatencyMs: number): ProcessTelemetryProjection {

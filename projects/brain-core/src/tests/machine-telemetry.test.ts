@@ -36,8 +36,8 @@ test('process projection is bounded, service-correlated, and excludes raw comman
   assert.equal(result.processes.length, 5);
   assert.equal(result.totalProcessCount, 6);
   assert.equal(result.truncated, true);
-  assert.equal(result.processes[0]?.serviceId, 'brain-core');
-  assert.equal(result.processes[1]?.serviceId, 'brain-console');
+  assert.equal(result.processes.find((process) => process.serviceId === 'brain-core')?.serviceId, 'brain-core');
+  assert.equal(result.processes.find((process) => process.serviceId === 'brain-console')?.serviceId, 'brain-console');
   const serialized = JSON.stringify(result);
   assert.equal(serialized.includes('never-return-this'), false);
   assert.equal(result.processes.some((process) => process.serviceId === 'scheduler'), true);
