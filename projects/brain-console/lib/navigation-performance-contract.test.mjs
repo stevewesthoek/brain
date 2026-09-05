@@ -9,7 +9,7 @@ const shell = fs.readFileSync(path.join(root, 'components/shell.tsx'), 'utf8');
 test('navigation does not idle-prefetch the whole application', () => {
   assert.doesNotMatch(shell, /IDLE_PREFETCH_ROUTES/);
   assert.doesNotMatch(shell, /setTimeout\(\(\) => \{[\s\S]*router\.prefetch/);
-  assert.match(shell, /prefetch=\{false\}/);
+  assert.match(shell, /<a href=\{item\.href\} className=\{cn\('nav-link'/);
   assert.doesNotMatch(shell, /prefetchTopLevel/);
   assert.match(shell, /prefetchBrainChild/);
 });

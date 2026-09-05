@@ -94,10 +94,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             const Icon = item.icon;
             return (
               <div key={item.href} className="nav-group">
-                <Link href={item.href} prefetch={false} className={cn('nav-link', active && 'active')}>
+                <a href={item.href} className={cn('nav-link', active && 'active')}>
                   <Icon size={18} />
                   <span>{item.label}</span>
-                </Link>
+                </a>
                 {'children' in item && item.children ? (
                   <div className="nav-children">
                     {item.children.map((child) => {
