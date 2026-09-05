@@ -9,12 +9,12 @@ const shell = fs.readFileSync(path.join(root, 'components/shell.tsx'), 'utf8');
 test('navigation does not idle-prefetch the whole application', () => {
   assert.doesNotMatch(shell, /IDLE_PREFETCH_ROUTES/);
   assert.doesNotMatch(shell, /setTimeout\(\(\) => \{[\s\S]*router\.prefetch/);
-  assert.match(shell, /prefetchTopLevel\(item\.href\)/);
+  assert.match(shell, /prefetch=\{false\}/);
+  assert.doesNotMatch(shell, /prefetchTopLevel/);
   assert.match(shell, /prefetchBrainChild/);
 });
 
-test('Brain navigation keeps normal prefetch and deferred subroute prefetch', () => {
-  assert.match(shell, /\['\/command-center', '\/brain', '\/computer', '\/operations'\]\.includes\(href\)/);
+test('Brain navigation keeps deferred subroute prefetch', () => {
   assert.match(shell, /pathname\.startsWith\('\/brain'\)/);
   assert.match(shell, /onMouseEnter=\{\(\) => prefetch\(child\.href\)\}/);
   assert.match(shell, /onFocus=\{\(\) => prefetch\(child\.href\)\}/);

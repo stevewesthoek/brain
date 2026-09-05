@@ -76,7 +76,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   });
 
   const prefetch = (href: string) => router.prefetch(href.split('#', 1)[0] || '/');
-  const prefetchTopLevel = (href: string) => ['/command-center', '/brain', '/computer', '/operations'].includes(href);
   const prefetchBrainChild = pathname.startsWith('/brain');
 
   return (
@@ -95,7 +94,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             const Icon = item.icon;
             return (
               <div key={item.href} className="nav-group">
-                <Link href={item.href} prefetch={prefetchTopLevel(item.href)} onMouseEnter={() => prefetchTopLevel(item.href) && prefetch(item.href)} onFocus={() => prefetchTopLevel(item.href) && prefetch(item.href)} className={cn('nav-link', active && 'active')}>
+                <Link href={item.href} prefetch={false} className={cn('nav-link', active && 'active')}>
                   <Icon size={18} />
                   <span>{item.label}</span>
                 </Link>
