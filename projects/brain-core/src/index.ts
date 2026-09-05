@@ -1,7 +1,9 @@
 import { startBrainCoreServer } from './api/server.js';
 import { startMachineTelemetryCollector } from './adapters/machine-telemetry.js';
+import { startUnifiedSearchIndex } from './adapters/unified-search.js';
 
 startMachineTelemetryCollector();
+startUnifiedSearchIndex();
 const server = await startBrainCoreServer();
 
 const stop = async (): Promise<void> => {

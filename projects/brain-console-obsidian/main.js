@@ -14,6 +14,7 @@ const {
   VIEW_TYPE,
   DEFAULT_BRAIN_CORE_URL,
   DEFAULT_NOTIFICATION_POLL_MS,
+  brainConsoleUrl,
   normalizeBaseUrl,
   normalizeQueue,
   decisionCounts,
@@ -146,6 +147,9 @@ class BrainConsoleView extends ItemView {
     });
     const refresh = header.createEl('button', { text: 'Refresh', cls: 'mod-cta' });
     refresh.addEventListener('click', () => void this.refresh());
+    const openConsole = header.createEl('button', { text: 'Open Brain Console' });
+    openConsole.setAttr('aria-label', 'Open this view in Brain Console');
+    openConsole.addEventListener('click', () => window.open(brainConsoleUrl('/command-center'), '_blank'));
     return container;
   }
 
@@ -335,6 +339,21 @@ module.exports = class BrainConsolePlugin extends Plugin {
       id: 'open-brain-console',
       name: 'Open Brain Console',
       callback: () => void this.activateView(),
+    });
+    this.addCommand({
+      id: 'open-brain-command-center',
+      name: 'Open Brain Command Center',
+      callback: () => window.open(brainConsoleUrl('/command-center'), '_blank'),
+    });
+    this.addCommand({
+      id: 'open-brain-operations',
+      name: 'Open Brain Operations',
+      callback: () => window.open(brainConsoleUrl('/operations'), '_blank'),
+    });
+    this.addCommand({
+      id: 'open-brain-computer',
+      name: 'Open Brain Computer',
+      callback: () => window.open(brainConsoleUrl('/computer'), '_blank'),
     });
     this.addSettingTab(new BrainConsoleSettingTab(this.app, this));
 

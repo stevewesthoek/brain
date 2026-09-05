@@ -227,7 +227,10 @@ const machineDiskTelemetrySchema = z.object({
   totalBytes: z.number().nonnegative().nullable(),
   usedBytes: z.number().nonnegative().nullable(),
   availableBytes: z.number().nonnegative().nullable(),
+  capacityBytes: z.number().nonnegative().nullable(),
   usedPercent: z.number().min(0).max(100).nullable(),
+  percentBasis: z.enum(['df-capacity', 'unavailable']),
+  availableMeaning: z.enum(['available-to-non-root', 'unavailable']),
   state: operationalStateSchema,
   sampledAt: z.string().nullable(),
   source: z.string(),
@@ -2294,3 +2297,32 @@ export const agentTaskStateSchema = z.object({
     evidencePacketRefs: z.array(agentEvidencePacketRefSchema).optional(),
   }).passthrough()).optional(),
 }).passthrough();
+
+export const unifiedSearchResultSchema = z.object({
+  id: z.string(),
+  type: z.enum(['ROUTE', 'TASK', 'EVIDENCE', 'CONTEXT', 'CONTINUATION', 'REPORT', 'SERVICE', 'SCHEDULER_JOB', 'CONSUMER', 'OBSIDIAN_NOTE']),
+  title: z.string(),
+  subtitle: z.string(),
+  source: z.string(),
+  freshness: z.enum(['CURRENT', 'STALE', 'DEGRADED', 'UNAVAILABLE']),
+  href: z.string().nullable(),
+  deepLink: z.string().optional(),
+  state: z.string().optional(),
+  status: z.string().optional(),
+});
+
+export const unifiedSearchSchema = z.object({
+  id: z.literal('brain-unified-search-v1'),
+  query: z.string(),
+  generatedAt: z.string(),
+  results: z.array(unifiedSearchResultSchema).max(32),
+  total: z.number().int().nonnegative(),
+  index: z.object({
+    freshness: z.enum(['CURRENT', 'STALE', 'DEGRADED', 'UNAVAILABLE']),
+    generatedAt: z.string().nullable(),
+    sourceCount: z.number().int().nonnegative(),
+    cacheHit: z.boolean(),
+    fullScanPerQuery: z.literal(false),
+  }),
+  failures: z.array(z.string()),
+});

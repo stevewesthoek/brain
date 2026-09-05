@@ -24,7 +24,11 @@ export interface DiskTelemetry {
   totalBytes: number | null;
   usedBytes: number | null;
   availableBytes: number | null;
+  /** df's capacity denominator: blocks counted as used + available to non-root. */
+  capacityBytes: number | null;
   usedPercent: number | null;
+  percentBasis: 'df-capacity' | 'unavailable';
+  availableMeaning: 'available-to-non-root' | 'unavailable';
   state: MachineOperationalState;
   sampledAt: string | null;
   source: string;
@@ -137,6 +141,7 @@ export function parseDfOutput(stdout: string, sampledAt: string): DiskTelemetry 
   const totalBytes = Math.round(totalBlocks * 1024);
   const usedBytes = Math.round(usedBlocks * 1024);
   const availableBytes = Math.round(availableBlocks * 1024);
+  const capacityBytes = usedBytes + availableBytes;
   return {
     id: 'primary-system-volume',
     mountPoint: '/',
@@ -144,11 +149,14 @@ export function parseDfOutput(stdout: string, sampledAt: string): DiskTelemetry 
     totalBytes,
     usedBytes,
     availableBytes,
+    capacityBytes,
     usedPercent: clampPercent(usedPercent),
+    percentBasis: 'df-capacity',
+    availableMeaning: 'available-to-non-root',
     state: diskStateForUsage(usedPercent),
     sampledAt,
     source: 'system-metrics.df-root',
-    message: 'Primary system volume from a bounded read-only df sample.',
+    message: 'APFS root volume from a bounded df sample; percentage uses df capacity (used + available-to-non-root), not physical volume size.',
   };
 }
 
@@ -297,7 +305,7 @@ export async function collectMachineTelemetry(options: { runCommand?: CommandRun
 }
 
 function unavailableDisk(sampledAt: string, message: string): DiskTelemetry {
-  return { id: 'primary-system-volume', mountPoint: '/', filesystem: 'unavailable', totalBytes: null, usedBytes: null, availableBytes: null, usedPercent: null, state: 'UNAVAILABLE', sampledAt, source: 'system-metrics.df-root', message };
+  return { id: 'primary-system-volume', mountPoint: '/', filesystem: 'unavailable', totalBytes: null, usedBytes: null, availableBytes: null, capacityBytes: null, usedPercent: null, percentBasis: 'unavailable', availableMeaning: 'unavailable', state: 'UNAVAILABLE', sampledAt, source: 'system-metrics.df-root', message };
 }
 
 function unavailableProcesses(sampledAt: string, sampleLatencyMs: number | null, message: string): ProcessTelemetryProjection {

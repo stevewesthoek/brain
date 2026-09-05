@@ -9,6 +9,8 @@ const {
   buildDecisionPayload,
   genericNotificationText,
   safeEvidenceRefs,
+  brainConsoleUrl,
+  obsidianOpenUri,
 } = core;
 
 function item(overrides = {}) {
@@ -91,4 +93,11 @@ test('Brain Core URL normalization is configurable but rejects non-http transpor
 test('evidence rendering is bounded', () => {
   const refs = safeEvidenceRefs({ evidenceRefs: Array.from({ length: 20 }, (_, index) => `source-${index}.md`) }, 5);
   assert.equal(refs.length, 5);
+});
+
+test('Obsidian and Console deep links use stable, safe identities', () => {
+  assert.equal(brainConsoleUrl('/operations'), 'http://127.0.0.1:4881/operations');
+  assert.equal(brainConsoleUrl('//unsafe'), 'http://127.0.0.1:4881/command-center');
+  assert.equal(obsidianOpenUri('mind', 'system/brain-mind-bridge.md'), 'obsidian://open?vault=mind&file=system%2Fbrain-mind-bridge.md');
+  assert.throws(() => obsidianOpenUri('mind', '../private.md'), /safe relative/);
 });

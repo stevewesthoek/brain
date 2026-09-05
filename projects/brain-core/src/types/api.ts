@@ -6496,6 +6496,7 @@ export interface BrainCoreRuntimeReportSummary {
 export interface BrainCoreRoutes {
   '/status': BrainCoreStatus;
   '/runtime/identity': DeploymentIdentity;
+  '/search': { id: 'brain-unified-search-v1'; query: string; results: unknown[]; total: number };
   '/operational-snapshot': OperationalSnapshot;
   '/sessions': {
     sessions: BrainCoreSessionSummary[];

@@ -17,10 +17,21 @@ test('disk telemetry parses the primary volume and applies conservative pressure
   assert.equal(disk.mountPoint, '/');
   assert.equal(disk.filesystem, 'local system volume');
   assert.equal(disk.totalBytes, 1024000000);
+  assert.equal(disk.capacityBytes, 1024000000);
+  assert.equal(disk.percentBasis, 'df-capacity');
+  assert.equal(disk.availableMeaning, 'available-to-non-root');
   assert.equal(disk.usedPercent, 85);
   assert.equal(disk.state, 'DEGRADED');
   assert.equal(diskStateForUsage(95), 'ERROR');
   assert.equal(diskStateForUsage(null), 'UNAVAILABLE');
+});
+
+test('df capacity invariant keeps APFS volume size distinct from available-to-non-root capacity', () => {
+  const disk = parseDfOutput('Filesystem 1024-blocks Used Available Capacity Mounted on\n/dev/disk3s1 1000000 12300 148900 8% /\n', sampledAt);
+  assert.equal(disk.totalBytes, 1024000000);
+  assert.equal(disk.capacityBytes, disk.usedBytes! + disk.availableBytes!);
+  assert.equal(Math.round((disk.usedBytes! / disk.capacityBytes!) * 100), disk.usedPercent);
+  assert.notEqual(disk.capacityBytes, disk.totalBytes);
 });
 
 test('process projection is bounded, service-correlated, and excludes raw command lines', () => {

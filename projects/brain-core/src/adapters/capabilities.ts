@@ -5,6 +5,7 @@ export const READ_ENDPOINTS = [
   '/status',
   '/runtime/identity',
   '/operational-snapshot',
+  '/search',
   '/health/projection',
   '/projections/health',
   '/projections/topology',

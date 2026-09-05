@@ -3,6 +3,7 @@
 const VIEW_TYPE = 'brain-console-view';
 const DEFAULT_BRAIN_CORE_URL = 'http://127.0.0.1:4877';
 const DEFAULT_NOTIFICATION_POLL_MS = 5 * 60 * 1000;
+const DEFAULT_BRAIN_CONSOLE_URL = 'http://127.0.0.1:4881';
 
 const PRIORITY_ORDER = Object.freeze({ critical: 0, high: 1, normal: 2, low: 3 });
 const STATUS_ORDER = Object.freeze({ pending: 0, superseded: 1, deferred: 2, approved: 3, rejected: 4 });
@@ -19,6 +20,19 @@ function normalizeBaseUrl(input) {
   } catch {
     return DEFAULT_BRAIN_CORE_URL;
   }
+}
+
+function brainConsoleUrl(pathname = '/command-center') {
+  const raw = String(pathname || '/command-center');
+  const safePath = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/command-center';
+  return `${DEFAULT_BRAIN_CONSOLE_URL}${safePath}`;
+}
+
+function obsidianOpenUri(vault, file) {
+  const vaultName = String(vault || 'mind').trim().slice(0, 160);
+  const filePath = String(file || '').trim().replace(/^\/+/, '');
+  if (!filePath || filePath.includes('..')) throw new Error('Obsidian deep link requires a safe relative note path');
+  return `obsidian://open?${new URLSearchParams({ vault: vaultName, file: filePath }).toString()}`;
 }
 
 function normalizeQueue(queue) {
@@ -99,7 +113,10 @@ module.exports = {
   VIEW_TYPE,
   DEFAULT_BRAIN_CORE_URL,
   DEFAULT_NOTIFICATION_POLL_MS,
+  DEFAULT_BRAIN_CONSOLE_URL,
   normalizeBaseUrl,
+  brainConsoleUrl,
+  obsidianOpenUri,
   normalizeQueue,
   decisionCounts,
   buildDecisionPayload,

@@ -14,6 +14,11 @@ The source adapter and plugin package both carry this contract. The current visi
 
 CLR3 recreates the Brain-owned standalone plugin source under `projects/brain-console-obsidian/` as a thin dependency-free Brain Core client and adds the Decision Center source implementation.
 
+The plugin also exposes stable inverse navigation commands for the standalone
+Console (`Open Brain Command Center`, `Open Brain Operations`, and `Open Brain
+Computer`). Console search results use `obsidian://open` only for notes from the
+bounded known-note registry; no fuzzy vault pathname or note body is used.
+
 Code is **not** written into the live `mind/.obsidian` folder in CLR3. The source package remains outside the live Mind vault until a separate explicit installation/activation task. Existing Mind `.obsidian` plugin state stays protected and uncommitted.
 
 ## Source of truth

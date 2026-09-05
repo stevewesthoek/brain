@@ -10,6 +10,7 @@ import { cn, timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GlobalPulseStrip } from '@/components/global-pulse-strip';
+import { CommandPalette } from '@/components/command-palette';
 
 const nav = [
   { href: '/command-center', label: 'Command Center', icon: LayoutDashboard },
@@ -124,6 +125,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <code className="topbar-endpoint">{BRAIN_CORE_URL}</code>
           </div>
           <div className="row" suppressHydrationWarning>
+            <CommandPalette />
             {status.isError ? <StatusBadge status="error" label="offline" /> : <StatusBadge status={status.isSuccess ? 'fresh' : 'stale'} label={status.isSuccess ? 'online' : 'checking'} />}
             <span className="meta" suppressHydrationWarning>updated {status.dataUpdatedAt ? timeAgo(new Date(status.dataUpdatedAt).toISOString()) : 'never'}</span>
             <ThemeToggle />

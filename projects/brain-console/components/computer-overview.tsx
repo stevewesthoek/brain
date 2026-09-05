@@ -87,8 +87,8 @@ function StorageCard({ disk }: { disk: OpsSystemMetrics['data']['disk'] | undefi
   return (
     <article className="workspace-metric-card">
       <div className="workspace-card-kicker"><span className="workspace-icon"><HardDrive size={15} /></span><span>Disk</span><OperationalStateBadge state={state} /></div>
-      <strong className="workspace-metric-value">{value}</strong>
-      <span className="meta">{disk ? `${formatBytes(disk.usedBytes)} / ${formatBytes(disk.totalBytes)} · ${disk.mountPoint}` : 'Primary system volume'}</span>
+      <strong className="workspace-metric-value">{value} allocated</strong>
+      <span className="meta">{disk ? `${formatBytes(disk.usedBytes)} used / ${formatBytes(disk.capacityBytes)} df capacity · ${formatBytes(disk.availableBytes)} available to non-root` : 'Primary system volume'}</span>
       <div className="workspace-meter" aria-hidden="true"><span style={{ width: `${typeof percent === 'number' ? Math.min(100, Math.max(0, percent)) : 0}%` }} /></div>
     </article>
   );

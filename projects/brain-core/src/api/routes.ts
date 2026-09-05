@@ -106,6 +106,7 @@ import {
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
 import { getContinuousProcessingRouteResponse } from './domain-routers/continuous-processing-router.js';
+import { searchUnified } from '../adapters/unified-search.js';
 
 type RecentVideoJobsResult = Awaited<ReturnType<typeof getRecentVideoJobsResult>>;
 let lastGoodRecentVideoJobsResult: RecentVideoJobsResult | null = null;
@@ -610,6 +611,10 @@ export async function routeRequest(
       return;
     case '/ops/ai-costs':
       sendJson(response, 200, await readOpsAiCosts());
+      return;
+    case '/search':
+    case '/unified-search':
+      sendJson(response, 200, await searchUnified(url.searchParams.get('q') ?? ''));
       return;
     case '/sessions':
       sendJson(response, 200, { sessions: listSessions() });
