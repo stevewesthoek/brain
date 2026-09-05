@@ -1,6 +1,12 @@
 # Brain Console Manual QA Runbook
 
-**Status:** ready for first browser QA pass  
+> **Superseded historical QA checklist.** The Brain Console 2.0 release is
+> complete. Use `operations/runbooks/brain-console-2-operations.md` for the
+> current release smoke test and recovery procedure. This dated checklist is
+> retained for historical regression context and is not an active migration
+> gate.
+
+**Status:** historical Phase 1 checklist
 **Dashboard:** Brain Console  
 **Port:** `4881`  
 **Brain Core:** `http://localhost:4877`  
@@ -169,7 +175,7 @@ Result: pass / partial / fail
 Findings:
 - 
 
-Required fixes before next migration slice:
+Historical required fixes recorded before the next migration slice:
 - 
 ```
 

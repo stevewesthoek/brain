@@ -1,21 +1,30 @@
 # Brain Console
 
-**Status:** Phase 1 implemented and build-validated; retained specialist surface
-**Role:** optional browser diagnostics/operations surface; **not** the primary human cockpit
+**Status:** Brain Console 2.0 complete; maintenance-only
+**Role:** canonical live operations cockpit over Brain Core; Obsidian remains the durable knowledge and Decision Center bridge
 **Port:** `4881`  
 **Data source:** Brain Core API only
 
-The canonical primary human cockpit is the **Obsidian Brain Console plugin**. Brain Core remains the shared headless API/control/safety boundary beneath both surfaces.
+Brain Core remains the shared headless API/control/safety boundary. The web Console owns live operational posture and safe operational views; the Obsidian plugin owns durable knowledge context and human-authored Decision Center work.
 
 ```text
-Obsidian Brain Console (primary cockpit) ─┐
-                                         ├─→ Brain Core API → runtime/job/config sources
-Port-4881 Brain Console (optional) ──────┘
+Brain Console web (live operations) ─────┐
+                                        ├─→ Brain Core API → runtime/job/config sources
+Obsidian Brain Console (knowledge bridge) ┘
 ```
 
 CLR Decision Center work belongs only in the Obsidian cockpit. Do not add a second Decision Center to this web app. This project remains available for justified specialist browser diagnostics and operational surfaces until a separate evidence-backed cleanup/decommission decision is approved.
 
 ## Run
+
+Current release and operations authority:
+
+```text
+operations/specs/brain-console-2-product-spec.md
+docs/system/brain-console-architecture.md
+operations/runbooks/brain-console-2-operations.md
+operations/reports/brain-console-2-modernization-roadmap.md
+```
 
 ```bash
 cd projects/brain-console
@@ -99,7 +108,7 @@ docs/system/brain-console-architecture.md
 docs/system/brain-console-design-system.md
 ```
 
-## Phase 1 surfaces
+## Current product surfaces and compatibility detail
 
 - Overview cards from `/ops/system-metrics`, `/ops/ai-usage-windows`, and `/ops/ai-costs`
 - Local Applications from `/local-apps/dashboard`, `/local-apps/action-readiness`, and `/local-apps/actions/status`
@@ -140,7 +149,7 @@ npm run typecheck
 npm run build
 ```
 
-Current Phase 1 validation:
+Historical Phase 1 validation evidence:
 
 ```text
 ✓ typecheck passes
@@ -157,7 +166,7 @@ POST /api/video-orchestrator/scripts/:jobId/request-changes
 
 Do not use the older `/changes` path.
 
-## Phase 1 parity
+Historical Phase 1 parity checklist
 
 See:
 
@@ -169,7 +178,9 @@ docs/system/brain-console-phase-1-parity-checklist.md
 
 ## Manual QA
 
-Before importing the next legacy-dashboard feature slice, run:
+For a current release smoke test or maintenance recovery, use the canonical
+operations runbook. The older manual QA checklist remains available only as
+historical regression context:
 
 ```text
 operations/runbooks/brain-console-manual-qa.md

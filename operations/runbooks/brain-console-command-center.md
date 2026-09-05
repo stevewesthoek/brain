@@ -1,5 +1,10 @@
 # Brain Console Command Center Runbook
 
+> **Historical legacy MVP runbook.** The current canonical product and
+> operations authority is `operations/runbooks/brain-console-2-operations.md`.
+> This document is retained as dated implementation history and must not be
+> used as the current 2.0 status, route, or recovery source.
+
 **Version:** 0.1.0  
 **Date:** 2026-05-17  
 **Purpose:** Operate the Obsidian Brain Console plugin as your primary Brain + Mind system cockpit.

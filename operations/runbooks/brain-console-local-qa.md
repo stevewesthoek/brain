@@ -1,5 +1,9 @@
 # Brain Console Local QA
 
+> **Historical legacy MVP QA note.** Brain Console 2.0 is complete. Use
+> `operations/runbooks/brain-console-2-operations.md` for current operation and
+> smoke verification; this dated note is retained only as historical context.
+
 **Date:** 2026-05-17  
 **Purpose:** Manual visual QA and polish assessment for Brain Console Obsidian plugin dashboard MVP.
 

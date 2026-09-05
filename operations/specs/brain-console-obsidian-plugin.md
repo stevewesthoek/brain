@@ -2,13 +2,24 @@
 
 ## Purpose
 
-Provide the **single primary human cockpit** for Brain + Mind inside Obsidian while keeping Brain Core as the headless API/control/safety boundary. Runtime and Decision Core state remain behind Brain Core instead of being copied into Markdown notes.
+Provide the supported **knowledge and Decision Center bridge** for Brain + Mind
+inside Obsidian while keeping Brain Core as the headless API/control/safety
+boundary. The web Brain Console is the live operational cockpit; runtime and
+Decision Core state remain behind Brain Core instead of being copied into
+Markdown notes.
 
-The standalone port-`4881` Brain Console is an optional specialist diagnostics/operations surface. It is not a second primary portal and must not receive a duplicate CLR Decision Center.
+The port-`4881` Brain Console is the live operational cockpit. This plugin is
+the durable knowledge and Decision Center bridge; it is not a second runtime
+authority or operational store.
 
 ## Status
 
 **Widget contract:** `brain-console-obsidian-widget-contract-v1` (version 1)
+
+**Release status:** Brain Console 2.0 complete. The reviewed plugin is live in
+the canonical Mind vault at `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console/`.
+Use `operations/runbooks/brain-console-2-operations.md` as the operational
+authority for activation and bridge verification.
 
 The source adapter and plugin package both carry this contract. The current visible plugin workflow remains Decision Center; the frozen widget list supports parity and future read-only cockpit expansion, not a Phase 0/A UI redesign.
 
@@ -19,7 +30,9 @@ Console (`Open Brain Command Center`, `Open Brain Operations`, and `Open Brain
 Computer`). Console search results use `obsidian://open` only for notes from the
 bounded known-note registry; no fuzzy vault pathname or note body is used.
 
-Code is **not** written into the live `mind/.obsidian` folder in CLR3. The source package remains outside the live Mind vault until a separate explicit installation/activation task. Existing Mind `.obsidian` plugin state stays protected and uncommitted.
+The canonical source package remains in Brain. Only the reviewed install files
+are present in the live Mind plugin folder; other Mind `.obsidian` state stays
+protected and uncommitted.
 
 ## Source of truth
 
@@ -118,7 +131,9 @@ The approval endpoints must show that responses contain `executed: false` until 
 
 ## Implemented adapter shape
 
-Keep the standalone plugin project outside the live vault, validate it there, then install/link reviewed files into the vault only through a separately authorized activation task.
+Keep the standalone plugin project outside the live vault. Validate it there,
+then maintain the bounded reviewed install in the live vault through the
+canonical operations runbook.
 
 ```text
 projects/brain-console-obsidian/
@@ -151,7 +166,7 @@ Minimum implementation:
 
 ## Validation checklist
 
-Before installing into `mind/.obsidian/plugins/`:
+For source/package validation and live maintenance:
 
 - dependency-free JavaScript syntax and Decision Center core tests pass;
 - one-primary-portal contract validation passes;
@@ -163,4 +178,4 @@ Before installing into `mind/.obsidian/plugins/`:
 - no secrets are stored in plugin settings;
 - no runtime logs or generated decision state are written to Mind;
 - no decision POST endpoint is called without a manual user click;
-- only reviewed source/install files are copied or linked into the live vault during a separately authorized activation task.
+- only the reviewed source/install files are present in the live vault; do not broaden the activation boundary.

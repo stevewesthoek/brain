@@ -8,6 +8,17 @@ This is the maintenance runbook for the accepted Brain Console 2.0 release.
 It documents the current local Mac deployment; it does not define a new
 feature roadmap.
 
+## Canonical documentation map
+
+| Concern | Authority |
+|---|---|
+| Product contract | `operations/specs/brain-console-2-product-spec.md` |
+| Architecture and safety boundary | `docs/system/brain-console-architecture.md` |
+| Web project entry point | `projects/brain-console/README.md` |
+| Obsidian integration entry point | `projects/brain-console-obsidian/README.md` and `operations/specs/brain-console-obsidian-plugin.md` |
+| Release status and phase closure | `operations/reports/brain-console-2-modernization-roadmap.md` |
+| Historical acceptance evidence | `operations/reports/brain-console-2-final-product-closeout-2026-09-05.md` |
+
 ## Canonical product surfaces
 
 Brain Core is the operational API and safety boundary. Brain Console is the

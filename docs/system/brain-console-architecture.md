@@ -15,6 +15,24 @@ Legacy dashboards are reference-only:
 
 New dashboard feature work belongs in Brain Console and must be backed by Brain Core API contracts.
 
+## Canonical product surfaces
+
+The finished 2.0 shell is organized around four primary web surfaces:
+
+- **Command Center** — posture, attention, active work, and next action.
+- **Brain** — orchestration, tasks/evidence, quality/safety, continuity, and capability routing.
+- **Computer** — host, service, local-app, process, storage, and network posture.
+- **Operations** — scheduler, runtime identity, tunnels, infrastructure, monitoring, and telemetry.
+
+Global `Cmd/Ctrl-K` search is the navigation layer across routes, tasks,
+operations, and bounded Obsidian references. Settings and specialist/detail
+routes remain available behind the shell. Obsidian is the durable knowledge
+and Decision Center bridge; Brain Core projections remain the operational
+authority. The complete port, LaunchAgent, recovery, scheduler, and bridge
+procedure is maintained in
+`operations/runbooks/brain-console-2-operations.md`; do not duplicate those
+operating instructions here.
+
 ## Local operator lifecycle
 
 Brain Core is the persistent local API boundary and is owned by the existing

@@ -1,5 +1,11 @@
 # Brain Console Manual Install Test
 
+> **Historical/manual test only — not the current production authority.** Brain
+> Console 2.0 live activation is complete. Use
+> `operations/runbooks/brain-console-2-operations.md` for the current plugin,
+> runtime, recovery, and Console ↔ Obsidian procedures. This document remains
+> only for bounded package-install regression work.
+
 This runbook covers a manual install and smoke test for the standalone `brain-console-obsidian` plugin.
 
 ## Prerequisites

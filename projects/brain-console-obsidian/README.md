@@ -1,8 +1,8 @@
 # Brain Console — Obsidian Cockpit
 
-**Role:** primary human cockpit for Brain + Mind  
+**Role:** supported Obsidian knowledge and Decision Center bridge for Brain + Mind
 **Backend:** Brain Core API  
-**CLR3:** Decision Center source package implemented; live Mind installation remains separately gated
+**Release:** Brain Console 2.0 complete; live Mind installation verified at plugin version `0.3.0`
 
 ## Architecture
 
@@ -14,7 +14,9 @@ Brain Core API (headless control/safety boundary)
 Decision Core / runtime sources
 ```
 
-The standalone browser Brain Console on port `4881` is an optional specialist diagnostics/operations surface. It is not the primary portal and does not own the CLR Decision Center.
+The browser Brain Console on port `4881` is the live operational cockpit. This
+plugin is the durable knowledge and Decision Center bridge. Brain Core remains
+the sole operational API/control/safety boundary.
 
 ## Decision Center
 
@@ -94,11 +96,23 @@ npm run check
 
 This runs JavaScript syntax checks and dependency-free Decision Center core tests.
 
-## Installation boundary
+## Live installation and maintenance boundary
 
-CLR3 does **not** install this project into `mind/.obsidian/plugins/` because Mind plugin state is protected application-local state and the user explicitly prohibited Mind modification in this phase.
+The reviewed plugin files are installed in the canonical live vault at:
 
-A later explicit installation/activation task may copy or link only the reviewed install files into the live vault. Installation does not change the canonical portal decision: Obsidian remains the primary cockpit and Brain Core remains the headless backend.
+```text
+/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console/
+```
+
+The bounded activation is complete and the `brain-console` community-plugin
+registry entry is enabled. Do not modify other Mind `.obsidian` settings,
+plugins, content, or secrets as part of routine maintenance. Use the canonical
+operations runbook for live verification, restart/recovery, and Console ↔
+Obsidian bridge checks:
+
+```text
+operations/runbooks/brain-console-2-operations.md
+```
 
 ## Safety boundaries
 
