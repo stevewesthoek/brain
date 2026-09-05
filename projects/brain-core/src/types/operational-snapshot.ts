@@ -173,6 +173,7 @@ export interface OperationalSnapshotSourceInputs {
   scheduler: unknown;
   localApps: unknown;
   computer: unknown;
+  machineTelemetry?: unknown;
   graphify: unknown;
   runtimeReports: BrainCoreRuntimeReportSummary[];
   infiniteBrain: unknown;
@@ -189,6 +190,7 @@ export interface OperationalSnapshotLoaders {
   scheduler: OperationalSnapshotLoader;
   localApps: OperationalSnapshotLoader;
   computer: OperationalSnapshotLoader;
+  machineTelemetry?: OperationalSnapshotLoader;
   graphify: OperationalSnapshotLoader;
   runtimeReports: OperationalSnapshotLoader;
   infiniteBrain: OperationalSnapshotLoader;

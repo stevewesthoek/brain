@@ -220,6 +220,64 @@ export const opsMetricSchema = z.object({
   message: z.string().optional(),
 });
 
+const machineDiskTelemetrySchema = z.object({
+  id: z.literal('primary-system-volume'),
+  mountPoint: z.literal('/'),
+  filesystem: z.string(),
+  totalBytes: z.number().nonnegative().nullable(),
+  usedBytes: z.number().nonnegative().nullable(),
+  availableBytes: z.number().nonnegative().nullable(),
+  usedPercent: z.number().min(0).max(100).nullable(),
+  state: operationalStateSchema,
+  sampledAt: z.string().nullable(),
+  source: z.string(),
+  message: z.string(),
+});
+
+const machineProcessSchema = z.object({
+  pid: z.number().int().nonnegative(),
+  displayName: z.string(),
+  serviceId: z.enum(['brain-core', 'brain-console', 'scheduler', 'obsidian']).nullable(),
+  cpuPercent: z.number().nonnegative(),
+  rssBytes: z.number().nonnegative(),
+  uptimeSeconds: z.number().nonnegative().nullable(),
+  state: z.enum(['running', 'sleeping', 'stopped', 'unknown']),
+  resourceState: operationalStateSchema,
+  sampledAt: z.string(),
+});
+
+const machineProcessAnomalySchema = z.object({
+  id: z.string(),
+  state: operationalStateSchema.exclude(['CURRENT', 'PENDING', 'BLOCKED']),
+  title: z.string(),
+  explanation: z.string(),
+  pid: z.number().int().nonnegative().nullable(),
+  serviceId: z.enum(['brain-core', 'brain-console', 'scheduler', 'obsidian']).nullable(),
+});
+
+const machineProcessProjectionSchema = z.object({
+  state: operationalStateSchema,
+  sampledAt: z.string().nullable(),
+  sampleLatencyMs: z.number().nonnegative().nullable(),
+  sampledCount: z.number().int().nonnegative(),
+  totalProcessCount: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+  topCpu: z.array(machineProcessSchema).max(5),
+  topMemory: z.array(machineProcessSchema).max(5),
+  brainServices: z.array(machineProcessSchema).max(5),
+  anomalies: z.array(machineProcessAnomalySchema).max(5),
+});
+
+const machineCollectorSchema = z.object({
+  samplingIntervalMs: z.number().int().positive(),
+  collectionCount: z.number().int().nonnegative(),
+  failureCount: z.number().int().nonnegative(),
+  inFlight: z.boolean(),
+  lastCollectionAt: z.string().nullable(),
+  lastCollectionDurationMs: z.number().nonnegative().nullable(),
+  payloadBytes: z.number().int().nonnegative(),
+});
+
 export const opsSystemMetricsSchema = z.object({
   id: z.string(),
   generatedAt: z.string(),
@@ -229,6 +287,9 @@ export const opsSystemMetricsSchema = z.object({
     memoryPressure: opsMetricSchema,
     gpuLoad: opsMetricSchema,
     uptime: opsMetricSchema,
+    disk: machineDiskTelemetrySchema,
+    processes: machineProcessProjectionSchema,
+    collector: machineCollectorSchema,
   }),
 });
 

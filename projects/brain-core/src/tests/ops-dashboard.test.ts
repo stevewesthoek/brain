@@ -15,6 +15,13 @@ test('ops dashboard exposes live system metrics and AI metrics', async () => {
   assert.ok(typeof system.data.cpuLoad.value === 'number');
   assert.ok(typeof system.data.memoryPressure.value === 'number' || system.data.memoryPressure.value === null);
   assert.ok(system.data.gpuLoad.status === 'fresh' || system.data.gpuLoad.status === 'unavailable');
+  assert.equal(system.data.disk.id, 'primary-system-volume');
+  assert.ok(['CURRENT', 'STALE', 'DEGRADED', 'UNAVAILABLE', 'ERROR', 'PENDING'].includes(system.data.disk.state));
+  assert.ok(system.data.processes.topCpu.length <= 5);
+  assert.ok(system.data.processes.topMemory.length <= 5);
+  assert.ok(system.data.processes.brainServices.length <= 5);
+  assert.equal(system.data.collector.samplingIntervalMs, 10_000);
+  assert.ok(system.data.collector.payloadBytes >= 0);
 
   assert.equal(usage.id, 'ops-ai-usage-windows');
   assert.ok(usage.status === 'available' || usage.status === 'partial');

@@ -17,6 +17,7 @@ import { readAgentApprovalGates } from '../adapters/agent-approval-gates.js';
 import { readAgentConsoleSummary } from '../adapters/agent-console-summary.js';
 import { readAgentCostSummary } from '../adapters/agent-cost-summary.js';
 import { readOpsAiCosts, readOpsAiUsageWindows, readOpsSystemMetrics } from '../adapters/ops-dashboard.js';
+import { readMachineTelemetry } from '../adapters/machine-telemetry.js';
 import { getInfiniteBrainStatus } from '../adapters/infinite-brain-status.js';
 import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval, readInfiniteBrainProposalReport, findInfiniteBrainProposal, recordInfiniteBrainProposalDecision, type InfiniteBrainProposalDecision } from '../adapters/infinite-brain-proposal-approval-store.js';
 import { readInfiniteBrainDecisionQueue } from '../adapters/infinite-brain-decision-core.js';
@@ -559,6 +560,7 @@ export async function routeRequest(
           scheduler: getInfraOfficeScheduler,
           localApps: readLocalAppsDashboard,
           computer: readInfrastructureStatus,
+          machineTelemetry: readMachineTelemetry,
           graphify: getGraphifyStatus,
           runtimeReports: listRuntimeReports,
           infiniteBrain: async () => ({

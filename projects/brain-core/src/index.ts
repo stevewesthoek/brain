@@ -1,5 +1,7 @@
 import { startBrainCoreServer } from './api/server.js';
+import { startMachineTelemetryCollector } from './adapters/machine-telemetry.js';
 
+startMachineTelemetryCollector();
 const server = await startBrainCoreServer();
 
 const stop = async (): Promise<void> => {

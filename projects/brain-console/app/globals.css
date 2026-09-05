@@ -2243,6 +2243,51 @@ tr:last-child td {
   text-transform: uppercase;
 }
 
+.workspace-process-summary {
+  display: grid;
+  gap: 4px;
+  padding: 5px 2px 0;
+}
+
+.workspace-process-summary-heading,
+.workspace-process-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.workspace-process-summary-heading {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.workspace-process-summary-heading span:last-child,
+.workspace-process-row .meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-process-row {
+  padding: 5px 7px;
+  border: 1px solid var(--section-line);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+}
+
+.workspace-process-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .workspace-port-row {
   justify-content: space-between;
 }

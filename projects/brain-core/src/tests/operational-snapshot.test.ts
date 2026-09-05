@@ -119,6 +119,22 @@ test('stale host telemetry and failed backups remain visible', () => {
   assert.ok(snapshot.sections.attention.data.items.some((item) => item.id === 'computer-failed-backups'));
 });
 
+test('machine telemetry pressure feeds the bounded operational attention model', () => {
+  const snapshot = buildOperationalSnapshot(base({
+    machineTelemetry: {
+      state: 'DEGRADED',
+      disk: { state: 'DEGRADED', usedPercent: 88 },
+      processes: {
+        state: 'CURRENT',
+        anomalies: [{ id: 'process-memory-101', state: 'DEGRADED', title: 'Brain Core memory pressure', explanation: 'Brain Core is above the conservative memory envelope.', pid: 101, serviceId: 'brain-core' }],
+      },
+    },
+  }));
+  assert.equal(snapshot.sections.computer.state, 'DEGRADED');
+  assert.ok(snapshot.sections.attention.data.items.some((item) => item.id === 'primary-disk-pressure'));
+  assert.ok(snapshot.sections.attention.data.items.some((item) => item.id === 'process-process-memory-101'));
+});
+
 test('provider failure degrades only the optional source and leaves snapshot valid', () => {
   const snapshot = buildOperationalSnapshot(base({
     sourceErrors: [{ source: 'provider', optional: true, error: { code: 'provider_unavailable', message: 'Provider did not respond.' } }],

@@ -1,5 +1,7 @@
 import { getSystemMetrics } from './system-metrics.js';
 import type { CodexUsageDiagnostics, CodexUsageFreshness } from './codex-usage-reader.js';
+import { readMachineTelemetry } from './machine-telemetry.js';
+import type { MachineTelemetry } from './machine-telemetry.js';
 
 type Freshness = 'fresh' | 'stale' | 'unavailable' | 'not_instrumented';
 
@@ -53,9 +55,13 @@ export async function readOpsSystemMetrics(): Promise<OpsDashboardEnvelope<{
   memoryPressure: OpsMetric<number>;
   gpuLoad: OpsMetric<number>;
   uptime: OpsMetric<number>;
+  disk: MachineTelemetry['disk'];
+  processes: MachineTelemetry['processes'];
+  collector: MachineTelemetry['collector'];
 }>> {
   const generatedAt = nowIso();
   const system = await getSystemMetrics();
+  const machine = readMachineTelemetry();
   const cpuCount = Math.max(1, system.cpuCount);
   const loadAverage = system.loadAvg1;
   const memoryPressure = system.memFreePercent === null ? null : 1 - system.memFreePercent / 100;
@@ -64,7 +70,7 @@ export async function readOpsSystemMetrics(): Promise<OpsDashboardEnvelope<{
   return {
     id: 'ops-system-metrics',
     generatedAt,
-    status: memoryPressure === null && gpuLoad === null ? 'not_instrumented' : 'partial',
+    status: machine.state === 'CURRENT' && memoryPressure !== null ? 'available' : 'partial',
     data: {
       cpuLoad: metric({
         id: 'cpu-load',
@@ -109,6 +115,9 @@ export async function readOpsSystemMetrics(): Promise<OpsDashboardEnvelope<{
         generatedAt,
         source: 'system-metrics.uptime',
       }),
+      disk: machine.disk,
+      processes: machine.processes,
+      collector: machine.collector,
     },
   };
 }

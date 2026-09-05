@@ -150,6 +150,19 @@ function stateForComputer(value: unknown, failure: OperationalSnapshotFailure | 
   return 'CURRENT';
 }
 
+function stateForMachineTelemetry(value: unknown): OperationalState {
+  const source = record(value);
+  const disk = record(source.disk);
+  const processes = record(source.processes);
+  const states = [stringValue(disk.state), stringValue(processes.state)];
+  if (states.includes('ERROR')) return 'ERROR';
+  if (states.includes('DEGRADED')) return 'DEGRADED';
+  if (states.includes('STALE')) return 'STALE';
+  if (states.includes('UNAVAILABLE')) return 'UNAVAILABLE';
+  if (states.includes('PENDING')) return 'PENDING';
+  return 'CURRENT';
+}
+
 function stateForIndex(value: unknown, failure: OperationalSnapshotFailure | undefined): OperationalState {
   if (failure) return 'ERROR';
   const source = record(value);
@@ -386,6 +399,36 @@ function buildAttention(input: OperationalSnapshotSourceInputs, data: Operationa
   if (data.computer.failedBackups > 0) {
     items.push(attention('computer-failed-backups', 'ERROR', 'A backup policy reports failure', `${data.computer.failedBackups} backup record${data.computer.failedBackups === 1 ? '' : 's'} reports failure.`, '/infra/backups', generatedAt, 'Inspect the backup failure receipt.'));
   }
+  const machineTelemetry = record(input.machineTelemetry);
+  const disk = record(machineTelemetry.disk);
+  const diskState = stringValue(disk.state);
+  const diskPercent = typeof disk.usedPercent === 'number' ? `${disk.usedPercent}% used` : 'usage is unavailable';
+  if (diskState === 'ERROR') {
+    items.push(attention('primary-disk-critical', 'ERROR', 'Primary disk is critically full', `The primary system volume is at ${diskPercent}.`, '/ops/system-metrics', generatedAt, 'Free space safely before starting large jobs.', 'primary-system-volume'));
+  } else if (diskState === 'DEGRADED') {
+    items.push(attention('primary-disk-pressure', 'DEGRADED', 'Primary disk pressure is elevated', `The primary system volume is at ${diskPercent}.`, '/ops/system-metrics', generatedAt, 'Review storage consumers before the volume reaches the critical threshold.', 'primary-system-volume'));
+  } else if (diskState === 'STALE') {
+    items.push(attention('primary-disk-stale', 'STALE', 'Primary disk telemetry is stale', 'The cached primary-volume sample exceeded its freshness budget.', '/ops/system-metrics', generatedAt, 'Refresh Computer telemetry and inspect the collector status.', 'primary-system-volume'));
+  } else if (diskState === 'UNAVAILABLE') {
+    items.push(attention('primary-disk-unavailable', 'UNAVAILABLE', 'Primary disk telemetry is unavailable', 'Core could not produce a bounded primary-volume sample.', '/ops/system-metrics', generatedAt, 'Inspect the read-only disk collector status.', 'primary-system-volume'));
+  }
+  const anomalies = arrayValue(record(machineTelemetry.processes).anomalies);
+  for (const anomaly of anomalies.slice(0, 2)) {
+    const entry = record(anomaly);
+    const state = stringValue(entry.state);
+    if (state === 'ERROR' || state === 'DEGRADED') {
+      items.push(attention(
+        `process-${stringValue(entry.id, 'anomaly')}`,
+        state,
+        stringValue(entry.title, 'Process resource pressure') ?? 'Process resource pressure',
+        stringValue(entry.explanation, 'A bounded process sample reported resource pressure.') ?? 'A bounded process sample reported resource pressure.',
+        '/ops/system-metrics',
+        generatedAt,
+        'Inspect the bounded process summary before taking any restart action.',
+        stringValue(entry.serviceId, stringValue(entry.pid)),
+      ));
+    }
+  }
   if (data.index.status === 'missing') {
     items.push(attention('index-unavailable', 'UNAVAILABLE', 'Index freshness is unavailable', 'No current Graph/index report is available for the configured sources.', '/projections/topology', generatedAt, 'Inspect index diagnostics; do not infer that the index is fresh.'));
   } else if (data.index.status === 'partial') {
@@ -422,7 +465,8 @@ export function buildOperationalSnapshot(input: OperationalSnapshotSourceInputs)
   const schedulerState = stateForScheduler(input.scheduler, failures.get('scheduler'));
   const localAppsState = stateForLocalApps(input.localApps, failures.get('localApps'));
   const computedComputerState = stateForComputer(input.computer, failures.get('computer'));
-  const computerState: OperationalState = data.computer.failedBackups > 0 ? 'ERROR' : data.computer.staleResources > 0 ? 'STALE' : computedComputerState;
+  const machineState = stateForMachineTelemetry(input.machineTelemetry);
+  const computerState: OperationalState = data.computer.failedBackups > 0 ? 'ERROR' : machineState === 'ERROR' ? 'ERROR' : machineState === 'DEGRADED' ? 'DEGRADED' : machineState === 'STALE' ? 'STALE' : data.computer.staleResources > 0 ? 'STALE' : computedComputerState;
   const indexState = stateForIndex(input.graphify, failures.get('graphify'));
   const brainState = stateForBrain(input.infiniteBrain, failures.get('infiniteBrain'));
   const activeWorkState: OperationalState = activeWork.some((item) => item.state === 'BLOCKED') ? 'BLOCKED' : activeWork.length > 0 ? 'CURRENT' : 'CURRENT';
@@ -537,7 +581,9 @@ export function buildOperationalSnapshot(input: OperationalSnapshotSourceInputs)
 
 async function loadSource(loader: OperationalSnapshotLoaders, source: string): Promise<{ value: unknown; error?: { source: string; error: OperationalSnapshotFailure } }> {
   try {
-    return { value: await loader[source as keyof OperationalSnapshotLoaders]() };
+    const sourceLoader = loader[source as keyof OperationalSnapshotLoaders];
+    if (!sourceLoader) return { value: null };
+    return { value: await sourceLoader() };
   } catch (error) {
     return {
       value: null,
@@ -570,6 +616,7 @@ export async function readOperationalSnapshot(input: OperationalSnapshotInputLoa
     scheduler: sourceValues.get('scheduler'),
     localApps: sourceValues.get('localApps'),
     computer: sourceValues.get('computer'),
+    machineTelemetry: sourceValues.get('machineTelemetry'),
     graphify: sourceValues.get('graphify'),
     runtimeReports,
     infiniteBrain: sourceValues.get('infiniteBrain'),
