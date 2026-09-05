@@ -6,6 +6,25 @@
 **Strategy:** incremental restructuring, Core-first, reversible migrations
 **Scope:** product architecture, UX, read model, reliability, and Mac operational identity; not a framework rewrite
 
+> **Release status — COMPLETE (2026-09-05):** Brain Console 2.0 modernization is
+> complete and accepted. Final release revision: `9a5719e731f16c4e88bb34720c1679f1e3276be9`.
+> The phases below are the historical implementation plan and are no longer an
+> active implementation queue. Computer, Search, Obsidian activation, Mac
+> runtime identity, accessibility, viewport, performance, and reliability gates
+> are all closed. Future work is maintenance-only unless a separately approved
+> Brain Console 2.1 effort is created.
+
+| Phase | Release disposition |
+|---|---|
+| Phase 0 — contract and identity freeze | COMPLETE |
+| Phase A — canonical operational read model | COMPLETE |
+| Phase B — Command Center and shell restructuring | COMPLETE |
+| Phase C — Brain and Infinite Brain drilldowns | COMPLETE |
+| Phase D — Computer and Operations consolidation | COMPLETE |
+| Phase E — search, indexing, and Obsidian integration | COMPLETE |
+| Phase F — Mac runtime and autostart modernization | COMPLETE |
+| Phase G — design system, accessibility, and performance hardening | COMPLETE |
+
 ## Outcome
 
 The roadmap moves Brain Console from a route collection to an attention-first cockpit while preserving Brain Core as the sole operational API and safety boundary. Obsidian remains the durable knowledge and Decision Center plane. The existing routes remain compatibility surfaces until each consumer is migrated.

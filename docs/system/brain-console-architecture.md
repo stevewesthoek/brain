@@ -1,6 +1,6 @@
 # Brain Console Architecture
 
-**Status:** active implementation reference  
+**Status:** accepted Brain Console 2.0 implementation reference; maintenance-only
 **Dashboard:** `projects/brain-console`  
 **Primary UI pattern:** shadcn/shadcnblocks-style admin dashboard  
 **Backend boundary:** Brain Core API only  
@@ -168,3 +168,4 @@ Related docs:
 - `docs/system/brain-console-phase-1-parity-checklist.md`
 - `docs/system/brain-console-local-apps-hardening.md`
 - `operations/runbooks/brain-console-manual-qa.md`
+- `operations/runbooks/brain-console-2-operations.md`

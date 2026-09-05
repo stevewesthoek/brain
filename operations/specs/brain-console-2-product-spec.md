@@ -1,9 +1,16 @@
 # Brain Console 2.0 Product Specification
 
-**Status:** proposed product contract
+**Status:** accepted release contract — Brain Console 2.0 complete
 **Date:** 2026-09-04
 **Owner:** Brain product and runtime maintainers
-**Implementation posture:** incremental modernization; preserve Brain Core safety boundaries
+**Implementation posture:** released baseline; maintenance-only; preserve Brain Core safety boundaries
+
+> The 2.0 contract is accepted at release revision
+> `9a5719e731f16c4e88bb34720c1679f1e3276be9`. The implementation and acceptance
+> evidence are recorded in `operations/reports/brain-console-2-final-product-closeout-2026-09-05.md`.
+> Do not reopen completed modernization phases or treat this specification as
+> an active feature backlog; separately approved future work belongs to a new
+> product version.
 
 ## Implementation status — Phase 0/A foundation
 
