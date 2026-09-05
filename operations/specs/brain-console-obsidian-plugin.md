@@ -1,4 +1,8 @@
-# Brain Console Obsidian Plugin Spec
+# Brain Console Obsidian Integration Contract
+
+**Current product:** Brain Console
+**Release baseline:** Brain Console 2.0 complete; this contract is the current
+maintenance authority for the Obsidian integration.
 
 ## Purpose
 
@@ -18,7 +22,7 @@ authority or operational store.
 
 **Release status:** Brain Console 2.0 complete. The reviewed plugin is live in
 the canonical Mind vault at `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console/`.
-Use `operations/runbooks/brain-console-2-operations.md` as the operational
+Use `operations/runbooks/brain-console-operations.md` as the operational
 authority for activation and bridge verification.
 
 The source adapter and plugin package both carry this contract. The current visible plugin workflow remains Decision Center; the frozen widget list supports parity and future read-only cockpit expansion, not a Phase 0/A UI redesign.

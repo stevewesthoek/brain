@@ -1,7 +1,7 @@
 # Brain Console Command Center Runbook
 
 > **Historical legacy MVP runbook.** The current canonical product and
-> operations authority is `operations/runbooks/brain-console-2-operations.md`.
+> operations authority is `operations/runbooks/brain-console-operations.md`.
 > This document is retained as dated implementation history and must not be
 > used as the current 2.0 status, route, or recovery source.
 

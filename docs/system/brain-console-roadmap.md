@@ -1,18 +1,25 @@
-# Brain Console 2.0 Modernization Roadmap
+# Brain Console Roadmap and Release Status
 
 **Date:** 2026-09-04
 **Baseline:** Brain `origin/main` at `33616316369bfa3c1fd1e5a346c1e8f68aa4cdac`
 **Runtime observed:** `/Users/Office/Repos/stevewesthoek/brain-runtime`, detached at `46bec0626b3d61c35f5f7da3b1a538c17978a4e2`
 **Strategy:** incremental restructuring, Core-first, reversible migrations
 **Scope:** product architecture, UX, read model, reliability, and Mac operational identity; not a framework rewrite
+**Current product:** Brain Console
 
-> **Release status — COMPLETE (2026-09-05):** Brain Console 2.0 modernization is
-> complete and accepted. Final release revision: `9a5719e731f16c4e88bb34720c1679f1e3276be9`.
+> **Release status — COMPLETE / CLOSED (2026-09-05):** The Brain Console 2.0
+> modernization release is complete and accepted. Final release revision:
+> `9a5719e731f16c4e88bb34720c1679f1e3276be9`.
 > The phases below are the historical implementation plan and are no longer an
 > active implementation queue. Computer, Search, Obsidian activation, Mac
 > runtime identity, accessibility, viewport, performance, and reliability gates
-> are all closed. Future work is maintenance-only unless a separately approved
-> Brain Console 2.1 effort is created.
+> are all closed. Future work is maintenance, bug fixes, regression repair,
+> separately approved features, or a separately approved future release.
+
+The current product is **Brain Console**. “Brain Console 2.0” is retained only
+as the historical release and modernization designation. The phase sections
+below are preserved as a historical implementation record, not as current
+product authorities or an open roadmap.
 
 | Phase | Release disposition |
 |---|---|
@@ -107,7 +114,7 @@ Current screens independently poll `/status`, projections, scheduler, telemetry,
 - `projects/brain-console/lib/braincore-client.ts`;
 - new Console state primitives;
 - contract and fixture tests under the existing test locations;
-- the product spec in `operations/specs/brain-console-2-product-spec.md`.
+- the product spec in `operations/specs/brain-console-product-spec.md`.
 
 ### Tests
 

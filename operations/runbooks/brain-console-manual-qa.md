@@ -1,7 +1,7 @@
 # Brain Console Manual QA Runbook
 
 > **Superseded historical QA checklist.** The Brain Console 2.0 release is
-> complete. Use `operations/runbooks/brain-console-2-operations.md` for the
+> complete. Use `operations/runbooks/brain-console-operations.md` for the
 > current release smoke test and recovery procedure. This dated checklist is
 > retained for historical regression context and is not an active migration
 > gate.
@@ -14,7 +14,7 @@
 
 - `projects/brain-console/README.md`
 - `docs/system/brain-console-architecture.md`
-- `operations/runbooks/brain-console-2-operations.md`
+- `operations/runbooks/brain-console-operations.md`
 
 ## Purpose
 

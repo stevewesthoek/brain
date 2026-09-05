@@ -1,6 +1,6 @@
 # Brain Console Architecture
 
-**Status:** accepted Brain Console 2.0 implementation reference; maintenance-only
+**Status:** current Brain Console architecture authority; Brain Console 2.0 release accepted; maintenance-only
 **Dashboard:** `projects/brain-console`  
 **Primary UI pattern:** shadcn/shadcnblocks-style admin dashboard  
 **Backend boundary:** Brain Core API only  
@@ -30,7 +30,7 @@ routes remain available behind the shell. Obsidian is the durable knowledge
 and Decision Center bridge; Brain Core projections remain the operational
 authority. The complete port, LaunchAgent, recovery, scheduler, and bridge
 procedure is maintained in
-`operations/runbooks/brain-console-2-operations.md`; do not duplicate those
+`operations/runbooks/brain-console-operations.md`; do not duplicate those
 operating instructions here.
 
 ## Local operator lifecycle
@@ -181,8 +181,8 @@ A UI-only change may skip Brain Core typecheck only when it does not touch Brain
 Related docs:
 
 - `docs/system/brain-console-design-system.md`
-- `operations/specs/brain-console-2-product-spec.md`
-- `operations/reports/brain-console-2-modernization-roadmap.md`
+- `operations/specs/brain-console-product-spec.md`
+- `docs/system/brain-console-roadmap.md`
 - `operations/reports/brain-console-2-final-product-closeout-2026-09-05.md`
 - `docs/system/brain-console-local-apps-hardening.md`
-- `operations/runbooks/brain-console-2-operations.md`
+- `operations/runbooks/brain-console-operations.md`

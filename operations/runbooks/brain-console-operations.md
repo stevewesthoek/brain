@@ -1,22 +1,23 @@
-# Brain Console 2.0 Operations Runbook
+# Brain Console Operations Runbook
 
-**Status:** released and accepted
-**Release revision:** `9a5719e731f16c4e88bb34720c1679f1e3276be9`
+**Status:** current operational authority; released and accepted
+**Current product:** Brain Console
+**Release baseline:** Brain Console 2.0 (`9a5719e731f16c4e88bb34720c1679f1e3276be9`)
 **Last verified:** 2026-09-05
 
-This is the maintenance runbook for the accepted Brain Console 2.0 release.
-It documents the current local Mac deployment; it does not define a new
-feature roadmap.
+This is the single current maintenance runbook for Brain Console. It documents
+the current local Mac deployment; it does not define a new feature roadmap.
 
 ## Canonical documentation map
 
 | Concern | Authority |
 |---|---|
-| Product contract | `operations/specs/brain-console-2-product-spec.md` |
+| Product contract | `operations/specs/brain-console-product-spec.md` |
 | Architecture and safety boundary | `docs/system/brain-console-architecture.md` |
 | Web project entry point | `projects/brain-console/README.md` |
-| Obsidian integration entry point | `projects/brain-console-obsidian/README.md` and `operations/specs/brain-console-obsidian-plugin.md` |
-| Release status and phase closure | `operations/reports/brain-console-2-modernization-roadmap.md` |
+| Obsidian integration authority | `operations/specs/brain-console-obsidian-plugin.md` |
+| Obsidian implementation entry point | `projects/brain-console-obsidian/README.md` |
+| Release status and phase closure | `docs/system/brain-console-roadmap.md` |
 | Historical acceptance evidence | `operations/reports/brain-console-2-final-product-closeout-2026-09-05.md` |
 
 ## Canonical product surfaces
@@ -148,7 +149,7 @@ report.
 
 ## Maintenance boundary
 
-Brain Console 2.0 is complete. Do not reopen the modernization roadmap for
+The Brain Console 2.0 modernization is complete. Do not reopen the modernization roadmap for
 Computer, Search, Obsidian activation, performance hardening, accessibility,
 or Mac-launcher work unless a real regression is verified. New product scope
-requires a separately approved Brain Console 2.1 release decision.
+requires a separately approved future Brain Console release decision.

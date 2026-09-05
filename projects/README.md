@@ -28,7 +28,7 @@ for global behavior, identity, and safety.
 
 ## Current projects
 
-- `brain-console/` — accepted Brain Console 2.0 local operations dashboard, backed by Brain Core API; see `projects/brain-console/README.md` and `operations/runbooks/brain-console-2-operations.md`
+- `brain-console/` — accepted Brain Console local operations dashboard, backed by Brain Core API; see `projects/brain-console/README.md` and `operations/runbooks/brain-console-operations.md`
 - `brain-core/` — local API and safety boundary for Brain operational data/actions
 - `cedula/` — Paraguay residency / cédula onboarding project with funnel, planning, and meeting notes
 

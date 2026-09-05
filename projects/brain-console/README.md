@@ -1,30 +1,28 @@
 # Brain Console
 
-**Status:** Brain Console 2.0 complete; maintenance-only
-**Role:** canonical live operations cockpit over Brain Core; Obsidian remains the durable knowledge and Decision Center bridge
-**Port:** `4881`  
-**Data source:** Brain Core API only
+**Status:** released; Brain Console 2.0 modernization complete; maintenance-only
+**Role:** primary maintainer entry point for the Brain Console web application
 
-Brain Core remains the shared headless API/control/safety boundary. The web Console owns live operational posture and safe operational views; the Obsidian plugin owns durable knowledge context and human-authored Decision Center work.
+The current product is **Brain Console**. Brain Console 2.0 is the completed
+release baseline, not a separate product.
 
-```text
-Brain Console web (live operations) ─────┐
-                                        ├─→ Brain Core API → runtime/job/config sources
-Obsidian Brain Console (knowledge bridge) ┘
-```
+## Current authorities
 
-CLR Decision Center work belongs only in the Obsidian cockpit. Do not add a second Decision Center to this web app. This project remains available for justified specialist browser diagnostics and operational surfaces until a separate evidence-backed cleanup/decommission decision is approved.
-
-## Run
-
-Current release and operations authority:
+Use these documents as the single source for each current concern:
 
 ```text
-operations/specs/brain-console-2-product-spec.md
+operations/specs/brain-console-product-spec.md
 docs/system/brain-console-architecture.md
-operations/runbooks/brain-console-2-operations.md
-operations/reports/brain-console-2-modernization-roadmap.md
+operations/runbooks/brain-console-operations.md
+docs/system/brain-console-roadmap.md
+operations/specs/brain-console-obsidian-plugin.md
 ```
+
+The web Console is the live operations cockpit over Brain Core. Obsidian is the
+durable knowledge and Decision Center bridge. Brain Core remains the API,
+control, and safety boundary.
+
+## Development
 
 ```bash
 cd projects/brain-console
@@ -32,155 +30,33 @@ npm install
 npm run dev
 ```
 
-Open:
+Open `http://localhost:4881` for the local development surface.
 
-```text
-http://localhost:4881
-```
+For the installed Brain Console.app, LaunchAgents, runtime identity, ports,
+restart/recovery, live routes, and bridge smoke test, use the canonical
+operations runbook. Do not duplicate those operational procedures here.
 
-## macOS Brain Console launcher
+## Architecture and design
 
-The version-controlled launcher is `tools/brain-console-launcher.mjs`. Install
-the thin user-facing app with:
-
-```bash
-/opt/homebrew/bin/node tools/scripts/install-brain-console-app.mjs
-```
-
-This installs `~/Applications/Brain Console.app` and registers the
-`com.office.brain-console` user LaunchAgent. The app checks the managed Brain
-Core LaunchAgent on port `4877`, reconciles the always-on Console service on
-port `4881`, waits for bounded readiness, and opens `/command-center`. Repeated
-launches are serialized and reuse healthy canonical processes. An occupied
-port whose owner is not the canonical Brain process is reported and never
-terminated automatically.
-
-Brain Core remains persistent through the existing
-`com.office.brain-core` LaunchAgent, and Brain Console is kept alive through
-`com.office.brain-console` at login and after unexpected exits. The app does
-not alter Dock preferences. Drag the installed app to the Dock if desired.
-Diagnostics are written to
-`~/Library/Logs/Brain Console/` with bounded rotation and without environment
-or credential dumps.
-
-To rebuild and reinstall after a source update, run `npm ci` and `npm run
-build` in `projects/brain-core` and `projects/brain-console`, then rerun the
-installer. The installer records the version-controlled checkout path in the
-thin wrapper, so reinstall from the intended canonical checkout. To remove
-the app, move `~/Applications/Brain Console.app` to the macOS Trash; removing
-the app does not stop the persistent Core LaunchAgent.
-
-Failure diagnosis starts with the launcher log, then these bounded identity
-checks:
-
-```bash
-tail -50 "$HOME/Library/Logs/Brain Console/launcher.log"
-launchctl print "gui/$(id -u)/com.office.brain-core"
-launchctl print "gui/$(id -u)/com.office.brain-console"
-lsof -nP -iTCP:4877 -sTCP:LISTEN
-lsof -nP -iTCP:4881 -sTCP:LISTEN
-```
-
-The startup decision is: healthy canonical Core → reuse; otherwise reconcile
-the existing Core LaunchAgent or stop on an ownership conflict; healthy
-canonical Console LaunchAgent → reuse; otherwise reconcile the Console
-LaunchAgent and wait up to 60 seconds; open `/command-center` only after
-readiness succeeds.
-
-Brain Core must be available at:
-
-```text
-http://localhost:4877
-```
-
-Override in the browser build with:
-
-```bash
-NEXT_PUBLIC_BRAIN_CORE_URL=http://localhost:4877 npm run dev
-```
-
-## Architecture and design rules
-
-Read these before changing Brain Console UI or API contracts:
+Read the architecture and design-system authorities before changing UI or API
+contracts:
 
 ```text
 docs/system/brain-console-architecture.md
 docs/system/brain-console-design-system.md
 ```
 
-## Current product surfaces and compatibility detail
+The browser never executes shell commands; operational actions go through
+Brain Core and remain explicitly gated.
 
-- Overview cards from `/ops/system-metrics`, `/ops/ai-usage-windows`, and `/ops/ai-costs`
-- Local Applications from `/local-apps/dashboard`, `/local-apps/action-readiness`, and `/local-apps/actions/status`
-- Dokploy status from `/infra/dokploy`
-- Canonical New Relic production host telemetry from `/infra/telemetry` (the legacy `/infra/monitoring` view remains available)
-- Office nightly scheduler status from `/infra/scheduler`
-- Brain Scheduler Control Center from `/infra/scheduler`
-- Cloudflare Tunnels from `/infra/tunnels`
-- Video Analyzer from `/research/video-analysis` and `/research/video-analysis/history`
-- AWS Video Pipeline from the current Brain Core AWS Video endpoints
-
-The Overview surface also shows the read-only Infinite Brain review queue from `/projections/review`, including items needing attention and terminal decision counts. It is a visibility aid only: review decisions remain in the Mind Steward workflow, and the Console does not approve, promote, or write Mind.
-
-## Design system
-
-Before changing the UI or operational contracts, read:
-
-```text
-docs/system/brain-console-architecture.md
-docs/system/brain-console-design-system.md
-```
-
-The dashboard follows a shadcnblocks admin-dashboard style: compact shell, left navigation, page tabs, bounded cards, clear status states, and no overlapping controls.
-
-## Safety
-
-- The browser never executes shell commands.
-- Start/stop/restart buttons call Brain Core only.
-- Unsupported actions remain disabled and explain why.
-- YouTube publishing routes exist in Brain Core but are intentionally absent from Phase 1.
-
-
-
-## Validate
+## Validation
 
 ```bash
 npm run typecheck
 npm run build
 ```
 
-Historical Phase 1 validation evidence:
-
-```text
-✓ typecheck passes
-✓ production build passes
-```
-
-## Current AWS Video contract
-
-Use the current Brain Core route for requesting script changes:
-
-```text
-POST /api/video-orchestrator/scripts/:jobId/request-changes
-```
-
-Do not use the older `/changes` path.
-
-Historical Phase 1 parity and QA context
-
-See:
-
-```text
-operations/runbooks/brain-console-manual-qa.md
-```
-
-
-
-## Manual QA
-
-For a current release smoke test or maintenance recovery, use the canonical
-operations runbook. The older manual QA checklist remains available only as
-historical regression context:
+Historical Phase 1 QA context remains in:
 
 ```text
 operations/runbooks/brain-console-manual-qa.md
