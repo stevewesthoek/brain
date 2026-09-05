@@ -26,11 +26,11 @@ function schedulerState(data: any, pending: boolean, error: boolean): Operationa
   return 'CURRENT';
 }
 
-function tunnelState(data: any, pending: boolean, error: boolean): OperationalState {
+function tunnelState(data: { status: string; tunnels: { status: string; hostnames?: { online: boolean | null }[] }[] } | undefined, pending: boolean, error: boolean): OperationalState {
   if (pending) return 'PENDING';
   if (error || !data) return 'UNAVAILABLE';
   if (data.status !== 'ok') return 'DEGRADED';
-  return data.tunnels.every((tunnel: any) => ['healthy', 'active', 'running', 'up', 'connected', 'online'].includes(String(tunnel.status).toLowerCase())) ? 'CURRENT' : 'DEGRADED';
+  return data.tunnels.every((tunnel) => ['healthy', 'active', 'running', 'up', 'connected', 'online'].includes(tunnel.status.toLowerCase()) && (tunnel.hostnames ?? []).every((host) => host.online !== false)) ? 'CURRENT' : 'DEGRADED';
 }
 
 function StatusTile({ icon: Icon, label, value, detail, state }: { icon: typeof Server; label: string; value: string; detail: string; state: OperationalState }) {

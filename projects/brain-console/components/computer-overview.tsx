@@ -21,8 +21,8 @@ function metricState(metric: OpsMetric | undefined): OperationalState {
   if (metric.status === 'unavailable' || metric.status === 'not_instrumented') return 'UNAVAILABLE';
   if (metric.status === 'stale') return 'STALE';
   if (typeof metric.value !== 'number') return 'UNAVAILABLE';
-  if (metric.value >= 0.95) return 'ERROR';
-  if (metric.value >= 0.8) return 'DEGRADED';
+  if (metric.unit === 'ratio' && metric.value >= 0.95) return 'ERROR';
+  if (metric.unit === 'ratio' && metric.value >= 0.8) return 'DEGRADED';
   return 'CURRENT';
 }
 
@@ -54,15 +54,15 @@ function schedulerState(data: InfraOfficeSchedulerStatus | undefined, isPending:
   return 'CURRENT';
 }
 
-function tunnelState(data: { status: string; tunnels: { status: string }[] } | undefined, isPending: boolean, isError: boolean): OperationalState {
+function tunnelState(data: { status: string; tunnels: { status: string; hostnames?: { online: boolean | null }[] }[] } | undefined, isPending: boolean, isError: boolean): OperationalState {
   if (isPending) return 'PENDING';
   if (isError || !data) return 'UNAVAILABLE';
   if (data.status !== 'ok') return 'DEGRADED';
-  return data.tunnels.every((tunnel) => ['healthy', 'active', 'running', 'up', 'connected', 'online'].includes(tunnel.status.toLowerCase())) ? 'CURRENT' : 'DEGRADED';
+  return data.tunnels.every((tunnel) => ['healthy', 'active', 'running', 'up', 'connected', 'online'].includes(tunnel.status.toLowerCase()) && (tunnel.hostnames ?? []).every((host) => host.online !== false)) ? 'CURRENT' : 'DEGRADED';
 }
 
-function MetricCard({ icon: Icon, label, metric, description }: { icon: typeof Cpu; label: string; metric?: OpsMetric; description: string }) {
-  const state = metricState(metric);
+function MetricCard({ icon: Icon, label, metric, description, notInstrumented = false }: { icon: typeof Cpu; label: string; metric?: OpsMetric; description: string; notInstrumented?: boolean }) {
+  const state = notInstrumented ? 'UNAVAILABLE' : metricState(metric);
   return (
     <article className="workspace-metric-card">
       <div className="workspace-card-kicker"><span className="workspace-icon"><Icon size={15} /></span><span>{label}</span><OperationalStateBadge state={state} /></div>
@@ -102,13 +102,13 @@ export function ComputerOverview() {
     <div className="workspace-screen computer-workspace">
       <header className="workspace-header">
         <div><div className="eyebrow">Computer</div><h1>Computer Overview</h1><p>Host posture, Brain services, local applications, and network reachability in one compact view.</p></div>
-        <div className="workspace-header-actions"><OperationalStateBadge state={networkState === 'ERROR' ? 'ERROR' : system.isError || apps.isError ? 'DEGRADED' : 'CURRENT'} /><span className="meta">{refreshedAt ? `Updated ${timeAgo(refreshedAt)}` : 'Loading live data'}</span><button className="button compact secondary" onClick={() => void Promise.all([system.refetch(), apps.refetch(), identity.refetch(), scheduler.refetch(), tunnels.refetch()])}><RefreshCw size={14} /> Refresh</button></div>
+        <div className="workspace-header-actions"><OperationalStateBadge state={networkState === 'ERROR' ? 'ERROR' : networkState === 'DEGRADED' || system.isError || apps.isError ? 'DEGRADED' : 'CURRENT'} /><span className="meta">{refreshedAt ? `Updated ${timeAgo(refreshedAt)}` : 'Loading live data'}</span><button className="button compact secondary" onClick={() => void Promise.all([system.refetch(), apps.refetch(), identity.refetch(), scheduler.refetch(), tunnels.refetch()])}><RefreshCw size={14} /> Refresh</button></div>
       </header>
 
       <section className="workspace-metric-grid" aria-label="Machine telemetry">
         <MetricCard icon={Cpu} label="CPU load" metric={system.data?.data.cpuLoad} description="Normalized 1-minute host load" />
         <MetricCard icon={MemoryStick} label="Memory pressure" metric={system.data?.data.memoryPressure} description="Host memory pressure" />
-        <MetricCard icon={HardDrive} label="Disk" description="No disk metric is instrumented" />
+        <MetricCard icon={HardDrive} label="Disk" description="No disk metric is instrumented" notInstrumented />
         <MetricCard icon={Timer} label="Uptime" metric={system.data?.data.uptime} description="Since the Core process started" />
       </section>
 
@@ -117,7 +117,7 @@ export function ComputerOverview() {
 
         <section className="workspace-panel" aria-labelledby="computer-apps"><div className="workspace-panel-heading"><div><div className="eyebrow">Applications</div><h2 id="computer-apps">Local apps</h2></div><Link href="/local-apps" className="workspace-link">Details <ArrowUpRight size={13} /></Link></div><div className="workspace-mini-summary"><strong>{apps.data?.runningCount ?? '—'}</strong><span>running</span><strong>{apps.data?.unknownCount ?? '—'}</strong><span>unknown</span><strong>{apps.data?.appCount ?? '—'}</strong><span>registered</span></div><div className="workspace-list">{visibleApps.map((app) => <AppRow key={app.id} app={app} />)}{visibleApps.length === 0 ? <div className="workspace-empty"><StatusBadge status={apps.isError ? 'error' : 'unknown'} label={apps.isError ? 'Unavailable' : 'Loading'} /><span>Local app registry has no current rows.</span></div> : null}</div><div className="workspace-panel-footer"><AppWindowIcon /> <span className="meta">Healthy items recede; stopped apps remain available in detail.</span></div></section>
 
-        <section className="workspace-panel" aria-labelledby="computer-network"><div className="workspace-panel-heading"><div><div className="eyebrow">Connectivity</div><h2 id="computer-network">Ports & tunnels</h2></div><Link href="/tunnels" className="workspace-link">Details <ArrowUpRight size={13} /></Link></div><div className="workspace-port-list"><div className="workspace-port-row"><span><Network size={14} /> Brain Core</span><code>:4877</code><OperationalStateBadge state={brainCoreState} /></div><div className="workspace-port-row"><span><Server size={14} /> Brain Console</span><code>:4881</code><OperationalStateBadge state={consoleState} /></div>{(tunnels.data?.tunnels ?? []).slice(0, 3).map((tunnel) => <div className="workspace-port-row" key={tunnel.id}><span><Network size={14} /> {tunnel.name}</span><span className="meta">{tunnel.hostnames.filter((host) => host.online === true).length}/{tunnel.hostnames.length} reachable</span><OperationalStateBadge state={tunnelState({ status: tunnel.status, tunnels: [tunnel] }, false, false)} /></div>)}</div><div className="workspace-panel-footer"><Activity size={14} /> <span className="meta">Tunnel state is read-only; credentials are never displayed.</span></div></section>
+        <section className="workspace-panel" aria-labelledby="computer-network"><div className="workspace-panel-heading"><div><div className="eyebrow">Connectivity</div><h2 id="computer-network">Ports & tunnels</h2></div><Link href="/tunnels" className="workspace-link">Details <ArrowUpRight size={13} /></Link></div><div className="workspace-port-list"><div className="workspace-port-row"><span><Network size={14} /> Brain Core</span><code>:4877</code><OperationalStateBadge state={brainCoreState} /></div><div className="workspace-port-row"><span><Server size={14} /> Brain Console</span><code>:4881</code><OperationalStateBadge state={consoleState} /></div>{(tunnels.data?.tunnels ?? []).slice(0, 2).map((tunnel) => <div className="workspace-port-row" key={tunnel.id}><span><Network size={14} /> {tunnel.name}</span><span className="meta">{tunnel.hostnames.filter((host) => host.online === true).length}/{tunnel.hostnames.length} reachable</span><OperationalStateBadge state={tunnelState({ status: tunnel.status, tunnels: [tunnel] }, false, false)} /></div>)}</div><div className="workspace-panel-footer"><Activity size={14} /> <span className="meta">Tunnel state is read-only; credentials are never displayed.</span></div></section>
       </div>
       <footer className="workspace-footer"><span className="meta">Conservative attention thresholds: ≥80% degraded, ≥95% error. Disk and process-level anomalies are not instrumented by Core.</span><Link href="/operations" className="button-link">Open Operations <ArrowUpRight size={13} /></Link></footer>
     </div>
