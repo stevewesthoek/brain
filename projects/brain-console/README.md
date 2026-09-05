@@ -166,12 +166,12 @@ POST /api/video-orchestrator/scripts/:jobId/request-changes
 
 Do not use the older `/changes` path.
 
-Historical Phase 1 parity checklist
+Historical Phase 1 parity and QA context
 
 See:
 
 ```text
-docs/system/brain-console-phase-1-parity-checklist.md
+operations/runbooks/brain-console-manual-qa.md
 ```
 
 
