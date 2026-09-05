@@ -10,15 +10,16 @@ Canonical runtime: `/Users/Office/Repos/stevewesthoek/brain-runtime`
 | Gate | Result |
 |---|---|
 | Origin/main before closeout | `84c289ccca3a04bcb9657f0e7e9dc1d48825a3d3` |
-| Origin/main after closeout | `a3520025b7fcc29779c2c5404bb5fe353a9d20f6` |
-| Runtime revision | `a3520025b7fcc29779c2c5404bb5fe353a9d20f6` |
+| Origin/main after product code closeout | `a3520025b7fcc29779c2c5404bb5fe353a9d20f6` |
+| Final origin/main release revision | `7adbc76212525bec0cbe8119a488378203177c5a` |
+| Runtime revision | `7adbc76212525bec0cbe8119a488378203177c5a` |
 | Runtime identity | `matching` |
 | Build mode | `production` |
 | Launch mechanism | `launchagent` |
 | Core / Console | `127.0.0.1:4877` / `127.0.0.1:4881` |
 | HTTP acceptance | Core health `200`; Console Command Center `200` |
 
-The installed Core identity endpoint reports matching source and deployment revisions, running service state, and the production build timestamp `2026-09-05T10:06:19.000Z`.
+The installed Core identity endpoint reports matching source and deployment revisions, running service state, and the final production build timestamp `2026-09-05T10:25:25.000Z`. The final release revision is documentation-only relative to the accepted product-code revision; the deployed application bundle is unchanged from the tested product code.
 
 ## Obsidian live activation
 
@@ -136,4 +137,3 @@ The production build emitted only the previously known Autoprefixer warnings; no
 ## Final verdict
 
 `BRAIN_CONSOLE_2_COMPLETE`
-
