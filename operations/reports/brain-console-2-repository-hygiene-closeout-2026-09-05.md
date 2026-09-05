@@ -1,7 +1,7 @@
 # Brain Console 2.0 Repository Hygiene Closeout
 
-Date: 2026-09-05  
-Repository: `stevewesthoek/brain`  
+Date: 2026-09-05
+Repository: `stevewesthoek/brain`
 Accepted live runtime revision: `9a5719e731f16c4e88bb34720c1679f1e3276be9`
 
 ## Final verdict
@@ -83,4 +83,3 @@ Generated files removed from Brain Console worktree state: **2**. No tracked evi
 
 - Final isolated hygiene checkout was clean after publication.
 - The shared checkout `/Users/Office/Repos/stevewesthoek/brain` was not cleaned, reset, stashed, switched, or otherwise modified; its unrelated dirty state was preserved.
-
