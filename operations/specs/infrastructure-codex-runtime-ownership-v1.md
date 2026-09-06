@@ -117,8 +117,10 @@ the supported sequence `initialize` → `initialized` →
 `auth.json` exists, the shadow exposes it to Codex only through an
 application-consumed symlink; it is never copied or read by Brain. This is
 required because app-server startup initializes local SQLite/WAL runtime state.
-The target profile root is not used as the observer process root, and the
-observer reports `targetRootMutation=false`. Observer versions before 1.1.0
+On macOS, the observer additionally runs under `/usr/bin/sandbox-exec` with
+`file-write*` denied for the target root, preventing write-through even if
+provider behavior changes. The target profile root is not used as the observer
+process root, and the observer reports `targetRootMutation=false`. Observer versions before 1.1.0
 could leave non-secret SQLite residue in the target root; such residue is not
 identity evidence and must be quarantined only after exact-root quiescence and
 open-handle checks. It returns only allowlisted

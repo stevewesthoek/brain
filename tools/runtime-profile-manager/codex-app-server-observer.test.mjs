@@ -96,6 +96,8 @@ test('app-server observer never starts in the target root or leaves runtime resi
   const sourceAuth = path.join(sourceRoot, 'auth.json');
   fs.writeFileSync(sourceAuth, 'synthetic-auth-placeholder', { mode: 0o600 });
   let spawnedHome = null;
+  let spawnedExecutable = null;
+  let spawnedArgs = null;
   const child = new EventEmitter();
   const stdout = new EventEmitter();
   child.stdout = stdout;
@@ -111,7 +113,9 @@ test('app-server observer never starts in the target root or leaves runtime resi
 
   const observation = await observeCodexAppServerAccount({
     root: sourceRoot,
-    spawnProcess: (_executable, _args, options) => {
+    spawnProcess: (executable, args, options) => {
+      spawnedExecutable = executable;
+      spawnedArgs = args;
       spawnedHome = options.env.CODEX_HOME;
       assert.notEqual(spawnedHome, sourceRoot);
       assert.equal(fs.lstatSync(path.join(spawnedHome, 'auth.json')).isSymbolicLink(), true);
@@ -121,6 +125,12 @@ test('app-server observer never starts in the target root or leaves runtime resi
   });
 
   assert.equal(observation.status, 'authenticated');
+  if (process.platform === 'darwin') {
+    assert.equal(spawnedExecutable, '/usr/bin/sandbox-exec');
+    assert.equal(spawnedArgs[2], 'codex');
+    assert.match(spawnedArgs[1], /deny file-write\*/);
+    assert.match(spawnedArgs[1], new RegExp(sourceRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
   assert.equal(fs.existsSync(spawnedHome), false);
   assert.equal(fs.readFileSync(sourceAuth, 'utf8'), 'synthetic-auth-placeholder');
   fs.rmSync(sourceRoot, { recursive: true, force: true });

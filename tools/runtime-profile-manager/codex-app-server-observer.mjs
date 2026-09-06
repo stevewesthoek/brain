@@ -117,6 +117,22 @@ function removeEphemeralObservationRoot(root) {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
+function sandboxLiteral(value) {
+  return String(value).replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+}
+
+function observerProcessCommand(executable, sourceRoot) {
+  if (process.platform !== 'darwin') return { executable, args: ['app-server', '--listen', 'stdio://'], sandboxed: false };
+  const sandboxExecutable = '/usr/bin/sandbox-exec';
+  if (!fs.existsSync(sandboxExecutable)) throw new Error('observer_write_sandbox_unavailable');
+  const profile = `(version 1) (allow default) (deny file-write* (subpath "${sandboxLiteral(path.resolve(sourceRoot))}"))`;
+  return {
+    executable: sandboxExecutable,
+    args: ['-p', profile, executable, 'app-server', '--listen', 'stdio://'],
+    sandboxed: true,
+  };
+}
+
 export function observeCodexAppServerAccount({
   root,
   executable = 'codex',
@@ -139,8 +155,10 @@ export function observeCodexAppServerAccount({
     let cleanupAttempts = 0;
     let finalResult;
     let observationRoot;
+    let processCommand;
     try {
       observationRoot = createEphemeralObservationRoot(root);
+      processCommand = observerProcessCommand(executable, root);
     } catch (error) {
       resolve({ state: 'unknown', status: 'unavailable', reason: error?.code ?? 'observer_shadow_root_failed', secretsExcluded: true, targetRootMutation: false });
       return;
@@ -170,7 +188,7 @@ export function observeCodexAppServerAccount({
     };
     let child;
     try {
-      child = spawnProcess(executable, ['app-server', '--listen', 'stdio://'], {
+      child = spawnProcess(processCommand.executable, processCommand.args, {
         cwd,
         env: {
           PATH: process.env.PATH,
