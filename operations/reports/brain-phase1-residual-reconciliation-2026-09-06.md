@@ -120,10 +120,21 @@ canonical catalog during this reconciliation.
 
 The canonical source base is healthy and synchronized, but Phase 1 is not
 closed because protected residual work and runtime ownership remain unresolved.
-The safe next gate is not live account admission yet. First, the active Codex
-task must be externally quiesced, then the remaining dirty paths and governed
-runtime checkout can be reviewed without risking the task that is executing
-the review.
+The current canonical managed-root preflight returns two independent failures:
+
+```text
+live Codex/ChatGPT/Computer Use process detected
+shared/default native Codex root — generic Brain repair forbidden
+```
+
+Closing the applications would address only the first failure. The second is
+an ownership policy, not a stale-process condition: the shared native root
+must remain application-owned, and any future repair must use the separately
+approved shared-root protocol or a dedicated Brain profile. The safe next gate
+is not live account admission yet. First, the active Codex task must be
+externally quiesced, then the remaining dirty paths and governed runtime
+checkout can be reviewed without risking the task that is executing the
+review.
 
 Until that happens, the correct state is:
 
