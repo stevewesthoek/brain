@@ -22,6 +22,11 @@ provider, grant, policy, or business decision.
 
 ## Identity and discovery
 
+Natural-language capability requests enter through the shared Brain query:
+`node tools/discover-capabilities.mjs --query "<request>" --kind mcp`.
+Discovery selects only documented/admitted routes; it never grants provider
+authorization or expands a client's tool scope.
+
 - Server names use a stable provider or installation identity, not a client
   brand. Capability namespaces use provider-owned domain terms and remain
   versioned independently from generated client registrations.

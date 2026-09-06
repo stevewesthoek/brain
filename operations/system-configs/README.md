@@ -53,6 +53,12 @@ All AI/IDE consumers see the same active skill set from `ai/skills/active/` via 
 | Kiro | `kiro/skills` | per-skill entries | each active skill |
 | Antigravity | `gemini/antigravity/skills` | root symlink | `ai/skills/active` |
 
+The same sync command also repairs the configured machine-local consumer roots:
+`~/.gemini/skills`, `~/.gemini/config/skills`,
+`~/.gemini/antigravity-ide/skills`, and `~/.kiro/skills`. These are narrow skill
+links only; authentication, history, and other runtime state remain local and
+are not overwritten.
+
 **Vendor and custom skill source folders are not exposed directly** unless they are activated through `ai/skills/active/`. After any skill install:
 
 ```bash

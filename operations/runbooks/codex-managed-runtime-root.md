@@ -1,5 +1,11 @@
 # Codex Managed Runtime Root
 
+> Legacy/default-root maintenance only. This runbook is not the normal
+> Account A/B profile lifecycle and is not invoked by the runtime-profile
+> manager. Normal isolated profiles use dedicated `CODEX_HOME` roots and the
+> profile-local Brain configuration materializer. Any live default-root
+> migration requires a separate operator-authorized maintenance window.
+
 ## Purpose
 
 Use this runbook when Codex Remote SSH fails with:
@@ -192,11 +198,32 @@ nothing. Report the failure before attempting another migration.
 
 ## Maintenance
 
-Use these commands after changing managed configuration or skill exports:
+The shared/default `~/.codex` is not a normal Brain-managed profile. Generic
+repair and migration are refused there, and they are also refused when the
+WebGPT integration journal is present. This prevents a physical-file operation
+from rewriting WebGPT routes, model/provider selection, hook trust state, or
+other application-owned resources.
+
+For normal Brain-managed profiles, use the runtime-profile manager and its
+profile-local configuration materializer. It writes only a non-secret profile
+configuration artifact after an ownership plan, revision recheck, atomic
+publication, and verification. It never owns `auth.json`, sessions, logs,
+SQLite, sockets, locks, cookies, or Keychain items.
+
+For a real shared-root maintenance window, first obtain explicit resource-level
+authority from the owning application surfaces, stop all relevant writers, and
+record the approved resources and rollback location. Use the WebGPT adapter for
+WebGPT-owned route or journal recovery; do not repair those resources through
+this script. Keep the timestamped backup and perform the acceptance checks
+before any separate cleanup operation.
+
+The following commands are therefore appropriate only for an isolated,
+synthetic/test root or an explicitly approved exceptional maintenance flow:
 
 ```bash
 bash operations/scripts/codex-home-managed-root.sh check
-# If check fails, quit Codex/ChatGPT and Computer Use before continuing.
+bash operations/scripts/codex-home-managed-root.sh preflight
+# A real default-root preflight should refuse generic mutation.
 bash operations/scripts/codex-home-managed-root.sh repair
 bash operations/scripts/codex-home-managed-root.sh check
 node tools/scripts/sync-ai-skills.mjs --dry-run
@@ -204,9 +231,44 @@ node tools/scripts/sync-ai-skills.mjs
 node tools/scripts/sync-ai-skills.mjs --check
 ```
 
+`preflight` is read-only and must report `OK: controlled Codex repair is
+approved to run.` before a synthetic repair. A `NOT OK` result is a hard stop;
+do not bypass it with `CODEX_HOME_SKIP_PROCESS_CHECK` outside tests.
+
 The general `brain-configs-link.sh` uses this manager. It never silently converts
 a legacy whole-directory Codex symlink. Migration requires the explicit flags
 shown above.
+
+## Read-only runtime observation
+
+For a current diagnostic without stopping or changing Codex, run from the Brain
+repository:
+
+```bash
+node tools/observe-infrastructure.mjs
+```
+
+The observer uses supported WebGPT doctor/DEV status, native `codex login
+status`, safe app metadata, and allowlisted process/listener metadata. It never
+reads auth files, browser storage, process arguments, environment variables,
+Keychain values, OAuth, tunnel credentials, or MCP payloads. It never starts,
+stops, restarts, logs in/out, repairs configuration, or attaches a connector.
+
+Interpretation is intentionally account-agnostic:
+
+- `authenticated` means only that the supported native status command
+  classified a current session as authenticated; it does not identify an
+  account or prove multiple profiles are preserved;
+- WebGPT production `degraded` may mean its connector attachment is not
+  locally provable even when the launcher, bridge, proxy, and tunnel are
+  healthy;
+- DEV `unknown` is expected when the profile is configured but not running or
+  its MCP runtime is not ready;
+- candidates and admission plans are evidence-only and never modify the
+  canonical catalog.
+
+The evidence report is
+`operations/reports/ikhp-live-codex-runtime-observation-2026-09-05.md`.
 
 ## Not in scope for this migration
 

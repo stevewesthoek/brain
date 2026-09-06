@@ -2,6 +2,18 @@
 
 This directory is the canonical, centralized home for MCP server documentation and templates.
 
+MCP capability discovery is part of the shared Brain route. Agents should run
+the same query used for skills and CLIs, then distinguish provider admission,
+client configuration, connection, and authentication:
+
+```bash
+node tools/discover-capabilities.mjs --query "<the user's request>" --kind mcp
+```
+
+The user should not need to know an MCP server name. Brain-owned providers use
+the admission registry; client-managed plugins are reported as configured
+surfaces without being mistaken for Brain admission or authentication proof.
+
 ## Goals
 - Keep MCP setup consistent across tools and repos.
 - Keep secrets and runtime tokens out of git.
@@ -10,6 +22,8 @@ This directory is the canonical, centralized home for MCP server documentation a
 ## Canonical locations
 - Server docs/templates: `operations/system-configs/mcp/<server>/`
 - Codex MCP registry: `operations/system-configs/codex/config.toml`
+- Provider admission registry: `operations/specs/mcp-provider-admissions.json`
+- Shared discovery implementation: `tools/discover-capabilities.mjs`
 - Antigravity MCP runtime config (centralized, git-ignored):
   `operations/system-configs/antigravity/User/mcp.json`
 - Antigravity MCP tracked template (safe):
