@@ -17,6 +17,7 @@ This index preserves existing skill names. It does not rename, delete, or merge 
 | `qa` | Quality assurance | Yes | default | General validation entry point |
 | `handoff` | Handoff prompts and cross-agent work | Yes | default | Useful across Claude Code, Codex, Gemini |
 | `careful` | Caution and high-risk work guardrails | Yes | default | Default safety skill |
+| `capability-discovery` | Natural-language lookup for skills, CLIs, MCP servers, and runbooks | Yes | default | Shared read-only discovery entry point; users never need internal names |
 | `design` | High-level design orchestration | No | design, power | Routes to dormant design subskills when needed |
 | `video` | High-level video production orchestration | No | video, power | Routes to video production subskills and package workflows |
 | `guard` | Guardrails and safety checks | No | design, power | Extended safety checks for specific domains |
@@ -28,6 +29,7 @@ This index preserves existing skill names. It does not rename, delete, or merge 
 | `autoresearch` | Autonomous research workflows | No | research, power | Automated research iteration and optimization |
 | `greploop` | Bounded review-fix-review loop for code quality gates | No | code-orchestrator | Dormant subskill used automatically by `code` when review findings should be fixed until clean; do not add to default active profile |
 | `spark` | Spark email/calendar/contact CLI | No | productivity, power | Mailbox, calendar, contacts, meetings, scheduling; personal-data sensitive, not default-active |
+| `stripe` | Stripe CLI for billing and payment operations | No | power | Natural-language billing route; uses `stripe` through shared PATH and the Stripe CLI runbook |
 
 ---
 
@@ -41,14 +43,14 @@ Path:
 docs/skills/profiles/default.txt
 ```
 
-Target size: about 7 active skills (minimal, truly always-on).
+Target size: about 8 active skills (minimal, truly always-on).
 
-**Philosophy:** Default includes only core orchestrators, session continuity, review/QA, memory, and safety skills. `handoff` stays default-active because cross-agent continuity is common. Heavy domain orchestrators (`design`, `video`) and tool skills (`gh`, `firecrawl`, `playwright`, `ffmpeg`, `n8n`, `autoresearch`) are dormant to reduce skill context pressure on Codex. They remain available through domain-specific profiles and natural-language routing.
+**Philosophy:** Default includes only core orchestrators, session continuity, review/QA, memory, safety, and the compact capability-discovery entry point. Heavy domain orchestrators (`design`, `video`) and tool skills (`gh`, `firecrawl`, `playwright`, `ffmpeg`, `n8n`, `autoresearch`) remain dormant to reduce skill context pressure on Codex. They are found through query-time discovery and source documentation.
 
 Includes:
 
 ```text
-code, research, memory, review, qa, handoff, careful
+code, research, memory, review, qa, handoff, careful, capability-discovery
 ```
 
 Newly installed skills do not belong here by default. Add them to the most
@@ -56,9 +58,10 @@ specific domain profile first. Promote a skill into `default.txt` only after an
 explicit always-on decision, because every default skill consumes context in
 Claude, Codex, Gemini, and IDE sessions.
 
-When a user requests design, video, research-acquisition, or DevOps work, natural-language routing should either:
-1. Recommend switching to the relevant domain profile (design, video, research, deploy), or
-2. Use the dormant source documentation directly if available.
+When a user requests a domain capability, `capability-discovery` runs the
+shared read-only registry query. The agent then reads the selected source
+skill/runbook and uses the available CLI or MCP surface. Profile activation is
+an internal optimization, not a user requirement.
 
 If a listed skill source does not exist yet, the switcher will fail rather than silently skipping it.
 
@@ -144,6 +147,7 @@ Key skills:
 | `video` | Main orchestrator |
 | `viral-flow` | Strategy, topics, angles, hooks, scripts |
 | `media-acquisition` | Dormant yt-dlp capability for online video/audio metadata, subtitles, transcripts, thumbnails, and permitted media acquisition |
+| `watch-video` | Provider-neutral multimodal video analysis with bounded frames, captions/explicit Whisper fallback, and local reports |
 | `ffmpeg` | Encoding, captions, format transforms |
 | `stb-pipeline` | Narrated slideshow / TTS pipeline patterns |
 | `design` | Thumbnails and visual polish |
@@ -246,8 +250,9 @@ Key skills:
 | `autoresearch` | Automated research workflows |
 | `firecrawl` | Web scraping/crawling |
 | `media-acquisition` | Dormant yt-dlp capability for video/audio source metadata, subtitles, transcripts, thumbnails, and permitted media acquisition |
+| `watch-video` | Provider-neutral multimodal video analysis; source: `ai/skills/custom/watch-video/SKILL.md`; runbook: `operations/runbooks/watch-video.md` |
 | `apify` | Apify actors and scraping |
-| `notebooklm.md` | NotebookLM workflow notes |
+| `notebooklm` | NotebookLM CLI workflows; source: `ai/skills/custom/notebooklm/SKILL.md`; runbook: `operations/runbooks/notebooklm.md` |
 | `playwright` | Browser automation notes |
 | `web` | Web workflows |
 | `gemini` | Large-context preprocessing |
@@ -294,10 +299,15 @@ Agents should not force the user to remember commands.
 
 When a user asks in natural language:
 
-1. Use the active orchestrator if one matches the intent.
-2. If the needed subskill is not active, consult this index.
-3. Recommend switching to the relevant profile, or use the dormant source documentation directly if the environment allows reading it.
-4. Do not claim the skill is gone.
+1. Use the active `capability-discovery` entry point for any request that may use tooling.
+2. Query `tools/discover-capabilities.mjs` against the natural-language request.
+3. Read the selected source skill/runbook and check actual CLI/MCP availability.
+4. Do not ask the user to name or activate a profile, and do not claim a dormant skill is gone.
+
+The discovery script scans all `SKILL.md` sources, profile aliases, CLI manifest
+entries, MCP admissions, and client configuration names at query time. This is
+the complete source inventory; this index remains the compact human routing
+map.
 
 ---
 

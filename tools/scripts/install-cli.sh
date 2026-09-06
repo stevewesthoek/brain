@@ -1,5 +1,5 @@
 #!/bin/bash
-# install-cli.sh — Automated CLI installation with manifest update and AI sync
+# install-cli.sh — Automated CLI installation with manifest update and discovery route
 #
 # Usage:
 #   ./install-cli.sh --name "command-name" --path "/path/to/binary" [--description "optional description"]
@@ -7,8 +7,8 @@
 # This script:
 # 1. Creates a symlink in ~/.local/bin/
 # 2. Updates operations/CLI-MANIFEST.md with the new CLI
-# 3. Syncs to all AI agents (Claude Code, Codex, Gemini)
-# 4. Verifies access in all three AIs
+# 3. Registers the CLI in Brain's capability manifest
+# 4. Verifies discovery and local access
 #
 # Example:
 #   ./install-cli.sh --name "my-tool" --path "/usr/local/bin/my-tool" --description "My awesome tool"
@@ -94,7 +94,7 @@ echo -e "${BLUE}=== Installing CLI: $CLI_NAME ===${NC}"
 echo ""
 
 # Step 1: Create symlink
-echo -e "${YELLOW}[1/4] Creating symlink...${NC}"
+echo -e "${YELLOW}[1/5] Creating symlink...${NC}"
 mkdir -p "$LOCAL_BIN"
 
 SYMLINK_PATH="$LOCAL_BIN/$CLI_NAME"
@@ -122,7 +122,7 @@ if ! command -v "$CLI_NAME" &> /dev/null; then
 fi
 
 # Step 2: Update manifest
-echo -e "${YELLOW}[2/4] Updating CLI manifest...${NC}"
+echo -e "${YELLOW}[2/5] Updating CLI manifest...${NC}"
 
 if [[ ! -f "$MANIFEST" ]]; then
   echo -e "${RED}Error: Manifest not found at $MANIFEST${NC}"
@@ -131,39 +131,42 @@ if [[ ! -f "$MANIFEST" ]]; then
   exit 1
 fi
 
-# Check if CLI is already in manifest
-if grep -q "| \`$CLI_NAME\` |" "$MANIFEST"; then
-  echo -e "${YELLOW}  ⚠ CLI already in manifest, updating entry${NC}"
+# Register the CLI in the canonical manifest.
+REGISTRY_SCRIPT="$BRAIN_ROOT/tools/register-cli-manifest.mjs"
+if [[ ! -f "$REGISTRY_SCRIPT" ]]; then
+  echo -e "${RED}Error: CLI registry helper not found at $REGISTRY_SCRIPT${NC}"
+  rm "$SYMLINK_PATH"
+  exit 1
+fi
+node "$REGISTRY_SCRIPT" --name "$CLI_NAME" --path "$CLI_PATH" --description "$CLI_DESCRIPTION"
+echo -e "${GREEN}  ✓ Manifest registration complete${NC}"
+
+# Step 3: Verify discovery route
+echo -e "${YELLOW}[3/5] Verifying Brain capability discovery...${NC}"
+
+DISCOVERY_SCRIPT="$BRAIN_ROOT/tools/discover-capabilities.mjs"
+if [[ -f "$DISCOVERY_SCRIPT" ]] && node "$DISCOVERY_SCRIPT" --query "$CLI_NAME" --kind cli --format compact >/dev/null; then
+  echo -e "${GREEN}  ✓ CLI is discoverable by all Brain agents${NC}"
 else
-  echo -e "${GREEN}  ✓ Adding entry to manifest${NC}"
+  echo -e "${RED}  ✗ CLI was not found by capability discovery${NC}"
+  rm "$SYMLINK_PATH"
+  exit 1
 fi
 
-# Append entry to manifest (simplified - just adds to a registry section)
-echo "  Entry: \`$CLI_NAME\` → $CLI_PATH"
-if [[ -n "$CLI_DESCRIPTION" ]]; then
-  echo "  Description: $CLI_DESCRIPTION"
-fi
+# Step 4: Verify the full onboarding contract
+echo -e "${YELLOW}[4/5] Verifying the onboarding contract...${NC}"
 
-echo -e "${GREEN}  ✓ Manifest updated (manual verification recommended)${NC}"
-
-# Step 3: Sync to all AIs
-echo -e "${YELLOW}[3/4] Syncing to all AI agents...${NC}"
-
-SYNC_SCRIPT="$BRAIN_ROOT/tools/scripts/sync-ai-skills.mjs"
-
-if [[ ! -f "$SYNC_SCRIPT" ]]; then
-  echo -e "${YELLOW}  ⚠ Sync script not found, skipping AI sync${NC}"
+VALIDATOR_SCRIPT="$BRAIN_ROOT/tools/validate-agent-capability-onboarding.mjs"
+if [[ -f "$VALIDATOR_SCRIPT" ]] && node "$VALIDATOR_SCRIPT" >/dev/null; then
+  echo -e "${GREEN}  ✓ Shared skill/CLI/MCP onboarding contract passes${NC}"
 else
-  echo "  Running sync to Claude Code, Codex, Gemini..."
-  if node "$SYNC_SCRIPT" --check &> /dev/null; then
-    echo -e "${GREEN}  ✓ AI sync complete${NC}"
-  else
-    echo -e "${YELLOW}  ⚠ AI sync check returned status, but CLI is installed${NC}"
-  fi
+  echo -e "${RED}  ✗ Shared onboarding contract failed${NC}"
+  rm "$SYMLINK_PATH"
+  exit 1
 fi
 
-# Step 4: Verify access
-echo -e "${YELLOW}[4/4] Verifying CLI access...${NC}"
+# Step 5: Verify access
+echo -e "${YELLOW}[5/5] Verifying CLI access...${NC}"
 
 # Test 1: Can we run it?
 if "$CLI_NAME" --version &> /dev/null || "$CLI_NAME" --help &> /dev/null || "$CLI_NAME" -h &> /dev/null; then
@@ -187,9 +190,9 @@ echo -e "${BLUE}=== Installation Complete ===${NC}"
 echo ""
 echo "Next steps:"
 echo "1. Review the manifest entry in: $MANIFEST"
-echo "2. For Codex: Run in Computer Use: which $CLI_NAME"
-echo "3. For Gemini: Test shell access: gemini-shell 'which $CLI_NAME'"
-echo "4. Update brain repo: git add -A && git commit"
+echo "2. Read the selected skill/runbook from capability discovery"
+echo "3. Verify the command from each supported AI shell when needed"
+echo "4. Update the Brain repo with the intentional manifest and docs changes"
 echo ""
 echo "Troubleshooting:"
 echo "  If CLI not found in one AI: see operations/runbooks/codex-cli-access.md"

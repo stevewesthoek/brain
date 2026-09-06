@@ -24,8 +24,8 @@ Help Claude use the Stripe CLI safely and consistently for local development wor
 1. **Test mode by default.** Always prefer test mode keys and test mode operations. Never assume production unless the user explicitly confirms it.
 2. **Never expose secrets.** Do not log, print, commit, or echo Stripe API keys, webhook signing secrets, or tokens. Never include them in command outputs shown to the user.
 3. **No destructive production actions without confirmation.** Before any operation that could affect live/production data, state what you are about to do and wait for explicit confirmation.
-4. **Verify auth before proceeding.** Do not rely on `stripe whoami` in this workspace. The installed CLI build does not support it. Check `~/.config/stripe/config.toml` and/or `stripe get /v1/account -p <profile>` before relying on CLI state. If unauthenticated, prompt login first.
-5. **Workspace default profile.** Unless a repo-specific doc says otherwise, treat `ProChat Studio` as the default Stripe CLI profile in this workspace.
+4. **Verify auth before proceeding.** Do not rely on `stripe whoami` in this workspace. The installed CLI build does not support it. Check `~/.config/stripe/config.toml` and/or `stripe get /v1/account -p <profile>` before relying on CLI state. If unauthenticated, report the blocker and request the owner's interactive login approval.
+5. **Workspace default profile.** Resolve the requested Dashboard account to its CLI profile selector. The active five-account set is `prochat portugal` (ProChat Portugal), `jpv-bootcamp` (JPV Bootcamp), `prochat studio` (ProChat Nederland), `says the bible` (Says the Bible), and `yeshua academy` (Yeshua Academy).
 
 ## Recommended workflow
 
@@ -34,11 +34,12 @@ Help Claude use the Stripe CLI safely and consistently for local development wor
 stripe --version
 
 # 2. Check current auth status
-cat ~/.config/stripe/config.toml
-stripe get /v1/account -p "ProChat Studio"
+awk '/^\[/{print}' ~/.config/stripe/config.toml  # show profile sections only; never print token values
+stripe get /v1/account -p "prochat portugal"
 
 # 3. Login if needed (opens browser)
-stripe login --project-name "ProChat Studio"
+# Local selector `prochat studio` => Dashboard account `ProChat Nederland`
+stripe login --project-name "prochat studio"
 
 # 4. Forward webhooks to your local server
 stripe listen --forward-to localhost:3000/webhooks
@@ -58,9 +59,10 @@ stripe payment_intents list --limit 5
 stripe --version
 
 # Auth
-stripe login --project-name "ProChat Studio"
-cat ~/.config/stripe/config.toml
-stripe get /v1/account -p "ProChat Studio"
+# Local selector `prochat studio` => Dashboard account `ProChat Nederland`
+stripe login --project-name "prochat studio"
+awk '/^\[/{print}' ~/.config/stripe/config.toml  # show profile sections only; never print token values
+stripe get /v1/account -p "prochat portugal"
 
 # Webhook forwarding
 stripe listen --forward-to localhost:3000/webhooks
@@ -85,6 +87,19 @@ stripe logs tail
 - Auth tokens are stored locally by the CLI — never pass them as inline arguments in commands Claude runs
 - Use `--api-key` flag only when absolutely necessary and only with test keys; never hardcode production keys
 - In this workspace, treat Stripe CLI as profile-based. One account can have both live and test access in the same profile.
-- Default to `ProChat Studio` unless a repo-specific doc overrides the profile for that repo.
+- Do not infer a CLI selector from a Dashboard display label. Use `stripe login list` and the active five-account mapping above; legacy duplicate selectors are retained but excluded from the active health set.
 - Dashboard-visible accounts in Stripe are not guaranteed to be enumerable via one account's API. Separate CLI auth per account may be required.
 - Canonical Stripe operations doc: use the standard Stripe runbook in `operations/runbooks/`
+
+## Current live auth evidence
+
+Last checked: **2026-08-26** using response-suppressed read-only account probes.
+
+- `prochat portugal` (`ProChat Portugal`): **authenticated/usable**; account and subscription reads passed.
+- `jpv-bootcamp` (`JPV Bootcamp`): **authenticated/usable**; account and subscription reads passed.
+- `prochat studio` (`ProChat Nederland`): **authenticated/usable**; account and subscription reads passed.
+- `says the bible` (`Says the Bible`): **authenticated/usable**; account and subscription reads passed.
+- `yeshua academy` (`Yeshua Academy`): **authenticated/usable**; account and subscription reads passed.
+- Older duplicate/out-of-set selectors remain recorded as disabled legacy entries; profile presence or key presence alone does not prove API access.
+
+Do not silently run `stripe login`: it changes local credential state and opens a browser OAuth flow. Use `stripe login list` to inspect logged-in profile labels, then use the exact CLI selector with `-p`; Dashboard labels and CLI selectors are not interchangeable.

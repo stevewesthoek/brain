@@ -42,6 +42,20 @@ It is meant to be:
 
 See: `operations/CLI-INSTALLATION-GUIDE.md` — Complete procedural guide for all AIs.
 
+For any natural-language request involving a skill, CLI, MCP server, or
+runbook, agents first use the shared read-only discovery route:
+
+```bash
+node tools/discover-capabilities.mjs --query "<the user's request>" --format compact
+```
+
+See `operations/runbooks/agent-capability-discovery.md`. Users do not need to
+know internal skill names, profiles, or client configuration names.
+
+For current CLI readiness—including authentication and desktop-session state—run
+the central redacted health check documented in
+`operations/runbooks/cli-access-health.md`.
+
 **To install a new CLI:**
 ```bash
 install-cli --name "command-name" --path "/real/path/to/command" --description "what it does"
@@ -50,8 +64,8 @@ install-cli --name "command-name" --path "/real/path/to/command" --description "
 This automatically:
 1. Creates symlink to `~/.local/bin/`
 2. Updates `operations/CLI-MANIFEST.md`
-3. Syncs to all AIs (Claude Code, Codex, Gemini)
-4. Verifies access in all three
+3. Registers the shared capability-discovery route
+4. Verifies local shell access and discoverability
 
 **To verify a CLI works in all AIs:**
 ```bash
@@ -69,6 +83,7 @@ These tools are explicit and Brain-native. They do not proxy Claude, Codex, Gemi
 
 **Files:**
 - `operations/CLI-MANIFEST.md` — Complete registry (70+ CLIs)
+- `operations/runbooks/agent-capability-discovery.md` — One natural-language discovery and onboarding route
 - `operations/CLI-INSTALLATION-GUIDE.md` — Full procedural guide
 - `operations/AI-CONFIG-INDEX.md` — AI configuration central directory
 - `operations/runbooks/context-compression.md` — Reversible context compression and failure-learning workflow
@@ -77,7 +92,7 @@ These tools are explicit and Brain-native. They do not proxy Claude, Codex, Gemi
 
 **Optional standalone agent surfaces:**
 - `omp` / Oh My Pi is installed as a separate terminal AI coding agent, like Cursor, Kiro, Antigravity, Claude Code, Codex, or Gemini. It is not part of the Brain platform architecture and must not replace AI Model Selector, Brain skills, shared memory, or routing policy. See `operations/runbooks/omp-optional-agent.md`.
-- Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/nexu-io/open-design` as an optional external visual design workbench for `/design`. It must not replace the design orchestrator, AI Model Selector, Brain skills, shared memory, or routing policy. See `operations/runbooks/open-design-optional-design-surface.md`.
+- Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/vendors/nexu-io/open-design` as an optional external visual design workbench for `/design`. It must not replace the design orchestrator, AI Model Selector, Brain skills, shared memory, or routing policy. See `operations/runbooks/open-design-optional-design-surface.md`.
 
 ---
 

@@ -10,13 +10,18 @@ The repo previously exposed 119 active skill entries through `ai/skills/active/`
 
 The new profile system adds:
 
-- compact default profile
+- compact default profile (8 entries including capability discovery)
 - domain profiles
 - recovery profile
 - skill index
 - conservative switcher script
 
-No source skills were deleted, renamed, or merged. Some source skills intentionally remain dormant and are still usable through orchestrator routing; for example, `ai/skills/custom/greploop` is not part of `active/` but `/code` uses it automatically for bounded review-fix-review loops when appropriate.
+Source skills remain dormant unless a profile or query-time route selects them.
+The legacy NotebookLM source was canonicalized to the standard
+`ai/skills/custom/notebooklm/SKILL.md` shape during onboarding; other source
+skills were not deleted, renamed, or merged. For example,
+`ai/skills/custom/greploop` is not part of `active/` but `/code` uses it
+automatically for bounded review-fix-review loops when appropriate.
 
 ---
 
@@ -63,12 +68,13 @@ The switcher:
 
 ---
 
-## Important Note About `.md` Active Entries
+## Standard source shape
 
-Some active entries may be real files rather than symlinks, for example:
+Active entries are symlinks to a folder containing `SKILL.md`. The former
+legacy NotebookLM file was canonicalized to:
 
 ```text
-ai/skills/active/notebooklm.md
+ai/skills/custom/notebooklm/SKILL.md
 ```
 
 `playwright` has been converted to the standard folder-based skill shape:

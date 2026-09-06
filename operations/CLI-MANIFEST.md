@@ -1,10 +1,18 @@
 # CLI Manifest — Canonical Tool Inventory
 
-**Last Updated:** 2026-06-03
+**Last Updated:** 2026-09-05
 **Scope:** All CLIs available to Claude Code, Codex, and Gemini CLI  
 **Purpose:** Single source of truth for CLI availability across all AI agents
 
-This document lists every CLI tool installed on this machine, its location, access method, and which AI agents can use it. All AIs should have access to all CLIs listed here.
+This document lists every CLI tool installed on this machine, its location, access method, and which AI agents can use it. All AIs should have access to all CLIs listed here. PATH/executable availability is separate from authentication or desktop-session readiness; use the central access-health checker for the latter.
+
+Natural-language discovery is handled by the shared read-only capability
+query, which cross-references this manifest with skills, runbooks, and MCP
+configuration:
+
+```bash
+node tools/discover-capabilities.mjs --query "<the user's request>"
+```
 
 ---
 
@@ -20,8 +28,8 @@ install-cli --name "command-name" --path "/path/to/binary" --description "option
 This automatically:
 1. ✅ Creates symlink to `~/.local/bin/`
 2. ✅ Updates this manifest
-3. ✅ Syncs to all AI agents
-4. ✅ Verifies access in Claude Code
+3. ✅ Registers the shared capability-discovery route
+4. ✅ Verifies local shell access and discoverability
 
 **To verify a CLI is accessible:**
 ```bash
@@ -100,6 +108,7 @@ manifest consumed by capability discovery.
 | `dokploy-cli` | `~/.local/bin/dokploy-cli` | `/Users/Office/.nvm/versions/node/v24.12.0/bin/dokploy` | cloud | Bash | Dokploy deployment CLI |
 | `dokploy-mcp` | `~/.local/bin/dokploy-mcp` | `/Users/Office/.nvm/versions/node/v24.12.0/bin/dokploy-mcp` | cloud | Bash | Dokploy MCP server |
 | `n8n-cli` | `~/.local/bin/n8n-cli` | `/Users/Office/.nvm/versions/node/v24.12.0/bin/n8n` | automation | Bash | n8n workflow automation CLI |
+| `stripe` | `/opt/homebrew/bin/stripe` | Homebrew Stripe CLI | payments | Bash | Stripe billing, subscriptions, invoices, customers, webhooks, and test events; read-only by default |
 
 ### Provisioning & Destruction (Infrastructure-as-Code)
 
@@ -142,6 +151,9 @@ manifest consumed by capability discovery.
 |-----|----------|----------------|------|---------|
 | **`install-cli`** | `~/.local/bin/install-cli` | `brain/tools/scripts/install-cli.sh` | **management** | **Install new CLI + auto-update manifest + sync AIs** |
 | **`verify-cli-access`** | `~/.local/bin/verify-cli-access` | `brain/tools/scripts/verify-cli-access.sh` | **management** | **Verify CLI access across all AIs** |
+| **`cli-access-health`** | `~/.local/bin/cli-access-health` | `brain/tools/scripts/cli-access-health` | **management** | **Redacted PATH, authentication, session, and safe-probe health report with optional notification** |
+| `runtime-profiles` | `brain/tools/scripts/runtime-profiles` | `brain/tools/runtime-profile-manager.mjs` | **management** | **Account-agnostic CLI-only Codex profile list/doctor/create/login-handoff/launch; no auth copying or global state mutation** |
+| `codex-cli-pilot` | `npm run codex:cli-pilot` | `brain/tools/codex-cli-pilot.mjs` | **verification** | **Operator-assisted two-profile CLI pilot with metadata-only shared-process quiescence gates; no login/auth copy/catalog mutation** |
 | `sync-credentials` | `~/.local/bin/sync-credentials` | `brain/tools/scripts/sync-credentials.sh` | system | Scan for `.env` files and sync credentials |
 | `mem-search` | `~/.local/bin/mem-search` | `brain/tools/scripts/mem-search.sh` | memory | Search memory by keyword/ID |
 | `mem-write` | `~/.local/bin/mem-write` | `brain/tools/scripts/mem-write.sh` | memory | Create/update memory entries |
@@ -168,7 +180,7 @@ manifest consumed by capability discovery.
 | `uvicorn` | `~/.local/bin/uvicorn` | runtime | pipx | ASGI web server |
 | `fastapi` | `~/.local/bin/fastapi` | framework | pipx | FastAPI CLI |
 | `omp` | `~/.local/bin/omp` | ai-agent | Bun global | Oh My Pi optional standalone terminal AI coding agent; separate IDE/agent surface only, not a replacement for AI Model Selector, Brain skills, shared memory, or routing policy |
-| `open-design` | `~/.local/bin/open-design` | design-workbench | source wrapper | Open Design optional external visual design workbench; wrapper points to `/Users/Office/Repos/nexu-io/open-design` and uses Node 24; separate IDE-like surface only, not Brain router, memory, or skill source |
+| `open-design` | `~/.local/bin/open-design` | design-workbench | source wrapper | Open Design optional external visual design workbench; wrapper points to `/Users/Office/Repos/vendors/nexu-io/open-design` and uses Node 24; separate IDE-like surface only, not Brain router, memory, or skill source |
 
 ### Backup & Archive Tools
 
@@ -291,27 +303,29 @@ aws-cli --help
 
 **Brain tool scripts (brain/tools/scripts/):**
 - Memory/context: `mem-search`, `mem-write`, `mem-facts`, `brain-compress`, `brain-learn-failures`
-- Infrastructure: `sync-credentials`, `n8n-api`, `jump`, `orchestrate`
+- Infrastructure: `sync-credentials`, `n8n-api`, `jump`, `orchestrate`, `runtime-profiles`
 - Finance: `ledger-*` commands
 
 ---
 
 ## Maintenance & Updates
 
-- **Last verified:** 2026-05-25
+- **Last verified:** 2026-08-26
 - **Update procedure:** When new CLIs are installed, add entry to this manifest
-- **Sync script:** `sync-ai-skills.mjs` (in `brain/tools/scripts/`) distributes CLI changes to all AI consumers
-- **Breaking changes:** Update this manifest + run `sync-ai-skills.mjs` + verify in all three AI agents
+- **Discovery:** `tools/discover-capabilities.mjs` resolves this manifest together with skills, runbooks, and MCP configuration for all AI consumers
+- **Access health:** `node tools/check-cli-access-health.mjs --write --notify` tests installed, executable, authenticated/session-ready, and deliberately unprobed states without printing credentials
+- **Breaking changes:** Update this manifest, run the onboarding validator, and verify the CLI through each supported AI shell
 
 ---
 
 ## Key Rules
 
-1. **Single Source of Truth:** This manifest is the canonical list. All three AIs must have access to all CLIs here.
+1. **Single Source of Truth:** This manifest is the canonical list of Brain-managed agent-facing CLIs. Generic package helper binaries are excluded unless they are an intentional agent capability.
 2. **Symlink Convention:** All CLIs are symlinked to `~/.local/bin/` for unified `$PATH` access.
 3. **No Shadowing:** Avoid duplicate CLI names across different installation methods.
-4. **Documentation:** Each CLI should have a corresponding runbook in `brain/operations/runbooks/` if non-trivial.
-5. **Verification:** After installing a new CLI, add it here and verify via all three AI agents.
+4. **Documentation:** Each non-trivial CLI must have a corresponding skill or runbook in `brain/operations/runbooks/`.
+5. **Verification:** After installing a new CLI, register it here, run capability discovery, and verify the command through each supported AI shell.
+6. **Authentication:** “Installed” is not “ready”; use the central access-health registry and keep login/token rotation as explicit owner actions.
 
 ---
 

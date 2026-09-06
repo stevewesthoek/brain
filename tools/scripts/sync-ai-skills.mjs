@@ -15,6 +15,7 @@
  */
 
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -25,6 +26,13 @@ const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const checkMode = args.includes('--check');
 const verbose = args.includes('--verbose');
+const homeDir = os.homedir();
+const activeDir = path.join(repoRoot, 'ai/skills/active');
+const activeDirReal = fs.realpathSync(activeDir);
+
+function absoluteTarget(targetPath) {
+  return path.isAbsolute(targetPath) ? targetPath : path.join(repoRoot, targetPath);
+}
 
 // Target mapping: ALL tools must point to ai/skills/active
 const targets = [
@@ -63,10 +71,30 @@ const targets = [
     mode: 'root-symlink',
     expectTarget: '../../../../ai/skills/active',
   },
+  {
+    name: 'Gemini CLI (home)',
+    target: path.join(homeDir, '.gemini', 'skills'),
+    mode: 'root-symlink',
+    expectTarget: path.relative(path.join(homeDir, '.gemini'), activeDir),
+  },
+  {
+    name: 'Antigravity (home config)',
+    target: path.join(homeDir, '.gemini', 'config', 'skills'),
+    mode: 'root-symlink',
+    expectTarget: path.relative(path.join(homeDir, '.gemini', 'config'), activeDir),
+  },
+  {
+    name: 'Antigravity IDE (home)',
+    target: path.join(homeDir, '.gemini', 'antigravity-ide', 'skills'),
+    mode: 'root-symlink',
+    expectTarget: path.relative(path.join(homeDir, '.gemini', 'antigravity-ide'), activeDir),
+  },
+  {
+    name: 'Kiro (home)',
+    target: path.join(homeDir, '.kiro', 'skills'),
+    mode: 'entry-symlinks',
+  },
 ];
-
-const activeDir = path.join(repoRoot, 'ai/skills/active');
-const activeDirReal = fs.realpathSync(activeDir);
 
 // State tracking
 let stats = {
@@ -155,7 +183,7 @@ function isSymlinkCorrectByRealpath(p, expectedAbsPath) {
  * Sync a root-symlink target to ai/skills/active
  */
 function syncRootSymlink(targetPath, toolName, expectTarget) {
-  const absTarget = path.join(repoRoot, targetPath);
+  const absTarget = absoluteTarget(targetPath);
   const absExpect = path.join(path.dirname(absTarget), expectTarget);
   const absExpectReal = fs.realpathSync(absExpect);
 
@@ -220,13 +248,25 @@ function syncRootSymlink(targetPath, toolName, expectTarget) {
     return true;
   }
 
-  // Blocked: non-empty dir, file, or broken symlink
+  // A broken managed root symlink cannot contain data. Repair it to the
+  // canonical active surface so consumers converge without a manual ritual.
+  if (res.type === 'broken') {
+    if (!dryRun && !checkMode) {
+      fs.rmSync(absTarget);
+      fs.symlinkSync(expectTarget, absTarget, 'dir');
+      success(`${toolName}: repaired broken symlink → ai/skills/active`);
+    } else if (dryRun) {
+      log(`  [DRY-RUN] Would repair broken symlink: ${targetPath}`);
+    }
+    stats.targetsChanged++;
+    return true;
+  }
+
+  // Blocked: non-empty directory or file
   if (res.type === 'dir') {
     error(`${toolName}: non-empty directory exists; cannot replace`);
   } else if (res.type === 'file') {
     error(`${toolName}: file exists; cannot replace`);
-  } else if (res.type === 'broken') {
-    error(`${toolName}: broken symlink (${res.target}); remove manually first`);
   } else {
     error(`${toolName}: unexpected state; cannot proceed`);
   }
@@ -238,7 +278,7 @@ function syncRootSymlink(targetPath, toolName, expectTarget) {
  * Sync entry-symlinks mode (Kiro): each active skill gets a symlink inside target dir
  */
 function syncEntrySymlinks(targetPath, toolName, activeSkills) {
-  const absTarget = path.join(repoRoot, targetPath);
+  const absTarget = absoluteTarget(targetPath);
 
   const res = resolvePath(absTarget);
 
@@ -322,7 +362,18 @@ function syncEntrySymlinks(targetPath, toolName, activeSkills) {
     } else if (res.type === 'symlink') {
       error(`${toolName}/${skill}: symlink points elsewhere; expected active skill`);
     } else if (res.type === 'broken') {
-      error(`${toolName}/${skill}: broken symlink; remove manually first`);
+      if (!dryRun && !checkMode) {
+        fs.rmSync(skillTarget);
+        fs.symlinkSync(relTarget, skillTarget, 'dir');
+        success(`${toolName}/${skill}: repaired broken symlink`);
+      } else if (dryRun) {
+        log(`  [DRY-RUN] Would repair broken symlink: ${toolName}/${skill}`);
+      } else {
+        error(`${toolName}/${skill}: broken symlink; run sync-ai-skills.mjs to repair it`);
+      }
+      stats.targetsChanged++;
+      if (checkMode) allOk = false;
+      continue;
     }
     stats.targetsBlocked++;
     allOk = false;
@@ -371,10 +422,10 @@ function validateActiveSkillReachability(activeSkills) {
   const failures = [];
 
   for (const target of targets) {
-    const absTarget = path.join(repoRoot, target.target);
+    const absTarget = absoluteTarget(target.target);
 
     for (const skill of activeSkills) {
-      // Skip placeholder .md files (e.g., notebooklm.md, playwright.md)
+      // Skip any legacy placeholder .md files retained in an active snapshot.
       if (skill.endsWith('.md')) {
         continue;
       }

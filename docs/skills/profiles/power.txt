@@ -21,3 +21,4 @@ autoresearch
 spark
 orchestrate
 greploop
+stripe

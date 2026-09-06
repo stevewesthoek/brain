@@ -1,15 +1,20 @@
 ---
 name: ai-agnostic-config
-description: When updating Claude Code config (CLAUDE.md, hooks, settings.json, session lifecycle, memory rules, routing, or workflow conventions), also update the Codex equivalent (AGENTS.md) to keep both AIs in sync. Trigger whenever touching brain/operations/system-configs/claude/, brain/CLAUDE.md, ~/.claude/CLAUDE.md, or ai/policy/. The two systems must stay unified — one way of working, two engines.
+description: Use when changing shared AI behavior, runtime adapters, hooks, settings, session lifecycle, memory rules, routing, or workflow conventions. Keep the shared Brain policy canonical and update only the affected Claude, Codex, Gemini, or IDE adapter references. Use the shared capability discovery route before creating new configuration.
 ---
 
 # AI-Agnostic Config
 
 ## The insight
 
-Claude and Codex are two engines in one unified system. Claude reads `CLAUDE.md` and hooks; Codex reads `AGENTS.md`. When you teach Claude something new about how to work — a session lifecycle, a memory rule, a routing convention, a workflow — Codex doesn't automatically learn it. You must update both explicitly.
+Claude and Codex are two engines in one unified system. Runtime adapters point
+to shared Brain policies and source docs; they do not own duplicate policy
+copies. When you teach the shared AI system something new, put the rule in the
+canonical Brain policy or documentation and ensure each supported runtime
+points to that source.
 
-If you only update one, the system splits. The AI you're not currently using will behave differently, and sessions started in one won't resume cleanly in the other.
+If an adapter is missing the shared reference, that runtime may not discover
+the same capability. Validate the adapters and shared inventory together.
 
 ## When this applies
 
@@ -25,10 +30,10 @@ Ask: *does this change how an AI should behave in a session?* If yes, both need 
 
 Before closing a PR or committing a config change, check:
 
-1. **What did I change in Claude's config?** (CLAUDE.md, hooks, routing, lifecycle)
-2. **Does Codex have the equivalent?** Open `brain/operations/system-configs/codex/AGENTS.md`
-3. **Is the same concept present?** If not, add it. If present but diverged, sync it.
-4. **Is the format compatible?** Both AIs read the same `.ai/current.md` — keep the schema identical.
+1. **What is the canonical shared source?** Prefer `ai/policy/`, a runbook, or a shared skill.
+2. **Which runtime adapters are affected?** Check the relevant Claude/Codex/Gemini/IDE config.
+3. **Do all adapters point to the same source and discovery query?** If not, patch the narrow missing reference.
+4. **Does the onboarding validator pass?** Run `node tools/validate-agent-capability-onboarding.mjs`.
 
 ## The fix
 
@@ -40,13 +45,16 @@ Claude config lives at:
 Codex config lives at:
 - `brain/operations/system-configs/codex/AGENTS.md` (symlinked as `~/.codex/AGENTS.md` inside the real local Codex runtime root)
 
-The policy files (`routing.md`, `guardrails.md`) are already shared — both configs reference them. That's the right pattern. For anything that can't be shared as a file reference, it must be duplicated manually and kept in sync.
+The policy files (`routing.md`, `guardrails.md`, and `capability-discovery.md`)
+are shared. That is the preferred pattern. Duplicate text only when a runtime
+requires a small adapter-specific instruction, and keep it limited to routing
+or invocation details.
 
 ## Skills should be AI-agnostic by default
 
 When writing a new skill that defines a workflow or convention (not a tool wrapper):
 - Write it so it works for both AIs
-- If it's stored in `brain/ai/skills/`, it's available to Claude via symlink — but Codex needs a path reference in AGENTS.md to use it
+- If it's stored in `brain/ai/skills/`, it is available through the shared active/exported skill surface; agents use query-time discovery for dormant sources
 - Tool-specific skills (Claude hooks, Codex review wrapper) are exceptions — they're inherently engine-specific
 
 ## Gotchas

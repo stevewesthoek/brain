@@ -7,10 +7,9 @@ bible-research
 autoresearch
 firecrawl
 apify
-notebooklm.md
+notebooklm
 playwright
 web
-gemini
 graphify
 memory
 review

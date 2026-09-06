@@ -31,9 +31,11 @@ Do not load the whole brain repo. Use `00-memory-map.md`, then search/read only 
 
 ## Skill Installation & Profile Management
 
-**Critical rule:** When installing a new skill, you MUST decide whether it's always-active or domain-specific. This prevents context bloat in Codex and Claude Code.
+**Critical rule:** Query the shared capability inventory before installing or
+activating anything, then decide whether a genuinely new skill is always-active,
+profile-scoped, or dormant. This prevents context bloat in Codex and Claude Code.
 
-### Always-Active Skills (Context Budget: 7 Skills Max)
+### Always-Active Skills (Context Budget: compact 8-entry default)
 
 These skills load in every session and should be minimal:
 
@@ -44,6 +46,7 @@ These skills load in every session and should be minimal:
 5. **qa** — QA and testing workflows
 6. **handoff** — Session pause/resume with compressed state
 7. **careful** — Safety guardrails for destructive commands
+8. **capability-discovery** — Shared natural-language routing for skills, CLIs, MCP, and runbooks
 
 **Context usage:** ~1,800 lines total. If this grows beyond 15 skills, Codex will warn about context budget.
 
@@ -68,24 +71,25 @@ These live in `ai/skills/custom/` or `ai/skills/vendors/` and are invoked explic
 
 When installing a new skill:
 
-1. **Decide category** — Use the decision tree above (always-active, domain-specific, or dormant)
-2. **Create skill folder:**
+1. **Query first:**
+   ```bash
+   node tools/discover-capabilities.mjs --query "<the user's request>" --format compact
+   ```
+   If a route exists, read and use it instead of creating a duplicate.
+2. **Decide category** — Use the decision tree above (always-active, domain-specific, or dormant)
+3. **Create skill folder:**
    - First-party → `ai/skills/custom/{skill-name}/SKILL.md`
    - Third-party → `ai/skills/vendors/{vendor}/{skill-name}/SKILL.md`
    - **Never** put a skill directly in `ai/skills/active/` (should only contain symlinks)
-3. **Create symlink if always-active:**
-   ```bash
-   ln -s ../custom/{skill-name} ai/skills/active/{skill-name}
-   # OR for vendor skills:
-   ln -s ../vendors/{vendor}/{skill-name} ai/skills/active/{skill-name}
-   ```
-4. **If domain-specific:** Update the domain profile, then update the domain orchestrator's SKILL.md to reference it
-5. **Verify the profile:**
+4. **Register the source:** Update the skill index, intended profile, and operational runbook when needed. Do not edit `active/` directly.
+5. **Verify the profile and onboarding contract:**
    ```bash
    node tools/scripts/switch-skill-profile.mjs default --dry-run --verbose
+   node tools/validate-agent-capability-onboarding.mjs
    ```
-6. **Sync to all AI consumers:**
+6. **Apply only the intended profile and sync:**
    ```bash
+   node tools/scripts/switch-skill-profile.mjs default --apply
    node tools/scripts/sync-ai-skills.mjs --check
    ```
 
@@ -114,35 +118,46 @@ Available profiles:
 
 | Profile | Skills | Use case |
 |---------|--------|----------|
-| `default` | 7 | Minimal always-on (code, research, memory, review, qa, handoff, careful) |
-| `video` | 11 | Add video orchestrator + ffmpeg, stb-pipeline, n8n, notebooklm |
-| `design` | 8 | Add design orchestrator + design-system, design-motion-principles, design-review |
-| `deploy` | 9 | Add deploy tools: freeze, canary, dokploy, gh, forge, land-and-deploy |
-| `research` | 9 | Add research tools: firecrawl, web, browse, autoresearch, investigate, graphify |
-| `power` | 17 | Most orchestrators + domain tools (for power users) |
+| `default` | 8 | Minimal always-on plus shared capability discovery |
+| `video` | 16 | Video orchestrator, production tools, and media workflow skills |
+| `design` | 14 | Design orchestrator, UI/UX, motion, and reference skills |
+| `deploy` | 22 | Deployment, cloud, hosting, Docker, GitHub, and infrastructure skills |
+| `research` | 13 | Research, scraping, browser, synthesis, and source skills |
+| `power` | 19 | Most orchestrators plus broad domain/tool coverage |
 | `productivity` | 5 | Minimal + memory + handoff (for focused work) |
-| `full-current` | 119 | RECOVERY: all original active entries (pre-May-8-2026) |
+| `full-current` | 118 | RECOVERY: all original active entries that still have source records |
 
 **See:** `docs/skills/profile-activation-runbook.md` for full procedures and troubleshooting.
 
 ### Why This Matters
 
 **Before:** 16 active skills = 5,943 lines → Codex warns about context budget  
-**After (default):** 7 active skills = 1,800 lines → 69% context saved  
+**After (default):** 8 active skills = compact routing plus the core session skills
 **Result:** ~4,100 lines freed for actual work in Codex and Claude Code
 
 ---
 
-## Universal capability install
+## Unified capability discovery and onboarding
 
-Before installing ANY skill, CLI, or MCP server: run `/brain-universal-capability-install`. All three engines (Claude, Codex, Gemini) must be configured simultaneously.
+For every natural-language request that may use a skill, CLI, MCP server, or
+runbook, query the shared inventory first:
+
+```bash
+node tools/discover-capabilities.mjs --query "<the user's request>" --format compact
+```
+
+The user does not need to know internal skill names, profiles, or client
+configuration names. If no existing route fits, use the universal onboarding
+skill and `operations/runbooks/agent-capability-discovery.md` to register the
+capability once in the canonical Brain registries and add only the required
+runtime adapters.
 
 After activating or installing a skill, export it to all configured AI/IDE consumers by running:
 ```bash
 node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-skills.mjs && node tools/scripts/sync-ai-skills.mjs --check
 ```
 
-This syncs active skills to Claude Code, Codex, Cursor, Kiro, and Antigravity. The check should pass before continuing with other work.
+This syncs active skills to the repository projections and machine-local roots for Claude Code, Codex CLI, Gemini CLI, Cursor, Kiro, and Antigravity. The check should pass before continuing with other work.
 
 ## CLI Manifest — Unified Tool Access
 
@@ -163,8 +178,8 @@ install-cli --name "command-name" --path "/path/to/binary" --description "what i
 This automatically:
 1. Creates the symlink to `~/.local/bin/`
 2. Updates `operations/CLI-MANIFEST.md`
-3. Syncs to all three AI agents
-4. Verifies access
+3. Registers the shared capability-discovery route
+4. Verifies local shell access and discoverability
 
 Then verify it worked:
 ```bash
@@ -183,7 +198,7 @@ Key rule: **All three AIs must have access to all CLIs.** If a CLI is missing fr
 
 Do not use `omp` as the Brain provider/model router. Do not migrate Brain skills, shared memory, or routing policy into `omp`. The AI Model Selector at `localhost:4890`, `brain/ai/skills/`, `~/.brain/memory/`, and `brain/ai/policy/routing.md` remain canonical. Runbook: `operations/runbooks/omp-optional-agent.md`.
 
-Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/nexu-io/open-design` as an optional external visual design workbench for `/design`, comparable to Cursor, Kiro, Antigravity, and other IDE-like surfaces. It must not replace `/design`, `/web-design`, Brain skills, shared memory, or the AI Model Selector. Runbook: `operations/runbooks/open-design-optional-design-surface.md`.
+Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/vendors/nexu-io/open-design` as an optional external visual design workbench for `/design`, comparable to Cursor, Kiro, Antigravity, and other IDE-like surfaces. It must not replace `/design`, `/web-design`, Brain skills, shared memory, or the AI Model Selector. Runbook: `operations/runbooks/open-design-optional-design-surface.md`.
 
 ## Code, understand, improve, fix, review, build, document, ship
 
