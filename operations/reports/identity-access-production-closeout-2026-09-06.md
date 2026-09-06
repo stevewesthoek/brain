@@ -174,9 +174,11 @@ The path `/Users/Office/Repos/stevewesthoek/brain` is still the active dirty
 Codex worktree on `codex/cloudflare-tooling-normalization` and currently has
 live Codex/ChatGPT/Computer Use/SSH-related processes associated with the
 session. It was not reset, switched, cleaned, or moved. The Video, launcher,
-Supabase, detached `.codex`, and detached `brain-runtime` worktrees remain
-protected because they contain dirty, unique, detached, or runtime-coupled
-state. No unexplained worktree was silently deleted.
+Supabase, and detached `brain-runtime` worktrees remain protected because
+they contain dirty, unique, or runtime-coupled state. The clean detached
+`.codex` worktree belonged to a completed task, had no unique commit, had no
+open handles, and was removed through Git worktree semantics. No unexplained
+worktree was silently deleted.
 
 Running the managed-root checker from the integration path reports symlink
 target differences because the live links intentionally point at the active

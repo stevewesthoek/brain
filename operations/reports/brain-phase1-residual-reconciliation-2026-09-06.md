@@ -19,7 +19,7 @@ written:
 | active historical checkout | `/Users/Office/Repos/stevewesthoek/brain`, dirty, `codex/cloudflare-tooling-normalization` |
 | dirty Video checkout | `/Users/Office/Repos/stevewesthoek/brain-video-orchestrator`, dirty, `feature/video-orchestrator` |
 | attached worktrees | 5 |
-| detached worktrees | 2 |
+| detached worktrees | 1 |
 
 The active and Video worktrees were not reset, stashed, cleaned, rebased,
 switched, or staged. No broad staging command was used.
@@ -33,7 +33,6 @@ switched, or staged. No broad staging command was used.
 | `/Users/Office/.config/workbench/phase3x-supabase-recovery-copy-automation` | 12 unique commits; clean | **PROTECT / DO NOT INTEGRATE WHOLE**. The branch enables a recurring job and points its LaunchAgent at this feature worktree. Scheduler activation and path coupling are not acceptable final state. |
 | `/Users/Office/Repos/stevewesthoek/brain-console-launcher` | 1 unique commit; clean; 188 commits behind current `main` | **SUPERSEDE / PROTECT**. Its August backup-telemetry snapshot is stale relative to current Console/runtime work. No clean cherry-pick is justified without reconstruction against current `main`. |
 | `/Users/Office/Repos/stevewesthoek/brain-runtime` | detached, clean, `9a5719e731f16c4e88bb34720c167f1e3276be9` | **RETAIN AS GOVERNED RUNTIME DEPENDENCY**. LaunchAgent and deployment reports reference this checkout; it must not be removed until runtime ownership is migrated and verified. |
-| `/Users/Office/.codex/worktrees/416e/brain` | detached, clean, `d55599da1729089bcce000b3e4eac451efe28f50` | **RETAIN TEMPORARILY**. No unique commit was found against current `main`, but active-task ownership must be proven absent before retirement. |
 | `/Users/Office/Repos/stevewesthoek/brain-main-integration-2026-09-01` | clean current `main`, equal to `origin/main` | **CANONICAL INTEGRATION BASE**. |
 
 ## Branch-level decisions
@@ -151,6 +150,11 @@ The canonical base also now contains the recovery-boundary hardening commit
 refuses execution from inside a Codex/ChatGPT process tree. This reduces the
 chance of repeating the earlier self-disconnect sequence but does not remove
 the requirement for an externally controlled maintenance window.
+
+The detached `/Users/Office/.codex/worktrees/416e/brain` worktree was then
+verified clean, confirmed to belong to a completed task, checked for open
+handles, and removed through `git worktree remove`. Its detached commit had no
+unique change against current `main`; no branch or source was deleted.
 
 The ten patch-equivalent review refs listed in
 `brain-residual-ref-retirement-2026-09-06.md` were subsequently retired after

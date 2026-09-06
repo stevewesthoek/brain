@@ -24,7 +24,7 @@ from the active Brain checkout at `2026-09-06 10:02:06 WEST`.
 | Video checkout | `/Users/Office/Repos/stevewesthoek/brain-video-orchestrator`, `feature/video-orchestrator`, `ed884b9e4b0c824f0251599091eea956c9ddb839` |
 | Video relation | 602 commits behind and 1 commit ahead of `origin/main` |
 | Video status | 30 tracked paths modified, 40 untracked paths, 0 staged; status fingerprint `1721e53272315d72e2a822799622767effc69689eed3e31c2339f24f7c0ddbab` |
-| Worktrees | 7 total: 5 attached, 2 detached |
+| Worktrees | 6 total: 5 attached, 1 detached |
 | Local branches | 51 |
 | Remote-tracking refs | 25 |
 
@@ -152,7 +152,6 @@ This ledger will be completed as reconciliation proceeds:
 | Brain Console launcher | Refresh/rebase or reconstruct on current `main`; do not preserve stale side line | Protected: current-main telemetry/evidence refresh required; stale Aug 30 “current health” claims not admitted |
 | Supabase recovery automation | Reconstruct on current `main` only after disabled/canonical-path/rollback gates are repaired | Protected: 12 unique cutover commits not integrated; scheduling remains disabled |
 | Backup branch | Preserve recovery provenance; do not merge snapshot noise | Protected pending unique-history review |
-| Detached `.codex` worktree | Provenance review; remove only if no dependency remains | Retained: clean detached ancestor, but task ownership is not proven absent |
 | Detached `brain-runtime` | Govern runtime deployment/reconcile ownership before removal | Retained: scheduler/runtime dependency remains possible |
 | Historical local branches | Classify and retire only after dependency checks | 35 fully merged unattached branches deleted; unique branches retained |
 | Remote feature branches | Classify after main integration and push; delete only proven obsolete refs | 13 fully merged refs deleted; unique/protected refs retained |
@@ -164,7 +163,7 @@ To be filled only after final validation:
 
 - commits created: reconciliation tranches and closeout documentation were pushed; pre-close checkpoint `d90e84fc74f8c8589f2eae6e661439b6550e3d19` is retained in the history;
 - branches integrated/superseded/deleted: accepted work integrated; 35 local and 13 remote fully merged refs deleted; unique/protected refs retained;
-- worktrees removed/retained: none removed; 7 retained, including the active dirty worktree, Video, launcher, Supabase, detached `.codex`, and runtime worktrees;
+- worktrees removed/retained: the clean completed-task `.codex` worktree was removed after open-handle and ownership checks; 6 worktrees remain, including the active dirty worktree, Video, launcher, Supabase, and governed runtime worktrees;
 - final local `main` SHA and `origin/main` SHA: equal at the final push; verify with `git rev-parse HEAD origin/main` in the integration checkout;
 - final cleanliness and secret scan: integration worktree clean; high-risk secret-value-pattern scan found 0 matches; metadata-only validators report `rawSecrets=none` and `containsSecrets=false`;
 - residual exceptions and removal conditions: protected unique branches/worktrees remain until their dirty/ambiguous ownership is separately resolved; generated artifact policy and fresh runtime evidence remain separate follow-up work.
