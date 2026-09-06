@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { validateInfrastructureGovernance } from '../../../../tools/infrastructure-catalog/governance-core.mjs';
 
 export const INFRASTRUCTURE_PLANE_SCHEMA_VERSION = '1.0.0';
 export const DEFAULT_INFRASTRUCTURE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -14,10 +15,12 @@ const CATALOG = Object.freeze({
   backups: 'operations/infrastructure/catalog/backup-policies.v1.json',
   healthPolicies: 'operations/infrastructure/catalog/health-policies.v1.json',
   safetyPolicies: 'operations/infrastructure/catalog/safety-policies.v1.json',
+  identityAccess: 'operations/infrastructure/catalog/identity-access.v1.json',
 });
 
 const RUNTIME = Object.freeze({
   health: 'runtime/local/infrastructure/health-state.json',
+  credentialHealth: 'runtime/local/infrastructure/credential-health-state.json',
   incidents: 'runtime/local/infrastructure/incident-state.json',
   actionReceipts: 'runtime/local/infrastructure/action-receipts.json',
 });
@@ -127,10 +130,35 @@ function loadPlane(root, now) {
     safetyPolicies: safetyPolicyItems,
     runtime: {
       health: readJsonState(root, RUNTIME.health),
+      credentialHealth: readJsonState(root, RUNTIME.credentialHealth),
       incidents: readJsonState(root, RUNTIME.incidents),
       actionReceipts: readJsonState(root, RUNTIME.actionReceipts),
     },
+    identityAccess: readJsonState(root, CATALOG.identityAccess),
   };
+}
+
+function governanceBundle(plane) {
+  return {
+    schemaVersion: plane.schemaVersion,
+    catalogVersion: plane.catalogVersion,
+    resources: plane.resources.map(({ freshness, ...resource }) => resource),
+    relations: plane.relations.map(({ freshness, ...relation }) => relation),
+    serviceBindings: plane.serviceBindings.map(({ freshness, ...binding }) => binding),
+    credentialReferences: plane.credentials,
+    backupPolicies: plane.backups.map(({ freshness, ...policy }) => policy),
+    healthPolicies: plane.healthPolicies.map(({ freshness, ...policy }) => policy),
+    safetyPolicies: plane.safetyPolicies.map(({ freshness, ...policy }) => policy),
+  };
+}
+
+function governanceReport(plane, now) {
+  return validateInfrastructureGovernance({
+    bundle: governanceBundle(plane),
+    identityAccess: plane.identityAccess.status === 'ok' ? plane.identityAccess.data : null,
+    now,
+    label: 'canonical',
+  });
 }
 
 function opts(options = {}) {
@@ -171,6 +199,7 @@ export function readInfrastructureHealth(options = {}) {
     schemaVersion: plane.schemaVersion,
     catalogVersion: plane.catalogVersion,
     policies: plane.healthPolicies,
+    credentialHealth: runtimeEnvelope(plane.runtime.credentialHealth, 'evaluations'),
     ...runtimeEnvelope(plane.runtime.health, 'observations'),
   };
 }
@@ -203,6 +232,16 @@ export function readInfrastructureCredentialStatus(options = {}) {
     catalogVersion: plane.catalogVersion,
     credentialReferences: plane.credentials,
     containsSecrets: false,
+  };
+}
+
+export function readInfrastructureGovernance(options = {}) {
+  const { root, now } = opts(options);
+  const plane = loadPlane(root, now);
+  return {
+    catalogVersion: plane.catalogVersion,
+    identityAccessState: plane.identityAccess.status,
+    ...governanceReport(plane, now),
   };
 }
 
@@ -278,13 +317,15 @@ export function readInfrastructureDoctor(options = {}) {
   const { root, now } = opts(options);
   const plane = loadPlane(root, now);
   const health = runtimeEnvelope(plane.runtime.health, 'observations');
+  const credentialHealth = runtimeEnvelope(plane.runtime.credentialHealth, 'evaluations');
   const incidents = runtimeEnvelope(plane.runtime.incidents, 'incidents');
   const receipts = runtimeEnvelope(plane.runtime.actionReceipts, 'receipts');
+  const governance = governanceReport(plane, now);
   const activeIncidents = incidents.incidents.filter((incident) => incident.status === 'open' || incident.status === 'suppressed');
   const resourceFreshness = countFreshness(plane.resources);
   const unknownBackups = plane.backups.filter(hasUnknownBackup).length;
   const unknownCredentialExpiry = plane.credentials.filter((credential) => credential.expiryKnown !== true).length;
-  const runtimeUnknowns = [health, incidents, receipts]
+  const runtimeUnknowns = [health, credentialHealth, incidents, receipts]
     .filter((entry) => entry.runtimeState !== 'ok')
     .map((entry) => `${entry.sourcePath}:${entry.runtimeState}`);
 
@@ -302,6 +343,7 @@ export function readInfrastructureDoctor(options = {}) {
       backupPolicies: plane.backups.length,
       credentialReferences: plane.credentials.length,
       observations: health.observations.length,
+      credentialEvaluations: credentialHealth.evaluations.length,
       activeIncidents: activeIncidents.length,
       actionReceipts: receipts.receipts.length,
       unknownBackups,
@@ -310,10 +352,17 @@ export function readInfrastructureDoctor(options = {}) {
     freshness: resourceFreshness,
     runtime: {
       health: health.runtimeState,
+      credentialHealth: credentialHealth.runtimeState,
       incidents: incidents.runtimeState,
       actionReceipts: receipts.runtimeState,
     },
     unknowns: runtimeUnknowns,
+    governance: {
+      errors: governance.errors.length,
+      warnings: governance.warnings.length,
+      coverage: governance.coverage,
+      readOnly: governance.readOnly,
+    },
   };
 }
 
@@ -326,6 +375,7 @@ export function readInfrastructureStatus(options = {}) {
     incidents: readInfrastructureIncidents(options),
     backups: readInfrastructureBackups(options),
     credentials: readInfrastructureCredentialStatus(options),
+    governance: readInfrastructureGovernance(options),
     safety: readInfrastructureSafety(options),
     actionReceipts: readInfrastructureActionReceipts(options),
     doctor: readInfrastructureDoctor(options),

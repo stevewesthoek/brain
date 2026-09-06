@@ -85,6 +85,8 @@ test('missing runtime state remains visible as UNKNOWN rather than synthesized h
   if (status.health.runtimeState !== 'ok') assert.deepEqual(status.health.observations, []);
   if (status.incidents.runtimeState !== 'ok') assert.deepEqual(status.incidents.incidents, []);
   if (status.actionReceipts.runtimeState !== 'ok') assert.deepEqual(status.actionReceipts.receipts, []);
+  assert.ok(['ok', 'missing', 'invalid'].includes(status.health.credentialHealth.runtimeState));
+  if (status.health.credentialHealth.runtimeState !== 'ok') assert.deepEqual(status.health.credentialHealth.evaluations, []);
 });
 
 test('credential surface is metadata only across shared status and CLI', () => {
