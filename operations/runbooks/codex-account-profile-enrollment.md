@@ -227,6 +227,15 @@ profile-scoped clear-stale --execute --confirm path after the recorded PID is
 proven dead. That command never kills a process. The shared/default root and
 WebGPT application homes require separate maintenance contracts.
 
+Account observation is isolated from target runtime state. Codex app-server
+starts in an ephemeral shadow root because startup initializes local SQLite/WAL
+files. If a target file-mode `auth.json` exists, it is exposed only as an
+application-consumed symlink; on macOS, `/usr/bin/sandbox-exec` denies writes
+to the target root. The observer reports `targetRootMutation=false` and cleans
+the shadow root after the bounded `account/read` request. It does not make the
+shared/default root writable or turn authenticated status into account
+attribution without private matching or human attestation.
+
 ## Related contracts
 
 - operations/specs/infrastructure-identity-access-v1.schema.json

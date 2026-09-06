@@ -68,8 +68,9 @@ or config files. This was a real non-secret mutation-contract defect, not a
 credential exposure. All handles were confirmed closed and the exact residue
 was moved recoverably to
 `/Users/Office/.brain/observer-quarantine/codex-app-server-20260906/`.
-Observer version 1.1.0 now uses an ephemeral shadow root; a real disposable
-subprocess probe confirmed the target root remained unchanged.
+Observer version 1.1.0 now uses an ephemeral shadow root and, on macOS, a
+write-denying sandbox for the target root; real disposable subprocess probes
+confirmed both the target directory and auth bytes remained unchanged.
 
 The next step is a human-operated official login, one account at a time,
 followed by private identity confirmation, profile-specific checks, complete
