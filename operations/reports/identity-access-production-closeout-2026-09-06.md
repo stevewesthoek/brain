@@ -4,9 +4,9 @@
 admission, canonical runtime placement, and final application acceptance remain
 open gates.
 
-**Canonical comparison:** `main` at
-`f220133d3f288c2169091d303d2bb92a318399c2`, equal to `origin/main` after the
-recovery-boundary, residual-ref, and external-validation closeout commits.
+**Canonical comparison:** the clean integration checkout is on `main` and
+equals `origin/main`; the branch/ref equality from the latest verification is
+the authoritative source, rather than a hash embedded in this report.
 
 **Safety:** no OAuth value, authentication-file content, cookie, browser
 storage, Keychain value, API key, authorization header, WebGPT source, MCP
