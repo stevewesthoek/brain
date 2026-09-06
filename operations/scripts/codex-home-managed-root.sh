@@ -14,6 +14,8 @@ set -euo pipefail
 #
 # Commands:
 #   check    Read-only validation.
+#   ownership-preflight
+#            Read-only ownership check without requiring process quiescence.
 #   preflight Read-only approval check for a controlled repair.
 #   repair   Create/repair the managed links inside a real ~/.codex directory.
 #   migrate  Copy a legacy whole-directory symlink into a real ~/.codex and
@@ -1217,6 +1219,10 @@ case "$COMMAND" in
     validate_sources
     check_managed_layout
     ;;
+  ownership-preflight)
+    validate_sources
+    configuration_ownership_preflight repair
+    ;;
   preflight)
     preflight_repair
     ;;
@@ -1231,7 +1237,7 @@ case "$COMMAND" in
     rollback_layout
     ;;
   *)
-    say "Usage: $0 {check|preflight|repair|migrate|rollback}"
+    say "Usage: $0 {check|ownership-preflight|preflight|repair|migrate|rollback}"
     exit 2
     ;;
 esac

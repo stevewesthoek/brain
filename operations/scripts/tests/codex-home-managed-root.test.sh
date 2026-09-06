@@ -539,6 +539,21 @@ fi
 grep -Fq 'shared/default native Codex root' "$SHARED_POLICY_OUTPUT" || fail "shared/default policy reason was not reported"
 pass "shared/default root rejects generic repair before mutation"
 
+SHARED_OWNERSHIP_OUTPUT="$SHARED_POLICY_ROOT/ownership-output"
+if (
+  unset CODEX_HOME
+  HOME="$SHARED_POLICY_ROOT/home" \
+    BRAIN_REPO="$SHARED_POLICY_ROOT/brain" \
+    CONFIGS_DIR="$SHARED_POLICY_ROOT/brain/operations/system-configs" \
+    BRAIN_AI_DIR="$SHARED_POLICY_ROOT/brain/ai" \
+    CODEX_HOME_TEST_MODE=0 \
+    bash "$MANAGER" ownership-preflight
+) >"$SHARED_OWNERSHIP_OUTPUT" 2>&1; then
+  fail "shared/default root accepted ownership preflight outside test mode"
+fi
+grep -Fq 'shared/default native Codex root' "$SHARED_OWNERSHIP_OUTPUT" || fail "ownership preflight did not report shared/default policy reason"
+pass "ownership preflight refuses the shared/default root before shutdown"
+
 WEBGPT_POLICY_ROOT="$TEST_ROOT/webgpt-policy"
 create_brain_fixture "$WEBGPT_POLICY_ROOT"
 mkdir -p "$WEBGPT_POLICY_ROOT/home/.codex" "$WEBGPT_POLICY_ROOT/home/.codex-chatgpt-web/codex"
