@@ -7,7 +7,7 @@ set -euo pipefail
 # LEGACY EXCEPTIONAL RECOVERY ONLY. The runtime-profile manager, account
 # switching, onboarding, and credential-health workflows never invoke this
 # script. It stops
-# ChatGPT/Codex, Computer Use, Codex-owned helper processes, Codex-related
+# ChatGPT/Codex, Computer Use (including its lock-screen guardian), Codex-owned helper processes, Codex-related
 # browser extension hosts, and user-owned SSH clients used for remote work.
 # ChatGPTHelper and ssh-agent are deliberately excluded.
 #
@@ -93,7 +93,7 @@ target_processes() {
       lower = tolower(cmd)
       if (cmd ~ /^\/Applications\/ChatGPT\.app\//) return "ChatGPT application"
       if (cmd ~ /^\/Applications\/Codex\.app\//) return "Codex application"
-      if (cmd ~ /\/Codex Computer Use\.app\// || cmd ~ /SkyComputerUse(Client|Service)/) return "Computer Use"
+      if (cmd ~ /\/Codex Computer Use\.app\// || cmd ~ /SkyComputerUse(Client|Service)/ || lower ~ /cualockscreenguardian/) return "Computer Use"
       if (cmd ~ /\/codex-code-mode-host([[:space:]]|$)/) return "Codex code-mode host"
       if (cmd ~ /\/cua_node\/bin\/node_repl([[:space:]]|$)/) return "Codex node_repl"
       if (lower ~ /chatgpt for chrome chrome-extension:\/\//) return "Codex browser extension host"
@@ -107,6 +107,20 @@ target_processes() {
       if (why != "") print $1 "\t" why
     }
   '
+}
+
+# A PID can be reused between the discovery snapshot and a signal. Reclassify
+# it immediately before signaling so a recycled PID cannot receive a signal
+# intended for a Codex-owned process.
+is_current_target() {
+  local expected_pid="$1" expected_reason="$2" pid reason
+  while IFS=$'\t' read -r pid reason; do
+    [ -n "$pid" ] || continue
+    if [ "$pid" = "$expected_pid" ] && [ "$reason" = "$expected_reason" ]; then
+      return 0
+    fi
+  done < <(target_processes)
+  return 1
 }
 
 print_targets() {
@@ -132,6 +146,10 @@ term_targets() {
   local pid reason
   while IFS=$'\t' read -r pid reason; do
     [ -n "$pid" ] || continue
+    if ! is_current_target "$pid" "$reason"; then
+      say "SKIP: PID $pid changed or exited before TERM — $reason"
+      continue
+    fi
     if [ "$DRY_RUN" -eq 1 ]; then
       say "DRY RUN: would request TERM for PID $pid — $reason"
     elif kill -TERM "$pid" 2>/dev/null; then
@@ -160,6 +178,10 @@ force_targets() {
   local pid reason
   while IFS=$'\t' read -r pid reason; do
     [ -n "$pid" ] || continue
+    if ! is_current_target "$pid" "$reason"; then
+      say "SKIP: PID $pid changed or exited before KILL — $reason"
+      continue
+    fi
     if kill -KILL "$pid" 2>/dev/null; then
       say "FORCE: sent KILL to PID $pid — $reason"
     else

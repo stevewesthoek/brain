@@ -33,6 +33,7 @@ cat > "$TEST_ROOT/affected.ps" <<'EOF'
 100 1 Office /Applications/ChatGPT.app/Contents/MacOS/ChatGPT
 101 1 Office /usr/bin/ssh office
 102 1 Office /opt/homebrew/bin/codex app-server --listen
+106 1 Office /Applications/Codex Computer Use.app/Contents/MacOS/CUALockScreenGuardian
 103 1 Office Contents/Resources/ChatGPTHelper
 104 1 Office /usr/bin/ssh-agent -l
 105 1 Office /usr/bin/Terminal
@@ -50,6 +51,7 @@ set -e
 assert_contains "$affected_output" "PID 100 — ChatGPT application"
 assert_contains "$affected_output" "PID 101 — user-owned SSH session"
 assert_contains "$affected_output" "PID 102 — Codex app-server"
+assert_contains "$affected_output" "PID 106 — Computer Use"
 assert_not_contains "$affected_output" "PID 103"
 assert_not_contains "$affected_output" "PID 104"
 printf '[PASS] dry-run identifies only the scoped Codex and SSH processes\n'
