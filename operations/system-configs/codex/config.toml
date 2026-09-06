@@ -17,6 +17,7 @@ service_tier = "default"
 [mcp_servers.stitch]
 command = "npx"
 args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
+startup_timeout_sec = 120
 
 [mcp_servers.stitch.env]
 DOTENV_CONFIG_QUIET = "true"
@@ -55,9 +56,6 @@ multi_agent = true
 js_repl = false
 
 [plugins."canva@openai-curated"]
-enabled = true
-
-[plugins."stripe@openai-curated"]
 enabled = true
 
 [plugins."github@openai-curated"]
