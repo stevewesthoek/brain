@@ -12,8 +12,8 @@ written:
 
 | Item | Current state |
 |---|---|
-| `origin/main` | `6fc645036d2d1617e952e05e6087f60c580a6f78` |
-| clean local `main` | `6fc645036d2d1617e952e05e6087f60c580a6f78` |
+| `origin/main` | `f220133d3f288c2169091d303d2bb92a318399c2` |
+| clean local `main` | `f220133d3f288c2169091d303d2bb92a318399c2` |
 | canonical integration checkout | `/Users/Office/Repos/stevewesthoek/brain-main-integration-2026-09-01` |
 | canonical checkout | clean, `main...origin/main` |
 | active historical checkout | `/Users/Office/Repos/stevewesthoek/brain`, dirty, `codex/cloudflare-tooling-normalization` |

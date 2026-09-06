@@ -5,8 +5,8 @@ admission, canonical runtime placement, and final application acceptance remain
 open gates.
 
 **Canonical comparison:** `main` at
-`6fc645036d2d1617e952e05e6087f60c580a6f78`, equal to `origin/main` after the
-recovery-boundary and residual-ref closeout commits.
+`f220133d3f288c2169091d303d2bb92a318399c2`, equal to `origin/main` after the
+recovery-boundary, residual-ref, and external-validation closeout commits.
 
 **Safety:** no OAuth value, authentication-file content, cookie, browser
 storage, Keychain value, API key, authorization header, WebGPT source, MCP
@@ -84,6 +84,23 @@ surfaces. The native profile manager does not target the WebGPT repository or
 application home. MCP authorization remains owned by the MCP/application
 surface; the `codex_apps` 401 and Stitch timeout are not repaired by native
 profile enrollment. No MCP state was changed in this pass.
+
+### Current WebGPT route observation
+
+The live WebGPT production runtime was observed without changing it. The
+loopback Responses bridge was listening and the launcher-owned tunnel reported
+healthy/ready. The WebGPT doctor nevertheless returned `NOT_READY` because its
+embedded launcher browser session could not be verified while the active
+Codex/ChatGPT task was using that browser; connector attachment therefore
+remains unproven in this observation. The live native configuration still
+contains WebGPT's managed `openai_base_url` route. This is intentional current
+integration state, not proof of native-profile independence.
+
+Accordingly, the required independence gate remains open: a future externally
+controlled maintenance window must prove that a dedicated native Codex profile
+works with WebGPT stopped, while WebGPT continues to work from its own home and
+browser/session boundary. This closeout does not remove or rewrite the live
+route.
 
 ## Deterministic verification
 
