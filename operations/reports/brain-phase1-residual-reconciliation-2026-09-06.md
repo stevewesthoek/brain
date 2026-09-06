@@ -57,6 +57,24 @@ Disposition:
 - branch retirement is deferred until the active Codex task is stopped and
   every residual path has an explicit disposition.
 
+The complete dirty-path ledger for this checkout is:
+
+| Paths | Disposition |
+|---|---|
+| `00-current-context.md`, `00-memory-map.md`, `ai/README.md`, `ai/policy/brain-module-onboarding.md`, `ai/skills/custom/apify/apify-multi-cli-wrapper.sh` | **PROTECT — user-owned shared AI-system work; review separately from I&A.** |
+| `operations/README.md`, `operations/decision-log.md`, `operations/infrastructure/CLI_ACCESS_REPAIR.md`, `operations/infrastructure/FAMILY_FINANCE_LOCAL_ONLY_DIRECTIVE.md`, `operations/infrastructure/catalog/README.md`, `operations/infrastructure/infra.md`, `operations/infrastructure/scheduler-inventory.md` | **PROTECT — operational documentation/state; do not merge wholesale.** |
+| `operations/reports/mru0-p3-25-5-operational-cockpit-acceptance-2026-08-23.md`, `operations/runbooks/README.md`, `operations/runbooks/infinite-brain-roadmap-status.md`, `operations/runbooks/mcp-centralization.md`, `operations/runbooks/open-design-optional-design-surface.md`, `operations/runbooks/orchestrators-reference.md`, `operations/runbooks/skill-profile-onboarding.md`, `operations/runbooks/supabase.md` | **PROTECT — report/runbook changes; reconcile by topic and provenance.** |
+| `operations/specs/infinite-brain-philosophy.md`, `operations/specs/infinite-brain-strategy.md`, `operations/specs/infrastructure-action-v1.schema.json`, `operations/specs/infrastructure-knowledge-health-plane-architecture.md`, `operations/specs/infrastructure-knowledge-health-plane-implementation-plan.md`, `operations/specs/infrastructure-knowledge-health-plane-roadmap.md` | **PROTECT — architecture/spec changes; require separate design review.** |
+| `operations/system-configs/bin/open-design`, `operations/system-configs/claude/settings.json`, `operations/system-configs/gemini/antigravity/skills` | **PROTECT — high-impact global configuration; no automatic integration.** |
+| `projects/brain-console/tsconfig.tsbuildinfo`, `tools/firecrawl/logs/firecrawl.log` | **PRESERVE OUTSIDE SOURCE — generated/build/log artifacts.** |
+| `tools/README.md` | **PROTECT — shared tooling documentation; reconcile by exact change.** |
+| `docs/migrations/buildflow-to-workbench-identity-mapping.md`, `operations/specs/brain-console-2-product-spec.md` | **PROTECT — untracked user-authored design/documentation; review separately.** |
+| `operations/reports/brain-console-2-deep-audit-2026-09-04.md`, `operations/reports/brain-console-2-modernization-roadmap.md`, `operations/reports/brain-repository-branch-architecture-assessment-2026-09-06.md`, `operations/reports/dokploy-upgrade-2026-09-03.md`, `operations/reports/ikhp-live-codex-webgpt-v5.0.3-recovery-2026-09-05.md`, `operations/reports/mru0-p3-26-friction-log-2026-08-24.md`, `operations/reports/mru0-p3-26-improvement-candidates-2026-08-24.md`, `operations/reports/mru0-p3-26-operational-usage-report-2026-08-24.md` | **PRESERVE AS EVIDENCE — integrate only as reviewed historical reports.** |
+| `operations/scripts/codex-stop-and-repair.sh`, `operations/scripts/tests/codex-stop-and-repair.test.sh` | **PROTECT — credential/runtime-sensitive recovery tooling; not admitted until process targeting, force escalation, config ownership, and self-termination hazards are reviewed.** |
+
+No path in this ledger is classified `unknown`; `PROTECT` means preserved
+pending an explicit later review, not silently discarded.
+
 ### Video Orchestrator
 
 The committed `ed884b9e` change is a large branch-relative bundle despite its
