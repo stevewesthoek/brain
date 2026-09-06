@@ -5,7 +5,7 @@ admission, canonical runtime placement, and final application acceptance remain
 open gates.
 
 **Canonical comparison:** `main` at
-`d11703494f3fdee98812fa2e3235b13b5ede334a`, equal to `origin/main` at the
+`25fec44c5203aeb44a519f87ee8bf6893a67fb44`, equal to `origin/main` at the
 time of this report.
 
 **Safety:** no OAuth value, authentication-file content, cookie, browser
