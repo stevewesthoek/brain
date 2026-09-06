@@ -11,9 +11,24 @@
 | MCP Server | Status | Setup Location |
 |-----------|--------|-----------------|
 | **Google Stitch** | ✅ Active | `stitch/` — Centralized setup for all IDEs |
+| **Codebase Memory** | ✅ Brain-admitted | `codebase-memory-mcp/` — Structural navigation provider |
+| **Mind Context** | ✅ Brain-admitted | `mind-context/` — Read-only personal-context provider |
+| **Context Mode** | ✅ Client-configured | `context-mode/` — Claude/context-mode local provider |
 | **Workbench** | ✅ Active, Brain-scoped | `workbench/` — Centralized setup for all IDEs + admission registry |
 | **B1.0a Guarded Save-to-Mind** | Disabled compatibility source | `b1-0a-guarded-save-to-mind/` — retained for evidence, not an active mutation path |
 | **Open Design** | 📋 TBD | TBD — needs architecture decision |
+
+Codex-managed external integrations (including Stripe, GitHub, Gmail,
+Google Calendar, Google Drive, Slack, Canva, Documents, Spreadsheets, and
+other enabled plugins) are discovered from the configured Codex plugin
+surface. They are client-managed integrations, not Brain provider admissions;
+their connection and authentication status must be checked at runtime.
+
+For any natural-language request, use the shared query first:
+
+```bash
+node tools/discover-capabilities.mjs --query "<the user's request>"
+```
 
 ---
 
@@ -232,6 +247,7 @@ Follow this checklist:
   - [ ] `cursor-config.template.json` (if Cursor supports)
   - [ ] `mcp-http-config.template.json` (if direct HTTP is option)
 - [ ] Add an admission to `operations/specs/mcp-provider-admissions.json`
+- [ ] Ensure `node tools/discover-capabilities.mjs --query "<example request>" --kind mcp` returns the provider
 - [ ] Validate exact provider artifacts and scope
 - [ ] Generate a project registration; use the global Codex config only for separately admitted global providers
 - [ ] Create setup script: `setup-<server>-all-ides.sh` (optional)

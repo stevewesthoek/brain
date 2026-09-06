@@ -2,7 +2,11 @@
 set -euo pipefail
 
 ###############################################################################
-# Codex managed runtime root
+# Codex managed runtime root — exceptional legacy/shared-root maintenance only
+#
+# This script is not the normal runtime-profile manager and must not be used
+# for Account A/B enrollment, switching, credential health, or WebGPT routing.
+# Isolated profiles use their own CODEX_HOME and the Brain config materializer.
 #
 # Codex creates Unix sockets below $CODEX_HOME. On macOS, a whole-directory
 # symlink from ~/.codex to Brain resolves to a path that can exceed SUN_LEN.
@@ -10,6 +14,7 @@ set -euo pipefail
 #
 # Commands:
 #   check    Read-only validation.
+#   preflight Read-only approval check for a controlled repair.
 #   repair   Create/repair the managed links inside a real ~/.codex directory.
 #   migrate  Copy a legacy whole-directory symlink into a real ~/.codex and
 #            atomically switch it. Requires CONFIRM_CODEX_HOME_MIGRATION=1.
@@ -76,7 +81,7 @@ control_socket_has_owner() {
   local socket_path="$1"
   local lsof_bin
   lsof_bin="$(resolve_lsof_bin)" || return 2
-  "$lsof_bin" -nU -Fn 2>/dev/null | rg --fixed-strings --line-regexp "n$socket_path" >/dev/null
+  "$lsof_bin" -nU -Fn 2>/dev/null | grep --fixed-strings --line-regexp "n$socket_path" >/dev/null
 }
 
 resolve_link_target_abs() {
@@ -135,6 +140,15 @@ import tomllib
 
 def contains(actual, managed, path=()):
     if isinstance(managed, dict):
+        if not path:
+            managed = {
+                key: value for key, value in managed.items()
+                if key not in {
+                    'openai_base_url',
+                    'experimental_realtime_webrtc_call_base_url',
+                    'model',
+                }
+            }
         return isinstance(actual, dict) and all(
             key in actual and (
                 (not path and key == 'desktop')
@@ -153,6 +167,74 @@ except (OSError, tomllib.TOMLDecodeError):
     raise SystemExit(1)
 raise SystemExit(0 if contains(actual, managed) else 1)
 PY
+}
+
+is_shared_default_root() {
+  local default_root normalized_root
+  default_root="$(normalize_existing_path "$HOME_DIR/.codex")" || return 1
+  normalized_root="$(normalize_existing_path "$CODEX_HOME_DIR")" || return 1
+  [ "$normalized_root" = "$default_root" ]
+}
+
+# This is an adapter-level ownership gate, not a second ownership model. The
+# shared/default root is an application-owned legacy surface. A real repair or
+# migration must therefore stop before staging any generated output when the
+# WebGPT integration journal exists or when the target is the normal default
+# root. Test fixtures may opt into the synthetic legacy path only through the
+# test-only environment used by this repository's shell tests.
+configuration_ownership_preflight() {
+  local operation="${1:-repair}"
+  local current_config="$CODEX_HOME_DIR/config.toml"
+  local webgpt_home="${CODEX_CHATGPT_WEB_HOME:-$HOME_DIR/.codex-chatgpt-web}"
+
+  if is_shared_default_root && [ "${CODEX_HOME_TEST_MODE:-0}" -ne 1 ]; then
+    say "[FAIL] $CODEX_HOME_DIR is the shared/default native Codex root; generic $operation is forbidden."
+    say "       Use a dedicated Brain runtime profile or the separately approved shared-root maintenance protocol."
+    return 1
+  fi
+
+  if [ -e "$webgpt_home/codex/integration-journal.json" ] || [ -e "$webgpt_home/codex/integration-journal.recovery.json" ]; then
+    say "[FAIL] WebGPT integration journal claims ownership of the shared Codex route; generic $operation is forbidden."
+    say "       Use the Codex WebGPT adapter/recovery path and do not rewrite the journal here."
+    return 1
+  fi
+
+  if [ -L "$current_config" ]; then
+    say "[FAIL] Codex config is a symlink; semantic ownership is unresolved before $operation."
+    return 1
+  fi
+  if [ -e "$current_config" ] && ! python3 - "$current_config" "$CONFIGS_DIR/codex/config.toml" "$operation" <<'PY'
+import sys
+import tomllib
+from pathlib import Path
+
+try:
+    current = tomllib.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+    canonical = tomllib.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
+except (OSError, tomllib.TOMLDecodeError):
+    raise SystemExit(1)
+
+# These are semantic resources owned by the application/provider integration,
+# not by a physical config-file location. Their values are never printed.
+external_top_level = {
+    'openai_base_url',
+    'experimental_realtime_webrtc_call_base_url',
+    'model',
+}
+external_sections = sorted(
+    key for key in current
+    if key not in canonical
+    and key in {'agents', 'features', 'hooks', 'marketplaces', 'plugins', 'projects', 'tui', 'desktop', 'mcp_servers'}
+)
+preserved_top_level = sorted(key for key in current if key not in canonical or key in external_top_level)
+print(f"OWNERSHIP_PLAN operation={sys.argv[3]} resource=codex.config action=preserve external_top_level={len(preserved_top_level)} external_sections={len(external_sections)}")
+raise SystemExit(0)
+PY
+  then
+    say "[FAIL] Codex config ownership plan could not parse the current and canonical config before $operation."
+    return 1
+  fi
+  say "[OK] configuration ownership plan is resolved before $operation; external resources will be preserved, not regenerated."
 }
 
 preserve_app_local_toml_sections() {
@@ -221,6 +303,28 @@ def append_to_section(text, section_name, lines):
         return text.replace(block, replacement, 1)
     return text
 
+def top_level_assignments(text):
+    assignments = {}
+    for line in text.splitlines(keepends=True):
+        if line.lstrip().startswith('['):
+            break
+        match = re.match(r'^\s*([A-Za-z0-9_-]+)\s*=', line)
+        if match:
+            assignments[match.group(1)] = line
+    return assignments
+
+def replace_or_insert_top_level(text, key, line):
+    lines = text.splitlines(keepends=True)
+    for index, current_line in enumerate(lines):
+        if current_line.lstrip().startswith('['):
+            lines.insert(index, line)
+            return ''.join(lines)
+        if re.match(rf'^\s*{re.escape(key)}\s*=', current_line):
+            lines[index] = line
+            return ''.join(lines)
+    lines.append(line)
+    return ''.join(lines)
+
 current_desktop = (
     [block for name, block in sections(current_text) if is_desktop_section(name)]
     if current_data.get('desktop') != staged_data.get('desktop')
@@ -249,15 +353,28 @@ if isinstance(current_node_repl_env, dict) and isinstance(staged_node_repl_env, 
         and key not in staged_node_repl_env
     ]
     staged_text = append_to_section(staged_text, 'mcp_servers.node_repl.env', missing_node_repl_env)
+
+# Preserve semantic top-level resources that belong to the application,
+# provider, or user even when the canonical Brain file also has a same-named
+# key. The route/model set is intentionally explicit and can be extended only
+# by an ownership-contract change with a regression test.
+APP_LOCAL_TOP_LEVEL_KEYS = {
+    'openai_base_url',
+    'experimental_realtime_webrtc_call_base_url',
+    'model',
+}
+current_top_level = top_level_assignments(current_text)
+staged_top_level = top_level_assignments(staged_text)
+for key, line in current_top_level.items():
+    if key in APP_LOCAL_TOP_LEVEL_KEYS and key in staged_top_level and line != staged_top_level[key]:
+        staged_text = replace_or_insert_top_level(staged_text, key, line)
+    elif key not in staged_top_level:
+        staged_text = replace_or_insert_top_level(staged_text, key, line)
+
 staged_names = {name for name, _ in sections(staged_text)}
 preserved = [
     block for name, block in sections(current_text)
-    if (
-        name.startswith('marketplaces.')
-        or name == 'tui.model_availability_nux'
-        or name in APP_LOCAL_PLUGIN_SECTION_NAMES
-    )
-    and name not in staged_names
+    if name not in staged_names
 ]
 if preserved:
     staged_text = staged_text.rstrip() + '\n\n# Preserved app-local upgrade state; not Git-owned.\n' + '\n'.join(
@@ -653,6 +770,7 @@ check_copy_space() {
 
 repair_layout() {
   validate_sources
+  configuration_ownership_preflight repair || die "configuration ownership plan blocked repair before mutation"
 
   if [ -L "$CODEX_HOME_DIR" ]; then
     die "$CODEX_HOME_DIR is a whole-directory symlink. Run the guarded migrate command instead."
@@ -703,6 +821,113 @@ repair_layout() {
   if [ "$DRY_RUN" -eq 0 ]; then
     check_managed_layout
   fi
+}
+
+preflight_repair() {
+  local failures=0
+  local source
+
+  for source in \
+    "$CONFIGS_DIR/codex/AGENTS.md" \
+    "$CONFIGS_DIR/codex/RTK.md" \
+    "$CONFIGS_DIR/codex/rules/default.rules" \
+    "$BRAIN_AI_DIR/skills/active" \
+    "$CONFIGS_DIR/codex/config.toml"; do
+    if [ -e "$source" ]; then
+      continue
+    fi
+    say "NOT OK: required managed source is missing: $source"
+    failures=$((failures + 1))
+  done
+
+  if [ "$failures" -eq 0 ]; then
+    if python3 - "$CONFIGS_DIR/codex/config.toml" <<'PY'
+import sys
+import tomllib
+from pathlib import Path
+
+try:
+    data = tomllib.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+    timeout = data['mcp_servers']['stitch']['startup_timeout_sec']
+except (KeyError, OSError, TypeError, tomllib.TOMLDecodeError):
+    raise SystemExit(1)
+raise SystemExit(0 if isinstance(timeout, int) and timeout >= 60 else 1)
+PY
+    then
+      say "OK: canonical Codex config is valid and Stitch has a safe startup timeout."
+    else
+      say "NOT OK: canonical Codex config is invalid or Stitch startup_timeout_sec is missing/too low."
+      failures=$((failures + 1))
+    fi
+  fi
+
+  if [ -L "$CODEX_HOME_DIR" ]; then
+    say "NOT OK: $CODEX_HOME_DIR is a whole-directory symlink; use migrate, not repair."
+    failures=$((failures + 1))
+  elif [ -e "$CODEX_HOME_DIR" ] && [ ! -d "$CODEX_HOME_DIR" ]; then
+    say "NOT OK: $CODEX_HOME_DIR exists but is not a directory."
+    failures=$((failures + 1))
+  else
+    say "OK: Codex home has a repairable directory layout."
+  fi
+
+  if codex_processes_are_running; then
+    say "NOT OK: Codex/ChatGPT or Computer Use is still running."
+    failures=$((failures + 1))
+  else
+    say "OK: no protected Codex process is running."
+  fi
+
+  local current_config="$CODEX_HOME_DIR/config.toml"
+  if [ -e "$current_config" ]; then
+    if [ -L "$current_config" ] || ! python3 - "$current_config" <<'PY'
+import sys
+import tomllib
+from pathlib import Path
+
+try:
+    tomllib.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+except (OSError, tomllib.TOMLDecodeError):
+    raise SystemExit(1)
+PY
+    then
+      say "NOT OK: live Codex config is not a valid physical TOML file: $current_config"
+      failures=$((failures + 1))
+    else
+      if generated_copy_contains_managed_source "$current_config" "$CONFIGS_DIR/codex/config.toml"; then
+        say "OK: live Codex config already contains the canonical managed values."
+      else
+        say "OK: live Codex config requires repair; the old file will be backed up."
+      fi
+      if grep -q '^\[hooks\.state' "$current_config"; then
+        say "OK: existing hook trust state detected and the repair path preserves it."
+      fi
+    fi
+  else
+    say "OK: no live Codex config exists; repair will create it."
+  fi
+
+  if ! configuration_ownership_preflight repair; then
+    failures=$((failures + 1))
+  fi
+
+  local backup_parent="$HOME_DIR/.brain-configs-backups"
+  if [ -e "$backup_parent" ] && { [ ! -d "$backup_parent" ] || [ ! -w "$backup_parent" ]; }; then
+    say "NOT OK: repair backup location is not writable: $backup_parent"
+    failures=$((failures + 1))
+  elif [ ! -e "$backup_parent" ] && [ ! -w "$HOME_DIR" ]; then
+    say "NOT OK: repair backup parent is not writable: $HOME_DIR"
+    failures=$((failures + 1))
+  else
+    say "OK: repair backup location is writable."
+  fi
+
+  if [ "$failures" -eq 0 ]; then
+    say "OK: controlled Codex repair is approved to run."
+    return 0
+  fi
+  say "NOT OK: controlled Codex repair is blocked ($failures check(s) failed)."
+  return 1
 }
 
 copy_directory() {
@@ -844,6 +1069,7 @@ PRAGMA wal_checkpoint(TRUNCATE);
 
 migrate_layout() {
   validate_sources
+  configuration_ownership_preflight migrate || die "configuration ownership plan blocked migration before mutation"
 
   [ "${CONFIRM_CODEX_HOME_MIGRATION:-0}" -eq 1 ] || {
     die "Migration requires CONFIRM_CODEX_HOME_MIGRATION=1. Run check first and close Codex/ChatGPT."
@@ -991,6 +1217,9 @@ case "$COMMAND" in
     validate_sources
     check_managed_layout
     ;;
+  preflight)
+    preflight_repair
+    ;;
   repair)
     repair_layout
     ;;
@@ -1002,7 +1231,7 @@ case "$COMMAND" in
     rollback_layout
     ;;
   *)
-    say "Usage: $0 {check|repair|migrate|rollback}"
+    say "Usage: $0 {check|preflight|repair|migrate|rollback}"
     exit 2
     ;;
 esac

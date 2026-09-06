@@ -32,7 +32,7 @@ create_brain_fixture() {
     "$configs_dir/codex/rules" \
     "$brain_ai_dir/skills/active"
   printf 'fixture agents\n' > "$configs_dir/codex/AGENTS.md"
-  printf '[mcp_servers.node_repl.env]\nBROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"\nNODE_REPL_TRUSTED_CODE_PATHS = "/Users/Office/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"\n\n[shell_environment_policy.set]\nCODEX_HOME = "/Users/Office/.codex"\n\n[desktop]\nconversationDetailMode = "managed-default"\n\n[desktop.appearanceLightChromeTheme]\nfixtureAccent = "managed-default"\n' > "$configs_dir/codex/config.toml"
+  printf 'model = "gpt-5.6-sol"\n[mcp_servers.stitch]\ncommand = "npx"\nargs = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]\nstartup_timeout_sec = 120\n\n[mcp_servers.node_repl.env]\nBROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"\nNODE_REPL_TRUSTED_CODE_PATHS = "/Users/Office/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"\n\n[shell_environment_policy.set]\nCODEX_HOME = "/Users/Office/.codex"\n\n[desktop]\nconversationDetailMode = "managed-default"\n\n[desktop.appearanceLightChromeTheme]\nfixtureAccent = "managed-default"\n' > "$configs_dir/codex/config.toml"
   printf 'fixture rtk\n' > "$configs_dir/codex/RTK.md"
   printf 'fixture rules\n' > "$configs_dir/codex/rules/default.rules"
   printf 'fixture skill\n' > "$brain_ai_dir/skills/active/example.md"
@@ -408,6 +408,9 @@ printf 'local custom agents\n' > "$REPAIR_ROOT/home/.codex/AGENTS.md"
 
 run_manager "$REPAIR_ROOT" repair >/dev/null
 run_manager "$REPAIR_ROOT" check >/dev/null
+PREFLIGHT_OUTPUT="$(run_manager "$REPAIR_ROOT" preflight 2>&1)" || fail "preflight rejected a repairable fixture"
+grep -Fq 'OK: controlled Codex repair is approved to run.' <<<"$PREFLIGHT_OUTPUT" || fail "preflight did not report approval"
+pass "preflight reports a repairable Codex layout as OK"
 assert_managed_link \
   "$REPAIR_ROOT/home/.codex/AGENTS.md" \
   "$REPAIR_ROOT/brain/operations/system-configs/codex/AGENTS.md"
@@ -434,6 +437,14 @@ path = Path(sys.argv[1])
 text = path.read_text()
 lines = text.splitlines(keepends=True)
 for index, line in enumerate(lines):
+    if line.startswith('model = '):
+        lines[index] = 'model = "chatgpt-web/high"\n'
+        break
+else:
+    raise SystemExit('model fixture key not found')
+lines.insert(0, 'openai_base_url = "http://127.0.0.1:17841/v1"\n')
+lines.insert(1, 'experimental_realtime_webrtc_call_base_url = "https://chatgpt.com/backend-api/codex"\n')
+for index, line in enumerate(lines):
     if line.startswith('NODE_REPL_TRUSTED_CODE_PATHS = '):
         lines[index:index + 1] = [
             line,
@@ -446,6 +457,8 @@ else:
     raise SystemExit('trusted code path fixture key not found')
 text = ''.join(lines)
 text += '\n[plugins."sites@openai-bundled"]\nenabled = true\n'
+text += '\n[hooks.state]\n\n[hooks.state."/fixture/hooks.json:pre_tool_use:0:0"]\ntrusted_hash = "sha256:fixture-hook-hash"\n'
+text += '\n[third_party.runtime]\nowner = "external-fixture"\nsetting = "must-survive"\n'
 path.write_text(text)
 PY
 sed -i '' 's/conversationDetailMode = "managed-default"/conversationDetailMode = "app-local"/' "$REPAIR_ROOT/home/.codex/config.toml"
@@ -453,6 +466,17 @@ sed -i '' 's/fixtureAccent = "managed-default"/fixtureAccent = "app-local-nested
 run_manager "$REPAIR_ROOT" check >/dev/null
 grep -Fq 'fixture-upgrade' "$REPAIR_ROOT/home/.codex/config.toml" || fail "check removed app-derived upgrade state"
 pass "check accepts app-derived additions and desktop overrides while enforcing the managed subset"
+
+HOOK_STATE_SNAPSHOT="$REPAIR_ROOT/hook-state-before.json"
+python3 - "$REPAIR_ROOT/home/.codex/config.toml" "$HOOK_STATE_SNAPSHOT" <<'PY'
+import json
+import sys
+import tomllib
+from pathlib import Path
+
+data = tomllib.loads(Path(sys.argv[1]).read_text())
+Path(sys.argv[2]).write_text(json.dumps(data.get('hooks', {}).get('state', {}), sort_keys=True))
+PY
 
 sed -i '' "s#$REPAIR_ROOT/home/.codex#$REPAIR_ROOT/wrong-codex#" "$REPAIR_ROOT/home/.codex/config.toml"
 if run_manager "$REPAIR_ROOT" check >/dev/null 2>&1; then
@@ -471,11 +495,63 @@ grep -Fq 'BROWSER_USE_CODEX_APP_VERSION = "fixture-app-version"' "$REPAIR_ROOT/h
 grep -Fq 'BROWSER_USE_TINYSKY_ENABLED = "0"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped app-local TinySky setting"
 grep -Fq 'NODE_REPL_TRUSTED_SERVICES = "fixture-trusted-services"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped app-local trusted services"
 grep -Fq '[plugins."sites@openai-bundled"]' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the installed app-local Sites plugin"
+grep -Fq '[hooks.state."/fixture/hooks.json:pre_tool_use:0:0"]' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped Codex hook trust state"
+grep -Fq 'trusted_hash = "sha256:fixture-hook-hash"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the trusted hook hash"
 grep -Fq 'conversationDetailMode = "app-local"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped an app-local desktop override"
 grep -Fq 'fixtureAccent = "app-local-nested"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped a nested app-local desktop override"
+grep -Fq 'openai_base_url = "http://127.0.0.1:17841/v1"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the WebGPT-owned route"
+grep -Fq 'experimental_realtime_webrtc_call_base_url = "https://chatgpt.com/backend-api/codex"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the WebGPT-owned realtime route"
+grep -Fq 'model = "chatgpt-web/high"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped the application-selected model"
+grep -Fq '[third_party.runtime]' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped an unknown third-party section"
+grep -Fq 'setting = "must-survive"' "$REPAIR_ROOT/home/.codex/config.toml" || fail "repair dropped unknown third-party configuration"
+python3 - "$REPAIR_ROOT/home/.codex/config.toml" "$HOOK_STATE_SNAPSHOT" <<'PY'
+import json
+import sys
+import tomllib
+from pathlib import Path
+
+data = tomllib.loads(Path(sys.argv[1]).read_text())
+actual = json.dumps(data.get('hooks', {}).get('state', {}), sort_keys=True)
+expected = Path(sys.argv[2]).read_text()
+if actual != expected:
+    raise SystemExit('hook trust state changed during unrelated repair')
+PY
 UPGRADE_BACKUP_COUNT="$(find "$REPAIR_ROOT/home/.brain-configs-backups" -type f -path '*/replaced-managed-entries/config.toml' | wc -l | tr -d ' ')"
 [ "$UPGRADE_BACKUP_COUNT" -ge 1 ] || fail "repair did not preserve the complete prior generated config"
 pass "repair rejects changed managed values and preserves prior config plus app-local desktop and marketplace state"
+
+SHARED_POLICY_ROOT="$TEST_ROOT/shared-policy"
+create_brain_fixture "$SHARED_POLICY_ROOT"
+mkdir -p "$SHARED_POLICY_ROOT/home/.codex"
+SHARED_POLICY_OUTPUT="$SHARED_POLICY_ROOT/output"
+if (
+  unset CODEX_HOME
+  HOME="$SHARED_POLICY_ROOT/home" \
+    BRAIN_REPO="$SHARED_POLICY_ROOT/brain" \
+    CONFIGS_DIR="$SHARED_POLICY_ROOT/brain/operations/system-configs" \
+    BRAIN_AI_DIR="$SHARED_POLICY_ROOT/brain/ai" \
+    CODEX_HOME_TEST_MODE=0 \
+    CODEX_HOME_SKIP_PROCESS_CHECK=0 \
+    bash "$MANAGER" repair
+) >"$SHARED_POLICY_OUTPUT" 2>&1; then
+  fail "shared/default root accepted generic repair outside test mode"
+fi
+grep -Fq 'shared/default native Codex root' "$SHARED_POLICY_OUTPUT" || fail "shared/default policy reason was not reported"
+pass "shared/default root rejects generic repair before mutation"
+
+WEBGPT_POLICY_ROOT="$TEST_ROOT/webgpt-policy"
+create_brain_fixture "$WEBGPT_POLICY_ROOT"
+mkdir -p "$WEBGPT_POLICY_ROOT/home/.codex" "$WEBGPT_POLICY_ROOT/home/.codex-chatgpt-web/codex"
+printf 'webgpt-owned config sentinel\n' > "$WEBGPT_POLICY_ROOT/home/.codex/config.toml"
+printf '{"schemaVersion":"fixture"}\n' > "$WEBGPT_POLICY_ROOT/home/.codex-chatgpt-web/codex/integration-journal.json"
+WEBGPT_CONFIG_DIGEST="$(shasum -a 256 "$WEBGPT_POLICY_ROOT/home/.codex/config.toml")"
+WEBGPT_POLICY_OUTPUT="$WEBGPT_POLICY_ROOT/output"
+if run_manager "$WEBGPT_POLICY_ROOT" repair >"$WEBGPT_POLICY_OUTPUT" 2>&1; then
+  fail "generic repair accepted a WebGPT-owned integration journal"
+fi
+grep -Fq 'WebGPT integration journal claims ownership' "$WEBGPT_POLICY_OUTPUT" || fail "WebGPT journal policy reason was not reported"
+[ "$WEBGPT_CONFIG_DIGEST" = "$(shasum -a 256 "$WEBGPT_POLICY_ROOT/home/.codex/config.toml")" ] || fail "WebGPT journal refusal changed the config"
+pass "WebGPT journal blocks generic repair before mutation"
 
 PRESERVED_FILE_COUNT="$(find "$REPAIR_ROOT/home/.brain-configs-backups" -type f -path '*/replaced-managed-entries/AGENTS.md' | wc -l | tr -d ' ')"
 [ "$PRESERVED_FILE_COUNT" -eq 1 ] || fail "conflicting managed file was not preserved"

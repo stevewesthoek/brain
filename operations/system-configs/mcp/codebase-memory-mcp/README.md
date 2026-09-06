@@ -1,6 +1,6 @@
 # codebase-memory-mcp MCP Provider
 
-**Status:** candidate (B8.2A — pending rollout authorization)
+**Status:** Brain-admitted, active-local, read-only by default
 **Admission ID:** `codebase-memory-mcp-brain`
 **Version:** 0.9.0
 **Upstream:** https://github.com/DeusData/codebase-memory-mcp
