@@ -97,6 +97,10 @@ export function runCodexAuthProfileIsolationCheck({ executable = 'codex', config
   }
 }
 
+export function exitCodeForStatus(status) {
+  return status === 'OK' ? 0 : 1;
+}
+
 function main() {
   const result = runCodexAuthProfileIsolationCheck();
   console.log(`CODEX_AUTH_PROFILE_ISOLATION=${result.status}`);
@@ -108,6 +112,7 @@ function main() {
   if (result.reasons.length > 0) console.log(`REASONS=${result.reasons.join(',')}`);
   if (result.warnings.length > 0) console.log(`WARNINGS=${result.warnings.join(',')}`);
   console.log('RAW_SECRETS=none');
+  process.exitCode = exitCodeForStatus(result.status);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { evaluateCodexAuthProfileIsolation } from './check-codex-auth-profile-isolation.mjs';
+import { evaluateCodexAuthProfileIsolation, exitCodeForStatus } from './check-codex-auth-profile-isolation.mjs';
 
 const config = { state: 'confirmed', configuredCredentialStore: 'file', storageSelection: 'file' };
 const cleanModes = ['file', 'keyring', 'auto'].map((mode) => ({
@@ -31,4 +31,10 @@ test('auth profile check fails closed when storage mode or disposable probe is u
   assert.equal(result.status, 'NOT_OK');
   assert.ok(result.reasons.includes('storage_mode_unspecified'));
   assert.ok(result.reasons.includes('synthetic_storage_probe_failed'));
+});
+
+test('CLI status contract makes NOT_OK machine-failing', () => {
+  assert.equal(exitCodeForStatus('OK'), 0);
+  assert.equal(exitCodeForStatus('NOT_OK'), 1);
+  assert.equal(exitCodeForStatus('BLOCKED'), 1);
 });
