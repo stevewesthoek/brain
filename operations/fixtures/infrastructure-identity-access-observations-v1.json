@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-09-04T00:00:00Z",
+  "maxObservations": 100,
+  "maxAgeSeconds": 3600,
+  "observations": [
+    {
+      "observationId": "observation:provider-a.primary.healthy",
+      "subjectId": "account:provider-a.primary",
+      "subjectKind": "account",
+      "observedAt": "2026-09-04T00:00:00Z",
+      "freshness": "fresh",
+      "normalizedStatus": "healthy",
+      "detailedState": "verified_healthy",
+      "expectedPrincipalMatch": "verified",
+      "checks": [
+        {"checkCode":"secret_reference_available","outcome":"pass","evidenceSummary":"Synthetic secret reference is available to the verifier."},
+        {"checkCode":"authentication_accepted","outcome":"pass","evidenceSummary":"Synthetic provider accepted the authorization."},
+        {"checkCode":"principal_identity_observed","outcome":"pass","evidenceSummary":"Synthetic provider returned a principal identifier."},
+        {"checkCode":"expected_principal_matches","outcome":"pass","evidenceSummary":"Returned principal matches the enrolled account."},
+        {"checkCode":"scope_capability_matches","outcome":"pass","evidenceSummary":"Required synthetic capability is present."},
+        {"checkCode":"minimal_provider_capability","outcome":"pass","evidenceSummary":"Read-only identity capability probe succeeded."},
+        {"checkCode":"evidence_fresh","outcome":"pass","evidenceSummary":"Observation is inside its freshness deadline."}
+      ],
+      "conditionCodes": [],
+      "provenance": {"source":"ikhp-identity-access-verifier","readOnly":true,"authority":"derived-runtime"}
+    },
+    {
+      "observationId": "observation:provider-a.secondary.wrong-account",
+      "subjectId": "account:provider-a.secondary",
+      "subjectKind": "account",
+      "observedAt": "2026-09-04T00:00:00Z",
+      "freshness": "fresh",
+      "normalizedStatus": "unhealthy",
+      "detailedState": "wrong_account",
+      "expectedPrincipalMatch": "mismatched",
+      "checks": [
+        {"checkCode":"secret_reference_available","outcome":"pass","evidenceSummary":"Synthetic secret reference is available to the verifier."},
+        {"checkCode":"authentication_accepted","outcome":"pass","evidenceSummary":"Synthetic provider accepted the authorization."},
+        {"checkCode":"principal_identity_observed","outcome":"pass","evidenceSummary":"Synthetic provider returned a principal identifier."},
+        {"checkCode":"expected_principal_matches","outcome":"fail","evidenceSummary":"Returned principal does not match the enrolled account."},
+        {"checkCode":"scope_capability_matches","outcome":"unknown","evidenceSummary":"Capability evaluation is withheld after an identity mismatch."},
+        {"checkCode":"minimal_provider_capability","outcome":"unknown","evidenceSummary":"Capability evaluation is withheld after an identity mismatch."},
+        {"checkCode":"evidence_fresh","outcome":"pass","evidenceSummary":"Observation is inside its freshness deadline."}
+      ],
+      "conditionCodes": ["identity_wrong_account"],
+      "provenance": {"source":"ikhp-identity-access-verifier","readOnly":true,"authority":"derived-runtime"}
+    }
+  ]
+}

@@ -2,8 +2,29 @@
 
 **Phase:** 3C7–3C11 + Phase 3F Post-Cutover — Architecture Evidence-Provenance Audit and Correction Passes  
 **Created:** 2026-08-16  
-**Last updated:** 2026-08-26 (Azure Dokploy decommission and canonicalization)
+**Last updated:** 2026-09-04 (target workload cleanup)
 **Status:** COMPLETE — AWS Dokploy sole production authority; `vm-supabase` ACTIVE production in `supabase-azure`
+
+## Current Cleanup Delta — 2026-09-04
+
+The following exact target workloads were decommissioned after identity confirmation:
+
+- Dokploy application records and runtime services removed: BuildFlow, BuildFlow Staging, Cedula,
+  Vault Legal, Vault Legal API, and Egg Cooker.
+- Target Supabase logical databases removed: `cedula` and `vault_legal`. The shared `postgres`
+  database and retained `tenant_cedula` schema were not modified.
+- Target DNS records and target shared-tunnel ingress rules removed; shared tunnels and unrelated
+  ingress were preserved.
+- Target remote runtime artifacts, exact target images/volume, and identified local checkout
+  directories were removed. No broad Docker prune or unrelated service cleanup was performed.
+- GitHub remote repository deletion remains incomplete because the available GitHub credential
+  lacks repository-admin deletion permission. The nested `willchen96/mike.git` resolves to
+  `open-legal-products/mike` and was not deleted because the available access is not admin-capable.
+- Cloudflare R2 bucket `mike-demo` remains present because the available credentials did not
+  authorize bucket management and the app-scoped S3 operation was rejected. No R2 mutation was
+  performed.
+
+The dated evidence below remains historical and is not rewritten to erase prior observations.
 
 ## Purpose
 

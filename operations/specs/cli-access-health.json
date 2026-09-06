@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "statusContract": {
+    "installed": "The command resolves on PATH and is executable.",
+    "ready": "The configured safe probe succeeded without exposing output.",
+    "needs_user_action": "The command exists, but authentication, session, or provider access failed.",
+    "not_tested": "No safe probe is defined because invocation could load models, scan credentials, mutate state, or require task-specific input.",
+    "disabled": "The profile is retained for historical traceability but is not part of the active account set.",
+    "delegated": "The wrapper surface is tested, but provider authentication is checked by its parent provider entry."
+  },
+  "default": {
+    "probe": ["--version"],
+    "probeClass": "local-invocation",
+    "authMode": "not_applicable",
+    "acceptableExitCodes": [0]
+  },
+  "overrides": {
+    "aws-cli": {
+      "probe": ["sts", "get-caller-identity", "--output", "json"],
+      "probeClass": "authenticated-read",
+      "authMode": "required"
+    },
+    "azure-cli": {
+      "probe": ["account", "list", "--all", "--output", "json"],
+      "probeClass": "authenticated-read",
+      "authMode": "required"
+    },
+    "gcp-cli": {
+      "probe": ["auth", "list", "--format=json"],
+      "probeClass": "authenticated-read",
+      "authMode": "required"
+    },
+    "cloudflare-cli": {
+      "probe": ["prochat-provisioner", "verify"],
+      "probeClass": "authenticated-read",
+      "authMode": "required",
+      "credentialReference": "~/.config/cloudflare-ai/credentials/prochat-provisioner.env"
+    },
+    "hetzner-cli": {
+      "probe": ["server", "list", "--output", "json"],
+      "probeClass": "authenticated-read",
+      "authMode": "required"
+    },
+    "tailscale-cli": {
+      "probe": ["status", "--json"],
+      "probeClass": "session-read",
+      "authMode": "required"
+    },
+    "gh": {
+      "probe": ["auth", "status"],
+      "probeClass": "authenticated-read",
+      "authMode": "required"
+    },
+    "supabase-cli": {
+      "probe": ["projects", "list", "--output", "json"],
+      "probeClass": "authenticated-read",
+      "authMode": "required"
+    },
+    "dokploy-cli": {
+      "probe": ["project", "list"],
+      "probeClass": "authenticated-read",
+      "authMode": "required",
+      "envFile": "~/.config/dokploy/.env"
+    },
+    "dokploy-mcp": {
+      "probe": [],
+      "probeClass": "mcp-start",
+      "authMode": "required",
+      "envFile": "~/.config/dokploy/.env"
+    },
+    "stripe": {
+      "probe": ["version"],
+      "probeClass": "local-invocation",
+      "authMode": "required",
+      "profiles": [
+        {
+          "name": "prochat portugal",
+          "label": "ProChat Portugal",
+          "probe": ["get", "/v1/account", "-p", "prochat portugal"],
+          "required": true
+        },
+        {
+          "name": "jpv-bootcamp",
+          "label": "JPV Bootcamp",
+          "probe": ["get", "/v1/account", "-p", "jpv-bootcamp"],
+          "required": true
+        },
+        {
+          "name": "prochat studio",
+          "label": "ProChat Nederland",
+          "probe": ["get", "/v1/account", "-p", "prochat studio"],
+          "required": true
+        },
+        {
+          "name": "says the bible",
+          "label": "Says the Bible",
+          "probe": ["get", "/v1/account", "-p", "says the bible"],
+          "required": true
+        },
+        {
+          "name": "yeshua academy",
+          "label": "Yeshua Academy",
+          "probe": ["get", "/v1/account", "-p", "yeshua academy"],
+          "required": true
+        },
+        {
+          "name": "prochat-main",
+          "label": "ProChat Studio (legacy profile)",
+          "probe": ["get", "/v1/account", "-p", "prochat-main"],
+          "required": false,
+          "enabled": false
+        },
+        {
+          "name": "default",
+          "label": "Says the Bible (legacy selector)",
+          "probe": ["get", "/v1/account", "-p", "default"],
+          "required": false,
+          "enabled": false
+        },
+        {
+          "name": "feel-good-with-ana",
+          "label": "Feel Good with Ana (outside active five)",
+          "probe": ["get", "/v1/account", "-p", "feel-good-with-ana"],
+          "required": false,
+          "enabled": false
+        },
+        {
+          "name": "jpv bootcamp",
+          "label": "JPV Bootcamp (legacy selector)",
+          "probe": ["get", "/v1/account", "-p", "jpv bootcamp"],
+          "required": false,
+          "enabled": false
+        },
+        {
+          "name": "prochat-legacy",
+          "label": "ProChat (legacy selector)",
+          "probe": ["get", "/v1/account", "-p", "prochat-legacy"],
+          "required": false,
+          "enabled": false
+        },
+        {
+          "name": "says the bible sandbox",
+          "label": "Says the Bible sandbox (outside active five)",
+          "probe": ["get", "/v1/account", "-p", "says the bible sandbox"],
+          "required": false,
+          "enabled": false
+        },
+        {
+          "name": "vila-solidaria",
+          "label": "Vila Solidária (outside active five)",
+          "probe": ["get", "/v1/account", "-p", "vila-solidaria"],
+          "required": false,
+          "enabled": false
+        },
+        {
+          "name": "yeshua-academy",
+          "label": "Yeshua Academy (legacy selector)",
+          "probe": ["get", "/v1/account", "-p", "yeshua-academy"],
+          "required": false,
+          "enabled": false
+        }
+      ],
+      "credentialReference": "~/.config/stripe/config.toml"
+    },
+    "notebooklm": {
+      "probe": ["auth", "check", "--test"],
+      "probeClass": "authenticated-read",
+      "authMode": "required"
+    },
+    "firecrawl": {
+      "probe": null,
+      "probeClass": "service-runtime",
+      "authMode": "not_applicable",
+      "note": "No probe: health starts Docker/OrbStack and may build the local service. Use firecrawl-status for non-starting inspection."
+    },
+    "firecrawl-status": {
+      "probe": [],
+      "probeClass": "service-read",
+      "authMode": "not_applicable"
+    },
+    "spark-cli": {
+      "probe": ["accounts"],
+      "probeClass": "desktop-session-read",
+      "authMode": "session-required"
+    },
+    "apify-multi": {
+      "probe": ["status"],
+      "probeClass": "authenticated-read",
+      "authMode": "required",
+      "credentialReference": "~/.apify-multi/tokens.json"
+    },
+    "n8n-api": {
+      "probe": ["list-workflows"],
+      "probeClass": "authenticated-read",
+      "authMode": "required",
+      "envFile": "~/.config/n8n/.env"
+    },
+    "stable-audio-cli": {
+      "probe": null,
+      "probeClass": "model-runtime",
+      "authMode": "not_applicable",
+      "note": "No probe: invocation can install/load model dependencies and allocate GPU resources."
+    },
+    "stable-audio-warmup": {
+      "probe": null,
+      "probeClass": "model-runtime",
+      "authMode": "not_applicable",
+      "note": "No probe: warmup intentionally loads a model and consumes local resources."
+    },
+    "sync-credentials": {
+      "probe": null,
+      "probeClass": "credential-scanner",
+      "authMode": "not_applicable",
+      "note": "No probe: invocation scans credential-bearing files."
+    },
+    "aws-provisioner": { "probe": ["sts", "get-caller-identity", "--output", "json"], "probeClass": "authenticated-read", "authMode": "required" },
+    "aws-destroyer": { "probe": ["sts", "get-caller-identity", "--output", "json"], "probeClass": "authenticated-read", "authMode": "required" },
+    "azure-apps-provisioner": { "probe": ["--help"], "probeClass": "guarded-surface", "authMode": "delegated" },
+    "azure-apps-destroyer": { "probe": ["--help"], "probeClass": "guarded-surface", "authMode": "delegated" },
+    "azure-data-provisioner": { "probe": ["--help"], "probeClass": "guarded-surface", "authMode": "delegated" },
+    "azure-data-destroyer": { "probe": ["--help"], "probeClass": "guarded-surface", "authMode": "delegated" },
+    "cloudflare-jpvbootcamp-provisioner": { "probe": ["verify"], "probeClass": "authenticated-read", "authMode": "required" },
+    "cloudflare-jpvbootcamp-destroyer": { "probe": ["verify"], "probeClass": "authenticated-read", "authMode": "required" },
+    "cloudflare-prochat-provisioner": { "probe": ["verify"], "probeClass": "authenticated-read", "authMode": "required" },
+    "cloudflare-prochat-destroyer": { "probe": ["verify"], "probeClass": "authenticated-read", "authMode": "required" },
+    "gws-provisioner": { "probe": ["domains", "list"], "probeClass": "authenticated-read", "authMode": "required" },
+    "gws-destroyer": { "probe": ["domains", "list"], "probeClass": "authenticated-read", "authMode": "required" },
+    "ledger-write": { "probe": null, "probeClass": "state-changing", "authMode": "not_applicable", "note": "No probe: write command requires task-specific input." },
+    "ledger-replay": { "probe": null, "probeClass": "state-changing", "authMode": "not_applicable", "note": "No probe: replay command can alter ledger state." },
+    "mem-write": { "probe": null, "probeClass": "state-changing", "authMode": "not_applicable", "note": "No probe: write command requires task-specific input." },
+    "mlx_whisper": { "probe": ["--help"], "probeClass": "local-invocation", "authMode": "not_applicable" },
+    "mem-facts": { "probe": ["list"], "probeClass": "local-read", "authMode": "not_applicable" },
+    "brain-learn-failures": { "probe": ["--help"], "probeClass": "local-invocation", "authMode": "not_applicable" },
+    "ledger-query": { "probe": [], "probeClass": "local-read", "authMode": "not_applicable" },
+    "fastapi": { "probe": ["--help"], "probeClass": "local-invocation", "authMode": "not_applicable" },
+    "arq": { "probe": null, "probeClass": "backup-client", "authMode": "not_applicable", "note": "No generic probe: Arq requires a task-specific backup operation." },
+    "orchestrate": { "probe": null, "probeClass": "orchestration-runtime", "authMode": "not_applicable", "note": "No probe: invocation may start an orchestration run." },
+    "jump": { "probe": null, "probeClass": "shell-navigation", "authMode": "not_applicable", "note": "No probe: command changes shell navigation state." }
+    ,"install-cli": { "probe": ["--help"], "probeClass": "management-surface", "authMode": "not_applicable" }
+    ,"verify-cli-access": { "probe": [], "probeClass": "management-surface", "authMode": "not_applicable" }
+    ,"cli-access-health": { "probe": ["--version"], "probeClass": "management-surface", "authMode": "not_applicable" }
+  }
+}

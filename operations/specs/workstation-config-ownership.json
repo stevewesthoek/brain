@@ -103,6 +103,8 @@
       "maxResolvedSocketPathBytes": 103,
       "configTomlMode": "GENERATED-COPY",
       "configTomlSymlinkRequired": false,
+      "normalProfilePolicy": "dedicated-code-home-with-brain-owned-profile-config",
+      "sharedDefaultRootPolicy": "legacy-exceptional-maintenance-observe-only",
       "mustValidateEndToEndAfterMigration": true
     },
     "migrationRequiresSshConfigResolutionCheck": true,

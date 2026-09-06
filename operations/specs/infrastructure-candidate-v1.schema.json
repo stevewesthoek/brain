@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.prochat.local/ikhp/infrastructure-candidate-v1.schema.json",
+  "title": "Infrastructure Candidate and Admission v1",
+  "$defs": {
+    "schemaVersion": { "const": "1.0.0" },
+    "resourceClass": { "enum": ["host", "application", "service", "database", "storage", "backup_system", "backup_job", "network", "tunnel", "domain", "dns_record", "provider_account", "credential_reference", "account", "session", "runtime_profile", "scheduler", "monitor", "control_plane"] },
+    "resourceId": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+    "candidateId": { "type": "string", "pattern": "^candidate:[a-z0-9][a-z0-9._-]*$" },
+    "observationId": { "type": "string", "pattern": "^observation:[a-z0-9._:-]+$" },
+    "freshness": { "enum": ["fresh", "stale", "unknown"] },
+    "evidenceState": { "enum": ["confirmed", "candidate", "unknown", "conflicted", "not_applicable"] },
+    "admissionState": { "enum": ["candidate", "admitted", "rejected", "retired", "unknown"] },
+    "identityStability": { "enum": ["stable", "profile-scoped", "process-instance", "endpoint-instance", "unknown"] },
+    "provenance": {
+      "type": "object",
+      "required": ["sourceRef", "classification", "observedAt", "freshnessDeadline", "owner", "readOnly"],
+      "properties": {
+        "sourceRef": { "type": "string", "minLength": 1 },
+        "classification": { "enum": ["OBSERVED-VERIFIED", "DERIVED-VERIFIED", "AUTHORITATIVE-CONFIG", "USER-PROPOSED", "UNKNOWN"] },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "freshnessDeadline": { "type": "string", "format": "date-time" },
+        "owner": { "type": "string", "minLength": 1 },
+        "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "readOnly": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "evidenceSummary": {
+      "type": "object",
+      "required": ["identity", "environment", "ownership", "dependencies", "health", "lifecycle", "isolation", "credentialCustody", "routeOwnership"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/evidenceState" },
+        "environment": { "$ref": "#/$defs/evidenceState" },
+        "ownership": { "$ref": "#/$defs/evidenceState" },
+        "dependencies": { "$ref": "#/$defs/evidenceState" },
+        "health": { "$ref": "#/$defs/evidenceState" },
+        "lifecycle": { "$ref": "#/$defs/evidenceState" },
+        "isolation": { "$ref": "#/$defs/evidenceState" },
+        "credentialCustody": { "$ref": "#/$defs/evidenceState" },
+        "routeOwnership": { "$ref": "#/$defs/evidenceState" },
+        "conflicts": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "bindingEvidence": {
+      "type": "object",
+      "required": ["relationshipKind", "subjectRef", "targetRef", "state", "expiresAt", "provenance"],
+      "properties": {
+        "relationshipKind": { "enum": ["account_session", "account_runtime_profile", "session_runtime_profile"] },
+        "subjectRef": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "targetRef": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "observedTargetRef": { "type": ["string", "null"], "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "state": { "enum": ["confirmed", "candidate", "unknown", "conflicted", "not_applicable"] },
+        "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["schemaVersion", "candidateId", "proposedResourceId", "resourceClass", "resourceKind", "admissionState", "identityStability", "freshness", "observationIds", "evidence", "provenance", "redaction"],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/schemaVersion" },
+        "candidateId": { "$ref": "#/$defs/candidateId" },
+        "proposedResourceId": { "type": ["string", "null"], "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "resourceClass": { "$ref": "#/$defs/resourceClass" },
+        "resourceKind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "admissionState": { "$ref": "#/$defs/admissionState" },
+        "identityStability": { "$ref": "#/$defs/identityStability" },
+        "freshness": { "$ref": "#/$defs/freshness" },
+        "observationIds": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/observationId" }, "uniqueItems": true },
+        "evidence": { "$ref": "#/$defs/evidenceSummary" },
+        "binding": { "$ref": "#/$defs/bindingEvidence" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "redaction": {
+          "type": "object",
+          "required": ["classification", "secretsExcluded"],
+          "properties": {
+            "classification": { "enum": ["non-secret-allowlisted", "metadata-only", "unknown"] },
+            "secretsExcluded": { "const": true },
+            "excludedClasses": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "admissionPlan": {
+      "type": "object",
+      "required": ["schemaVersion", "candidateId", "decision", "reasons", "changes", "executionEnabled", "executionPerformed", "actualEffects", "containsSecrets"],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/schemaVersion" },
+        "candidateId": { "$ref": "#/$defs/candidateId" },
+        "decision": { "enum": ["admit", "remain_candidate", "reject", "no_op", "blocked"] },
+        "reasons": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" }, "uniqueItems": true },
+        "changes": { "type": "array", "items": { "type": "object", "required": ["path", "from", "to"], "properties": { "path": { "type": "string", "minLength": 1 }, "from": {}, "to": {} }, "additionalProperties": false } },
+        "observationIds": { "type": "array", "items": { "$ref": "#/$defs/observationId" }, "uniqueItems": true },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "executionEnabled": { "const": false },
+        "executionPerformed": { "const": false },
+        "actualEffects": { "type": "array", "maxItems": 0 },
+        "containsSecrets": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "backlogItem": {
+      "type": "object",
+      "required": ["itemId", "subjectKind", "status", "reasons"],
+      "properties": {
+        "itemId": { "type": "string", "minLength": 1 },
+        "subjectKind": { "enum": ["resource", "candidate", "observation"] },
+        "status": { "enum": ["observed_candidate", "admitted", "governance_unknown", "blocked", "unknown"] },
+        "reasons": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" }, "uniqueItems": true },
+        "observationIds": { "type": "array", "items": { "$ref": "#/$defs/observationId" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "backlog": {
+      "type": "object",
+      "required": ["schemaVersion", "generatedAt", "items", "counts", "executionEnabled", "containsSecrets"],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/schemaVersion" },
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/backlogItem" } },
+        "counts": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "executionEnabled": { "const": false },
+        "containsSecrets": { "const": false }
+      },
+      "additionalProperties": false
+    }
+  },
+  "anyOf": [
+    { "$ref": "#/$defs/candidate" },
+    { "$ref": "#/$defs/admissionPlan" },
+    { "$ref": "#/$defs/backlog" }
+  ]
+}

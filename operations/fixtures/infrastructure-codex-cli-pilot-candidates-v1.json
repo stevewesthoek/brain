@@ -1,0 +1,370 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "0.1.0",
+  "catalogId": "codex-cli-pilot-candidates",
+  "entrypoint": true,
+  "mutationEnabled": false,
+  "accounts": [
+    {
+      "accountId": "account:openai.personal.01",
+      "providerId": "openai",
+      "accountKind": "human_account",
+      "displayName": "OpenAI personal account 01",
+      "lifecycleState": "candidate",
+      "accountRole": {
+        "class": "primary",
+        "isPreferred": true,
+        "rank": 1
+      },
+      "expectedPrincipal": {
+        "principalType": "provider_account",
+        "principalRef": "principal:openai.personal.01",
+        "displayLabel": "OpenAI personal account 01 (operator confirms)",
+        "matchStrategy": "manual_review"
+      },
+      "credentialIds": [],
+      "sessionIds": [],
+      "surfaceBindingIds": ["surface_binding:openai.personal.01.codex-cli"],
+      "runtimeProfileIds": ["runtime_profile:openai.personal.01.cli"],
+      "verificationPolicyId": "verification_policy:codex-cli-read-only",
+      "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-05T00:00:00Z",
+        "freshnessDeadline": "2026-10-05T00:00:00Z",
+        "owner": "operator/codex-cli-pilot",
+        "evidenceRefs": []
+      }
+    },
+    {
+      "accountId": "account:openai.personal.02",
+      "providerId": "openai",
+      "accountKind": "human_account",
+      "displayName": "OpenAI personal account 02",
+      "lifecycleState": "candidate",
+      "accountRole": {
+        "class": "secondary",
+        "isPreferred": false,
+        "rank": 2
+      },
+      "expectedPrincipal": {
+        "principalType": "provider_account",
+        "principalRef": "principal:openai.personal.02",
+        "displayLabel": "OpenAI personal account 02 (operator confirms)",
+        "matchStrategy": "manual_review"
+      },
+      "credentialIds": [],
+      "sessionIds": ["session:openai.codex.default.legacy"],
+      "surfaceBindingIds": ["surface_binding:openai.personal.02.codex-cli"],
+      "runtimeProfileIds": ["runtime_profile:openai.personal.02.cli"],
+      "verificationPolicyId": "verification_policy:codex-cli-read-only",
+      "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-05T00:00:00Z",
+        "freshnessDeadline": "2026-10-05T00:00:00Z",
+        "owner": "operator/codex-cli-pilot",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "credentials": [],
+  "sessions": [
+    {
+      "sessionId": "session:openai.codex.default.legacy",
+      "accountId": "account:openai.personal.02",
+      "surfaceBindingId": "surface_binding:openai.personal.02.codex-cli",
+      "binding": {
+        "state": "user_attested",
+        "expiresAt": "2026-10-05T00:00:00Z",
+        "provenance": {
+          "sourceRef": "operations/reports/ikhp-live-codex-runtime-observation-2026-09-05.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-05T12:32:53.503Z",
+          "freshnessDeadline": "2026-10-05T00:00:00Z",
+          "owner": "operator/codex-cli-pilot",
+          "evidenceRefs": ["user-attestation:current-default-codex-session-is-account-02"]
+        }
+      },
+      "sessionKind": "cached_runtime_authorization",
+      "stateOwner": "application",
+      "applicationRef": "application:codex-cli-default",
+      "managedStateRef": "application-state://codex/default",
+      "credentialIds": [],
+      "runtimeProfileId": null,
+      "authenticationStorage": {
+        "mode": "unknown",
+        "owner": "application",
+        "locationKind": "unknown",
+        "isolationScope": "unknown",
+        "isolationState": "unknown",
+        "profileIsolationProven": null,
+        "healthState": "healthy",
+        "materialExposure": "application_only",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/ikhp-live-codex-runtime-observation-2026-09-05.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-05T12:32:53.503Z",
+          "freshnessDeadline": "2026-09-05T13:32:53.503Z",
+          "owner": "operator/codex-cli-pilot",
+          "evidenceRefs": []
+        }
+      },
+      "lastObservedAt": "2026-09-05T12:32:53.503Z",
+      "lastKnownState": "verified_healthy",
+      "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/reports/ikhp-live-codex-runtime-observation-2026-09-05.md",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-05T12:32:53.503Z",
+        "freshnessDeadline": "2026-10-05T00:00:00Z",
+        "owner": "operator/codex-cli-pilot",
+        "evidenceRefs": ["user-attestation:current-default-codex-session-is-account-02"]
+      }
+    }
+  ],
+  "currentObservedSessionIds": ["session:openai.codex.default.legacy"],
+  "surfaceBindings": [
+    {
+      "surfaceBindingId": "surface_binding:openai.personal.01.codex-cli",
+      "accountId": "account:openai.personal.01",
+      "surfaceId": "codex-cli",
+      "lifecycleState": "candidate",
+      "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}},
+      "sessionIds": [],
+      "runtimeProfileIds": ["runtime_profile:openai.personal.01.cli"],
+      "capabilityEvidence": {"nAccountModel": "supported", "isolatedRuntime": "supported", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "supported"},
+      "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}
+    },
+    {
+      "surfaceBindingId": "surface_binding:openai.personal.02.codex-cli",
+      "accountId": "account:openai.personal.02",
+      "surfaceId": "codex-cli",
+      "lifecycleState": "candidate",
+      "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}},
+      "sessionIds": ["session:openai.codex.default.legacy"],
+      "runtimeProfileIds": ["runtime_profile:openai.personal.02.cli"],
+      "capabilityEvidence": {"nAccountModel": "supported", "isolatedRuntime": "supported", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "supported"},
+      "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}
+    }
+  ],
+  "runtimeProfiles": [
+    {
+      "runtimeProfileId": "runtime_profile:openai.personal.01.cli",
+      "accountId": "account:openai.personal.01",
+      "surfaceBindingId": "surface_binding:openai.personal.01.codex-cli",
+      "binding": {
+        "state": "declared",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-05T00:00:00Z",
+          "freshnessDeadline": "2026-10-05T00:00:00Z",
+          "owner": "operator/codex-cli-pilot",
+          "evidenceRefs": []
+        }
+      },
+      "profileKind": "cli",
+      "runtimeAdapterRef": "runtime_adapter:codex-cli",
+      "isolationRef": "runtime-ref://profiles/openai.personal.01.cli",
+      "stateOwnership": "application",
+      "authenticationStorage": {
+        "mode": "file",
+        "owner": "application",
+        "locationKind": "codex_home_auth_file",
+        "isolationScope": "codex_home",
+        "isolationState": "candidate",
+        "profileIsolationProven": false,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-05T00:00:00Z",
+          "freshnessDeadline": "2026-10-05T00:00:00Z",
+          "owner": "operator/codex-cli-pilot",
+          "evidenceRefs": []
+        }
+      },
+      "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",
+      "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
+      "switchPolicy": {
+        "requiresQuiescence": false,
+        "allowsConcurrentProfiles": true,
+        "processOwnership": "profile_scoped",
+        "concurrencySupport": "supported",
+        "maxConcurrentProfiles": 2,
+        "isolationRequired": true
+      },
+      "configurationOwnership": {
+        "artifactKind": "codex_config",
+        "pathRelativeToRoot": "config.toml",
+        "writerOwnerRef": "brain:runtime-profile-config-materializer",
+        "custody": "brain",
+        "mutationAuthority": "owner-only",
+        "sourceIntentRef": "brain:codex-profile-defaults"
+      },
+      "routeBinding": {
+        "mode": "direct_native",
+        "providerRef": "openai",
+        "ownerRef": "brain:runtime-profile-route-intent",
+        "optional": false
+      },
+      "runtimeNamespace": {
+        "boundary": "codex_home",
+        "processOwnership": "profile_scoped",
+        "stateOwner": "application",
+        "noSharedStateWith": ["~/.codex", "runtime_profile:openai.personal.02.cli", "runtime_profile:codex.webgpt.production", "runtime_profile:codex.webgpt.development"]
+      },
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-05T00:00:00Z",
+        "freshnessDeadline": "2026-10-05T00:00:00Z",
+        "owner": "operator/codex-cli-pilot",
+        "evidenceRefs": []
+      }
+    },
+    {
+      "runtimeProfileId": "runtime_profile:openai.personal.02.cli",
+      "accountId": "account:openai.personal.02",
+      "surfaceBindingId": "surface_binding:openai.personal.02.codex-cli",
+      "binding": {
+        "state": "declared",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-05T00:00:00Z",
+          "freshnessDeadline": "2026-10-05T00:00:00Z",
+          "owner": "operator/codex-cli-pilot",
+          "evidenceRefs": []
+        }
+      },
+      "profileKind": "cli",
+      "runtimeAdapterRef": "runtime_adapter:codex-cli",
+      "isolationRef": "runtime-ref://profiles/openai.personal.02.cli",
+      "stateOwnership": "application",
+      "authenticationStorage": {
+        "mode": "file",
+        "owner": "application",
+        "locationKind": "codex_home_auth_file",
+        "isolationScope": "codex_home",
+        "isolationState": "candidate",
+        "profileIsolationProven": false,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-05T00:00:00Z",
+          "freshnessDeadline": "2026-10-05T00:00:00Z",
+          "owner": "operator/codex-cli-pilot",
+          "evidenceRefs": []
+        }
+      },
+      "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",
+      "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
+      "switchPolicy": {
+        "requiresQuiescence": false,
+        "allowsConcurrentProfiles": true,
+        "processOwnership": "profile_scoped",
+        "concurrencySupport": "supported",
+        "maxConcurrentProfiles": 2,
+        "isolationRequired": true
+      },
+      "configurationOwnership": {
+        "artifactKind": "codex_config",
+        "pathRelativeToRoot": "config.toml",
+        "writerOwnerRef": "brain:runtime-profile-config-materializer",
+        "custody": "brain",
+        "mutationAuthority": "owner-only",
+        "sourceIntentRef": "brain:codex-profile-defaults"
+      },
+      "routeBinding": {
+        "mode": "direct_native",
+        "providerRef": "openai",
+        "ownerRef": "brain:runtime-profile-route-intent",
+        "optional": false
+      },
+      "runtimeNamespace": {
+        "boundary": "codex_home",
+        "processOwnership": "profile_scoped",
+        "stateOwner": "application",
+        "noSharedStateWith": ["~/.codex", "runtime_profile:openai.personal.01.cli", "runtime_profile:codex.webgpt.production", "runtime_profile:codex.webgpt.development"]
+      },
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-05T00:00:00Z",
+        "freshnessDeadline": "2026-10-05T00:00:00Z",
+        "owner": "operator/codex-cli-pilot",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "secretStoreAdapters": [],
+  "lifecyclePolicies": [
+    {
+      "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",
+      "lifecycleClass": "oauth_refreshable",
+      "refreshMode": "application_owned",
+      "renewalMode": "forbidden",
+      "rotationMode": "forbidden",
+      "verificationCadenceSeconds": 3600,
+      "rotateBeforeSeconds": null,
+      "revocationDetection": "provider_probe",
+      "requiresHumanForReauthentication": true,
+      "artificialKeepaliveAllowed": false,
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-05T00:00:00Z",
+        "freshnessDeadline": "2026-10-05T00:00:00Z",
+        "owner": "operator/codex-cli-pilot",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "verificationPolicies": [
+    {
+      "verificationPolicyId": "verification_policy:codex-cli-read-only",
+      "adapterRef": "runtime_adapter:codex-cli",
+      "checks": [
+        "authentication_accepted",
+        "principal_identity_observed",
+        "expected_principal_matches",
+        "minimal_provider_capability",
+        "evidence_fresh"
+      ],
+      "probeMode": "read_only",
+      "freshnessSeconds": 3600,
+      "maxAttempts": 1,
+      "backoffSeconds": 0,
+      "requiresExpectedPrincipal": true,
+      "readOnlyOnly": true,
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-05T00:00:00Z",
+        "freshnessDeadline": "2026-10-05T00:00:00Z",
+        "owner": "operator/codex-cli-pilot",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "provenance": {
+    "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
+    "classification": "USER-PROPOSED",
+    "verifiedAt": "2026-09-05T00:00:00Z",
+    "freshnessDeadline": "2026-10-05T00:00:00Z",
+    "owner": "operator/codex-cli-pilot",
+    "evidenceRefs": []
+  }
+}

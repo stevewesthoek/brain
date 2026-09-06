@@ -1,0 +1,428 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.prochat.local/ikhp/infrastructure-identity-access-v1.schema.json",
+  "title": "Infrastructure Knowledge & Health Plane Identity & Access v1",
+  "description": "Provider-neutral, non-secret identity and access metadata plus read-only verification evidence.",
+  "anyOf": [
+    { "$ref": "#/$defs/identityAccessCatalog" },
+    { "$ref": "#/$defs/observationSnapshot" }
+  ],
+  "$defs": {
+    "schemaVersion": { "const": "1.0.0" },
+    "catalogVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "identifier": { "type": "string", "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
+    "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+    "safeMetadataIdentifier": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,127}$" },
+    "metadataSource": { "enum": ["user_declared", "provider_observed", "policy_derived", "unknown", null] },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "provenanceClass": { "enum": ["OBSERVED-VERIFIED", "DERIVED-VERIFIED", "AUTHORITATIVE-CONFIG", "USER-PROPOSED", "UNKNOWN"] },
+    "freshness": { "enum": ["fresh", "stale", "unknown"] },
+    "evidenceState": { "enum": ["confirmed", "candidate", "unknown", "conflicted", "not_applicable"] },
+    "normalizedStatus": { "enum": ["healthy", "degraded", "unhealthy", "unknown"] },
+    "detailedState": {
+      "enum": [
+        "unknown",
+        "vault_unavailable",
+        "credential_missing",
+        "credential_present",
+        "credential_expiring",
+        "credential_expired",
+        "provider_rejected",
+        "provider_revoked",
+        "wrong_account",
+        "insufficient_scope",
+        "interactive_reauthentication_required",
+        "refresh_available",
+        "refresh_failed",
+        "provider_unavailable",
+        "verified_healthy"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["sourceRef", "classification", "verifiedAt", "freshnessDeadline", "owner"],
+      "properties": {
+        "sourceRef": { "type": "string", "minLength": 1 },
+        "classification": { "$ref": "#/$defs/provenanceClass" },
+        "verifiedAt": { "$ref": "#/$defs/timestamp" },
+        "freshnessDeadline": { "$ref": "#/$defs/timestamp" },
+        "owner": { "type": "string", "minLength": 1 },
+        "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "expectedPrincipal": {
+      "type": "object",
+      "required": ["principalType", "principalRef", "displayLabel", "matchStrategy"],
+      "properties": {
+        "principalType": { "enum": ["provider_account", "workspace", "organization", "user", "service_identity", "application_identity"] },
+        "principalRef": { "type": ["string", "null"] },
+        "displayLabel": { "type": ["string", "null"] },
+        "matchStrategy": { "enum": ["provider_asserted_id", "provider_asserted_subject", "account_fingerprint", "manual_review", "not_configured"] }
+      },
+      "additionalProperties": false
+    },
+    "bindingState": {
+      "enum": ["provider_verified", "user_attested", "declared", "unknown", "conflicted", "not_applicable"]
+    },
+    "bindingEvidence": {
+      "type": "object",
+      "required": ["state", "expiresAt", "provenance"],
+      "properties": {
+        "state": { "$ref": "#/$defs/bindingState" },
+        "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "authenticationStorage": {
+      "type": "object",
+      "required": ["mode", "owner", "locationKind", "isolationScope", "isolationState", "profileIsolationProven", "healthState", "materialExposure", "mutationMode", "provenance"],
+      "properties": {
+        "mode": { "enum": ["file", "keyring", "auto", "ephemeral", "browser_profile", "application_native", "unknown"] },
+        "owner": { "enum": ["application", "runtime_adapter", "provider", "operating_system", "orchestrator", "unknown"] },
+        "locationKind": { "enum": ["codex_home_auth_file", "os_keyring", "application_browser_profile", "application_native_state", "process_memory", "auto_selected", "unknown"] },
+        "isolationScope": { "enum": ["codex_home", "runtime_profile", "application_instance", "browser_profile", "operating_system_user", "process", "remote_application", "unknown"] },
+        "isolationState": { "$ref": "#/$defs/evidenceState" },
+        "profileIsolationProven": { "type": ["boolean", "null"] },
+        "healthState": { "$ref": "#/$defs/normalizedStatus" },
+        "materialExposure": { "enum": ["never_observed", "metadata_only", "application_only", "unknown"] },
+        "mutationMode": { "enum": ["application_only", "provider_only", "approval_gated", "disabled", "unknown"] },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "secretStoreAdapter": {
+      "type": "object",
+      "required": ["adapterId", "adapterKind", "capabilities", "secretValueOwner", "mutationMode", "bootstrapMode", "provenance"],
+      "properties": {
+        "adapterId": { "$ref": "#/$defs/identifier" },
+        "adapterKind": { "enum": ["machine_runtime_store", "human_recovery_store", "os_native_store", "application_managed", "encrypted_bootstrap_store", "external_store"] },
+        "capabilities": {
+          "type": "array",
+          "items": { "enum": ["metadata_read", "bounded_consume", "resolve_for_bound_process", "version_metadata", "lease_metadata", "lease_renewal", "revocation_metadata", "audit_metadata", "offline_recovery"] },
+          "uniqueItems": true
+        },
+        "secretValueOwner": { "enum": ["adapter", "application", "provider", "human"] },
+        "mutationMode": { "enum": ["disabled", "read_only", "approval_gated"] },
+        "bootstrapMode": { "enum": ["explicit_human_bootstrap", "application_bootstrap", "external_bootstrap", "not_applicable"] },
+        "referenceScheme": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9._-]*$" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "lifecyclePolicy": {
+      "type": "object",
+      "required": ["lifecyclePolicyId", "lifecycleClass", "refreshMode", "renewalMode", "rotationMode", "verificationCadenceSeconds", "rotateBeforeSeconds", "revocationDetection", "requiresHumanForReauthentication", "artificialKeepaliveAllowed", "provenance"],
+      "properties": {
+        "lifecyclePolicyId": { "$ref": "#/$defs/identifier" },
+        "lifecycleClass": { "enum": ["static_until_revoked", "explicit_expiry", "oauth_refreshable", "interactive_reauthentication", "provider_rotatable", "ephemeral_session", "certificate_renewable", "application_managed"] },
+        "refreshMode": { "enum": ["none", "provider_endpoint", "application_owned", "interactive_only"] },
+        "renewalMode": { "enum": ["forbidden", "read_only_discovery", "approval_gated"] },
+        "rotationMode": { "enum": ["forbidden", "approval_gated", "provider_managed"] },
+        "verificationCadenceSeconds": { "type": "integer", "minimum": 60, "maximum": 31536000 },
+        "rotateBeforeSeconds": { "type": ["integer", "null"], "minimum": 0, "maximum": 315360000 },
+        "revocationDetection": { "enum": ["provider_probe", "runtime_signal", "manual", "not_supported"] },
+        "requiresHumanForReauthentication": { "type": "boolean" },
+        "artificialKeepaliveAllowed": { "const": false },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "verificationPolicy": {
+      "type": "object",
+      "required": ["verificationPolicyId", "adapterRef", "checks", "probeMode", "freshnessSeconds", "maxAttempts", "backoffSeconds", "requiresExpectedPrincipal", "readOnlyOnly", "provenance"],
+      "properties": {
+        "verificationPolicyId": { "$ref": "#/$defs/identifier" },
+        "adapterRef": { "$ref": "#/$defs/identifier" },
+        "checks": {
+          "type": "array",
+          "items": { "enum": ["secret_reference_available", "authentication_accepted", "principal_identity_observed", "expected_principal_matches", "scope_capability_matches", "minimal_provider_capability", "evidence_fresh"] },
+          "uniqueItems": true
+        },
+        "requiredScopes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "uniqueItems": true
+        },
+        "probeMode": { "enum": ["read_only", "interactive", "unsupported"] },
+        "freshnessSeconds": { "type": "integer", "minimum": 60, "maximum": 31536000 },
+        "expiringWithinSeconds": { "type": "integer", "minimum": 0, "maximum": 31536000 },
+        "maxAttempts": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "backoffSeconds": { "type": "integer", "minimum": 0, "maximum": 86400 },
+        "requiresExpectedPrincipal": { "type": "boolean" },
+        "readOnlyOnly": { "const": true },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "account": {
+      "type": "object",
+      "required": ["accountId", "providerId", "accountKind", "displayName", "lifecycleState", "expectedPrincipal", "credentialIds", "sessionIds", "surfaceBindingIds", "runtimeProfileIds", "verificationPolicyId", "recoveryRunbookRef", "provenance"],
+      "properties": {
+        "accountId": { "$ref": "#/$defs/identifier" },
+        "providerId": { "$ref": "#/$defs/providerId" },
+        "accountKind": { "enum": ["human_account", "workspace_account", "organization_account", "service_account", "application_account"] },
+        "displayName": { "type": "string", "minLength": 1 },
+        "lifecycleState": { "enum": ["enrolled", "candidate", "inactive", "retired", "unknown"] },
+        "accountRole": {
+          "type": "object",
+          "required": ["class", "isPreferred", "rank"],
+          "properties": {
+            "class": { "enum": ["primary", "secondary", "other", "unknown"] },
+            "isPreferred": { "type": "boolean" },
+            "rank": { "type": ["integer", "null"], "minimum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "expectedPrincipal": { "$ref": "#/$defs/expectedPrincipal" },
+        "credentialIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        "sessionIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        "surfaceBindingIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        "runtimeProfileIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        "verificationPolicyId": { "$ref": "#/$defs/identifier" },
+        "recoveryRunbookRef": { "type": "string", "minLength": 1 },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "credential": {
+      "type": "object",
+      "required": ["credentialId", "accountId", "credentialKind", "secretOwner", "secretStoreAdapterId", "secretStoreRef", "materialization", "scopeSummary", "expiryState", "expiresAt", "lifecyclePolicyId", "verificationPolicyId", "lastVerifiedAt", "lastKnownState", "recoveryRunbookRef", "provenance"],
+      "properties": {
+        "credentialId": { "$ref": "#/$defs/identifier" },
+        "accountId": { "$ref": "#/$defs/identifier" },
+        "credentialKind": { "enum": ["api_key", "oauth_authorization", "oauth_refresh_credential", "client_secret", "password", "ssh_credential", "certificate", "service_account_credential", "ephemeral_credential"] },
+        "providerCredentialType": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9._-]{0,127}$" },
+        "providerCredentialTypeSource": { "$ref": "#/$defs/metadataSource" },
+        "secretOwner": { "enum": ["secret_store", "application", "provider", "human"] },
+        "secretStoreAdapterId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
+        "secretStoreRef": { "type": ["string", "null"], "pattern": "^(secret-ref|vault-ref|keychain-ref|opaque-ref)://[^\\s]+$" },
+        "materialization": { "enum": ["none", "bound_process_memory", "child_process_environment", "child_process_stdin", "os_native_store", "application_native_state"] },
+        "scopeSummary": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "expiryState": { "enum": ["known", "unknown", "not_applicable"] },
+        "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+        "lifecyclePolicyId": { "$ref": "#/$defs/identifier" },
+        "verificationPolicyId": { "$ref": "#/$defs/identifier" },
+        "lastVerifiedAt": { "type": ["string", "null"], "format": "date-time" },
+        "lastKnownState": { "$ref": "#/$defs/detailedState" },
+        "recoveryRunbookRef": { "type": "string", "minLength": 1 },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "session": {
+      "type": "object",
+      "required": ["sessionId", "accountId", "surfaceBindingId", "binding", "sessionKind", "stateOwner", "applicationRef", "managedStateRef", "credentialIds", "runtimeProfileId", "authenticationStorage", "lastObservedAt", "lastKnownState", "recoveryRunbookRef", "provenance"],
+      "properties": {
+        "sessionId": { "$ref": "#/$defs/identifier" },
+        "accountId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
+        "surfaceBindingId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
+        "binding": { "$ref": "#/$defs/bindingEvidence" },
+        "sessionKind": { "enum": ["provider_session", "cli_login", "mcp_oauth_authorization", "cached_runtime_authorization", "interactive_login"] },
+        "stateOwner": { "enum": ["application", "runtime_adapter", "brain"] },
+        "applicationRef": { "type": ["string", "null"] },
+        "managedStateRef": { "type": ["string", "null"], "pattern": "^(application-state|runtime-state|opaque-ref)://[^\\s]+$" },
+        "credentialIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        "runtimeProfileId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
+        "authenticationStorage": { "$ref": "#/$defs/authenticationStorage" },
+        "lastObservedAt": { "type": ["string", "null"], "format": "date-time" },
+        "lastKnownState": { "$ref": "#/$defs/detailedState" },
+        "recoveryRunbookRef": { "type": "string", "minLength": 1 },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "runtimeProfile": {
+      "type": "object",
+      "required": ["runtimeProfileId", "accountId", "surfaceBindingId", "binding", "profileKind", "runtimeAdapterRef", "isolationRef", "stateOwnership", "authenticationStorage", "lifecyclePolicyId", "recoveryRunbookRef", "switchPolicy", "provenance"],
+      "properties": {
+        "runtimeProfileId": { "$ref": "#/$defs/identifier" },
+        "accountId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
+        "surfaceBindingId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
+        "binding": { "$ref": "#/$defs/bindingEvidence" },
+        "profileKind": { "enum": ["cli", "desktop", "ide", "webgpt_production", "webgpt_dev", "mcp_client", "worker", "service", "other"] },
+        "runtimeAdapterRef": { "$ref": "#/$defs/identifier" },
+        "isolationRef": { "type": "string", "pattern": "^(runtime-ref|opaque-ref)://[^\\s]+$" },
+        "stateOwnership": { "enum": ["application", "runtime_adapter", "brain"] },
+        "authenticationStorage": { "$ref": "#/$defs/authenticationStorage" },
+        "lifecyclePolicyId": { "$ref": "#/$defs/identifier" },
+        "recoveryRunbookRef": { "type": "string", "minLength": 1 },
+        "switchPolicy": {
+          "type": "object",
+          "required": ["requiresQuiescence", "allowsConcurrentProfiles", "processOwnership", "concurrencySupport", "maxConcurrentProfiles", "isolationRequired"],
+          "properties": {
+            "requiresQuiescence": { "type": "boolean" },
+            "allowsConcurrentProfiles": { "type": "boolean" },
+            "processOwnership": { "enum": ["profile_scoped", "application_scoped", "host_scoped", "unknown"] },
+            "concurrencySupport": { "enum": ["supported", "unsupported", "unknown"] },
+            "maxConcurrentProfiles": { "type": ["integer", "null"], "minimum": 1 },
+            "isolationRequired": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "configurationOwnership": {
+          "type": "object",
+          "properties": {
+            "artifactKind": { "enum": ["codex_config", "runtime_config", "other"] },
+            "pathRelativeToRoot": { "type": "string", "pattern": "^[^/].*" },
+            "writerOwnerRef": { "type": "string", "minLength": 1 },
+            "custody": { "enum": ["brain", "application", "runtime_adapter", "provider", "unknown"] },
+            "mutationAuthority": { "enum": ["owner-only", "approval-gated", "disabled", "unknown"] },
+            "sourceIntentRef": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "routeBinding": {
+          "type": "object",
+          "properties": {
+            "mode": { "enum": ["direct_native", "external_route_provider", "dedicated_runtime", "unknown"] },
+            "providerRef": { "type": ["string", "null"], "minLength": 1 },
+            "ownerRef": { "type": "string", "minLength": 1 },
+            "optional": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "runtimeNamespace": {
+          "type": "object",
+          "properties": {
+            "boundary": { "enum": ["codex_home", "application_instance", "browser_profile", "unknown"] },
+            "processOwnership": { "enum": ["profile_scoped", "application_scoped", "host_scoped", "unknown"] },
+            "stateOwner": { "enum": ["application", "brain", "runtime_adapter", "unknown"] },
+            "noSharedStateWith": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+          },
+          "additionalProperties": false
+        },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "checkResult": {
+      "type": "object",
+      "required": ["checkCode", "outcome", "evidenceSummary"],
+      "properties": {
+        "checkCode": { "enum": ["secret_reference_available", "authentication_accepted", "principal_identity_observed", "expected_principal_matches", "scope_capability_matches", "minimal_provider_capability", "evidence_fresh"] },
+        "outcome": { "enum": ["pass", "fail", "skipped", "unknown"] },
+        "evidenceSummary": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "surfaceBinding": {
+      "type": "object",
+      "required": ["surfaceBindingId", "accountId", "surfaceId", "lifecycleState", "binding", "sessionIds", "runtimeProfileIds", "provenance"],
+      "properties": {
+        "surfaceBindingId": { "$ref": "#/$defs/identifier" },
+        "accountId": { "$ref": "#/$defs/identifier" },
+        "surfaceId": { "$ref": "#/$defs/safeMetadataIdentifier" },
+        "lifecycleState": { "enum": ["enrolled", "candidate", "inactive", "retired", "unknown"] },
+        "binding": { "$ref": "#/$defs/bindingEvidence" },
+        "sessionIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        "runtimeProfileIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        "capabilityEvidence": {
+          "type": "object",
+          "properties": {
+            "nAccountModel": { "enum": ["supported", "unknown", "unsupported"] },
+            "isolatedRuntime": { "enum": ["supported", "unknown", "unsupported"] },
+            "authIsolation": { "enum": ["supported", "unknown", "unsupported"] },
+            "concurrentProfiles": { "enum": ["supported", "unknown", "unsupported"] },
+            "programmaticSelection": { "enum": ["supported", "unknown", "unsupported"] }
+          },
+          "additionalProperties": false
+        },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "verificationObservation": {
+      "type": "object",
+      "required": ["observationId", "subjectId", "subjectKind", "observedAt", "freshness", "normalizedStatus", "detailedState", "expectedPrincipalMatch", "checks", "conditionCodes", "provenance"],
+      "properties": {
+        "observationId": { "type": "string", "pattern": "^observation:[a-z0-9._:-]+$" },
+        "subjectId": { "$ref": "#/$defs/identifier" },
+        "subjectKind": { "enum": ["account", "credential", "session", "runtime_profile"] },
+        "observedAt": { "$ref": "#/$defs/timestamp" },
+        "freshness": { "$ref": "#/$defs/freshness" },
+        "normalizedStatus": { "$ref": "#/$defs/normalizedStatus" },
+        "detailedState": { "$ref": "#/$defs/detailedState" },
+        "providerId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9._-]*$" },
+        "providerCredentialType": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9._-]{0,127}$" },
+        "observedPrincipalLabel": { "type": ["string", "null"], "maxLength": 256 },
+        "expectedPrincipalMatch": { "enum": ["verified", "mismatched", "unknown", "not_applicable"] },
+        "observedPrincipalRef": { "type": ["string", "null"], "maxLength": 512 },
+        "observedScopeSummary": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 256 }, "uniqueItems": true },
+        "scopeEvidence": { "enum": ["provider_observed", "declared_only", "not_observable", "unknown"] },
+        "observedExpiresAt": { "type": ["string", "null"], "format": "date-time" },
+        "expiryMetadataSource": { "$ref": "#/$defs/metadataSource" },
+        "refreshAvailable": { "type": ["boolean", "null"] },
+        "providerReasonCode": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9._-]{0,127}$" },
+        "rateLimit": {
+          "type": ["object", "null"],
+          "properties": {
+            "limit": { "type": "integer", "minimum": 0 },
+            "remaining": { "type": "integer", "minimum": 0 },
+            "resetAt": { "type": ["string", "null"], "format": "date-time" },
+            "retryAfterSeconds": { "type": "integer", "minimum": 0, "maximum": 31536000 }
+          },
+          "additionalProperties": false
+        },
+        "checks": { "type": "array", "items": { "$ref": "#/$defs/checkResult" }, "minItems": 1 },
+        "conditionCodes": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" }, "uniqueItems": true },
+        "provenance": {
+          "type": "object",
+          "required": ["source", "readOnly", "authority"],
+          "properties": {
+            "source": { "const": "ikhp-identity-access-verifier" },
+            "readOnly": { "const": true },
+            "authority": { "const": "derived-runtime" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "detailedState": { "const": "wrong_account" } }, "required": ["detailedState"] },
+          "then": { "properties": { "expectedPrincipalMatch": { "const": "mismatched" }, "normalizedStatus": { "enum": ["unhealthy", "degraded"] } } }
+        },
+        {
+          "if": { "properties": { "detailedState": { "const": "verified_healthy" } }, "required": ["detailedState"] },
+          "then": { "properties": { "expectedPrincipalMatch": { "enum": ["verified", "not_applicable"] }, "normalizedStatus": { "const": "healthy" } } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "identityAccessCatalog": {
+      "type": "object",
+      "required": ["schemaVersion", "catalogVersion", "catalogId", "entrypoint", "mutationEnabled", "accounts", "credentials", "sessions", "surfaceBindings", "runtimeProfiles", "secretStoreAdapters", "lifecyclePolicies", "verificationPolicies", "provenance"],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/schemaVersion" },
+        "catalogVersion": { "$ref": "#/$defs/catalogVersion" },
+        "catalogId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "entrypoint": { "const": true },
+        "mutationEnabled": { "const": false },
+        "accounts": { "type": "array", "items": { "$ref": "#/$defs/account" } },
+        "credentials": { "type": "array", "items": { "$ref": "#/$defs/credential" } },
+        "sessions": { "type": "array", "items": { "$ref": "#/$defs/session" } },
+        "currentObservedSessionIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        "surfaceBindings": { "type": "array", "items": { "$ref": "#/$defs/surfaceBinding" } },
+        "runtimeProfiles": { "type": "array", "items": { "$ref": "#/$defs/runtimeProfile" } },
+        "secretStoreAdapters": { "type": "array", "items": { "$ref": "#/$defs/secretStoreAdapter" } },
+        "lifecyclePolicies": { "type": "array", "items": { "$ref": "#/$defs/lifecyclePolicy" } },
+        "verificationPolicies": { "type": "array", "items": { "$ref": "#/$defs/verificationPolicy" } },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "observationSnapshot": {
+      "type": "object",
+      "required": ["schemaVersion", "generatedAt", "maxObservations", "maxAgeSeconds", "observations"],
+      "properties": {
+        "schemaVersion": { "$ref": "#/$defs/schemaVersion" },
+        "generatedAt": { "$ref": "#/$defs/timestamp" },
+        "maxObservations": { "type": "integer", "minimum": 1, "maximum": 5000 },
+        "maxAgeSeconds": { "type": "integer", "minimum": 60, "maximum": 31536000 },
+        "observations": { "type": "array", "items": { "$ref": "#/$defs/verificationObservation" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

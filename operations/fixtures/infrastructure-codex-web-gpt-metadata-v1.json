@@ -1,0 +1,207 @@
+{
+  "fixtureVersion": "1.0.0",
+  "purpose": "Non-secret metadata adapter proof for a Codex Web GPT production and development runtime; direct shared-root integration is legacy/current, not target architecture.",
+  "architectureDecision": {
+    "sourceAdapterRef": "runtime_adapter:codex-web-gpt",
+    "currentProductionIntegration": "legacy_shared_default_root",
+    "preferredIntegrationMode": "external_route_provider",
+    "preferredIntegrationStatus": "candidate_not_proven_by_v5_source",
+    "fallbackIntegrationMode": "dedicated_webgpt_codex_home",
+    "fallbackIntegrationStatus": "source_path_boundary_found_launcher_lifecycle_unproven",
+    "nativeProfileIdsExcluded": [
+      "runtime_profile:openai.personal.01.cli",
+      "runtime_profile:openai.personal.02.cli"
+    ],
+    "optionalConsumerProfileId": "runtime_profile:codex.webgpt.production",
+    "productionDevNamespaceCollision": "forbidden",
+    "secretsIncluded": false
+  },
+  "catalog": {
+    "schemaVersion": "1.0.0",
+    "catalogVersion": "1.0.0",
+    "resources": [
+      {
+        "resourceId": "network:codex-web-production",
+        "resourceClass": "network",
+        "resourceKind": "environment",
+        "name": "Codex Web GPT production environment",
+        "lifecycleState": "active",
+        "owner": "application-owner",
+        "governance": {
+          "admissionState": "admitted", "environmentRef": "network:codex-web-production", "environmentClass": "production",
+          "identityBindingRefs": [], "runtimeProfileRefs": [], "runtimeAdapterRef": null, "healthPolicyRef": "health_policy:codex-web-production",
+          "accountCapacity": "many", "profileConcurrency": "concurrent",
+          "discovery": { "mode": "application", "authority": "authoritative", "evidenceRefs": ["fixture:codex-web-gpt-metadata"] },
+          "ownership": { "authoritativeOwnerRef": "application:codex-web-gpt", "ownerState": "confirmed", "authoritativeOwnerKind": "application", "custody": "application", "mutationAuthority": "owner-only", "observerRefs": ["monitor:codex-web-observer"], "verifierRefs": ["monitor:codex-web-verifier"], "driftDetectorRefs": ["monitor:codex-web-drift"], "mutationActorRefs": ["application:codex-web-gpt"] },
+          "lifecycle": { "quiescenceRequired": false, "disruptionRisk": "medium", "dependencyCheckRequired": true, "maintenanceMode": "normal", "activeWorkloadPolicy": "observe_only", "recoveryRunbookRef": "runbook:codex-web-gpt-recovery" },
+          "isolation": { "domainRef": "network:codex-web-production", "mode": "isolated", "boundaryRefs": ["network:codex-web-production"] },
+          "capabilities": ["observe", "verify", "drift_detect", "recommend"]
+        },
+        "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" }
+      },
+      {
+        "resourceId": "network:codex-web-development",
+        "resourceClass": "network",
+        "resourceKind": "environment",
+        "name": "Codex Web GPT development environment",
+        "lifecycleState": "active",
+        "owner": "application-owner",
+        "governance": {
+          "admissionState": "admitted", "environmentRef": "network:codex-web-development", "environmentClass": "development",
+          "identityBindingRefs": [], "runtimeProfileRefs": [], "runtimeAdapterRef": null, "healthPolicyRef": "health_policy:codex-web-development",
+          "accountCapacity": "many", "profileConcurrency": "concurrent",
+          "discovery": { "mode": "application", "authority": "authoritative", "evidenceRefs": ["fixture:codex-web-gpt-metadata"] },
+          "ownership": { "authoritativeOwnerRef": "application:codex-web-gpt", "ownerState": "confirmed", "authoritativeOwnerKind": "application", "custody": "application", "mutationAuthority": "owner-only", "observerRefs": ["monitor:codex-web-observer"], "verifierRefs": ["monitor:codex-web-verifier"], "driftDetectorRefs": ["monitor:codex-web-drift"], "mutationActorRefs": ["application:codex-web-gpt"] },
+          "lifecycle": { "quiescenceRequired": false, "disruptionRisk": "low", "dependencyCheckRequired": true, "maintenanceMode": "normal", "activeWorkloadPolicy": "observe_only", "recoveryRunbookRef": "runbook:codex-web-gpt-recovery" },
+          "isolation": { "domainRef": "network:codex-web-development", "mode": "isolated", "boundaryRefs": ["network:codex-web-development"] },
+          "capabilities": ["observe", "verify", "drift_detect", "recommend"]
+        },
+        "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" }
+      },
+      {
+        "resourceId": "application:codex-web-gpt",
+        "resourceClass": "application",
+        "resourceKind": "consumer",
+        "name": "Codex Web GPT consumer",
+        "lifecycleState": "active",
+        "owner": "application-owner",
+        "governance": {
+          "admissionState": "admitted", "environmentRef": "network:codex-web-production", "environmentClass": "production",
+          "identityBindingRefs": ["account:codex-personal-a", "account:codex-personal-b", "session:codex-web-gpt-production", "session:codex-web-gpt-development"],
+          "runtimeProfileRefs": ["runtime_profile:codex-web-gpt-production", "runtime_profile:codex-web-gpt-development"], "runtimeAdapterRef": "service:codex-web-gpt-runtime", "healthPolicyRef": "health_policy:codex-web-gpt",
+          "accountCapacity": "many", "profileConcurrency": "concurrent",
+          "discovery": { "mode": "application", "authority": "authoritative", "evidenceRefs": ["fixture:codex-web-gpt-metadata"] },
+          "ownership": { "authoritativeOwnerRef": "application:codex-web-gpt", "ownerState": "confirmed", "authoritativeOwnerKind": "application", "custody": "application", "mutationAuthority": "owner-only", "observerRefs": ["monitor:codex-web-observer"], "verifierRefs": ["monitor:codex-web-verifier"], "driftDetectorRefs": ["monitor:codex-web-drift"], "mutationActorRefs": ["application:codex-web-gpt"] },
+          "lifecycle": { "quiescenceRequired": true, "disruptionRisk": "high", "dependencyCheckRequired": true, "maintenanceMode": "normal", "activeWorkloadPolicy": "idle_required", "recoveryRunbookRef": "runbook:codex-web-gpt-recovery" },
+          "isolation": { "domainRef": "network:codex-web-production", "mode": "isolated", "boundaryRefs": ["network:codex-web-production"] },
+          "capabilities": ["observe", "verify", "drift_detect", "recommend", "coordinate", "recover"]
+        },
+        "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" }
+      },
+      {
+        "resourceId": "service:codex-web-gpt-runtime",
+        "resourceClass": "service",
+        "resourceKind": "runtime",
+        "name": "Codex Web GPT production launcher",
+        "lifecycleState": "active",
+        "owner": "application-owner",
+        "governance": {
+          "admissionState": "admitted", "environmentRef": "network:codex-web-production", "environmentClass": "production",
+          "identityBindingRefs": ["session:codex-web-gpt-production"], "runtimeProfileRefs": ["runtime_profile:codex-web-gpt-production"], "runtimeAdapterRef": "service:codex-web-gpt-runtime", "healthPolicyRef": "health_policy:codex-web-gpt-runtime",
+          "accountCapacity": "many", "profileConcurrency": "concurrent",
+          "discovery": { "mode": "application", "authority": "authoritative", "evidenceRefs": ["fixture:codex-web-gpt-metadata"] },
+          "ownership": { "authoritativeOwnerRef": "application:codex-web-gpt", "ownerState": "confirmed", "authoritativeOwnerKind": "application", "custody": "application", "mutationAuthority": "owner-only", "observerRefs": ["monitor:codex-web-observer"], "verifierRefs": ["monitor:codex-web-verifier"], "driftDetectorRefs": ["monitor:codex-web-drift"], "mutationActorRefs": ["application:codex-web-gpt"] },
+          "lifecycle": { "quiescenceRequired": true, "disruptionRisk": "high", "dependencyCheckRequired": true, "maintenanceMode": "normal", "activeWorkloadPolicy": "idle_required", "recoveryRunbookRef": "runbook:codex-web-gpt-recovery", "upgradePolicyRef": "policy:codex-web-gpt-upgrade" },
+          "isolation": { "domainRef": "network:codex-web-production", "mode": "isolated", "boundaryRefs": ["network:codex-web-production"] },
+          "capabilities": ["observe", "verify", "drift_detect", "recommend", "coordinate", "recover", "mutate"]
+        },
+        "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" }
+      },
+      {
+        "resourceId": "service:codex-web-gpt-dev-runtime",
+        "resourceClass": "service",
+        "resourceKind": "runtime",
+        "name": "Codex Web GPT development launcher",
+        "lifecycleState": "active",
+        "owner": "application-owner",
+        "governance": {
+          "admissionState": "admitted", "environmentRef": "network:codex-web-development", "environmentClass": "development",
+          "identityBindingRefs": ["session:codex-web-gpt-development"], "runtimeProfileRefs": ["runtime_profile:codex-web-gpt-development"], "runtimeAdapterRef": "service:codex-web-gpt-runtime", "healthPolicyRef": "health_policy:codex-web-gpt-dev-runtime",
+          "accountCapacity": "many", "profileConcurrency": "concurrent",
+          "discovery": { "mode": "application", "authority": "authoritative", "evidenceRefs": ["fixture:codex-web-gpt-metadata"] },
+          "ownership": { "authoritativeOwnerRef": "application:codex-web-gpt", "ownerState": "confirmed", "authoritativeOwnerKind": "application", "custody": "application", "mutationAuthority": "owner-only", "observerRefs": ["monitor:codex-web-observer"], "verifierRefs": ["monitor:codex-web-verifier"], "driftDetectorRefs": ["monitor:codex-web-drift"], "mutationActorRefs": ["application:codex-web-gpt"] },
+          "lifecycle": { "quiescenceRequired": true, "disruptionRisk": "medium", "dependencyCheckRequired": true, "maintenanceMode": "normal", "activeWorkloadPolicy": "idle_required", "recoveryRunbookRef": "runbook:codex-web-gpt-recovery" },
+          "isolation": { "domainRef": "network:codex-web-development", "mode": "isolated", "boundaryRefs": ["network:codex-web-development"] },
+          "capabilities": ["observe", "verify", "drift_detect", "recommend", "coordinate", "recover", "mutate"]
+        },
+        "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" }
+      },
+      {
+        "resourceId": "control_plane:codex-web-gpt-browser-session",
+        "resourceClass": "control_plane",
+        "resourceKind": "browser_session",
+        "name": "Application-owned browser session",
+        "lifecycleState": "active",
+        "owner": "application-owner",
+        "governance": {
+          "admissionState": "admitted", "environmentRef": "network:codex-web-production", "environmentClass": "production",
+          "identityBindingRefs": ["session:codex-web-gpt-production"], "runtimeProfileRefs": ["runtime_profile:codex-web-gpt-production"], "runtimeAdapterRef": "service:codex-web-gpt-runtime", "healthPolicyRef": "health_policy:codex-web-gpt-session",
+          "accountCapacity": "many", "profileConcurrency": "concurrent",
+          "discovery": { "mode": "application", "authority": "authoritative", "evidenceRefs": ["fixture:codex-web-gpt-metadata"] },
+          "ownership": { "authoritativeOwnerRef": "application:codex-web-gpt", "ownerState": "confirmed", "authoritativeOwnerKind": "application", "custody": "application", "mutationAuthority": "none", "observerRefs": ["monitor:codex-web-observer"], "verifierRefs": ["monitor:codex-web-verifier"], "driftDetectorRefs": ["monitor:codex-web-drift"], "mutationActorRefs": [] },
+          "lifecycle": { "quiescenceRequired": true, "disruptionRisk": "high", "dependencyCheckRequired": true, "maintenanceMode": "normal", "activeWorkloadPolicy": "idle_required", "recoveryRunbookRef": "runbook:codex-web-gpt-reauthentication" },
+          "isolation": { "domainRef": "network:codex-web-production", "mode": "isolated", "boundaryRefs": ["network:codex-web-production"] },
+          "capabilities": ["observe", "verify", "recommend"]
+        },
+        "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" }
+      },
+      {
+        "resourceId": "service:codex-web-gpt-connector",
+        "resourceClass": "service",
+        "resourceKind": "connector",
+        "name": "Codex Web GPT connector",
+        "lifecycleState": "active",
+        "owner": "provider-owner",
+        "governance": {
+          "admissionState": "admitted", "environmentRef": "network:codex-web-production", "environmentClass": "production",
+          "identityBindingRefs": [], "runtimeProfileRefs": [], "runtimeAdapterRef": "service:codex-web-gpt-runtime", "healthPolicyRef": "health_policy:codex-web-gpt-connector",
+          "accountCapacity": "many", "profileConcurrency": "concurrent",
+          "discovery": { "mode": "provider", "authority": "authoritative", "evidenceRefs": ["fixture:codex-web-gpt-metadata"] },
+          "ownership": { "authoritativeOwnerRef": "service:codex-web-gpt-connector", "ownerState": "confirmed", "authoritativeOwnerKind": "provider", "custody": "provider", "mutationAuthority": "none", "observerRefs": ["monitor:codex-web-observer"], "verifierRefs": ["monitor:codex-web-verifier"], "driftDetectorRefs": ["monitor:codex-web-drift"], "mutationActorRefs": [] },
+          "lifecycle": { "quiescenceRequired": false, "disruptionRisk": "high", "dependencyCheckRequired": true, "maintenanceMode": "normal", "activeWorkloadPolicy": "observe_only", "recoveryRunbookRef": "runbook:codex-web-gpt-recovery" },
+          "isolation": { "domainRef": "network:codex-web-production", "mode": "isolated", "boundaryRefs": ["network:codex-web-production"] },
+          "capabilities": ["observe", "verify", "drift_detect", "recommend"]
+        },
+        "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" }
+      },
+      {
+        "resourceId": "tunnel:codex-web-gpt-bridge",
+        "resourceClass": "tunnel",
+        "resourceKind": "loopback_bridge",
+        "name": "Loopback/API bridge",
+        "lifecycleState": "active",
+        "owner": "provider-owner",
+        "governance": {
+          "admissionState": "admitted", "environmentRef": "network:codex-web-production", "environmentClass": "production",
+          "identityBindingRefs": [], "runtimeProfileRefs": ["runtime_profile:codex-web-gpt-production"], "runtimeAdapterRef": "service:codex-web-gpt-runtime", "healthPolicyRef": "health_policy:codex-web-gpt-bridge",
+          "accountCapacity": "many", "profileConcurrency": "concurrent",
+          "discovery": { "mode": "application", "authority": "authoritative", "evidenceRefs": ["fixture:codex-web-gpt-metadata"] },
+          "ownership": { "authoritativeOwnerRef": "application:codex-web-gpt", "ownerState": "confirmed", "authoritativeOwnerKind": "application", "custody": "unknown", "mutationAuthority": "owner-only", "observerRefs": ["monitor:codex-web-observer"], "verifierRefs": ["monitor:codex-web-verifier"], "driftDetectorRefs": ["monitor:codex-web-drift"], "mutationActorRefs": ["application:codex-web-gpt"] },
+          "lifecycle": { "quiescenceRequired": true, "disruptionRisk": "high", "dependencyCheckRequired": true, "maintenanceMode": "normal", "activeWorkloadPolicy": "idle_required", "recoveryRunbookRef": "runbook:codex-web-gpt-recovery" },
+          "isolation": { "domainRef": "network:codex-web-production", "mode": "isolated", "boundaryRefs": ["network:codex-web-production"] },
+          "capabilities": ["observe", "verify", "drift_detect", "recommend", "coordinate", "recover", "mutate"]
+        },
+        "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" }
+      }
+    ],
+    "relations": [
+      { "relationId": "relation:codex-web-runtime-owner", "relationClass": "owned_by", "sourceId": "service:codex-web-gpt-runtime", "targetId": "application:codex-web-gpt", "state": "active", "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "relationId": "relation:codex-web-runtime-connector", "relationClass": "depends_on", "sourceId": "service:codex-web-gpt-runtime", "targetId": "service:codex-web-gpt-connector", "state": "active", "governance": { "dependency": { "class": "required", "availability": "continuous", "quiescenceRequired": true, "disruptionRisk": "high", "recoveryRunbookRef": "runbook:codex-web-gpt-recovery" } }, "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "relationId": "relation:codex-web-runtime-bridge", "relationClass": "routes_to", "sourceId": "service:codex-web-gpt-runtime", "targetId": "tunnel:codex-web-gpt-bridge", "state": "active", "governance": { "routeOwnership": { "ownerRef": "application:codex-web-gpt", "ownerState": "confirmed", "writerRefs": ["application:codex-web-gpt"], "mutationAuthority": "owner-only" } }, "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "relationId": "relation:codex-web-runtime-session", "relationClass": "connects_to", "sourceId": "service:codex-web-gpt-runtime", "targetId": "control_plane:codex-web-gpt-browser-session", "state": "active", "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } }
+    ],
+    "serviceBindings": [
+      { "bindingId": "binding:codex-web-runtime-profile", "serviceId": "service:codex-web-gpt-runtime", "resourceId": "application:codex-web-gpt", "bindingKind": "runtime_profile", "configSourceRef": "fixture:codex-web-gpt", "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "bindingId": "binding:codex-web-connector", "serviceId": "service:codex-web-gpt-runtime", "resourceId": "service:codex-web-gpt-connector", "bindingKind": "dependency", "configSourceRef": "fixture:codex-web-gpt", "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } }
+    ],
+    "credentialReferences": [], "backupPolicies": [],
+    "healthPolicies": [
+      { "healthPolicyId": "health_policy:codex-web-production", "resourceId": "network:codex-web-production", "freshnessSeconds": 3600, "unknownIsHealthy": false, "conditions": [], "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "healthPolicyId": "health_policy:codex-web-development", "resourceId": "network:codex-web-development", "freshnessSeconds": 3600, "unknownIsHealthy": false, "conditions": [], "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "healthPolicyId": "health_policy:codex-web-gpt", "resourceId": "application:codex-web-gpt", "freshnessSeconds": 900, "unknownIsHealthy": false, "conditions": [], "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "healthPolicyId": "health_policy:codex-web-gpt-runtime", "resourceId": "service:codex-web-gpt-runtime", "freshnessSeconds": 300, "unknownIsHealthy": false, "conditions": [{ "conditionCode": "runtime_unknown", "severity": "high" }], "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "healthPolicyId": "health_policy:codex-web-gpt-dev-runtime", "resourceId": "service:codex-web-gpt-dev-runtime", "freshnessSeconds": 600, "unknownIsHealthy": false, "conditions": [], "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "healthPolicyId": "health_policy:codex-web-gpt-session", "resourceId": "control_plane:codex-web-gpt-browser-session", "freshnessSeconds": 900, "unknownIsHealthy": false, "conditions": [{ "conditionCode": "session_unknown", "severity": "high" }], "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "healthPolicyId": "health_policy:codex-web-gpt-connector", "resourceId": "service:codex-web-gpt-connector", "freshnessSeconds": 300, "unknownIsHealthy": false, "conditions": [{ "conditionCode": "provider_unknown", "severity": "high" }], "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } },
+      { "healthPolicyId": "health_policy:codex-web-gpt-bridge", "resourceId": "tunnel:codex-web-gpt-bridge", "freshnessSeconds": 300, "unknownIsHealthy": false, "conditions": [{ "conditionCode": "bridge_unknown", "severity": "high" }], "provenance": { "sourceRef": "fixture:codex-web-gpt", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-09-12T00:00:00Z", "owner": "fixture" } }
+    ],
+    "safetyPolicies": []
+  },
+  "identityBindingNotes": {
+    "accountRefs": ["account:codex-personal-a", "account:codex-personal-b"],
+    "sessionStateOwner": "application",
+    "credentialCustody": "unknown_until_evidence",
+    "liveIntegration": false,
+    "secretsIncluded": false
+  }
+}

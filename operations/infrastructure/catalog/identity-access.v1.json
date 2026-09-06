@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "0.1.0",
+  "catalogId": "brain-identity-access",
+  "entrypoint": true,
+  "mutationEnabled": false,
+  "accounts": [],
+  "credentials": [],
+  "sessions": [],
+  "surfaceBindings": [],
+  "runtimeProfiles": [],
+  "secretStoreAdapters": [],
+  "lifecyclePolicies": [],
+  "verificationPolicies": [],
+  "provenance": {
+    "sourceRef": "operations/specs/infrastructure-identity-access-v1.schema.json",
+    "classification": "AUTHORITATIVE-CONFIG",
+    "verifiedAt": "2026-09-04T00:00:00Z",
+    "freshnessDeadline": "2026-10-04T00:00:00Z",
+    "owner": "brain/identity-access",
+    "evidenceRefs": [
+      "operations/specs/infrastructure-knowledge-health-plane-architecture.md",
+      "operations/specs/infrastructure-knowledge-health-plane-roadmap.md"
+    ]
+  }
+}
