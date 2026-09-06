@@ -60,6 +60,13 @@ metadata and isolation plan. The bounded profile check correctly returned
 `NOT_OK` because authentication and profile-local configuration have not yet
 been established. No `auth.json` exists in either dedicated root.
 
+The latest metadata-only recheck on 2026-09-06 returned `CODEX_CLI_PILOT=OK`
+for the two-profile plan, but collection acceptance returned `NOT_OK` with
+`authentication_not_confirmed` and `profile_configuration_not_owned`. The
+controlled admission bridge consequently returned `BLOCKED` and performed no
+catalog mutation. This is the expected fail-closed result until each profile
+has been materially configured and authenticated by the operator.
+
 ### Observer residue correction
 
 The first observer implementation started Codex directly in the target roots
