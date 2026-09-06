@@ -58,7 +58,7 @@ test('New Relic maps every configured resource and surfaces disk/reporting failu
   assert.equal(aws.metricsSummary.apmReporting, 1);
   assert.equal(aws.metricsSummary.openIssues, 1);
 
-  const supabase = observations.find((entry) => entry.resourceId === 'host:supabase');
+  const supabase = observations.find((entry) => entry.resourceId === 'host:vm-supabase');
   assert.equal(supabase.status, 'unhealthy');
   assert.equal(supabase.freshness, 'stale');
   assert.ok(supabase.conditionCodes.includes('host_not_reporting'));
@@ -110,7 +110,7 @@ test('Tailscale normalizes expected devices and never silently drops missing pee
   assert.equal(office.status, 'healthy');
   assert.equal(office.metricsSummary.sshReachable, true);
 
-  const supabase = observations.find((entry) => entry.resourceId === 'host:supabase');
+  const supabase = observations.find((entry) => entry.resourceId === 'host:vm-supabase');
   assert.equal(supabase.status, 'unhealthy');
   assert.ok(supabase.conditionCodes.includes('tailscale_device_offline'));
 

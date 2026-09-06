@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { evaluateLifecycleReadiness } from '../../../../tools/infrastructure-catalog/governance-core.mjs';
 
 export const INFRASTRUCTURE_ACTION_SCHEMA_VERSION = '1.0.0';
 
@@ -114,6 +115,7 @@ export function computeInfrastructureActionHash(actionPlan) {
     forbiddenEffects: actionPlan.forbiddenEffects ?? [],
     reversibility: actionPlan.reversibility,
     rollback: actionPlan.rollback,
+    quiescenceEvidence: actionPlan.preconditions?.quiescenceEvidence ?? [],
   };
   return createHash('sha256').update(stableStringify(intent)).digest('hex');
 }
@@ -248,6 +250,22 @@ function providerEvidenceFailures(actionPlan) {
   return sortedUnique(failures);
 }
 
+function governanceAuthorityFailures(actionPlan, resourcesById) {
+  if (!isMutation(actionPlan)) return [];
+  const failures = [];
+  for (const resourceId of actionPlan.targetResourceIds ?? []) {
+    const governance = resourcesById.get(resourceId)?.governance;
+    if (!governance) continue;
+    if (governance.admissionState !== 'admitted') failures.push(`resource_not_admitted:${resourceId}`);
+    if (governance.ownership?.ownerState !== 'confirmed' || !governance.ownership?.authoritativeOwnerRef) {
+      failures.push(`resource_owner_unresolved:${resourceId}`);
+    }
+    if (!(governance.capabilities ?? []).includes('mutate')) failures.push(`resource_mutation_not_admitted:${resourceId}`);
+    if (governance.ownership?.mutationAuthority === 'none') failures.push(`mutation_authority_missing:${resourceId}`);
+  }
+  return failures;
+}
+
 function evaluateRequiredEvidence(actionPlan, requiredEvidence, approvalStatus) {
   if (!isMutation(actionPlan)) return [];
   const failures = [];
@@ -303,6 +321,7 @@ export function evaluateInfrastructureActionSafety({
   relations = [],
   safetyPolicies = [],
   incidents = [],
+  runtimeEvidence = [],
   canonicalPolicyCatalogVersion,
   now,
 }) {
@@ -349,8 +368,23 @@ export function evaluateInfrastructureActionSafety({
 
   denialCodes.push(...evaluateRequiredEvidence(actionPlan, requiredEvidence, approvalStatus));
   denialCodes.push(...providerEvidenceFailures(actionPlan));
+  denialCodes.push(...governanceAuthorityFailures(actionPlan, resourceMap));
   const incidentFailure = incidentConstraintViolation(actionPlan, incidents);
   if (incidentFailure) denialCodes.push(incidentFailure);
+
+  const lifecycleReadiness = uniqueTargets
+    .map((resourceId) => resourceMap.get(resourceId))
+    .filter((resource) => resource?.governance?.lifecycle?.quiescenceRequired === true)
+    .map((resource) => evaluateLifecycleReadiness({
+      resource,
+      runtimeEvidence: runtimeEvidence.length > 0 ? runtimeEvidence : actionPlan.preconditions?.quiescenceEvidence ?? [],
+    }));
+  if (isMutation(actionPlan)) {
+    for (const readiness of lifecycleReadiness) {
+      if (readiness.status === 'blocked') denialCodes.push(`active_workload_blocks_operation:${readiness.resourceId}`);
+      else if (readiness.status === 'unknown') denialCodes.push(`quiescence_unknown:${readiness.resourceId}`);
+    }
+  }
 
   if (isMutation(actionPlan)) {
     const declaredBlastRadius = actionPlan.preconditions?.blastRadius;
@@ -402,6 +436,7 @@ export function evaluateInfrastructureActionSafety({
     satisfiedEvidence,
     missingEvidence: uniqueDenials,
     requiredAuthority,
+    lifecycleReadiness,
     approvalStatus: approvalStatus.status,
     executionEnabled: false,
     executionPerformed: false,

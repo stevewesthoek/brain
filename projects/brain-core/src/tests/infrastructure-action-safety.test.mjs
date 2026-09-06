@@ -21,6 +21,7 @@ function evaluate(actionPlan, extra = {}) {
     relations: extra.relations ?? fixtures.relations,
     safetyPolicies: extra.safetyPolicies ?? fixtures.safetyPolicies,
     incidents: extra.incidents ?? [],
+    runtimeEvidence: extra.runtimeEvidence ?? [],
     canonicalPolicyCatalogVersion: extra.canonicalPolicyCatalogVersion ?? fixtures.policyCatalogVersion,
     now: extra.now ?? fixtures.now,
   });
@@ -246,6 +247,25 @@ test('valid low-risk reversible plan reaches preflight_ready without Decision Co
 test('active incident severity constraint blocks mutation', () => {
   const result = evaluate(base('highRiskApproved'), { incidents: [fixtures.blockingIncident] });
   expectDenied(result, 'incident_severity_exceeds_limit');
+});
+
+test('governed mutation requires observed quiescence and blocks active workload', () => {
+  const governed = clone(fixtures.resources.find((resource) => resource.resourceId === 'host:test-high'));
+  governed.governance = {
+    lifecycle: { quiescenceRequired: true, activeWorkloadPolicy: 'idle_required' },
+  };
+  const missing = evaluate(base('highRiskApproved'), { resources: [governed] });
+  expectDenied(missing, 'quiescence_unknown:host:test-high');
+  const active = evaluate(base('highRiskApproved'), {
+    resources: [governed],
+    runtimeEvidence: [{ resourceId: 'host:test-high', workloadState: 'active' }],
+  });
+  expectDenied(active, 'active_workload_blocks_operation:host:test-high');
+  const idle = evaluate(base('highRiskApproved'), {
+    resources: [governed],
+    runtimeEvidence: [{ resourceId: 'host:test-high', workloadState: 'idle' }],
+  });
+  assert.equal(idle.lifecycleReadiness[0].status, 'ready');
 });
 
 test('action hash is deterministic', () => {

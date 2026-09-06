@@ -12,11 +12,13 @@ test('listAgentCapabilities returns the seeded registry', async () => {
   assert.equal(new Set(ids).size, ids.length);
 
   for (const requiredId of [
+    'skill.capability-discovery',
     'skill.code',
     'skill.design',
     'skill.research',
     'skill.web',
     'skill.video',
+    'skill.stripe',
     'cli.cloudflare',
     'cli.dokploy',
     'cli.aws',
