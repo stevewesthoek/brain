@@ -29,6 +29,18 @@ export interface AgentCapabilitySummary {
 
 const AGENT_CAPABILITIES: AgentCapabilitySummary[] = [
   {
+    id: 'skill.capability-discovery',
+    kind: 'skill',
+    label: 'Capability Discovery',
+    source: 'ai/skills/custom/capability-discovery/SKILL.md',
+    description: 'Routes natural-language requests to the shared skill, CLI, MCP, and runbook inventory.',
+    safetyClass: 'read_only',
+    requiresApprovalFor: [],
+    preferredAiTaskTypes: ['capability_discovery', 'tool_routing', 'agent_setup'],
+    verification: ['node tools/discover-capabilities.mjs --query "<request>"'],
+    enabled: true,
+  },
+  {
     id: 'skill.code',
     kind: 'skill',
     label: 'Code Orchestrator',
@@ -98,6 +110,18 @@ const AGENT_CAPABILITIES: AgentCapabilitySummary[] = [
     requiresApprovalFor: ['external_state', 'save_to_mind', 'external_transcription', 'paid_vision'],
     preferredAiTaskTypes: ['video_frame_analysis', 'transcript_summarization', 'video_summary_generation'],
     verification: ['canonical result envelope', 'timestamped visual observations', 'processing cost evidence'],
+    enabled: true,
+  },
+  {
+    id: 'skill.stripe',
+    kind: 'skill',
+    label: 'Stripe CLI',
+    source: 'ai/skills/custom/stripe/stripe-cli/SKILL.md',
+    description: 'Routes Stripe inspection and local webhook workflows through the shared Stripe CLI route.',
+    safetyClass: 'financial',
+    requiresApprovalFor: ['financial', 'credential_sensitive', 'external_state'],
+    preferredAiTaskTypes: ['billing', 'payments', 'financial'],
+    verification: ['stripe version', 'node tools/discover-capabilities.mjs --query "Stripe"'],
     enabled: true,
   },
 ];
