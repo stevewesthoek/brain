@@ -1,7 +1,7 @@
 # Brain Repository Mainline Reconciliation
 
 **Date:** 2026-09-06
-**Status:** in progress; evidence and attribution phase
+**Status:** complete for the reviewed mainline reconciliation; protected residual work remains explicitly retained
 **Canonical target:** one validated, clean `main` checkout and explicit
 disposition for every branch, worktree, and changed path
 **Safety boundary:** no live OAuth, Keychain, Codex, WebGPT, MCP, Hooks,
@@ -147,24 +147,24 @@ This ledger will be completed as reconciliation proceeds:
 
 | Resource | Required disposition | Status |
 | --- | --- | --- |
-| Active Brain branch | Partition, validate, and commit accepted logical tranches; preserve or supersede the rest explicitly | Evidence captured; attribution in progress |
+| Active Brain branch | Partition, validate, and commit accepted logical tranches; preserve or supersede the rest explicitly | Accepted tranches are on pushed main; dirty residual work remains protected in the active checkout |
 | Video Orchestrator branch | Integrate accepted source/contracts/docs/tests; exclude or govern generated output | Approved-source intent reconstructed on main; branch remains protected for dirty work |
 | Brain Console launcher | Refresh/rebase or reconstruct on current `main`; do not preserve stale side line | Protected: current-main telemetry/evidence refresh required; stale Aug 30 “current health” claims not admitted |
 | Supabase recovery automation | Reconstruct on current `main` only after disabled/canonical-path/rollback gates are repaired | Protected: 12 unique cutover commits not integrated; scheduling remains disabled |
 | Backup branch | Preserve recovery provenance; do not merge snapshot noise | Protected pending unique-history review |
-| Detached `.codex` worktree | Provenance review; remove only if no dependency remains | Preserved |
-| Detached `brain-runtime` | Govern runtime deployment/reconcile ownership before removal | Preserved; runtime dependency suspected |
-| Historical local branches | Classify and retire only after dependency checks | Pending |
-| Remote feature branches | Classify after main integration and push; delete only proven obsolete refs | Pending |
-| Generated artifacts | Define class-specific retention/ignore/release policy | Pending explicit policy |
+| Detached `.codex` worktree | Provenance review; remove only if no dependency remains | Retained: clean detached ancestor, but task ownership is not proven absent |
+| Detached `brain-runtime` | Govern runtime deployment/reconcile ownership before removal | Retained: scheduler/runtime dependency remains possible |
+| Historical local branches | Classify and retire only after dependency checks | 35 fully merged unattached branches deleted; unique branches retained |
+| Remote feature branches | Classify after main integration and push; delete only proven obsolete refs | 13 fully merged refs deleted; unique/protected refs retained |
+| Generated artifacts | Define class-specific retention/ignore/release policy | Not admitted to main; user-owned generated/runtime artifacts remain in protected dirty worktrees |
 
 ## Completion record
 
 To be filled only after final validation:
 
-- commits created: main reconciliation tranches through `de5ac46a24b7ab70b38dcb5370ea97d0ee806887`; report commit pending;
-- branches integrated/superseded/deleted: pending;
-- worktrees removed/retained: pending;
-- final local `main` SHA and `origin/main` SHA: pending;
-- final cleanliness and secret scan: pending;
-- residual exceptions and removal conditions: pending.
+- commits created: 18 pushed mainline commits, ending with report formatting commit `d90e84fc74f8c8589f2eae6e661439b6550e3d19`;
+- branches integrated/superseded/deleted: accepted work integrated; 35 local and 13 remote fully merged refs deleted; unique/protected refs retained;
+- worktrees removed/retained: none removed; 7 retained, including the active dirty worktree, Video, launcher, Supabase, detached `.codex`, and runtime worktrees;
+- final local `main` SHA and `origin/main` SHA: `d90e84fc74f8c8589f2eae6e661439b6550e3d19` (equal);
+- final cleanliness and secret scan: integration worktree clean; high-risk secret-value-pattern scan found 0 matches; metadata-only validators report `rawSecrets=none` and `containsSecrets=false`;
+- residual exceptions and removal conditions: protected unique branches/worktrees remain until their dirty/ambiguous ownership is separately resolved; generated artifact policy and fresh runtime evidence remain separate follow-up work.
