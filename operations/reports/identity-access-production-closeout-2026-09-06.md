@@ -187,6 +187,12 @@ they contain dirty, unique, or runtime-coupled state. The clean detached
 open handles, and was removed through Git worktree semantics. No unexplained
 worktree was silently deleted.
 
+The fresh process check on 2026-09-06 still found the native ChatGPT/Codex
+application, Codex app-server processes, Computer Use, and the separate Codex
+WebGPT application active. Therefore the externally controlled maintenance
+window is not open. No shutdown, logout, route change, browser-session change,
+or runtime relocation was attempted from this task.
+
 Running the managed-root checker from the integration path reports symlink
 target differences because the live links intentionally point at the active
 `/Users/Office/Repos/stevewesthoek/brain` path. That is a path-placement issue,
