@@ -211,12 +211,12 @@ function writeOwnerOnlyJson(file, value, { replace = false } = {}) {
   const destination = resolvedAbsolute(file, 'output');
   const parent = path.dirname(destination);
   fs.mkdirSync(parent, { recursive: true, mode: 0o700 });
-  fs.chmodSync(parent, 0o700);
+  assertOwnerOnlyPath(parent, { directory: true });
   const existing = metadata(destination);
   if (existing.exists && !replace) throw new Error(`refusing to overwrite existing evidence: ${destination}`);
   if (existing.exists) assertOwnerOnlyPath(destination);
   const temp = `${destination}.tmp-${process.pid}`;
-  const descriptor = fs.openSync(temp, 'w', 0o600);
+  const descriptor = fs.openSync(temp, 'wx', 0o600);
   try {
     fs.writeFileSync(descriptor, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
     fs.fchmodSync(descriptor, 0o600);
@@ -337,9 +337,9 @@ function buildPacket(options) {
 
 function processCategory(command) {
   const lower = command.toLowerCase();
-  if (command.startsWith('/Applications/ChatGPT.app/')) return 'native_chatgpt_application';
+  if (command.startsWith('/Applications/ChatGPT.app/') || command.startsWith('/Applications/ChatGPT Classic.app/')) return 'native_chatgpt_application';
   if (command.startsWith('/Applications/Codex.app/')) return 'native_codex_application';
-  if (command.includes('/Codex Computer Use.app/') || lower.includes('skycomputeruse')) return 'native_computer_use_service';
+  if (command.includes('/Codex Computer Use.app/') || lower.includes('skycomputeruse') || lower.includes('/unified-computer-use/')) return 'native_computer_use_service';
   if (lower.includes('cualockscreenguardian')) return 'native_computer_use_guardian';
   if (command.includes('/cua_node/bin/node_repl')) return 'native_codex_node_repl';
   if (lower.includes('chatgpt for chrome chrome-extension://')) return 'native_codex_browser_extension_host';
@@ -401,7 +401,8 @@ function loadPacket(file) {
   for (const field of ['sourceCheckout', 'canonicalCheckout', 'profilesRoot', 'candidateCatalog', 'canonicalCatalog', 'continuationEvidencePath']) {
     if (typeof packet[field] !== 'string' || !path.isAbsolute(packet[field])) throw new Error(`packet path is invalid: ${field}`);
   }
-  if (JSON.stringify(packet).match(/"(?:access[_-]?token|refresh[_-]?token|password|secret|cookie|authorization)"\s*:/i)) {
+  const serialized = JSON.stringify(packet);
+  if (serialized.includes('@') || serialized.match(/"(?:access[_-]?token|refresh[_-]?token|password|secret|cookie|authorization)"\s*:/i)) {
     throw new Error('packet contains a forbidden credential-like field or value');
   }
   return { packet, packetPath };
