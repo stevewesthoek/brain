@@ -6,21 +6,21 @@
   "mutationEnabled": false,
   "accounts": [
     {
-      "accountId": "account:provider-a.primary",
+      "accountId": "account:provider-a.01",
       "providerId": "provider-a",
       "accountKind": "human_account",
       "displayName": "Synthetic provider A primary account",
       "lifecycleState": "enrolled",
       "expectedPrincipal": {
         "principalType": "provider_account",
-        "principalRef": "principal:provider-a.primary",
+        "principalRef": "principal:provider-a.01",
         "displayLabel": "synthetic-primary",
         "matchStrategy": "provider_asserted_subject"
       },
-      "credentialIds": ["credential:provider-a.primary.refresh"],
-      "sessionIds": ["session:provider-a.primary.cli", "session:provider-a.primary.mcp"],
-      "surfaceBindingIds": ["surface_binding:provider-a.primary.codex-cli", "surface_binding:provider-a.primary.codex-mcp"],
-      "runtimeProfileIds": ["runtime_profile:provider-a.primary.cli"],
+      "credentialIds": ["credential:provider-a.01.refresh"],
+      "sessionIds": ["session:provider-a.01.cli", "session:provider-a.01.mcp"],
+      "surfaceBindingIds": ["surface_binding:provider-a.01.codex-cli", "surface_binding:provider-a.01.codex-mcp"],
+      "runtimeProfileIds": ["runtime_profile:provider-a.01.cli"],
       "verificationPolicyId": "verification_policy:provider-principal",
       "recoveryRunbookRef": "runbook://provider-a/interactive-reauthentication",
       "provenance": {
@@ -33,21 +33,21 @@
       }
     },
     {
-      "accountId": "account:provider-a.secondary",
+      "accountId": "account:provider-a.02",
       "providerId": "provider-a",
       "accountKind": "human_account",
       "displayName": "Synthetic provider A secondary account",
       "lifecycleState": "enrolled",
       "expectedPrincipal": {
         "principalType": "provider_account",
-        "principalRef": "principal:provider-a.secondary",
+        "principalRef": "principal:provider-a.02",
         "displayLabel": "synthetic-secondary",
         "matchStrategy": "provider_asserted_subject"
       },
-      "credentialIds": ["credential:provider-a.secondary.api"],
+      "credentialIds": ["credential:provider-a.02.api"],
       "sessionIds": [],
-      "surfaceBindingIds": ["surface_binding:provider-a.secondary.codex-cli"],
-      "runtimeProfileIds": ["runtime_profile:provider-a.secondary.cli"],
+      "surfaceBindingIds": ["surface_binding:provider-a.02.codex-cli"],
+      "runtimeProfileIds": ["runtime_profile:provider-a.02.cli"],
       "verificationPolicyId": "verification_policy:provider-principal",
       "recoveryRunbookRef": "runbook://provider-a/api-key-recovery",
       "provenance": {
@@ -62,12 +62,12 @@
   ],
   "credentials": [
     {
-      "credentialId": "credential:provider-a.primary.refresh",
-      "accountId": "account:provider-a.primary",
+      "credentialId": "credential:provider-a.01.refresh",
+      "accountId": "account:provider-a.01",
       "credentialKind": "oauth_refresh_credential",
       "secretOwner": "secret_store",
       "secretStoreAdapterId": "secret_store:machine_runtime",
-      "secretStoreRef": "secret-ref://machine-runtime/provider-a.primary/refresh",
+      "secretStoreRef": "secret-ref://machine-runtime/provider-a.01/refresh",
       "materialization": "bound_process_memory",
       "scopeSummary": ["identity", "minimal-provider-capability"],
       "expiryState": "unknown",
@@ -87,12 +87,12 @@
       }
     },
     {
-      "credentialId": "credential:provider-a.secondary.api",
-      "accountId": "account:provider-a.secondary",
+      "credentialId": "credential:provider-a.02.api",
+      "accountId": "account:provider-a.02",
       "credentialKind": "api_key",
       "secretOwner": "secret_store",
       "secretStoreAdapterId": "secret_store:machine_runtime",
-      "secretStoreRef": "secret-ref://machine-runtime/provider-a.secondary/api",
+      "secretStoreRef": "secret-ref://machine-runtime/provider-a.02/api",
       "materialization": "child_process_environment",
       "scopeSummary": ["minimal-provider-capability"],
       "expiryState": "not_applicable",
@@ -114,9 +114,9 @@
   ],
   "sessions": [
     {
-      "sessionId": "session:provider-a.primary.cli",
-      "accountId": "account:provider-a.primary",
-      "surfaceBindingId": "surface_binding:provider-a.primary.codex-cli",
+      "sessionId": "session:provider-a.01.cli",
+      "accountId": "account:provider-a.01",
+      "surfaceBindingId": "surface_binding:provider-a.01.codex-cli",
       "binding": {
         "state": "declared",
         "expiresAt": null,
@@ -132,9 +132,9 @@
       "sessionKind": "cli_login",
       "stateOwner": "application",
       "applicationRef": "application:synthetic-cli",
-      "managedStateRef": "application-state://synthetic-cli/provider-a.primary",
-      "credentialIds": ["credential:provider-a.primary.refresh"],
-      "runtimeProfileId": "runtime_profile:provider-a.primary.cli",
+      "managedStateRef": "application-state://synthetic-cli/provider-a.01",
+      "credentialIds": ["credential:provider-a.01.refresh"],
+      "runtimeProfileId": "runtime_profile:provider-a.01.cli",
       "authenticationStorage": {
         "mode": "file",
         "owner": "application",
@@ -167,9 +167,9 @@
       }
     },
     {
-      "sessionId": "session:provider-a.primary.mcp",
-      "accountId": "account:provider-a.primary",
-      "surfaceBindingId": "surface_binding:provider-a.primary.codex-mcp",
+      "sessionId": "session:provider-a.01.mcp",
+      "accountId": "account:provider-a.01",
+      "surfaceBindingId": "surface_binding:provider-a.01.codex-mcp",
       "binding": {
         "state": "declared",
         "expiresAt": null,
@@ -185,9 +185,9 @@
       "sessionKind": "mcp_oauth_authorization",
       "stateOwner": "application",
       "applicationRef": "application:synthetic-mcp-client",
-      "managedStateRef": "application-state://synthetic-mcp/provider-a.primary",
+      "managedStateRef": "application-state://synthetic-mcp/provider-a.01",
       "credentialIds": [],
-      "runtimeProfileId": "runtime_profile:provider-a.primary.cli",
+      "runtimeProfileId": "runtime_profile:provider-a.01.cli",
       "authenticationStorage": {
         "mode": "browser_profile",
         "owner": "application",
@@ -222,44 +222,44 @@
   ],
   "surfaceBindings": [
     {
-      "surfaceBindingId": "surface_binding:provider-a.primary.codex-cli",
-      "accountId": "account:provider-a.primary",
+      "surfaceBindingId": "surface_binding:provider-a.01.codex-cli",
+      "accountId": "account:provider-a.01",
       "surfaceId": "codex-cli",
       "lifecycleState": "enrolled",
       "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}},
-      "sessionIds": ["session:provider-a.primary.cli"],
-      "runtimeProfileIds": ["runtime_profile:provider-a.primary.cli"],
+      "sessionIds": ["session:provider-a.01.cli"],
+      "runtimeProfileIds": ["runtime_profile:provider-a.01.cli"],
       "capabilityEvidence": {"nAccountModel": "supported", "isolatedRuntime": "supported", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "supported"},
       "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}
     },
     {
-      "surfaceBindingId": "surface_binding:provider-a.primary.codex-mcp",
-      "accountId": "account:provider-a.primary",
+      "surfaceBindingId": "surface_binding:provider-a.01.codex-mcp",
+      "accountId": "account:provider-a.01",
       "surfaceId": "codex-mcp",
       "lifecycleState": "enrolled",
       "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}},
-      "sessionIds": ["session:provider-a.primary.mcp"],
+      "sessionIds": ["session:provider-a.01.mcp"],
       "runtimeProfileIds": [],
       "capabilityEvidence": {"nAccountModel": "unknown", "isolatedRuntime": "unknown", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "unknown"},
       "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}
     },
     {
-      "surfaceBindingId": "surface_binding:provider-a.secondary.codex-cli",
-      "accountId": "account:provider-a.secondary",
+      "surfaceBindingId": "surface_binding:provider-a.02.codex-cli",
+      "accountId": "account:provider-a.02",
       "surfaceId": "codex-cli",
       "lifecycleState": "enrolled",
       "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}},
       "sessionIds": [],
-      "runtimeProfileIds": ["runtime_profile:provider-a.secondary.cli"],
+      "runtimeProfileIds": ["runtime_profile:provider-a.02.cli"],
       "capabilityEvidence": {"nAccountModel": "supported", "isolatedRuntime": "supported", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "supported"},
       "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}
     }
   ],
   "runtimeProfiles": [
     {
-      "runtimeProfileId": "runtime_profile:provider-a.primary.cli",
-      "accountId": "account:provider-a.primary",
-      "surfaceBindingId": "surface_binding:provider-a.primary.codex-cli",
+      "runtimeProfileId": "runtime_profile:provider-a.01.cli",
+      "accountId": "account:provider-a.01",
+      "surfaceBindingId": "surface_binding:provider-a.01.codex-cli",
       "binding": {
         "state": "declared",
         "expiresAt": null,
@@ -274,7 +274,7 @@
       },
       "profileKind": "cli",
       "runtimeAdapterRef": "runtime_adapter:generic-cli",
-      "isolationRef": "runtime-ref://profiles/provider-a.primary",
+      "isolationRef": "runtime-ref://profiles/provider-a.01",
       "stateOwnership": "runtime_adapter",
       "authenticationStorage": {
         "mode": "file",
@@ -308,9 +308,9 @@
       }
     },
     {
-      "runtimeProfileId": "runtime_profile:provider-a.secondary.cli",
-      "accountId": "account:provider-a.secondary",
-      "surfaceBindingId": "surface_binding:provider-a.secondary.codex-cli",
+      "runtimeProfileId": "runtime_profile:provider-a.02.cli",
+      "accountId": "account:provider-a.02",
+      "surfaceBindingId": "surface_binding:provider-a.02.codex-cli",
       "binding": {
         "state": "declared",
         "expiresAt": null,
@@ -325,7 +325,7 @@
       },
       "profileKind": "cli",
       "runtimeAdapterRef": "runtime_adapter:generic-cli",
-      "isolationRef": "runtime-ref://profiles/provider-a.secondary",
+      "isolationRef": "runtime-ref://profiles/provider-a.02",
       "stateOwnership": "runtime_adapter",
       "authenticationStorage": {
         "mode": "keyring",

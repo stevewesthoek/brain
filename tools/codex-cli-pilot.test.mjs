@@ -58,7 +58,7 @@ test('pilot plan selects a dynamic collection and keeps the canonical catalog se
     assert.equal(report.controls.globalProcessProbeUsed, false);
     assert.equal(report.controls.authContentsRead, false);
     assert.deepEqual(report.identity.selectedProfiles, selectedProfiles);
-    assert.deepEqual(report.accountMapping.preferredAccountIds, ['account:openai.personal.01']);
+    assert.deepEqual(report.accountMapping.preferredAccountIds, ['account:openai.01']);
   } finally {
     fs.rmSync(profilesRoot, { recursive: true, force: true });
   }
@@ -106,7 +106,7 @@ test('collection acceptance remains NOT_OK until every selected profile is attes
     assert.deepEqual(accepted.identity.attestedProfiles, selectedProfiles);
     assert.equal(accepted.controls.loginExecuted, false);
     assert.equal(accepted.controls.authCopied, false);
-    assert.deepEqual(accepted.accountMapping.preferredAccountIds, ['account:openai.personal.01']);
+    assert.deepEqual(accepted.accountMapping.preferredAccountIds, ['account:openai.01']);
   } finally {
     fs.rmSync(profilesRoot, { recursive: true, force: true });
   }

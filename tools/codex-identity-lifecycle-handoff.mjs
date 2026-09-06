@@ -16,38 +16,49 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 import { runRuntimeProfileManager } from './runtime-profile-manager.mjs';
+import { createCodexCliRuntimeProfileAdapter } from './runtime-profile-manager/codex-cli-adapter.mjs';
+import {
+  buildRuntimeProfileConfigurationArtifact,
+  compileCodexProfileConfig,
+  inspectRuntimeProfileConfiguration,
+} from './runtime-profile-manager/runtime-profile-configuration.mjs';
 
 const DEFAULT_SOURCE_CHECKOUT = '/Users/Office/Repos/stevewesthoek/brain-main-integration-2026-09-01';
 const DEFAULT_CANONICAL_CHECKOUT = '/Users/Office/Repos/stevewesthoek/brain';
 const DEFAULT_PROFILES_ROOT = path.join(os.homedir(), '.brain', 'codex-runtime-profiles');
 const DEFAULT_HANDOFF_ROOT = path.join(os.homedir(), '.brain', 'codex-identity-handoff');
+const DEFAULT_RETIREMENT_ROOT = path.join(os.homedir(), '.brain', 'codex-runtime-profile-retirements');
 const DEFAULT_CANDIDATE_CATALOG = 'operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json';
 const DEFAULT_CANONICAL_CATALOG = 'operations/infrastructure/catalog/identity-access.v1.json';
 const HANDOFF_KIND = 'brain.codex.identity.profile-lifecycle-handoff';
 const EVIDENCE_KIND = 'brain.codex.identity.profile-lifecycle-evidence';
 const SCHEMA_VERSION = '2.0.0';
 const SHARED_DEFAULT_ROOT = path.join(os.homedir(), '.codex');
+const LEGACY_PROFILE_IDS = Object.freeze([
+  'runtime_profile:openai.personal.01.cli',
+  'runtime_profile:openai.personal.02.cli',
+]);
 
 const PROFILE_SPECS = Object.freeze([
   Object.freeze({
-    accountId: 'account:openai.personal.01',
-    runtimeProfileId: 'runtime_profile:openai.personal.01.cli',
+    accountId: 'account:openai.01',
+    runtimeProfileId: 'runtime_profile:openai.01.cli',
     role: 'primary',
     preferred: true,
-    purpose: 'personal/default',
+    purpose: 'default',
   }),
   Object.freeze({
-    accountId: 'account:openai.personal.02',
-    runtimeProfileId: 'runtime_profile:openai.personal.02.cli',
+    accountId: 'account:openai.02',
+    runtimeProfileId: 'runtime_profile:openai.02.cli',
     role: 'secondary',
     preferred: false,
-    purpose: 'overflow capacity',
+    purpose: 'overflow_capacity',
   }),
 ]);
 
 function usage() {
   return [
-    'Usage: node tools/codex-identity-lifecycle-handoff.mjs <prepare|inspect|execute> [options]',
+    'Usage: node tools/codex-identity-lifecycle-handoff.mjs <prepare|inspect|execute|retire-stale> [options]',
     '',
     'This is the profile-scoped v2 coordinator. It does not require global',
     'Codex, ChatGPT, WebGPT, Computer Use, SSH, or MCP shutdown.',
@@ -58,6 +69,7 @@ function usage() {
     '  --canonical-checkout PATH canonical Brain path for observation only',
     '  --profiles-root PATH     dedicated CODEX_HOME parent',
     '  --handoff-root PATH      owner-only packet/evidence directory',
+    '  --retirement-root PATH   owner-only archive for retired bootstrap roots',
     '  --confirm                 required for execute',
     '  --login                   emit official per-profile login handoffs',
     '',
@@ -73,6 +85,7 @@ function parseArgs(argv) {
     canonicalCheckout: DEFAULT_CANONICAL_CHECKOUT,
     profilesRoot: DEFAULT_PROFILES_ROOT,
     handoffRoot: DEFAULT_HANDOFF_ROOT,
+    retirementRoot: DEFAULT_RETIREMENT_ROOT,
     packet: undefined,
     confirm: false,
     login: false,
@@ -83,6 +96,7 @@ function parseArgs(argv) {
     ['--canonical-checkout', 'canonicalCheckout'],
     ['--profiles-root', 'profilesRoot'],
     ['--handoff-root', 'handoffRoot'],
+    ['--retirement-root', 'retirementRoot'],
   ]);
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index];
@@ -97,9 +111,9 @@ function parseArgs(argv) {
       process.exit(0);
     } else throw new Error(`unknown option: ${arg}\n${usage()}`);
   }
-  if (!['prepare', 'inspect', 'execute'].includes(operation)) throw new Error(usage());
+  if (!['prepare', 'inspect', 'execute', 'retire-stale'].includes(operation)) throw new Error(usage());
   if (['inspect', 'execute'].includes(operation) && !options.packet) throw new Error(`${operation} requires --packet PATH`);
-  if (operation === 'execute' && !options.confirm) throw new Error('execute requires --confirm');
+  if (['execute', 'retire-stale'].includes(operation) && !options.confirm) throw new Error(`${operation} requires --confirm`);
   return { operation, options };
 }
 
@@ -325,6 +339,106 @@ function deriveAttemptEvidencePath(packet) {
   return path.join(parent, `${stem}.attempt-${stamp}-${process.pid}-${crypto.randomBytes(4).toString('hex')}.evidence.json`);
 }
 
+function relativeEntries(root) {
+  const entries = [];
+  function visit(current, relative) {
+    for (const name of fs.readdirSync(current)) {
+      const child = path.join(current, name);
+      const childRelative = relative ? path.join(relative, name) : name;
+      const info = metadata(child);
+      entries.push({ relativePath: childRelative, ...info });
+      if (info.type === 'directory') visit(child, childRelative);
+    }
+  }
+  visit(root, '');
+  return entries.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+}
+
+function isKnownBootstrapEntry(entry) {
+  if (['config.toml', 'config.toml.brain-ownership.json', 'tmp', 'tmp/arg0'].includes(entry.relativePath)) return true;
+  if (/^tmp\/arg0\/codex-arg0[A-Za-z0-9]+$/.test(entry.relativePath)) return entry.type === 'directory';
+  if (/^tmp\/arg0\/codex-arg0[A-Za-z0-9]+\/.lock$/.test(entry.relativePath)) return entry.type === 'file' && entry.size === 0;
+  if (/^tmp\/arg0\/codex-arg0[A-Za-z0-9]+\/(?:apply_patch|applypatch|codex-execve-wrapper)$/.test(entry.relativePath)) {
+    if (entry.type !== 'symlink') return false;
+    const target = fs.readlinkSync(path.join(entry.rootPath, entry.relativePath));
+    return path.isAbsolute(target) && target.startsWith('/opt/homebrew/lib/node_modules/@openai/codex/') && path.basename(target) === 'codex';
+  }
+  return false;
+}
+
+function inspectLegacyBootstrapRoot({ profilesRoot, runtimeProfileId, adapter }) {
+  const root = profileRoot(profilesRoot, runtimeProfileId);
+  const rootInfo = metadata(root);
+  if (!rootInfo.exists) return { runtimeProfileId, root, status: 'NOT_NEEDED', reason: 'root_absent' };
+  if (rootInfo.type !== 'directory' || rootInfo.ownerUid !== process.getuid?.() || (rootInfo.mode & 0o077) !== 0) {
+    return { runtimeProfileId, root, status: 'BLOCKED', reason: 'root_not_owner_only_directory' };
+  }
+  const entries = relativeEntries(root);
+  const entriesWithRoot = entries.map((entry) => ({ ...entry, rootPath: root }));
+  const unexpected = entriesWithRoot.filter((entry) => !isKnownBootstrapEntry(entry));
+  const unsafe = entries.filter((entry) => {
+    const knownRuntimeResidue = entry.relativePath === 'tmp'
+      || entry.relativePath === 'tmp/arg0'
+      || /^tmp\/arg0\/codex-arg0[A-Za-z0-9]+(?:\/\.lock)?$/.test(entry.relativePath)
+      || /^tmp\/arg0\/codex-arg0[A-Za-z0-9]+\/(?:apply_patch|applypatch|codex-execve-wrapper)$/.test(entry.relativePath);
+    return entry.type === 'symlink' ? !isKnownBootstrapEntry({ ...entry, rootPath: root }) : entry.ownerUid !== process.getuid?.() || (!knownRuntimeResidue && (entry.mode & 0o077) !== 0);
+  });
+  const configPath = path.join(root, 'config.toml');
+  const profile = { runtimeProfileId, profileKind: 'cli' };
+  const artifact = buildRuntimeProfileConfigurationArtifact({ profile, root, configPath });
+  const configuration = inspectRuntimeProfileConfiguration({ artifact });
+  let configMatchesBootstrap = false;
+  if (metadata(configPath).exists && metadata(configPath).type === 'file') {
+    const expected = compileCodexProfileConfig({ profile, artifact });
+    configMatchesBootstrap = fs.readFileSync(configPath, 'utf8') === expected;
+  }
+  const authentication = adapter.inspectAuthentication({ root });
+  const processState = adapter.inspectProcessOwnership({ profile, root, context: {} });
+  const resourceProbe = adapter.inspectProcessOwnership({ profile, root, context: {} });
+  const reasons = [
+    ...(unexpected.length ? ['unexpected_root_entries'] : []),
+    ...(unsafe.length ? ['unsafe_root_entry_permissions_or_type'] : []),
+    ...(configuration.state !== 'owned' ? ['brain_configuration_not_owned'] : []),
+    ...(!configMatchesBootstrap ? ['configuration_is_not_exact_bootstrap_policy'] : []),
+    ...(authentication.status !== 'not_authenticated' || authentication.state !== 'confirmed' ? ['authentication_not_confirmed_absent'] : []),
+    ...(processState.state !== 'none' ? ['profile_process_or_lease_present'] : []),
+    ...(resourceProbe.resourceOwners?.length ? ['profile_resource_in_use'] : []),
+    ...(resourceProbe.state === 'unknown' ? ['profile_resource_ownership_unresolved'] : []),
+  ];
+  return {
+    runtimeProfileId,
+    root,
+    status: reasons.length ? 'BLOCKED' : 'READY',
+    reasons,
+    entries: entries.map(({ relativePath, type, ownerUid, mode, size }) => ({ relativePath, type, ownerUid, mode, size })),
+    configuration: { state: configuration.state, reasons: configuration.reasons },
+    authentication: { state: authentication.state, status: authentication.status },
+    process: { state: processState.state },
+    resourceOwners: { state: processState.resourceOwners?.length ? 'active' : processState.state, owners: processState.resourceOwners ?? [] },
+  };
+}
+
+function retireLegacyBootstrapRoots(options, adapter = createCodexCliRuntimeProfileAdapter()) {
+  const profilesRoot = resolvedAbsolute(options.profilesRoot, 'profiles root');
+  const retirementRoot = resolvedAbsolute(options.retirementRoot, 'retirement root');
+  assertOwnerOnly(profilesRoot, { directory: true });
+  fs.mkdirSync(retirementRoot, { recursive: true, mode: 0o700 });
+  assertOwnerOnly(retirementRoot, { directory: true });
+  const inspections = LEGACY_PROFILE_IDS.map((runtimeProfileId) => inspectLegacyBootstrapRoot({ profilesRoot, runtimeProfileId, adapter }));
+  if (inspections.some((inspection) => inspection.status === 'BLOCKED')) {
+    return { status: 'BLOCKED', inspections, retired: [] };
+  }
+  const retired = [];
+  for (const inspection of inspections.filter((item) => item.status === 'READY')) {
+    const stamp = new Date().toISOString().replace(/[-:.]/g, '').replace(/Z$/, 'Z');
+    const archive = path.join(retirementRoot, `${inspection.runtimeProfileId.slice('runtime_profile:'.length)}.retired-${stamp}-${crypto.randomBytes(4).toString('hex')}`);
+    if (metadata(archive).exists) throw new Error(`retirement archive collision: ${archive}`);
+    fs.renameSync(inspection.root, archive);
+    retired.push({ runtimeProfileId: inspection.runtimeProfileId, from: inspection.root, to: archive, reason: 'superseded_before_authentication', namespaceReason: 'canonical_namespace_normalization' });
+  }
+  return { status: 'OK', inspections, retired };
+}
+
 function resolveCatalog(packet) {
   const candidate = resolvedAbsolute(packet.candidateCatalog, 'candidate catalog');
   const info = metadata(candidate);
@@ -449,6 +563,11 @@ async function main(argv = process.argv.slice(2)) {
     process.stdout.write(`PROFILE_LIFECYCLE=PACKET_READY\n${JSON.stringify({ status: packet.status, packetPath: outputPath, profilesRoot: packet.profilesRoot, secretsExcluded: true }, null, 2)}\n`);
     return 0;
   }
+  if (operation === 'retire-stale') {
+    const result = retireLegacyBootstrapRoots(options);
+    process.stdout.write(`PROFILE_LIFECYCLE=RETIRE_${result.status}\n${JSON.stringify(result, null, 2)}\n`);
+    return result.status === 'BLOCKED' ? 1 : 0;
+  }
   const loaded = loadPacket(options.packet);
   if (operation === 'inspect') {
     process.stdout.write(`PROFILE_LIFECYCLE=INSPECT_OK\n${JSON.stringify({ status: 'OK', handoffId: loaded.packet.handoffId, policy: loaded.packet.policy, profiles: loaded.packet.profiles }, null, 2)}\n`);
@@ -488,4 +607,5 @@ export {
   deriveAttemptEvidencePath,
   loadPacket,
   profileRoot,
+  retireLegacyBootstrapRoots,
 };

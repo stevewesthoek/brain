@@ -87,7 +87,7 @@ test('admission rejects a selected profile that is not a bound native CLI profil
     schema,
   });
   assert.equal(plan.status, 'BLOCKED');
-  assert.ok(plan.reasons.includes('unsupported_profile_surface:runtime_profile:openai.personal.01.cli'));
+  assert.ok(plan.reasons.includes('unsupported_profile_surface:runtime_profile:openai.01.cli'));
 });
 
 test('admission fails closed on conflicting canonical identity records', () => {
@@ -107,7 +107,7 @@ test('admission fails closed on conflicting canonical identity records', () => {
     schema,
   });
   assert.equal(plan.status, 'BLOCKED');
-  assert.ok(plan.reasons.includes('catalog_id_conflict:account:openai.personal.01'));
+  assert.ok(plan.reasons.includes('catalog_id_conflict:account:openai.01'));
 });
 
 test('execution creates an owner-only backup and atomically publishes the validated catalog', () => {

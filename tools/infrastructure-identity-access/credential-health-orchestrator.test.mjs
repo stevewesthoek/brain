@@ -118,7 +118,7 @@ test('declared expiry becomes an evidence-backed warning and then a critical con
 
 test('missed scheduler interval materializes stale evidence without claiming healthy', () => {
   const previous = {
-    credentialId: 'credential:provider-a.primary.refresh', accountId: 'account:provider-a.primary', providerId: 'provider-a', providerCredentialType: null,
+    credentialId: 'credential:provider-a.01.refresh', accountId: 'account:provider-a.01', providerId: 'provider-a', providerCredentialType: null,
     status: 'healthy', freshness: 'fresh', detailedState: 'verified_healthy', observedAt: '2030-01-01T00:00:00Z', freshnessDeadline: '2030-01-01T01:00:00Z',
     evaluationStatus: 'verified', conditionCodes: [], cadenceSeconds: 3600, backoffSeconds: 30, consecutiveTransientFailures: 0, missedIntervals: 0,
     lastAttemptAt: '2030-01-01T00:00:00Z', nextDueAt: '2030-01-01T01:00:00Z', expectedPrincipalMatch: 'verified', observedPrincipalLabel: null,

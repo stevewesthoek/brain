@@ -41,8 +41,8 @@ test('WebGPT isolation decision excludes native profiles and keeps unproven mode
   assert.equal(decision.preferredIntegrationStatus, 'target_contract_not_proven_by_v5_source');
   assert.equal(decision.fallbackIntegrationStatus, 'source_resolution_supported_launcher_lifecycle_unproven');
   assert.deepEqual(decision.nativeProfileIdsExcluded, [
-    'runtime_profile:openai.personal.01.cli',
-    'runtime_profile:openai.personal.02.cli',
+    'runtime_profile:openai.01.cli',
+    'runtime_profile:openai.02.cli',
   ]);
   assert.equal(decision.optionalWebGptConsumerProfile, 'runtime_profile:codex.webgpt.production');
 });

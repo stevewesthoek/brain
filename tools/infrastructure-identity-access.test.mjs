@@ -22,7 +22,7 @@ test('the portable fixture proves multiple accounts for one provider and applica
   assert.deepEqual(new Set(fixture.accounts.map((account) => account.providerId)), new Set(['provider-a']));
   assert.equal(fixture.sessions.every((session) => session.stateOwner === 'application'), true);
   assert.equal(fixture.credentials.every((credential) => credential.secretStoreRef?.startsWith('secret-ref://')), true);
-  assert.deepEqual(new Set(fixture.runtimeProfiles.map((profile) => profile.accountId)), new Set(['account:provider-a.primary', 'account:provider-a.secondary']));
+  assert.deepEqual(new Set(fixture.runtimeProfiles.map((profile) => profile.accountId)), new Set(['account:provider-a.01', 'account:provider-a.02']));
   assert.equal(fixture.runtimeProfiles.every((profile) => profile.binding.state === 'declared'), true);
   assert.equal(fixture.runtimeProfiles.find((profile) => profile.authenticationStorage.mode === 'keyring')?.authenticationStorage.profileIsolationProven, null);
   assert.equal(fixture.runtimeProfiles.find((profile) => profile.authenticationStorage.mode === 'file')?.authenticationStorage.profileIsolationProven, false);
@@ -43,7 +43,7 @@ test('schema rejects inline secret material and keepalive policy', () => {
   const catalog = loadJson(path.join(root, 'operations/fixtures/infrastructure-identity-access-alternate-v1.json'));
   catalog.credentials[0].secretStoreRef = 'inline-secret-material';
   assert.notEqual(validateJsonSchema(schema.$defs.identityAccessCatalog, catalog, schema).length, 0);
-  catalog.credentials[0].secretStoreRef = 'secret-ref://machine-runtime/provider-a.primary/refresh';
+  catalog.credentials[0].secretStoreRef = 'secret-ref://machine-runtime/provider-a.01/refresh';
   catalog.lifecyclePolicies[0].artificialKeepaliveAllowed = true;
   assert.notEqual(validateJsonSchema(schema.$defs.identityAccessCatalog, catalog, schema).length, 0);
 });
@@ -69,14 +69,14 @@ test('catalog preserves preferred account separately from the current observed a
   const fixture = loadJson(path.join(root, 'operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json'));
   const result = validateIdentityAccessCatalog({ schema, catalog: fixture, label: '.codex-pilot-candidates' });
   assert.deepEqual(result.errors, []);
-  assert.deepEqual(fixture.accounts.find((account) => account.accountId === 'account:openai.personal.01').accountRole, {
+  assert.deepEqual(fixture.accounts.find((account) => account.accountId === 'account:openai.01').accountRole, {
     class: 'primary', isPreferred: true, rank: 1,
   });
-  assert.deepEqual(fixture.accounts.find((account) => account.accountId === 'account:openai.personal.02').accountRole, {
+  assert.deepEqual(fixture.accounts.find((account) => account.accountId === 'account:openai.02').accountRole, {
     class: 'secondary', isPreferred: false, rank: 2,
   });
   const current = fixture.sessions.find((session) => fixture.currentObservedSessionIds.includes(session.sessionId));
-  assert.equal(current.accountId, 'account:openai.personal.02');
+  assert.equal(current.accountId, 'account:openai.02');
   assert.equal(current.binding.state, 'user_attested');
   assert.equal(current.runtimeProfileId, null);
 });

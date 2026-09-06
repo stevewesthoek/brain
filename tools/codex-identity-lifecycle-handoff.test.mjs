@@ -14,6 +14,7 @@ import {
   deriveAttemptEvidencePath,
   loadPacket,
   profileRoot,
+  retireLegacyBootstrapRoots,
 } from './codex-identity-lifecycle-handoff.mjs';
 
 function temporaryRoot(prefix) {
@@ -58,6 +59,8 @@ test('the new packet declares profile-local lifecycle semantics', () => {
   assert.equal(packet.policy.webGptMutation, false);
   assert.equal(packet.policy.nAccountModel, 'dynamic_collection');
   assert.equal(packet.profiles.length, 2);
+  assert.deepEqual(packet.profiles.map((profile) => profile.accountId), ['account:openai.01', 'account:openai.02']);
+  assert.deepEqual(packet.profiles.map((profile) => profile.runtimeProfileId), ['runtime_profile:openai.01.cli', 'runtime_profile:openai.02.cli']);
   assert.notEqual(packet.profiles[0].root, packet.profiles[1].root);
 });
 
@@ -86,7 +89,7 @@ test('retired v1 packets are rejected before execution', () => {
 
 test('profile roots cannot be the shared default CODEX_HOME', () => {
   const shared = path.join(os.homedir(), '.codex');
-  assert.throws(() => profileRoot(shared, 'runtime_profile:openai.personal.01.cli'), /shared/);
+  assert.throws(() => profileRoot(shared, 'runtime_profile:openai.01.cli'), /shared/);
 });
 
 test('evidence kind is distinct from the handoff packet kind', () => {
@@ -128,4 +131,18 @@ test('prepare writes a v2 packet only from a clean main checkout', () => {
   assert.equal(result.packet.policy.globalProcessQuiescenceRequired, false);
   assert.equal(result.packet.preparationEvidence.secretsExcluded, true);
   assert.ok(result.packetPath.endsWith('.packet.json'));
+});
+
+test('stale-root retirement fails closed when authentication material is present', () => {
+  const root = temporaryRoot('brain-profile-retirement-');
+  const profilesRoot = path.join(root, 'profiles');
+  fs.mkdirSync(profilesRoot, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(path.join(profilesRoot, 'openai.personal.01.cli'), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(profilesRoot, 'openai.personal.01.cli', 'auth.json'), '{}\n', { mode: 0o600 });
+  const fakeAdapter = {
+    inspectAuthentication: () => ({ state: 'confirmed', status: 'not_authenticated' }),
+    inspectProcessOwnership: () => ({ state: 'none', resourceOwners: [] }),
+  };
+  assert.equal(retireLegacyBootstrapRoots({ profilesRoot, retirementRoot: path.join(root, 'retirements') }, fakeAdapter).status, 'BLOCKED');
+  assert.equal(fs.existsSync(path.join(profilesRoot, 'openai.personal.01.cli')), true);
 });

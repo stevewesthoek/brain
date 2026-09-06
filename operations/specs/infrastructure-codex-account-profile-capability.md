@@ -83,7 +83,7 @@ runtime profile ── storage metadata ──> application/runtime-owned state
 ```
 
 Account IDs are stable Brain references such as
-`account:openai.personal.01` and `account:openai.personal.02`. They are not
+`account:openai.01` and `account:openai.02`. They are not
 email addresses and do not embed token hashes, filenames, browser directories,
 or provider session identifiers. The numeric suffix is an allocator output,
 not a fixed account count or a promise that the account is currently active.

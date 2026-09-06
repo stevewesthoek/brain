@@ -150,13 +150,26 @@ function bindingEvidence({ state = 'declared', observedAt, sourceRef, classifica
   };
 }
 
-function nextNumber(values, pattern) {
-  let maximum = 0;
-  for (const value of values) {
-    const match = pattern.exec(value ?? '');
-    if (match) maximum = Math.max(maximum, Number(match[1]));
+function escapedRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function nextAccountOrdinal(accounts, providerId) {
+  const provider = escapedRegex(providerId);
+  const canonicalPattern = new RegExp(`^account:${provider}\\.(\\d+)$`);
+  const legacyPattern = new RegExp(`^account:${provider}\\.(?:personal|work|business|primary|secondary)(?:\\.(\\d+))?$`);
+  const ordinals = [];
+  for (const account of accounts) {
+    const accountId = account?.accountId;
+    const canonical = canonicalPattern.exec(accountId ?? '');
+    if (canonical) {
+      ordinals.push(Number(canonical[1]));
+      continue;
+    }
+    const legacy = legacyPattern.exec(accountId ?? '');
+    if (legacy) ordinals.push(Number(legacy[1] ?? 1));
   }
-  return maximum + 1;
+  return (ordinals.length ? Math.max(...ordinals) : 0) + 1;
 }
 
 function accountRoleFor({ providerId, accounts, preferred = false, purpose = 'overflow_capacity' }) {
@@ -236,10 +249,9 @@ export function allocateAccountIdentity({
   if (preferred === true && accounts.some((account) => account.providerId === normalizedProvider && account.accountRole?.isPreferred === true && account.lifecycleState !== 'retired')) {
     throw new Error(`preferred account already exists for provider ${normalizedProvider}`);
   }
-  const accountPattern = new RegExp(`^account:${normalizedProvider}\\.(?:primary|secondary)\\.(\\d+)$`);
-  const number = nextNumber(accounts.map((account) => account.accountId), accountPattern);
+  const number = nextAccountOrdinal(accounts, normalizedProvider);
   const role = accountRoleFor({ providerId: normalizedProvider, accounts, preferred, purpose });
-  const accountId = `account:${normalizedProvider}.${role.class}.${String(number).padStart(2, '0')}`;
+  const accountId = `account:${normalizedProvider}.${String(number).padStart(2, '0')}`;
   const verificationPolicyId = (catalog.verificationPolicies ?? []).find((policy) => policy.adapterRef?.includes(normalizedProvider))?.verificationPolicyId
     ?? (catalog.verificationPolicies ?? [])[0]?.verificationPolicyId
     ?? `verification_policy:${normalizedProvider}-read-only`;

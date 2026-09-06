@@ -5,8 +5,8 @@
   "maxAgeSeconds": 3600,
   "observations": [
     {
-      "observationId": "observation:provider-a.primary.healthy",
-      "subjectId": "account:provider-a.primary",
+      "observationId": "observation:provider-a.01.healthy",
+      "subjectId": "account:provider-a.01",
       "subjectKind": "account",
       "observedAt": "2026-09-04T00:00:00Z",
       "freshness": "fresh",
@@ -26,8 +26,8 @@
       "provenance": {"source":"ikhp-identity-access-verifier","readOnly":true,"authority":"derived-runtime"}
     },
     {
-      "observationId": "observation:provider-a.secondary.wrong-account",
-      "subjectId": "account:provider-a.secondary",
+      "observationId": "observation:provider-a.02.wrong-account",
+      "subjectId": "account:provider-a.02",
       "subjectKind": "account",
       "observedAt": "2026-09-04T00:00:00Z",
       "freshness": "fresh",

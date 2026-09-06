@@ -8,6 +8,30 @@ The old v1 packet
 `/Users/Office/.brain/codex-identity-handoff/codex-identity-20260906T130049Z-91992.packet.json`
 is historical evidence. Never execute it and never delete its evidence.
 
+If a command reports `refusing to overwrite existing evidence`, it is pointing
+at that immutable historical path or another already-written evidence file.
+Do not remove or overwrite it. The current coordinator rejects v1 packets and
+creates a fresh immutable attempt path for v2 packets.
+
+## Retire the superseded bootstrap roots
+
+The earlier `openai.personal.*` roots are not account profiles. They were
+created before the namespace was normalized and must never be authenticated.
+The controlled retirement command checks that each exact root is owner-only,
+Brain-owned bootstrap configuration only, unauthenticated, and unused. If
+any check fails, it does not move anything. A successful retirement is a
+recoverable atomic archive move, not a raw delete:
+
+```bash
+cd /Users/Office/Repos/stevewesthoek/brain-main-integration-2026-09-01
+node tools/codex-identity-lifecycle-handoff.mjs retire-stale --confirm
+```
+
+The command archives eligible roots under
+`/Users/Office/.brain/codex-runtime-profile-retirements/` with reason
+`superseded_before_authentication` and namespace reason
+`canonical_namespace_normalization`.
+
 ## Prepare a fresh profile-scoped packet
 
 Run from the clean canonical `main` checkout. This is safe while native Codex
@@ -22,6 +46,10 @@ The packet contains only opaque account/profile metadata and non-secret paths.
 It does not read `auth.json`, OAuth, browser state, Keychain values, or MCP
 state. It records the initial two-profile acceptance set; the production model
 remains a dynamic N-account collection.
+
+The canonical initial IDs are `account:openai.01` and `account:openai.02`, with
+profile roots ending in `openai.01.cli` and `openai.02.cli`. Role (`primary` /
+`secondary`) and purpose are mutable policy metadata, never identity names.
 
 ## Inspect before execution
 

@@ -53,7 +53,58 @@ test('allocator never reuses an identifier from a retired account', () => {
   first.accounts[0].lifecycleState = 'retired';
   const next = appendAccount(first, 'opaque-ref://openai/new-2', 2);
   assert.notEqual(next.accounts[0].accountId, next.accounts[1].accountId);
-  assert.match(next.accounts[1].accountId, /\.02$/);
+  assert.equal(next.accounts[1].accountId, 'account:openai.02');
+});
+
+test('allocator reserves ordinals from canonical and legacy semantic identifiers', () => {
+  const catalog = {
+    ...emptyCatalog(),
+    accounts: [
+      { accountId: 'account:openai.01', providerId: 'openai', lifecycleState: 'retired' },
+      { accountId: 'account:openai.personal.02', providerId: 'openai', lifecycleState: 'retired' },
+      { accountId: 'account:openai.primary.04', providerId: 'openai', lifecycleState: 'retired' },
+    ],
+  };
+  const allocation = allocateAccountIdentity({
+    catalog,
+    providerId: 'openai',
+    identityRef: 'opaque-ref://openai/new-5',
+  });
+  assert.equal(allocation.accountId, 'account:openai.05');
+});
+
+test('account identifiers are stable when role policy changes', () => {
+  const first = allocateAccountIdentity({
+    catalog: emptyCatalog(),
+    providerId: 'openai',
+    identityRef: 'opaque-ref://openai/stable',
+    preferred: false,
+  });
+  const second = allocateAccountIdentity({
+    catalog: emptyCatalog(),
+    providerId: 'openai',
+    identityRef: 'opaque-ref://openai/stable',
+    preferred: true,
+  });
+  assert.equal(first.accountId, second.accountId);
+  assert.equal(first.accountId, 'account:openai.01');
+  assert.notEqual(first.role.class, second.role.class);
+});
+
+test('new account identifiers never encode mutable role semantics', () => {
+  let catalog = emptyCatalog();
+  for (const [index, purpose] of ['default', 'overflow_capacity', 'primary'].entries()) {
+    const allocation = allocateAccountIdentity({
+      catalog,
+      providerId: 'openai',
+      identityRef: `opaque-ref://openai/semantic-${index}`,
+      purpose,
+      preferred: purpose === 'primary',
+    });
+    assert.match(allocation.accountId, /^account:openai\.\d{2}$/);
+    assert.doesNotMatch(allocation.accountId, /personal|work|business|primary|secondary/);
+    catalog = { ...catalog, accounts: [...catalog.accounts, allocation.account] };
+  }
 });
 
 test('preferred policy is explicit and does not follow the active account', () => {
@@ -70,7 +121,7 @@ test('preferred policy is explicit and does not follow the active account', () =
 
 test('known identity re-observation is idempotent and creates no duplicate binding', () => {
   const account = {
-    accountId: 'account:openai.primary.01',
+    accountId: 'account:openai.01',
     providerId: 'openai',
     accountKind: 'human_account',
     displayName: 'OpenAI primary account 01',
@@ -140,7 +191,7 @@ test('new account proposals can be admitted as a schema-valid linked unit', () =
 
 test('private matcher output can enroll a known account without exposing its identity value', () => {
   const account = {
-    accountId: 'account:openai.primary.01',
+    accountId: 'account:openai.01',
     providerId: 'openai',
     accountKind: 'human_account',
     displayName: 'OpenAI primary account 01',
@@ -162,7 +213,7 @@ test('private matcher output can enroll a known account without exposing its ide
 
 test('partial surface enrollment proposes only the missing runtime record and link', () => {
   const account = {
-    accountId: 'account:openai.secondary.01',
+    accountId: 'account:openai.02',
     providerId: 'openai',
     accountKind: 'human_account',
     displayName: 'OpenAI secondary account 01',
@@ -179,7 +230,7 @@ test('partial surface enrollment proposes only the missing runtime record and li
     surfaceId: 'codex-cli',
   });
   assert.equal(result.status, 'known_account');
-  assert.equal(result.runtimeProfile.runtimeProfileId, 'runtime_profile:openai.secondary.01.cli');
+  assert.equal(result.runtimeProfile.runtimeProfileId, 'runtime_profile:openai.02.cli');
   assert.equal(result.catalogMutation.proposedRecords.some((record) => record.runtimeProfileId === result.runtimeProfile.runtimeProfileId), true);
   assert.deepEqual(result.account.runtimeProfileIds, [result.runtimeProfile.runtimeProfileId]);
 });
@@ -206,7 +257,7 @@ test('binding changes are explicit and require admission', () => {
 });
 
 test('incremental persistence verification is linear rather than pairwise', () => {
-  const ids = Array.from({ length: 20 }, (_, index) => `runtime_profile:openai.secondary.${String(index + 1).padStart(2, '0')}.cli`);
+  const ids = Array.from({ length: 20 }, (_, index) => `runtime_profile:openai.${String(index + 1).padStart(2, '0')}.cli`);
   const plan = buildIncrementalProfileVerificationPlan(ids, { newProfileId: ids[19] });
   assert.equal(plan.checkCount, 39);
   assert.equal(plan.complexity, 'O(N)');

@@ -18,8 +18,8 @@ import {
 
 const root = path.resolve(import.meta.dirname, '../..');
 const catalog = loadJson(path.join(root, 'operations/fixtures/infrastructure-identity-access-alternate-v1.json'));
-const profileA = 'runtime_profile:provider-a.primary.cli';
-const profileB = 'runtime_profile:provider-a.secondary.cli';
+const profileA = 'runtime_profile:provider-a.01.cli';
+const profileB = 'runtime_profile:provider-a.02.cli';
 
 function context(profilesRoot, extra = {}) {
   return { profilesRoot, routeOwnerRef: 'native-direct', ...extra };
@@ -48,7 +48,7 @@ test('materializes one owner-only non-secret config per profile root', () => {
     assert.notEqual(planA.artifact.path, planB.artifact.path);
     assert.equal(fs.statSync(planA.artifact.path).mode & 0o777, 0o600);
     assert.equal(fs.statSync(planA.artifact.ownershipMetadataPath).mode & 0o777, 0o600);
-    assert.match(fs.readFileSync(planA.artifact.path, 'utf8'), /provider-a\.primary\.cli/);
+    assert.match(fs.readFileSync(planA.artifact.path, 'utf8'), /provider-a\.01\.cli/);
     assert.doesNotMatch(fs.readFileSync(planA.artifact.path, 'utf8'), /access[_-]?token|refresh[_-]?token|password/i);
     assert.equal(fs.existsSync(path.join(rootA, 'auth.json')), false);
     assert.equal(fs.existsSync(path.join(rootB, 'auth.json')), false);

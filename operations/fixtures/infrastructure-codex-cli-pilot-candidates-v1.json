@@ -6,7 +6,7 @@
   "mutationEnabled": false,
   "accounts": [
     {
-      "accountId": "account:openai.personal.01",
+      "accountId": "account:openai.01",
       "providerId": "openai",
       "accountKind": "human_account",
       "displayName": "OpenAI personal account 01",
@@ -18,14 +18,14 @@
       },
       "expectedPrincipal": {
         "principalType": "provider_account",
-        "principalRef": "principal:openai.personal.01",
+        "principalRef": "principal:openai.01",
         "displayLabel": "OpenAI personal account 01 (operator confirms)",
         "matchStrategy": "manual_review"
       },
       "credentialIds": [],
       "sessionIds": [],
-      "surfaceBindingIds": ["surface_binding:openai.personal.01.codex-cli"],
-      "runtimeProfileIds": ["runtime_profile:openai.personal.01.cli"],
+      "surfaceBindingIds": ["surface_binding:openai.01.codex-cli"],
+      "runtimeProfileIds": ["runtime_profile:openai.01.cli"],
       "verificationPolicyId": "verification_policy:codex-cli-read-only",
       "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
       "provenance": {
@@ -38,7 +38,7 @@
       }
     },
     {
-      "accountId": "account:openai.personal.02",
+      "accountId": "account:openai.02",
       "providerId": "openai",
       "accountKind": "human_account",
       "displayName": "OpenAI personal account 02",
@@ -50,14 +50,14 @@
       },
       "expectedPrincipal": {
         "principalType": "provider_account",
-        "principalRef": "principal:openai.personal.02",
+        "principalRef": "principal:openai.02",
         "displayLabel": "OpenAI personal account 02 (operator confirms)",
         "matchStrategy": "manual_review"
       },
       "credentialIds": [],
       "sessionIds": ["session:openai.codex.default.legacy"],
-      "surfaceBindingIds": ["surface_binding:openai.personal.02.codex-cli"],
-      "runtimeProfileIds": ["runtime_profile:openai.personal.02.cli"],
+      "surfaceBindingIds": ["surface_binding:openai.02.codex-cli"],
+      "runtimeProfileIds": ["runtime_profile:openai.02.cli"],
       "verificationPolicyId": "verification_policy:codex-cli-read-only",
       "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
       "provenance": {
@@ -74,8 +74,8 @@
   "sessions": [
     {
       "sessionId": "session:openai.codex.default.legacy",
-      "accountId": "account:openai.personal.02",
-      "surfaceBindingId": "surface_binding:openai.personal.02.codex-cli",
+      "accountId": "account:openai.02",
+      "surfaceBindingId": "surface_binding:openai.02.codex-cli",
       "binding": {
         "state": "user_attested",
         "expiresAt": "2026-10-05T00:00:00Z",
@@ -129,33 +129,33 @@
   "currentObservedSessionIds": ["session:openai.codex.default.legacy"],
   "surfaceBindings": [
     {
-      "surfaceBindingId": "surface_binding:openai.personal.01.codex-cli",
-      "accountId": "account:openai.personal.01",
+      "surfaceBindingId": "surface_binding:openai.01.codex-cli",
+      "accountId": "account:openai.01",
       "surfaceId": "codex-cli",
       "lifecycleState": "candidate",
       "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}},
       "sessionIds": [],
-      "runtimeProfileIds": ["runtime_profile:openai.personal.01.cli"],
+      "runtimeProfileIds": ["runtime_profile:openai.01.cli"],
       "capabilityEvidence": {"nAccountModel": "supported", "isolatedRuntime": "supported", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "supported"},
       "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}
     },
     {
-      "surfaceBindingId": "surface_binding:openai.personal.02.codex-cli",
-      "accountId": "account:openai.personal.02",
+      "surfaceBindingId": "surface_binding:openai.02.codex-cli",
+      "accountId": "account:openai.02",
       "surfaceId": "codex-cli",
       "lifecycleState": "candidate",
       "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}},
       "sessionIds": ["session:openai.codex.default.legacy"],
-      "runtimeProfileIds": ["runtime_profile:openai.personal.02.cli"],
+      "runtimeProfileIds": ["runtime_profile:openai.02.cli"],
       "capabilityEvidence": {"nAccountModel": "supported", "isolatedRuntime": "supported", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "supported"},
       "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}
     }
   ],
   "runtimeProfiles": [
     {
-      "runtimeProfileId": "runtime_profile:openai.personal.01.cli",
-      "accountId": "account:openai.personal.01",
-      "surfaceBindingId": "surface_binding:openai.personal.01.codex-cli",
+      "runtimeProfileId": "runtime_profile:openai.01.cli",
+      "accountId": "account:openai.01",
+      "surfaceBindingId": "surface_binding:openai.01.codex-cli",
       "binding": {
         "state": "declared",
         "expiresAt": null,
@@ -170,7 +170,7 @@
       },
       "profileKind": "cli",
       "runtimeAdapterRef": "runtime_adapter:codex-cli",
-      "isolationRef": "runtime-ref://profiles/openai.personal.01.cli",
+      "isolationRef": "runtime-ref://profiles/openai.01.cli",
       "stateOwnership": "application",
       "authenticationStorage": {
         "mode": "file",
@@ -219,7 +219,7 @@
         "boundary": "codex_home",
         "processOwnership": "profile_scoped",
         "stateOwner": "application",
-        "noSharedStateWith": ["~/.codex", "runtime_profile:openai.personal.02.cli", "runtime_profile:codex.webgpt.production", "runtime_profile:codex.webgpt.development"]
+        "noSharedStateWith": ["~/.codex", "runtime_profile:openai.02.cli", "runtime_profile:codex.webgpt.production", "runtime_profile:codex.webgpt.development"]
       },
       "provenance": {
         "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",
@@ -231,9 +231,9 @@
       }
     },
     {
-      "runtimeProfileId": "runtime_profile:openai.personal.02.cli",
-      "accountId": "account:openai.personal.02",
-      "surfaceBindingId": "surface_binding:openai.personal.02.codex-cli",
+      "runtimeProfileId": "runtime_profile:openai.02.cli",
+      "accountId": "account:openai.02",
+      "surfaceBindingId": "surface_binding:openai.02.codex-cli",
       "binding": {
         "state": "declared",
         "expiresAt": null,
@@ -248,7 +248,7 @@
       },
       "profileKind": "cli",
       "runtimeAdapterRef": "runtime_adapter:codex-cli",
-      "isolationRef": "runtime-ref://profiles/openai.personal.02.cli",
+      "isolationRef": "runtime-ref://profiles/openai.02.cli",
       "stateOwnership": "application",
       "authenticationStorage": {
         "mode": "file",
@@ -297,7 +297,7 @@
         "boundary": "codex_home",
         "processOwnership": "profile_scoped",
         "stateOwner": "application",
-        "noSharedStateWith": ["~/.codex", "runtime_profile:openai.personal.01.cli", "runtime_profile:codex.webgpt.production", "runtime_profile:codex.webgpt.development"]
+        "noSharedStateWith": ["~/.codex", "runtime_profile:openai.01.cli", "runtime_profile:codex.webgpt.production", "runtime_profile:codex.webgpt.development"]
       },
       "provenance": {
         "sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json",

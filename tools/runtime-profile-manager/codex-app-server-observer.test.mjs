@@ -139,13 +139,13 @@ test('app-server observer never starts in the target root or leaves runtime resi
 test('private identity matcher can bind an account without returning provider PII', () => {
   const matcher = createPrivateIdentityMatcher({
     providerId: 'openai',
-    resolveExpectedIdentity: () => ({ accountId: 'account:openai.primary.01', email: 'private@example.invalid' }),
+    resolveExpectedIdentity: () => ({ accountId: 'account:openai.01', email: 'private@example.invalid' }),
   });
   const result = redactCodexAccountRead({
     response: { result: { account: { type: 'chatgpt', planType: 'plus', email: 'private@example.invalid' } } },
     identityMatcher: matcher,
   });
-  assert.equal(result.canonicalAccountId, 'account:openai.primary.01');
+  assert.equal(result.canonicalAccountId, 'account:openai.01');
   assert.equal(result.identityMatch, 'matched');
   assert.equal(result.emailPresent, true);
   assert.equal(Object.hasOwn(result, 'email'), false);

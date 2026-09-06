@@ -107,8 +107,8 @@ export function buildCodexWebGptIsolationDecision(analysis) {
       : 'source_resolution_not_proven',
     migrationRequired: true,
     nativeProfileIdsExcluded: [
-      'runtime_profile:openai.personal.01.cli',
-      'runtime_profile:openai.personal.02.cli',
+      'runtime_profile:openai.01.cli',
+      'runtime_profile:openai.02.cli',
     ],
     optionalWebGptConsumerProfile: 'runtime_profile:codex.webgpt.production',
     webGptFailureIsolation: 'required',

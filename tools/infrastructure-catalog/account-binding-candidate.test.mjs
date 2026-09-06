@@ -17,16 +17,16 @@ const now = '2026-09-05T00:00:00Z';
 
 function bindingCandidate({ state = 'candidate', classification = 'USER-PROPOSED', observedTargetRef = null } = {}) {
   return createBindingCandidate({
-    candidateId: 'candidate:openai.personal.01.cli-binding',
+    candidateId: 'candidate:openai.01.cli-binding',
     relationshipKind: 'account_runtime_profile',
-    subjectRef: 'runtime_profile:openai.personal.01.cli',
-    targetRef: 'account:openai.personal.01',
+    subjectRef: 'runtime_profile:openai.01.cli',
+    targetRef: 'account:openai.01',
     state,
     observedTargetRef,
     evidence: { isolation: 'confirmed' },
     observedAt: now,
     provenanceClassification: classification,
-    provenanceEvidenceRefs: ['user-confirmation:openai.personal.01'],
+    provenanceEvidenceRefs: ['user-confirmation:openai.01'],
   });
 }
 
@@ -72,7 +72,7 @@ test('conflicting account/profile binding is rejected by shared admission', () =
 });
 
 test('wrong-account binding evidence cannot be admitted', () => {
-  const candidate = bindingCandidate({ state: 'conflicted', classification: 'OBSERVED-VERIFIED', observedTargetRef: 'account:openai.personal.02' });
+  const candidate = bindingCandidate({ state: 'conflicted', classification: 'OBSERVED-VERIFIED', observedTargetRef: 'account:openai.02' });
   assert.deepEqual(validateCandidateContract(candidate, { schema: candidateSchema }), []);
   const plan = planCandidateAdmission({ candidate, now });
   assert.equal(plan.decision, 'reject');

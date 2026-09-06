@@ -9,8 +9,8 @@
     "fallbackIntegrationMode": "dedicated_webgpt_codex_home",
     "fallbackIntegrationStatus": "source_path_boundary_found_launcher_lifecycle_unproven",
     "nativeProfileIdsExcluded": [
-      "runtime_profile:openai.personal.01.cli",
-      "runtime_profile:openai.personal.02.cli"
+      "runtime_profile:openai.01.cli",
+      "runtime_profile:openai.02.cli"
     ],
     "optionalConsumerProfileId": "runtime_profile:codex.webgpt.production",
     "productionDevNamespaceCollision": "forbidden",

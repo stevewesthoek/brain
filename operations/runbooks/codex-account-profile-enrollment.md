@@ -84,7 +84,7 @@ npm run runtime:profiles -- prepare-account \
   --catalog operations/infrastructure/catalog/identity-access.v1.json \
   --surface codex-app-server \
   --provider openai \
-  --matched-account-id 'account:openai.primary.01'
+  --matched-account-id 'account:openai.01'
 ~~~
 
 The observer may use an email only inside a private matcher. The matcher may
@@ -106,7 +106,7 @@ npm run codex:cli-pilot -- plan \
   --catalog "$PILOT_CATALOG" \
   --profiles-root "$PILOT_ROOT" \
   --profiles \
-    runtime_profile:openai.personal.01.cli,runtime_profile:openai.personal.02.cli \
+    runtime_profile:openai.01.cli,runtime_profile:openai.02.cli \
   --output "/tmp/codex-cli-pilot-plan.json"
 ~~~
 
@@ -124,11 +124,11 @@ non-secret configuration, one selected runtime profile at a time:
 ~~~bash
 npm run runtime:profiles -- create \
   --catalog "$PILOT_CATALOG" --profiles-root "$PILOT_ROOT" \
-  --profile runtime_profile:openai.personal.01.cli --execute --confirm
+  --profile runtime_profile:openai.01.cli --execute --confirm
 
 npm run runtime:profiles -- materialize-config \
   --catalog "$PILOT_CATALOG" --profiles-root "$PILOT_ROOT" \
-  --profile runtime_profile:openai.personal.01.cli --execute --confirm
+  --profile runtime_profile:openai.01.cli --execute --confirm
 ~~~
 
 Repeat those commands for every selected profile. Creation writes only an
@@ -144,7 +144,7 @@ handoff for one selected profile:
 ~~~bash
 npm run runtime:profiles -- login \
   --catalog "$PILOT_CATALOG" --profiles-root "$PILOT_ROOT" \
-  --profile runtime_profile:openai.personal.01.cli
+  --profile runtime_profile:openai.01.cli
 ~~~
 
 The operator performs the official provider login in the correct account and
@@ -162,9 +162,9 @@ collection acceptance and attest every selected profile:
 npm run codex:cli-pilot -- acceptance \
   --catalog "$PILOT_CATALOG" \
   --profiles-root "$PILOT_ROOT" \
-  --profiles runtime_profile:openai.personal.01.cli,runtime_profile:openai.personal.02.cli \
-  --attest-profile runtime_profile:openai.personal.01.cli \
-  --attest-profile runtime_profile:openai.personal.02.cli \
+  --profiles runtime_profile:openai.01.cli,runtime_profile:openai.02.cli \
+  --attest-profile runtime_profile:openai.01.cli \
+  --attest-profile runtime_profile:openai.02.cli \
   --output "operations/reports/codex-cli-pilot-acceptance.json"
 ~~~
 
@@ -236,13 +236,13 @@ assumption.
 ~~~bash
 npm run codex:cli-pilot -- launch \
   --catalog "$PILOT_CATALOG" --profiles-root "$PILOT_ROOT" \
-  --profile runtime_profile:openai.personal.01.cli \
+  --profile runtime_profile:openai.01.cli \
   --acceptance operations/reports/codex-cli-pilot-acceptance.json \
   --execute --confirm
 
 npm run codex:cli-pilot -- launch-check \
   --catalog "$PILOT_CATALOG" --profiles-root "$PILOT_ROOT" \
-  --profile runtime_profile:openai.personal.01.cli \
+  --profile runtime_profile:openai.01.cli \
   --acceptance operations/reports/codex-cli-pilot-acceptance.json \
   --output operations/reports/codex-cli-pilot-launch-01.json
 ~~~

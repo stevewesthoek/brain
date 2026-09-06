@@ -22,8 +22,8 @@ import { createCodexCliRuntimeProfileAdapter } from './runtime-profile-manager/c
 
 const root = path.resolve(import.meta.dirname, '..');
 const fixture = loadJson(path.join(root, 'operations/fixtures/infrastructure-identity-access-alternate-v1.json'));
-const primaryId = 'runtime_profile:provider-a.primary.cli';
-const secondaryId = 'runtime_profile:provider-a.secondary.cli';
+const primaryId = 'runtime_profile:provider-a.01.cli';
+const secondaryId = 'runtime_profile:provider-a.02.cli';
 
 function makeContext(profilesRoot, extra = {}) {
   return { profilesRoot, routeOwnerRef: 'brain:runtime-profile-route-intent', ...extra };
@@ -37,7 +37,7 @@ test('list is account-agnostic, exposes distinct roots, and keeps MCP sessions s
     assert.equal(result.status, 'OK');
     assert.equal(result.profileCount, 2);
     assert.notEqual(result.profiles[0].runtimeRoot, result.profiles[1].runtimeRoot);
-    assert.equal(result.profiles[0].account.accountId, 'account:provider-a.primary');
+    assert.equal(result.profiles[0].account.accountId, 'account:provider-a.01');
     assert.equal(result.profiles[0].sessions.some((session) => session.sessionKind === 'mcp_oauth_authorization'), true);
     assert.equal(result.redaction.authContentsRead, false);
   } finally {
