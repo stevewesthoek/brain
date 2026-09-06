@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BRAIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+NODE_BIN="${BRAIN_NODE_BIN:-node}"
+
+exec "$NODE_BIN" "$BRAIN_ROOT/tools/runtime-profile-manager.mjs" "$@"
