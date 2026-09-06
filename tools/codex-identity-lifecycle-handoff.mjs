@@ -17,6 +17,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import readline from 'node:readline/promises';
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..');
@@ -411,7 +412,7 @@ function runJsonNode(sourceCheckout, scriptName, args, { profileRoot } = {}) {
   try {
     const output = execFileSync(process.execPath, [script, ...args], {
       encoding: 'utf8',
-      env: profileRoot ? safeEnv(profileRoot) : safeEnv(os.homedir()),
+      env: profileRoot ? safeEnv(profileRoot) : safeEnv(path.join(os.homedir(), '.codex')),
       stdio: ['ignore', 'pipe', 'pipe'],
       maxBuffer: 4 * 1024 * 1024,
     });
@@ -423,13 +424,24 @@ function runJsonNode(sourceCheckout, scriptName, args, { profileRoot } = {}) {
   }
 }
 
-function runProfileCommand(profileRoot, args) {
+function runProfileCommand(profileRoot, args, { interactive = false } = {}) {
   const executable = 'codex';
   const result = spawnSync(executable, args, {
     env: safeEnv(profileRoot),
-    stdio: 'ignore',
+    stdio: interactive ? 'inherit' : 'ignore',
   });
   return { status: result.error ? 'error' : result.status === 0 ? 'ok' : 'failed', exitCode: result.status ?? null };
+}
+
+async function operatorAttestation(profile) {
+  const prompt = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const expected = `CONFIRM_${profile.role.toUpperCase()}`;
+    const answer = (await prompt.question(`After the provider UI shows the intended ${profile.role} account, type ${expected}: `)).trim();
+    return answer === expected;
+  } finally {
+    prompt.close();
+  }
 }
 
 async function executePacket(options) {
@@ -448,6 +460,7 @@ async function executePacket(options) {
       completedAt: new Date().toISOString(),
       expectedMainSha: packet.expectedMainSha,
       canonicalCheckout: packet.canonicalCheckout,
+      acceptancePath: events.find((event) => event.event === 'collection_acceptance')?.acceptancePath ?? null,
       profiles: packet.profiles.map(({ accountId, runtimeProfileId, role, preferred, root }) => ({ accountId, runtimeProfileId, role, preferred, root })),
       events,
       reasons: [...new Set(reasons)],
@@ -546,21 +559,56 @@ async function executePacket(options) {
       return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['login_handoff_unavailable'], evidencePath: outputPath };
     }
     process.stdout.write(`LOGIN REQUIRED: ${profile.role} profile ${profile.runtimeProfileId}. Choose the intended provider account in the official login flow.\n`);
-    const loginResult = runProfileCommand(profile.root, login.handoff.args);
+    const loginResult = runProfileCommand(profile.root, login.handoff.args, { interactive: true });
     if (loginResult.status !== 'ok') {
       const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`official_login_failed:${profile.runtimeProfileId}`]);
       return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['official_login_failed'], evidencePath: outputPath };
     }
-    events.push({ at: new Date().toISOString(), event: 'official_login_completed', runtimeProfileId: profile.runtimeProfileId, role: profile.role, operatorAttestation: 'required_after_provider_ui_confirmation' });
+    const attested = await operatorAttestation(profile);
+    if (!attested) {
+      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`operator_attestation_failed:${profile.runtimeProfileId}`]);
+      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['operator_attestation_failed'], evidencePath: outputPath };
+    }
+    events.push({ at: new Date().toISOString(), event: 'official_login_completed', runtimeProfileId: profile.runtimeProfileId, role: profile.role, operatorAttestation: 'confirmed' });
   }
 
-  for (const profile of packet.profiles) {
+  const verificationSequence = [packet.profiles[0], packet.profiles[1], packet.profiles[0]];
+  for (const profile of verificationSequence) {
+    const doctor = runJsonNode(executionSource, 'runtime-profile-manager.mjs', [
+      'doctor', '--catalog', candidateCatalog, '--profiles-root', packet.profilesRoot,
+      '--profile', profile.runtimeProfileId,
+    ], { profileRoot: profile.root });
+    if (doctor.status !== 'OK' || doctor.authentication?.status !== 'authenticated') {
+      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`coexistence_verification_failed:${profile.runtimeProfileId}`]);
+      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['coexistence_verification_failed'], evidencePath: outputPath };
+    }
+    events.push({ at: new Date().toISOString(), event: 'coexistence_verification', runtimeProfileId: profile.runtimeProfileId, role: profile.role, authentication: 'authenticated' });
+  }
+
+  for (const profile of verificationSequence) {
     const proof = runProfileCommand(profile.root, ['exec', '--ephemeral', '--skip-git-repo-check', '--json', 'Reply with exactly OK.']);
     events.push({ at: new Date().toISOString(), event: 'profile_cli_proof', runtimeProfileId: profile.runtimeProfileId, role: profile.role, result: proof.status, exitCode: proof.exitCode });
     if (proof.status !== 'ok') {
       const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`cli_proof_failed:${profile.runtimeProfileId}`]);
       return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['cli_proof_failed'], evidencePath: outputPath };
     }
+  }
+  const acceptancePath = path.join(path.dirname(packetPath), `${packet.handoffId}.acceptance.json`);
+  try {
+    const acceptance = runJsonNode(executionSource, 'codex-cli-pilot.mjs', [
+      'acceptance', '--catalog', candidateCatalog, '--profiles-root', packet.profilesRoot,
+      '--profiles', packet.profiles.map((profile) => profile.runtimeProfileId).join(','),
+      ...packet.profiles.flatMap((profile) => ['--attest-profile', profile.runtimeProfileId]),
+      '--output', acceptancePath,
+    ]);
+    if (acceptance.status !== 'OK') {
+      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', ['collection_acceptance_failed']);
+      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['collection_acceptance_failed'], evidencePath: outputPath };
+    }
+    events.push({ at: new Date().toISOString(), event: 'collection_acceptance', status: 'OK', acceptancePath });
+  } catch (error) {
+    const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', ['collection_acceptance_failed']);
+    return { status: 'HANDOFF_PARTIAL_SAFE', reasons: [error.message], evidencePath: outputPath };
   }
   events.push({ at: new Date().toISOString(), event: 'keychain_enrollment', status: 'deferred_until_explicit_brain_owned_credential_selection' });
   const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', ['canonical_admission_and_operator_attestation_remain_phase_c']);
