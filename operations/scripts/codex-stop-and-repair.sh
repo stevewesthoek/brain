@@ -135,10 +135,12 @@ print_targets() {
 
 request_desktop_quit() {
   # AppleScript's "quit" is the normal app shutdown path. A missing app is
-  # expected and intentionally ignored.
+  # expected and intentionally ignored. The running check is important: a
+  # quit request must never resolve an unlaunched app during a quiescence
+  # operation.
   if command -v osascript >/dev/null 2>&1; then
-    osascript -e 'tell application "ChatGPT" to quit' >/dev/null 2>&1 || true
-    osascript -e 'tell application "Codex" to quit' >/dev/null 2>&1 || true
+    osascript -e 'if application "ChatGPT" is running then tell application "ChatGPT" to quit' >/dev/null 2>&1 || true
+    osascript -e 'if application "Codex" is running then tell application "Codex" to quit' >/dev/null 2>&1 || true
   fi
 }
 
