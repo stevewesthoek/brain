@@ -136,39 +136,19 @@ render_generated_source() {
 generated_copy_contains_managed_source() {
   local destination="$1"
   local source="$2"
-  python3 - "$destination" <(render_generated_source "$source") <<'PY'
-import sys
-import tomllib
-
-def contains(actual, managed, path=()):
-    if isinstance(managed, dict):
-        if not path:
-            managed = {
-                key: value for key, value in managed.items()
-                if key not in {
-                    'openai_base_url',
-                    'experimental_realtime_webrtc_call_base_url',
-                    'model',
-                }
-            }
-        return isinstance(actual, dict) and all(
-            key in actual and (
-                (not path and key == 'desktop')
-                or contains(actual[key], value, path + (key,))
-            )
-            for key, value in managed.items()
-        )
-    return actual == managed
-
-try:
-    with open(sys.argv[1], 'rb') as handle:
-        actual = tomllib.load(handle)
-    with open(sys.argv[2], 'rb') as handle:
-        managed = tomllib.load(handle)
-except (OSError, tomllib.TOMLDecodeError):
-    raise SystemExit(1)
-raise SystemExit(0 if contains(actual, managed) else 1)
-PY
+  local rendered
+  rendered="$(mktemp /tmp/codex-managed-source.XXXXXX)" || return 1
+  chmod 0600 "$rendered" || { rm -f "$rendered"; return 1; }
+  if ! render_generated_source "$source" > "$rendered"; then
+    rm -f "$rendered"
+    return 1
+  fi
+  if node "$BRAIN_REPO/tools/codex-toml-ownership-helper.mjs" contains-managed "$destination" "$rendered"; then
+    rm -f "$rendered"
+    return 0
+  fi
+  rm -f "$rendered"
+  return 1
 }
 
 is_shared_default_root() {
@@ -205,34 +185,7 @@ configuration_ownership_preflight() {
     say "[FAIL] Codex config is a symlink; semantic ownership is unresolved before $operation."
     return 1
   fi
-  if [ -e "$current_config" ] && ! python3 - "$current_config" "$CONFIGS_DIR/codex/config.toml" "$operation" <<'PY'
-import sys
-import tomllib
-from pathlib import Path
-
-try:
-    current = tomllib.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
-    canonical = tomllib.loads(Path(sys.argv[2]).read_text(encoding='utf-8'))
-except (OSError, tomllib.TOMLDecodeError):
-    raise SystemExit(1)
-
-# These are semantic resources owned by the application/provider integration,
-# not by a physical config-file location. Their values are never printed.
-external_top_level = {
-    'openai_base_url',
-    'experimental_realtime_webrtc_call_base_url',
-    'model',
-}
-external_sections = sorted(
-    key for key in current
-    if key not in canonical
-    and key in {'agents', 'features', 'hooks', 'marketplaces', 'plugins', 'projects', 'tui', 'desktop', 'mcp_servers'}
-)
-preserved_top_level = sorted(key for key in current if key not in canonical or key in external_top_level)
-print(f"OWNERSHIP_PLAN operation={sys.argv[3]} resource=codex.config action=preserve external_top_level={len(preserved_top_level)} external_sections={len(external_sections)}")
-raise SystemExit(0)
-PY
-  then
+  if [ -e "$current_config" ] && ! node "$BRAIN_REPO/tools/codex-toml-ownership-helper.mjs" plan "$current_config" "$CONFIGS_DIR/codex/config.toml" "$operation"; then
     say "[FAIL] Codex config ownership plan could not parse the current and canonical config before $operation."
     return 1
   fi
@@ -243,10 +196,17 @@ preserve_app_local_toml_sections() {
   local current="$1"
   local staged="$2"
   [ -f "$current" ] && [ ! -L "$current" ] || return 0
-  python3 - "$current" "$staged" <<'PY'
+  if node "$BRAIN_REPO/tools/codex-toml-ownership-helper.mjs" preserve "$current" "$staged"; then
+    return 0
+  fi
+  return 1
+  : <<'PY'
 import re
 import sys
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 from pathlib import Path
 
 current_path = Path(sys.argv[1])
@@ -845,7 +805,10 @@ preflight_repair() {
   if [ "$failures" -eq 0 ]; then
     if python3 - "$CONFIGS_DIR/codex/config.toml" <<'PY'
 import sys
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 from pathlib import Path
 
 try:
@@ -884,7 +847,10 @@ PY
   if [ -e "$current_config" ]; then
     if [ -L "$current_config" ] || ! python3 - "$current_config" <<'PY'
 import sys
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 from pathlib import Path
 
 try:

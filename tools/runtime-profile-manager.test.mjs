@@ -26,7 +26,16 @@ const primaryId = 'runtime_profile:provider-a.primary.cli';
 const secondaryId = 'runtime_profile:provider-a.secondary.cli';
 
 function makeContext(profilesRoot, extra = {}) {
-  return { profilesRoot, routeOwnerRef: 'brain:runtime-profile-route-intent', ...extra };
+  return {
+    profilesRoot,
+    routeOwnerRef: 'brain:runtime-profile-route-intent',
+    // Unit tests that are not specifically testing process-owner discovery must
+    // not depend on host lsof availability. Production keeps the adapter's
+    // fail-closed defaultResourceOwnerProbe; tests inject an observed-empty
+    // owner set unless a case explicitly overrides it.
+    resourceOwnerProbe: () => ({ state: 'observed', owners: [], source: 'synthetic_test_probe' }),
+    ...extra,
+  };
 }
 
 test('list is account-agnostic, exposes distinct roots, and keeps MCP sessions separate', () => {

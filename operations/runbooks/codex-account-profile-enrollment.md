@@ -227,6 +227,23 @@ profile-scoped clear-stale --execute --confirm path after the recorded PID is
 proven dead. That command never kills a process. The shared/default root and
 WebGPT application homes require separate maintenance contracts.
 
+## Lifecycle handoff and evidence recovery
+
+Profile-local lifecycle handoffs use `tools/codex-identity-lifecycle-handoff.mjs`.
+A profile-local plan must never promote global blockers (shared-root quiescence,
+WebGPT health, MCP session state) into the profile-scoped gate. Retry evidence
+that already exists is never overwritten — the handoff fails closed to prevent
+evidence poisoning from interrupted turns.
+
+The TOML ownership helper (`tools/codex-toml-ownership-helper.mjs`) replaces the
+former Python 3.11 tomllib dependency. It supports contains-managed, plan,
+preserve, and validate operations against config.toml without requiring Python
+or additional npm dependencies.
+
+WebGPT diagnostics use `tools/codex-webgpt-owner-cli.mjs` (route-status, doctor)
+and `tools/inspect-codex-webgpt-cli.mjs` for inspection. These tools observe
+WebGPT health without mutating its route, journal, browser state, or OAuth.
+
 ## Related contracts
 
 - operations/specs/infrastructure-identity-access-v1.schema.json
@@ -237,3 +254,7 @@ WebGPT application homes require separate maintenance contracts.
 - tools/infrastructure-catalog/account-runtime-architecture.mjs
 - tools/runtime-profile-manager.mjs
 - tools/codex-cli-pilot.mjs
+- tools/codex-identity-lifecycle-handoff.mjs
+- tools/codex-toml-ownership-helper.mjs
+- tools/codex-webgpt-owner-cli.mjs
+- tools/inspect-codex-webgpt-cli.mjs

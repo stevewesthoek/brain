@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 MANAGER="$(cd -- "$SCRIPT_DIR/.." && pwd)/codex-home-managed-root.sh"
 BRAIN_LINKER="$(cd -- "$SCRIPT_DIR/.." && pwd)/brain-configs-link.sh"
+TOML_HELPER="$(cd -- "$SCRIPT_DIR/../../.." && pwd)/tools/codex-toml-ownership-helper.mjs"
 TEST_ROOT="$(mktemp -d /tmp/cx.XXXXXX)"
 
 cleanup() {
@@ -28,9 +29,10 @@ create_brain_fixture() {
   local configs_dir="${2:-$root/brain/operations/system-configs}"
   local brain_ai_dir="${3:-$root/brain/ai}"
   mkdir -p \
-    "$root/brain" \
+    "$root/brain/tools" \
     "$configs_dir/codex/rules" \
     "$brain_ai_dir/skills/active"
+  cp "$TOML_HELPER" "$root/brain/tools/codex-toml-ownership-helper.mjs"
   printf 'fixture agents\n' > "$configs_dir/codex/AGENTS.md"
   printf 'model = "gpt-5.6-sol"\n[mcp_servers.stitch]\ncommand = "npx"\nargs = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]\nstartup_timeout_sec = 120\n\n[mcp_servers.node_repl.env]\nBROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"\nNODE_REPL_TRUSTED_CODE_PATHS = "/Users/Office/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"\n\n[shell_environment_policy.set]\nCODEX_HOME = "/Users/Office/.codex"\n\n[desktop]\nconversationDetailMode = "managed-default"\n\n[desktop.appearanceLightChromeTheme]\nfixtureAccent = "managed-default"\n' > "$configs_dir/codex/config.toml"
   printf 'fixture rtk\n' > "$configs_dir/codex/RTK.md"
