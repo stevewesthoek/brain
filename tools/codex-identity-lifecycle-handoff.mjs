@@ -1,66 +1,68 @@
 #!/usr/bin/env node
 
 /**
- * Cross-lifecycle handoff for the Codex identity/profile closeout.
+ * Profile-scoped Codex identity lifecycle coordinator.
  *
- * `prepare` is safe to run from the active Codex task. It writes an owner-only
- * packet and never stops processes, changes Git worktrees, logs in, reads
- * authentication material, or touches WebGPT.
- *
- * `execute` is intentionally a separate external phase. It refuses to run
- * while native Codex/ChatGPT/Computer Use processes are present, never kills
- * them, and writes only redacted evidence. Provider login remains an explicit
- * human step inside the external terminal.
+ * Version 1.0 packets from the retired global-quiescence workflow are
+ * intentionally rejected. This coordinator operates only on dedicated
+ * CODEX_HOME roots and never stops, inspects, or mutates shared native
+ * Codex/ChatGPT/WebGPT surfaces.
  */
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import readline from 'node:readline/promises';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
-const REPO_ROOT = path.resolve(import.meta.dirname, '..');
+import { runRuntimeProfileManager } from './runtime-profile-manager.mjs';
+
 const DEFAULT_SOURCE_CHECKOUT = '/Users/Office/Repos/stevewesthoek/brain-main-integration-2026-09-01';
 const DEFAULT_CANONICAL_CHECKOUT = '/Users/Office/Repos/stevewesthoek/brain';
-const DEFAULT_PROFILES_ROOT = '/Users/Office/.brain/codex-runtime-profiles';
+const DEFAULT_PROFILES_ROOT = path.join(os.homedir(), '.brain', 'codex-runtime-profiles');
 const DEFAULT_HANDOFF_ROOT = path.join(os.homedir(), '.brain', 'codex-identity-handoff');
 const DEFAULT_CANDIDATE_CATALOG = 'operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json';
 const DEFAULT_CANONICAL_CATALOG = 'operations/infrastructure/catalog/identity-access.v1.json';
-const HANDOFF_KIND = 'brain.codex.identity.lifecycle-handoff';
-const HANDOFF_SCHEMA_VERSION = '1.0.0';
-const PROFILE_SPECS = [
-  {
+const HANDOFF_KIND = 'brain.codex.identity.profile-lifecycle-handoff';
+const EVIDENCE_KIND = 'brain.codex.identity.profile-lifecycle-evidence';
+const SCHEMA_VERSION = '2.0.0';
+const SHARED_DEFAULT_ROOT = path.join(os.homedir(), '.codex');
+
+const PROFILE_SPECS = Object.freeze([
+  Object.freeze({
     accountId: 'account:openai.personal.01',
     runtimeProfileId: 'runtime_profile:openai.personal.01.cli',
     role: 'primary',
     preferred: true,
     purpose: 'personal/default',
-  },
-  {
+  }),
+  Object.freeze({
     accountId: 'account:openai.personal.02',
     runtimeProfileId: 'runtime_profile:openai.personal.02.cli',
     role: 'secondary',
     preferred: false,
     purpose: 'overflow capacity',
-  },
-];
+  }),
+]);
 
 function usage() {
   return [
-    'Usage: node tools/codex-identity-lifecycle-handoff.mjs <prepare|execute> [options]',
+    'Usage: node tools/codex-identity-lifecycle-handoff.mjs <prepare|inspect|execute> [options]',
+    '',
+    'This is the profile-scoped v2 coordinator. It does not require global',
+    'Codex, ChatGPT, WebGPT, Computer Use, SSH, or MCP shutdown.',
     '',
     'Options:',
-    '  --packet PATH             owner-only Phase-A packet (execute input)',
-    '  --source-checkout PATH   clean main source checkout',
-    '  --canonical-checkout PATH canonical Brain path',
-    '  --profiles-root PATH     dedicated Codex profile parent',
-    '  --handoff-root PATH      owner-only local packet/evidence directory',
+    '  --packet PATH             v2 packet path for inspect/execute',
+    '  --source-checkout PATH   clean main source checkout for prepare',
+    '  --canonical-checkout PATH canonical Brain path for observation only',
+    '  --profiles-root PATH     dedicated CODEX_HOME parent',
+    '  --handoff-root PATH      owner-only packet/evidence directory',
     '  --confirm                 required for execute',
-    '  --login                   perform explicit human login handoffs',
+    '  --login                   emit official per-profile login handoffs',
     '',
-    'prepare is read-only except for its owner-only packet.',
-    'execute never kills processes and never reads or copies secrets.',
+    'Old v1 packets, including 91992, are permanently retired and rejected.',
+    'No operation reads, copies, or prints authentication material.',
   ].join('\n');
 }
 
@@ -95,9 +97,9 @@ function parseArgs(argv) {
       process.exit(0);
     } else throw new Error(`unknown option: ${arg}\n${usage()}`);
   }
-  if (!['prepare', 'execute'].includes(operation)) throw new Error(usage());
+  if (!['prepare', 'inspect', 'execute'].includes(operation)) throw new Error(usage());
+  if (['inspect', 'execute'].includes(operation) && !options.packet) throw new Error(`${operation} requires --packet PATH`);
   if (operation === 'execute' && !options.confirm) throw new Error('execute requires --confirm');
-  if (operation === 'execute' && !options.packet) throw new Error('execute requires --packet PATH');
   return { operation, options };
 }
 
@@ -124,9 +126,8 @@ function metadata(file) {
   }
 }
 
-function assertOwnerOnlyPath(file, { directory = false, allowMissing = false } = {}) {
+function assertOwnerOnly(file, { directory = false } = {}) {
   const info = metadata(file);
-  if (!info.exists && allowMissing) return info;
   if (!info.exists) throw new Error(`required path is missing: ${file}`);
   if (info.type === 'symlink') throw new Error(`symlink is not allowed: ${file}`);
   if (directory ? info.type !== 'directory' : info.type !== 'file') throw new Error(`unexpected path type: ${file}`);
@@ -135,7 +136,7 @@ function assertOwnerOnlyPath(file, { directory = false, allowMissing = false } =
   return info;
 }
 
-function assertDirectoryPath(file) {
+function assertDirectory(file) {
   const info = metadata(file);
   if (!info.exists || info.type !== 'directory') throw new Error(`required directory is missing or invalid: ${file}`);
   if (info.ownerUid !== process.getuid?.()) throw new Error(`directory owner is not the current user: ${file}`);
@@ -157,7 +158,7 @@ function runGit(args, cwd) {
 
 function gitState(checkout) {
   const root = resolvedAbsolute(checkout, 'checkout');
-  assertDirectoryPath(root);
+  assertDirectory(root);
   const head = runGit(['rev-parse', '--verify', 'HEAD'], root);
   const branch = runGit(['branch', '--show-current'], root) || null;
   const status = runGit(['status', '--porcelain=v1'], root);
@@ -167,59 +168,58 @@ function gitState(checkout) {
   } catch {
     originMain = null;
   }
-  let uniqueCommitsVsMain = null;
-  try {
-    uniqueCommitsVsMain = Number(runGit(['rev-list', '--count', 'main..HEAD'], root));
-  } catch {
-    uniqueCommitsVsMain = null;
-  }
   return {
     path: root,
     head,
     branch,
     originMain,
     clean: status.length === 0,
-    modifiedPathCount: status ? status.split('\n').filter((line) => line.length > 0 && !line.startsWith('??')).length : 0,
+    modifiedPathCount: status ? status.split('\n').filter((line) => line && !line.startsWith('??')).length : 0,
     untrackedPathCount: status ? status.split('\n').filter((line) => line.startsWith('??')).length : 0,
-    uniqueCommitsVsMain,
   };
 }
 
-function profileMetadata(profilesRoot) {
-  const parent = metadata(profilesRoot);
-  const profiles = PROFILE_SPECS.map((spec) => {
-    const root = path.join(profilesRoot, spec.runtimeProfileId.slice('runtime_profile:'.length));
-    return {
-      ...spec,
-      root,
-      rootMetadata: metadata(root),
-    };
-  });
-  return { parent, profiles };
+function isPathWithin(parent, child) {
+  const relative = path.relative(path.resolve(parent), path.resolve(child));
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
-function safeEnv(profileRoot) {
-  const keep = ['PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TERM', 'TMPDIR'];
-  const env = {};
-  for (const key of keep) if (process.env[key]) env[key] = process.env[key];
-  env.HOME = os.homedir();
-  env.CODEX_HOME = profileRoot;
-  return env;
+function profileRoot(profilesRoot, runtimeProfileId) {
+  if (path.resolve(profilesRoot) === path.resolve(SHARED_DEFAULT_ROOT)) throw new Error('profile root parent may not be shared ~/.codex');
+  const suffix = runtimeProfileId.slice('runtime_profile:'.length);
+  const root = path.resolve(profilesRoot, suffix);
+  if (!isPathWithin(profilesRoot, root) || root === path.resolve(profilesRoot)) throw new Error(`profile root escaped profiles root: ${runtimeProfileId}`);
+  if (root === path.resolve(SHARED_DEFAULT_ROOT)) throw new Error('profile root may not be shared ~/.codex');
+  return root;
 }
 
-function writeOwnerOnlyJson(file, value, { replace = false } = {}) {
+function assertProfileCollection(packet) {
+  if (!Array.isArray(packet.profiles) || packet.profiles.length === 0) throw new Error('handoff packet contains no profiles');
+  const profilesRoot = resolvedAbsolute(packet.profilesRoot, 'profiles root');
+  if (profilesRoot === path.resolve(SHARED_DEFAULT_ROOT)) throw new Error('profiles root may not be shared ~/.codex');
+  for (const profile of packet.profiles) {
+    if (!profile || typeof profile.runtimeProfileId !== 'string' || typeof profile.root !== 'string') throw new Error('profile metadata is incomplete');
+    const expectedRoot = profileRoot(profilesRoot, profile.runtimeProfileId);
+    if (path.resolve(profile.root) !== expectedRoot) throw new Error(`profile root does not match its runtime profile: ${profile.runtimeProfileId}`);
+    if (path.resolve(profile.root) === path.resolve(SHARED_DEFAULT_ROOT)) throw new Error('profile targets shared ~/.codex');
+  }
+  return profilesRoot;
+}
+
+function writeOwnerOnlyJson(file, value) {
   const destination = resolvedAbsolute(file, 'output');
   const parent = path.dirname(destination);
   fs.mkdirSync(parent, { recursive: true, mode: 0o700 });
-  assertOwnerOnlyPath(parent, { directory: true });
-  const existing = metadata(destination);
-  if (existing.exists && !replace) throw new Error(`refusing to overwrite existing evidence: ${destination}`);
-  if (existing.exists) assertOwnerOnlyPath(destination);
-  const temp = `${destination}.tmp-${process.pid}`;
+  assertOwnerOnly(parent, { directory: true });
+  if (metadata(destination).exists) throw new Error(`refusing to overwrite existing evidence: ${destination}`);
+  const temp = `${destination}.tmp-${process.pid}-${crypto.randomBytes(6).toString('hex')}`;
   const descriptor = fs.openSync(temp, 'wx', 0o600);
   try {
     fs.writeFileSync(descriptor, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
     fs.fchmodSync(descriptor, 0o600);
+  } catch (error) {
+    try { fs.unlinkSync(temp); } catch {}
+    throw error;
   } finally {
     fs.closeSync(descriptor);
   }
@@ -228,8 +228,8 @@ function writeOwnerOnlyJson(file, value, { replace = false } = {}) {
 }
 
 function packetId() {
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-  return `codex-identity-${stamp}-${process.pid}`;
+  const stamp = new Date().toISOString().replace(/[-:.]/g, '').replace(/Z$/, 'Z');
+  return `codex-profile-${stamp}-${process.pid}-${crypto.randomBytes(4).toString('hex')}`;
 }
 
 function buildPacket(options) {
@@ -238,31 +238,17 @@ function buildPacket(options) {
   const profilesRoot = resolvedAbsolute(options.profilesRoot, 'profiles root');
   const handoffRoot = resolvedAbsolute(options.handoffRoot, 'handoff root');
   const source = gitState(sourceCheckout);
-  if (source.branch !== 'main' || !source.clean || !source.originMain) {
-    throw new Error('source checkout must be clean main with a resolvable origin/main');
-  }
+  if (source.branch !== 'main' || !source.clean || !source.originMain) throw new Error('source checkout must be clean main with a resolvable origin/main');
   const canonical = metadata(canonicalCheckout);
-  let legacy = null;
-  if (canonical.exists && canonical.type === 'directory') {
-    try {
-      legacy = gitState(canonicalCheckout);
-    } catch {
-      legacy = { path: canonicalCheckout, state: 'not_a_git_checkout' };
-    }
-  } else {
-    legacy = { path: canonicalCheckout, state: canonical.exists ? 'unexpected_path_type' : 'missing' };
-  }
-  const profileState = profileMetadata(profilesRoot);
   const id = packetId();
   const packetPath = path.join(handoffRoot, `${id}.packet.json`);
   const evidencePath = path.join(handoffRoot, `${id}.evidence.json`);
-  const archiveParent = path.join(path.dirname(canonicalCheckout), 'brain-identity-handoff-archives', id);
   const packet = {
-    schemaVersion: HANDOFF_SCHEMA_VERSION,
+    schemaVersion: SCHEMA_VERSION,
     kind: HANDOFF_KIND,
     handoffId: id,
-    phase: 'A',
-    status: 'READY_FOR_EXTERNAL_PHASE',
+    phase: 'PROFILE_SCOPED',
+    status: 'READY_FOR_PROFILE_SCOPED_EXECUTION',
     preparedAt: new Date().toISOString(),
     expectedMainSha: source.head,
     expectedOriginMainSha: source.originMain,
@@ -271,39 +257,23 @@ function buildPacket(options) {
     profilesRoot,
     candidateCatalog: path.join(sourceCheckout, DEFAULT_CANDIDATE_CATALOG),
     canonicalCatalog: path.join(sourceCheckout, DEFAULT_CANONICAL_CATALOG),
-    profiles: PROFILE_SPECS.map((spec) => ({
-      ...spec,
-      root: path.join(profilesRoot, spec.runtimeProfileId.slice('runtime_profile:'.length)),
-    })),
-    configOwnership: {
-      configWriter: 'brain:runtime-profile-config-materializer',
-      configurationCustody: 'brain',
-      authenticationCustody: 'codex_application',
-      route: 'direct_native_openai',
-      allowedMutation: 'profile_config_only',
-      sharedDefaultRoot: 'application_owned_observe_only',
-      webGpt: 'separate_application_owned_surface',
+    profiles: PROFILE_SPECS.map((spec) => ({ ...spec, root: profileRoot(profilesRoot, spec.runtimeProfileId) })),
+    policy: {
+      lifecycleScope: 'profile_scoped',
+      globalProcessQuiescenceRequired: false,
+      targetProfileLeaseRequired: true,
+      sharedDefaultRootMutation: false,
+      webGptMutation: false,
+      oauthReadOrCopy: false,
+      canonicalCatalogMutation: false,
+      canonicalCheckoutRelocation: 'deferred_separate_maintenance',
+      nAccountModel: 'dynamic_collection',
     },
-    processAbsencePredicates: [
-      'native_chatgpt_application',
-      'native_codex_application',
-      'native_codex_app_server',
-      'native_computer_use_service',
-      'native_computer_use_guardian',
-      'native_codex_node_repl',
-      'native_codex_browser_extension_host',
-    ],
-    externalOperations: [
-      'verify_stable_native_process_absence',
-      'verify_source_main_and_origin_alignment',
-      'relocate_canonical_only_if_legacy_checkout_is_clean_and_unique_work_is_zero',
-      'create_or_verify_dedicated_profile_roots',
-      'materialize_non_secret_profile_configurations',
-      'invoke_human_official_login_per_profile',
-      'run_profile_scoped_read_only_observation_and_cli_proof',
-      'enroll_only_explicitly_brain_owned_keychain_credentials',
-      'write_redacted_continuation_evidence',
-    ],
+    retiredV1PacketPolicy: {
+      schemaVersion: '1.0.0',
+      action: 'reject_without_execution',
+      evidencePreserved: true,
+    },
     webGptPolicy: {
       action: 'untouched',
       excludedPaths: ['/Users/Office/Repos/vendors/codex-chatgpt-web', '/Users/Office/.codex-chatgpt-web'],
@@ -311,19 +281,9 @@ function buildPacket(options) {
       noRouteChange: true,
       noBrowserStateChange: true,
     },
-    rollback: {
-      mode: 'retain_and_restore_exact_worktree_state',
-      archiveParent,
-      evidencePath,
-      noDelete: true,
-      noForcePush: true,
-      noApplicationStateDeletion: true,
-    },
     preparationEvidence: {
       source,
-      legacy,
       canonicalMetadata: canonical,
-      profiles: profileState,
       secretsExcluded: true,
       oauthExcluded: true,
       keychainValuesExcluded: true,
@@ -335,285 +295,150 @@ function buildPacket(options) {
   return { packet, packetPath };
 }
 
-function processCategory(command) {
-  const lower = command.toLowerCase();
-  if (command.startsWith('/Applications/ChatGPT.app/') || command.startsWith('/Applications/ChatGPT Classic.app/')) return 'native_chatgpt_application';
-  if (command.startsWith('/Applications/Codex.app/')) return 'native_codex_application';
-  if (command.includes('/Codex Computer Use.app/') || lower.includes('skycomputeruse') || lower.includes('/unified-computer-use/')) return 'native_computer_use_service';
-  if (lower.includes('cualockscreenguardian')) return 'native_computer_use_guardian';
-  if (command.includes('/cua_node/bin/node_repl')) return 'native_codex_node_repl';
-  if (lower.includes('chatgpt for chrome chrome-extension://')) return 'native_codex_browser_extension_host';
-  if (/\bcodex\b/.test(lower) && /\bapp-server\b/.test(lower)) return 'native_codex_app_server';
-  return null;
-}
-
-function nativeProcessSnapshot() {
-  let output = '';
-  try {
-    output = execFileSync('ps', ['-axo', 'pid=,ppid=,user=,command='], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  } catch {
-    throw new Error('unable to inspect process table');
-  }
-  const owner = process.env.USER ?? os.userInfo().username;
-  const processes = [];
-  for (const line of output.split('\n')) {
-    const match = /^\s*(\d+)\s+(\d+)\s+(\S+)\s+(.+)$/.exec(line);
-    if (!match || match[3] !== owner) continue;
-    const category = processCategory(match[4]);
-    if (!category) continue;
-    processes.push({
-      pid: Number(match[1]),
-      ppid: Number(match[2]),
-      category,
-      commandFingerprint: `sha256:${crypto.createHash('sha256').update(match[4]).digest('hex')}`,
-    });
-  }
-  return processes;
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function stableQuiescence({ samples = 3, delayMs = 1000 } = {}) {
-  const observations = [];
-  for (let index = 0; index < samples; index += 1) {
-    const processes = nativeProcessSnapshot();
-    observations.push({ sample: index + 1, processCount: processes.length, processes });
-    if (processes.length > 0) return { status: 'BLOCKED', observations, reason: 'native_processes_present' };
-    if (index + 1 < samples) await sleep(delayMs);
-  }
-  return { status: 'OK', observations, reason: null };
-}
-
 function loadPacket(file) {
   const packetPath = resolvedAbsolute(file, 'packet');
-  assertOwnerOnlyPath(packetPath);
+  assertOwnerOnly(packetPath);
   let packet;
   try {
     packet = JSON.parse(fs.readFileSync(packetPath, 'utf8'));
   } catch {
     throw new Error('packet is not valid JSON');
   }
-  if (!packet || packet.schemaVersion !== HANDOFF_SCHEMA_VERSION || packet.kind !== HANDOFF_KIND) throw new Error('packet schema or kind is invalid');
+  if (packet?.schemaVersion !== SCHEMA_VERSION || packet?.kind !== HANDOFF_KIND) {
+    throw new Error('packet is retired or belongs to an unsupported lifecycle version; prepare a fresh v2 packet');
+  }
   if (packet.containsSecrets !== false || packet.preparationEvidence?.secretsExcluded !== true) throw new Error('packet secret-exclusion marker is invalid');
-  if (!Array.isArray(packet.profiles) || packet.profiles.length < 2) throw new Error('packet must contain the selected profile collection');
-  for (const field of ['sourceCheckout', 'canonicalCheckout', 'profilesRoot', 'candidateCatalog', 'canonicalCatalog', 'continuationEvidencePath']) {
+  if (JSON.stringify(packet).includes('@')) throw new Error('packet contains an unexpected identity value');
+  assertProfileCollection(packet);
+  for (const field of ['sourceCheckout', 'canonicalCheckout', 'candidateCatalog', 'canonicalCatalog', 'continuationEvidencePath']) {
     if (typeof packet[field] !== 'string' || !path.isAbsolute(packet[field])) throw new Error(`packet path is invalid: ${field}`);
   }
-  const serialized = JSON.stringify(packet);
-  if (serialized.includes('@') || serialized.match(/"(?:access[_-]?token|refresh[_-]?token|password|secret|cookie|authorization)"\s*:/i)) {
-    throw new Error('packet contains a forbidden credential-like field or value');
-  }
+  if (packet.policy?.lifecycleScope !== 'profile_scoped' || packet.policy?.globalProcessQuiescenceRequired !== false) throw new Error('packet does not declare the profile-scoped safety policy');
   return { packet, packetPath };
 }
 
-function runJsonNode(sourceCheckout, scriptName, args, { profileRoot } = {}) {
-  const script = path.join(sourceCheckout, 'tools', scriptName);
-  try {
-    const output = execFileSync(process.execPath, [script, ...args], {
-      encoding: 'utf8',
-      env: profileRoot ? safeEnv(profileRoot) : safeEnv(path.join(os.homedir(), '.codex')),
-      stdio: ['ignore', 'pipe', 'pipe'],
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    const lines = output.trim().split('\n');
-    const jsonStart = lines.findIndex((line) => line.trim().startsWith('{'));
-    return JSON.parse(lines.slice(jsonStart < 0 ? 0 : jsonStart).join('\n'));
-  } catch (error) {
-    throw new Error(`profile tooling failed (${error?.status ? `exit_${error.status}` : error?.code ?? 'invalid_output'})`);
-  }
+function deriveAttemptEvidencePath(packet) {
+  const original = packet.continuationEvidencePath;
+  const parent = path.dirname(original);
+  const stem = path.basename(original, '.json').replace(/\.evidence$/, '');
+  const stamp = new Date().toISOString().replace(/[-:.]/g, '').replace(/Z$/, 'Z');
+  return path.join(parent, `${stem}.attempt-${stamp}-${process.pid}-${crypto.randomBytes(4).toString('hex')}.evidence.json`);
 }
 
-function runProfileCommand(profileRoot, args, { interactive = false } = {}) {
-  const executable = 'codex';
-  const result = spawnSync(executable, args, {
-    env: safeEnv(profileRoot),
-    stdio: interactive ? 'inherit' : 'ignore',
-  });
-  return { status: result.error ? 'error' : result.status === 0 ? 'ok' : 'failed', exitCode: result.status ?? null };
+function resolveCatalog(packet) {
+  const candidate = resolvedAbsolute(packet.candidateCatalog, 'candidate catalog');
+  const info = metadata(candidate);
+  if (!info.exists || info.type !== 'file') throw new Error('candidate catalog is missing or invalid');
+  return candidate;
 }
 
-async function operatorAttestation(profile) {
-  const prompt = readline.createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const expected = `CONFIRM_${profile.role.toUpperCase()}`;
-    const answer = (await prompt.question(`After the provider UI shows the intended ${profile.role} account, type ${expected}: `)).trim();
-    return answer === expected;
-  } finally {
-    prompt.close();
-  }
+function safeProfileResult(profile, created, materialized, doctor, login) {
+  return {
+    runtimeProfileId: profile.runtimeProfileId,
+    accountId: profile.accountId,
+    role: profile.role,
+    preferred: profile.preferred,
+    root: profile.root,
+    status: 'READY',
+    created: created.status,
+    materialized: materialized.status,
+    doctor: {
+      status: doctor.status,
+      readiness: doctor.readiness,
+      runtimeRoot: doctor.runtimeRoot,
+      authenticationStatus: doctor.authentication?.status ?? 'not_probed',
+      configurationState: doctor.configuration?.state ?? 'unknown',
+      processState: doctor.process?.state ?? 'unknown',
+      reasons: doctor.reasons ?? [],
+      warnings: doctor.warnings ?? [],
+    },
+    login: login ? {
+      status: login.status,
+      executable: login.handoff?.executable ?? null,
+      args: login.handoff?.args ?? null,
+      envOverlay: login.handoff?.envOverlay ?? null,
+      humanMustComplete: login.handoff?.humanMustComplete ?? false,
+      managerDoesNotExecute: login.handoff?.managerDoesNotExecute ?? true,
+    } : null,
+  };
+}
+
+async function prepareProfile(profile, catalog, profilesRoot, includeLogin) {
+  const common = ['--catalog', catalog, '--profiles-root', profilesRoot, '--profile', profile.runtimeProfileId];
+  const created = await runRuntimeProfileManager(['create', ...common, '--execute', '--confirm']);
+  if (!['OK', 'NOT_NEEDED'].includes(created.status)) return { status: 'BLOCKED', stage: 'create', runtimeProfileId: profile.runtimeProfileId, reason: 'profile_root_creation_failed', details: created };
+  const materialized = await runRuntimeProfileManager(['materialize-config', ...common, '--execute', '--confirm']);
+  if (!['OK', 'NOT_NEEDED'].includes(materialized.status)) return { status: 'BLOCKED', stage: 'materialize-config', runtimeProfileId: profile.runtimeProfileId, reason: 'profile_config_materialization_failed', details: materialized };
+  const doctor = await runRuntimeProfileManager(['doctor', ...common, '--no-login-probe']);
+  if (!['OK', 'NOT_OK'].includes(doctor.status)) return { status: 'BLOCKED', stage: 'doctor', runtimeProfileId: profile.runtimeProfileId, reason: 'profile_doctor_failed', details: doctor };
+  const login = includeLogin ? await runRuntimeProfileManager(['login', ...common]) : null;
+  if (includeLogin && login.status !== 'READY') return { status: 'BLOCKED', stage: 'login-handoff', runtimeProfileId: profile.runtimeProfileId, reason: 'profile_login_handoff_unavailable', details: login };
+  return safeProfileResult(profile, created, materialized, doctor, login);
 }
 
 async function executePacket(options) {
   const { packet, packetPath } = loadPacket(options.packet);
-  const events = [];
-  const evidencePath = packet.continuationEvidencePath;
-  const writeEvidence = (status, reasons = []) => {
-    const evidence = {
-      schemaVersion: HANDOFF_SCHEMA_VERSION,
-      kind: HANDOFF_KIND,
-      handoffId: packet.handoffId,
-      phase: 'B',
-      status,
-      packetPath,
-      startedAt: events[0]?.at ?? new Date().toISOString(),
-      completedAt: new Date().toISOString(),
-      expectedMainSha: packet.expectedMainSha,
-      canonicalCheckout: packet.canonicalCheckout,
-      acceptancePath: events.find((event) => event.event === 'collection_acceptance')?.acceptancePath ?? null,
-      profiles: packet.profiles.map(({ accountId, runtimeProfileId, role, preferred, root }) => ({ accountId, runtimeProfileId, role, preferred, root })),
-      events,
-      reasons: [...new Set(reasons)],
-      webGpt: 'untouched',
-      secretsExcluded: true,
-      oauthCopied: false,
-      keychainValuesRead: false,
-      processesKilled: false,
-      forceUsed: false,
-    };
-    return writeOwnerOnlyJson(evidencePath, evidence);
-  };
-  events.push({ at: new Date().toISOString(), event: 'external_phase_started' });
-  let quiescence;
-  try {
-    quiescence = await stableQuiescence();
-  } catch (error) {
-    events.push({ at: new Date().toISOString(), event: 'quiescence_probe_failed' });
-    const outputPath = writeEvidence('HANDOFF_BLOCKED', [error.message]);
-    return { status: 'HANDOFF_BLOCKED', reasons: [error.message], evidencePath: outputPath };
-  }
-  events.push({ at: new Date().toISOString(), event: 'quiescence_checked', status: quiescence.status, observations: quiescence.observations });
-  if (quiescence.status !== 'OK') {
-    const outputPath = writeEvidence('HANDOFF_BLOCKED', [quiescence.reason]);
-    return { status: 'HANDOFF_BLOCKED', reasons: [quiescence.reason], evidencePath: outputPath };
-  }
-
-  let source;
-  try {
-    source = gitState(packet.sourceCheckout);
-  } catch (error) {
-    const outputPath = writeEvidence('HANDOFF_BLOCKED', ['source_checkout_unreadable']);
-    return { status: 'HANDOFF_BLOCKED', reasons: [error.message], evidencePath: outputPath };
-  }
-  if (source.head !== packet.expectedMainSha || source.branch !== 'main' || !source.clean || source.originMain !== packet.expectedOriginMainSha) {
-    const outputPath = writeEvidence('HANDOFF_BLOCKED', ['source_main_changed_or_dirty']);
-    return { status: 'HANDOFF_BLOCKED', reasons: ['source_main_changed_or_dirty'], evidencePath: outputPath };
-  }
-  events.push({ at: new Date().toISOString(), event: 'source_main_verified', mainSha: source.head });
-
-  let canonical = null;
-  try {
-    canonical = gitState(packet.canonicalCheckout);
-  } catch {
-    canonical = null;
-  }
-  let relocation = { status: 'skipped', reason: 'canonical_checkout_not_clean_and_unique_free' };
-  if (canonical?.clean && canonical.uniqueCommitsVsMain === 0 && canonical.head === packet.expectedMainSha && canonical.branch === 'main') {
-    relocation = { status: 'already_canonical', path: packet.canonicalCheckout };
-  } else if (!canonical) {
-    relocation = { status: 'blocked', reason: 'canonical_checkout_not_git_or_unreadable' };
-  } else if (!canonical.clean || (canonical.uniqueCommitsVsMain ?? 1) > 0) {
-    relocation = { status: 'skipped_protected_residual', clean: canonical.clean, uniqueCommitsVsMain: canonical.uniqueCommitsVsMain };
-  }
-  events.push({ at: new Date().toISOString(), event: 'canonical_relocation_evaluated', relocation });
-  if (relocation.status === 'blocked') {
-    const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', ['canonical_relocation_not_safe']);
-    return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['canonical_relocation_not_safe'], evidencePath: outputPath };
-  }
-
-  const executionSource = packet.sourceCheckout;
-  const candidateCatalog = path.join(executionSource, DEFAULT_CANDIDATE_CATALOG);
-  const profileResults = [];
+  const catalog = resolveCatalog(packet);
+  const source = gitState(packet.sourceCheckout);
+  if (source.head !== packet.expectedMainSha || source.branch !== 'main' || !source.clean || source.originMain !== packet.expectedOriginMainSha) throw new Error('source main changed, is dirty, or no longer matches the prepared packet');
+  const startedAt = new Date().toISOString();
+  const results = [];
+  let terminal = 'READY_FOR_PROVIDER_LOGIN';
   for (const profile of packet.profiles) {
+    let result;
     try {
-      const create = runJsonNode(executionSource, 'runtime-profile-manager.mjs', [
-        'create', '--catalog', candidateCatalog, '--profiles-root', packet.profilesRoot,
-        '--profile', profile.runtimeProfileId, '--execute', '--confirm',
-      ], { profileRoot: profile.root });
-      const materialize = runJsonNode(executionSource, 'runtime-profile-manager.mjs', [
-        'materialize-config', '--catalog', candidateCatalog, '--profiles-root', packet.profilesRoot,
-        '--profile', profile.runtimeProfileId, '--execute', '--confirm',
-      ], { profileRoot: profile.root });
-      if (!['OK', 'NOT_NEEDED'].includes(create.status) || !['OK', 'NOT_NEEDED'].includes(materialize.status)) throw new Error('profile preparation was not accepted');
-      profileResults.push({ runtimeProfileId: profile.runtimeProfileId, role: profile.role, create: create.status, materialize: materialize.status });
-      events.push({ at: new Date().toISOString(), event: 'profile_prepared', runtimeProfileId: profile.runtimeProfileId, role: profile.role, create: create.status, materialize: materialize.status });
+      result = await prepareProfile(profile, catalog, packet.profilesRoot, options.login);
     } catch (error) {
-      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`profile_preparation_failed:${profile.runtimeProfileId}`]);
-      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: [error.message], evidencePath: outputPath };
+      result = {
+        status: 'BLOCKED',
+        stage: 'profile-operation',
+        runtimeProfileId: profile.runtimeProfileId,
+        reason: 'profile_operation_failed',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+    results.push(result);
+    if (result.status !== 'READY') {
+      terminal = 'BLOCKED';
+      break;
     }
   }
-
-  if (!options.login) {
-    events.push({ at: new Date().toISOString(), event: 'login_handoff_deferred', reason: 'execute_requires_explicit_login_switch' });
-    const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', ['human_login_not_requested']);
-    return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['human_login_not_requested'], evidencePath: outputPath };
-  }
-
-  for (const profile of packet.profiles) {
-    const login = runJsonNode(executionSource, 'runtime-profile-manager.mjs', [
-      'login', '--catalog', candidateCatalog, '--profiles-root', packet.profilesRoot,
-      '--profile', profile.runtimeProfileId,
-    ], { profileRoot: profile.root });
-    if (login.status !== 'READY' || !login.handoff?.humanMustComplete) {
-      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`login_handoff_unavailable:${profile.runtimeProfileId}`]);
-      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['login_handoff_unavailable'], evidencePath: outputPath };
-    }
-    process.stdout.write(`LOGIN REQUIRED: ${profile.role} profile ${profile.runtimeProfileId}. Choose the intended provider account in the official login flow.\n`);
-    const loginResult = runProfileCommand(profile.root, login.handoff.args, { interactive: true });
-    if (loginResult.status !== 'ok') {
-      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`official_login_failed:${profile.runtimeProfileId}`]);
-      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['official_login_failed'], evidencePath: outputPath };
-    }
-    const attested = await operatorAttestation(profile);
-    if (!attested) {
-      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`operator_attestation_failed:${profile.runtimeProfileId}`]);
-      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['operator_attestation_failed'], evidencePath: outputPath };
-    }
-    events.push({ at: new Date().toISOString(), event: 'official_login_completed', runtimeProfileId: profile.runtimeProfileId, role: profile.role, operatorAttestation: 'confirmed' });
-  }
-
-  const verificationSequence = [packet.profiles[0], packet.profiles[1], packet.profiles[0]];
-  for (const profile of verificationSequence) {
-    const doctor = runJsonNode(executionSource, 'runtime-profile-manager.mjs', [
-      'doctor', '--catalog', candidateCatalog, '--profiles-root', packet.profilesRoot,
-      '--profile', profile.runtimeProfileId,
-    ], { profileRoot: profile.root });
-    if (doctor.status !== 'OK' || doctor.authentication?.status !== 'authenticated') {
-      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`coexistence_verification_failed:${profile.runtimeProfileId}`]);
-      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['coexistence_verification_failed'], evidencePath: outputPath };
-    }
-    events.push({ at: new Date().toISOString(), event: 'coexistence_verification', runtimeProfileId: profile.runtimeProfileId, role: profile.role, authentication: 'authenticated' });
-  }
-
-  for (const profile of verificationSequence) {
-    const proof = runProfileCommand(profile.root, ['exec', '--ephemeral', '--skip-git-repo-check', '--json', 'Reply with exactly OK.']);
-    events.push({ at: new Date().toISOString(), event: 'profile_cli_proof', runtimeProfileId: profile.runtimeProfileId, role: profile.role, result: proof.status, exitCode: proof.exitCode });
-    if (proof.status !== 'ok') {
-      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', [`cli_proof_failed:${profile.runtimeProfileId}`]);
-      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['cli_proof_failed'], evidencePath: outputPath };
-    }
-  }
-  const acceptancePath = path.join(path.dirname(packetPath), `${packet.handoffId}.acceptance.json`);
-  try {
-    const acceptance = runJsonNode(executionSource, 'codex-cli-pilot.mjs', [
-      'acceptance', '--catalog', candidateCatalog, '--profiles-root', packet.profilesRoot,
-      '--profiles', packet.profiles.map((profile) => profile.runtimeProfileId).join(','),
-      ...packet.profiles.flatMap((profile) => ['--attest-profile', profile.runtimeProfileId]),
-      '--output', acceptancePath,
-    ]);
-    if (acceptance.status !== 'OK') {
-      const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', ['collection_acceptance_failed']);
-      return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['collection_acceptance_failed'], evidencePath: outputPath };
-    }
-    events.push({ at: new Date().toISOString(), event: 'collection_acceptance', status: 'OK', acceptancePath });
-  } catch (error) {
-    const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', ['collection_acceptance_failed']);
-    return { status: 'HANDOFF_PARTIAL_SAFE', reasons: [error.message], evidencePath: outputPath };
-  }
-  events.push({ at: new Date().toISOString(), event: 'keychain_enrollment', status: 'deferred_until_explicit_brain_owned_credential_selection' });
-  const outputPath = writeEvidence('HANDOFF_PARTIAL_SAFE', ['canonical_admission_and_operator_attestation_remain_phase_c']);
-  return { status: 'HANDOFF_PARTIAL_SAFE', reasons: ['canonical_admission_and_operator_attestation_remain_phase_c'], evidencePath: outputPath, profiles: profileResults };
+  const evidencePath = deriveAttemptEvidencePath(packet);
+  const evidence = {
+    schemaVersion: SCHEMA_VERSION,
+    kind: EVIDENCE_KIND,
+    handoffId: packet.handoffId,
+    attemptId: path.basename(evidencePath, '.evidence.json'),
+    phase: 'PROFILE_SCOPED',
+    terminal,
+    startedAt,
+    completedAt: new Date().toISOString(),
+    packetPath,
+    sourceMainSha: source.head,
+    profilesRoot: packet.profilesRoot,
+    policy: packet.policy,
+    results,
+    providerLogin: options.login ? 'waiting_for_provider_login' : 'not_requested',
+    deferredMaintenance: {
+      canonicalCheckout: 'separate_git_maintenance_not_profile_prerequisite',
+      canonicalCatalogAdmission: 'deferred_until_real_identity_and_isolation_evidence',
+      keychainEnrollment: 'deferred_until_explicit_brain_owned_credential_selection',
+    },
+    redaction: {
+      secretsExcluded: true,
+      oauthRead: false,
+      authContentsRead: false,
+      keychainValuesRead: false,
+      webGptStateRead: false,
+      globalProcessProbeUsed: false,
+      processesKilled: false,
+      sharedDefaultRootMutated: false,
+      canonicalCatalogMutated: false,
+    },
+    previousEvidencePreserved: packet.continuationEvidencePath !== evidencePath,
+  };
+  writeOwnerOnlyJson(evidencePath, evidence);
+  return { status: terminal, evidencePath, evidence };
 }
 
 async function main(argv = process.argv.slice(2)) {
@@ -621,27 +446,46 @@ async function main(argv = process.argv.slice(2)) {
   if (operation === 'prepare') {
     const { packet, packetPath } = buildPacket(options);
     const outputPath = writeOwnerOnlyJson(packetPath, packet);
-    process.stdout.write(`PHASE_A=HANDOFF_READY\n${JSON.stringify({ status: packet.status, packetPath: outputPath, expectedMainSha: packet.expectedMainSha, continuationEvidencePath: packet.continuationEvidencePath, secretsExcluded: true }, null, 2)}\n`);
+    process.stdout.write(`PROFILE_LIFECYCLE=PACKET_READY\n${JSON.stringify({ status: packet.status, packetPath: outputPath, profilesRoot: packet.profilesRoot, secretsExcluded: true }, null, 2)}\n`);
+    return 0;
+  }
+  const loaded = loadPacket(options.packet);
+  if (operation === 'inspect') {
+    process.stdout.write(`PROFILE_LIFECYCLE=INSPECT_OK\n${JSON.stringify({ status: 'OK', handoffId: loaded.packet.handoffId, policy: loaded.packet.policy, profiles: loaded.packet.profiles }, null, 2)}\n`);
     return 0;
   }
   const result = await executePacket(options);
-  process.stdout.write(`${result.status}\n${JSON.stringify({ status: result.status, evidencePath: result.evidencePath, reasons: result.reasons ?? [] }, null, 2)}\n`);
-  return result.status === 'HANDOFF_OK' ? 0 : 1;
+  process.stdout.write(`PROFILE_LIFECYCLE=${result.status}\n${JSON.stringify({
+    status: result.status,
+    evidencePath: result.evidencePath,
+    profiles: result.evidence.results.map((item) => ({ runtimeProfileId: item.runtimeProfileId, status: item.status, stage: item.stage ?? null })),
+    login: options.login ? 'waiting_for_provider_login' : 'not_requested',
+    loginHandoffs: options.login
+      ? result.evidence.results.filter((item) => item.login?.status === 'READY').map((item) => ({
+        runtimeProfileId: item.runtimeProfileId,
+        executable: item.login.executable,
+        args: item.login.args,
+        envOverlay: item.login.envOverlay,
+      }))
+      : [],
+  }, null, 2)}\n`);
+  return result.status === 'BLOCKED' ? 1 : 0;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
-    process.stderr.write(`HANDOFF_BLOCKED\n${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(`PROFILE_LIFECYCLE=NOT_OK\n${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
   });
 }
 
 export {
+  EVIDENCE_KIND,
   HANDOFF_KIND,
-  HANDOFF_SCHEMA_VERSION,
   PROFILE_SPECS,
+  SCHEMA_VERSION,
   buildPacket,
-  nativeProcessSnapshot,
-  processCategory,
-  stableQuiescence,
+  deriveAttemptEvidencePath,
+  loadPacket,
+  profileRoot,
 };
