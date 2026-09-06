@@ -1,9 +1,9 @@
 # Brain Repository Mainline Reconciliation
 
-**Date:** 2026-09-06  
-**Status:** in progress; evidence and attribution phase  
+**Date:** 2026-09-06
+**Status:** in progress; evidence and attribution phase
 **Canonical target:** one validated, clean `main` checkout and explicit
-disposition for every branch, worktree, and changed path  
+disposition for every branch, worktree, and changed path
 **Safety boundary:** no live OAuth, Keychain, Codex, WebGPT, MCP, Hooks,
 browser, scheduler, or runtime state was changed by this reconciliation.
 
