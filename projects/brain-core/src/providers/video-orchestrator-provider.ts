@@ -669,16 +669,20 @@ export async function resolvePublishableAssets(jobId: string): Promise<Publishab
     statusJson: statusJson !== null,
     inferredS3: Boolean(inferred.finalVideo || inferred.thumbnail || inferred.narration),
   };
+  const assetsVideoKey = stringValue(assetsJson?.videoKey) ?? stringValue(assetsJson?.videoSourceKey);
+  const statusVideoKey = stringValue(statusJson?.finalVideoKey) ?? stringValue(statusJson?.videoKey) ?? stringValue(statusJson?.videoSourceKey);
 
   const video = await firstExistingS3Key([
     { key: stringValue(publishJson?.videoKey), source: 'publishJson' },
     { key: nestedPath(assetsJson, 'finalVideo'), source: 'assetsJson' },
-    { key: stringValue(statusJson?.finalVideoKey), source: 'statusJson' },
+    { key: assetsVideoKey, source: 'assetsJson' },
+    { key: statusVideoKey, source: 'statusJson' },
     { key: inferred.finalVideo ?? expectedKeys.videoKey, source: 'inferredS3' },
   ]);
   const thumbnail = await firstExistingS3Key([
     { key: stringValue(publishJson?.thumbnailKey), source: 'publishJson' },
     { key: nestedPath(assetsJson, 'thumbnail'), source: 'assetsJson' },
+    { key: stringValue(assetsJson?.thumbnailKey), source: 'assetsJson' },
     { key: stringValue(statusJson?.thumbnailKey), source: 'statusJson' },
     { key: inferred.thumbnail ?? expectedKeys.thumbnailKey, source: 'inferredS3' },
   ]);
@@ -1615,15 +1619,12 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
 
   // Dry-run fast path: skip heavy finalization/resolution, validate only publish-critical keys
   if (options.dryRun) {
-    const canonicalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
-    const canonicalThumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
-    const [videoExists, thumbExists] = await Promise.all([
-      fileExists(join(getVideoOrchestratorRoot(), canonicalVideoKey)).then(ok => ok || checkS3ObjectExists(S3_BUCKET, canonicalVideoKey, AWS_REGION)),
-      fileExists(join(getVideoOrchestratorRoot(), canonicalThumbnailKey)).then(ok => ok || checkS3ObjectExists(S3_BUCKET, canonicalThumbnailKey, AWS_REGION)),
-    ]);
+    const resolved = await resolvePublishableAssets(jobId);
+    const dryRunVideoKey = resolved.videoKey ?? resolved.expectedKeys.videoKey;
+    const dryRunThumbnailKey = resolved.thumbnailKey ?? resolved.expectedKeys.thumbnailKey;
     const dryRunMissing: string[] = [];
-    if (!videoExists) dryRunMissing.push(canonicalVideoKey);
-    if (!thumbExists) dryRunMissing.push(canonicalThumbnailKey);
+    if (!resolved.videoKey) dryRunMissing.push(dryRunVideoKey);
+    if (!resolved.thumbnailKey) dryRunMissing.push(dryRunThumbnailKey);
     if (dryRunMissing.length > 0) {
       return {
         ok: false,
@@ -1636,14 +1637,15 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     }
     // Publish metadata: read existing or use initial
     let publishJson = publishJson_initial ?? {};
-    if (!publishJson.videoKey) publishJson = { ...publishJson, videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey };
+    const publishWasMissing = !publishJson.videoKey;
+    if (publishWasMissing) publishJson = { ...publishJson, videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey };
     const generationMode = typeof publishJson.generationMode === 'string' ? publishJson.generationMode : null;
 
     if (isGeneratedMediaGenerationMode(generationMode)) {
       const assetValidation = validateGeneratedMediaPublishAssets({
         generationMode,
-        videoKey: canonicalVideoKey,
-        thumbnailKey: canonicalThumbnailKey,
+        videoKey: dryRunVideoKey,
+        thumbnailKey: dryRunThumbnailKey,
         jobId,
       });
       if (!assetValidation.valid) {
@@ -1653,7 +1655,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
           dryRun: true,
           code: 'generated_media_publish_assets_invalid',
           error: `Generated-media mode requires valid generated assets: ${assetValidation.reason}`,
-          details: { generationMode, videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey, reason: assetValidation.reason },
+          details: { generationMode, videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey, reason: assetValidation.reason },
         };
       }
     }
@@ -1668,12 +1670,12 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
 
     // For approved-video-* jobs, publish.json may not yet exist in S3 (the upload script requires it).
     // Initialize it with a minimal pending record before calling the script.
-    if (!publishJson.videoKey) {
+    if (publishWasMissing) {
       const initialPublish = {
         jobId,
         publishStatus: 'pending',
-        videoKey: canonicalVideoKey,
-        thumbnailKey: canonicalThumbnailKey,
+        videoKey: dryRunVideoKey,
+        thumbnailKey: dryRunThumbnailKey,
         platforms: {},
         createdAt: new Date().toISOString(),
       };
@@ -1691,7 +1693,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     try {
       const publishCheckRunning: PublishCheckMetadata = {
         jobId,
-        youtubeDryRun: { status: 'running', startedAt: dryRunStartedAt, checkedBy: 'brain-console', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        youtubeDryRun: { status: 'running', startedAt: dryRunStartedAt, checkedBy: 'brain-console', videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey },
         dryRunPassed: false,
       };
       await writePublishCheckJson(jobId, publishCheckRunning);
@@ -1702,7 +1704,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
       const now = new Date().toISOString();
       const publishCheckPassed: PublishCheckMetadata = {
         jobId,
-        youtubeDryRun: { status: 'passed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', privacy: 'private', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        youtubeDryRun: { status: 'passed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', privacy: 'private', videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey },
         dryRunPassed: true,
       };
       await writePublishCheckJson(jobId, publishCheckPassed);
@@ -1711,7 +1713,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
       const now = new Date().toISOString();
       const publishCheckFailed: PublishCheckMetadata = {
         jobId,
-        youtubeDryRun: { status: 'failed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        youtubeDryRun: { status: 'failed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey },
         dryRunPassed: false,
       };
       await writePublishCheckJson(jobId, publishCheckFailed).catch(() => {});
@@ -2497,19 +2499,37 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
 
   const generationMode = stringValue(assetsJson?.generationMode) ?? stringValue(publishJson?.generationMode) ?? stringValue(statusJson?.generationMode) ?? null;
   const isHybridImageSlideshow = generationMode === 'hybrid_image_slideshow_video';
-  const requiredKeys = [
-    'jobs/' + jobId + '/metadata/scene-plan.json',
-    'jobs/' + jobId + '/audio/narration-script.txt',
-    'jobs/' + jobId + '/audio/narration.mp3',
-    'jobs/' + jobId + '/metadata/assets.json',
-    ...(isHybridImageSlideshow ? ['jobs/' + jobId + '/metadata/overlay-plan.json'] : []),
-    'jobs/' + jobId + '/video-generated/generated-001.mp4',
-    'jobs/' + jobId + '/exports/generated-001-final.mp4',
-    'jobs/' + jobId + '/exports/thumbnail-001.jpg',
-    'jobs/' + jobId + '/metadata/youtube-package.json',
-    'jobs/' + jobId + '/metadata/publish.json',
-    'jobs/' + jobId + '/metadata/review.json',
-  ];
+  const isApprovedSourceVideo = generationMode === 'approved-source-video';
+  const approvedVideoKey = stringValue(publishJson?.videoKey)
+    ?? stringValue(assetsJson?.videoSourceKey)
+    ?? stringValue(assetsJson?.videoKey)
+    ?? stringValue(statusJson?.videoSourceKey)
+    ?? stringValue(statusJson?.videoKey);
+  const approvedThumbnailKey = stringValue(publishJson?.thumbnailKey)
+    ?? stringValue(assetsJson?.thumbnailKey)
+    ?? stringValue(statusJson?.thumbnailKey);
+  const requiredKeys = isApprovedSourceVideo
+    ? [
+        'jobs/' + jobId + '/metadata/assets.json',
+        ...(approvedVideoKey ? [approvedVideoKey] : ['jobs/' + jobId + '/exports/generated-001-final.mp4']),
+        ...(approvedThumbnailKey ? [approvedThumbnailKey] : ['jobs/' + jobId + '/exports/thumbnail-001.jpg']),
+        'jobs/' + jobId + '/metadata/youtube-package.json',
+        'jobs/' + jobId + '/metadata/publish.json',
+        'jobs/' + jobId + '/metadata/review.json',
+      ]
+    : [
+        'jobs/' + jobId + '/metadata/scene-plan.json',
+        'jobs/' + jobId + '/audio/narration-script.txt',
+        'jobs/' + jobId + '/audio/narration.mp3',
+        'jobs/' + jobId + '/metadata/assets.json',
+        ...(isHybridImageSlideshow ? ['jobs/' + jobId + '/metadata/overlay-plan.json'] : []),
+        'jobs/' + jobId + '/video-generated/generated-001.mp4',
+        'jobs/' + jobId + '/exports/generated-001-final.mp4',
+        'jobs/' + jobId + '/exports/thumbnail-001.jpg',
+        'jobs/' + jobId + '/metadata/youtube-package.json',
+        'jobs/' + jobId + '/metadata/publish.json',
+        'jobs/' + jobId + '/metadata/review.json',
+      ];
 
   const repairableMetadataKeys = new Set([
     `jobs/${jobId}/metadata/youtube-package.json`,
@@ -2537,8 +2557,12 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
   }
 
   const repaired: string[] = [];
-  const canonicalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
-  const canonicalThumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+  const canonicalVideoKey = isApprovedSourceVideo
+    ? (approvedVideoKey ?? `jobs/${jobId}/exports/generated-001-final.mp4`)
+    : `jobs/${jobId}/exports/generated-001-final.mp4`;
+  const canonicalThumbnailKey = isApprovedSourceVideo
+    ? (approvedThumbnailKey ?? `jobs/${jobId}/exports/thumbnail-001.jpg`)
+    : `jobs/${jobId}/exports/thumbnail-001.jpg`;
   const canonicalYoutubePackageKey = `jobs/${jobId}/metadata/youtube-package.json`;
   const canonicalPublishKey = `jobs/${jobId}/metadata/publish.json`;
   const canonicalReviewKey = `jobs/${jobId}/metadata/review.json`;
@@ -2562,10 +2586,10 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
       topicDescription: stringValue((await readJobMetadataJson(jobId, 'topic.json') as Record<string, unknown> | null)?.description) ?? undefined,
       generationMode: generationMode ?? 'hybrid_image_slideshow_video',
       mediaSource: stringValue(assetsJson?.mediaSource) ?? 'hybrid',
-      videoKey: stringValue(assetsJson?.videoSourceKey) ?? canonicalVideoKey,
+      videoKey: canonicalVideoKey,
       thumbnailKey: canonicalThumbnailKey,
-      scenePlanKey: `jobs/${jobId}/metadata/scene-plan.json`,
-      narrationScriptKey: `jobs/${jobId}/audio/narration-script.txt`,
+      scenePlanKey: isApprovedSourceVideo ? stringValue(assetsJson?.scenePlanKey) : `jobs/${jobId}/metadata/scene-plan.json`,
+      narrationScriptKey: isApprovedSourceVideo ? stringValue(assetsJson?.narrationScriptKey) : `jobs/${jobId}/audio/narration-script.txt`,
       scenePlan: Array.isArray(scenePlan?.scenes) ? (scenePlan.scenes as ScenePlan['scenes']) : undefined,
     });
     youtubePackageRepair = built as unknown as Record<string, unknown>;
@@ -2596,7 +2620,7 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
   const assetPublishable = {
     videoKey: canonicalVideoKey,
     thumbnailKey: canonicalThumbnailKey,
-    narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    narrationKey: isApprovedSourceVideo ? null : `jobs/${jobId}/audio/narration.mp3`,
     missing: [],
     checked: {
       publishJson: true,
@@ -2626,10 +2650,10 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
     jobId,
     generationMode: generationMode ?? stringValue(assetsJson?.generationMode) ?? 'hybrid_image_slideshow_video',
     mediaSource: stringValue(assetsJson?.mediaSource) ?? 'hybrid',
-    scenePlanKey: `jobs/${jobId}/metadata/scene-plan.json`,
-    narrationScriptKey: `jobs/${jobId}/audio/narration-script.txt`,
-    audioKey: `jobs/${jobId}/audio/narration.mp3`,
-    videoSourceKey: `jobs/${jobId}/video-generated/generated-001.mp4`,
+    scenePlanKey: isApprovedSourceVideo ? stringValue(assetsJson?.scenePlanKey) : `jobs/${jobId}/metadata/scene-plan.json`,
+    narrationScriptKey: isApprovedSourceVideo ? stringValue(assetsJson?.narrationScriptKey) : `jobs/${jobId}/audio/narration-script.txt`,
+    audioKey: isApprovedSourceVideo ? stringValue(assetsJson?.audioKey) : `jobs/${jobId}/audio/narration.mp3`,
+    videoSourceKey: isApprovedSourceVideo ? canonicalVideoKey : `jobs/${jobId}/video-generated/generated-001.mp4`,
     videoKey: canonicalVideoKey,
     finalVideo: canonicalVideoKey,
     thumbnailKey: canonicalThumbnailKey,
@@ -2652,15 +2676,15 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
   }
 
   const canonicalMedia: VideoReviewMedia = {
-    scenePlanKey: `jobs/${jobId}/metadata/scene-plan.json`,
-    narrationScriptKey: `jobs/${jobId}/audio/narration-script.txt`,
-    audioKey: `jobs/${jobId}/audio/narration.mp3`,
-    sceneImageKeys: Array.isArray(assetsJson?.sceneImageKeys) ? (assetsJson.sceneImageKeys as string[]).filter((item): item is string => typeof item === 'string') : [],
+    scenePlanKey: isApprovedSourceVideo ? stringValue(assetsJson?.scenePlanKey) : `jobs/${jobId}/metadata/scene-plan.json`,
+    narrationScriptKey: isApprovedSourceVideo ? stringValue(assetsJson?.narrationScriptKey) : `jobs/${jobId}/audio/narration-script.txt`,
+    audioKey: isApprovedSourceVideo ? stringValue(assetsJson?.audioKey) : `jobs/${jobId}/audio/narration.mp3`,
+    sceneImageKeys: isApprovedSourceVideo ? [] : (Array.isArray(assetsJson?.sceneImageKeys) ? (assetsJson.sceneImageKeys as string[]).filter((item): item is string => typeof item === 'string') : []),
     videoKey: canonicalVideoKey,
     thumbnailKey: canonicalThumbnailKey,
     publishKey: canonicalPublishKey,
     youtubePackageKey: canonicalYoutubePackageKey,
-    overlayPlanKey: isHybridImageSlideshow ? `jobs/${jobId}/metadata/overlay-plan.json` : stringValue(assetsJson?.overlayPlanKey) ?? null,
+    overlayPlanKey: isApprovedSourceVideo ? null : (isHybridImageSlideshow ? `jobs/${jobId}/metadata/overlay-plan.json` : stringValue(assetsJson?.overlayPlanKey) ?? null),
   };
 
   let reviewRepair = reviewJson ? parseReviewRecord(reviewJson, jobId) : null;

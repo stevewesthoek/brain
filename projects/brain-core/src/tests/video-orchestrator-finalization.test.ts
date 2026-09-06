@@ -227,6 +227,102 @@ test('finalize, get review, and approve share the same canonical media contract'
   }
 });
 
+test('finalize preserves approved source-video keys without generated-media prerequisites', async () => {
+  const jobId = `test-approved-source-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const jobsRoot = getVideoOrchestratorJobsRoot();
+  const jobRoot = join(jobsRoot, jobId);
+  const metadataRoot = join(jobRoot, 'metadata');
+  const sourceVideoKey = `jobs/${jobId}/source/approved.mp4`;
+  const sourceThumbnailKey = `jobs/${jobId}/source/approved.jpg`;
+  const canonicalMedia: VideoReviewMedia = {
+    scenePlanKey: null,
+    narrationScriptKey: null,
+    audioKey: null,
+    sceneImageKeys: [],
+    videoKey: sourceVideoKey,
+    thumbnailKey: sourceThumbnailKey,
+    publishKey: `jobs/${jobId}/metadata/publish.json`,
+    youtubePackageKey: `jobs/${jobId}/metadata/youtube-package.json`,
+    overlayPlanKey: null,
+  };
+
+  try {
+    await mkdir(join(jobRoot, 'source'), { recursive: true });
+    await mkdir(metadataRoot, { recursive: true });
+    await writeFile(join(jobRoot, 'source', 'approved.mp4'), Buffer.from('approved-video'));
+    await writeFile(join(jobRoot, 'source', 'approved.jpg'), Buffer.from('approved-thumbnail'));
+
+    await writeFile(join(metadataRoot, 'assets.json'), JSON.stringify({
+      jobId,
+      mediaSource: 'uploaded-video',
+      generationMode: 'approved-source-video',
+      videoSourceKey: sourceVideoKey,
+      videoKey: sourceVideoKey,
+      thumbnailKey: sourceThumbnailKey,
+      aiGenerated: false,
+      slideshowGenerated: false,
+      fixtureUsed: false,
+    }));
+    await writeFile(join(metadataRoot, 'status.json'), JSON.stringify({
+      jobId,
+      generationMode: 'approved-source-video',
+      mediaSource: 'uploaded-video',
+      videoSourceKey: sourceVideoKey,
+      thumbnailKey: sourceThumbnailKey,
+    }));
+    await writeFile(join(metadataRoot, 'publish.json'), JSON.stringify({
+      jobId,
+      generationMode: 'approved-source-video',
+      mediaSource: 'uploaded-video',
+      videoKey: sourceVideoKey,
+      thumbnailKey: sourceThumbnailKey,
+      youtubePackageKey: canonicalMedia.youtubePackageKey,
+      platforms: { youtube: { status: 'pending' } },
+    }));
+    await writeFile(join(metadataRoot, 'youtube-package.json'), JSON.stringify({
+      jobId,
+      generationMode: 'approved-source-video',
+      videoKey: sourceVideoKey,
+      thumbnailKey: sourceThumbnailKey,
+    }));
+    await writeFile(join(metadataRoot, 'thumbnail.json'), JSON.stringify({
+      jobId,
+      thumbnailStatus: 'generated',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      provider: 'selected-scene-image',
+      source: { kind: 'approved-upload', key: sourceThumbnailKey },
+      thumbnailKey: sourceThumbnailKey,
+      previewKey: sourceThumbnailKey,
+      width: 1280,
+      height: 720,
+      mimeType: 'image/jpeg',
+      titleOverlay: null,
+      prompt: null,
+      warnings: [],
+    }));
+    await writeFile(join(metadataRoot, 'review.json'), JSON.stringify({
+      jobId,
+      reviewStatus: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      reviewedAt: null,
+      reviewedBy: null,
+      notes: null,
+      media: canonicalMedia,
+    }));
+
+    const finalized = await finalizeAwsVideoPublishPackage(jobId);
+    assert.equal(finalized.ok, true);
+    if (!finalized.ok) return;
+    assert.deepEqual(finalized.media, canonicalMedia);
+    assert.equal(finalized.assets?.videoSourceKey, sourceVideoKey);
+    assert.equal(finalized.assets?.thumbnailKey, sourceThumbnailKey);
+  } finally {
+    await rm(jobRoot, { recursive: true, force: true });
+  }
+});
+
 test('createJobFromPrompt dedup: second request with same channelId+prompt returns cached result with duplicateSuppressed flag', async () => {
   // This test verifies the in-memory dedup map prevents duplicate job creation
   // within the 30s TTL window
