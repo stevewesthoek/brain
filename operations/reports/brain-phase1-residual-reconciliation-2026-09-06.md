@@ -12,8 +12,8 @@ written:
 
 | Item | Current state |
 |---|---|
-| `origin/main` | `25fec44c5203aeb44a519f87ee8bf6893a67fb44` |
-| clean local `main` | `25fec44c5203aeb44a519f87ee8bf6893a67fb44` |
+| `origin/main` | `b54f84d4d901fb7eaf315d0531418d269ba6e6b3` |
+| clean local `main` | `b54f84d4d901fb7eaf315d0531418d269ba6e6b3` |
 | canonical integration checkout | `/Users/Office/Repos/stevewesthoek/brain-main-integration-2026-09-01` |
 | canonical checkout | clean, `main...origin/main` |
 | active historical checkout | `/Users/Office/Repos/stevewesthoek/brain`, dirty, `codex/cloudflare-tooling-normalization` |
@@ -145,3 +145,9 @@ residual reconciliation: partial
 live account admission: not started
 production closeout: NOT_COMPLETE
 ```
+
+The canonical base also now contains the recovery-boundary hardening commit
+`b54f84d4`: ownership is checked before shutdown, and the exceptional wrapper
+refuses execution from inside a Codex/ChatGPT process tree. This reduces the
+chance of repeating the earlier self-disconnect sequence but does not remove
+the requirement for an externally controlled maintenance window.

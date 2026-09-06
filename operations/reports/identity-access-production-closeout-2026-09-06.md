@@ -5,8 +5,8 @@ admission, canonical runtime placement, and final application acceptance remain
 open gates.
 
 **Canonical comparison:** `main` at
-`25fec44c5203aeb44a519f87ee8bf6893a67fb44`, equal to `origin/main` at the
-time of this report.
+`b54f84d4d901fb7eaf315d0531418d269ba6e6b3`, equal to `origin/main` after the
+recovery-boundary hardening commit.
 
 **Safety:** no OAuth value, authentication-file content, cookie, browser
 storage, Keychain value, API key, authorization header, WebGPT source, MCP
@@ -102,6 +102,16 @@ The validator outputs consistently reported no raw secrets and no execution or
 mutation. The catalog still reports stale-provenance warnings for older
 infrastructure evidence; these are visible warnings and do not become healthy
 by assumption.
+
+### Recovery-boundary hardening
+
+The canonical `main` branch now contains `b54f84d4` (`fix(codex): gate
+recovery before shutdown`). The managed-root manager exposes a read-only
+ownership preflight, and the exceptional stop-and-repair wrapper performs that
+check before requesting any application shutdown. The wrapper also refuses to
+run from inside a Codex/ChatGPT process tree. Focused managed-root and
+stop-and-repair tests pass. This does not authorize generic repair of the
+shared native root; that root remains application-owned and refused.
 
 ## Repository and worktree disposition
 
