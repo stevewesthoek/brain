@@ -162,9 +162,9 @@ This ledger will be completed as reconciliation proceeds:
 
 To be filled only after final validation:
 
-- commits created: 18 pushed mainline commits, ending with report formatting commit `d90e84fc74f8c8589f2eae6e661439b6550e3d19`;
+- commits created: reconciliation tranches and closeout documentation were pushed; pre-close checkpoint `d90e84fc74f8c8589f2eae6e661439b6550e3d19` is retained in the history;
 - branches integrated/superseded/deleted: accepted work integrated; 35 local and 13 remote fully merged refs deleted; unique/protected refs retained;
 - worktrees removed/retained: none removed; 7 retained, including the active dirty worktree, Video, launcher, Supabase, detached `.codex`, and runtime worktrees;
-- final local `main` SHA and `origin/main` SHA: `d90e84fc74f8c8589f2eae6e661439b6550e3d19` (equal);
+- final local `main` SHA and `origin/main` SHA: equal at the final push; verify with `git rev-parse HEAD origin/main` in the integration checkout;
 - final cleanliness and secret scan: integration worktree clean; high-risk secret-value-pattern scan found 0 matches; metadata-only validators report `rawSecrets=none` and `containsSecrets=false`;
 - residual exceptions and removal conditions: protected unique branches/worktrees remain until their dirty/ambiguous ownership is separately resolved; generated artifact policy and fresh runtime evidence remain separate follow-up work.
