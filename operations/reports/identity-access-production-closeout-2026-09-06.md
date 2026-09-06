@@ -148,6 +148,20 @@ These are recorded as external/deferred validation findings, not as evidence
 that the Codex identity/profile implementation is healthy in those other
 surfaces.
 
+### Controlled admission bridge
+
+The missing last-mile catalog transition is now implemented as a separate,
+explicitly gated command: `npm run codex:admit-profiles`. It accepts only a
+successful `codex-cli-pilot finalize` report, validates the candidate and
+canonical catalogs, admits the selected account/binding/profile closure, and
+publishes through an owner-only atomic replacement with a recoverable backup.
+It never reads or copies OAuth, Keychain, browser, WebGPT, or auth-file
+contents. It deliberately excludes credential records and the legacy
+shared-root session, and it records concurrent-profile support as unknown
+until that capability has its own evidence. The command and focused tests are
+on `main`; no admission has been executed because the real profile acceptance
+report does not yet exist.
+
 ## Repository and worktree disposition
 
 The clean integration checkout is the current safe `main` base:

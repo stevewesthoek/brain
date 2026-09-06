@@ -186,6 +186,44 @@ no auth copying, no route mutation, and complete profile attestation. It
 remains evidence for later admission; it does not mutate the canonical
 catalog.
 
+## Controlled canonical admission
+
+Only a successful `finalize` report can be admitted, and admission is a
+separate explicit operation. First produce a read-only plan:
+
+~~~bash
+npm run codex:admit-profiles -- \
+  --candidate-catalog "$PILOT_CATALOG" \
+  --acceptance operations/reports/codex-cli-pilot-finalize.json \
+  --catalog operations/infrastructure/catalog/identity-access.v1.json
+~~~
+
+The plan must return `READY`. It validates both catalogs and the final report,
+checks every selected profile's authenticated/read-only evidence, rejects
+conflicts, and derives only the selected account → surface binding → runtime
+profile closure. It does not admit the legacy shared-root session, candidate
+accounts that were not selected, or any credential records. Credential and
+Keychain admission remains a separate Phase 3 workflow.
+
+After reviewing the redacted plan, publish it with the explicit confirmation
+gate:
+
+~~~bash
+npm run codex:admit-profiles -- \
+  --candidate-catalog "$PILOT_CATALOG" \
+  --acceptance operations/reports/codex-cli-pilot-finalize.json \
+  --catalog operations/infrastructure/catalog/identity-access.v1.json \
+  --execute --confirm
+~~~
+
+Publication is an owner-only, same-directory atomic replacement with an
+owner-only backup under `~/.brain/backups/identity-access-admission/`. The
+catalog remains `mutationEnabled=false`: this is metadata admission, not
+permission for Brain to read, copy, refresh, or rotate application credentials.
+The admission deliberately records concurrent-profile support as `unknown`
+unless a future evidence workflow proves it; successful sequential isolation
+must not be inflated into a concurrency claim.
+
 ## Launch proof
 
 Only a later separately authorized pilot may execute the final launch proof.
