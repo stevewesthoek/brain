@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BRAIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+NODE_BIN="${BRAIN_NODE_BIN:-/Users/Office/.nvm/versions/node/v20.20.2/bin/node}"
+
+case "${1:-}" in
+  --version)
+    printf '%s\n' 'cli-access-health 1.0.0'
+    ;;
+  --help|-h)
+    printf '%s\n' 'Usage: cli-access-health [--write] [--notify] [--json]'
+    printf '%s\n' 'Runs the redacted Brain CLI access and authentication health check.'
+    ;;
+  *)
+    exec "$NODE_BIN" "$BRAIN_ROOT/tools/check-cli-access-health.mjs" "$@"
+    ;;
+esac

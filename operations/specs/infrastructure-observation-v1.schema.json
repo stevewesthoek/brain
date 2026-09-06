@@ -13,7 +13,174 @@
       "properties": {
         "source": { "type": "string", "minLength": 1 },
         "readOnly": { "const": true },
-        "authority": { "enum": ["provider-evidence", "local-observation", "derived-runtime"] }
+        "authority": { "enum": ["provider-evidence", "local-observation", "derived-runtime"] },
+        "classification": { "enum": ["OBSERVED-VERIFIED", "DERIVED-VERIFIED", "AUTHORITATIVE-CONFIG", "USER-PROPOSED", "UNKNOWN"] },
+        "confidence": { "enum": ["high", "medium", "low", "unknown"] },
+        "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "evidenceState": { "enum": ["confirmed", "candidate", "unknown", "conflicted", "not_applicable"] },
+    "confidence": { "enum": ["high", "medium", "low", "unknown"] },
+    "observer": {
+      "type": "object",
+      "required": ["observerId", "adapterKind", "adapterVersion"],
+      "properties": {
+        "observerId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "adapterKind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "adapterVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      },
+      "additionalProperties": false
+    },
+    "environmentEvidence": {
+      "type": "object",
+      "required": ["state", "environmentClass", "environmentRef"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "environmentClass": { "enum": ["production", "development", "staging", "test", "local", "other", "unknown"] },
+        "environmentRef": { "type": ["string", "null"], "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "basis": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "runtimeIdentityEvidence": {
+      "type": "object",
+      "required": ["state", "runtimeKind", "runtimeRef", "version"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "runtimeKind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
+        "runtimeRef": { "type": ["string", "null"], "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "version": { "type": ["string", "null"], "maxLength": 128 },
+        "profileRef": { "type": ["string", "null"], "pattern": "^runtime_profile:[a-z0-9][a-z0-9._-]*$" },
+        "identityStability": { "enum": ["stable", "profile-scoped", "process-instance", "endpoint-instance", "unknown"] }
+      },
+      "additionalProperties": false
+    },
+    "processEvidence": {
+      "type": "object",
+      "required": ["state", "processIds", "ownerState"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "processIds": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "uniqueItems": true },
+        "parentProcessIds": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "uniqueItems": true },
+        "ownerState": { "$ref": "#/$defs/evidenceState" },
+        "ownerRef": { "type": ["string", "null"], "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "commandIdentity": { "type": ["string", "null"], "pattern": "^[a-z0-9._-]+$" }
+      },
+      "additionalProperties": false
+    },
+    "endpointEvidence": {
+      "type": "object",
+      "required": ["state", "endpoints"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["protocol", "hostClass", "port", "reachability", "ownerProcessId"],
+            "properties": {
+              "protocol": { "enum": ["http", "https", "tcp", "unix", "unknown"] },
+              "hostClass": { "enum": ["loopback", "local-network", "public", "unknown"] },
+              "port": { "type": ["integer", "null"], "minimum": 1, "maximum": 65535 },
+              "reachability": { "enum": ["listening", "reachable", "unreachable", "unknown"] },
+              "ownerProcessId": { "type": ["integer", "null"], "minimum": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ownershipEvidence": {
+      "type": "object",
+      "required": ["state", "ownerRef", "ownerKind", "custody", "mutationAuthority", "writerRefs"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "ownerRef": { "type": ["string", "null"], "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "ownerKind": { "enum": ["application", "provider", "platform", "operator", "orchestrator", "external", "unknown"] },
+        "custody": { "enum": ["application", "provider", "platform", "orchestrator", "secret_store", "operator", "external", "unknown"] },
+        "mutationAuthority": { "enum": ["none", "owner-only", "explicit-transfer", "unknown"] },
+        "writerRefs": { "type": "array", "items": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "dependencyEvidence": {
+      "type": "object",
+      "required": ["state", "dependencies"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["resourceRef", "class", "availability", "status"],
+            "properties": {
+              "resourceRef": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+              "class": { "enum": ["required", "optional"] },
+              "availability": { "enum": ["startup", "continuous", "lifecycle"] },
+              "status": { "enum": ["healthy", "degraded", "unhealthy", "unknown", "not_observed"] }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "identityBindingEvidence": {
+      "type": "object",
+      "required": ["state", "accountRefs", "sessionRefs", "runtimeProfileRefs", "custody"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "accountRefs": { "type": "array", "items": { "type": "string", "pattern": "^account:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true },
+        "sessionRefs": { "type": "array", "items": { "type": "string", "pattern": "^session:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true },
+        "runtimeProfileRefs": { "type": "array", "items": { "type": "string", "pattern": "^runtime_profile:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true },
+        "custody": { "enum": ["application", "runtime_adapter", "orchestrator", "unknown", "not_applicable"] },
+        "principalMatch": { "enum": ["verified", "mismatched", "unknown", "not_applicable"] }
+      },
+      "additionalProperties": false
+    },
+    "capabilityEvidence": {
+      "type": "object",
+      "required": ["state", "adapterRef", "capabilities"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "adapterRef": { "type": ["string", "null"], "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "capabilities": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "lifecycleEvidence": {
+      "type": "object",
+      "required": ["state", "ownerManaged", "quiescenceState"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "ownerManaged": { "enum": ["application", "provider", "platform", "orchestrator", "unknown"] },
+        "launchAtLogin": { "enum": ["enabled", "disabled", "unknown", "not_applicable"] },
+        "keepRunningWhenWindowCloses": { "enum": ["enabled", "disabled", "unknown", "not_applicable"] },
+        "quiescenceState": { "enum": ["idle", "active", "unknown", "not_observable", "not_required"] },
+        "activeWorkloadCount": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "isolationEvidence": {
+      "type": "object",
+      "required": ["state", "environmentRef", "boundaryRefs", "dimensions"],
+      "properties": {
+        "state": { "$ref": "#/$defs/evidenceState" },
+        "environmentRef": { "type": ["string", "null"], "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" },
+        "boundaryRefs": { "type": "array", "items": { "type": "string", "pattern": "^[a-z_]+:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true },
+        "dimensions": { "type": "object", "additionalProperties": { "enum": ["distinct", "shared-approved", "unknown"] } }
+      },
+      "additionalProperties": false
+    },
+    "redaction": {
+      "type": "object",
+      "required": ["classification", "secretsExcluded"],
+      "properties": {
+        "classification": { "enum": ["non-secret-allowlisted", "metadata-only", "unknown"] },
+        "secretsExcluded": { "const": true },
+        "excludedClasses": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
       },
       "additionalProperties": false
     },
@@ -31,7 +198,22 @@
         "sourceEntityId": { "type": ["string", "null"] },
         "metricsSummary": { "type": "object" },
         "conditionCodes": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" }, "uniqueItems": true },
-        "provenance": { "$ref": "#/$defs/provenance" }
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "observationKind": { "enum": ["discovery", "runtime", "relationship", "health", "lifecycle", "identity_access"] },
+        "observer": { "$ref": "#/$defs/observer" },
+        "candidateId": { "type": ["string", "null"], "pattern": "^candidate:[a-z0-9][a-z0-9._-]*$" },
+        "environment": { "$ref": "#/$defs/environmentEvidence" },
+        "runtimeIdentity": { "$ref": "#/$defs/runtimeIdentityEvidence" },
+        "processEvidence": { "$ref": "#/$defs/processEvidence" },
+        "endpointEvidence": { "$ref": "#/$defs/endpointEvidence" },
+        "ownershipEvidence": { "$ref": "#/$defs/ownershipEvidence" },
+        "routeOwnershipEvidence": { "$ref": "#/$defs/ownershipEvidence" },
+        "dependencyEvidence": { "$ref": "#/$defs/dependencyEvidence" },
+        "identityBindingEvidence": { "$ref": "#/$defs/identityBindingEvidence" },
+        "healthCapability": { "$ref": "#/$defs/capabilityEvidence" },
+        "lifecycleCapability": { "$ref": "#/$defs/lifecycleEvidence" },
+        "isolationEvidence": { "$ref": "#/$defs/isolationEvidence" },
+        "redaction": { "$ref": "#/$defs/redaction" }
       },
       "allOf": [
         { "if": { "properties": { "freshness": { "enum": ["stale", "unknown"] } } }, "then": { "properties": { "status": { "enum": ["degraded", "unhealthy", "unknown"] } } } }

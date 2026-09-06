@@ -230,9 +230,18 @@ Config values in the same file (not secrets — listed so `sync-credentials` doe
 
 CLI auth via browser OAuth — no persistent API key file. Account IDs stored in `~/.config/stripe/config.toml`.
 
+Current CLI evidence (2026-08-26): the active selectors `prochat portugal`,
+`jpv-bootcamp`, `prochat studio`, `says the bible`, and `yeshua academy`—
+displayed respectively as ProChat Portugal, JPV Bootcamp, ProChat Nederland,
+Says the Bible, and Yeshua Academy—all pass account and subscription reads.
+The Dashboard account switcher may show multiple accounts for one user, but
+Stripe CLI access remains profile/account scoped; `stripe accounts list`
+returning an empty list means no Connect subaccounts were returned for that
+account.
+
 | Account | Live Account ID | Profile | Test Access | Notes |
 |---------|-----------------|---------|-------------|-------|
-| ProChat Studio | `acct_1SxE7KDmzmvnZunZ` | `ProChat Studio` | Same profile has test mode | Main Stripe account authenticated locally via separate CLI profile; intended read-only inventory profile |
+| ProChat Studio | `acct_1SxE7KDmzmvnZunZ` | `prochat-main` | Same profile has test mode | Legacy profile probe failed on 2026-08-26; separate from the active `prochat studio` / ProChat Nederland profile |
 | Says the Bible (live) | `acct_1T5EojLzAX9y8uTj` | `default` | Same profile has test mode | Existing live Stripe account wired to the Says the Bible website; do not interrupt |
 | Says the Bible (sandbox) | _n/a_ | `says the bible sandbox` | Separate test-only profile | Distinct Stripe sandbox/test account profile with its own test key set |
 | Feel Good with Ana | `acct_1NIqSdDns7UgqVkf` | `feel-good-with-ana` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; dashboard timezone `Europe/Rome`; country `IT` |
@@ -241,16 +250,17 @@ CLI auth via browser OAuth — no persistent API key file. Account IDs stored in
 | Vila Solidária | `acct_1S4gIHGuhwwbZ1l7` | `vila-solidaria` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; non-profit business type; dashboard timezone `Europe/Lisbon`; country `PT` |
 | Yeshua Academy | `acct_1FIyIjBfXlZVNl8d` | `yeshua-academy` | Same profile has test mode | CLI-verified on 2026-04-11; standard account; non-profit business type; dashboard timezone `Europe/Lisbon`; country `NL` |
 
-Re-authenticate: `stripe login --project-name "ProChat Studio"` (opens browser). Switch profiles: `stripe login --profile "says the bible sandbox"`.
+Re-authenticate: `stripe login --project-name "ProChat Studio"` (opens browser; requires owner approval). The resulting CLI selector is `prochat-main`. Switch profiles with the profile-specific login flow only after confirming the intended account.
 
 ### Stripe inventory notes
 
-- The `ProChat Studio` CLI profile is the workspace default; it is separate from the existing `default` Says the Bible profile.
-- `stripe get /v1/accounts -p "ProChat Studio"` returned an empty list, so the other dashboard-visible accounts are not exposed as Connect subaccounts through this API credential.
-- All authenticated live profiles now also have test-mode API keys in the same Stripe CLI profile.
+- Current Dashboard-to-CLI mappings are maintained in the central Stripe health registry; do not infer selectors from display labels. The separate `prochat-main` / ProChat Studio profile is legacy and currently rejected.
+- `stripe get /v1/accounts -p "prochat-main"` returned an empty list, so the other dashboard-visible accounts are not exposed as Connect subaccounts through this API credential.
+- Profile configuration and key presence are not proof of current API access; use the central read-only health check and account probes.
+- The 2026-08-26 full active-set probe passed for all five Dashboard accounts. Older duplicate/out-of-set selectors remain disabled in the health registry.
 - In Stripe terms, test mode is usually not a separate sandbox account ID; it is the same account with separate test credentials.
 - The one explicit exception in local CLI config is `says the bible sandbox`, which is a distinct test-only profile rather than just the test half of the live account.
-- All live dashboard-visible accounts have now been authenticated into dedicated local Stripe CLI profiles on 2026-04-11, and all of those profiles include test access.
+- Current live status is maintained by `node tools/check-cli-access-health.mjs --write --notify`; do not rely on the historical 2026-04-11 authentication claims above.
 
 ## Google Ads — Yeshua Academy (Ad Grants)
 

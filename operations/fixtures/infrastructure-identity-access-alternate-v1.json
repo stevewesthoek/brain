@@ -1,0 +1,469 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "0.1.0",
+  "catalogId": "synthetic-identity-access",
+  "entrypoint": true,
+  "mutationEnabled": false,
+  "accounts": [
+    {
+      "accountId": "account:provider-a.primary",
+      "providerId": "provider-a",
+      "accountKind": "human_account",
+      "displayName": "Synthetic provider A primary account",
+      "lifecycleState": "enrolled",
+      "expectedPrincipal": {
+        "principalType": "provider_account",
+        "principalRef": "principal:provider-a.primary",
+        "displayLabel": "synthetic-primary",
+        "matchStrategy": "provider_asserted_subject"
+      },
+      "credentialIds": ["credential:provider-a.primary.refresh"],
+      "sessionIds": ["session:provider-a.primary.cli", "session:provider-a.primary.mcp"],
+      "surfaceBindingIds": ["surface_binding:provider-a.primary.codex-cli", "surface_binding:provider-a.primary.codex-mcp"],
+      "runtimeProfileIds": ["runtime_profile:provider-a.primary.cli"],
+      "verificationPolicyId": "verification_policy:provider-principal",
+      "recoveryRunbookRef": "runbook://provider-a/interactive-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    },
+    {
+      "accountId": "account:provider-a.secondary",
+      "providerId": "provider-a",
+      "accountKind": "human_account",
+      "displayName": "Synthetic provider A secondary account",
+      "lifecycleState": "enrolled",
+      "expectedPrincipal": {
+        "principalType": "provider_account",
+        "principalRef": "principal:provider-a.secondary",
+        "displayLabel": "synthetic-secondary",
+        "matchStrategy": "provider_asserted_subject"
+      },
+      "credentialIds": ["credential:provider-a.secondary.api"],
+      "sessionIds": [],
+      "surfaceBindingIds": ["surface_binding:provider-a.secondary.codex-cli"],
+      "runtimeProfileIds": ["runtime_profile:provider-a.secondary.cli"],
+      "verificationPolicyId": "verification_policy:provider-principal",
+      "recoveryRunbookRef": "runbook://provider-a/api-key-recovery",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "credentials": [
+    {
+      "credentialId": "credential:provider-a.primary.refresh",
+      "accountId": "account:provider-a.primary",
+      "credentialKind": "oauth_refresh_credential",
+      "secretOwner": "secret_store",
+      "secretStoreAdapterId": "secret_store:machine_runtime",
+      "secretStoreRef": "secret-ref://machine-runtime/provider-a.primary/refresh",
+      "materialization": "bound_process_memory",
+      "scopeSummary": ["identity", "minimal-provider-capability"],
+      "expiryState": "unknown",
+      "expiresAt": null,
+      "lifecyclePolicyId": "lifecycle_policy:oauth-refreshable",
+      "verificationPolicyId": "verification_policy:provider-principal",
+      "lastVerifiedAt": null,
+      "lastKnownState": "unknown",
+      "recoveryRunbookRef": "runbook://provider-a/interactive-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    },
+    {
+      "credentialId": "credential:provider-a.secondary.api",
+      "accountId": "account:provider-a.secondary",
+      "credentialKind": "api_key",
+      "secretOwner": "secret_store",
+      "secretStoreAdapterId": "secret_store:machine_runtime",
+      "secretStoreRef": "secret-ref://machine-runtime/provider-a.secondary/api",
+      "materialization": "child_process_environment",
+      "scopeSummary": ["minimal-provider-capability"],
+      "expiryState": "not_applicable",
+      "expiresAt": null,
+      "lifecyclePolicyId": "lifecycle_policy:static-until-revoked",
+      "verificationPolicyId": "verification_policy:provider-principal",
+      "lastVerifiedAt": null,
+      "lastKnownState": "unknown",
+      "recoveryRunbookRef": "runbook://provider-a/api-key-recovery",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "sessionId": "session:provider-a.primary.cli",
+      "accountId": "account:provider-a.primary",
+      "surfaceBindingId": "surface_binding:provider-a.primary.codex-cli",
+      "binding": {
+        "state": "declared",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-04T00:00:00Z",
+          "freshnessDeadline": "2026-10-04T00:00:00Z",
+          "owner": "fixture/identity-access",
+          "evidenceRefs": []
+        }
+      },
+      "sessionKind": "cli_login",
+      "stateOwner": "application",
+      "applicationRef": "application:synthetic-cli",
+      "managedStateRef": "application-state://synthetic-cli/provider-a.primary",
+      "credentialIds": ["credential:provider-a.primary.refresh"],
+      "runtimeProfileId": "runtime_profile:provider-a.primary.cli",
+      "authenticationStorage": {
+        "mode": "file",
+        "owner": "application",
+        "locationKind": "codex_home_auth_file",
+        "isolationScope": "codex_home",
+        "isolationState": "candidate",
+        "profileIsolationProven": false,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-04T00:00:00Z",
+          "freshnessDeadline": "2026-10-04T00:00:00Z",
+          "owner": "fixture/identity-access",
+          "evidenceRefs": []
+        }
+      },
+      "lastObservedAt": null,
+      "lastKnownState": "unknown",
+      "recoveryRunbookRef": "runbook://provider-a/interactive-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    },
+    {
+      "sessionId": "session:provider-a.primary.mcp",
+      "accountId": "account:provider-a.primary",
+      "surfaceBindingId": "surface_binding:provider-a.primary.codex-mcp",
+      "binding": {
+        "state": "declared",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-04T00:00:00Z",
+          "freshnessDeadline": "2026-10-04T00:00:00Z",
+          "owner": "fixture/identity-access",
+          "evidenceRefs": []
+        }
+      },
+      "sessionKind": "mcp_oauth_authorization",
+      "stateOwner": "application",
+      "applicationRef": "application:synthetic-mcp-client",
+      "managedStateRef": "application-state://synthetic-mcp/provider-a.primary",
+      "credentialIds": [],
+      "runtimeProfileId": "runtime_profile:provider-a.primary.cli",
+      "authenticationStorage": {
+        "mode": "browser_profile",
+        "owner": "application",
+        "locationKind": "application_browser_profile",
+        "isolationScope": "browser_profile",
+        "isolationState": "unknown",
+        "profileIsolationProven": null,
+        "healthState": "unknown",
+        "materialExposure": "application_only",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-04T00:00:00Z",
+          "freshnessDeadline": "2026-10-04T00:00:00Z",
+          "owner": "fixture/identity-access",
+          "evidenceRefs": []
+        }
+      },
+      "lastObservedAt": null,
+      "lastKnownState": "unknown",
+      "recoveryRunbookRef": "runbook://provider-a/mcp-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "surfaceBindings": [
+    {
+      "surfaceBindingId": "surface_binding:provider-a.primary.codex-cli",
+      "accountId": "account:provider-a.primary",
+      "surfaceId": "codex-cli",
+      "lifecycleState": "enrolled",
+      "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}},
+      "sessionIds": ["session:provider-a.primary.cli"],
+      "runtimeProfileIds": ["runtime_profile:provider-a.primary.cli"],
+      "capabilityEvidence": {"nAccountModel": "supported", "isolatedRuntime": "supported", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "supported"},
+      "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}
+    },
+    {
+      "surfaceBindingId": "surface_binding:provider-a.primary.codex-mcp",
+      "accountId": "account:provider-a.primary",
+      "surfaceId": "codex-mcp",
+      "lifecycleState": "enrolled",
+      "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}},
+      "sessionIds": ["session:provider-a.primary.mcp"],
+      "runtimeProfileIds": [],
+      "capabilityEvidence": {"nAccountModel": "unknown", "isolatedRuntime": "unknown", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "unknown"},
+      "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}
+    },
+    {
+      "surfaceBindingId": "surface_binding:provider-a.secondary.codex-cli",
+      "accountId": "account:provider-a.secondary",
+      "surfaceId": "codex-cli",
+      "lifecycleState": "enrolled",
+      "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}},
+      "sessionIds": [],
+      "runtimeProfileIds": ["runtime_profile:provider-a.secondary.cli"],
+      "capabilityEvidence": {"nAccountModel": "supported", "isolatedRuntime": "supported", "authIsolation": "unknown", "concurrentProfiles": "unknown", "programmaticSelection": "supported"},
+      "provenance": {"sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-04T00:00:00Z", "freshnessDeadline": "2026-10-04T00:00:00Z", "owner": "fixture/identity-access", "evidenceRefs": []}
+    }
+  ],
+  "runtimeProfiles": [
+    {
+      "runtimeProfileId": "runtime_profile:provider-a.primary.cli",
+      "accountId": "account:provider-a.primary",
+      "surfaceBindingId": "surface_binding:provider-a.primary.codex-cli",
+      "binding": {
+        "state": "declared",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-04T00:00:00Z",
+          "freshnessDeadline": "2026-10-04T00:00:00Z",
+          "owner": "fixture/identity-access",
+          "evidenceRefs": []
+        }
+      },
+      "profileKind": "cli",
+      "runtimeAdapterRef": "runtime_adapter:generic-cli",
+      "isolationRef": "runtime-ref://profiles/provider-a.primary",
+      "stateOwnership": "runtime_adapter",
+      "authenticationStorage": {
+        "mode": "file",
+        "owner": "application",
+        "locationKind": "codex_home_auth_file",
+        "isolationScope": "codex_home",
+        "isolationState": "candidate",
+        "profileIsolationProven": false,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-04T00:00:00Z",
+          "freshnessDeadline": "2026-10-04T00:00:00Z",
+          "owner": "fixture/identity-access",
+          "evidenceRefs": []
+        }
+      },
+      "lifecyclePolicyId": "lifecycle_policy:oauth-refreshable",
+      "recoveryRunbookRef": "runbook://provider-a/interactive-reauthentication",
+      "switchPolicy": {"requiresQuiescence": true, "allowsConcurrentProfiles": true, "processOwnership": "profile_scoped", "concurrencySupport": "supported", "maxConcurrentProfiles": 2, "isolationRequired": true},
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    },
+    {
+      "runtimeProfileId": "runtime_profile:provider-a.secondary.cli",
+      "accountId": "account:provider-a.secondary",
+      "surfaceBindingId": "surface_binding:provider-a.secondary.codex-cli",
+      "binding": {
+        "state": "declared",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-04T00:00:00Z",
+          "freshnessDeadline": "2026-10-04T00:00:00Z",
+          "owner": "fixture/identity-access",
+          "evidenceRefs": []
+        }
+      },
+      "profileKind": "cli",
+      "runtimeAdapterRef": "runtime_adapter:generic-cli",
+      "isolationRef": "runtime-ref://profiles/provider-a.secondary",
+      "stateOwnership": "runtime_adapter",
+      "authenticationStorage": {
+        "mode": "keyring",
+        "owner": "application",
+        "locationKind": "os_keyring",
+        "isolationScope": "operating_system_user",
+        "isolationState": "unknown",
+        "profileIsolationProven": null,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-04T00:00:00Z",
+          "freshnessDeadline": "2026-10-04T00:00:00Z",
+          "owner": "fixture/identity-access",
+          "evidenceRefs": []
+        }
+      },
+      "lifecyclePolicyId": "lifecycle_policy:static-until-revoked",
+      "recoveryRunbookRef": "runbook://provider-a/api-key-recovery",
+      "switchPolicy": {"requiresQuiescence": true, "allowsConcurrentProfiles": true, "processOwnership": "profile_scoped", "concurrencySupport": "supported", "maxConcurrentProfiles": 2, "isolationRequired": true},
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "secretStoreAdapters": [
+    {
+      "adapterId": "secret_store:machine_runtime",
+      "adapterKind": "machine_runtime_store",
+      "capabilities": ["metadata_read", "resolve_for_bound_process", "version_metadata", "lease_metadata", "audit_metadata"],
+      "secretValueOwner": "adapter",
+      "mutationMode": "disabled",
+      "bootstrapMode": "explicit_human_bootstrap",
+      "referenceScheme": "opaque",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    },
+    {
+      "adapterId": "secret_store:human_recovery",
+      "adapterKind": "human_recovery_store",
+      "capabilities": ["metadata_read", "offline_recovery", "audit_metadata"],
+      "secretValueOwner": "human",
+      "mutationMode": "disabled",
+      "bootstrapMode": "explicit_human_bootstrap",
+      "referenceScheme": "opaque",
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "lifecyclePolicies": [
+    {
+      "lifecyclePolicyId": "lifecycle_policy:oauth-refreshable",
+      "lifecycleClass": "oauth_refreshable",
+      "refreshMode": "provider_endpoint",
+      "renewalMode": "approval_gated",
+      "rotationMode": "approval_gated",
+      "verificationCadenceSeconds": 3600,
+      "rotateBeforeSeconds": 604800,
+      "revocationDetection": "provider_probe",
+      "requiresHumanForReauthentication": true,
+      "artificialKeepaliveAllowed": false,
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    },
+    {
+      "lifecyclePolicyId": "lifecycle_policy:static-until-revoked",
+      "lifecycleClass": "static_until_revoked",
+      "refreshMode": "none",
+      "renewalMode": "approval_gated",
+      "rotationMode": "approval_gated",
+      "verificationCadenceSeconds": 86400,
+      "rotateBeforeSeconds": null,
+      "revocationDetection": "provider_probe",
+      "requiresHumanForReauthentication": true,
+      "artificialKeepaliveAllowed": false,
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "verificationPolicies": [
+    {
+      "verificationPolicyId": "verification_policy:provider-principal",
+      "adapterRef": "provider_adapter:read-only",
+      "checks": ["secret_reference_available", "authentication_accepted", "principal_identity_observed", "expected_principal_matches", "scope_capability_matches", "minimal_provider_capability", "evidence_fresh"],
+      "probeMode": "read_only",
+      "freshnessSeconds": 3600,
+      "maxAttempts": 2,
+      "backoffSeconds": 30,
+      "requiresExpectedPrincipal": true,
+      "readOnlyOnly": true,
+      "provenance": {
+        "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-04T00:00:00Z",
+        "freshnessDeadline": "2026-10-04T00:00:00Z",
+        "owner": "fixture/identity-access",
+        "evidenceRefs": []
+      }
+    }
+  ],
+  "provenance": {
+    "sourceRef": "operations/fixtures/infrastructure-identity-access-alternate-v1.json",
+    "classification": "USER-PROPOSED",
+    "verifiedAt": "2026-09-04T00:00:00Z",
+    "freshnessDeadline": "2026-10-04T00:00:00Z",
+    "owner": "fixture/identity-access",
+    "evidenceRefs": []
+  }
+}

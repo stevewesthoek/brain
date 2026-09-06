@@ -3,7 +3,8 @@
 ```
 Status:                         CANONICAL
 Repository:                     brain
-Last verified:                  2026-08-26
+Last verified:                  2026-09-04
+Target workload cleanup:       2026-09-04 (six Dokploy applications decommissioned)
 Azure Dokploy decommissioned:   2026-08-26 (all PROCHAT-APPS resources deleted)
 Phase 3C6 corrections applied:  2026-08-16
 Phase 3C7 corrections applied:  2026-08-16 (evidence-provenance audit; schema counts, SSH model,
@@ -124,8 +125,8 @@ three-node infrastructure and is documented separately below:
  │  ┌──────────────────────────────────────────────────────────────────┐    │
  │  │  Docker Swarm (single-node)                                      │    │
  │  │  Dokploy + Traefik v3.6.7 + postgres:16 + redis:7               │    │
- │  │  24 Application Swarm services + 17 Compose projects            │    │
- │  │  (14 local postgres:15 · n8n · ory · umami)                    │    │
+ │  │  18 Application Swarm services + 16 Compose projects            │    │
+ │  │  (13 local postgres:15 · n8n · ory · umami)                    │    │
  │  └──────────────────────────────────────────────────────────────────┘    │
  │  cloudflared (ACTIVE) · tailscaled                                      │
  └──────────────────────────────────────────┬───────────────────────────────┘
@@ -140,7 +141,7 @@ three-node infrastructure and is documented separately below:
                               │  PostgreSQL at 10.0.2.4:5433                │
                               │                                             │
                               │  One PostgreSQL server on vm-supabase      │
-                              │  24 logical databases                       │
+                              │  22 logical databases                       │
                               │  AWS writers active; Supabase ACTIVE       │
                               │  vm-supabase / supabase-azure — untouched │
                               └─────────────────────────────────────────────┘
@@ -149,7 +150,7 @@ three-node infrastructure and is documented separately below:
 **USER-PROPOSED FUTURE DATA MODEL** (not an approved architecture decision — see ADR-003):
 > Steve's proposed target: ONE logical database + explicit per-application schemas.
 > The `tenant_*` naming is NOT part of the USER-PROPOSED FUTURE DATA MODEL's naming convention.
-> **Current verified state differs**: 24 logical databases exist; see Section 8.2.
+> **Current verified state differs**: 22 logical databases exist; see Section 8.2.
 > `tenant_*` schemas and databases exist; direct runtime dependency is not fully verified for all.
 > `tenant_*` naming exists in the current environment. Its historical relationship to the
 > dedicated-database pattern is not established by current evidence. Naming alone proves
@@ -220,7 +221,7 @@ rollback target.
 | Subnet route | 10.0.2.0/24 (advertised by Supabase Tailscale node) |
 | PostgreSQL endpoint | 10.0.2.4:5433 |
 | **PostgreSQL version** | **15.8** (verified 2026-08-16 via BEGIN TRANSACTION READ ONLY) |
-| Databases | 24 logical databases (see Section 8.4) |
+| Databases | 22 logical databases (see Section 8.4) |
 | Access | Tailscale-only (not publicly routable) |
 
 **Note:** The PostgreSQL versions listed in other sections (pg17 for n8n, pg16 for Dokploy
@@ -446,11 +447,11 @@ projects managed by Dokploy.
 | YMzA8RYJdczAp_KYHONFG | Boilerplates | ProKit Dev, SaaSKit Dev |
 | hXaySDURUd2i0enErtSwx | Clients | JPV Bootcamp apps |
 | C1WHQrOjpC3Ysfc-V6sBU | Databases | Standalone DB containers |
-| kNa9UD808a88taxtLmcnQ | Demo | Vault Legal frontend + API |
+| kNa9UD808a88taxtLmcnQ | Demo | Empty after Vault Legal frontend + API decommission (2026-09-04) |
 | 2VaDvNViTYD_asKA_h6sb | Ops | n8n, umami, ory, free-resend |
-| Weq2uY4KM9IKizVAw_RE- | SaaS | Proofly, Status Link, Egg Cooker |
+| Weq2uY4KM9IKizVAw_RE- | SaaS | Proofly, Status Link |
 | VGUe7AzRsqLFv_wSPDCQ- | WaaS | Workbench, fala |
-| SPX-3TSitP84hxmp51gDT | Web | ProChat, Cedula, Oliveto, Yeshua Academy, Via di Eden, JCCP, Says the Bible, ProChat Accountant |
+| SPX-3TSitP84hxmp51gDT | Web | ProChat, Oliveto, Yeshua Academy, Via di Eden, JCCP, Says the Bible, ProChat Accountant |
 
 ### 5.3 Ory Kratos (Standalone Container)
 
@@ -479,7 +480,7 @@ All AWS workloads are suppressed:
 
 ## 6. Application Inventory
 
-24 applications across 8 Dokploy projects.
+18 applications across 8 Dokploy projects.
 
 **Classification key:**
 - **CURRENT-ACTIVE** — operational, image present, ready for cutover
@@ -488,46 +489,39 @@ All AWS workloads are suppressed:
 
 | # | appName | Human Name | Image | Classification | Supabase Writer | Local DB |
 |---|---------|------------|-------|---------------|-----------------|----------|
-| 1 | app-index-haptic-port-m88k9z | Workbench | ghcr.io/stevewesthoek/buildflow@sha256:4a657 (pinned) | CURRENT-ACTIVE | NO | volume only |
-| 2 | app-transmit-online-hard-drive-of1m9k | Workbench Staging | ghcr.io/stevewesthoek/buildflow@sha256:4a657 (pinned) | CURRENT-ACTIVE | NO | volume only |
-| 3 | web-cedula-b1gepj | Cedula | ghcr.io/prochattools/cedula:latest | CURRENT-ACTIVE | YES | tenant_cedula |
-| 4 | apps-saas-egg-cooker-qtutkp | Egg Cooker | nixpacks (github) | CURRENT-INACTIVE | NO | — |
-| 5 | app-override-online-interface-1wzjpb | fala | ghcr.io/prochattools/fala:latest | KNOWN-BROKEN-SOURCE-PARITY | YES | fala (Supabase) |
-| 6 | apps-internal-free-resend-izqnvr | Free Resend | locally built (github nixpacks) | CURRENT-ACTIVE | NO | tenant_resend |
-| 7 | web-public-jccp-holdings-pvtist | JCCP Holdings | ghcr.io/prochattools/jccp-holdings:latest | CURRENT-ACTIVE | NO | — |
-| 8 | web-public-jpv-bootcamp-l66egq | JPV Bootcamp | ghcr.io/prochattools/jpv-bootcamp:latest | CURRENT-ACTIVE | YES | tenant_jpvbootcamp |
-| 9 | clients-jpv-bootcamp-app-tp9xrk | JPV Bootcamp Payload CMS | ghcr.io/prochattools/jpv-bootcamp:a0c32276 (pinned SHA) | CURRENT-ACTIVE | YES | jpvbootcamp |
-| 10 | web-public-olivetoorganizing-zwthea | Oliveto Organizing | ghcr.io/prochattools/oliveto-organizing:latest | CURRENT-ACTIVE | YES | tenant_olivetoorganizing |
-| 11 | web-public-prochat-avejzq | ProChat | ghcr.io/prochattools/prochat:latest | CURRENT-ACTIVE | YES | tenant_prochat |
-| 12 | web-public-prochat-accountant-zrekal | ProChat Accountant | locally built (source present, registry broken) | KNOWN-BROKEN-SOURCE-PARITY | YES | accountant (Supabase) |
-| 13 | boilerplates-prokit-dev-s5f8yz | ProKit Dev | nixpacks (github) | CURRENT-INACTIVE | NO | — |
-| 14 | templates-prokit-kcde8a | ProKit Studio | ghcr.io/prochattools/prokit-studio:latest (missing) | KNOWN-BROKEN-SOURCE-PARITY | NO | tenant_prokitstudio |
-| 15 | saas-proofly-ixcmnz | Proofly | ghcr.io/prochattools/proofly:latest | CURRENT-ACTIVE | YES | proofly (Supabase) |
-| 16 | boilerplates-saaskit-dev-ixnolx | SaaSKit Dev | nixpacks (github) | CURRENT-INACTIVE | NO | — |
-| 17 | templates-saaskit-3ynx5a | SaaSKit Studio | ghcr.io/prochattools/saaskit-studio:latest (missing) | KNOWN-BROKEN-SOURCE-PARITY | NO | tenant_saaskitstudio |
-| 18 | web-says-the-bible-ing7sx | Says the Bible | ghcr.io/prochattools/says-the-bible:latest | CURRENT-ACTIVE | YES | saysthebible (Supabase) |
-| 19 | apps-saas-status-link-dw1c6j | Status Link | ghcr.io/prochattools/statuslink:latest | CURRENT-ACTIVE | YES | statuslink (Supabase) |
-| 20 | demo-vault-legal-wtpg0l | Vault Legal | ghcr.io/prochattools/vault-legal-frontend:latest | CURRENT-ACTIVE | NO | — |
-| 21 | demo-vault-legal-api-drzgfx | Vault Legal API | ghcr.io/prochattools/vault-legal-backend:latest | CURRENT-ACTIVE | YES | vault_legal (Supabase) |
-| 22 | web-public-viadieden-kttqn4 | Via di Eden | ghcr.io/prochattools/via-di-eden:f2d0650e (pinned SHA) | CURRENT-ACTIVE | YES | tenant_viadieden |
-| 23 | web-yeshua-academy-ariw56 | Yeshua Academy | ghcr.io/yeshuaacademy/yeshuaacademy:latest | CURRENT-ACTIVE | NO | — |
-| 24 | apps-saas-open-fund-vdymfu | Yeshua Academy Finance | ghcr.io/yeshuaacademy/finance:latest | CURRENT-ACTIVE | YES | finance (Supabase) |
+| 1 | app-override-online-interface-1wzjpb | fala | ghcr.io/prochattools/fala:latest | KNOWN-BROKEN-SOURCE-PARITY | YES | fala (Supabase) |
+| 2 | apps-internal-free-resend-izqnvr | Free Resend | locally built (github nixpacks) | CURRENT-ACTIVE | NO | tenant_resend |
+| 3 | web-public-jccp-holdings-pvtist | JCCP Holdings | ghcr.io/prochattools/jccp-holdings:latest | CURRENT-ACTIVE | NO | — |
+| 4 | web-public-jpv-bootcamp-l66egq | JPV Bootcamp | ghcr.io/prochattools/jpv-bootcamp:latest | CURRENT-ACTIVE | YES | tenant_jpvbootcamp |
+| 5 | clients-jpv-bootcamp-app-tp9xrk | JPV Bootcamp Payload CMS | ghcr.io/prochattools/jpv-bootcamp:a0c32276 (pinned SHA) | CURRENT-ACTIVE | YES | jpvbootcamp |
+| 6 | web-public-olivetoorganizing-zwthea | Oliveto Organizing | ghcr.io/prochattools/oliveto-organizing:latest | CURRENT-ACTIVE | YES | tenant_olivetoorganizing |
+| 7 | web-public-prochat-avejzq | ProChat | ghcr.io/prochattools/prochat:latest | CURRENT-ACTIVE | YES | tenant_prochat |
+| 8 | web-public-prochat-accountant-zrekal | ProChat Accountant | locally built (source present, registry broken) | KNOWN-BROKEN-SOURCE-PARITY | YES | accountant (Supabase) |
+| 9 | boilerplates-prokit-dev-s5f8yz | ProKit Dev | nixpacks (github) | CURRENT-INACTIVE | NO | — |
+| 10 | templates-prokit-kcde8a | ProKit Studio | ghcr.io/prochattools/prokit-studio:latest (missing) | KNOWN-BROKEN-SOURCE-PARITY | NO | tenant_prokitstudio |
+| 11 | saas-proofly-ixcmnz | Proofly | ghcr.io/prochattools/proofly:latest | CURRENT-ACTIVE | YES | proofly (Supabase) |
+| 12 | boilerplates-saaskit-dev-ixnolx | SaaSKit Dev | nixpacks (github) | CURRENT-INACTIVE | NO | — |
+| 13 | templates-saaskit-3ynx5a | SaaSKit Studio | ghcr.io/prochattools/saaskit-studio:latest (missing) | KNOWN-BROKEN-SOURCE-PARITY | NO | tenant_saaskitstudio |
+| 14 | web-says-the-bible-ing7sx | Says the Bible | ghcr.io/prochattools/says-the-bible:latest | CURRENT-ACTIVE | YES | saysthebible (Supabase) |
+| 15 | apps-saas-status-link-dw1c6j | Status Link | ghcr.io/prochattools/statuslink:latest | CURRENT-ACTIVE | YES | statuslink (Supabase) |
+| 16 | web-public-viadieden-kttqn4 | Via di Eden | ghcr.io/prochattools/via-di-eden:f2d0650e (pinned SHA) | CURRENT-ACTIVE | YES | tenant_viadieden |
+| 17 | web-yeshua-academy-ariw56 | Yeshua Academy | ghcr.io/yeshuaacademy/yeshuaacademy:latest | CURRENT-ACTIVE | NO | — |
+| 18 | apps-saas-open-fund-vdymfu | Yeshua Academy Finance | ghcr.io/yeshuaacademy/finance:latest | CURRENT-ACTIVE | YES | finance (Supabase) |
 
-**Summary (from rows above): 17 CURRENT-ACTIVE · 3 CURRENT-INACTIVE · 4 KNOWN-BROKEN-SOURCE-PARITY = 24 ✓**
+**Summary (from rows above): 12 CURRENT-ACTIVE · 2 CURRENT-INACTIVE · 4 KNOWN-BROKEN-SOURCE-PARITY = 18 ✓**
 
 ### Per-Workload Image & Source Authority
 
 | Application | Reproducible Source of Truth | Mutable? |
 |-------------|------------------------------|---------|
-| Workbench, Workbench Staging | Pinned digest sha256:4a657686731b in GHCR | NO — pinned |
 | Via di Eden | Commit SHA tag `f2d0650e` in GHCR | NO — pinned |
 | JPV Bootcamp Payload CMS | Commit SHA `a0c32276` in GHCR | NO — pinned (confirm before cutover) |
 | JPV Bootcamp (public site) | `ghcr.io/prochattools/jpv-bootcamp:latest` | YES — re-pull at cutover |
-| ProChat, Cedula, Oliveto, Says the Bible, Status Link, Proofly, JCCP, Vault Legal (+API), Via di Eden, Yeshua Academy, Yeshua Academy Finance, fala | `ghcr.io/<org>/<repo>:latest` — 11 apps with mutable tag | YES — re-pull at cutover |
+| ProChat, Oliveto, Says the Bible, Status Link, Proofly, JCCP, Via di Eden, Yeshua Academy, Yeshua Academy Finance, fala | `ghcr.io/<org>/<repo>:latest` — remaining apps with mutable tag | YES — re-pull at cutover |
 | Free Resend | GitHub source + nixpacks build (Dokploy build pipeline) | YES — rebuild from current GitHub source on AWS |
 | ProChat Accountant | Dockerfile in `/etc/dokploy/applications/web-public-prochat-accountant-zrekal/code/` | YES — `docker build` at cutover |
 | ProKit Studio, SaaSKit Studio | Registry image missing; source-parity exception; remain stopped | N/A |
-| Egg Cooker, ProKit Dev, SaaSKit Dev | GitHub source + nixpacks; inactive; not deployed | N/A |
+| ProKit Dev, SaaSKit Dev | GitHub source + nixpacks; inactive; not deployed | N/A |
 
 **Historical note:** Before the 2026-08-17 cutover, Azure Dokploy was authoritative for image/tag
 choices. AWS is now the sole production Dokploy authority; this historical migration note must
@@ -544,7 +538,7 @@ Full map in evidence register (F-APP-001). Key notes:
 
 ## 7. Compose Inventory
 
-17 Compose projects.
+16 Compose projects.
 
 ### 7.1 Application Compose Projects
 
@@ -554,7 +548,7 @@ Full map in evidence register (F-APP-001). Key notes:
 | compose-index-haptic-firewall-rlwj48 | ory | oryd/kratos:v1.3.1 | YES (ory_prod) | Auth service; container stopped on AWS |
 | ops-umami-sqswbj | umami | umami:3.0.3 | YES (analytics) | Analytics; running on AWS (`ops-umami-sqswbj-umami-1`); file-provider Traefik route restored + acceptance PASS 2026-08-19; code-umami-1 retired |
 
-### 7.2 Local Tenant Database Compose Projects (14)
+### 7.2 Local Tenant Database Compose Projects (13)
 
 Each runs a single `postgres:15` container serving the local tenant database.
 
@@ -567,7 +561,6 @@ Each runs a single `postgres:15` container serving the local tenant database.
 | compose-copy-open-source-interface-fkhqrw | tenant_saysthebible | 21 | ZERO ✓ |
 | compose-copy-redundant-capacitor-zc4esw | tenant_prokit | 2 | ZERO ✓ |
 | compose-generate-mobile-microchip-tksvis | openfund | 24 | ZERO ✓ |
-| compose-generate-wireless-bandwidth-v7bvut | tenant_cedula | 5 | ZERO ✓ |
 | compose-hack-open-source-driver-mmchh4 | tenant_jpvbootcamp | 12 | ZERO ✓ |
 | compose-input-open-source-bandwidth-droye2 | jpvbootcamp | 2 | ZERO ✓ |
 | compose-navigate-optical-monitor-vi714i | tenant_olivetoorganizing | 0 | ZERO ✓ |
@@ -594,7 +587,7 @@ dump/restore requirement was completed during cutover; Azure Dokploy no longer e
 | Concept | What it is | Authoritative Source | Independent copies? |
 |---------|-----------|---------------------|-------------------|
 | A — Dokploy Control Plane | postgres:16 container; stores Dokploy operational state, app configs, env vars | **AWS Dokploy** — current | Historical Azure copy deleted with Azure Dokploy |
-| B — Local Tenant Databases | postgres:15 containers (14) + postgres:17 (n8n); per-application runtime data | **AWS Dokploy** — current | Historical Azure copies were reconciled during cutover |
+| B — Local Tenant Databases | postgres:15 containers (13) + postgres:17 (n8n); per-application runtime data | **AWS Dokploy** — current | Historical Azure copies were reconciled during cutover |
 | C — Supabase | One shared self-hosted PostgreSQL 15.8 server reachable through Tailscale by workloads configured to use it | **Supabase** (always, single instance) | NO — there is only one instance; both environments connect to it |
 
 ### 8.2 USER-PROPOSED FUTURE DATA MODEL vs. VERIFIED CURRENT ARCHITECTURE
@@ -608,7 +601,7 @@ No tenant_ prefix as an architectural standard
 ```
 
 **VERIFIED CURRENT ARCHITECTURE** (OBSERVED-VERIFIED 2026-08-16):
-- 24 logical databases exist in Supabase (`CREATE DATABASE` — each is a separate PostgreSQL DB)
+- 22 logical databases currently exist in Supabase (`CREATE DATABASE` — each is a separate PostgreSQL DB); 24 were observed before the 2026-09-04 decommission cleanup
 - Most production applications connect to a dedicated per-app logical database (cedula→cedula, prochat→prochat, etc.)
 - The `postgres` system database contains 36 application/Supabase-relevant schemas (OBSERVED-VERIFIED 2026-08-16)
   (excludes PostgreSQL internal schemas: pg_catalog, information_schema, pg_toast, pg_temp_*, pg_toast_temp_*)
@@ -625,7 +618,7 @@ convergence requires explicit planning, separate approval, and post-cutover stab
 dependency is not fully verified. Do not alter, rename, or drop them before explicit
 post-cutover investigation and approval.
 
-### 8.3 Local Database Inventory (16 total — all on Dokploy hosts)
+### 8.3 Local Database Inventory (15 total — all on Dokploy hosts)
 
 These are Docker-volume-backed postgres containers running on the Dokploy host. They are
 **not part of Supabase**. Azure has the live copies; AWS has frozen snapshot copies.
@@ -641,15 +634,14 @@ These are Docker-volume-backed postgres containers running on the Dokploy host. 
 | 7 | compose-copy-open-source-interface-fkhqrw | tenant_saysthebible | postgres:15 | 21 | Says the Bible |
 | 8 | compose-copy-redundant-capacitor-zc4esw | tenant_prokit | postgres:15 | 2 | ProKit |
 | 9 | compose-generate-mobile-microchip-tksvis | openfund | postgres:15 | 24 | Yeshua Academy Finance |
-| 10 | compose-generate-wireless-bandwidth-v7bvut | tenant_cedula | postgres:15 | 5 | Cedula |
-| 11 | compose-hack-open-source-driver-mmchh4 | tenant_jpvbootcamp | postgres:15 | 12 | JPV Bootcamp |
-| 12 | compose-input-open-source-bandwidth-droye2 | jpvbootcamp | postgres:15 | 2 | JPV Bootcamp Payload CMS |
-| 13 | compose-navigate-optical-monitor-vi714i | tenant_olivetoorganizing | postgres:15 | 0 | Oliveto Organizing |
-| 14 | compose-quantify-1080p-system-tp1q5f | tenant_saaskitstudio | postgres:15 | 4 | SaaSKit Studio |
-| 15 | compose-reboot-cross-platform-driver-6l6dun | tenant_resend | postgres:15 | 6 | Free Resend |
-| 16 | compose-synthesize-bluetooth-panel-tg5mhy | tenant_saaskit | postgres:15 | 4 | SaaSKit |
+| 10 | compose-hack-open-source-driver-mmchh4 | tenant_jpvbootcamp | postgres:15 | 12 | JPV Bootcamp |
+| 11 | compose-input-open-source-bandwidth-droye2 | jpvbootcamp | postgres:15 | 2 | JPV Bootcamp Payload CMS |
+| 12 | compose-navigate-optical-monitor-vi714i | tenant_olivetoorganizing | postgres:15 | 0 | Oliveto Organizing |
+| 13 | compose-quantify-1080p-system-tp1q5f | tenant_saaskitstudio | postgres:15 | 4 | SaaSKit Studio |
+| 14 | compose-reboot-cross-platform-driver-6l6dun | tenant_resend | postgres:15 | 6 | Free Resend |
+| 15 | compose-synthesize-bluetooth-panel-tg5mhy | tenant_saaskit | postgres:15 | 4 | SaaSKit |
 
-### 8.4 Supabase Database Catalog (24 logical databases)
+### 8.4 Supabase Database Catalog (22 logical databases)
 
 **Classification categories:**
 
@@ -667,7 +659,6 @@ These are Docker-volume-backed postgres containers running on the Dokploy host. 
 | postgres | 117 MB | SUPABASE/POSTGRES SYSTEM | Contains 36 application/Supabase-relevant schemas (OBSERVED-VERIFIED 2026-08-16) — see Section 8.5 |
 | accountant | 8197 kB | CURRENT-ACTIVE APPLICATION DATABASE | ProChat Accountant — owner: accountant_user (OBSERVED-VERIFIED; not supabase_admin) |
 | analytics | 11 MB | CURRENT-ACTIVE APPLICATION DATABASE | Umami analytics |
-| cedula | 8205 kB | CURRENT-ACTIVE APPLICATION DATABASE | Cedula |
 | fala | 7957 kB | CURRENT-ACTIVE APPLICATION DATABASE | fala (applicationStatus=error on Azure; no active connections observed) |
 | finance | 20 MB | CURRENT-ACTIVE APPLICATION DATABASE | Yeshua Academy Finance / OpenFund — owner: postgres (OBSERVED-VERIFIED; not supabase_admin) |
 | jpvbootcamp | 27 MB | CURRENT-ACTIVE APPLICATION DATABASE | JPV Bootcamp (Payload CMS + public site; prod + staging schemas) |
@@ -681,7 +672,6 @@ These are Docker-volume-backed postgres containers running on the Dokploy host. 
 | saaskitstudio | 7989 kB | CURRENT-ACTIVE APPLICATION DATABASE | SaaSKit Studio |
 | saysthebible | 10 MB | CURRENT-ACTIVE APPLICATION DATABASE | Says the Bible |
 | statuslink | 8805 kB | CURRENT-ACTIVE APPLICATION DATABASE | Status Link |
-| vault_legal | 8645 kB | CURRENT-ACTIVE APPLICATION DATABASE | Vault Legal API |
 | viadieden | 7949 kB | CURRENT-ACTIVE APPLICATION DATABASE | Via di Eden |
 | tenant_prokit | 8013 kB | UNKNOWN / LEGACY-CANDIDATE | No application DATABASE_URL connects to this database (OBSERVED-VERIFIED, F-UNK-005). Usage unverified. `tenant_` prefix at DB level is naming convention, not proof of status. Do not drop without investigation. |
 | tenant_saaskit | 8181 kB | UNKNOWN / LEGACY-CANDIDATE | No application DATABASE_URL connects to this database (OBSERVED-VERIFIED, F-UNK-005). Usage unverified. `tenant_` prefix at DB level is naming convention, not proof of status. Do not drop without investigation. |
@@ -714,7 +704,7 @@ Note: Phase 3C7 reported "35" — that count excluded `information_schema` from 
 
 | Schema | Owner | Tables | Application |
 |--------|-------|--------|-------------|
-| tenant_cedula | supabase_admin | 5 | Cedula |
+| tenant_cedula | supabase_admin | 5 | Retained shared schema; former Cedula mapping (app decommissioned 2026-09-04) |
 | tenant_jpvbootcamp | supabase_admin + postgres | 12 | JPV Bootcamp |
 | tenant_olivetoorganizing | postgres | 0 | Oliveto Organizing |
 | tenant_openfund | mcp_manager | 13 | Yeshua Academy Finance |
@@ -770,10 +760,6 @@ neither legacy nor obsolescence. Do not rename or drop without investigation.
 
 | Application | Local DB (postgres:15) | Supabase Logical DB | tenant_* Schema (postgres) |
 |-------------|----------------------|--------------------|-----------------------------|
-| Workbench | volume only | — | — |
-| Workbench Staging | volume only | — | — |
-| Cedula | tenant_cedula | cedula | tenant_cedula |
-| Egg Cooker | — | — | — |
 | fala | — | fala | — |
 | Free Resend | tenant_resend | resend | tenant_resend |
 | JCCP Holdings | — | — | — |
@@ -789,14 +775,15 @@ neither legacy nor obsolescence. Do not rename or drop without investigation.
 | SaaSKit Studio | tenant_saaskitstudio | saaskitstudio | tenant_saaskitstudio |
 | Says the Bible | tenant_saysthebible | saysthebible | tenant_saysthebible |
 | Status Link | tenant_statuslink | statuslink | tenant_statuslink |
-| Vault Legal | — | — | — |
-| Vault Legal API | — | vault_legal | — |
 | Via di Eden | tenant_viadieden | viadieden | tenant_viadieden |
 | Yeshua Academy | — | — | — |
 | Yeshua Academy Finance | openfund | finance | finance, ya_finance_schema, tenant_openfund |
 | n8n | n8n (postgres:17) | — | — |
 | Ory Kratos | — | ory_prod | — |
 | Umami | — | analytics | — |
+
+`tenant_cedula` remains a retained shared schema in the `postgres` database. It is not evidence of
+an active Cedula application, and it was intentionally not dropped as part of this workload cleanup.
 
 **Observed pattern:** Many applications have both a local postgres:15 container AND a dedicated
 Supabase logical database AND a correspondingly named `tenant_*` schema in the `postgres` database.
@@ -886,8 +873,8 @@ the migration and not current ownership.
 
 | Data Type | Authoritative Source | Notes |
 |-----------|---------------------|-------|
-| **Supabase data (all 24 databases)** | **Supabase** — always live | Single instance; no sync needed at cutover |
-| **Azure local DB data (14 × postgres:15)** | **AWS Dokploy** — current | Historical Azure copy was reconciled during cutover; recover using AWS snapshots/backups |
+| **Supabase data (all 22 databases)** | **Supabase** — always live | Single instance; no sync needed at cutover |
+| **Azure local DB data (13 × postgres:15)** | **AWS Dokploy** — current | Historical Azure copy was reconciled during cutover; recover using AWS snapshots/backups |
 | **n8n data (postgres:17)** | **AWS Dokploy** — current | Historical Azure copy was reconciled during cutover |
 | **Dokploy control-plane config** | **AWS Dokploy** — current | Historical Azure control-plane authority ended at cutover |
 | **Application configs (env vars)** | **AWS Dokploy** — current | Historical Azure-only changes are not current authority |
@@ -972,23 +959,21 @@ Running writers from any second Dokploy/runtime authority against the authoritat
 not depend on cloudflared state. An AWS workload that Supabase writes will corrupt data even if
 cloudflared is masked and no public traffic reaches it.
 
-### Applications (13)
+### Applications (11)
 
 | # | appName | Application | Supabase Database(s) |
 |---|---------|-------------|---------------------|
-| 1 | demo-vault-legal-api-drzgfx | Vault Legal API | vault_legal |
-| 2 | app-override-online-interface-1wzjpb | fala | fala |
-| 3 | apps-saas-open-fund-vdymfu | Yeshua Academy Finance | finance |
-| 4 | apps-saas-status-link-dw1c6j | Status Link | statuslink |
-| 5 | clients-jpv-bootcamp-app-tp9xrk | JPV Bootcamp Payload CMS | jpvbootcamp |
-| 6 | saas-proofly-ixcmnz | Proofly | proofly |
-| 7 | web-cedula-b1gepj | Cedula | cedula |
-| 8 | web-public-jpv-bootcamp-l66egq | JPV Bootcamp | jpvbootcamp |
-| 9 | web-public-olivetoorganizing-zwthea | Oliveto Organizing | olivetoorganizing |
-| 10 | web-public-prochat-accountant-zrekal | ProChat Accountant | accountant |
-| 11 | web-public-prochat-avejzq | ProChat | prochat |
-| 12 | web-public-viadieden-kttqn4 | Via di Eden | viadieden |
-| 13 | web-says-the-bible-ing7sx | Says the Bible | saysthebible |
+| 1 | app-override-online-interface-1wzjpb | fala | fala |
+| 2 | apps-saas-open-fund-vdymfu | Yeshua Academy Finance | finance |
+| 3 | apps-saas-status-link-dw1c6j | Status Link | statuslink |
+| 4 | clients-jpv-bootcamp-app-tp9xrk | JPV Bootcamp Payload CMS | jpvbootcamp |
+| 5 | saas-proofly-ixcmnz | Proofly | proofly |
+| 6 | web-public-jpv-bootcamp-l66egq | JPV Bootcamp | jpvbootcamp |
+| 7 | web-public-olivetoorganizing-zwthea | Oliveto Organizing | olivetoorganizing |
+| 8 | web-public-prochat-accountant-zrekal | ProChat Accountant | accountant |
+| 9 | web-public-prochat-avejzq | ProChat | prochat |
+| 10 | web-public-viadieden-kttqn4 | Via di Eden | viadieden |
+| 11 | web-says-the-bible-ing7sx | Says the Bible | saysthebible |
 
 ### Compose (1)
 
@@ -1059,7 +1044,11 @@ control-plane state must be dumped from Azure and restored to AWS after the writ
 **When:** Phase C of the cutover runbook — after Azure writers stopped, before AWS writers start.
 **Source:** Azure (authoritative). **Destination:** AWS. **Direction:** One-way.
 
-### 15.1 Database Sync Inventory (16 total)
+### 15.1 Database Sync Inventory (16 total — HISTORICAL CUTOVER INVENTORY)
+
+This is a historical migration inventory captured before the 2026-08-17 cutover. It is retained
+for provenance; it is not a current resource inventory. Decommissioned target rows below are not
+instructions to recreate or retain those workloads.
 
 | # | Database | Source Container | PG Version | Priority | Justification |
 |---|---------|-----------------|-----------|---------|---------------|
@@ -1413,7 +1402,7 @@ decommission per-app logical databases → consolidate into single application d
 ### 20.2 Healthcheck Policy
 
 No Docker Swarm healthchecks on application services. Add post-cutover to critical Supabase
-writers: ProChat, Cedula, JPV Bootcamp, Proofly, Says the Bible.
+writers: ProChat, JPV Bootcamp, Proofly, Says the Bible.
 
 ### 20.3 Resource Limits
 
@@ -1468,7 +1457,8 @@ NO-DUAL-WRITER gate must be enforced separately.
 ### ADR-003: Supabase as Shared PostgreSQL Server — Proposed Future vs. Verified Current
 
 **Status:** PROPOSED — convergence to one-database model is Steve's stated intent but has not been
-approved as an actionable ADR. Current state is 24 logical databases (VERIFIED CURRENT ARCHITECTURE).
+approved as an actionable ADR. Current state is 22 logical databases (VERIFIED CURRENT ARCHITECTURE;
+24 were observed before the 2026-09-04 decommission cleanup).
 The shared-server decision (Supabase) is IMPLEMENTED; the one-database convergence plan is PROPOSED.
 
 **USER-PROPOSED FUTURE DATA MODEL (stated by Steve, not an approved ADR):**
@@ -1477,7 +1467,7 @@ The shared-server decision (Supabase) is IMPLEMENTED; the one-database convergen
 
 **Verified Current Architecture (OBSERVED-VERIFIED 2026-08-16):**
 - One shared PostgreSQL 15.8 server (Supabase) — observed current pattern
-- 24 logical databases (`CREATE DATABASE`) — this does NOT match the proposed single-database model
+- 22 logical databases currently exist (`CREATE DATABASE`) — this does NOT match the proposed single-database model; 24 were observed on 2026-08-16 before cleanup
 - `postgres` central database with 36 schemas (OBSERVED-VERIFIED 2026-08-16) — partially overlaps with "explicit schemas" concept
 - `tenant_*` naming at both database and schema level — historical relationship to proposed future model is UNKNOWN
 
@@ -1508,14 +1498,15 @@ cutover. Plus n8n postgres:17 and Dokploy postgres:16 = 16 total PostgreSQL sync
 
 ### ADR-005: BuildFlow Digest-Pinned at Migration Capture
 
-**Status:** IMPLEMENTED
+**Status:** HISTORICAL — implemented for the 2026-08-17 migration; BuildFlow workloads decommissioned 2026-09-04
 
-**Decision:** Both BuildFlow instances use pinned digest `sha256:4a657686731b` at cutover.
+**Decision:** Both BuildFlow instances used pinned digest `sha256:4a657686731b` at cutover.
 
 **Rationale:** The `:latest` tag drifted after Phase 3A capture. Pinned digest preserves source
 parity with the Azure instance being migrated.
 
-**Consequence:** BuildFlow must be explicitly updated post-cutover for newer versions.
+**Consequence:** BuildFlow would have required an explicit post-cutover update for newer versions;
+the workloads were subsequently decommissioned on 2026-09-04.
 
 ---
 
@@ -1523,8 +1514,9 @@ parity with the Azure instance being migrated.
 
 **Status:** IMPLEMENTED
 
-**Decision:** AWS shadow node uses two independent suppression layers: (1) `autoDeploy=false`
-on all 24 apps and 17 compose projects, and (2) cloudflared masked + Lightsail TCP 80/443 absent.
+**Decision:** At cutover, the AWS shadow node used two independent suppression layers: (1)
+`autoDeploy=false` on all 24 apps and 17 compose projects, and (2) cloudflared masked + Lightsail
+TCP 80/443 absent. These counts are historical cutover state.
 
 **Rationale:** Belt-and-suspenders. The cloudflared + firewall layer ensures no public traffic
 reaches AWS even if Dokploy DB is modified. However, the data-writer gate (zero running workloads)
