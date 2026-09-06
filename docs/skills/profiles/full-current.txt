@@ -11,7 +11,6 @@ aws-cli
 azure-cli
 benchmark
 brain-new-ai-tool-integration
-brain-nightly-scheduler-new-job
 brain-universal-capability-install
 canary
 careful
@@ -42,7 +41,6 @@ firecrawl
 flux-local
 forge
 freeze
-gemini
 gemini-json-control-chars
 gh
 ghostty-term-zshrc-conflict
@@ -78,7 +76,7 @@ nextjs-fixed-header-hero-flex-overflow
 nextjs-next-public-dockerfile-real-value
 nextjs-sqlite-buildtime-crash
 nextjs-standalone-runtime-deps
-notebooklm.md
+notebooklm
 office-hours
 orbstack
 ory
@@ -87,7 +85,6 @@ plan-ceo-review
 plan-design-review
 plan-eng-review
 playwright
-brain-nightly-scheduler-new-job
 qa
 qa-only
 redesign-skill

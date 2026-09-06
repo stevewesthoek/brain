@@ -125,6 +125,18 @@ Those belong in:
 
 ## Natural Language Routing
 
+For any request that may use a skill, CLI, MCP server, or runbook, agents must
+first run the shared read-only discovery query. The user should not need to
+know internal skill names, profiles, or client configuration names:
+
+```bash
+node tools/discover-capabilities.mjs --query "<the user's request>" --format compact
+```
+
+Read the selected source/runbook, then use the actual available shell or MCP
+surface. Query-time discovery is shared; runtime-specific configuration is only
+an adapter and does not grant authorization.
+
 When the user says:
 
 - "make the AI remember this" → use `mind` unless it is a global AI-system rule.

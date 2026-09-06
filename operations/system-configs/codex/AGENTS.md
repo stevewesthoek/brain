@@ -76,6 +76,12 @@ Discover shared skills, dormant profiles, CLIs, and runbooks through `brain/ai/p
 
 Use active `/skill-name` entries directly when available. For dormant skills, consult the source docs/profile before activation. For CLIs, call directly via bash after checking the manifest when needed.
 
+For any natural-language request that may need a skill, CLI, MCP server, or
+runbook, first run the shared read-only discovery query:
+`node /Users/Office/Repos/stevewesthoek/brain/tools/discover-capabilities.mjs --query "<request>" --format compact`.
+Then read the selected source documentation before acting. Discovery does not
+grant execution or mutation authority.
+
 **Optional standalone agent surfaces:**
 - `omp` / Oh My Pi is available as a separate terminal AI coding agent, like Cursor, Kiro, Antigravity, Claude Code, Codex, and Gemini. It is an optional manual runtime/evaluation harness only. Do not use it to replace AI Model Selector, Brain skills, shared memory, or routing policy. Canonical boundaries are documented in `brain/operations/runbooks/omp-optional-agent.md`.
 - Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/nexu-io/open-design` as an optional external visual design workbench pattern for `/design`, like an IDE surface beside Cursor, Kiro, Antigravity, and Oh My Pi. It must not replace `/design`, `/web-design`, AI Model Selector, Brain skills, shared memory, or routing policy. Auto-detect available CLIs (`open-design`, validated non-system `od`, `claude`, `codex`, `gemini`, `omp`) and route generation through `ai-select`. Canonical boundaries are documented in `brain/operations/runbooks/open-design-optional-design-surface.md`.

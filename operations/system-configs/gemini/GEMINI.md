@@ -76,11 +76,22 @@ Avoid using Gemini for:
 **Shared with Claude and Codex:**
 Discover shared skills, dormant profiles, CLIs, and runbooks through `brain/ai/policy/capability-discovery.md`, `brain/docs/skills/skill-index.md`, `brain/docs/skills/profiles/`, `brain/operations/CLI-MANIFEST.md`, and `brain/operations/AI-CONFIG-INDEX.md`.
 
+For every natural-language request that may need tooling, use the same
+read-only query as Claude Code and Codex:
+
+```bash
+node /Users/Office/Repos/stevewesthoek/brain/tools/discover-capabilities.mjs \
+  --query "<the user's request>" --format compact
+```
+
+Read the selected source documentation before using the CLI or MCP surface.
+The user does not need to know skill names or profiles.
+
 Use active `/skill-name` entries directly when available. For dormant skills, consult the source docs/profile before activation. For CLIs, call directly via bash after checking the manifest when needed.
 
 **Optional standalone agent surfaces:**
 - `omp` / Oh My Pi is available as a separate terminal AI coding agent, like Cursor, Kiro, Antigravity, Claude Code, Codex, and Gemini. It is an optional manual runtime/evaluation harness only. Do not use it to replace AI Model Selector, Brain skills, shared memory, or routing policy. Canonical boundaries are documented in `brain/operations/runbooks/omp-optional-agent.md`.
-- Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/nexu-io/open-design` as an optional external visual design workbench pattern for `/design`, like an IDE surface beside Cursor, Kiro, Antigravity, and Oh My Pi. It must not replace `/design`, `/web-design`, AI Model Selector, Brain skills, shared memory, or routing policy. Auto-detect available CLIs (`open-design`, validated non-system `od`, `claude`, `codex`, `gemini`, `omp`) and route generation through `ai-select`. Canonical boundaries are documented in `brain/operations/runbooks/open-design-optional-design-surface.md`.
+- Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/vendors/nexu-io/open-design` as an optional external visual design workbench pattern for `/design`, like an IDE surface beside Cursor, Kiro, Antigravity, and Oh My Pi. It must not replace `/design`, `/web-design`, AI Model Selector, Brain skills, shared memory, or routing policy. Auto-detect available CLIs (`open-design`, validated non-system `od`, `claude`, `codex`, `gemini`, `omp`) and route generation through `ai-select`. Canonical boundaries are documented in `brain/operations/runbooks/open-design-optional-design-surface.md`.
 
 ### Gemini-Specific Constraints & Usage
 

@@ -1,6 +1,6 @@
 # Skill Loading Architecture
 
-**Status:** Implemented as profile + index system  
+**Status:** Implemented as profile + index + query-time discovery system
 **Goal:** Keep all skills available while reducing the always-active skill surface for Claude Code, Codex, Gemini, Cursor, Kiro, and Antigravity.
 
 ---
@@ -30,7 +30,7 @@ non-default profile unless Steve explicitly approves always-on activation.
 
 ## Why this exists
 
-`ai/skills/active/` is exported to all AI/IDE consumers by `tools/scripts/sync-ai-skills.mjs`. A large active directory creates metadata overhead and noisy skill routing.
+`ai/skills/active/` is exported to all AI/IDE consumers by `tools/scripts/sync-ai-skills.mjs`. The compact `capability-discovery` skill uses `tools/discover-capabilities.mjs` to route natural-language requests to dormant source docs, CLIs, MCP surfaces, and runbooks without loading the whole inventory into every prompt. A large active directory creates metadata overhead and noisy skill routing.
 
 The repository previously had 119 active skill entries. This architecture keeps those skills available but avoids loading all of them by default.
 
@@ -202,7 +202,8 @@ node tools/scripts/sync-ai-skills.mjs --check
 
 ## Recommended Default Policy
 
-Keep the default profile small, currently about 7 skills:
+Keep the default profile small, currently 8 skills including the compact
+capability-discovery entry point:
 
 - high-level orchestrators
 - core review/QA/safety skills
@@ -219,6 +220,11 @@ default, available through a domain profile." Add a skill to
 
 ## What This Does Not Do
 
-This does not implement automatic runtime skill loading inside Claude Code or Codex. Instead, it creates a safe repo-level profile system and a skill index. Agents can use natural language through active orchestrators and consult the index when deeper dormant skills are needed.
+This does not inject every dormant skill into Claude Code or Codex prompts. It
+does provide automatic, read-only query-time discovery through
+`tools/discover-capabilities.mjs`, exposed by the default
+`capability-discovery` skill. Agents use the query result to read only the
+selected dormant source documentation, so natural-language routing does not
+require the user to know skill names or profiles.
 
 This also does not remove any historical skill. All source skills remain available.

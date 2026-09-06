@@ -38,12 +38,17 @@ CLI_TO_CHECK="${1:-}"
 echo -e "${BLUE}=== CLI Access Verification ===${NC}"
 echo ""
 
-# Helper function to test CLI
+# Helper function to test CLI availability and a best-effort standard probe.
+# Some Brain wrappers require positional arguments and therefore return a
+# nonzero status for --version/--help or an empty invocation. PATH plus an
+# executable target is still valid access evidence for those wrappers.
 test_cli() {
   local cli_name="$1"
+  local cli_path
 
   # Try to find the CLI
-  if command -v "$cli_name" &> /dev/null; then
+  cli_path="$(command -v "$cli_name" 2>/dev/null || true)"
+  if [[ -n "$cli_path" ]]; then
     # Try to run it with --version or --help
     if "$cli_name" --version &> /dev/null 2>&1; then
       return 0
@@ -51,8 +56,11 @@ test_cli() {
       return 0
     elif "$cli_name" -h &> /dev/null 2>&1; then
       return 0
+    elif [[ -x "$cli_path" ]]; then
+      # Found in PATH and resolves to an executable, but this CLI has no
+      # generic standard probe (for example, an argument-driven wrapper).
+      return 0
     else
-      # Found in PATH but can't run standard commands
       return 1
     fi
   else
@@ -110,6 +118,7 @@ CRITICAL_CLIS=(
   "spark-cli"
   "aws-cli"
   "cloudflare-cli"
+  "stripe"
   "mem-search"
   "sync-credentials"
 )

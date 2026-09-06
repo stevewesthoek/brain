@@ -1,5 +1,5 @@
 # Default active skill profile
-# Goal: truly minimal always-on surface. ~7 core skills for ordinary work.
+# Goal: truly minimal always-on surface. ~8 core skills for ordinary work.
 # Source skills are not deleted; dormant skills remain in ai/skills/custom and ai/skills/vendors.
 # Heavy orchestrators (design, video) and tool skills (gh, firecrawl, etc.) move to domain profiles.
 # Natural-language routing will recommend dormant profiles when needed.
@@ -11,3 +11,4 @@ review
 qa
 handoff
 careful
+capability-discovery

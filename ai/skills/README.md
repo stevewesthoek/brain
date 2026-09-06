@@ -19,7 +19,7 @@ skills/
 3. Skills in `vendors/` or `custom/` may remain dormant when they are too specialized or are meant to be routed by a higher-level orchestrator.
 4. New vendor/custom skills should be registered in `docs/skills/skill-index.md`; add a symlink in `active/` only when the skill is intentionally default-active.
 5. Raw writes/copies/symlinks under `active/` are confirmation-gated by `operations/system-configs/claude/hooks/check-active-skill-surface.sh`.
-6. Orchestrators such as `code` may use dormant source skills automatically from the registry and source docs. Example: `custom/greploop` remains dormant but is part of `/code`'s automatic review-fix-review workflow.
+6. The default `capability-discovery` skill uses the shared read-only query-time inventory so agents can find dormant skills, CLIs, MCP servers, source docs, and runtime routes from natural language. Orchestrators such as `code` may then read the selected dormant source skill automatically. Example: `custom/greploop` remains dormant but is part of `/code`'s automatic review-fix-review workflow.
 7. Do not store tool-internal config, caches, or runtime state here.
 8. Before adding permanent rules to a skill, classify them with `docs/rules/rule-onboarding-and-hook-policy.md`. Deterministic command/path/diff rules should move to hooks or CI when feasible; skills should keep task-specific workflow knowledge and judgment rules.
 
@@ -64,7 +64,7 @@ The skill library is pruned monthly to prevent token overhead and signal dilutio
 
 **Invariant: `active/` is the only canonical skill export surface for all AI/IDE consumers.**
 
-After installing or activating any skill in `active/`, you **must** run the sync script to make it available to all consumers:
+After installing or activating any skill in `active/`, you **must** run the sync script to export it to all consumers:
 
 ```bash
 # Preview what will change
@@ -80,5 +80,9 @@ node tools/scripts/sync-ai-skills.mjs --check
 A passing `--check` means:
 - Every active skill is visible at `<consumer-target>/<skill>/SKILL.md` for all consumers
 - Claude Code, Codex, Gemini, Cursor, Kiro, and Antigravity all see the same active skill set
+
+The sync script exports active skills only. It is not a discovery registry and
+does not make every dormant skill part of every prompt; dormant capabilities
+remain query-discoverable through `tools/discover-capabilities.mjs`.
 
 **Never manually copy skills into tool-specific folders.** The sync script is the sole source of truth for exporting skills. Vendor and custom source folders must remain hidden unless explicitly activated through `active/`.

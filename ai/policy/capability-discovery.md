@@ -2,7 +2,7 @@
 
 **Purpose:** Define how Brain discovers existing skills, CLIs, workflows, and config before adding new tools or relying on giant always-on capability lists.
 
-**Status:** Canonical policy for capability lookup across Claude Code, Codex CLI, Gemini CLI, and IDE/agent surfaces.
+**Status:** Canonical policy and routing contract for capability lookup across Claude Code, Codex CLI, Gemini CLI, and IDE/agent surfaces.
 
 ---
 
@@ -10,7 +10,17 @@
 
 Do not make the user know skill names, CLI names, MCP servers, or profile internals.
 
-When the user asks for a capability in natural language, the AI system should find the smallest existing capability that fits before suggesting installation, activation, or new infrastructure.
+When the user asks for a capability in natural language, the AI system should
+find the smallest existing capability that fits before suggesting installation,
+activation, or new infrastructure. The shared implementation is:
+
+```bash
+node /Users/Office/Repos/stevewesthoek/brain/tools/discover-capabilities.mjs \
+  --query "<the user's request>" --format compact
+```
+
+When already working from Brain, the relative form is preferred:
+`node tools/discover-capabilities.mjs --query "<request>"`.
 
 ---
 
@@ -18,13 +28,11 @@ When the user asks for a capability in natural language, the AI system should fi
 
 Use this order unless the user names an exact tool or file:
 
-1. **Active/default skills** — use the current exported skill surface for common work.
-2. **Skill index** — check `docs/skills/skill-index.md` for dormant skills and profiles.
-3. **Domain profiles** — check `docs/skills/profiles/` when a domain is obvious, such as design, video, research, deploy, productivity, or power-user work.
-4. **CLI manifest** — check `operations/CLI-MANIFEST.md` for installed shell tools and verification commands.
-5. **AI config index** — check `operations/AI-CONFIG-INDEX.md` for global config, hooks, policies, model routing, and runtime-specific files.
-6. **Runbooks and policy docs** — check `operations/runbooks/`, `ai/policy/`, and `docs/rules/` when the task is operational or procedural.
-7. **Capability installation flow** — only after registry search shows no existing capability fits, use the universal capability installation process.
+1. **Active/default skills** — start with the compact `capability-discovery` entry point.
+2. **Shared discovery query** — scan the current skill, CLI, MCP, profile, and runbook registries.
+3. **Selected source documentation** — read the best matching skill/runbook before acting.
+4. **Actual availability** — verify the CLI through PATH or the MCP through its configured client surface; for CLI authentication/session readiness use the central redacted access-health checker. Presence is not authentication.
+5. **Capability installation flow** — only after discovery shows no existing capability fits, use the universal capability installation process.
 
 ---
 
@@ -32,10 +40,10 @@ Use this order unless the user names an exact tool or file:
 
 | Runtime/surface | Discovery behavior |
 |---|---|
-| Claude Code | Use active skills first; consult registries for dormant skills, CLIs, hooks, and runbooks instead of relying on long inline lists. |
-| Codex CLI | Use this policy directly when Codex is the entry point; do not assume a skill is unavailable because it is not in Codex's minimal root. |
-| Gemini CLI | Use this policy to find source docs and produce compact briefs; avoid pretending Gemini should execute workflows that belong to Claude/Codex. |
-| IDE/agent surfaces | Treat skills, CLIs, and runbooks as Brain-owned capabilities; use registries rather than local memory or duplicated lists. |
+| Claude Code | Run the shared discovery query, read the selected source docs, then use Bash or an exposed MCP surface. |
+| Codex CLI | Run the shared discovery query from Brain even when the custom skill is dormant; use shell or an exposed MCP surface. |
+| Gemini CLI | Run the shared discovery query to find source docs and produce compact briefs; do not claim unsupported execution. |
+| IDE/agent surfaces | Use the same query and registries; runtime-specific configuration only changes the available execution surface. |
 
 ---
 
@@ -64,7 +72,9 @@ Keep always-on prompts limited to:
 - high-risk guardrails that cannot yet be enforced elsewhere;
 - where to look up dormant capabilities.
 
-Long inventories belong in registries such as `docs/skills/skill-index.md` and `operations/CLI-MANIFEST.md`.
+Long inventories belong in the query-time discovery output and source registries
+such as `docs/skills/skill-index.md`, `operations/CLI-MANIFEST.md`, and the MCP
+admission/configuration sources.
 
 ---
 
@@ -78,4 +88,4 @@ Why: <one sentence>
 Next action: <smallest safe step>
 ```
 
-If no fitting capability is found, say what was checked before proposing installation or new infrastructure.
+If no fitting capability is found, say what the shared query checked before proposing installation or new infrastructure.

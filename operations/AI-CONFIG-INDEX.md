@@ -2,7 +2,7 @@
 
 **Purpose:** Single directory that maps all AI configuration files, CLI access, skills, and operational standards across Claude Code, Codex, and Gemini CLI.
 
-**Status:** Master index for AI infrastructure (created 2026-05-25)
+**Status:** Master index for AI infrastructure (updated 2026-09-05)
 
 ---
 
@@ -30,6 +30,11 @@ caches, and app-server sockets remain local. See
 | **AGENTS.md** | Codex agent documentation | `~/.codex/AGENTS.md` → `brain/operations/system-configs/codex/AGENTS.md` |
 | **RTK.md** | RTK (token reduction) configuration for Codex | `~/.codex/RTK.md` → `brain/operations/system-configs/codex/RTK.md` |
 | **auth.json** | Codex authentication (machine state, not symlinked) | `~/.codex/auth.json` |
+
+The account-agnostic CLI-only runtime boundary is managed separately from
+Codex configuration by `tools/runtime-profile-manager.mjs` (discoverable as
+`runtime-profiles`). It consumes the shared Identity & Access catalog and does
+not copy or own Codex authentication state.
 
 ### Gemini CLI
 | File | Purpose | Location |
@@ -98,12 +103,38 @@ caches, and app-server sockets remain local. See
 
 **Default active skills:**
 ```
-/code, /research, /memory, /review, /qa, /handoff, /careful
+/code, /research, /memory, /review, /qa, /handoff, /careful, /capability-discovery
 ```
 
 **Dormant skills:** Heavy or specialized skills stay outside `active/` and are documented in `docs/skills/skill-index.md`. The `/code` orchestrator may route to dormant engineering subskills automatically from their source docs when appropriate. Example: `custom/greploop` remains dormant but is part of `/code`'s automatic review-fix-review arsenal.
 
-**Access:** All AIs see the same `active/` symlinks by default. Dormant skills are not manually activated for normal users; orchestrators such as `/code` own when/how to apply them from the registry and source documentation.
+**Access:** All AIs see the same `active/` symlinks by default. The compact
+`capability-discovery` skill runs `tools/discover-capabilities.mjs` for
+natural-language requests and reads only the selected dormant source
+documentation. Users are not expected to activate profiles or name skills.
+
+### 2b.1. Unified Capability Discovery
+
+**Implementation:** `tools/discover-capabilities.mjs`
+**Validation:** `tools/validate-agent-capability-onboarding.mjs`
+
+The query-time inventory scans the shared skill sources and profiles, the
+canonical CLI manifest and PATH, Brain MCP admissions and docs, and client
+configuration names. This is the single discovery technique for Claude Code,
+Codex CLI, Gemini CLI, and other configured agent surfaces. It does not print
+secrets and does not grant execution or mutation authority.
+
+### 2b.2. MCP Registry and Client Adapters
+
+**Provider admission:** `operations/specs/mcp-provider-admissions.json`
+**Provider docs/templates:** `operations/system-configs/mcp/`
+**Client adapters:** `operations/system-configs/codex/config.toml`, Claude
+MCP configuration, and other runtime-specific templates.
+
+MCP requests use the same query-time discovery script as skills and CLIs. The
+result distinguishes Brain admission, client configuration, connection,
+authentication, and live verification. Client configuration never replaces
+the provider admission registry or creates authorization.
 
 ---
 
@@ -154,8 +185,9 @@ This is documented in both `brain/CLAUDE.md` and each AI's config.
 - **Gemini CLI:** Natural language + shell access for analysis
 
 ### For AI Agents
-- **Skills:** Use `/skill-name` directly (all AIs read same `active/` symlinks)
-- **CLIs:** Use shell access + $PATH lookup (all AIs inherit system PATH)
+- **Natural language:** Run `node tools/discover-capabilities.mjs --query "<request>"` first; users do not need internal names
+- **Skills:** Read the selected source through the shared active/exported surface
+- **CLIs:** Use shell access + `$PATH` lookup (all AIs inherit the managed PATH)
 - **Memory:** Use `mem-search`, `mem-write`, `mem-facts` (all AIs use same `~/.brain/memory/`)
 - **Policies:** Refer to `ai/policy/` (routing.md, guardrails.md — both AIs read)
 
@@ -265,17 +297,19 @@ notebooklm --version
 ## Maintenance & Updates
 
 ### When You Install a New CLI
-1. Install to `~/.local/bin/` (symlink or direct)
-2. Add entry to `operations/CLI-MANIFEST.md`
-3. Verify in all three AIs
-4. If using brain wrapper, run: `node tools/scripts/sync-ai-skills.mjs --check`
-5. Update this index if it affects any of the listed files
+1. Query the shared capability inventory first
+2. Install to `~/.local/bin/` (symlink or direct)
+3. Add entry to `operations/CLI-MANIFEST.md`
+4. Verify the discovery route and the command in each supported AI shell
+5. Run `node tools/validate-agent-capability-onboarding.mjs`
+6. Update this index if it affects any of the listed files
 
 ### When You Add/Update a Skill
-1. Place source in `ai/skills/custom/` or `ai/skills/vendors/`
-2. Create symlink in `ai/skills/active/`
-3. Run: `node tools/scripts/sync-ai-skills.mjs --dry-run && sync-ai-skills.mjs && sync-ai-skills.mjs --check`
-4. Verify skill is accessible in all three AIs
+1. Query the shared capability inventory first
+2. Place source in `ai/skills/custom/` or `ai/skills/vendors/`
+3. Add the profile/index/runbook records required by the onboarding contract
+4. Apply only the intended profile and run `node tools/scripts/sync-ai-skills.mjs --check`
+5. Run `node tools/validate-agent-capability-onboarding.mjs`
 
 ### When You Update a Policy
 1. Update `ai/policy/routing.md` or `ai/policy/guardrails.md`

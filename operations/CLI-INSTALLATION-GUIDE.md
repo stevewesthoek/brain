@@ -16,8 +16,8 @@ install-cli --name "command-name" --path "/path/to/binary" --description "what i
 **What happens automatically:**
 - ✅ Creates symlink to `~/.local/bin/command-name`
 - ✅ Updates `operations/CLI-MANIFEST.md`
-- ✅ Runs `sync-ai-skills.mjs` to sync to all AIs
-- ✅ Verifies access in Claude Code
+- ✅ Registers the shared capability-discovery route
+- ✅ Verifies local shell access and discoverability
 
 **Example:**
 ```bash
@@ -58,7 +58,8 @@ verify-cli-access
 1. **Root README.md** — ⚡ Quick Reference section at top (you're reading it)
 2. **CLI-MANIFEST.md** — Quick Start section (line 1-50)
 3. **CLAUDE.md** — CLI Manifest section (refs this workflow)
-4. **This file** — Full procedural guide
+4. **`operations/runbooks/agent-capability-discovery.md`** — Shared natural-language route
+5. **This file** — Full procedural guide
 
 ---
 
@@ -68,19 +69,19 @@ verify-cli-access
 - Can invoke: `bash install-cli --name cmd --path /path`
 - Can invoke: `bash verify-cli-access cmd`
 - Can read manifest: `operations/CLI-MANIFEST.md`
-- **Discovery:** When in brain repo, read root README.md first
+- **Discovery:** Run `node tools/discover-capabilities.mjs --query "<request>" --kind cli`
 
 ### Codex
 - Can invoke (Computer Use): `install-cli --name cmd --path /path`
 - Can invoke (Computer Use): `verify-cli-access cmd`
 - Can read manifest: `operations/CLI-MANIFEST.md`
-- **Discovery:** When in brain repo context, check README.md Quick Reference
+- **Discovery:** Run the same shared capability query from the Brain repository
 
 ### Gemini CLI
 - Can invoke (context-mode shell): `install-cli --name cmd --path /path`
 - Can invoke (context-mode shell): `verify-cli-access cmd`
 - Can read manifest: `operations/CLI-MANIFEST.md`
-- **Discovery:** When brain context is loaded, read README.md Quick Reference
+- **Discovery:** Run the same shared capability query from the Brain repository
 
 ---
 
@@ -219,9 +220,9 @@ chmod +x /path/to/target
    - Adds entry to `operations/CLI-MANIFEST.md`
    - Notes in manifest if updating existing entry
 
-4. **Sync to AIs:**
-   - Runs `node tools/scripts/sync-ai-skills.mjs`
-   - Checks if sync succeeded
+4. **Verify the shared route:**
+   - Runs `node tools/discover-capabilities.mjs --query "<cli-name>" --kind cli`
+   - Checks whether the command is available on the shared `PATH`
 
 5. **Verify access:**
    - Tests if CLI can be found in PATH
