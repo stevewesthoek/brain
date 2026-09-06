@@ -46,5 +46,17 @@ The following remain protected and are not part of this retirement:
 - detached `.codex` and `brain-runtime` worktrees — ownership/runtime checks
   remain open.
 
-After retirement, fetch and verify that local `main` and `origin/main` remain
-identical and that only the retained refs remain for later reconciliation.
+## Post-retirement verification
+
+Retirement completed without force-push:
+
+- six remote refs were deleted from `origin`;
+- four local-only refs were deleted locally;
+- all ten exact names are absent from both local and `origin` ref namespaces;
+- no worktree was attached to any retired ref;
+- local `main` and `origin/main` remain identical at
+  `f69abba5d1c868ffc0c67c7af9c8d6fe2ee7474f`;
+- the canonical integration worktree remains clean.
+
+The retained refs and worktrees listed above remain the complete residual set
+for the next reconciliation pass.
