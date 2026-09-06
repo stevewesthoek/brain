@@ -55,5 +55,6 @@ assert.equal(doctor.executionEnabled, false, 'doctor cannot enable execution');
 assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.health), 'health runtime state must remain explicit');
 assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.incidents), 'incident runtime state must remain explicit');
 assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.actionReceipts), 'receipt runtime state must remain explicit');
+assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.credentialHealth), 'credential health runtime state must remain explicit');
 
 console.log(`infrastructure-consumers-valid catalogVersion=${catalog.catalogVersion} resources=${canonicalIds.length} contextItems=${context.items.length} mcpCapabilities=${mcp.capabilities.length} executionEnabled=false containsSecrets=false`);
