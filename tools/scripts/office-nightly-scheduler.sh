@@ -327,6 +327,30 @@ run_gws_token_refresh() {
   run_job "gws-token-refresh" "$timeout_seconds" "$command" "$token_log"
 }
 
+run_credential_health_evaluation() {
+  local timeout_seconds="${CREDENTIAL_HEALTH_TIMEOUT_SECONDS:-120}"
+  local repo_root
+  repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  local health_script="$repo_root/tools/infrastructure-identity-access/credential-health-cli.mjs"
+  local health_log="$LOG_DIR/credential-health-evaluation.log"
+  local command
+
+  if [[ "${BRAIN_IDENTITY_ACCESS_HEALTH_ENABLED:-0}" != "1" ]]; then
+    log "skipping job=credential-health-evaluation reason=explicit_activation_required"
+    return 0
+  fi
+  if [[ ! -f "$health_script" ]]; then
+    log "skipping job=credential-health-evaluation reason=missing_script path=$health_script"
+    return 0
+  fi
+
+  # The CLI has a fixed repository root and accepts only --notify. No
+  # credential reference, token, account, provider URL, or arbitrary path is
+  # transported through the scheduler command.
+  command="$(printf 'cd %q && node %q --notify >> %q 2>&1' "$repo_root" "$health_script" "$health_log")"
+  run_job "credential-health-evaluation" "$timeout_seconds" "$command" "$health_log"
+}
+
 run_mind_steward_dry_run_report() {
   local timeout_seconds="${MIND_STEWARD_DRY_RUN_TIMEOUT_SECONDS:-300}"
   local report_script="${MIND_STEWARD_DRY_RUN_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mind-steward-dry-run-report.sh}"
@@ -500,6 +524,10 @@ main() {
   log "skipping job=gemini-cleanup reason=bs0-11-unsafe-quiesced"
   log "skipping job=google-ads-sync reason=bs0-11-unsafe-quiesced"
   log "skipping job=gws-token-refresh reason=bs0-11-unsafe-quiesced"
+
+  # Identity & Access health is read-only but credential-sensitive. It remains
+  # dormant until separately activated after reviewed metadata enrollment.
+  run_credential_health_evaluation || log "warning credential-health-evaluation failed but chain continues"
 
   # Mind Steward dry-run report — validates planner package and writes runtime report only; never stops chain
   run_mind_steward_dry_run_report || log "warning mind-steward-dry-run failed but chain continues"

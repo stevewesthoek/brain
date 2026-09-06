@@ -10,7 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const validator = path.join(root, 'tools/validate-infinite-brain-scheduler-inventory.mjs');
 const inventory = path.join(root, 'operations/specs/infinite-brain-scheduler-inventory.json');
 test('scheduler inventory validates its repository source markers and report-only Mind modes', () => {
-  assert.match(execFileSync('node', [validator], { encoding: 'utf8' }), /jobs=17/);
+  assert.match(execFileSync('node', [validator], { encoding: 'utf8' }), /jobs=18/);
 });
 test('scheduler inventory rejects inferred activation and missing receipts', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'scheduler-inventory-'));
