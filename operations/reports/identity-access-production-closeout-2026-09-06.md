@@ -60,6 +60,17 @@ metadata and isolation plan. The bounded profile check correctly returned
 `NOT_OK` because authentication and profile-local configuration have not yet
 been established. No `auth.json` exists in either dedicated root.
 
+### Observer residue correction
+
+The first observer implementation started Codex directly in the target roots
+and created application SQLite/WAL/SHM runtime files despite not creating auth
+or config files. This was a real non-secret mutation-contract defect, not a
+credential exposure. All handles were confirmed closed and the exact residue
+was moved recoverably to
+`/Users/Office/.brain/observer-quarantine/codex-app-server-20260906/`.
+Observer version 1.1.0 now uses an ephemeral shadow root; a real disposable
+subprocess probe confirmed the target root remained unchanged.
+
 The next step is a human-operated official login, one account at a time,
 followed by private identity confirmation, profile-specific checks, complete
 attestation, and an A→B→A persistence/recheck sequence. Brain must not perform

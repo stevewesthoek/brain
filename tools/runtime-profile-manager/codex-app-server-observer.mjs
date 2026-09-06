@@ -1,9 +1,12 @@
+import fs from 'node:fs';
 import { spawn } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
 
 import { assertPrivateMatcherResultSafe, redactPrivateMatcherResult } from './private-identity-matcher.mjs';
 
 export const CODEX_APP_SERVER_OBSERVER_ID = 'observer:codex-app-server-account';
-export const CODEX_APP_SERVER_OBSERVER_VERSION = '1.0.0';
+export const CODEX_APP_SERVER_OBSERVER_VERSION = '1.1.0';
 
 const ALLOWED_ACCOUNT_TYPES = new Set(['apiKey', 'chatgpt', 'chatgptAuthTokens', 'amazonBedrock']);
 
@@ -88,6 +91,32 @@ function parseLine(line) {
   }
 }
 
+/**
+ * Codex app-server initializes local SQLite state when it starts. Running it
+ * directly in a target CODEX_HOME would therefore make account observation
+ * unexpectedly mutating. Use an ephemeral shadow root and expose only the
+ * application-owned auth file by symlink when it exists. The auth material is
+ * never copied or read by Brain; Codex remains the only consumer of it.
+ */
+function createEphemeralObservationRoot(sourceRoot) {
+  const shadowRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-codex-account-observer-'));
+  try {
+    const sourceAuth = path.join(path.resolve(sourceRoot), 'auth.json');
+    const sourceAuthStat = fs.statSync(sourceAuth);
+    if (sourceAuthStat.isFile()) fs.symlinkSync(sourceAuth, path.join(shadowRoot, 'auth.json'));
+    return shadowRoot;
+  } catch (error) {
+    if (error?.code === 'ENOENT') return shadowRoot;
+    fs.rmSync(shadowRoot, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+function removeEphemeralObservationRoot(root) {
+  if (!root) return;
+  fs.rmSync(root, { recursive: true, force: true });
+}
+
 export function observeCodexAppServerAccount({
   root,
   executable = 'codex',
@@ -102,14 +131,42 @@ export function observeCodexAppServerAccount({
   if (!root) return Promise.resolve({ state: 'unknown', status: 'error', reason: 'runtime_root_required', secretsExcluded: true });
   return new Promise((resolve) => {
     let settled = false;
+    let resolved = false;
+    let childClosed = false;
     let buffer = '';
     let initialized = false;
     let timeout;
+    let cleanupAttempts = 0;
+    let finalResult;
+    let observationRoot;
+    try {
+      observationRoot = createEphemeralObservationRoot(root);
+    } catch (error) {
+      resolve({ state: 'unknown', status: 'unavailable', reason: error?.code ?? 'observer_shadow_root_failed', secretsExcluded: true, targetRootMutation: false });
+      return;
+    }
+    const resolveAfterCleanup = (result) => {
+      if (resolved) return;
+      try {
+        removeEphemeralObservationRoot(observationRoot);
+      } catch (error) {
+        if (cleanupAttempts < 10 && error?.code === 'ENOTEMPTY') {
+          cleanupAttempts += 1;
+          setTimeout(() => resolveAfterCleanup(result), 100);
+          return;
+        }
+        result = { ...result, observationCleanup: 'failed' };
+      }
+      resolved = true;
+      resolve({ ...result, observationRoot: 'ephemeral', targetRootMutation: false });
+    };
     const finish = (result) => {
       if (settled) return;
       settled = true;
+      finalResult = result;
       clearTimeout(timeout);
-      resolve(result);
+      if (childClosed) resolveAfterCleanup(result);
+      else setTimeout(() => resolveAfterCleanup(result), 250);
     };
     let child;
     try {
@@ -118,7 +175,7 @@ export function observeCodexAppServerAccount({
         env: {
           PATH: process.env.PATH,
           HOME: process.env.HOME ?? process.cwd(),
-          CODEX_HOME: root,
+          CODEX_HOME: observationRoot,
         },
         stdio: ['pipe', 'pipe', 'ignore'],
         shell: false,
@@ -157,7 +214,9 @@ export function observeCodexAppServerAccount({
     });
     child.on?.('error', (error) => finish({ state: 'unknown', status: 'unavailable', reason: error?.code ?? 'app_server_error', secretsExcluded: true }));
     child.on?.('close', (code) => {
+      childClosed = true;
       if (!settled) finish({ state: 'unknown', status: 'error', reason: code === 0 ? 'account_read_missing' : 'app_server_exit', secretsExcluded: true });
+      else resolveAfterCleanup(finalResult);
     });
     try {
       child.stdin.write(`${JSON.stringify({ method: 'initialize', id: 1, params: { clientInfo } })}\n`);

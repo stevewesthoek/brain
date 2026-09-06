@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 
 import {
@@ -84,6 +87,43 @@ test('app-server observer performs initialize then read without refresh', async 
   assert.equal(observation.emailPresent, true);
   assert.equal(observation.observedPrincipalRef, null);
   assert.equal(observation.secretsExcluded, true);
+  assert.equal(observation.observationRoot, 'ephemeral');
+  assert.equal(observation.targetRootMutation, false);
+});
+
+test('app-server observer never starts in the target root or leaves runtime residue', async () => {
+  const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-codex-observer-source-'));
+  const sourceAuth = path.join(sourceRoot, 'auth.json');
+  fs.writeFileSync(sourceAuth, 'synthetic-auth-placeholder', { mode: 0o600 });
+  let spawnedHome = null;
+  const child = new EventEmitter();
+  const stdout = new EventEmitter();
+  child.stdout = stdout;
+  child.stdin = {
+    write(value) {
+      const message = JSON.parse(value);
+      if (message.method === 'initialize') queueMicrotask(() => stdout.emit('data', `${JSON.stringify({ id: 1, result: {} })}\n`));
+      if (message.method === 'account/read') queueMicrotask(() => stdout.emit('data', `${JSON.stringify({ id: 2, result: { account: { type: 'chatgpt' }, requiresOpenaiAuth: false } })}\n`));
+    },
+    end() {},
+  };
+  child.kill = () => {};
+
+  const observation = await observeCodexAppServerAccount({
+    root: sourceRoot,
+    spawnProcess: (_executable, _args, options) => {
+      spawnedHome = options.env.CODEX_HOME;
+      assert.notEqual(spawnedHome, sourceRoot);
+      assert.equal(fs.lstatSync(path.join(spawnedHome, 'auth.json')).isSymbolicLink(), true);
+      return child;
+    },
+    timeoutMs: 1_000,
+  });
+
+  assert.equal(observation.status, 'authenticated');
+  assert.equal(fs.existsSync(spawnedHome), false);
+  assert.equal(fs.readFileSync(sourceAuth, 'utf8'), 'synthetic-auth-placeholder');
+  fs.rmSync(sourceRoot, { recursive: true, force: true });
 });
 
 test('private identity matcher can bind an account without returning provider PII', () => {

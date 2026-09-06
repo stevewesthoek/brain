@@ -111,9 +111,17 @@ called by profile enrollment, account switching or credential health.
 
 ## Supported account observation
 
-The Codex adapter can start an app-server inside the selected profile root and
-perform the supported sequence `initialize` → `initialized` →
-`account/read` with `{ refreshToken: false }`. It returns only allowlisted
+The Codex adapter starts an app-server in an ephemeral shadow root and performs
+the supported sequence `initialize` → `initialized` →
+`account/read` with `{ refreshToken: false }`. When a target file-mode
+`auth.json` exists, the shadow exposes it to Codex only through an
+application-consumed symlink; it is never copied or read by Brain. This is
+required because app-server startup initializes local SQLite/WAL runtime state.
+The target profile root is not used as the observer process root, and the
+observer reports `targetRootMutation=false`. Observer versions before 1.1.0
+could leave non-secret SQLite residue in the target root; such residue is not
+identity evidence and must be quarantined only after exact-root quiescence and
+open-handle checks. It returns only allowlisted
 metadata: authentication state/type, plan type, whether an email was present,
 reauthentication-required state, and an honest account-binding limitation.
 
