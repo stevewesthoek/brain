@@ -52,6 +52,8 @@
     "test:codex-profile-admission": "node --test tools/infrastructure-identity-access/codex-profile-admission.test.mjs",
     "runtime:profiles": "node tools/runtime-profile-manager.mjs",
     "codex:admit-profiles": "node tools/admit-codex-cli-profiles.mjs",
+    "codex:identity-handoff": "node tools/codex-identity-lifecycle-handoff.mjs",
+    "test:codex-identity-handoff": "node --test tools/codex-identity-lifecycle-handoff.test.mjs",
     "test:runtime-profiles": "node --test tools/runtime-profile-manager.test.mjs",
     "test:configuration-ownership": "node --test tools/lib/configuration-ownership.test.mjs",
     "test:codex-runtime-architecture": "node --test tools/lib/configuration-ownership.test.mjs tools/infrastructure-catalog/account-runtime-architecture.test.mjs tools/runtime-profile-manager/runtime-profile-configuration.test.mjs tools/runtime-profile-manager/codex-app-server-observer.test.mjs tools/runtime-profile-manager/codex-webgpt-adapter.test.mjs",
