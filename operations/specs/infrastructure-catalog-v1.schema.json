@@ -12,6 +12,121 @@
     "relationClass": { "enum": ["runs_on", "depends_on", "connects_to", "routes_to", "monitored_by", "backed_up_by", "authenticates_with", "configured_by", "owned_by", "replaced_by", "fails_over_to"] },
     "lifecycleState": { "enum": ["active", "planned", "migrating", "inactive", "retired", "unknown"] },
     "severity": { "enum": ["info", "low", "medium", "high", "critical"] },
+    "referenceId": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*:[a-z0-9][a-z0-9._-]*$" },
+    "identityReference": { "type": "string", "pattern": "^(account|credential|session|runtime_profile):[a-z0-9][a-z0-9._-]*$" },
+    "admissionState": { "enum": ["candidate", "admitted", "rejected", "retired", "unknown"] },
+    "environmentClass": { "enum": ["production", "development", "staging", "test", "local", "other", "unknown"] },
+    "ownerState": { "enum": ["confirmed", "candidate", "unknown", "conflicted"] },
+    "ownerKind": { "enum": ["application", "provider", "platform", "operator", "orchestrator", "external", "unknown"] },
+    "stateCustody": { "enum": ["application", "provider", "platform", "orchestrator", "secret_store", "operator", "external", "unknown"] },
+    "mutationAuthority": { "enum": ["none", "owner-only", "explicit-transfer", "unknown"] },
+    "capability": { "enum": ["observe", "verify", "drift_detect", "recommend", "coordinate", "recover", "mutate"] },
+    "disruptionRisk": { "enum": ["none", "low", "medium", "high", "unknown"] },
+    "maintenanceMode": { "enum": ["normal", "maintenance", "unknown"] },
+    "activeWorkloadPolicy": { "enum": ["idle_required", "lease_required", "observe_only", "unknown"] },
+    "isolationMode": { "enum": ["isolated", "shared-approved", "unknown"] },
+    "discovery": {
+      "type": "object",
+      "required": ["mode", "authority", "evidenceRefs"],
+      "properties": {
+        "mode": { "enum": ["manual", "automatic", "provider", "application", "derived", "unknown"] },
+        "authority": { "enum": ["candidate", "authoritative", "unknown"] },
+        "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "ownership": {
+      "type": "object",
+      "required": ["authoritativeOwnerRef", "ownerState", "authoritativeOwnerKind", "custody", "mutationAuthority", "observerRefs", "verifierRefs", "driftDetectorRefs", "mutationActorRefs"],
+      "properties": {
+        "authoritativeOwnerRef": { "anyOf": [{ "$ref": "#/$defs/referenceId" }, { "type": "null" }] },
+        "ownerState": { "$ref": "#/$defs/ownerState" },
+        "authoritativeOwnerKind": { "$ref": "#/$defs/ownerKind" },
+        "custody": { "$ref": "#/$defs/stateCustody" },
+        "mutationAuthority": { "$ref": "#/$defs/mutationAuthority" },
+        "observerRefs": { "type": "array", "items": { "$ref": "#/$defs/referenceId" }, "uniqueItems": true },
+        "verifierRefs": { "type": "array", "items": { "$ref": "#/$defs/referenceId" }, "uniqueItems": true },
+        "driftDetectorRefs": { "type": "array", "items": { "$ref": "#/$defs/referenceId" }, "uniqueItems": true },
+        "mutationActorRefs": { "type": "array", "items": { "$ref": "#/$defs/referenceId" }, "uniqueItems": true },
+        "transferPolicyRef": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "lifecycleGovernance": {
+      "type": "object",
+      "required": ["quiescenceRequired", "disruptionRisk", "dependencyCheckRequired", "maintenanceMode", "activeWorkloadPolicy", "recoveryRunbookRef"],
+      "properties": {
+        "quiescenceRequired": { "type": "boolean" },
+        "disruptionRisk": { "$ref": "#/$defs/disruptionRisk" },
+        "dependencyCheckRequired": { "type": "boolean" },
+        "maintenanceMode": { "$ref": "#/$defs/maintenanceMode" },
+        "activeWorkloadPolicy": { "$ref": "#/$defs/activeWorkloadPolicy" },
+        "recoveryRunbookRef": { "type": ["string", "null"], "minLength": 1 },
+        "upgradePolicyRef": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "isolation": {
+      "type": "object",
+      "required": ["domainRef", "mode", "boundaryRefs"],
+      "properties": {
+        "domainRef": { "anyOf": [{ "$ref": "#/$defs/referenceId" }, { "type": "null" }] },
+        "mode": { "$ref": "#/$defs/isolationMode" },
+        "boundaryRefs": { "type": "array", "items": { "$ref": "#/$defs/referenceId" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "resourceGovernance": {
+      "type": "object",
+      "required": ["admissionState", "environmentRef", "environmentClass", "identityBindingRefs", "runtimeProfileRefs", "runtimeAdapterRef", "healthPolicyRef", "accountCapacity", "profileConcurrency", "discovery", "ownership", "lifecycle", "isolation", "capabilities"],
+      "properties": {
+        "admissionState": { "$ref": "#/$defs/admissionState" },
+        "environmentRef": { "anyOf": [{ "$ref": "#/$defs/referenceId" }, { "type": "null" }] },
+        "environmentClass": { "$ref": "#/$defs/environmentClass" },
+        "identityBindingRefs": { "type": "array", "items": { "$ref": "#/$defs/identityReference" }, "uniqueItems": true },
+        "runtimeProfileRefs": { "type": "array", "items": { "type": "string", "pattern": "^runtime_profile:[a-z0-9][a-z0-9._-]*$" }, "uniqueItems": true },
+        "runtimeAdapterRef": { "anyOf": [{ "$ref": "#/$defs/referenceId" }, { "type": "null" }] },
+        "healthPolicyRef": { "type": ["string", "null"], "pattern": "^health_policy:[a-z0-9][a-z0-9._-]*$" },
+        "accountCapacity": { "enum": ["one", "many", "unsupported", "unknown"] },
+        "profileConcurrency": { "enum": ["concurrent", "exclusive", "unknown"] },
+        "discovery": { "$ref": "#/$defs/discovery" },
+        "ownership": { "$ref": "#/$defs/ownership" },
+        "lifecycle": { "$ref": "#/$defs/lifecycleGovernance" },
+        "isolation": { "$ref": "#/$defs/isolation" },
+        "capabilities": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/capability" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "routeOwnership": {
+      "type": "object",
+      "required": ["ownerRef", "ownerState", "writerRefs", "mutationAuthority"],
+      "properties": {
+        "ownerRef": { "anyOf": [{ "$ref": "#/$defs/referenceId" }, { "type": "null" }] },
+        "ownerState": { "$ref": "#/$defs/ownerState" },
+        "writerRefs": { "type": "array", "items": { "$ref": "#/$defs/referenceId" }, "uniqueItems": true },
+        "mutationAuthority": { "$ref": "#/$defs/mutationAuthority" }
+      },
+      "additionalProperties": false
+    },
+    "relationGovernance": {
+      "type": "object",
+      "properties": {
+        "dependency": {
+          "type": "object",
+          "required": ["class", "availability", "quiescenceRequired", "disruptionRisk"],
+          "properties": {
+            "class": { "enum": ["required", "optional"] },
+            "availability": { "enum": ["startup", "continuous", "lifecycle"] },
+            "quiescenceRequired": { "type": "boolean" },
+            "disruptionRisk": { "$ref": "#/$defs/disruptionRisk" },
+            "recoveryRunbookRef": { "type": ["string", "null"], "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "routeOwnership": { "$ref": "#/$defs/routeOwnership" }
+      },
+      "additionalProperties": false
+    },
     "sourceEvidence": {
       "type": "object",
       "required": ["sourceRef", "classification", "verifiedAt", "freshnessDeadline", "owner"],
@@ -31,6 +146,7 @@
       "properties": {
         "resourceId": { "$ref": "#/$defs/resourceId" },
         "resourceClass": { "$ref": "#/$defs/resourceClass" },
+        "resourceKind": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" },
         "name": { "type": "string", "minLength": 1 },
         "lifecycleState": { "$ref": "#/$defs/lifecycleState" },
         "owner": { "type": "string", "minLength": 1 },
@@ -38,6 +154,7 @@
         "providerEntityRef": { "type": ["string", "null"] },
         "addresses": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
         "attributes": { "type": "object" },
+        "governance": { "$ref": "#/$defs/resourceGovernance" },
         "provenance": { "$ref": "#/$defs/sourceEvidence" }
       },
       "additionalProperties": false
@@ -52,6 +169,7 @@
         "targetId": { "$ref": "#/$defs/resourceId" },
         "state": { "enum": ["active", "planned", "historical", "unknown"] },
         "attributes": { "type": "object" },
+        "governance": { "$ref": "#/$defs/relationGovernance" },
         "provenance": { "$ref": "#/$defs/sourceEvidence" }
       },
       "additionalProperties": false
@@ -63,9 +181,10 @@
         "bindingId": { "type": "string", "pattern": "^binding:[a-z0-9][a-z0-9._-]*$" },
         "serviceId": { "$ref": "#/$defs/resourceId" },
         "resourceId": { "$ref": "#/$defs/resourceId" },
-        "bindingKind": { "enum": ["endpoint", "runtime", "configuration", "data", "monitoring", "authentication", "backup"] },
+        "bindingKind": { "enum": ["endpoint", "runtime", "configuration", "data", "monitoring", "authentication", "backup", "route", "dependency", "runtime_profile"] },
         "endpointRef": { "type": ["string", "null"] },
         "configSourceRef": { "type": "string", "minLength": 1 },
+        "governance": { "$ref": "#/$defs/relationGovernance" },
         "provenance": { "$ref": "#/$defs/sourceEvidence" }
       },
       "additionalProperties": false

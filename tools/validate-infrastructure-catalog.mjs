@@ -47,7 +47,7 @@ if (dokployAws) {
   if (dokployAws.attributes?.publicSshBlocked !== true) pushError('reference-dokploy-public-ssh-invalid: public SSH must be blocked');
 }
 
-requireResource('host:supabase');
+requireResource('host:vm-supabase');
 requireResource('provider_account:azure-prochat-data');
 
 const dokployAzureFallback = requireResource('host:dokploy-azure');
@@ -130,7 +130,7 @@ for (const resourceId of requiredProviderResources) requireResource(resourceId);
 const requiredSafetyResources = [
   'host:dokploy-aws',
   'host:dokploy-azure',
-  'host:supabase',
+  'host:vm-supabase',
   'host:cloudpanel-aws',
   'network:tailnet-infrastructure',
   'tunnel:cloudflare-production',

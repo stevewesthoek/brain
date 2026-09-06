@@ -27,7 +27,7 @@ const contextProvider = createInfrastructureContextProvider({ clock: () => now }
 const capabilityProvider = createInfrastructureMcpCapabilityProvider({ clock: () => now });
 const broker = createContextBroker({ contextProviders: [contextProvider], capabilityProviders: [capabilityProvider], clock: () => now });
 const context = broker.call('resolve', { query: 'supabase', maxItems: 5, maxTokens: 1200 });
-assert.ok(context.items.some((item) => item.itemId === 'host:supabase'), 'Context Broker must resolve canonical resource IDs');
+assert.ok(context.items.some((item) => item.itemId === 'host:vm-supabase'), 'Context Broker must resolve canonical resource IDs');
 assert.ok(context.items.every((item) => item.citation && item.freshness), 'Context Broker items require citations and freshness');
 assert.ok(context.budget.usedTokens <= context.budget.maxTokens, 'Context Broker must remain within token budget');
 
@@ -55,5 +55,6 @@ assert.equal(doctor.executionEnabled, false, 'doctor cannot enable execution');
 assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.health), 'health runtime state must remain explicit');
 assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.incidents), 'incident runtime state must remain explicit');
 assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.actionReceipts), 'receipt runtime state must remain explicit');
+assert.ok(['ok', 'missing', 'invalid'].includes(doctor.runtime.credentialHealth), 'credential health runtime state must remain explicit');
 
 console.log(`infrastructure-consumers-valid catalogVersion=${catalog.catalogVersion} resources=${canonicalIds.length} contextItems=${context.items.length} mcpCapabilities=${mcp.capabilities.length} executionEnabled=false containsSecrets=false`);
