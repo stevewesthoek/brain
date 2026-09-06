@@ -121,6 +121,22 @@ function isSkillSource(p) {
   return fs.existsSync(path.join(p, 'SKILL.md')) || fs.existsSync(path.join(p, 'skill.md'));
 }
 
+function readSkillFrontmatterName(p) {
+  const skillPath = fs.existsSync(path.join(p, 'SKILL.md'))
+    ? path.join(p, 'SKILL.md')
+    : path.join(p, 'skill.md');
+  if (!fs.existsSync(skillPath)) return null;
+
+  try {
+    const content = fs.readFileSync(skillPath, 'utf8');
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/);
+    const name = match?.[1]?.match(/^name:\s*["']?([^"'\n]+?)["']?\s*$/m)?.[1]?.trim();
+    return name || null;
+  } catch {
+    return null;
+  }
+}
+
 function getActiveEntries() {
   if (!fs.existsSync(activeDir)) {
     fail(`Active skill directory not found: ${path.relative(repoRoot, activeDir)}`);
@@ -154,7 +170,7 @@ function walkForSkillSource(root, skill) {
     const current = stack.pop();
     const base = path.basename(current);
 
-    if (base === skill && isSkillSource(current)) {
+    if ((base === skill || readSkillFrontmatterName(current) === skill) && isSkillSource(current)) {
       return current;
     }
 
