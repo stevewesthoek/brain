@@ -12,8 +12,8 @@ written:
 
 | Item | Current state |
 |---|---|
-| `origin/main` | `b54f84d4d901fb7eaf315d0531418d269ba6e6b3` |
-| clean local `main` | `b54f84d4d901fb7eaf315d0531418d269ba6e6b3` |
+| `origin/main` | `6fc645036d2d1617e952e05e6087f60c580a6f78` |
+| clean local `main` | `6fc645036d2d1617e952e05e6087f60c580a6f78` |
 | canonical integration checkout | `/Users/Office/Repos/stevewesthoek/brain-main-integration-2026-09-01` |
 | canonical checkout | clean, `main...origin/main` |
 | active historical checkout | `/Users/Office/Repos/stevewesthoek/brain`, dirty, `codex/cloudflare-tooling-normalization` |
@@ -151,3 +151,8 @@ The canonical base also now contains the recovery-boundary hardening commit
 refuses execution from inside a Codex/ChatGPT process tree. This reduces the
 chance of repeating the earlier self-disconnect sequence but does not remove
 the requirement for an externally controlled maintenance window.
+
+The ten patch-equivalent review refs listed in
+`brain-residual-ref-retirement-2026-09-06.md` were subsequently retired after
+the exact local/remote and no-worktree checks passed. The residual set is now
+limited to the protected unique/runtime-coupled refs documented above.

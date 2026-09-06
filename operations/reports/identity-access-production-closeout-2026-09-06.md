@@ -5,8 +5,8 @@ admission, canonical runtime placement, and final application acceptance remain
 open gates.
 
 **Canonical comparison:** `main` at
-`b54f84d4d901fb7eaf315d0531418d269ba6e6b3`, equal to `origin/main` after the
-recovery-boundary hardening commit.
+`6fc645036d2d1617e952e05e6087f60c580a6f78`, equal to `origin/main` after the
+recovery-boundary and residual-ref closeout commits.
 
 **Safety:** no OAuth value, authentication-file content, cookie, browser
 storage, Keychain value, API key, authorization header, WebGPT source, MCP
@@ -112,6 +112,24 @@ check before requesting any application shutdown. The wrapper also refuses to
 run from inside a Codex/ChatGPT process tree. Focused managed-root and
 stop-and-repair tests pass. This does not authorize generic repair of the
 shared native root; that root remains application-owned and refused.
+
+### Whole-repository validation boundaries
+
+The focused I&A, runtime-profile, managed-root, Keychain, credential-health,
+contract, and MCP-admission checks passed. Two broader checks remain
+explicitly outside this closeout scope:
+
+- `validate-infinite-brain-conformance.mjs` reports Workbench revision and
+  artifact-digest mismatches against its admitted external revision, plus
+  stale historical Mind evidence and scheduler command failures. No Brain
+  Workbench checkout or scheduler was changed to conceal those mismatches.
+- `sync-ai-skills.mjs --check` reports stale Kiro live symlinks/reachability.
+  No global skill synchronization was run because it would mutate unrelated
+  live consumers and no skill activation occurred in this closeout.
+
+These are recorded as external/deferred validation findings, not as evidence
+that the Codex identity/profile implementation is healthy in those other
+surfaces.
 
 ## Repository and worktree disposition
 
