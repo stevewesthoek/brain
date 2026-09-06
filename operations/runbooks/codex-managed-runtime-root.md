@@ -222,6 +222,7 @@ synthetic/test root or an explicitly approved exceptional maintenance flow:
 
 ```bash
 bash operations/scripts/codex-home-managed-root.sh check
+bash operations/scripts/codex-home-managed-root.sh ownership-preflight
 bash operations/scripts/codex-home-managed-root.sh preflight
 # A real default-root preflight should refuse generic mutation.
 bash operations/scripts/codex-home-managed-root.sh repair
@@ -231,7 +232,10 @@ node tools/scripts/sync-ai-skills.mjs
 node tools/scripts/sync-ai-skills.mjs --check
 ```
 
-`preflight` is read-only and must report `OK: controlled Codex repair is
+`ownership-preflight` is read-only and checks only resource ownership. It is
+safe to run before asking applications to quit; a failure means no shutdown
+should be attempted by an automated recovery wrapper. `preflight` is
+read-only and must report `OK: controlled Codex repair is
 approved to run.` before a synthetic repair. A `NOT OK` result is a hard stop;
 do not bypass it with `CODEX_HOME_SKIP_PROCESS_CHECK` outside tests.
 
