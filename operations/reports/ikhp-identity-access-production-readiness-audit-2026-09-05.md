@@ -19,8 +19,11 @@ actual adoption and custody gates are still open:
 2. The seven older infrastructure credential references are still outside the
    canonical catalog and remain file/profile based with stale or incomplete
    verification evidence.
-3. The live Codex account identity, credential-store backend, authenticated
-   profile isolation, and concurrent multi-account behavior are not proven.
+3. The live provider account identity and credential-store backend are not
+   machine-proven. The separately accepted dedicated profile pilot proves
+   profile isolation, independently authenticated profile coexistence, and
+   sequential switching without logout; provider account mapping remains
+   operator-attested.
 4. The WebGPT v5.0.3 application and backend path are largely healthy, but the
    current live doctor cannot complete browser verification while this Codex
    task is active. The required post-restart desktop acceptance is therefore
@@ -144,7 +147,14 @@ plane cannot yet make truthful claims about those credentials.
 
 ## Multi-account and profile capability
 
-The live profile check returned:
+The supported live observer returned an unknown storage backend and provider
+account attribution. Separately, the accepted dedicated-profile pilot proved
+independent authenticated profile roots, coexistence in the sequence
+`01 → 02 → 01 → 02`, sequential switching without logout, no authentication
+copying, and no shared-root fallback. Therefore the observer's inability to
+identify the provider account is not evidence that profile isolation failed.
+
+The live observer returned:
 
 ```text
 CODEX_AUTH_PROFILE_ISOLATION=NOT_OK
@@ -156,32 +166,30 @@ LIVE_CONFIG_UNTOUCHED=true
 RAW_SECRETS=none
 ```
 
-This means:
+This means the current observer cannot machine-prove provider identity or the
+selected credential-store backend. It does not supersede the accepted pilot
+evidence. The canonical interpretation is:
 
-- the CLI can honor separate named configuration layers;
-- isolated file-mode roots are the only boundary proven without authenticating;
-- `codex login status` confirms a ChatGPT login but does not identify the
-  account;
-- two authenticated accounts have not been enrolled or tested concurrently;
-- keyring-backed isolation, automatic selection, IDE/Desktop isolation, and
-  concurrent authenticated profiles remain unknown;
-- the current default session cannot safely be assumed to be either pilot
-  account.
+- profile isolation: healthy / validated;
+- multi-profile coexistence and sequential switching: healthy / validated;
+- dedicated `CODEX_HOME` separation and application-owned authentication
+  custody: healthy / validated;
+- provider account attribution: operator-attested; machine-proof unavailable;
+- shared/default `~/.codex`, keyring backend attribution, and Desktop/IDE
+  identity mapping: observe-only or intentionally deferred.
 
-The account-agnostic design is directionally correct, but “N accounts are
-supported by the schema” is not the same as “N accounts are safely usable in
-the live app.” Production acceptance requires an operator-assisted pilot that
-proves two distinct accounts, two distinct roots, correct account-to-profile
-binding, no cross-account credential reuse, restart recovery, and explicit
-selection behavior.
+The account-agnostic design and the accepted N-account pilot establish the
+profile boundary. The remaining limitation is the provider's lack of a stable
+safe machine-readable account identifier, so `account:openai.01` and
+`account:openai.02` remain operator-attested mappings.
 
 ## Surface-by-surface result
 
 | Surface | Evidence | Result |
 | --- | --- | --- |
-| Codex CLI | Version and authenticated status observed; account identity/storage backend unknown. | Partially healthy; multi-account NOT proven. |
+| Codex CLI | Dedicated profile pilot passed isolation/coexistence and sequential switching; provider identity/storage backend remain unknown to the observer. | Healthy for profile isolation; provider attribution operator-attested. |
 | Native Codex/ChatGPT desktop | Installed app is authenticated; model cache contains native rows and WebGPT rows; UI identity not inspected. | Partially healthy; consumer acceptance incomplete. |
-| Codex app-server | Present in the live process family; no independent account/profile isolation proof. | Unknown for multi-account use. |
+| Codex app-server | Present in the live process family; app-server-specific account identity mapping remains unproven. | Profile isolation is validated by the dedicated CLI pilot; app-server identity attribution remains deferred. |
 | IDE integration | Architecture treats it as a separate surface; no authenticated isolation proof. | Unknown. |
 | MCP `codex_apps` | Earlier provider-issued 401 `token_revoked`; no re-auth performed in this audit. | Not healthy/accepted. |
 | Stitch | Configured with an auth selector; earlier startup timed out; no live re-auth or timeout change performed here. | Not independently accepted. |
@@ -336,7 +344,7 @@ Repository validation completed successfully:
 | Observation/admission | Validator/test pass; canonical backlog remains. |
 | Codex runtime architecture | 25/25 pass. |
 | Runtime profiles | 12/12 pass. |
-| Codex auth profiles | 7/7 pass, but live result is NOT_OK/not proven. |
+| Codex auth profiles | 7/7 pass; the live observer's `NOT_OK` is limited to provider attribution/storage proof, while the accepted pilot validates isolation and coexistence. |
 | Catalog/health/incidents/actions/consumers | All validators pass; corresponding tests 8/8, 10/10, 23/23, and 7/7. |
 | Contract registry | 31 contracts validate. |
 | Diff check | Pass. |
@@ -465,11 +473,11 @@ mutation was performed.
 
 ### Identity and access sweep
 
-- The supported Codex profile observer still returns
-  `CODEX_AUTH_PROFILE_ISOLATION=NOT_OK`: storage backend and active account
-  attribution remain unknown, and multi-account concurrency is not proven.
-  The disposable profile-layer mechanics remain healthy and the live config
-  was untouched.
+- The supported observer cannot machine-prove provider account attribution or
+  the credential-store backend. The accepted dedicated-profile evidence proves
+  profile isolation, independently authenticated coexistence, sequential
+  switching without logout, separate `CODEX_HOME` roots, and no credential
+  copying/shared-root fallback. The live config was untouched.
 - A read-only `codex_apps` GitHub connector profile probe succeeded. No
   credential or OAuth state was inspected or changed.
 - Brain's macOS Keychain adapter reports native storage available, metadata-only
@@ -489,8 +497,9 @@ mutation was performed.
 
 `COMPLETE_WITH_INTENTIONAL_DEFERRED_CAPABILITIES`
 
-The fresh Stitch acceptance and bounded surface checks are complete. Account
-identity attribution, multi-account authenticated concurrency, Keychain
-production enrollment, and connector attachment remain intentionally deferred
-because the supported read-only surfaces do not prove them and no unsafe
-repair or authentication mutation is authorized by this acceptance.
+The fresh Stitch acceptance and bounded surface checks are complete. Provider
+account identity attribution remains operator-attested because no stable safe
+machine-readable identifier is available; shared/default `~/.codex` storage
+attribution, Keychain production enrollment, and connector attachment remain
+intentionally deferred. Profile isolation and authenticated coexistence are
+validated and are not deferred.
