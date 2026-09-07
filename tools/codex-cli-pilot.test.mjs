@@ -112,6 +112,31 @@ test('collection acceptance remains NOT_OK until every selected profile is attes
   }
 });
 
+test('collection acceptance preserves asynchronous account-observer evidence', async () => {
+  const profilesRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-codex-cli-pilot-async-observer-'));
+  try {
+    const baseAdapter = provisionAuthenticatedRoots(
+      createCodexCliRuntimeProfileAdapter({ run: () => ({ status: 0, stdout: 'Logged in', stderr: '' }) }),
+      profilesRoot,
+    );
+    const adapter = {
+      ...baseAdapter,
+      inspectAccountObservation(args) {
+        return Promise.resolve(baseAdapter.inspectAccountObservation(args));
+      },
+    };
+    const report = await runPilot([
+      'acceptance',
+      '--profiles', selectedProfiles.join(','),
+      ...selectedProfiles.flatMap((profileId) => ['--attest-profile', profileId]),
+    ], { catalog, adapter, context: makeContext(profilesRoot) });
+    assert.equal(report.status, 'OK');
+    assert.deepEqual(report.evidence.profiles.map((profile) => profile.authentication.status), ['authenticated', 'authenticated']);
+  } finally {
+    fs.rmSync(profilesRoot, { recursive: true, force: true });
+  }
+});
+
 test('incremental new-account acceptance uses existing/new/existing linear verification', async () => {
   const profilesRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-codex-cli-pilot-incremental-'));
   try {
@@ -168,6 +193,7 @@ test('collection launch and finalize consume profile-keyed reports without fixed
       ...launchPaths.flatMap((launchPath) => ['--launch-check', launchPath]),
     ], { catalog, adapter, context });
     assert.equal(final.status, 'OK');
+    assert.equal(final.evidence.profileIsolationProven, true);
     assert.equal(final.evidence.sequentialLaunch.profiles.length, selectedProfiles.length);
     assert.equal(final.evidence.concurrency, 'not_tested_and_not_authorized');
   } finally {

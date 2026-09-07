@@ -575,6 +575,7 @@ async function runPilot(argv = process.argv.slice(2), dependencies = {}) {
           profiles: acceptedProfiles.map((profileId) => ({ status: 'proven', report: launchByProfile.get(profileId).sourcePath, evidence: launchByProfile.get(profileId).evidence.launchCheck })),
         },
         rootsDistinct: new Set(doctors.map((doctor) => doctor.runtimeRoot)).size === acceptedProfiles.length,
+        profileIsolationProven: reasons.length === 0,
         defaultCodexRoot: defaultAfter,
         targetScope: 'profile_scoped',
         sharedDefaultRootPolicy: {

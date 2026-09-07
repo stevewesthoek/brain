@@ -10,7 +10,18 @@ import { applyCodexProfileAdmission, buildCodexProfileAdmissionPlan } from './co
 
 const root = path.resolve(import.meta.dirname, '../..');
 const schema = loadJson(path.join(root, 'operations/specs/infrastructure-identity-access-v1.schema.json'));
-const canonical = loadJson(path.join(root, 'operations/infrastructure/catalog/identity-access.v1.json'));
+const canonical = (() => {
+  const value = loadJson(path.join(root, 'operations/infrastructure/catalog/identity-access.v1.json'));
+  // The live catalog may contain a prior real admission when tests run from a
+  // developer checkout. Admission unit tests intentionally start from the
+  // clean baseline, while preserving the catalog's static metadata.
+  value.catalogVersion = '0.1.0';
+  for (const collection of [
+    'accounts', 'credentials', 'sessions', 'surfaceBindings', 'runtimeProfiles',
+    'secretStoreAdapters', 'lifecyclePolicies', 'verificationPolicies',
+  ]) value[collection] = [];
+  return value;
+})();
 const candidate = loadJson(path.join(root, 'operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json'));
 const selectedProfiles = candidate.runtimeProfiles.map((profile) => profile.runtimeProfileId);
 

@@ -6,10 +6,12 @@ import { loadAndValidateIdentityAccess, validateIdentityAccessCatalog } from './
 
 const root = path.resolve(import.meta.dirname, '..');
 
-test('identity and access catalog foundation validates without raw secret material', () => {
+test('identity and access catalog validates without raw secret material', () => {
   const result = loadAndValidateIdentityAccess({ root });
   assert.deepEqual(result.errors, []);
-  assert.equal(result.counts.canonical.accounts, 0);
+  assert.equal(result.counts.canonical.accounts, 2);
+  assert.equal(result.counts.canonical.credentials, 0);
+  assert.equal(result.counts.canonical.runtimeProfiles, 2);
   assert.equal(result.counts.alternate.accounts, 2);
   assert.equal(result.counts.alternate.credentials, 2);
   assert.equal(result.counts.alternate.sessions, 2);

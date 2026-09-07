@@ -184,10 +184,12 @@ async function inspectProfile({ selected, adapter, context, probeAuthentication 
   const configuration = inspectRuntimeProfileConfiguration({ artifact: configurationArtifact });
   const expectedPrincipal = profile.accountId ? selected.accounts.get(profile.accountId)?.expectedPrincipal : null;
   const observationContext = { ...context, expectedPrincipal };
+  // Adapters may use either a bounded synchronous status probe or an
+  // asynchronous supported account observer. Always await the adapter result
+  // so callers cannot accidentally serialize a Promise as `{}` and lose the
+  // authentication evidence at a higher-level acceptance gate.
   const authentication = probeAuthentication && security.rootExists && security.safe
-    ? context.accountObservationMode === 'app-server'
-      ? await adapter.inspectAccountObservation({ profile, root, context: observationContext })
-      : adapter.inspectAccountObservation({ profile, root, context: observationContext })
+    ? await adapter.inspectAccountObservation({ profile, root, context: observationContext })
     : { state: 'unknown', status: security.rootExists ? 'not_probed' : 'not_provisioned' };
   const process = adapter.inspectProcessOwnership({ profile, root, context });
   const binding = bindingReadiness(profile);
