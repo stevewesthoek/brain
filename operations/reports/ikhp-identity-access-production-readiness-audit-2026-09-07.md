@@ -114,19 +114,25 @@ automatic rotation is active.
 ## WebGPT and MCP status
 
 The owner-supported WebGPT doctor reported configuration, native Codex route,
-service ownership, Responses proxy, tunnel binary/key, tunnel service, and
-tunnel runtime healthy. Browser verification was blocked because the active
-Codex turn was still running; connector attachment remained unknown. This is a
-human/application acceptance boundary and was not bypassed by restarting or
-mutating WebGPT. DEV remained stopped and separate.
+service ownership, Responses proxy, tunnel binary/key, tunnel service, tunnel
+runtime, and browser host healthy. Connector attachment remains a warning. This
+is an application acceptance boundary and was not bypassed by mutating WebGPT.
+DEV remained stopped and separate.
 
 The prior `codex_apps` provider-revoked incident and Stitch startup timeout
 remain explicitly recorded as historical, independent incidents. The current
 read-only `codex_apps` call succeeds. A corrected direct Stitch wrapper probe
 now completes MCP initialization and a provider tool call after the exact IAM
-grant and API enablement above. The already-running desktop Codex process has
-not been restarted, so its previously loaded stale MCP definition remains a
-controlled reload deferral; no global shutdown was performed.
+grant and API enablement above. The generated live projection was refreshed
+through the supported narrow `codex mcp remove/add stitch` operation: it now
+references the OAuth wrapper, contains no Stitch API-key reference, and retains
+the pre-existing non-Stitch semantic inventory. Codex Desktop was then quit and
+reopened normally; process evidence confirms a new Desktop process, while
+WebGPT remained running and untouched. The Stitch call bound to this already
+established Codex task nevertheless still returns the previous API-key-mode
+401. This is a task-level MCP binding/re-handshake boundary, not evidence of
+remaining local projection drift; no global shutdown or OAuth reauthentication
+was performed.
 
 ## Mutation authority
 
@@ -170,9 +176,10 @@ Passing targeted gates:
 - Secret-sensitive diff scan and `git diff --check`: pass.
 
 The live shared-default profile check is intentionally `NOT_OK` as described
-above. The live WebGPT browser/connector acceptance is intentionally deferred
-because the required owner interaction cannot be safely performed inside this
-active Codex turn.
+above. The active Codex task's Stitch binding remains a controlled
+re-handshake deferral even though the local projection and independent wrapper
+probe pass. WebGPT's connector warning remains an application-owned acceptance
+boundary.
 
 ## Audit conclusion and next safe boundaries
 
@@ -185,8 +192,8 @@ complete with the following intentional deferrals:
    exercise;
 4. WebGPT browser/connector/model-picker acceptance from a quiescent owner
    session;
-5. controlled reload of the already-running desktop Codex process so it reads
-   the corrected Stitch wrapper;
+5. fresh task-level MCP handshake so the current Codex task binds the corrected
+   Stitch wrapper rather than its pre-refresh transport;
 6. per-provider migration/verification contracts for existing infrastructure
    credentials.
 
