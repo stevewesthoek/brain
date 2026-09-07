@@ -125,7 +125,8 @@ application-owned OAuth.
 
 ## Git closeout
 
-This work is committed with the intent
-`feat(identity): operationalize Brain Keychain secret storage`, pushed to
-canonical `main`, and verified with local `main == origin/main` and a clean
-worktree. No force push was used.
+Implementation commit: `61231ec5` (`feat(identity): operationalize Brain
+Keychain secret storage`). This audit is finalized in the scoped
+documentation closeout commit containing this report. After that commit was
+pushed to canonical `main`, local `main == origin/main` and a clean
+worktree were verified. No force push was used.
