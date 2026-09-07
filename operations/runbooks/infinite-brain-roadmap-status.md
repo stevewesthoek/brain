@@ -372,3 +372,29 @@ Update this page only when:
 - the verification date is updated.
 
 Never promote `implemented` or `tested` to `active` without runtime evidence and the required approval boundary.
+
+## Identity & Access production closeout — 2026-09-07
+
+The canonical Identity & Access catalog now admits `account:openai.01` and
+`account:openai.02`, their dedicated CLI profiles and Office runtime
+instances, the operator-attested MacBook desktop runtime for account 02, and
+transport-only multi-host execution connections. The catalog also records the
+shared/default Codex surface, WebGPT production session, and the two observed
+MCP session incidents as bounded application-owned sessions. Native Codex,
+WebGPT, MCP, SSH, and Tailscale custody remain separate; no OAuth or secret
+material was copied into Brain.
+
+The macOS Keychain adapter is admitted as the reference Brain-managed adapter
+with metadata-only and bounded-consume capabilities, while mutation remains
+disabled. The real metadata-only synthetic-reference probe returned `missing`
+without exposing data. No real Brain-managed credential was migrated because
+the existing infrastructure references still require per-consumer ownership,
+rotation, recovery, and explicit human-gated enrollment evidence.
+
+Read-only credential health is active and secret-free; it currently evaluates
+zero credential records by design. Dedicated CLI profile doctors are healthy;
+the shared default remains intentionally unknown. WebGPT service/config/proxy/
+tunnel checks are healthy, while browser/connector acceptance is deferred
+because the owner diagnostic observed the active Codex turn. See
+`operations/reports/credential-custody-inventory-2026-09-07.md` and
+`operations/reports/ikhp-identity-access-production-readiness-audit-2026-09-07.md`.

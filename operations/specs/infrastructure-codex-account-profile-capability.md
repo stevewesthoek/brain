@@ -2,12 +2,15 @@
 
 ## Status
 
-This is the 2026-09-05 corrective architecture and synthetic-validation
-tranche for native Codex/OpenAI authentication and Codex Web GPT. The
-repository manager is a CLI-only, repository-controlled proof surface; it does
-not copy authentication state, automate login, or change any live application
-session. The real multi-account pilot remains operator-assisted and is not
-authorized by this document.
+This is the 2026-09-07 production-activation closeout for native
+Codex/OpenAI authentication and Codex Web GPT. The repository manager remains a
+CLI-only, repository-controlled proof surface; it does not copy
+authentication state, automate login, or change any live application session.
+The canonical catalog now contains the two admitted account/profile bindings,
+host-local runtime instances, bounded legacy/application session metadata, and
+the read-only Keychain adapter contract. Provider identity for the dedicated
+profiles remains operator-attested where the supported observer exposes no
+stable non-personal principal identifier.
 
 The conclusion is **partially supported**:
 
@@ -107,12 +110,14 @@ The schema now represents:
 - candidate-level account/profile relationships through the existing pure
   observation/admission machinery.
 
-The canonical catalog remains empty until a real account is explicitly
-enrolled. The alternate fixture demonstrates multiple same-provider accounts,
-surface-specific bindings, application-owned sessions, file/keyring/browser
-storage metadata, and declared (not provider-verified) relationships without
-any credential material. The CLI candidate fixture is a test collection, not a
-production account registry.
+The canonical catalog contains the two real operator-admitted OpenAI accounts,
+three runtime profiles, three host-local runtime instances, and five bounded
+application session records. It contains no raw or Brain-custodied credential
+material: native Codex OAuth, WebGPT session state, MCP OAuth, and the shared
+default state remain application-owned. The alternate fixture continues to
+demonstrate multiple same-provider accounts and credential references without
+any production credential material. The CLI candidate fixture remains a test
+collection, not a production account registry.
 
 The allocator supports N accounts. Preferred-account policy is explicit and
 provider-scoped; active session state never changes it. A new account gets the

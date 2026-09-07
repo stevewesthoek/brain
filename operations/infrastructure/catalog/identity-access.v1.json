@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "0.1.2",
+  "catalogVersion": "0.1.3",
   "catalogId": "brain-identity-access",
   "entrypoint": true,
   "mutationEnabled": false,
@@ -142,6 +142,230 @@
         "freshnessDeadline": "2026-10-07T08:58:56Z",
         "owner": "operator/identity-access",
         "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
+      }
+    },
+    {
+      "sessionId": "session:codex-default.shared",
+      "accountId": null,
+      "surfaceBindingId": null,
+      "binding": {
+        "state": "not_applicable",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T09:42:40Z",
+          "freshnessDeadline": "2026-09-07T10:42:40Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["codex-auth-profile-check:shared-default"]
+        }
+      },
+      "sessionKind": "cached_runtime_authorization",
+      "stateOwner": "application",
+      "applicationRef": "application:codex-native",
+      "managedStateRef": "application-state://codex/shared-default",
+      "credentialIds": [],
+      "runtimeProfileId": null,
+      "runtimeInstanceId": null,
+      "executionTargetRef": null,
+      "executionConnectionId": null,
+      "authenticationStorage": {
+        "mode": "unknown",
+        "owner": "application",
+        "locationKind": "unknown",
+        "isolationScope": "operating_system_user",
+        "isolationState": "unknown",
+        "profileIsolationProven": null,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T09:42:40Z",
+          "freshnessDeadline": "2026-09-07T10:42:40Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["codex-auth-profile-check:shared-default"]
+        }
+      },
+      "lastObservedAt": "2026-09-07T09:42:40Z",
+      "lastKnownState": "unknown",
+      "recoveryRunbookRef": "runbook://openai/codex-default-observation",
+      "provenance": {
+        "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T09:42:40Z",
+        "freshnessDeadline": "2026-09-07T10:42:40Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["codex-auth-profile-check:shared-default"]
+      }
+    },
+    {
+      "sessionId": "session:codex-webgpt-production",
+      "accountId": null,
+      "surfaceBindingId": null,
+      "binding": {
+        "state": "not_applicable",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T09:42:40Z",
+          "freshnessDeadline": "2026-09-07T10:42:40Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["codex-webgpt-doctor:2026-09-07"]
+        }
+      },
+      "sessionKind": "provider_session",
+      "stateOwner": "application",
+      "applicationRef": "application:codex-web-gpt",
+      "managedStateRef": "application-state://webgpt/production",
+      "credentialIds": [],
+      "runtimeProfileId": null,
+      "runtimeInstanceId": null,
+      "executionTargetRef": null,
+      "executionConnectionId": null,
+      "authenticationStorage": {
+        "mode": "browser_profile",
+        "owner": "application",
+        "locationKind": "application_browser_profile",
+        "isolationScope": "browser_profile",
+        "isolationState": "unknown",
+        "profileIsolationProven": null,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T09:42:40Z",
+          "freshnessDeadline": "2026-09-07T10:42:40Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["codex-webgpt-doctor:2026-09-07"]
+        }
+      },
+      "lastObservedAt": "2026-09-07T09:42:40Z",
+      "lastKnownState": "unknown",
+      "recoveryRunbookRef": "runbook://codex-webgpt/production-owner-diagnostics",
+      "provenance": {
+        "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T09:42:40Z",
+        "freshnessDeadline": "2026-09-07T10:42:40Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["codex-webgpt-doctor:2026-09-07"]
+      }
+    },
+    {
+      "sessionId": "session:mcp.codex_apps",
+      "accountId": null,
+      "surfaceBindingId": null,
+      "binding": {
+        "state": "not_applicable",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T09:42:40Z",
+          "freshnessDeadline": "2026-09-07T10:42:40Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["mcp:codex_apps:token_revoked"]
+        }
+      },
+      "sessionKind": "mcp_oauth_authorization",
+      "stateOwner": "application",
+      "applicationRef": "application:mcp-codex-apps",
+      "managedStateRef": "application-state://mcp/codex_apps",
+      "credentialIds": [],
+      "runtimeProfileId": null,
+      "runtimeInstanceId": null,
+      "executionTargetRef": null,
+      "executionConnectionId": null,
+      "authenticationStorage": {
+        "mode": "application_native",
+        "owner": "application",
+        "locationKind": "application_native_state",
+        "isolationScope": "application_instance",
+        "isolationState": "unknown",
+        "profileIsolationProven": null,
+        "healthState": "unhealthy",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T09:42:40Z",
+          "freshnessDeadline": "2026-09-07T10:42:40Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["mcp:codex_apps:token_revoked"]
+        }
+      },
+      "lastObservedAt": "2026-09-07T09:42:40Z",
+      "lastKnownState": "provider_revoked",
+      "recoveryRunbookRef": "runbook://mcp/codex_apps-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T09:42:40Z",
+        "freshnessDeadline": "2026-09-07T10:42:40Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["mcp:codex_apps:token_revoked"]
+      }
+    },
+    {
+      "sessionId": "session:mcp.stitch",
+      "accountId": null,
+      "surfaceBindingId": null,
+      "binding": {
+        "state": "not_applicable",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T09:42:40Z",
+          "freshnessDeadline": "2026-09-07T10:42:40Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["mcp:stitch:startup_timeout"]
+        }
+      },
+      "sessionKind": "mcp_oauth_authorization",
+      "stateOwner": "application",
+      "applicationRef": "application:mcp-stitch",
+      "managedStateRef": "application-state://mcp/stitch",
+      "credentialIds": [],
+      "runtimeProfileId": null,
+      "runtimeInstanceId": null,
+      "executionTargetRef": null,
+      "executionConnectionId": null,
+      "authenticationStorage": {
+        "mode": "application_native",
+        "owner": "application",
+        "locationKind": "application_native_state",
+        "isolationScope": "application_instance",
+        "isolationState": "unknown",
+        "profileIsolationProven": null,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T09:42:40Z",
+          "freshnessDeadline": "2026-09-07T10:42:40Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["mcp:stitch:startup_timeout"]
+        }
+      },
+      "lastObservedAt": "2026-09-07T09:42:40Z",
+      "lastKnownState": "provider_unavailable",
+      "recoveryRunbookRef": "runbook://mcp/stitch-startup-diagnostics",
+      "provenance": {
+        "sourceRef": "operations/reports/credential-custody-inventory-2026-09-07.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T09:42:40Z",
+        "freshnessDeadline": "2026-09-07T10:42:40Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["mcp:stitch:startup_timeout"]
       }
     }
   ],
@@ -779,7 +1003,25 @@
       }
     }
   ],
-  "secretStoreAdapters": [],
+  "secretStoreAdapters": [
+    {
+      "adapterId": "secret-store:macos-keychain",
+      "adapterKind": "os_native_store",
+      "capabilities": ["metadata_read", "bounded_consume"],
+      "secretValueOwner": "adapter",
+      "mutationMode": "disabled",
+      "bootstrapMode": "explicit_human_bootstrap",
+      "referenceScheme": "keychain-ref",
+      "provenance": {
+        "sourceRef": "operations/runbooks/infrastructure-identity-access-macos-keychain-pilot.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T09:42:40Z",
+        "freshnessDeadline": "2026-10-07T09:42:40Z",
+        "owner": "brain/identity-access",
+        "evidenceRefs": ["macos-keychain:synthetic-reference-missing-safe"]
+      }
+    }
+  ],
   "lifecyclePolicies": [
     {
       "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",

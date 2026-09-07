@@ -1,7 +1,8 @@
 # IKHP Identity & Access — macOS Keychain adapter pilot
 
 **Status:** read-only synthetic pilot plus GitHub verifier/enrollment tooling,
-added 2026-09-04; no real credential enrolled
+added 2026-09-04; adapter metadata is admitted in the canonical catalog, but
+no real credential is enrolled
 
 This runbook defines Brain's first/reference local `SecretStoreAdapter` for
 macOS. It is deliberately narrower than a credential manager: Brain owns
@@ -199,9 +200,11 @@ node tools/validate-infrastructure-credential-health.mjs
 node tools/infrastructure-identity-access/credential-health-cli.mjs
 ```
 
-The CLI accepts only `--notify`. The canonical catalog is intentionally empty,
-so this is a successful zero-account pass until reviewed metadata enrollment
-is performed. The typed scheduler job is report-only, credential-sensitive,
+The CLI accepts only `--notify`. The canonical catalog has admitted accounts
+and application-owned sessions but intentionally has zero Brain-health
+credential records, so this is a successful zero-credential pass until a
+reviewed Brain-managed credential is eligible for metadata enrollment. The
+typed scheduler job is report-only, credential-sensitive,
 and remains behind the explicit `BRAIN_IDENTITY_ACCESS_HEALTH_ENABLED=1`
 activation gate. When enabled, a missed macOS schedule is not treated as a
 healthy result: the next run marks old evidence stale/overdue, records the

@@ -14,6 +14,13 @@ test('identity and access catalog validates without raw secret material', () => 
   assert.equal(result.counts.canonical.runtimeProfiles, 3);
   assert.equal(result.counts.canonical.runtimeInstances, 3);
   assert.equal(result.counts.canonical.accessPaths, 2);
+  assert.equal(result.counts.canonical.sessions, 5);
+  assert.equal(result.counts.canonical.executionConnections, 2);
+  const catalog = loadJson(path.join(root, 'operations/infrastructure/catalog/identity-access.v1.json'));
+  assert.equal(catalog.secretStoreAdapters.length, 1);
+  assert.equal(catalog.secretStoreAdapters[0].adapterId, 'secret-store:macos-keychain');
+  assert.equal(catalog.sessions.find((session) => session.sessionId === 'session:codex-default.shared').authenticationStorage.healthState, 'unknown');
+  assert.equal(catalog.sessions.find((session) => session.sessionId === 'session:codex-default.shared').lastKnownState, 'unknown');
   assert.equal(result.counts.alternate.accounts, 2);
   assert.equal(result.counts.alternate.credentials, 2);
   assert.equal(result.counts.alternate.sessions, 2);
