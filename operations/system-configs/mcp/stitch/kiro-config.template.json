@@ -2,11 +2,10 @@
   "mcpServers": {
     "stitch": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"],
+      "command": "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh",
+      "args": [],
       "env": {
-        "DOTENV_CONFIG_QUIET": "true",
-        "STITCH_API_KEY": "gcloud-adc"
+        "DOTENV_CONFIG_QUIET": "true"
       }
     }
   }

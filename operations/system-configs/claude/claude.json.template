@@ -7,11 +7,10 @@
     },
     "stitch": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"],
+      "command": "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh",
+      "args": [],
       "env": {
-        "DOTENV_CONFIG_QUIET": "true",
-        "STITCH_API_KEY": "gcloud-adc"
+        "DOTENV_CONFIG_QUIET": "true"
       }
     }
   }
@@ -25,7 +24,7 @@
 // - NotebookLM: Use CLI v0.3.4 (installed via pipx at /Users/Office/.local/bin/notebooklm)
 //   - Not an MCP server — it's a direct CLI tool
 //   - Use /notebooklm skill for research, content generation, batch export
-// - STITCH_API_KEY = "gcloud-adc" is not a secret — it tells the proxy to use gcloud ADC
+// - stitch-oauth-proxy.sh resolves a short-lived ADC OAuth token at process start
 // - After restoring, run: claude mcp list   to verify all servers are registered
 // - Real ~/.claude.json also contains numStartups, userID, and other runtime metadata
 //   added automatically by Claude Code on first launch — those do not need to be pre-set

@@ -93,7 +93,7 @@ grant execution or mutation authority.
 - `/codex-second-opinion` — Controlled code review tier system
 
 **[Codex only] MCP Servers & Plugins:**
-- **stitch** — Design tools integration (command: `npx @_davideast/stitch-mcp proxy`)
+- **stitch** — Design tools integration (command: `stitch-oauth-proxy.sh`, which injects a short-lived ADC OAuth token)
 - **b1_0a_guarded_save_to_mind** — Confirmation-required fixed-scope update and rollback tools for workflow `FwP5INe9qoo1OwGC`; registered in `config.toml`, uses the existing n8n credential abstraction, and must never be used for any other workflow or path.
 - **OpenAI plugins** — Canva, Stripe, GitHub, Google Drive (marketplace integrations)
 

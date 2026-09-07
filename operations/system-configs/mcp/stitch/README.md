@@ -39,7 +39,7 @@ Runtime auth state must stay in your home directory and must not be committed to
 ### Step 1: Initialize Stitch (One-time setup)
 
 ```bash
-# Initialize Stitch proxy with gcloud ADC auth
+# Initialize Stitch and authorize Google Application Default Credentials
 npx -y @_davideast/stitch-mcp init
 
 # Verify setup
@@ -47,6 +47,8 @@ npx -y @_davideast/stitch-mcp doctor
 ```
 
 This sets up `~/.stitch-mcp/` with Google Application Default Credentials.
+The proxy wrapper resolves a short-lived ADC access token at each process
+start; it does not persist a token in any MCP configuration file.
 
 ### Step 2: Add to Claude Code (~/.claude.json)
 
@@ -57,11 +59,10 @@ cat > /tmp/stitch-snippet.json << 'EOF'
   "mcpServers": {
     "stitch": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"],
+      "command": "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh",
+      "args": [],
       "env": {
-        "DOTENV_CONFIG_QUIET": "true",
-        "STITCH_API_KEY": "gcloud-adc"
+        "DOTENV_CONFIG_QUIET": "true"
       }
     }
   }
@@ -83,11 +84,10 @@ cat > /tmp/kiro-snippet.json << 'EOF'
   "mcpServers": {
     "stitch": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"],
+      "command": "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh",
+      "args": [],
       "env": {
-        "DOTENV_CONFIG_QUIET": "true",
-        "STITCH_API_KEY": "gcloud-adc"
+        "DOTENV_CONFIG_QUIET": "true"
       }
     }
   }
@@ -108,11 +108,10 @@ cat > /tmp/cursor-snippet.json << 'EOF'
   "mcpServers": {
     "stitch": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"],
+      "command": "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh",
+      "args": [],
       "env": {
-        "DOTENV_CONFIG_QUIET": "true",
-        "STITCH_API_KEY": "gcloud-adc"
+        "DOTENV_CONFIG_QUIET": "true"
       }
     }
   }
@@ -192,33 +191,35 @@ npx -y @_davideast/stitch-mcp doctor
 
 ## Key Technical Notes
 
-### `STITCH_API_KEY = "gcloud-adc"` is NOT a Secret
-- It's a **sentinel value** that tells the proxy to use Google Application Default Credentials
-- Stored in `~/.stitch-mcp/` by the `init` command
-- The proxy reads it and uses gcloud ADC from `~/.config/gcloud/` or `~/.stitch-mcp/google-cloud-sdk/`
-- **Never** put your real Google API key here
+### OAuth proxy authentication
+- The installed Stitch SDK treats `STITCH_API_KEY` literally and sends it as `X-Goog-Api-Key`.
+- `gcloud-adc` is **not** a valid API-key sentinel for the SDK and must not be configured as one.
+- `stitch-oauth-proxy.sh` obtains a short-lived token with `gcloud auth application-default print-access-token` at process start.
+- The token is passed as `STITCH_ACCESS_TOKEN` only to the child proxy and is never written to the repository or MCP config.
+- **Never** put a real Google API key or OAuth token in a tracked configuration file.
 
 ### Proxy vs. HTTP Mode
 
 | Mode | Storage | Best For | Security |
 |------|---------|----------|----------|
-| **Proxy** (recommended) | `~/.stitch-mcp/` via gcloud ADC | Claude Code, Codex, Kiro, Cursor | Uses OAuth + gcloud, no tokens in config |
+| **Proxy** (recommended) | `~/.stitch-mcp/` via gcloud ADC | Claude Code, Codex, Kiro, Cursor | Wrapper injects a short-lived OAuth token, no tokens in config |
 | **HTTP** | Token-bearing Antigravity config | Antigravity (direct HTTP endpoint) | Store token only in ignored runtime file |
 
 ### Environment Variables
 - `DOTENV_CONFIG_QUIET = "true"` — Prevent dotenv startup noise on stdout (breaks JSON-RPC)
-- `STITCH_USE_SYSTEM_GCLOUD = "1"` (optional) — Use system gcloud instead of bundled SDK
-- `STITCH_API_KEY = "gcloud-adc"` — Always set this in all proxy-based configs
+- `STITCH_GCLOUD_BIN` (optional) — Override the gcloud executable used by the wrapper
+- `STITCH_PROJECT_ID` (optional) — Override the quota project; otherwise the wrapper uses the active gcloud project
 
 ## Troubleshooting
 
 ### Issue: "StitchProxy requires an API key"
-**Cause:** `STITCH_API_KEY` not set or gcloud ADC not initialized.
+**Cause:** The MCP server was launched directly instead of through the OAuth wrapper, or ADC is not initialized.
 **Fix:**
 ```bash
 npx -y @_davideast/stitch-mcp init
 npx -y @_davideast/stitch-mcp doctor
 ```
+Ensure every stdio client launches `stitch-oauth-proxy.sh`, not `npx ... proxy` directly.
 
 ### Issue: MCP server not appearing in tool
 **Cause:** Config file not reloaded or syntax error.
@@ -228,14 +229,19 @@ npx -y @_davideast/stitch-mcp doctor
 3. Check `codex mcp list` or `claude mcp list`
 
 ### Issue: "Authorization failed" or "Invalid token"
-**Cause:** gcloud token expired or project not enabled.
+**Cause:** ADC is missing/expired, the quota project is unavailable, or the caller lacks Stitch access.
 **Fix:**
 ```bash
 gcloud auth application-default login
 gcloud config set project <YOUR_PROJECT_ID>
-gcloud beta services mcp enable stitch.googleapis.com --project=<YOUR_PROJECT_ID>
 npx -y @_davideast/stitch-mcp doctor
 ```
+
+If the proxy returns `403` asking for `serviceusage.services.use`, grant the
+selected Google identity `roles/serviceusage.serviceUsageConsumer` on the
+quota project, or run the official Stitch `init` flow and accept its IAM/API
+configuration prompts. This is a project-permission change and must be
+reviewed by the project owner.
 
 ### Issue: Works in Codex, not in Claude Code/Kiro/Cursor
 **Cause:** Config not added to that IDE's settings file.

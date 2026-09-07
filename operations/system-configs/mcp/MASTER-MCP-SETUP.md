@@ -292,8 +292,8 @@ claude "Use Google Stitch to list datasets"  # In Claude Code
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | "MCP server not found" | Config not merged | Check config file syntax, restart IDE |
-| "Authorization failed" | gcloud ADC not initialized | Run `npx -y @_davideast/stitch-mcp init` |
-| "Proxy requires API key" | `STITCH_API_KEY` not set | Add `STITCH_API_KEY = "gcloud-adc"` to env |
+| "Authorization failed" | gcloud ADC not initialized | Run the official Stitch login flow and verify the OAuth wrapper |
+| "Proxy requires API key" | Client bypassed the OAuth wrapper | Configure `stitch-oauth-proxy.sh`; do not use `STITCH_API_KEY = "gcloud-adc"` |
 | Dotenv startup banners break JSON-RPC | Noise on stdout | Set `DOTENV_CONFIG_QUIET = "true"` |
 | Server appears in one IDE, not others | Inconsistent config | Use templates from this directory |
 | Works in proxy mode, not HTTP | Token expired | Refresh with `gcloud auth print-access-token` |

@@ -9,6 +9,7 @@ set +e
 
 STITCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BRAIN_ROOT="$(cd "$STITCH_DIR/../../../.." && pwd)"
+STITCH_WRAPPER="$STITCH_DIR/stitch-oauth-proxy.sh"
 
 echo "🔍 Verifying Google Stitch MCP Setup"
 echo "======================================="
@@ -44,6 +45,12 @@ warn() {
 echo "📦 Stitch MCP Proxy Setup"
 echo "------------------------"
 
+if [ -x "$STITCH_WRAPPER" ]; then
+    pass "OAuth proxy wrapper is executable"
+else
+    fail "OAuth proxy wrapper is missing or not executable"
+fi
+
 if npx -y @_davideast/stitch-mcp doctor &>/dev/null; then
     pass "Stitch proxy health check"
 else
@@ -58,16 +65,11 @@ echo "--------------------------------"
 
 if [ -f ~/.claude.json ]; then
     if jq -e '.mcpServers.stitch' ~/.claude.json &>/dev/null; then
-        if jq -e '.mcpServers.stitch.env.STITCH_API_KEY' ~/.claude.json &>/dev/null; then
-            pass "Stitch configured in ~/.claude.json"
-            local api_key=$(jq -r '.mcpServers.stitch.env.STITCH_API_KEY' ~/.claude.json)
-            if [ "$api_key" = "gcloud-adc" ]; then
-                pass "Using gcloud ADC (correct)"
-            else
-                warn "STITCH_API_KEY set to '$api_key' (should be 'gcloud-adc')"
-            fi
+        configured_command=$(jq -r '.mcpServers.stitch.command // empty' ~/.claude.json)
+        if [ "$configured_command" = "$STITCH_WRAPPER" ] && ! jq -e '.mcpServers.stitch.env.STITCH_API_KEY' ~/.claude.json &>/dev/null; then
+            pass "Stitch uses the OAuth wrapper in ~/.claude.json"
         else
-            fail "STITCH_API_KEY env var not set"
+            fail "~/.claude.json does not use the OAuth wrapper"
         fi
     else
         fail "Stitch not in ~/.claude.json"
@@ -94,10 +96,10 @@ echo "--------------------------------"
 if [ -f ~/.codex/config.toml ]; then
     if grep -q "\[mcp_servers.stitch\]" ~/.codex/config.toml; then
         pass "Stitch configured in ~/.codex/config.toml"
-        if grep -q 'STITCH_API_KEY = "gcloud-adc"' ~/.codex/config.toml; then
-            pass "Using gcloud ADC (correct)"
+        if grep -q "command = \"$STITCH_WRAPPER\"" ~/.codex/config.toml && ! grep -q 'STITCH_API_KEY' ~/.codex/config.toml; then
+            pass "Using the OAuth wrapper (short-lived ADC token)"
         else
-            fail "STITCH_API_KEY not set to gcloud-adc"
+            fail "Codex Stitch config bypasses the OAuth wrapper"
         fi
     else
         fail "Stitch not in ~/.codex/config.toml"

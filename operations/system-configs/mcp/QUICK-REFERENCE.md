@@ -26,9 +26,9 @@ codex mcp list | grep stitch
 1. Settings → Extensions → MCP Servers → Add
 2. Name: `stitch`
 3. Type: `stdio`
-4. Command: `npx`
-5. Args: `["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]`
-6. Env: `DOTENV_CONFIG_QUIET=true` | `STITCH_API_KEY=gcloud-adc`
+4. Command: `/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh`
+5. Args: `[]`
+6. Env: `DOTENV_CONFIG_QUIET=true`
 
 ### Cursor
 Same as Kiro above.
@@ -76,13 +76,10 @@ Expected: ✅ All critical checks passed (12 passed, 0 failed)
 
 | Setting | Value | Type |
 |---------|-------|------|
-| `command` | `npx` | Proxy mode |
-| `args[0]` | `-y` | Skip npm prompts |
-| `args[1]` | `@_davideast/stitch-mcp` | Package name |
-| `args[2]` | `proxy` | Use proxy mode |
-| `args[3]` | `--transport` | Transport flag |
-| `args[4]` | `stdio` | Use stdio |
-| `STITCH_API_KEY` | `gcloud-adc` | **NOT a secret** |
+| `command` | `stitch-oauth-proxy.sh` | Resolve ADC and launch OAuth proxy |
+| `args` | `[]` | Wrapper supplies package and stdio transport |
+| `STITCH_ACCESS_TOKEN` | Process-local | Short-lived ADC token; never configured or persisted |
+| `STITCH_PROJECT_ID` | Active gcloud project | OAuth quota project |
 | `DOTENV_CONFIG_QUIET` | `true` | Suppress startup noise |
 
 ---
@@ -129,7 +126,7 @@ npx -y @_davideast/stitch-mcp doctor
 |---------|---------|-----|
 | Not in IDE | Check template | Copy from `stitch/<ide>-config.*` |
 | Authorization error | `gcloud auth print-access-token` | Refresh auth |
-| "Requires API key" | `STITCH_API_KEY` env var | Must be `gcloud-adc` |
+| "Requires API key" | Proxy launched directly or ADC unavailable | Use `stitch-oauth-proxy.sh` and run the official login flow |
 | Dotenv noise in output | `DOTENV_CONFIG_QUIET` | Set to `true` |
 | Symlink broken | `ls -la` | Recreate with `ln -sfn` |
 
@@ -156,17 +153,17 @@ Verification script:   ~/Repos/stevewesthoek/brain/operations/system-configs/mcp
 **Kiro:**
 ```
 Type: stdio
-Command: npx
-Args: ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
-Env: DOTENV_CONFIG_QUIET=true, STITCH_API_KEY=gcloud-adc
+Command: /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh
+Args: []
+Env: DOTENV_CONFIG_QUIET=true
 ```
 
 **Cursor:**
 ```
 Type: stdio
-Command: npx
-Args: ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
-Env: DOTENV_CONFIG_QUIET=true, STITCH_API_KEY=gcloud-adc
+Command: /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh
+Args: []
+Env: DOTENV_CONFIG_QUIET=true
 ```
 
 ---
@@ -201,7 +198,7 @@ See: `MASTER-MCP-SETUP.md` → "Adding a New MCP Server" checklist
 
 ## Key Concept
 
-**`STITCH_API_KEY = "gcloud-adc"` is NOT a secret.** It's a sentinel value that tells the Stitch proxy to use your existing gcloud authentication. Your real credentials come from:
+The OAuth wrapper resolves a short-lived access token from your existing gcloud authentication at process start. The token is never placed in configuration. The underlying ADC files remain owned by gcloud:
 - `~/.config/gcloud/` (system gcloud)
 - `~/.stitch-mcp/` (bundled gcloud, managed by init)
 

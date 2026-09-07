@@ -3,6 +3,11 @@
 **Date:** 2026-06-17  
 **Status:** All issues resolved | All IDEs configured | All documentation complete
 
+> Historical note (2026-09-07): this restoration snapshot predates validation
+> against Stitch SDK `0.3.5` / MCP package `0.9.0`. Its `STITCH_API_KEY =
+> "gcloud-adc"` sentinel configuration is superseded. The current supported
+> path is `stitch-oauth-proxy.sh`, which injects a short-lived ADC OAuth token.
+
 ---
 
 ## Executive Summary

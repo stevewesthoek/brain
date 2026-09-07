@@ -15,13 +15,12 @@ service_tier = "default"
 # Codex runtime config.
 
 [mcp_servers.stitch]
-command = "npx"
-args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
+command = "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh"
+args = []
 startup_timeout_sec = 120
 
 [mcp_servers.stitch.env]
 DOTENV_CONFIG_QUIET = "true"
-STITCH_API_KEY = "gcloud-adc"
 
 [mcp_servers.node_repl]
 args = []

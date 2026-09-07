@@ -79,13 +79,17 @@ npx -y @_davideast/stitch-mcp init
 
 # Config in IDE (proxy mode)
 [mcp_servers.stitch]
-command = "npx"
-args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
+command = "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh"
+args = []
 
 [mcp_servers.stitch.env]
 DOTENV_CONFIG_QUIET = "true"
-STITCH_API_KEY = "gcloud-adc"  # NOT a secret — tells proxy to use gcloud ADC
 ```
+
+The wrapper obtains a short-lived ADC access token at process start and passes
+it as `STITCH_ACCESS_TOKEN`. Do not configure `STITCH_API_KEY = "gcloud-adc"`:
+the installed SDK sends that literal value as an API key and the Stitch MCP
+endpoint rejects it.
 
 ### 2. HTTP Mode (Antigravity)
 
@@ -135,11 +139,10 @@ codex mcp list | grep stitch
 2. Settings → Extensions → MCP Servers → Add
 3. Name: `stitch`
 4. Type: `stdio`
-5. Command: `npx`
-6. Args: `["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]`
+5. Command: `/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/mcp/stitch/stitch-oauth-proxy.sh`
+6. Args: `[]`
 7. Env:
    - `DOTENV_CONFIG_QUIET`: `true`
-   - `STITCH_API_KEY`: `gcloud-adc`
 
 See: `operations/system-configs/mcp/stitch/kiro-config.template.json`
 
@@ -274,14 +277,16 @@ Use this documented pattern:
 
 ### "STITCH_API_KEY required" Error
 1. Run: `npx -y @_davideast/stitch-mcp init`
-2. Verify `STITCH_API_KEY = "gcloud-adc"` is set in config
+2. Verify the client launches `stitch-oauth-proxy.sh`
 3. Restart IDE
 
 ### "Authorization failed" or "403 Forbidden"
 1. Ensure gcloud is authenticated: `gcloud auth application-default login`
 2. Set correct project: `gcloud config set project <PROJECT_ID>`
-3. Enable Stitch API: `gcloud beta services mcp enable stitch.googleapis.com`
-4. Re-run doctor: `npx -y @_davideast/stitch-mcp doctor`
+3. Re-run doctor: `npx -y @_davideast/stitch-mcp doctor`
+4. If the proxy reports missing `serviceusage.services.use`, grant the
+   selected Google identity `roles/serviceusage.serviceUsageConsumer` on the
+   quota project, or accept the official Stitch `init` IAM/API prompts.
 
 ### "Works in Claude Code, not in Codex"
 - Claude Code and Codex use different config files

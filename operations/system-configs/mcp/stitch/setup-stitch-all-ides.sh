@@ -43,14 +43,14 @@ merge_json() {
     fi
 }
 
-# 1. Initialize Stitch (first time)
-echo "📦 Step 1: Initialize Stitch MCP with gcloud ADC"
-if npx -y @_davideast/stitch-mcp doctor &>/dev/null; then
-    echo "  ✅ Stitch already initialized"
+# 1. Check Stitch (read-only)
+echo "📦 Step 1: Check Stitch MCP with gcloud ADC"
+if npx -y @_davideast/stitch-mcp doctor; then
+    echo "  ✅ Stitch health check passed"
 else
-    echo "  ⚙️  Running: npx -y @_davideast/stitch-mcp init"
-    npx -y @_davideast/stitch-mcp init
-    echo "  ✅ Stitch initialized"
+    echo "  ⚠️  Stitch health check needs attention"
+    echo "     No automatic init or IAM/API mutation is performed."
+    echo "     Run the official init flow manually after reviewing its prompts."
 fi
 echo ""
 
@@ -59,7 +59,8 @@ echo "📝 Step 2: Claude Code (~/.claude.json)"
 if [ -f ~/.claude.json ]; then
     STITCH_CONFIG=$(cat "$STITCH_DIR/claude-code-config.template.json" | jq '.mcpServers.stitch')
     if jq -e '.mcpServers.stitch' ~/.claude.json &>/dev/null; then
-        echo "  ✅ Stitch already in ~/.claude.json"
+        echo "  ⚙️  Updating Stitch auth transport in ~/.claude.json..."
+        merge_json ~/.claude.json "stitch" "$STITCH_CONFIG"
     else
         echo "  ⚙️  Adding Stitch to ~/.claude.json..."
         merge_json ~/.claude.json "stitch" "$STITCH_CONFIG"
@@ -94,7 +95,8 @@ else
     if [ -f "$KIRO_CONFIG_DIR/settings.json" ]; then
         STITCH_CONFIG=$(cat "$STITCH_DIR/kiro-config.template.json" | jq '.mcpServers.stitch')
         if jq -e '.mcpServers.stitch' "$KIRO_CONFIG_DIR/settings.json" &>/dev/null; then
-            echo "  ✅ Stitch already in Kiro settings.json"
+            echo "  ⚙️  Updating Stitch auth transport in Kiro settings.json..."
+            merge_json "$KIRO_CONFIG_DIR/settings.json" "stitch" "$STITCH_CONFIG"
         else
             echo "  ⚙️  Adding Stitch to Kiro settings.json..."
             merge_json "$KIRO_CONFIG_DIR/settings.json" "stitch" "$STITCH_CONFIG"
@@ -120,7 +122,8 @@ else
     if [ -f "$CURSOR_CONFIG_DIR/settings.json" ]; then
         STITCH_CONFIG=$(cat "$STITCH_DIR/cursor-config.template.json" | jq '.mcpServers.stitch')
         if jq -e '.mcpServers.stitch' "$CURSOR_CONFIG_DIR/settings.json" &>/dev/null; then
-            echo "  ✅ Stitch already in Cursor settings.json"
+            echo "  ⚙️  Updating Stitch auth transport in Cursor settings.json..."
+            merge_json "$CURSOR_CONFIG_DIR/settings.json" "stitch" "$STITCH_CONFIG"
         else
             echo "  ⚙️  Adding Stitch to Cursor settings.json..."
             merge_json "$CURSOR_CONFIG_DIR/settings.json" "stitch" "$STITCH_CONFIG"
