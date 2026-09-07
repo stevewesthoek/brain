@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-conversation-evidence.v1.schema.json",
+  "title": "Infinite Brain bounded conversation evidence report v1",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "report_type", "evidence_count", "duplicate_count", "evidence", "contradictions", "stale_evidence", "infrastructure_evidence", "invariants"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "report_type": { "const": "conversation-evidence-report-only" },
+    "source_count": { "type": "integer", "minimum": 0 },
+    "evidence_count": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "duplicate_count": { "type": "integer", "minimum": 0 },
+    "evidence": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/event" } },
+    "candidate_themes": { "type": "array", "items": { "type": "string" } },
+    "contradictions": { "type": "array", "items": { "type": "object", "required": ["claim_key", "positive", "negative"], "properties": { "claim_key": { "type": "string" }, "positive": { "type": "array", "items": { "type": "string" } }, "negative": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false } },
+    "stale_evidence": { "type": "array", "items": { "type": "string" } },
+    "infrastructure_evidence": { "type": "array", "items": { "type": "object", "required": ["event_id", "routing_target", "canonical_mutation"], "properties": { "event_id": { "type": "string" }, "routing_target": { "const": "ikhp:evidence-candidate" }, "canonical_mutation": { "const": false } }, "additionalProperties": false } },
+    "redactions": { "type": "integer", "minimum": 0 },
+    "invariants": { "type": "object", "required": ["report_only", "writes_to_mind", "writes_to_brain_canonical", "ikhp_canonical_mutation", "provider_calls", "raw_transcripts_stored", "new_authority_store"], "properties": { "report_only": { "const": true }, "writes_to_mind": { "const": false }, "writes_to_brain_canonical": { "const": false }, "ikhp_canonical_mutation": { "const": false }, "provider_calls": { "const": false }, "raw_transcripts_stored": { "const": false }, "new_authority_store": { "const": false } }, "additionalProperties": false }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "event": {
+      "type": "object",
+      "required": ["event_id", "category", "statement", "actor", "claim_type", "observed_at", "content_hash", "routing_classification", "routing_target", "redactions", "provenance"],
+      "properties": {
+        "event_id": { "type": "string", "pattern": "^event:conversation-[a-f0-9]{24}$" },
+        "category": { "type": "string" },
+        "statement": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "actor": { "enum": ["human", "assistant", "tool"] },
+        "claim_type": { "enum": ["user_statement", "assistant_statement", "tool_observation", "repository_evidence", "runtime_observation", "inference", "recommendation", "decision", "unresolved_question"] },
+        "observed_at": { "type": "string" },
+        "content_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "routing_classification": { "enum": ["infrastructure", "general_review"] },
+        "routing_target": { "enum": ["ikhp:evidence-candidate", "mind-steward:review-only"] },
+        "redactions": { "type": "integer", "minimum": 0 },
+        "provenance": { "type": "object", "required": ["source_system", "source_session", "adapter", "evidence_hash", "retrieved_at"], "properties": { "source_system": { "type": "string" }, "source_session": { "type": "string" }, "source_message": {}, "observed_at": {}, "adapter": { "type": "string" }, "evidence_hash": { "type": "string" }, "retrieved_at": { "type": "string", "format": "date-time" } }, "additionalProperties": false }
+      },
+      "additionalProperties": true
+    }
+  }
+}

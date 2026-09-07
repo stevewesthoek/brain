@@ -31,6 +31,19 @@ test('projects GitHub repository evidence into the existing human review workflo
   assert.equal(projection.invariants.automatic_decisions, false);
 });
 
+test('preserves conversation claim classes and routes infrastructure evidence to IKHP', () => {
+  const projection = buildUnifiedReviewInbox({ conversations: [{
+    source_reference: { ref: 'session:codex:s1' },
+    source_revision: 'sha256:s1',
+    candidate_insights: [{ event_id: 'event:1', actor: 'assistant', claim_type: 'assistant_statement', routing_classification: 'infrastructure', routing_target: 'ikhp:evidence-candidate' }],
+  }] });
+  const item = projection.items[0];
+  assert.equal(item.conversation_claims[0].claim_type, 'assistant_statement');
+  assert.equal(item.infrastructure_evidence[0].routing_target, 'ikhp:evidence-candidate');
+  assert.equal(item.infrastructure_evidence[0].canonical_mutation, false);
+  assert.equal(projection.invariants.ikhp_canonical_mutation, false);
+});
+
 test('rejects duplicate GitHub repository identities instead of merging them', () => {
   const make = (id) => ({ content: { github_repository_evidence: [{ repository: { repository_id: id } }] }, source_file: `mind/inbox/new/${id.replace('/', '-')}.md` });
   assert.throws(() => buildUnifiedReviewInbox({ ingestion: [make('owner/name'), make('OWNER/NAME')] }), /duplicate_github_repository_identity/);

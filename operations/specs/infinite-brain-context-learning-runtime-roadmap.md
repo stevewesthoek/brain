@@ -182,7 +182,7 @@ The same broker contract works in local and dual-host fixtures with no `/Users/O
 
 ## CLR5 — Conversation evidence adapters, report-only
 
-**Status:** not authorized.
+**Status:** complete and accepted 2026-09-07 as a bounded report-only repository implementation; no automatic discovery, semantic provider call, canonical Mind write, or IKHP canonical mutation is active.
 
 **Cross-program infrastructure gate:** Infrastructure Knowledge & Health Plane (IKHP) is now the canonical Brain program for server/network/application/tunnel/backup/credential-reference topology and live infrastructure health. Before CLR5 implementation begins, its event-classification contracts must route infrastructure-related conversation content as non-canonical evidence/candidates targeting IKHP contracts. CLR5 must not create a parallel infrastructure truth store, persist raw secret values, or treat conversation statements about current infrastructure health as authoritative live state.
 
@@ -217,7 +217,10 @@ Incrementally discover and normalize conversation evidence without creating cano
 
 ### Exit gate
 
-Repeated scans create no duplicate events, private material does not leak, adapters can resume from watermarks, and disk growth from ledger metadata is demonstrably bounded.
+Repeated bounded scans create no duplicate events, private material is
+redacted/rejected before persistence, adapters resume from watermarks, and the
+runtime-local ledger/report path is bounded and rebuildable. Acceptance is
+recorded in `operations/reports/clr5-conversation-evidence-acceptance-2026-09-07.md`.
 
 ## CLR6 — Learning candidates, relational strengthening, and compaction
 

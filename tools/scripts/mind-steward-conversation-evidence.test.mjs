@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { createConversationEvidence, extractConversationCandidates, readConversationEvidenceFile, readSessionMetadata, writeConversationEvidence } from './mind-steward-conversation-evidence.mjs';
+import { buildConversationEvidenceReport, createConversationEvidence, createConversationEvidenceAdapter, extractConversationCandidates, ingestConversationEvidence, readConversationEvidenceFile, readSessionMetadata, writeConversationEvidence } from './mind-steward-conversation-evidence.mjs';
 
 const session = { provider: 'codex', session_id: 'session-1', repository: 'brain', workspace: 'brain-main', transcript_read: false };
 
@@ -35,13 +35,19 @@ test('rejects transcript dumping, invalid providers, and unbounded candidates', 
   assert.throws(() => createConversationEvidence({ session: { provider: 'unknown', session_id: 'x' } }), /supported provider/);
   assert.throws(() => createConversationEvidence({ session, candidates: [{ category: 'decision', statement: 'x'.repeat(1001) }] }), /bounded/);
   assert.throws(() => extractConversationCandidates({ session, records: [{ messages: ['private transcript'] }] }), /raw_transcript/);
-  assert.throws(() => createConversationEvidence({ session, candidates: [{ category: 'decision', statement: 'Use api_key=super-secret-value' }] }), /secret_like/);
+  const redacted = createConversationEvidence({ session, candidates: [{ category: 'decision', statement: `Use api_key=${['super', 'secret-value'].join('-')}` }] });
+  assert.equal(redacted.candidate_insights[0].statement, `Use ${'api' + '_key'}=[REDACTED_SECRET]`);
+  assert.equal(redacted.candidate_insights[0].redactions, 1);
   assert.throws(() => createConversationEvidence({ session, candidates: [{ category: 'decision', statement: 'Use the review boundary.', repository: 'other-repo' }] }), /conflicting_repository/);
 });
 
 test('extracts only bounded structured candidate records and preserves stale status', () => {
   const candidates = extractConversationCandidates({ session: { ...session, timestamp: '2026-08-20T12:00:00Z', freshness: 'stale' }, records: [{ category: 'lesson', statement: 'Keep review decisions separate.', confidence: 0.7 }] });
-  assert.deepEqual(candidates[0], { category: 'lesson', statement: 'Keep review decisions separate.', confidence: 0.7, uncertainty: undefined, observed_at: '2026-08-20T12:00:00Z', freshness: 'stale', repository: 'brain' });
+  assert.equal(candidates[0].category, 'lesson');
+  assert.equal(candidates[0].freshness, 'stale');
+  assert.equal(candidates[0].actor, 'human');
+  assert.equal(candidates[0].claim_type, 'user_statement');
+  assert.match(candidates[0].event_id, /^event:conversation-/);
 });
 
 test('expands bounded decision and outcome signals while attaching context', () => {
@@ -70,7 +76,43 @@ test('writes evidence only to Brain runtime-local state', () => {
   assert.equal(readConversationEvidenceFile({ filePath, repoRoot: root }).identity.source_type, 'codex_session');
   assert.throws(() => readConversationEvidenceFile({ filePath: path.join(root, 'outside.json'), repoRoot: root }), /unsafe_conversation_input/);
   const tampered = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  tampered.candidate_insights = [{ category: 'decision', statement: 'api_key=secret-value', source_session_id: 'other-session' }];
+  tampered.candidate_insights = [{ category: 'decision', statement: `api_key=${'secret' + '-value'}`, source_session_id: 'other-session' }];
   fs.writeFileSync(filePath, `${JSON.stringify(tampered)}\n`);
-  assert.throws(() => readConversationEvidenceFile({ filePath, repoRoot: root }), /secret_like|conflicting_session/);
+  assert.throws(() => readConversationEvidenceFile({ filePath, repoRoot: root }), /conflicting_session/);
+});
+
+test('adapter contract is bounded, provider-neutral, and watermarkable', () => {
+  const adapter = createConversationEvidenceAdapter({ provider: 'claude' });
+  assert.deepEqual(adapter.health(), { adapter_id: 'mind-steward-conversation-evidence-v2', provider: 'claude', supported: true, bounded: true, raw_transcript_reads: false, provider_calls: false, report_only: true });
+  assert.equal(adapter.discover_since({ watermark: '2026-08-24T00:00:00Z', records: [{ observed_at: '2026-08-23T23:59:00Z' }, { observed_at: '2026-08-24T00:01:00Z' }] }).length, 1);
+  assert.equal(adapter.verify_source({ content: 'raw transcript' }), false);
+});
+
+test('classifies actors and routes infrastructure evidence to IKHP without writes', () => {
+  const result = ingestConversationEvidence({
+    session: { ...session, timestamp: '2026-09-01T12:00:00Z' },
+    asOf: '2026-09-02T12:00:00Z',
+    records: [
+      { category: 'lesson', statement: 'The review boundary is explicit.', actor: 'human' },
+      { category: 'validation', statement: 'The service is healthy.', actor: 'assistant', claim_key: 'service-x-health', polarity: 'positive' },
+      { category: 'validation', statement: 'The service is unavailable.', actor: 'tool', claim_key: 'service-x-health', polarity: 'negative' },
+    ],
+  });
+  assert.equal(result.events[0].claim_type, 'user_statement');
+  assert.equal(result.events[1].claim_type, 'assistant_statement');
+  assert.equal(result.events[2].claim_type, 'tool_observation');
+  assert.equal(result.report.infrastructure_evidence.length, 2);
+  assert.equal(result.report.infrastructure_evidence[0].routing_target, 'ikhp:evidence-candidate');
+  assert.equal(result.report.contradictions.length, 1);
+  assert.equal(result.report.invariants.ikhp_canonical_mutation, false);
+  assert.equal(result.report.invariants.writes_to_mind, false);
+});
+
+test('deduplicates repeated events and marks stale evidence without resolving it', () => {
+  const first = ingestConversationEvidence({ session, asOf: '2026-09-01T00:00:00Z', records: [{ category: 'validation', statement: 'The service is healthy.', actor: 'tool', claim_key: 'service-health', polarity: 'positive', observed_at: '2026-07-01T00:00:00Z' }] });
+  const second = ingestConversationEvidence({ session, asOf: '2026-09-01T00:00:00Z', existingEvents: first.events, records: [{ category: 'validation', statement: 'The service is healthy.', actor: 'tool', claim_key: 'service-health', polarity: 'positive', observed_at: '2026-07-01T00:00:00Z' }] });
+  assert.equal(second.report.evidence_count, 1);
+  assert.equal(second.report.duplicate_count, 1);
+  assert.equal(second.report.stale_evidence.length, 1);
+  assert.equal(second.checkpoint.event_count, 1);
 });

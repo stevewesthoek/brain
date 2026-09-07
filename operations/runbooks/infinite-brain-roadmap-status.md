@@ -421,3 +421,18 @@ Brain-owned credential was eligible for migration in this tranche. Codex,
 WebGPT, MCP, SSH, Tailscale, browser, and provider-owned credentials remain
 outside the Brain namespace. A separate physical Brain keychain remains an
 optional future deployment mode, not the default.
+
+## CLR5 conversation evidence closeout — 2026-09-07
+
+CLR5 is complete as a bounded report-only repository implementation. The
+explicit Claude Code, Codex, and Workbench session-reference boundary now has
+deterministic event IDs/content hashes, watermarks, actor/claim distinction,
+privacy redaction, duplicate collapse, contradiction/staleness reporting, and
+an explicit non-canonical `ikhp:evidence-candidate` route for infrastructure
+evidence. The existing unified review inbox and human decision workflow remain
+the operator surface.
+
+No automatic discovery, raw transcript duplication, semantic provider call,
+canonical Mind write, IKHP canonical mutation, or new authority store is
+active. Acceptance evidence:
+`operations/reports/clr5-conversation-evidence-acceptance-2026-09-07.md`.

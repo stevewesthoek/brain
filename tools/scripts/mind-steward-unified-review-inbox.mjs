@@ -26,6 +26,11 @@ function normalizeItem(item, sourceType, index) {
     ?? null;
   const provenance = item.provenance ?? { origin: item.origin ?? sourceType, adapter: item.adapter ?? 'unified-review-projection', authority_context: item.authority_context ?? { authority_owner: 'brain-runtime', domain: 'brain' } };
   const candidates = item.candidate_insights ?? [];
+  const infrastructureEvidence = candidates.filter((candidate) => candidate.routing_classification === 'infrastructure').map((candidate) => ({
+    event_id: candidate.event_id,
+    routing_target: 'ikhp:evidence-candidate',
+    canonical_mutation: false,
+  }));
   return {
     review_id: `review:${effectiveSourceType}:${index + 1}:${sourceHash ?? 'unhashed'}`,
     ingestion_id: item.ingestion_id ?? item.identity?.ingestion_id ?? null,
@@ -38,6 +43,15 @@ function normalizeItem(item, sourceType, index) {
     provenance,
     extracted_information: item.extracted_information ?? item.content?.extracted_information ?? (repositoryEvidence.length ? repositoryEvidence : item.statement ?? item.title ?? item.message ?? candidates),
     repository_evidence: repositoryEvidence,
+    conversation_claims: candidates.map((candidate) => ({
+      event_id: candidate.event_id ?? null,
+      actor: candidate.actor ?? null,
+      claim_type: candidate.claim_type ?? null,
+      routing_classification: candidate.routing_classification ?? 'general_review',
+      routing_target: candidate.routing_target ?? 'mind-steward:review-only',
+      canonical_mutation: false,
+    })),
+    infrastructure_evidence: infrastructureEvidence,
     confidence: item.confidence ?? item.content?.confidence ?? item.extraction_confidence ?? item.evidence?.extraction_confidence ?? 0.5,
     uncertainty: item.uncertainty ?? item.content?.uncertainty ?? item.evidence?.uncertainty ?? ['source-specific uncertainty not supplied'],
     freshness: item.freshness ?? item.governance?.freshness ?? 'unknown',
@@ -78,6 +92,7 @@ export function buildUnifiedReviewInbox({ ingestion = [], pdf = [], conversation
       automatic_decisions: false,
       provider_calls: false,
       duplicate_authority: false,
+      ikhp_canonical_mutation: false,
     },
   };
 }

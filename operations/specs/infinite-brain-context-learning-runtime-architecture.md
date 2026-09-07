@@ -266,6 +266,20 @@ health()
 
 Adapters do not decide what becomes memory. They only produce normalized evidence.
 
+CLR5's accepted implementation uses the existing explicit-session foundation
+and adds a provider-neutral adapter surface: `discover_since(watermark)`,
+`normalize(record)`, `verify_source(record)`, `privacy_classify(record)`,
+`checkpoint(events)`, and `health()`. The implementation is bounded to 100
+records per operation and 1,000 characters per candidate. It emits
+deterministic event IDs/content hashes, preserves source/session/time/adapter
+provenance, distinguishes human/assistant/tool claims, and produces only
+runtime-local report/review artifacts.
+
+Infrastructure-classified events carry an IKHP evidence-candidate routing
+target. This is classification and review routing, not a write to the IKHP
+catalog or health state. Contradictions and stale evidence remain explicit;
+the adapter never chooses canonical truth.
+
 ## 5. Learning candidate engine
 
 Candidate categories:

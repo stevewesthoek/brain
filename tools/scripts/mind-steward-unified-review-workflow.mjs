@@ -22,6 +22,8 @@ function sourceSnapshot(item) {
     confidence: item.confidence ?? null,
     uncertainty: item.uncertainty ?? [],
     repository_evidence: item.repository_evidence ?? [],
+    conversation_claims: item.conversation_claims ?? [],
+    infrastructure_evidence: item.infrastructure_evidence ?? [],
   };
 }
 
@@ -118,6 +120,7 @@ export function renderReviewWorkflow(workflow) {
   for (const item of workflow.items) {
     lines.push(`## ${item.review_id}`, '', `- State: **${item.state}**`, `- Source: ${item.source.source_reference}`, `- Evidence: ${item.source.evidence_references.join(', ') || 'source reference only'}`, `- Freshness: ${item.source.freshness}; confidence: ${item.source.confidence}; uncertainty: ${Array.isArray(item.source.uncertainty) ? item.source.uncertainty.join('; ') : item.source.uncertainty}`);
     if (item.source.repository_evidence?.length) lines.push(`- Repository evidence: ${JSON.stringify(item.source.repository_evidence)}`);
+    if (item.source.infrastructure_evidence?.length) lines.push(`- IKHP evidence routing: ${JSON.stringify(item.source.infrastructure_evidence)}`);
     lines.push(`- History entries: ${item.history.length}`, `- Unresolved: ${item.unresolved}`, '');
   }
   return `${lines.join('\n')}\n`;
