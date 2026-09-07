@@ -14,10 +14,15 @@ application/provider or human boundary.
 
 ## Baseline and evidence boundary
 
-The audit started from `main` at `97b85ded`, which was equal to `origin/main`
-and clean. Current live checks were read-only. No login, logout, OAuth refresh,
-auth-file read, Keychain value read, browser-storage read, route write, WebGPT
-change, credential migration, or provider mutation was performed.
+The audit started from `main` at `310ce491f448485b4e80915ec6717db919c2c520`,
+which was equal to `origin/main` and clean. Local live checks were read-only.
+The only external provider changes in this recovery were explicitly scoped and
+confirmed by the operator: the active Stitch ADC user received
+`roles/serviceusage.serviceUsageConsumer` on project
+`project-d63f458f-8fba-450e-acf`, and only `stitch.googleapis.com` was enabled
+in that project. No login, logout, OAuth refresh, auth-file read, Keychain
+value read, browser-storage read, route write, WebGPT change, or credential
+migration was performed.
 
 The audited repositories are:
 
@@ -59,8 +64,8 @@ needed or performed.
 | MacBook Codex Desktop session | Codex Desktop application/provider | runtime-instance-local, host-local | operator-attested; provider identity not inspected | application only |
 | Shared `~/.codex` | native Codex application | global, operating-system-user | account/storage/effective backend unknown | observe-only; no Brain repair |
 | WebGPT browser/session/route/tunnel | WebGPT application | surface-local | config/service/proxy/tunnel healthy; browser/connector acceptance deferred | WebGPT owner-only |
-| `codex_apps` MCP OAuth | MCP/application/provider | surface-local | provider-revoked, prior `401 token_revoked` | MCP/provider human reauth |
-| Stitch MCP OAuth/startup state | MCP/application/provider | surface-local | startup/provider availability unknown after timeout | MCP/provider owner |
+| `codex_apps` MCP OAuth | MCP/application/provider | surface-local | current supported read-only call succeeded; prior `401 token_revoked` is historical | MCP/provider owner |
+| Stitch MCP OAuth/startup state | MCP/application/provider | surface-local | corrected wrapper reaches provider successfully; live desktop-loaded process still needs controlled reload | MCP/provider owner |
 | SSH identity for MacBook → Office | host/application/network boundary | connection-local | SSH aliases and paths observed; separate from OpenAI auth | host/SSH owner |
 | Tailscale identity/API reference | Tailscale/application/provider | host/connection-local | path probe healthy; credential value not inspected | Tailscale owner |
 | Existing infrastructure credential references | Brain metadata with provider/app/host material owners | provider/service/host-local | seven IKHP references catalogued; per-provider migration not yet proven | deferred, per resource |
@@ -116,9 +121,12 @@ human/application acceptance boundary and was not bypassed by restarting or
 mutating WebGPT. DEV remained stopped and separate.
 
 The prior `codex_apps` provider-revoked incident and Stitch startup timeout
-remain explicitly recorded as independent residual incidents. Neither is
-collapsed into native Codex account health, and neither triggered token
-inspection or reauthentication.
+remain explicitly recorded as historical, independent incidents. The current
+read-only `codex_apps` call succeeds. A corrected direct Stitch wrapper probe
+now completes MCP initialization and a provider tool call after the exact IAM
+grant and API enablement above. The already-running desktop Codex process has
+not been restarted, so its previously loaded stale MCP definition remains a
+controlled reload deferral; no global shutdown was performed.
 
 ## Mutation authority
 
@@ -177,7 +185,8 @@ complete with the following intentional deferrals:
    exercise;
 4. WebGPT browser/connector/model-picker acceptance from a quiescent owner
    session;
-5. MCP provider reauthentication and Stitch startup remediation;
+5. controlled reload of the already-running desktop Codex process so it reads
+   the corrected Stitch wrapper;
 6. per-provider migration/verification contracts for existing infrastructure
    credentials.
 
@@ -189,7 +198,8 @@ the current application ownership model.
 ## Git closeout
 
 The activation commit is `82034442` (`feat(identity): activate credential
-custody and health`). This audit is finalized in the scoped documentation
-closeout commit containing this report. After that commit was pushed, local
-`main` and `origin/main` were verified equal and the worktree was clean. No
-force push was used.
+custody and health`), followed by the pushed Stitch OAuth transport correction
+`310ce491f448485b4e80915ec6717db919c2c520`. This report is finalized in the
+scoped documentation closeout commit containing the current evidence. After
+that commit is pushed, local `main` and `origin/main` must be verified equal
+and the worktree clean. No force push is permitted.
