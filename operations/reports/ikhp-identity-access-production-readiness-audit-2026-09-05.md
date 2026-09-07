@@ -448,3 +448,49 @@ automatically make provider-revoked OAuth sessions immortal and should not
 replace native application custody without a supported contract.
 
 Until those gates are closed, the honest status remains **`NOT_COMPLETE`**.
+
+## Corrective acceptance addendum — 2026-09-07
+
+This addendum records the bounded follow-up acceptance. It does not alter
+authentication, credentials, runtime configuration, or application-owned
+state.
+
+### Stitch
+
+The fresh task-bound Stitch provider call `list_projects` succeeded. This is
+fresh evidence that the configured OAuth-wrapper binding is healthy, the
+previous stale task binding is no longer authoritative, and the earlier 401
+condition is not present on this task. No Stitch write or additional provider
+mutation was performed.
+
+### Identity and access sweep
+
+- The supported Codex profile observer still returns
+  `CODEX_AUTH_PROFILE_ISOLATION=NOT_OK`: storage backend and active account
+  attribution remain unknown, and multi-account concurrency is not proven.
+  The disposable profile-layer mechanics remain healthy and the live config
+  was untouched.
+- A read-only `codex_apps` GitHub connector profile probe succeeded. No
+  credential or OAuth state was inspected or changed.
+- Brain's macOS Keychain adapter reports native storage available, metadata-only
+  capability, mutation disabled, and no secret values returned. The synthetic
+  pilot reference is absent. The canonical Brain credential-health catalog has
+  zero admitted production items, so the expected production item count is
+  currently zero rather than an unverified inferred inventory.
+- WebGPT owner diagnostics report `doctor: ok`, an active local route, and a
+  healthy/ready tunnel runtime. The only remaining warning is that local
+  checks cannot prove ChatGPT connector attachment while the connector is
+  outside this bounded local proof; no restart or repair was performed.
+- The accepted host boundary remains intact: Codex runs on the local client
+  host and remote execution is a separate SSH/Tailscale target. Runtime roots,
+  account attribution, and credentials are not inherited across hosts.
+
+### Final classification
+
+`COMPLETE_WITH_INTENTIONAL_DEFERRED_CAPABILITIES`
+
+The fresh Stitch acceptance and bounded surface checks are complete. Account
+identity attribution, multi-account authenticated concurrency, Keychain
+production enrollment, and connector attachment remain intentionally deferred
+because the supported read-only surfaces do not prove them and no unsafe
+repair or authentication mutation is authorized by this acceptance.
