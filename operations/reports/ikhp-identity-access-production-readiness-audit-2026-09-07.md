@@ -188,5 +188,8 @@ the current application ownership model.
 
 ## Git closeout
 
-Final commit and remote synchronization are recorded after the final
-validation commit. No force push is permitted.
+The activation commit is `82034442` (`feat(identity): activate credential
+custody and health`). This audit is finalized in the scoped documentation
+closeout commit containing this report. After that commit was pushed, local
+`main` and `origin/main` were verified equal and the worktree was clean. No
+force push was used.
