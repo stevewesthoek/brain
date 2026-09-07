@@ -107,7 +107,7 @@ host-local and are not silently copied between Macs.
 | Required outcome | Result | Evidence |
 | --- | --- | --- |
 | COMMITTED? | yes | Vault productionization is an ancestor; final autopilot commit `8f8d6c8d7a1eb8929a7dbdc2329407ebb73a8c51` is on `main`. |
-| PUSHED? | yes | Final `origin/main` resolves to `b34b23215187f9ec7c9de624f21b1357f211691b`; executable autopilot commit `8f8d6c8d` is its ancestor; no force push was used. |
+| PUSHED? | yes | Final verification showed `main == origin/main`; executable autopilot commit `8f8d6c8d` is an ancestor; no force push was used. |
 | DOCUMENTED? | yes | This closeout, the autopilot production report, operator runbook, strategy, adapter contract, and canonical catalog are present. |
 | OPERATOR AVAILABLE? | yes | `npm run vault -- status|list|inspect|verify|add|update|rotate|retire|delete|doctor`. |
 | ACTIVATED? | yes | The clean detached `brain-runtime` checkout runs `8f8d6c8d`; the existing 03:00 LaunchAgent executed the credential-health job successfully; no separate vault daemon is required. |
@@ -126,7 +126,7 @@ retirement. The vault activation model is on-demand through the Brain runtime;
 the existing credential-health contract is read-only and does not mutate or
 export credentials.
 
-Final canonical `main` HEAD: `b34b23215187f9ec7c9de624f21b1357f211691b`.
+Final canonical `main` and `origin/main` were equal at the last verification.
 
 ## Deferred hardening
 
