@@ -102,6 +102,30 @@ host-local and are not silently copied between Macs.
   provider tokens were read or committed; no-secret-output assertions passed.
 - `git diff --check`: passed.
 
+## Final live production verification — 2026-09-07
+
+| Required outcome | Result | Evidence |
+| --- | --- | --- |
+| COMMITTED? | yes | Productionization commit `cb670f19cf8d1146e3f5e431165a1b207b8c7089` is on `main`. |
+| PUSHED? | yes | `origin/main` resolves to the same commit; no force push was used. |
+| DOCUMENTED? | yes | This closeout, the operator runbook, strategy, adapter contract, and canonical catalog are present. |
+| OPERATOR AVAILABLE? | yes | `npm run vault -- status|list|inspect|verify|add|update|rotate|retire|delete|doctor`. |
+| ACTIVATED? | yes | The normal Brain runtime CLI and health-orchestrator entry points are wired; no separate vault daemon is required. |
+| OPERATIONAL? | yes | Live `status`, `list`, `doctor`, and Keychain inventory checks passed. |
+| AUTOMATIC READ-ONLY HEALTH? | yes | The provider-neutral health orchestrator automatically evaluates admitted catalog credentials through the fixed Keychain adapter and bounded verifier; the current empty catalog correctly produced zero evaluations. |
+| AUTOMATIC BOUNDED CONSUMER USE? | yes | Opaque catalog references resolve only through the registered verification boundary; no general raw-secret read exists. |
+| HUMAN-GATED SECRET MUTATION? | yes | Add, update, rotate, and delete require explicit confirmation and native hidden TTY input where applicable. |
+| PRODUCTION ITEM COUNT? | 0 | Live Keychain inventory and canonical catalog both report zero. |
+| SECURITY CLEAN? | yes | No real secrets were enrolled, migrated, printed, or committed; targeted secret scans and no-secret-output assertions passed. |
+
+Automatic by design: metadata inventory, catalog reconciliation, health evaluation,
+incident projection, opaque-reference resolution, and the bounded registered
+provider verification path. Human-gated by design: secret entry, overwrite,
+rotation, local deletion, provider cutover, provider revocation, and catalog
+retirement. The vault activation model is on-demand through the Brain runtime;
+the existing credential-health contract is read-only and does not mutate or
+export credentials.
+
 ## Deferred hardening
 
 Stronger signed/entitled `SecAccessControl` remains future hardening because
