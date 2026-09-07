@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildCredentialResolution,
+  admitBrainCreatedCredential,
   buildRotationPlan,
   buildVaultDoctor,
   classifyRetirement,
@@ -49,6 +50,24 @@ test('resolution exposes only an opaque reference and metadata', () => {
   assert.equal(resolved.reference, 'keychain-ref://tools.prochat.brain/credential.synthetic');
   assert.equal(resolved.secretValueReturned, false);
   assert.equal(JSON.stringify(resolved).includes('synthetic-value'), false);
+});
+
+test('Brain-created credentials enter the native store from bounded memory and wipe the producer buffer', async () => {
+  const brainCatalog = JSON.parse(JSON.stringify(catalog));
+  brainCatalog.credentials[0].materialization = 'os_native_store';
+  const observed = [];
+  const secret = Buffer.from('synthetic-only-value');
+  const result = await admitBrainCreatedCredential({
+    credentialId: 'credential:synthetic',
+    catalog: brainCatalog,
+    producerAuthority: 'brain-owned-creation',
+    secret,
+    adapter: { create: async (reference, options) => { observed.push({ reference, secret: Buffer.from(options.secret), operatorConfirmed: options.operatorConfirmed }); return { ok: true, storageState: 'present' }; } },
+  });
+  assert.equal(result.ok, true);
+  assert.deepEqual(observed, [{ reference: 'keychain-ref://tools.prochat.brain/credential.synthetic', secret: Buffer.from('synthetic-only-value'), operatorConfirmed: true }]);
+  assert.deepEqual(secret, Buffer.alloc(secret.length));
+  assert.equal(result.containsSecrets, false);
 });
 
 test('retirement distinguishes local deletion from provider revocation', () => {

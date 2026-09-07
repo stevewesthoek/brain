@@ -26,6 +26,9 @@ Automatic:
 
 - approved catalog/contract reference discovery and evidence-backed ownership
   classification;
+- Brain-created credentials admitted through `admitBrainCreatedCredential`
+  enter the native Keychain from a bounded producer-memory buffer, which is
+  wiped after the adapter call rather than staged in plaintext;
 - Brain-owned metadata candidates, Keychain/item availability, bounded
   provider verification, expiry windows, incident lifecycle, deduplication,
   recovery verification, and notification planning;

@@ -37,6 +37,9 @@ Automatic by design:
 - ownership classification when evidence is sufficient, with unknown and
   application-owned references left outside the vault;
 - metadata-only Brain admission records and host coverage state;
+- Brain-created credentials admitted through `admitBrainCreatedCredential`
+  enter the native Keychain directly from a bounded producer-memory `Buffer`
+  and are wiped after the adapter call; no plaintext config staging exists;
 - Keychain availability, item existence, bounded provider verification, expiry
   windows, incident projection, deduplicated notification planning, and
   recovery verification;

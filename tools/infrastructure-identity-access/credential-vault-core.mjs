@@ -168,6 +168,27 @@ export function buildCredentialResolution({ credentialId, catalog } = {}) {
   return { ok: true, credentialId: metadata.credentialId, reference: metadata.reference, metadata, containsSecrets: false, secretValueReturned: false };
 }
 
+/**
+ * Store a credential created by an admitted Brain-owned producer without
+ * routing material through argv, environment, files, or model context. The
+ * producer supplies a short-lived Buffer from its own bounded process memory;
+ * the adapter owns the native Keychain write and the buffer is wiped here.
+ */
+export async function admitBrainCreatedCredential({ credentialId, catalog, adapter, secret, label = 'Brain credential', producerAuthority } = {}) {
+  const resolution = buildCredentialResolution({ credentialId, catalog });
+  if (!resolution.ok) return { ok: false, reasonCode: resolution.reasonCode, containsSecrets: false, secretValueReturned: false };
+  if (producerAuthority !== 'brain-owned-creation') return { ok: false, reasonCode: 'producer_authority_required', containsSecrets: false, secretValueReturned: false };
+  const credential = catalog.credentials.find((entry) => entry.credentialId === credentialId);
+  if (credential.secretOwner !== 'secret_store' || credential.materialization !== 'os_native_store') return { ok: false, reasonCode: 'brain_keychain_materialization_required', containsSecrets: false, secretValueReturned: false };
+  if (!Buffer.isBuffer(secret) || secret.length === 0 || secret.length > 64 * 1024) return { ok: false, reasonCode: 'bound_buffer_required', containsSecrets: false, secretValueReturned: false };
+  try {
+    const result = await adapter.create(resolution.reference, { secret, label, operatorConfirmed: true });
+    return { ok: result.ok === true, credentialId, storageState: result.storageState ?? 'unknown', reasonCode: result.reasonCode ?? null, containsSecrets: false, secretValueReturned: false };
+  } finally {
+    secret.fill(0);
+  }
+}
+
 export function classifyRetirement({ localDelete = false, catalogRetire = false, providerRevoke = false } = {}) {
   return {
     localKeychainDeletion: localDelete ? 'requested' : 'not_requested',
