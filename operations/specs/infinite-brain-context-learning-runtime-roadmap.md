@@ -224,7 +224,9 @@ recorded in `operations/reports/clr5-conversation-evidence-acceptance-2026-09-07
 
 ## CLR6 — Learning candidates, relational strengthening, and compaction
 
-**Status:** not authorized.
+**Status:** complete as report-only implementation 2026-09-07.
+
+**Acceptance:** `operations/reports/clr6-learning-candidates-acceptance-2026-09-07.md`
 
 ### Objective
 
@@ -241,12 +243,15 @@ Convert evidence into report-only learning candidates and relationship updates w
 - duplicate-candidate merging;
 - relation strengthening instead of repeated summaries;
 - supersession/revalidation candidates;
-- hot-index compaction and cache TTL/LRU behavior;
+- bounded candidate/relation compaction with provenance-preserving receipts;
+- hot-index/cache lifecycle remains a derived-layer contract; no canonical write;
 - disk/context growth metrics.
 
 ### Exit gate
 
-Candidate precision, duplicate rate, hot-index/evidence ratio, and human-review burden meet pilot thresholds. No canonical Mind/Brain content is changed.
+Focused synthetic candidate/relation/replay/deletion/privacy gates pass. Pilot
+precision, hot-index/evidence ratio, and human-review burden remain measured
+report metrics; no canonical Mind/Brain content is changed.
 
 ## CLR7 — Reviewed promotion and logical learning transactions
 

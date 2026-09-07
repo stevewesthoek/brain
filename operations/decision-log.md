@@ -610,3 +610,10 @@ Then monitor: `vo jobs --limit 5`
 - Impact: Existing unified review remains the operator surface. No transcript database, automatic discovery, semantic provider call, canonical Mind write, credential persistence, or parallel infrastructure authority was added.
 - Verification: Focused CLR5 suite passed 35/35; context-learning and conversation-report schema validators passed; synthetic secret, contradiction, stale, duplicate, and IKHP-routing scenarios passed.
 - Rollback: Remove the CLR5 adapter/report-only additions while retaining the historical explicit-session evidence foundation; runtime-local artifacts remain disposable and are not committed.
+
+- Date: 2026-09-07 (CLR6 learning candidates and compaction closeout)
+- Decision: Keep CLR6 deterministic, bounded, and report-only. Aggregate exact candidate identities with provenance and source diversity, expose contradictions and freshness, represent explicit relations separately from weak co-occurrence, and compact derived evidence without deleting canonical/history sources.
+- Context: CLR6 was authorized after the CLR5 evidence boundary. The implementation needed to strengthen relational evidence without creating a second Mind/Brain/IKHP authority or bypassing human review.
+- Impact: Added the candidate/relation engine, schema validator, focused synthetic coverage, contract/runbook, and acceptance report. Infrastructure evidence routes to `ikhp:evidence-candidate` only; source deletion preserves retraction references; replay is idempotent. CLR7 reviewed promotion remains a separate milestone.
+- Verification: CLR6 focused suite passed 15/15; schema and existing CLR5/context-learning regression gates are required before integration; report invariants assert zero canonical writes, provider calls, IKHP mutation, raw transcript storage, and automatic promotion.
+- Rollback: Remove the CLR6 report-only module/schema/tests/docs while retaining CLR5; no canonical data or runtime authority needs rollback.

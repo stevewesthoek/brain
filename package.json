@@ -8,6 +8,7 @@
   },
   "scripts": {
     "validate:conversation-evidence": "node tools/validate-conversation-evidence.mjs",
+    "validate:learning-candidates": "node tools/validate-learning-candidates.mjs",
     "test:phase7a": "node --test tools/context-learning/codex-code-default.test.mjs tools/context-learning/phase6c-isolated-code-tasks.test.mjs",
     "validate:phase7a": "node tools/context-learning/run-phase7a-codex-code-default.mjs --summary",
     "test:phase7b": "node --test tools/context-learning/claude-code-canary.test.mjs tools/context-learning/universal-consumer-contract.test.mjs tools/context-learning/cross-session-continuity-pilot.test.mjs",

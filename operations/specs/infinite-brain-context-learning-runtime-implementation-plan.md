@@ -345,9 +345,13 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ## CLR6 — Learning candidates, relations, and compaction
 
-**Authorization:** not authorized.
+**Authorization:** owner-authorized report-only implementation complete 2026-09-07.
+
+**Acceptance:** `operations/reports/clr6-learning-candidates-acceptance-2026-09-07.md`
 
 ### CLR6.1 — Deterministic candidate signals
+
+**Status:** complete in `tools/context-learning/learning-candidate-engine.mjs`; no semantic provider or canonical write.
 
 - **Signals:** explicit corrections/decisions, repeated commands/tasks, known failure markers, repeated preference phrases, stale-knowledge references.
 - **Boundary:** candidates only.
@@ -370,6 +374,8 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ### CLR6.5 — Duplicate merge and relation strengthening
 
+**Status:** complete for deterministic exact identity, provenance-preserving aggregation, explicit relations, and weak co-occurrence reporting.
+
 - **Purpose:** Merge candidates targeting the same canonical concept, increment evidence relationships, and avoid repeated summaries.
 
 ### CLR6.6 — Supersession/revalidation candidates
@@ -378,14 +384,20 @@ A task marked `not authorized` is design backlog only and must not be executed f
 
 ### CLR6.7 — Compaction and hot-index lifecycle
 
+**Status:** bounded report-only compaction complete; cache TTL/LRU remains a derived-layer contract for later runtime activation.
+
 - **Purpose:** TTL/LRU caches, remove superseded hot entries, compact resolved candidates to receipts, preserve rebuildability.
 - **Boundary:** no deletion of canonical/history sources.
 
 ### CLR6.8 — Pilot metrics report
 
+**Status:** report counters implemented; production pilot thresholds remain unclaimed.
+
 - **Metrics:** precision, duplicate rate, relations/atom, hot-index ratio, disk growth per 1,000 messages, stale-hit rate, token/latency, decision burden.
 
 ### CLR6 exit gate
+
+**Status:** report-only implementation gate passed; CLR7 remains separately unauthorized.
 
 - Candidate quality is high enough that review saves time rather than creating work.
 - Hot state grows sublinearly relative to evidence.

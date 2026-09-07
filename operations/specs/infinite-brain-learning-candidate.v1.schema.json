@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/infinite-brain-learning-candidate.v1.schema.json",
+  "title": "Infinite Brain CLR6 Learning Candidate Report v1",
+  "type": "object",
+  "required": ["schema_version", "report_type", "generated_at", "candidate_count", "candidates", "relations", "invariants"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "report_type": { "const": "learning-candidate-report-only" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "candidate_count": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "new_count": { "type": "integer", "minimum": 0 },
+    "strengthened_count": { "type": "integer", "minimum": 0 },
+    "conflicted_count": { "type": "integer", "minimum": 0 },
+    "stale_count": { "type": "integer", "minimum": 0 },
+    "review_ready_count": { "type": "integer", "minimum": 0 },
+    "relation_candidate_count": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "infrastructure_routed_count": { "type": "integer", "minimum": 0 },
+    "source_diversity": { "type": "integer", "minimum": 0 },
+    "retracted_evidence_count": { "type": "integer", "minimum": 0 },
+    "compaction": { "type": "object" },
+    "candidates": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/candidate" } },
+    "relations": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/relation" } },
+    "invariants": {
+      "type": "object",
+      "required": ["report_only", "writes_to_mind", "writes_to_brain_canonical", "ikhp_canonical_mutation", "provider_calls", "raw_transcripts_stored", "new_authority_store", "automatic_promotion"],
+      "properties": {
+        "report_only": { "const": true },
+        "writes_to_mind": { "const": false },
+        "writes_to_brain_canonical": { "const": false },
+        "ikhp_canonical_mutation": { "const": false },
+        "provider_calls": { "const": false },
+        "raw_transcripts_stored": { "const": false },
+        "new_authority_store": { "const": false },
+        "automatic_promotion": { "const": false }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "required": ["schema_version", "candidate_id", "candidate_type", "identity", "proposed_content", "support_evidence_refs", "contradicting_evidence_refs", "provenance", "first_observed", "last_observed", "freshness", "support_count", "independent_source_count", "contradiction_count", "evidence_strength", "inference_level", "lifecycle_state", "review_state", "infrastructure_routing", "canonical_comparison", "review_ready"],
+      "properties": {
+        "schema_version": { "const": "1.0.0" },
+        "candidate_id": { "type": "string", "pattern": "^lc-[a-f0-9]{24}$" },
+        "candidate_type": { "type": "string", "minLength": 1 },
+        "identity": { "type": "string", "minLength": 1 },
+        "normalized_subject": { "type": ["string", "null"] },
+        "proposed_content": { "type": "string", "maxLength": 1000 },
+        "support_evidence_refs": { "type": "array", "uniqueItems": true, "maxItems": 100, "items": { "type": "string" } },
+        "contradicting_evidence_refs": { "type": "array", "uniqueItems": true, "maxItems": 100, "items": { "type": "string" } },
+        "retracted_evidence_refs": { "type": "array", "uniqueItems": true, "maxItems": 100, "items": { "type": "string" } },
+        "provenance": { "type": "object" },
+        "first_observed": { "type": "string", "format": "date-time" },
+        "last_observed": { "type": "string", "format": "date-time" },
+        "freshness": { "enum": ["fresh", "stale", "review_due", "unknown"] },
+        "support_count": { "type": "integer", "minimum": 0 },
+        "independent_source_count": { "type": "integer", "minimum": 0 },
+        "contradiction_count": { "type": "integer", "minimum": 0 },
+        "evidence_strength": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "inference_level": { "enum": ["explicit", "derived", "cooccurrence"] },
+        "lifecycle_state": { "enum": ["observed", "candidate", "strengthened", "conflicted", "stale", "review_ready", "accepted", "rejected", "deferred", "superseded"] },
+        "review_state": { "type": "string" },
+        "canonical_target_hint": { "type": ["string", "null"] },
+        "infrastructure_routing": { "enum": ["ikhp:evidence-candidate", "mind-steward:review-only"] },
+        "canonical_comparison": { "enum": ["new_candidate", "supports_existing", "contradicts_existing"] },
+        "review_ready": { "type": "boolean" },
+        "source_deletions": { "type": "object" },
+        "compaction": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "relation": {
+      "type": "object",
+      "required": ["relation_id", "relation_type", "subject_ref", "object_ref", "inference_level", "evidence_refs", "support_count", "independent_source_count", "contradiction_count", "strength_class", "routed_to"],
+      "properties": {
+        "relation_id": { "type": "string", "pattern": "^rel-[a-f0-9]{24}$" },
+        "relation_type": { "type": "string", "minLength": 1 },
+        "subject_ref": { "type": "string", "minLength": 1 },
+        "object_ref": { "type": "string", "minLength": 1 },
+        "inference_level": { "enum": ["explicit", "derived", "cooccurrence"] },
+        "evidence_refs": { "type": "array", "uniqueItems": true, "maxItems": 100, "items": { "type": "string" } },
+        "source_refs": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "support_count": { "type": "integer", "minimum": 0 },
+        "independent_source_count": { "type": "integer", "minimum": 0 },
+        "contradiction_count": { "type": "integer", "minimum": 0 },
+        "strength_class": { "enum": ["weak", "observed", "strengthened"] },
+        "routed_to": { "enum": ["ikhp:evidence-candidate", "mind-steward:review-only"] }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -375,6 +375,19 @@ Track:
 
 Acceptance requires measured **sublinear hot-state growth** relative to evidence volume. Exact production limits are configuration/profile values established from pilot baselines, not hardcoded Steve-specific constants.
 
+### 6.4 CLR6 report-only implementation
+
+`tools/context-learning/learning-candidate-engine.mjs` implements the bounded
+CLR6 candidate/relation projection over normalized CLR5 evidence. Candidate
+identity is deterministic and replay-idempotent; source classes, independent
+source diversity, contradictions, freshness, canonical comparison, and source
+retractions remain explicit. Explicit relations are distinct from weak
+co-occurrence. `compactLearningCandidates()` preserves provenance and counts
+while bounding evidence references. The report surface asserts no Mind/Brain
+canonical write, no IKHP mutation, no provider call, no raw transcript
+storage, and no automatic promotion. Human review and the existing audited
+Apply-one boundary remain required.
+
 ## 7. Logical atomicity and learning transactions
 
 Brain and Mind are separate Git repositories, so physical one-commit atomicity is impossible. The runtime must provide logical atomicity.
