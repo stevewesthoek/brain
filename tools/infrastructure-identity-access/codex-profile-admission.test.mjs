@@ -18,6 +18,7 @@ const canonical = (() => {
   value.catalogVersion = '0.1.0';
   for (const collection of [
     'accounts', 'credentials', 'sessions', 'surfaceBindings', 'runtimeProfiles',
+    'runtimeInstances', 'accessPaths',
     'secretStoreAdapters', 'lifecyclePolicies', 'verificationPolicies',
   ]) value[collection] = [];
   return value;
@@ -70,6 +71,8 @@ test('admission derives an enrolled, account-agnostic profile collection without
   assert.equal(plan.mergedCatalog.accounts.length, 2);
   assert.equal(plan.mergedCatalog.surfaceBindings.length, 2);
   assert.equal(plan.mergedCatalog.runtimeProfiles.length, 2);
+  assert.equal(plan.mergedCatalog.runtimeInstances.length, 2);
+  assert.equal(plan.changes.runtimeInstances.length, 2);
   assert.equal(plan.mergedCatalog.sessions.length, 0);
   assert.equal(plan.mergedCatalog.runtimeProfiles.every((profile) => profile.binding.state === 'user_attested'), true);
   assert.equal(plan.mergedCatalog.runtimeProfiles.every((profile) => profile.authenticationStorage.profileIsolationProven === true), true);

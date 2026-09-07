@@ -5,6 +5,7 @@ import path from 'node:path';
 import { loadJson } from './context-learning/context-learning-core.mjs';
 import { validateIdentityAccessCatalog } from './validate-infrastructure-identity-access.mjs';
 import {
+  RUNTIME_PROFILE_MANAGER_VERSION,
   buildLaunchPlan,
   buildLoginHandoff,
   clearStaleRuntimeProfileLease,
@@ -28,7 +29,7 @@ const SCHEMA = path.join(ROOT, 'operations/specs/infrastructure-identity-access-
 
 function usage() {
   return [
-    'Usage: node tools/runtime-profile-manager.mjs <list|prepare-account|capabilities|create|materialize-config|doctor|login|launch|clear-stale> [options]',
+    'Usage: node tools/runtime-profile-manager.mjs <list|instances|prepare-account|capabilities|create|materialize-config|doctor|login|launch|clear-stale> [options]',
     '',
     'Options:',
     '  --catalog PATH         Identity & Access catalog (default: canonical catalog)',
@@ -51,6 +52,42 @@ function usage() {
     'clear-stale is available with --execute --confirm and removes only a verified stale manager lease; it never kills a process.',
     'There is intentionally no logout or auth-copy command. Desktop/WebGPT and MCP state are separate surfaces.',
   ].join('\n');
+}
+
+function listRuntimeTopology(catalog) {
+  return {
+    managerVersion: RUNTIME_PROFILE_MANAGER_VERSION,
+    operation: 'instances',
+    status: 'OK',
+    instances: [...(catalog.runtimeInstances ?? [])].sort((left, right) => left.runtimeInstanceId.localeCompare(right.runtimeInstanceId)).map((instance) => ({
+      runtimeInstanceId: instance.runtimeInstanceId,
+      accountId: instance.accountId,
+      runtimeProfileId: instance.runtimeProfileId,
+      hostId: instance.hostId,
+      lifecycleState: instance.lifecycleState,
+      runtimeRoot: instance.runtimeRoot,
+      processOwnership: instance.processOwnership,
+      authenticationStorage: {
+        owner: instance.authenticationStorage?.owner ?? 'unknown',
+        mode: instance.authenticationStorage?.mode ?? 'unknown',
+        isolationScope: instance.authenticationStorage?.isolationScope ?? 'unknown',
+        healthState: instance.authenticationStorage?.healthState ?? 'unknown',
+      },
+    })),
+    accessPaths: [...(catalog.accessPaths ?? [])].sort((left, right) => left.accessPathId.localeCompare(right.accessPathId)).map((accessPath) => ({
+      accessPathId: accessPath.accessPathId,
+      sourceHostId: accessPath.sourceHostId,
+      destinationHostId: accessPath.destinationHostId,
+      transport: accessPath.transport,
+      accessMode: accessPath.accessMode,
+      runtimeInstanceIds: accessPath.runtimeInstanceIds,
+      availability: accessPath.availability,
+      trustState: accessPath.trustState,
+      healthState: accessPath.healthState,
+      lastObservedAt: accessPath.lastObservedAt,
+    })),
+    redaction: { secretsExcluded: true, authContentsRead: false, rawOutputCaptured: false },
+  };
 }
 
 function parseArgs(argv) {
@@ -90,7 +127,7 @@ function parseArgs(argv) {
       options[{ '--model': 'model', '--reasoning-effort': 'reasoningEffort', '--personality': 'personality' }[arg]] = value;
     } else throw new Error(`unknown option: ${arg}\n${usage()}`);
   }
-  if (!['list', 'prepare-account', 'capabilities', 'create', 'materialize-config', 'doctor', 'login', 'launch', 'clear-stale'].includes(operation)) throw new Error(usage());
+  if (!['list', 'instances', 'prepare-account', 'capabilities', 'create', 'materialize-config', 'doctor', 'login', 'launch', 'clear-stale'].includes(operation)) throw new Error(usage());
   if (operation === 'prepare-account' && !options.surface) throw new Error('--surface is required for prepare-account');
   if (operation === 'prepare-account' && options.identityRef?.includes('@')) throw new Error('--identity-ref must be an opaque provider reference, not an email');
   if (['create', 'materialize-config', 'doctor', 'login', 'launch', 'clear-stale'].includes(operation) && !options.profile) throw new Error('--profile is required for this operation');
@@ -121,6 +158,7 @@ export async function runRuntimeProfileManager(argv = process.argv.slice(2), dep
   };
 
   if (operation === 'list') return listRuntimeProfiles({ catalog, adapter, context });
+  if (operation === 'instances') return listRuntimeTopology(catalog);
   if (operation === 'capabilities') return buildSurfaceCapabilityMatrix({ catalog });
   if (operation === 'prepare-account') {
     return prepareAccountEnrollment({

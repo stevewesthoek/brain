@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation and live-validation tranche, 2026-09-05. This contract does not
+Implementation and live-validation tranche, 2026-09-07. This contract does not
 perform live login, migrate the current session, or repair MCP OAuth. It
 records the supported production WebGPT direct-route compatibility boundary
 validated during the v5.0.3 recovery and upgrade. It replaces the unsafe pilot
@@ -30,6 +30,30 @@ and configuration ownership are deliberately separate.
 | WebGPT DEV | separate WebGPT DEV home, browser partition and sandbox `CODEX_HOME` | WebGPT DEV application/browser session | WebGPT DEV application | observation and governance only |
 | Optional WebGPT Codex consumer | dedicated consumer profile, if later admitted | WebGPT route relationship; not native Codex OAuth | Brain materializer for its consumer profile | separate route/profile health |
 | Brain-managed secrets | macOS Keychain adapter and opaque references | Brain secret-store boundary | Brain credential-health lifecycle | verify/alert policy; no Codex OAuth custody |
+
+### Host-local instances and remote access paths
+
+An account-independent runtime profile is a logical identity boundary. A
+`runtimeInstance` is the host-local materialization of that profile and is
+identified by the pair `(runtimeProfileId, hostId)`. The instance owns the
+physical root, process ownership, lease metadata, and application-owned
+authentication boundary for that host. The same profile may therefore have one
+instance on each admitted host without sharing `CODEX_HOME`, auth state, locks,
+SQLite state, or processes.
+
+An `accessPath` is a separate transport record from a source host to a
+destination host. It may expose one or more destination runtime instances, but
+it never changes their identity or custody. A transport failure is an access
+incident, not an authentication failure. Host retirement retires its runtime
+instances and paths; it does not renumber or retire the account or logical
+profile.
+
+The current admitted topology is intentionally asymmetric: `host:office` is
+the native Codex runtime host, while `host:macbook` is a remote interactive
+client over verified Thunderbolt and Tailscale paths. No MacBook-local Codex
+OAuth is claimed. If a local MacBook Codex runtime is later used, it must be
+admitted as its own `(profile, host)` instance with its own application-owned
+state.
 
 Account identities and surface bindings are stable semantic records. Account
 switching never renumbers them and never copies application authentication
@@ -94,6 +118,15 @@ global `ps` snapshot. An active unrelated ChatGPT, Codex, WebGPT, Computer Use,
 or SSH process is not a conflict unless it owns the exact target root or lease.
 Another selected profile is likewise independent unless it targets the same
 namespace.
+
+The read-only topology view is available with:
+
+```bash
+npm run runtime:profiles -- instances
+```
+
+It reports instance roots, host IDs, custody metadata, and access-path health;
+it does not read authentication contents or mutate either host.
 
 An active process for the exact target profile blocks login, materialization and
 launch where mutation or a second target runtime would be unsafe. Unknown,

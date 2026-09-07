@@ -1,10 +1,11 @@
 import { createCandidate, planCandidateAdmission } from './observation-core.mjs';
 
-export const ACCOUNT_RUNTIME_ARCHITECTURE_VERSION = '1.0.0';
+export const ACCOUNT_RUNTIME_ARCHITECTURE_VERSION = '1.1.0';
 
 const SAFE_ID = /^[a-z][a-z0-9._-]*$/;
 const ACCOUNT_ID = /^account:([a-z0-9][a-z0-9._-]*)$/;
 const PROFILE_ID = /^runtime_profile:([a-z0-9][a-z0-9._-]*)$/;
+const HOST_ID = /^host:([a-z0-9][a-z0-9._-]*)$/;
 const OPAQUE_IDENTITY_REF = /^(?:opaque-ref|provider-subject):\/\/[^\s@]+$/;
 
 export const CODEX_SURFACES = Object.freeze({
@@ -126,6 +127,12 @@ function profileSuffix(profileId) {
   return match[1];
 }
 
+function hostSuffix(hostId) {
+  const match = HOST_ID.exec(hostId ?? '');
+  if (!match) throw new Error(`invalid host id: ${hostId ?? 'missing'}`);
+  return match[1];
+}
+
 function safeOpaqueIdentityRef(value) {
   return typeof value === 'string' && value.length <= 512 && OPAQUE_IDENTITY_REF.test(value) ? value : null;
 }
@@ -210,6 +217,15 @@ export function surfaceBindingIdFor(accountId, surfaceId) {
 export function runtimeProfileIdFor(accountId, surfaceId) {
   const definition = getSurfaceDefinition(surfaceId);
   return `runtime_profile:${accountSuffix(accountId)}.${definition.profileSuffix}`;
+}
+
+export function runtimeInstanceIdFor(runtimeProfileId, hostId) {
+  return `runtime_instance:${hostSuffix(hostId)}.${profileSuffix(runtimeProfileId)}`;
+}
+
+export function accessPathIdFor(sourceHostId, destinationHostId, transport) {
+  const normalizedTransport = safeSlug(transport, 'transport');
+  return `access_path:${hostSuffix(sourceHostId)}.${hostSuffix(destinationHostId)}.${normalizedTransport}`;
 }
 
 export function matchKnownAccount({ catalog = {}, providerId, identityRef } = {}) {
@@ -340,6 +356,7 @@ export function allocateSurfaceBinding({
     isolationRef: `runtime-ref://profiles/${accountSuffixValue}/${definition.profileSuffix}`,
     stateOwnership: definition.stateOwner,
     authenticationStorage: authenticationStorage(definition, sourceRef, observedAt),
+    runtimeInstanceIds: [],
     lifecyclePolicyId: (catalog.lifecyclePolicies ?? []).find((policy) => policy.lifecyclePolicyId.includes(definition.profileSuffix))?.lifecyclePolicyId
       ?? (catalog.lifecyclePolicies ?? [])[0]?.lifecyclePolicyId
       ?? `lifecycle_policy:${definition.profileSuffix}-application-managed`,
@@ -391,6 +408,149 @@ export function allocateSurfaceBinding({
     bindingCreated,
     profileCreated,
   };
+}
+
+export function allocateRuntimeInstance({
+  catalog = {},
+  profile,
+  hostId,
+  runtimeRoot,
+  sourceRef = 'brain:identity-access/runtime-instance-allocator',
+  observedAt = new Date(),
+} = {}) {
+  if (!profile?.runtimeProfileId || !profile.accountId) throw new Error('profile with account is required');
+  if (typeof runtimeRoot !== 'string' || runtimeRoot.length === 0) throw new Error('runtimeRoot is required');
+  const normalizedHostId = `host:${hostSuffix(hostId)}`;
+  const runtimeInstanceId = runtimeInstanceIdFor(profile.runtimeProfileId, normalizedHostId);
+  const existing = (catalog.runtimeInstances ?? []).find((entry) => entry.runtimeInstanceId === runtimeInstanceId);
+  if (existing) return { created: false, runtimeInstance: existing, runtimeInstanceId };
+  const runtimeInstance = {
+    runtimeInstanceId,
+    accountId: profile.accountId,
+    runtimeProfileId: profile.runtimeProfileId,
+    hostId: normalizedHostId,
+    lifecycleState: 'candidate',
+    runtimeRoot,
+    stateOwnership: profile.stateOwnership,
+    processOwnership: profile.runtimeNamespace?.processOwnership ?? profile.switchPolicy?.processOwnership ?? 'unknown',
+    configWriterRef: profile.configurationOwnership?.writerOwnerRef ?? 'brain:runtime-profile-config-materializer',
+    leasePath: '.brain-runtime-profile-lease.json',
+    binding: bindingEvidence({ observedAt, sourceRef }),
+    authenticationStorage: structuredClone(profile.authenticationStorage),
+    runtimeNamespace: {
+      boundary: profile.runtimeNamespace?.boundary ?? profile.authenticationStorage?.isolationScope ?? 'unknown',
+      stateOwner: profile.runtimeNamespace?.stateOwner ?? profile.stateOwnership,
+      noSharedStateWith: sortedUnique([
+        ...(profile.runtimeNamespace?.noSharedStateWith ?? []),
+        `host-local-auth:${normalizedHostId}`,
+      ]),
+    },
+    provenance: provenance({ sourceRef, classification: 'USER-PROPOSED', observedAt }),
+  };
+  return { created: true, runtimeInstance, runtimeInstanceId };
+}
+
+export function allocateAccessPath({
+  catalog = {},
+  sourceHostId,
+  destinationHostId,
+  transport,
+  runtimeInstanceIds,
+  accessMode = 'remote',
+  availability = 'unknown',
+  trustState = 'unknown',
+  healthState = 'unknown',
+  routeAliases = [],
+  sourceRef = 'brain:identity-access/access-path-observer',
+  observedAt = new Date(),
+} = {}) {
+  const normalizedSource = `host:${hostSuffix(sourceHostId)}`;
+  const normalizedDestination = `host:${hostSuffix(destinationHostId)}`;
+  const normalizedTransport = safeSlug(transport, 'transport');
+  const targets = sortedUnique(runtimeInstanceIds);
+  if (targets.length === 0) throw new Error('runtimeInstanceIds are required');
+  const accessPathId = accessPathIdFor(normalizedSource, normalizedDestination, normalizedTransport);
+  const existing = (catalog.accessPaths ?? []).find((entry) => entry.accessPathId === accessPathId);
+  if (existing) return { created: false, accessPath: existing, accessPathId };
+  const accessPath = {
+    accessPathId,
+    sourceHostId: normalizedSource,
+    destinationHostId: normalizedDestination,
+    transport: normalizedTransport,
+    accessMode,
+    runtimeInstanceIds: targets,
+    availability,
+    trustState,
+    healthState,
+    lastObservedAt: iso(observedAt, 'observedAt'),
+    routeAliases: sortedUnique(routeAliases),
+    provenance: provenance({ sourceRef, classification: trustState === 'verified' ? 'OBSERVED-VERIFIED' : 'USER-PROPOSED', observedAt }),
+  };
+  return { created: true, accessPath, accessPathId };
+}
+
+export function validateMultiHostTopology({ catalog = {}, hostIds = [] } = {}) {
+  const errors = [];
+  const profiles = new Map((catalog.runtimeProfiles ?? []).map((entry) => [entry.runtimeProfileId, entry]));
+  const instances = new Map((catalog.runtimeInstances ?? []).map((entry) => [entry.runtimeInstanceId, entry]));
+  const paths = new Map((catalog.accessPaths ?? []).map((entry) => [entry.accessPathId, entry]));
+  const knownHosts = new Set(hostIds);
+  const profileHostPairs = new Set();
+
+  const checkHost = (hostId, label) => {
+    if (!HOST_ID.test(hostId ?? '')) errors.push(`${label}:invalid_host_id:${hostId ?? 'missing'}`);
+    if (knownHosts.size > 0 && !knownHosts.has(hostId)) errors.push(`${label}:unknown_host:${hostId}`);
+  };
+
+  for (const instance of instances.values()) {
+    checkHost(instance.hostId, `runtime_instance:${instance.runtimeInstanceId}`);
+    const profile = profiles.get(instance.runtimeProfileId);
+    if (!profile) {
+      errors.push(`runtime_instance_missing_profile:${instance.runtimeInstanceId}:${instance.runtimeProfileId}`);
+      continue;
+    }
+    if (profile.accountId !== instance.accountId) errors.push(`runtime_instance_account_mismatch:${instance.runtimeInstanceId}`);
+    if (!profile.runtimeInstanceIds?.includes(instance.runtimeInstanceId)) errors.push(`runtime_profile_missing_runtime_instance:${instance.runtimeProfileId}:${instance.runtimeInstanceId}`);
+    try {
+      const expectedId = runtimeInstanceIdFor(instance.runtimeProfileId, instance.hostId);
+      if (expectedId !== instance.runtimeInstanceId) errors.push(`runtime_instance_id_mismatch:${instance.runtimeInstanceId}:${expectedId}`);
+    } catch {
+      // The schema/host check above provides the actionable error.
+    }
+    const pair = `${instance.runtimeProfileId}|${instance.hostId}`;
+    if (profileHostPairs.has(pair)) errors.push(`duplicate_runtime_profile_host_pair:${pair}`);
+    profileHostPairs.add(pair);
+    if (typeof instance.runtimeRoot !== 'string' || instance.runtimeRoot.length === 0) errors.push(`runtime_instance_missing_root:${instance.runtimeInstanceId}`);
+    if (instance.authenticationStorage?.owner !== profile.authenticationStorage?.owner) errors.push(`runtime_instance_storage_owner_mismatch:${instance.runtimeInstanceId}`);
+  }
+
+  for (const profile of profiles.values()) {
+    for (const instanceId of profile.runtimeInstanceIds ?? []) {
+      const instance = instances.get(instanceId);
+      if (!instance) errors.push(`runtime_profile_missing_instance:${profile.runtimeProfileId}:${instanceId}`);
+      else if (instance.runtimeProfileId !== profile.runtimeProfileId) errors.push(`runtime_profile_instance_link_mismatch:${profile.runtimeProfileId}:${instanceId}`);
+    }
+  }
+
+  for (const accessPath of paths.values()) {
+    checkHost(accessPath.sourceHostId, `access_path:${accessPath.accessPathId}:source`);
+    checkHost(accessPath.destinationHostId, `access_path:${accessPath.accessPathId}:destination`);
+    if (accessPath.accessMode === 'remote' && accessPath.sourceHostId === accessPath.destinationHostId) errors.push(`remote_access_path_must_cross_hosts:${accessPath.accessPathId}`);
+    if (accessPath.accessMode === 'local' && accessPath.sourceHostId !== accessPath.destinationHostId) errors.push(`local_access_path_must_be_host_local:${accessPath.accessPathId}`);
+    try {
+      const expectedId = accessPathIdFor(accessPath.sourceHostId, accessPath.destinationHostId, accessPath.transport);
+      if (expectedId !== accessPath.accessPathId) errors.push(`access_path_id_mismatch:${accessPath.accessPathId}:${expectedId}`);
+    } catch {
+      // The schema/host check above provides the actionable error.
+    }
+    for (const instanceId of accessPath.runtimeInstanceIds ?? []) {
+      const instance = instances.get(instanceId);
+      if (!instance) errors.push(`access_path_missing_runtime_instance:${accessPath.accessPathId}:${instanceId}`);
+      else if (instance.hostId !== accessPath.destinationHostId) errors.push(`access_path_destination_mismatch:${accessPath.accessPathId}:${instanceId}`);
+    }
+  }
+
+  return sortedUnique(errors);
 }
 
 export function prepareAccountEnrollment({
@@ -592,7 +752,7 @@ export function buildSurfaceCapabilityMatrix({ catalog = {}, evidenceBySurface =
   };
 }
 
-export function validateDynamicCatalogShape({ catalog = {}, expectedCounts = [] } = {}) {
+export function validateDynamicCatalogShape({ catalog = {}, expectedCounts = [], hostIds = [] } = {}) {
   const errors = [];
   const accounts = new Map((catalog.accounts ?? []).map((entry) => [entry.accountId, entry]));
   const bindings = new Map((catalog.surfaceBindings ?? []).map((entry) => [entry.surfaceBindingId, entry]));
@@ -633,6 +793,7 @@ export function validateDynamicCatalogShape({ catalog = {}, expectedCounts = [] 
     if (!Number.isInteger(count) || count < 1) continue;
     if (accounts.size !== count) errors.push(`expected_account_count:${count}:actual:${accounts.size}`);
   }
+  errors.push(...validateMultiHostTopology({ catalog, hostIds }));
   return sortedUnique(errors);
 }
 

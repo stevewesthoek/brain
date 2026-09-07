@@ -16,7 +16,9 @@ provider/application
   │    ├─ expected principal
   │    ├─ credential reference(s)
   │    ├─ application-owned session(s)
-  │    └─ runtime profile(s)
+    │    └─ logical runtime profile(s)
+    │         └─ host-local runtime instance(s)
+    ├─ access path(s) to admitted host instances
   ├─ storage adapter metadata
   ├─ read-only health evidence
   └─ recovery/approval policy
@@ -44,6 +46,13 @@ Brain-managed secret custody and application-owned runtime authentication are
 separate concerns. A Brain metadata reference may point at an admitted
 Brain-owned secret without making Brain the owner of an application's OAuth
 state.
+
+Host-local runtime instances are part of the access-plane topology, not a new
+credential store. They reference application-owned authentication in the
+owning host/profile namespace. Remote access paths (for example Tailscale or
+Thunderbolt) carry operator access to an instance; they do not copy or
+re-home the instance's OAuth state. This keeps multiple accounts and multiple
+hosts account-agnostic while preserving application custody.
 
 One concern has one owner. The catalog is the canonical metadata model; a
 vault is not a second account registry, and a runtime lease is not an identity
@@ -146,11 +155,11 @@ mechanics in `tools/runtime-profile-manager/codex-cli-adapter.mjs`.
    cover distinct roots, owner-only permissions, human login handoff,
    child-only launch, process leases, duplicate roots, route preservation,
    account ambiguity, and MCP separation.
-3. **Two-account CLI pilot — next and explicitly human-gated.** Enroll two
-   opaque real records, create two empty roots, perform normal provider login
-   separately, confirm each provider account, and run only bounded read-only
-   checks. Do not migrate or copy existing auth state.
-4. **Read-only vault inventory — later.** Admit OnePassword or another store
+3. **Two-account CLI pilot — complete for the admitted Office host.** Two
+   opaque records have independent authenticated CLI roots on `host:office`.
+   The MacBook is admitted as a remote client only; no local MacBook OAuth is
+   claimed. Do not migrate or copy existing auth state.
+4. **Read-only vault inventory — next.** Admit OnePassword or another store
    only for selected Brain-owned references; test permissions, auditability,
    recovery, account namespacing, expiry metadata, and notification delivery.
 5. **Provider-specific renewal — last.** Add only where the provider has a

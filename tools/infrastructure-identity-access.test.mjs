@@ -12,11 +12,23 @@ test('identity and access catalog validates without raw secret material', () => 
   assert.equal(result.counts.canonical.accounts, 2);
   assert.equal(result.counts.canonical.credentials, 0);
   assert.equal(result.counts.canonical.runtimeProfiles, 2);
+  assert.equal(result.counts.canonical.runtimeInstances, 2);
+  assert.equal(result.counts.canonical.accessPaths, 2);
   assert.equal(result.counts.alternate.accounts, 2);
   assert.equal(result.counts.alternate.credentials, 2);
   assert.equal(result.counts.alternate.sessions, 2);
   assert.equal(result.counts.alternate.runtimeProfiles, 2);
   assert.equal(result.counts.observations, 2);
+});
+
+test('canonical runtime instances are host-local while MacBook access paths remain remote', () => {
+  const catalog = loadJson(path.join(root, 'operations/infrastructure/catalog/identity-access.v1.json'));
+  assert.deepEqual(catalog.runtimeInstances.map((instance) => instance.hostId), ['host:office', 'host:office']);
+  assert.deepEqual(catalog.accessPaths.map((accessPath) => [accessPath.sourceHostId, accessPath.destinationHostId, accessPath.accessMode]), [
+    ['host:macbook', 'host:office', 'remote'],
+    ['host:macbook', 'host:office', 'remote'],
+  ]);
+  assert.equal(catalog.runtimeInstances.every((instance) => instance.authenticationStorage.owner === 'application'), true);
 });
 
 test('the portable fixture proves multiple accounts for one provider and application-owned sessions', () => {

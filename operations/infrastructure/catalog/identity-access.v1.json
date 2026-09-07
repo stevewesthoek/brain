@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "0.1.1",
+  "catalogVersion": "0.1.2",
   "catalogId": "brain-identity-access",
   "entrypoint": true,
   "mutationEnabled": false,
@@ -212,6 +212,9 @@
           ]
         }
       },
+      "runtimeInstanceIds": [
+        "runtime_instance:office.openai.01.cli"
+      ],
       "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",
       "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
       "switchPolicy": {
@@ -301,6 +304,9 @@
           ]
         }
       },
+      "runtimeInstanceIds": [
+        "runtime_instance:office.openai.02.cli"
+      ],
       "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",
       "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
       "switchPolicy": {
@@ -345,6 +351,164 @@
         "evidenceRefs": [
           "codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"
         ]
+      }
+    }
+  ],
+  "runtimeInstances": [
+    {
+      "runtimeInstanceId": "runtime_instance:office.openai.01.cli",
+      "accountId": "account:openai.01",
+      "runtimeProfileId": "runtime_profile:openai.01.cli",
+      "hostId": "host:office",
+      "lifecycleState": "enrolled",
+      "runtimeRoot": "~/.brain/codex-runtime-profiles/openai.01.cli",
+      "stateOwnership": "application",
+      "processOwnership": "profile_scoped",
+      "configWriterRef": "brain:runtime-profile-config-materializer",
+      "leasePath": ".brain-runtime-profile-lease.json",
+      "binding": {
+        "state": "user_attested",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/codex-multi-host-runtime-instance-audit-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:38:18Z",
+          "freshnessDeadline": "2026-10-07T08:38:18Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["tailscale:office", "codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"]
+        }
+      },
+      "authenticationStorage": {
+        "mode": "file",
+        "owner": "application",
+        "locationKind": "codex_home_auth_file",
+        "isolationScope": "codex_home",
+        "isolationState": "confirmed",
+        "profileIsolationProven": true,
+        "healthState": "healthy",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/codex-multi-host-runtime-instance-audit-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T08:38:18Z",
+          "freshnessDeadline": "2026-10-07T08:38:18Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"]
+        }
+      },
+      "runtimeNamespace": {
+        "boundary": "codex_home",
+        "stateOwner": "application",
+        "noSharedStateWith": ["runtime_profile:openai.02.cli", "host-local-auth:host:office", "~/.codex"]
+      },
+      "provenance": {
+        "sourceRef": "operations/reports/codex-multi-host-runtime-instance-audit-2026-09-07.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T08:38:18Z",
+        "freshnessDeadline": "2026-10-07T08:38:18Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["tailscale:office", "codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"]
+      }
+    },
+    {
+      "runtimeInstanceId": "runtime_instance:office.openai.02.cli",
+      "accountId": "account:openai.02",
+      "runtimeProfileId": "runtime_profile:openai.02.cli",
+      "hostId": "host:office",
+      "lifecycleState": "enrolled",
+      "runtimeRoot": "~/.brain/codex-runtime-profiles/openai.02.cli",
+      "stateOwnership": "application",
+      "processOwnership": "profile_scoped",
+      "configWriterRef": "brain:runtime-profile-config-materializer",
+      "leasePath": ".brain-runtime-profile-lease.json",
+      "binding": {
+        "state": "user_attested",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/codex-multi-host-runtime-instance-audit-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:38:18Z",
+          "freshnessDeadline": "2026-10-07T08:38:18Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["tailscale:office", "codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"]
+        }
+      },
+      "authenticationStorage": {
+        "mode": "file",
+        "owner": "application",
+        "locationKind": "codex_home_auth_file",
+        "isolationScope": "codex_home",
+        "isolationState": "confirmed",
+        "profileIsolationProven": true,
+        "healthState": "healthy",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/codex-multi-host-runtime-instance-audit-2026-09-07.md",
+          "classification": "OBSERVED-VERIFIED",
+          "verifiedAt": "2026-09-07T08:38:18Z",
+          "freshnessDeadline": "2026-10-07T08:38:18Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"]
+        }
+      },
+      "runtimeNamespace": {
+        "boundary": "codex_home",
+        "stateOwner": "application",
+        "noSharedStateWith": ["runtime_profile:openai.01.cli", "host-local-auth:host:office", "~/.codex"]
+      },
+      "provenance": {
+        "sourceRef": "operations/reports/codex-multi-host-runtime-instance-audit-2026-09-07.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T08:38:18Z",
+        "freshnessDeadline": "2026-10-07T08:38:18Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["tailscale:office", "codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"]
+      }
+    }
+  ],
+  "accessPaths": [
+    {
+      "accessPathId": "access_path:macbook.office.thunderbolt",
+      "sourceHostId": "host:macbook",
+      "destinationHostId": "host:office",
+      "transport": "thunderbolt",
+      "accessMode": "remote",
+      "runtimeInstanceIds": ["runtime_instance:office.openai.01.cli", "runtime_instance:office.openai.02.cli"],
+      "availability": "available",
+      "trustState": "verified",
+      "healthState": "healthy",
+      "lastObservedAt": "2026-09-07T08:38:18Z",
+      "routeAliases": ["office"],
+      "provenance": {
+        "sourceRef": "operations/runbooks/workstation-config-ownership.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T08:38:18Z",
+        "freshnessDeadline": "2026-09-07T09:38:18Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["ssh-config:MacBook", "ssh-config:office"]
+      }
+    },
+    {
+      "accessPathId": "access_path:macbook.office.tailscale",
+      "sourceHostId": "host:macbook",
+      "destinationHostId": "host:office",
+      "transport": "tailscale",
+      "accessMode": "remote",
+      "runtimeInstanceIds": ["runtime_instance:office.openai.01.cli", "runtime_instance:office.openai.02.cli"],
+      "availability": "available",
+      "trustState": "verified",
+      "healthState": "healthy",
+      "lastObservedAt": "2026-09-07T08:38:18Z",
+      "routeAliases": ["office"],
+      "provenance": {
+        "sourceRef": "operations/runbooks/workstation-config-ownership.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T08:38:18Z",
+        "freshnessDeadline": "2026-09-07T09:38:18Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["tailscale:office", "tailscale:macbook"]
       }
     }
   ],

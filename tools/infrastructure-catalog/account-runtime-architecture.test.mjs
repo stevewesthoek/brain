@@ -6,16 +6,20 @@ import { loadJson, validateJsonSchema } from '../context-learning/context-learni
 import {
   allocateAccountIdentity,
   allocateSurfaceBinding,
+  allocateAccessPath,
+  allocateRuntimeInstance,
   buildIncrementalProfileVerificationPlan,
   buildSurfaceCapabilityMatrix,
   prepareAccountEnrollment,
   runtimeProfileIdFor,
+  runtimeInstanceIdFor,
   surfaceBindingIdFor,
   validateDynamicCatalogShape,
+  validateMultiHostTopology,
 } from './account-runtime-architecture.mjs';
 
 function emptyCatalog() {
-  return { accounts: [], surfaceBindings: [], runtimeProfiles: [], sessions: [], verificationPolicies: [], lifecyclePolicies: [] };
+  return { accounts: [], surfaceBindings: [], runtimeProfiles: [], runtimeInstances: [], accessPaths: [], sessions: [], verificationPolicies: [], lifecyclePolicies: [] };
 }
 
 function appendAccount(catalog, identityRef, index) {
@@ -271,4 +275,58 @@ test('surface capability matrix keeps unknown and unsupported distinct', () => {
   assert.equal(cli.authIsolation, 'unknown');
   assert.equal(cli.concurrentProfiles, 'unsupported');
   assert.equal(matrix.liveOAuthPerformed, false);
+});
+
+test('one account profile can have independent host-local runtime instances', () => {
+  const account = allocateAccountIdentity({ catalog: emptyCatalog(), providerId: 'openai', identityRef: 'opaque-ref://openai/multi-host' }).account;
+  const base = { ...emptyCatalog(), accounts: [account] };
+  const binding = allocateSurfaceBinding({ catalog: base, account, surfaceId: 'codex-cli' });
+  const catalog = { ...base, surfaceBindings: [binding.surfaceBinding], runtimeProfiles: [binding.runtimeProfile] };
+  const office = allocateRuntimeInstance({ catalog, profile: binding.runtimeProfile, hostId: 'host:office', runtimeRoot: '~/.brain/codex-runtime-profiles/openai.01.cli' });
+  const macbook = allocateRuntimeInstance({ catalog: { ...catalog, runtimeInstances: [office.runtimeInstance] }, profile: binding.runtimeProfile, hostId: 'host:macbook', runtimeRoot: '~/.brain/codex-runtime-profiles/openai.01.cli' });
+  const profile = { ...binding.runtimeProfile, runtimeInstanceIds: [office.runtimeInstanceId, macbook.runtimeInstanceId].sort() };
+  const complete = { ...catalog, runtimeProfiles: [profile], runtimeInstances: [office.runtimeInstance, macbook.runtimeInstance] };
+  assert.equal(office.runtimeInstanceId, runtimeInstanceIdFor(profile.runtimeProfileId, 'host:office'));
+  assert.notEqual(office.runtimeInstanceId, macbook.runtimeInstanceId);
+  assert.deepEqual(validateMultiHostTopology({ catalog: complete, hostIds: ['host:office', 'host:macbook'] }), []);
+});
+
+test('access paths are transport-specific and target only their destination host', () => {
+  const profile = {
+    runtimeProfileId: 'runtime_profile:openai.01.cli',
+    accountId: 'account:openai.01',
+    runtimeInstanceIds: ['runtime_instance:office.openai.01.cli'],
+    authenticationStorage: { owner: 'application' },
+  };
+  const instance = {
+    runtimeInstanceId: 'runtime_instance:office.openai.01.cli',
+    accountId: profile.accountId,
+    runtimeProfileId: profile.runtimeProfileId,
+    hostId: 'host:office',
+    runtimeRoot: '~/.brain/codex-runtime-profiles/openai.01.cli',
+    authenticationStorage: { owner: 'application' },
+  };
+  const catalog = { runtimeProfiles: [profile], runtimeInstances: [instance], accessPaths: [] };
+  const thunderbolt = allocateAccessPath({ catalog, sourceHostId: 'host:macbook', destinationHostId: 'host:office', transport: 'thunderbolt', runtimeInstanceIds: [instance.runtimeInstanceId] });
+  const tailscale = allocateAccessPath({ catalog: { ...catalog, accessPaths: [thunderbolt.accessPath] }, sourceHostId: 'host:macbook', destinationHostId: 'host:office', transport: 'tailscale', runtimeInstanceIds: [instance.runtimeInstanceId] });
+  assert.notEqual(thunderbolt.accessPathId, tailscale.accessPathId);
+  assert.deepEqual(validateMultiHostTopology({ catalog: { ...catalog, accessPaths: [thunderbolt.accessPath, tailscale.accessPath] }, hostIds: ['host:office', 'host:macbook'] }), []);
+});
+
+test('the topology scales as N accounts by N hosts without a remote-profile special case', () => {
+  let catalog = emptyCatalog();
+  for (let index = 1; index <= 3; index += 1) catalog = appendAccount(catalog, `opaque-ref://openai/grid-${index}`, index);
+  const hosts = ['host:office', 'host:macbook'];
+  const instances = [];
+  const profiles = catalog.runtimeProfiles.map((profile) => ({ ...profile, runtimeInstanceIds: [] }));
+  for (const profile of profiles) {
+    for (const hostId of hosts) {
+      const allocated = allocateRuntimeInstance({ catalog: { ...catalog, runtimeInstances: instances }, profile, hostId, runtimeRoot: `~/.brain/codex-runtime-profiles/${profile.accountId}.cli` });
+      instances.push(allocated.runtimeInstance);
+      profile.runtimeInstanceIds.push(allocated.runtimeInstanceId);
+    }
+  }
+  const complete = { ...catalog, runtimeProfiles: profiles, runtimeInstances: instances };
+  assert.equal(instances.length, 6);
+  assert.deepEqual(validateDynamicCatalogShape({ catalog: complete, hostIds: hosts }), []);
 });

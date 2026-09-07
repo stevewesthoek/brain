@@ -102,6 +102,7 @@ function assertAcceptanceReport(report) {
 function selectedClosure(candidate, selectedProfileIds, ref, now) {
   const selected = new Set(selectedProfileIds);
   const profiles = (candidate.runtimeProfiles ?? []).filter((profile) => selected.has(profile.runtimeProfileId));
+  const selectedRuntimeInstanceIds = new Set(profiles.flatMap((profile) => profile.runtimeInstanceIds ?? []));
   const accountIds = new Set(profiles.map((profile) => profile.accountId).filter(Boolean));
   const bindingIds = new Set(profiles.map((profile) => profile.surfaceBindingId).filter(Boolean));
   const sessions = (candidate.sessions ?? []).filter((session) => selected.has(session.runtimeProfileId));
@@ -114,6 +115,7 @@ function selectedClosure(candidate, selectedProfileIds, ref, now) {
 
   const admittedProfiles = profiles.map((profile) => ({
     ...profile,
+    runtimeInstanceIds: (profile.runtimeInstanceIds ?? []).filter((instanceId) => selectedRuntimeInstanceIds.has(instanceId)),
     binding: setAttestedBinding(profile.binding, ref, now),
     authenticationStorage: {
       ...profile.authenticationStorage,
@@ -159,6 +161,23 @@ function selectedClosure(candidate, selectedProfileIds, ref, now) {
     binding: setAttestedBinding(session.binding, ref, now),
     provenance: withEvidence(session.provenance, ref, now),
   }));
+  const admittedRuntimeInstances = (candidate.runtimeInstances ?? []).filter((instance) => selectedRuntimeInstanceIds.has(instance.runtimeInstanceId)).map((instance) => ({
+    ...instance,
+    lifecycleState: 'enrolled',
+    binding: setAttestedBinding(instance.binding, ref, now),
+    authenticationStorage: {
+      ...instance.authenticationStorage,
+      isolationState: 'confirmed',
+      profileIsolationProven: true,
+      healthState: 'healthy',
+      provenance: withEvidence(instance.authenticationStorage?.provenance, ref, now),
+    },
+    provenance: withEvidence(instance.provenance, ref, now),
+  }));
+  const admittedAccessPaths = (candidate.accessPaths ?? []).filter((accessPath) => accessPath.runtimeInstanceIds?.every((instanceId) => selectedRuntimeInstanceIds.has(instanceId))).map((accessPath) => ({
+    ...accessPath,
+    provenance: withEvidence(accessPath.provenance, ref, now),
+  }));
   const lifecyclePolicyIds = new Set(admittedProfiles.map((profile) => profile.lifecyclePolicyId));
   const verificationPolicyIds = new Set(admittedAccounts.map((account) => account.verificationPolicyId));
   return {
@@ -167,6 +186,8 @@ function selectedClosure(candidate, selectedProfileIds, ref, now) {
     sessions: admittedSessions,
     surfaceBindings: admittedBindings,
     runtimeProfiles: admittedProfiles,
+    runtimeInstances: admittedRuntimeInstances,
+    accessPaths: admittedAccessPaths,
     secretStoreAdapters: [],
     lifecyclePolicies: (candidate.lifecyclePolicies ?? []).filter((policy) => lifecyclePolicyIds.has(policy.lifecyclePolicyId)).map((policy) => ({ ...policy, provenance: withEvidence(policy.provenance, ref, now) })),
     verificationPolicies: (candidate.verificationPolicies ?? []).filter((policy) => verificationPolicyIds.has(policy.verificationPolicyId)).map((policy) => ({ ...policy, provenance: withEvidence(policy.provenance, ref, now) })),
@@ -213,6 +234,8 @@ export function buildCodexProfileAdmissionPlan({ canonicalCatalog, candidateCata
     sessions: mergeRecords(canonicalCatalog.sessions, closure.sessions, 'sessionId', mergeErrors),
     surfaceBindings: mergeRecords(canonicalCatalog.surfaceBindings, closure.surfaceBindings, 'surfaceBindingId', mergeErrors),
     runtimeProfiles: mergeRecords(canonicalCatalog.runtimeProfiles, closure.runtimeProfiles, 'runtimeProfileId', mergeErrors),
+    runtimeInstances: mergeRecords(canonicalCatalog.runtimeInstances, closure.runtimeInstances, 'runtimeInstanceId', mergeErrors),
+    accessPaths: mergeRecords(canonicalCatalog.accessPaths, closure.accessPaths, 'accessPathId', mergeErrors),
     secretStoreAdapters: mergeRecords(canonicalCatalog.secretStoreAdapters, closure.secretStoreAdapters, 'adapterId', mergeErrors),
     lifecyclePolicies: mergeRecords(canonicalCatalog.lifecyclePolicies, closure.lifecyclePolicies, 'lifecyclePolicyId', mergeErrors),
     verificationPolicies: mergeRecords(canonicalCatalog.verificationPolicies, closure.verificationPolicies, 'verificationPolicyId', mergeErrors),
@@ -230,6 +253,8 @@ export function buildCodexProfileAdmissionPlan({ canonicalCatalog, candidateCata
       accounts: closure.accounts.map((record) => record.accountId),
       surfaceBindings: closure.surfaceBindings.map((record) => record.surfaceBindingId),
       runtimeProfiles: closure.runtimeProfiles.map((record) => record.runtimeProfileId),
+      runtimeInstances: closure.runtimeInstances.map((record) => record.runtimeInstanceId),
+      accessPaths: closure.accessPaths.map((record) => record.accessPathId),
       sessions: closure.sessions.map((record) => record.sessionId),
       credentials: [],
     },

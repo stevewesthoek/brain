@@ -191,6 +191,7 @@
           "evidenceRefs": []
         }
       },
+      "runtimeInstanceIds": ["runtime_instance:office.openai.01.cli"],
       "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",
       "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
       "switchPolicy": {
@@ -269,6 +270,7 @@
           "evidenceRefs": []
         }
       },
+      "runtimeInstanceIds": ["runtime_instance:office.openai.02.cli"],
       "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",
       "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
       "switchPolicy": {
@@ -309,6 +311,41 @@
       }
     }
   ],
+  "runtimeInstances": [
+    {
+      "runtimeInstanceId": "runtime_instance:office.openai.01.cli",
+      "accountId": "account:openai.01",
+      "runtimeProfileId": "runtime_profile:openai.01.cli",
+      "hostId": "host:office",
+      "lifecycleState": "candidate",
+      "runtimeRoot": "~/.brain/codex-runtime-profiles/openai.01.cli",
+      "stateOwnership": "application",
+      "processOwnership": "profile_scoped",
+      "configWriterRef": "brain:runtime-profile-config-materializer",
+      "leasePath": ".brain-runtime-profile-lease.json",
+      "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}},
+      "authenticationStorage": {"mode": "file", "owner": "application", "locationKind": "codex_home_auth_file", "isolationScope": "codex_home", "isolationState": "candidate", "profileIsolationProven": false, "healthState": "unknown", "materialExposure": "never_observed", "mutationMode": "application_only", "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}},
+      "runtimeNamespace": {"boundary": "codex_home", "stateOwner": "application", "noSharedStateWith": ["runtime_profile:openai.02.cli", "~/.codex"]},
+      "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}
+    },
+    {
+      "runtimeInstanceId": "runtime_instance:office.openai.02.cli",
+      "accountId": "account:openai.02",
+      "runtimeProfileId": "runtime_profile:openai.02.cli",
+      "hostId": "host:office",
+      "lifecycleState": "candidate",
+      "runtimeRoot": "~/.brain/codex-runtime-profiles/openai.02.cli",
+      "stateOwnership": "application",
+      "processOwnership": "profile_scoped",
+      "configWriterRef": "brain:runtime-profile-config-materializer",
+      "leasePath": ".brain-runtime-profile-lease.json",
+      "binding": {"state": "declared", "expiresAt": null, "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}},
+      "authenticationStorage": {"mode": "file", "owner": "application", "locationKind": "codex_home_auth_file", "isolationScope": "codex_home", "isolationState": "candidate", "profileIsolationProven": false, "healthState": "unknown", "materialExposure": "never_observed", "mutationMode": "application_only", "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}},
+      "runtimeNamespace": {"boundary": "codex_home", "stateOwner": "application", "noSharedStateWith": ["runtime_profile:openai.01.cli", "~/.codex"]},
+      "provenance": {"sourceRef": "operations/fixtures/infrastructure-codex-cli-pilot-candidates-v1.json", "classification": "USER-PROPOSED", "verifiedAt": "2026-09-05T00:00:00Z", "freshnessDeadline": "2026-10-05T00:00:00Z", "owner": "operator/codex-cli-pilot", "evidenceRefs": []}
+    }
+  ],
+  "accessPaths": [],
   "secretStoreAdapters": [],
   "lifecyclePolicies": [
     {

@@ -11,13 +11,18 @@ provider
   → account identity
     → account policy
       → surface binding
-        → runtime instance / namespace
+        → logical runtime profile
+          → host-local runtime instance
+            → access path (optional)
 ~~~
 
 An account identity is an opaque Brain reference. A surface binding says which
-application surface represents that account. A runtime profile is a concrete
-namespace for that binding, such as a dedicated CLI CODEX_HOME. A current
-session never changes the preferred-account policy.
+application surface represents that account. A runtime profile is the
+transport-independent logical namespace for that binding, such as a dedicated
+CLI `CODEX_HOME` contract. A runtime instance is the host-local materialization
+of that profile. An access path is only how a client reaches an instance; it is
+not another profile and never carries copied OAuth state. A current session
+never changes the preferred-account policy.
 
 This tranche is repository-only and synthetic-tested. It does not perform
 OAuth, login, logout, token refresh, token copying, Keychain reads, browser
@@ -58,6 +63,17 @@ npm run validate:infrastructure-identity-access
 The capability command is evidence-only. unknown means “not proven”; it is not
 converted to supported. The canonical catalog remains the source of truth and
 is intentionally not populated by the preparation command.
+
+To inspect admitted host-local instances and remote paths without reading auth
+contents:
+
+~~~bash
+npm run runtime:profiles -- instances
+~~~
+
+The output distinguishes `runtime_instance:office.<profile>` from the
+`access_path:macbook.office.<transport>` records. A MacBook remote client does
+not imply a MacBook-local authenticated Codex profile.
 
 To prepare a candidate from a private, stable provider reference, use an
 opaque reference rather than an email address, token, cookie, or JWT:

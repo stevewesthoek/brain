@@ -3,11 +3,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadJson, validateJsonSchema } from './context-learning/context-learning-core.mjs';
+import { validateMultiHostTopology } from './infrastructure-catalog/account-runtime-architecture.mjs';
 
 export const SCHEMA_PATH = 'operations/specs/infrastructure-identity-access-v1.schema.json';
 export const CATALOG_PATH = 'operations/infrastructure/catalog/identity-access.v1.json';
 export const ALTERNATE_FIXTURE_PATH = 'operations/fixtures/infrastructure-identity-access-alternate-v1.json';
 export const OBSERVATION_FIXTURE_PATH = 'operations/fixtures/infrastructure-identity-access-observations-v1.json';
+export const INFRASTRUCTURE_CATALOG_PATH = 'operations/infrastructure/catalog/assets.v1.json';
 
 const RAW_ACCESS_KEYS = new Set([
   'value', 'token', 'password', 'apikey', 'api_key', 'privatekey', 'private_key',
@@ -109,7 +111,7 @@ function validateUniqueIds(collections, errors) {
   return seen;
 }
 
-function validateCatalog({ schema, catalog, label }) {
+function validateCatalog({ schema, catalog, label, hostIds = [] }) {
   const errors = [...validateJsonSchema(schema.$defs.identityAccessCatalog, catalog, schema, `$${label}`)];
   scanSecretSafety(catalog, label, errors);
   validateProvenance(catalog.provenance, `${label} catalog`, errors);
@@ -120,6 +122,8 @@ function validateCatalog({ schema, catalog, label }) {
   const sessions = new Map((catalog.sessions ?? []).map((entry) => [entry.sessionId, entry]));
   const surfaceBindings = new Map((catalog.surfaceBindings ?? []).map((entry) => [entry.surfaceBindingId, entry]));
   const profiles = new Map((catalog.runtimeProfiles ?? []).map((entry) => [entry.runtimeProfileId, entry]));
+  const runtimeInstances = new Map((catalog.runtimeInstances ?? []).map((entry) => [entry.runtimeInstanceId, entry]));
+  const accessPaths = new Map((catalog.accessPaths ?? []).map((entry) => [entry.accessPathId, entry]));
   const secretStores = new Map((catalog.secretStoreAdapters ?? []).map((entry) => [entry.adapterId, entry]));
   const lifecycles = new Map((catalog.lifecyclePolicies ?? []).map((entry) => [entry.lifecyclePolicyId, entry]));
   const verifications = new Map((catalog.verificationPolicies ?? []).map((entry) => [entry.verificationPolicyId, entry]));
@@ -130,6 +134,8 @@ function validateCatalog({ schema, catalog, label }) {
     ['session', catalog.sessions, 'sessionId'],
     ['surface-binding', catalog.surfaceBindings, 'surfaceBindingId'],
     ['runtime-profile', catalog.runtimeProfiles, 'runtimeProfileId'],
+    ['runtime-instance', catalog.runtimeInstances, 'runtimeInstanceId'],
+    ['access-path', catalog.accessPaths, 'accessPathId'],
     ['secret-store-adapter', catalog.secretStoreAdapters, 'adapterId'],
     ['lifecycle-policy', catalog.lifecyclePolicies, 'lifecyclePolicyId'],
     ['verification-policy', catalog.verificationPolicies, 'verificationPolicyId'],
@@ -264,7 +270,28 @@ function validateCatalog({ schema, catalog, label }) {
     if (profile.switchPolicy.concurrencySupport === 'unsupported' && profile.switchPolicy.allowsConcurrentProfiles) {
       pushUnique(errors, `runtime profile ${profile.runtimeProfileId}: unsupported concurrency cannot be enabled`);
     }
+    for (const id of profile.runtimeInstanceIds ?? []) {
+      const instance = runtimeInstances.get(id);
+      if (!instance) pushUnique(errors, `runtime profile ${profile.runtimeProfileId}: missing runtime instance ${id}`);
+      else if (instance.runtimeProfileId !== profile.runtimeProfileId) pushUnique(errors, `runtime profile ${profile.runtimeProfileId}: runtime instance link mismatch ${id}`);
+    }
   }
+
+  for (const instance of catalog.runtimeInstances ?? []) {
+    validateProvenance(instance.provenance, `runtime instance ${instance.runtimeInstanceId}`, errors);
+    validateBinding(instance.binding, instance.accountId, `runtime instance ${instance.runtimeInstanceId}`, errors);
+    validateAuthenticationStorage(instance.authenticationStorage, `runtime instance ${instance.runtimeInstanceId}`, errors);
+    if (!accounts.has(instance.accountId)) pushUnique(errors, `runtime instance ${instance.runtimeInstanceId}: missing account ${instance.accountId}`);
+    const profile = profiles.get(instance.runtimeProfileId);
+    if (!profile) pushUnique(errors, `runtime instance ${instance.runtimeInstanceId}: missing runtime profile ${instance.runtimeProfileId}`);
+    else if (profile.accountId !== instance.accountId) pushUnique(errors, `runtime instance ${instance.runtimeInstanceId}: account mismatch`);
+  }
+
+  for (const accessPath of catalog.accessPaths ?? []) {
+    validateProvenance(accessPath.provenance, `access path ${accessPath.accessPathId}`, errors);
+    for (const id of accessPath.runtimeInstanceIds ?? []) if (!runtimeInstances.has(id)) pushUnique(errors, `access path ${accessPath.accessPathId}: missing runtime instance ${id}`);
+  }
+  errors.push(...validateMultiHostTopology({ catalog, hostIds }).map((error) => `${label}: ${error}`));
 
   for (const adapter of catalog.secretStoreAdapters ?? []) {
     validateProvenance(adapter.provenance, `secret-store adapter ${adapter.adapterId}`, errors);
@@ -291,7 +318,7 @@ function validateCatalog({ schema, catalog, label }) {
       pushUnique(errors, `account ${account.accountId}: verification requires an expected principal`);
     }
   }
-  return { errors, counts: { accounts: accounts.size, credentials: credentials.size, sessions: sessions.size, runtimeProfiles: profiles.size } };
+  return { errors, counts: { accounts: accounts.size, credentials: credentials.size, sessions: sessions.size, runtimeProfiles: profiles.size, runtimeInstances: runtimeInstances.size, accessPaths: accessPaths.size } };
 }
 
 function validateObservations({ schema, snapshot, label }) {
@@ -318,8 +345,10 @@ export function loadAndValidateIdentityAccess({ root = path.resolve(import.meta.
   const catalog = loadJson(path.join(root, CATALOG_PATH));
   const alternate = loadJson(path.join(root, ALTERNATE_FIXTURE_PATH));
   const observations = loadJson(path.join(root, OBSERVATION_FIXTURE_PATH));
-  const canonical = validateCatalog({ schema, catalog, label: '.canonical' });
-  const portable = validateCatalog({ schema, catalog: alternate, label: '.alternate' });
+  const infrastructure = loadJson(path.join(root, INFRASTRUCTURE_CATALOG_PATH));
+  const hostIds = new Set((infrastructure.resources ?? []).filter((resource) => resource.resourceClass === 'host').map((resource) => resource.resourceId));
+  const canonical = validateCatalog({ schema, catalog, label: '.canonical', hostIds });
+  const portable = validateCatalog({ schema, catalog: alternate, label: '.alternate', hostIds });
   const observed = validateObservations({ schema, snapshot: observations, label: '.observations' });
   return {
     schema,
@@ -341,7 +370,7 @@ function main() {
     return;
   }
   const { canonical, alternate, observations } = result.counts;
-  console.log(`infrastructure-identity-access-valid canonicalAccounts=${canonical.accounts} alternateAccounts=${alternate.accounts} alternateCredentials=${alternate.credentials} alternateSessions=${alternate.sessions} alternateProfiles=${alternate.runtimeProfiles} observations=${observations} mutationEnabled=false rawSecrets=none`);
+  console.log(`infrastructure-identity-access-valid canonicalAccounts=${canonical.accounts} canonicalInstances=${canonical.runtimeInstances} canonicalAccessPaths=${canonical.accessPaths} alternateAccounts=${alternate.accounts} alternateCredentials=${alternate.credentials} alternateSessions=${alternate.sessions} alternateProfiles=${alternate.runtimeProfiles} observations=${observations} mutationEnabled=false rawSecrets=none`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

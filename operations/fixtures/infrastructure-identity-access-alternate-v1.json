@@ -295,6 +295,7 @@
           "evidenceRefs": []
         }
       },
+      "runtimeInstanceIds": [],
       "lifecyclePolicyId": "lifecycle_policy:oauth-refreshable",
       "recoveryRunbookRef": "runbook://provider-a/interactive-reauthentication",
       "switchPolicy": {"requiresQuiescence": true, "allowsConcurrentProfiles": true, "processOwnership": "profile_scoped", "concurrencySupport": "supported", "maxConcurrentProfiles": 2, "isolationRequired": true},
@@ -346,6 +347,7 @@
           "evidenceRefs": []
         }
       },
+      "runtimeInstanceIds": [],
       "lifecyclePolicyId": "lifecycle_policy:static-until-revoked",
       "recoveryRunbookRef": "runbook://provider-a/api-key-recovery",
       "switchPolicy": {"requiresQuiescence": true, "allowsConcurrentProfiles": true, "processOwnership": "profile_scoped", "concurrencySupport": "supported", "maxConcurrentProfiles": 2, "isolationRequired": true},
@@ -359,6 +361,8 @@
       }
     }
   ],
+  "runtimeInstances": [],
+  "accessPaths": [],
   "secretStoreAdapters": [
     {
       "adapterId": "secret_store:machine_runtime",
