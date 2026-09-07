@@ -22,6 +22,7 @@ testing.
 | Host scope | Host-local |
 | Synchronization | Explicitly disabled; no automatic iCloud Keychain distribution |
 | Accessibility | `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` |
+| Access control | Per-item `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`; operator-gated mutation |
 | Mutation | Approval-gated create/update/delete |
 | Raw read | Not exposed; authorized read is bounded verifier stdin delivery |
 | Inventory | Metadata-only; never requests secret data |
@@ -125,8 +126,9 @@ application-owned OAuth.
 
 ## Git closeout
 
-Implementation commit: `61231ec5` (`feat(identity): operationalize Brain
-Keychain secret storage`). This audit is finalized in the scoped
-documentation closeout commit containing this report. After that commit was
-pushed to canonical `main`, local `main == origin/main` and a clean
-worktree were verified. No force push was used.
+Implementation commits: `61231ec5` (`feat(identity): operationalize Brain
+Keychain secret storage`) and corrective `a11709b7` (`fix(identity): align
+Keychain access model with script runtime`). This audit is finalized in the
+scoped documentation closeout commit containing this report. After that
+commit is pushed to canonical `main`, local `main == origin/main` and a clean
+worktree will be verified. No force push is used.

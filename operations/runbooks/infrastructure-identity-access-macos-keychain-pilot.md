@@ -245,13 +245,19 @@ They do not contact GitHub or read a real credential.
 
 The default physical store is the logged-in user's macOS `login` Keychain.
 Items use the `tools.prochat.brain` service namespace, generic-password
-class, `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, and
+class with the per-item `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`
+protection, and
 `kSecAttrSynchronizable=false`. Metadata probes request attributes only and
 use `kSecUseAuthenticationUIFail`, so a locked or unavailable Keychain fails
 closed without an unlock prompt in background operation. Authorized provider
 verification is limited to a registered verifier and may require the normal
 macOS Keychain access decision for the user/session. No broad ACL weakening is
-performed.
+performed. The native helper's allowlisted verifier boundary remains the
+application-level consumer control. The stronger `SecAccessControl` item
+attribute is intentionally deferred: unsigned source-distributed Swift
+helpers receive `errSecMissingEntitlement` for that insertion path on this
+host, so it is not claimed as operational until a signed/entitled helper is
+introduced and tested.
 
 The adapter reports `permission_denied` for locked/denied access,
 `unavailable` for unavailable storage, and `unknown` for unmapped native
@@ -327,7 +333,8 @@ claimed as complete.
   against the secret before release; the verifier remains a trusted, scoped
   execution component and must stay locally registered.
 - **Keychain prompts/permissions:** locked or denied access becomes a
-  non-healthy `vault_unavailable` result; no unlock or retry mutation occurs.
+  non-healthy `secret_store_locked` result; unavailable storage becomes
+  `secret_store_unavailable`; no unlock or retry mutation occurs.
 - **concurrency:** same-reference mutation is approval-gated; callers must
   serialize lifecycle operations and version replacements before cutover.
 - **memory lifetime:** the native boundary makes best-effort `Data` cleanup;
