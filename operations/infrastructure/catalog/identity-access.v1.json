@@ -61,12 +61,16 @@
         "matchStrategy": "manual_review"
       },
       "credentialIds": [],
-      "sessionIds": [],
+      "sessionIds": [
+        "session:openai.02.macbook.desktop"
+      ],
       "surfaceBindingIds": [
-        "surface_binding:openai.02.codex-cli"
+        "surface_binding:openai.02.codex-cli",
+        "surface_binding:openai.02.codex-desktop"
       ],
       "runtimeProfileIds": [
-        "runtime_profile:openai.02.cli"
+        "runtime_profile:openai.02.cli",
+        "runtime_profile:openai.02.desktop"
       ],
       "verificationPolicyId": "verification_policy:codex-cli-read-only",
       "recoveryRunbookRef": "runbook://openai/codex-cli-reauthentication",
@@ -83,7 +87,64 @@
     }
   ],
   "credentials": [],
-  "sessions": [],
+  "sessions": [
+    {
+      "sessionId": "session:openai.02.macbook.desktop",
+      "accountId": "account:openai.02",
+      "surfaceBindingId": "surface_binding:openai.02.codex-desktop",
+      "binding": {
+        "state": "user_attested",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:58:56Z",
+          "freshnessDeadline": "2026-10-07T08:58:56Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
+        }
+      },
+      "sessionKind": "provider_session",
+      "stateOwner": "application",
+      "applicationRef": "application:codex-desktop",
+      "managedStateRef": "application-state://codex/macbook/openai.02.desktop",
+      "credentialIds": [],
+      "runtimeProfileId": "runtime_profile:openai.02.desktop",
+      "runtimeInstanceId": "runtime_instance:macbook.openai.02.desktop",
+      "executionTargetRef": "host:office",
+      "executionConnectionId": null,
+      "authenticationStorage": {
+        "mode": "application_native",
+        "owner": "application",
+        "locationKind": "application_native_state",
+        "isolationScope": "application_instance",
+        "isolationState": "candidate",
+        "profileIsolationProven": false,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:58:56Z",
+          "freshnessDeadline": "2026-10-07T08:58:56Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
+        }
+      },
+      "lastObservedAt": "2026-09-07T08:58:56Z",
+      "lastKnownState": "unknown",
+      "recoveryRunbookRef": "runbook://openai/codex-desktop-reauthentication",
+      "provenance": {
+        "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-07T08:58:56Z",
+        "freshnessDeadline": "2026-10-07T08:58:56Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
+      }
+    }
+  ],
   "surfaceBindings": [
     {
       "surfaceBindingId": "surface_binding:openai.01.codex-cli",
@@ -165,6 +226,41 @@
         "evidenceRefs": [
           "codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"
         ]
+      }
+    },
+    {
+      "surfaceBindingId": "surface_binding:openai.02.codex-desktop",
+      "accountId": "account:openai.02",
+      "surfaceId": "codex-desktop",
+      "lifecycleState": "candidate",
+      "binding": {
+        "state": "user_attested",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:58:56Z",
+          "freshnessDeadline": "2026-10-07T08:58:56Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
+        }
+      },
+      "sessionIds": ["session:openai.02.macbook.desktop"],
+      "runtimeProfileIds": ["runtime_profile:openai.02.desktop"],
+      "capabilityEvidence": {
+        "nAccountModel": "supported",
+        "isolatedRuntime": "unknown",
+        "authIsolation": "unknown",
+        "concurrentProfiles": "unknown",
+        "programmaticSelection": "unknown"
+      },
+      "provenance": {
+        "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-07T08:58:56Z",
+        "freshnessDeadline": "2026-10-07T08:58:56Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
       }
     }
   ],
@@ -352,6 +448,77 @@
           "codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"
         ]
       }
+    },
+    {
+      "runtimeProfileId": "runtime_profile:openai.02.desktop",
+      "accountId": "account:openai.02",
+      "surfaceBindingId": "surface_binding:openai.02.codex-desktop",
+      "binding": {
+        "state": "user_attested",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:58:56Z",
+          "freshnessDeadline": "2026-10-07T08:58:56Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
+        }
+      },
+      "profileKind": "desktop",
+      "runtimeAdapterRef": "runtime_adapter:codex-desktop",
+      "isolationRef": "runtime-ref://profiles/openai.02.desktop",
+      "stateOwnership": "application",
+      "authenticationStorage": {
+        "mode": "application_native",
+        "owner": "application",
+        "locationKind": "application_native_state",
+        "isolationScope": "application_instance",
+        "isolationState": "candidate",
+        "profileIsolationProven": false,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:58:56Z",
+          "freshnessDeadline": "2026-10-07T08:58:56Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["macbook:default-codex-home-present"]
+        }
+      },
+      "runtimeInstanceIds": ["runtime_instance:macbook.openai.02.desktop"],
+      "lifecyclePolicyId": "lifecycle_policy:codex-cli-oauth",
+      "recoveryRunbookRef": "runbook://openai/codex-desktop-reauthentication",
+      "switchPolicy": {
+        "requiresQuiescence": true,
+        "allowsConcurrentProfiles": false,
+        "processOwnership": "application_scoped",
+        "concurrencySupport": "unknown",
+        "maxConcurrentProfiles": null,
+        "isolationRequired": true
+      },
+      "routeBinding": {
+        "mode": "direct_native",
+        "providerRef": "openai",
+        "ownerRef": "brain:runtime-profile-route-intent",
+        "optional": false
+      },
+      "runtimeNamespace": {
+        "boundary": "application_instance",
+        "processOwnership": "application_scoped",
+        "stateOwner": "application",
+        "noSharedStateWith": ["runtime_profile:openai.01.cli", "runtime_profile:openai.02.cli"]
+      },
+      "provenance": {
+        "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-07T08:58:56Z",
+        "freshnessDeadline": "2026-10-07T08:58:56Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
+      }
     }
   ],
   "runtimeInstances": [
@@ -359,7 +526,7 @@
       "runtimeInstanceId": "runtime_instance:office.openai.01.cli",
       "accountId": "account:openai.01",
       "runtimeProfileId": "runtime_profile:openai.01.cli",
-      "hostId": "host:office",
+      "runtimeHostId": "host:office",
       "lifecycleState": "enrolled",
       "runtimeRoot": "~/.brain/codex-runtime-profiles/openai.01.cli",
       "stateOwnership": "application",
@@ -415,7 +582,7 @@
       "runtimeInstanceId": "runtime_instance:office.openai.02.cli",
       "accountId": "account:openai.02",
       "runtimeProfileId": "runtime_profile:openai.02.cli",
-      "hostId": "host:office",
+      "runtimeHostId": "host:office",
       "lifecycleState": "enrolled",
       "runtimeRoot": "~/.brain/codex-runtime-profiles/openai.02.cli",
       "stateOwnership": "application",
@@ -466,6 +633,62 @@
         "owner": "operator/identity-access",
         "evidenceRefs": ["tailscale:office", "codex-cli-pilot-finalize:codex-cli-pilot-finalize-20260907-2.json"]
       }
+    },
+    {
+      "runtimeInstanceId": "runtime_instance:macbook.openai.02.desktop",
+      "accountId": "account:openai.02",
+      "runtimeProfileId": "runtime_profile:openai.02.desktop",
+      "runtimeHostId": "host:macbook",
+      "lifecycleState": "candidate",
+      "runtimeRoot": "~/.codex",
+      "stateOwnership": "application",
+      "processOwnership": "application_scoped",
+      "configWriterRef": "application:codex-desktop",
+      "leasePath": null,
+      "binding": {
+        "state": "user_attested",
+        "expiresAt": null,
+        "provenance": {
+          "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:58:56Z",
+          "freshnessDeadline": "2026-10-07T08:58:56Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["user-attestation:macbook-codex-session-account-02"]
+        }
+      },
+      "authenticationStorage": {
+        "mode": "application_native",
+        "owner": "application",
+        "locationKind": "application_native_state",
+        "isolationScope": "application_instance",
+        "isolationState": "candidate",
+        "profileIsolationProven": false,
+        "healthState": "unknown",
+        "materialExposure": "never_observed",
+        "mutationMode": "application_only",
+        "provenance": {
+          "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+          "classification": "USER-PROPOSED",
+          "verifiedAt": "2026-09-07T08:58:56Z",
+          "freshnessDeadline": "2026-10-07T08:58:56Z",
+          "owner": "operator/identity-access",
+          "evidenceRefs": ["macbook:default-codex-home-present"]
+        }
+      },
+      "runtimeNamespace": {
+        "boundary": "application_instance",
+        "stateOwner": "application",
+        "noSharedStateWith": ["runtime_profile:openai.02.cli", "runtime_instance:office.openai.02.cli", "host-local-auth:host:office"]
+      },
+      "provenance": {
+        "sourceRef": "operations/reports/codex-runtime-host-execution-target-correction-2026-09-07.md",
+        "classification": "USER-PROPOSED",
+        "verifiedAt": "2026-09-07T08:58:56Z",
+        "freshnessDeadline": "2026-10-07T08:58:56Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["macbook:default-codex-home-present", "user-attestation:macbook-codex-session-account-02"]
+      }
     }
   ],
   "accessPaths": [
@@ -475,7 +698,6 @@
       "destinationHostId": "host:office",
       "transport": "thunderbolt",
       "accessMode": "remote",
-      "runtimeInstanceIds": ["runtime_instance:office.openai.01.cli", "runtime_instance:office.openai.02.cli"],
       "availability": "available",
       "trustState": "verified",
       "healthState": "healthy",
@@ -496,7 +718,6 @@
       "destinationHostId": "host:office",
       "transport": "tailscale",
       "accessMode": "remote",
-      "runtimeInstanceIds": ["runtime_instance:office.openai.01.cli", "runtime_instance:office.openai.02.cli"],
       "availability": "available",
       "trustState": "verified",
       "healthState": "healthy",
@@ -509,6 +730,52 @@
         "freshnessDeadline": "2026-09-07T09:38:18Z",
         "owner": "operator/identity-access",
         "evidenceRefs": ["tailscale:office", "tailscale:macbook"]
+      }
+    }
+  ],
+  "executionConnections": [
+    {
+      "executionConnectionId": "execution_connection:macbook.openai.02.desktop.office.ssh.macbook.office.thunderbolt",
+      "sourceRuntimeInstanceId": "runtime_instance:macbook.openai.02.desktop",
+      "sourceHostId": "host:macbook",
+      "targetHostId": "host:office",
+      "executionTargetRef": "host:office",
+      "protocol": "ssh",
+      "networkPathId": "access_path:macbook.office.thunderbolt",
+      "targetRuntimeInstanceId": null,
+      "workspaceRef": "workspace:brain",
+      "healthState": "healthy",
+      "lastObservedAt": "2026-09-07T08:58:56Z",
+      "credentialCustodyRef": "custody:ssh.macbook-office",
+      "provenance": {
+        "sourceRef": "operations/runbooks/workstation-config-ownership.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T08:58:56Z",
+        "freshnessDeadline": "2026-09-07T09:58:56Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["ssh-config:MacBook", "ssh-config:office", "ssh:MacBook-to-office"]
+      }
+    },
+    {
+      "executionConnectionId": "execution_connection:macbook.openai.02.desktop.office.ssh.macbook.office.tailscale",
+      "sourceRuntimeInstanceId": "runtime_instance:macbook.openai.02.desktop",
+      "sourceHostId": "host:macbook",
+      "targetHostId": "host:office",
+      "executionTargetRef": "host:office",
+      "protocol": "ssh",
+      "networkPathId": "access_path:macbook.office.tailscale",
+      "targetRuntimeInstanceId": null,
+      "workspaceRef": "workspace:brain",
+      "healthState": "healthy",
+      "lastObservedAt": "2026-09-07T08:58:56Z",
+      "credentialCustodyRef": "custody:ssh.macbook-office",
+      "provenance": {
+        "sourceRef": "operations/runbooks/workstation-config-ownership.md",
+        "classification": "OBSERVED-VERIFIED",
+        "verifiedAt": "2026-09-07T08:58:56Z",
+        "freshnessDeadline": "2026-09-07T09:58:56Z",
+        "owner": "operator/identity-access",
+        "evidenceRefs": ["tailscale:macbook", "tailscale:office", "ssh:MacBook-to-office"]
       }
     }
   ],

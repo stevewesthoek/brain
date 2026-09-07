@@ -217,7 +217,7 @@
     },
     "session": {
       "type": "object",
-      "required": ["sessionId", "accountId", "surfaceBindingId", "binding", "sessionKind", "stateOwner", "applicationRef", "managedStateRef", "credentialIds", "runtimeProfileId", "authenticationStorage", "lastObservedAt", "lastKnownState", "recoveryRunbookRef", "provenance"],
+      "required": ["sessionId", "accountId", "surfaceBindingId", "binding", "sessionKind", "stateOwner", "applicationRef", "managedStateRef", "credentialIds", "runtimeProfileId", "runtimeInstanceId", "executionTargetRef", "executionConnectionId", "authenticationStorage", "lastObservedAt", "lastKnownState", "recoveryRunbookRef", "provenance"],
       "properties": {
         "sessionId": { "$ref": "#/$defs/identifier" },
         "accountId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
@@ -229,6 +229,9 @@
         "managedStateRef": { "type": ["string", "null"], "pattern": "^(application-state|runtime-state|opaque-ref)://[^\\s]+$" },
         "credentialIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
         "runtimeProfileId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$" },
+        "runtimeInstanceId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$", "$comment": "Host-local Codex runtime instance; null is allowed for non-runtime application sessions." },
+        "executionTargetRef": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._/-]*$" },
+        "executionConnectionId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._-]*$", "$comment": "Remote execution connection used by this interaction, when selected." },
         "authenticationStorage": { "$ref": "#/$defs/authenticationStorage" },
         "lastObservedAt": { "type": ["string", "null"], "format": "date-time" },
         "lastKnownState": { "$ref": "#/$defs/detailedState" },
@@ -304,12 +307,12 @@
     },
     "runtimeInstance": {
       "type": "object",
-      "required": ["runtimeInstanceId", "accountId", "runtimeProfileId", "hostId", "lifecycleState", "runtimeRoot", "stateOwnership", "processOwnership", "configWriterRef", "leasePath", "binding", "authenticationStorage", "provenance"],
+      "required": ["runtimeInstanceId", "accountId", "runtimeProfileId", "runtimeHostId", "lifecycleState", "runtimeRoot", "stateOwnership", "processOwnership", "configWriterRef", "leasePath", "binding", "authenticationStorage", "provenance"],
       "properties": {
         "runtimeInstanceId": { "$ref": "#/$defs/identifier" },
         "accountId": { "$ref": "#/$defs/identifier" },
         "runtimeProfileId": { "type": "string", "pattern": "^runtime_profile:[a-z0-9][a-z0-9._-]*$" },
-        "hostId": { "$ref": "#/$defs/hostReference" },
+        "runtimeHostId": { "$ref": "#/$defs/hostReference" },
         "lifecycleState": { "enum": ["enrolled", "candidate", "inactive", "retired", "unknown"] },
         "runtimeRoot": { "type": "string", "minLength": 1 },
         "stateOwnership": { "enum": ["application", "runtime_adapter", "brain"] },
@@ -334,19 +337,38 @@
     },
     "accessPath": {
       "type": "object",
-      "required": ["accessPathId", "sourceHostId", "destinationHostId", "transport", "accessMode", "runtimeInstanceIds", "availability", "trustState", "healthState", "lastObservedAt", "provenance"],
+      "required": ["accessPathId", "sourceHostId", "destinationHostId", "transport", "accessMode", "availability", "trustState", "healthState", "lastObservedAt", "provenance"],
       "properties": {
         "accessPathId": { "$ref": "#/$defs/identifier" },
         "sourceHostId": { "$ref": "#/$defs/hostReference" },
         "destinationHostId": { "$ref": "#/$defs/hostReference" },
         "transport": { "enum": ["local_console", "tailscale", "thunderbolt", "ssh", "remote_desktop", "other"] },
         "accessMode": { "enum": ["local", "remote"] },
-        "runtimeInstanceIds": { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "minItems": 1, "uniqueItems": true },
         "availability": { "enum": ["available", "unavailable", "unknown", "retired"] },
         "trustState": { "enum": ["verified", "attested", "unknown", "conflicted"] },
         "healthState": { "$ref": "#/$defs/normalizedStatus" },
         "lastObservedAt": { "$ref": "#/$defs/timestamp" },
         "routeAliases": { "type": "array", "items": { "$ref": "#/$defs/safeMetadataIdentifier" }, "uniqueItems": true },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "executionConnection": {
+      "type": "object",
+      "required": ["executionConnectionId", "sourceRuntimeInstanceId", "sourceHostId", "targetHostId", "executionTargetRef", "protocol", "networkPathId", "targetRuntimeInstanceId", "workspaceRef", "healthState", "lastObservedAt", "credentialCustodyRef", "provenance"],
+      "properties": {
+        "executionConnectionId": { "$ref": "#/$defs/identifier" },
+        "sourceRuntimeInstanceId": { "$ref": "#/$defs/identifier" },
+        "sourceHostId": { "$ref": "#/$defs/hostReference" },
+        "targetHostId": { "$ref": "#/$defs/hostReference" },
+        "executionTargetRef": { "$ref": "#/$defs/identifier" },
+        "protocol": { "enum": ["local", "ssh", "other"] },
+        "networkPathId": { "type": ["string", "null"], "$comment": "Transport/path record; null is allowed for local execution." },
+        "targetRuntimeInstanceId": { "type": ["string", "null"], "$comment": "Optional only; remote execution normally targets a host/workspace, not another Codex runtime." },
+        "workspaceRef": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._/-]*$" },
+        "healthState": { "$ref": "#/$defs/normalizedStatus" },
+        "lastObservedAt": { "$ref": "#/$defs/timestamp" },
+        "credentialCustodyRef": { "$ref": "#/$defs/identifier" },
         "provenance": { "$ref": "#/$defs/provenance" }
       },
       "additionalProperties": false
@@ -446,7 +468,7 @@
     },
     "identityAccessCatalog": {
       "type": "object",
-      "required": ["schemaVersion", "catalogVersion", "catalogId", "entrypoint", "mutationEnabled", "accounts", "credentials", "sessions", "surfaceBindings", "runtimeProfiles", "runtimeInstances", "accessPaths", "secretStoreAdapters", "lifecyclePolicies", "verificationPolicies", "provenance"],
+      "required": ["schemaVersion", "catalogVersion", "catalogId", "entrypoint", "mutationEnabled", "accounts", "credentials", "sessions", "surfaceBindings", "runtimeProfiles", "runtimeInstances", "accessPaths", "executionConnections", "secretStoreAdapters", "lifecyclePolicies", "verificationPolicies", "provenance"],
       "properties": {
         "schemaVersion": { "$ref": "#/$defs/schemaVersion" },
         "catalogVersion": { "$ref": "#/$defs/catalogVersion" },
@@ -461,6 +483,7 @@
         "runtimeProfiles": { "type": "array", "items": { "$ref": "#/$defs/runtimeProfile" } },
         "runtimeInstances": { "type": "array", "items": { "$ref": "#/$defs/runtimeInstance" } },
         "accessPaths": { "type": "array", "items": { "$ref": "#/$defs/accessPath" } },
+        "executionConnections": { "type": "array", "items": { "$ref": "#/$defs/executionConnection" } },
         "secretStoreAdapters": { "type": "array", "items": { "$ref": "#/$defs/secretStoreAdapter" } },
         "lifecyclePolicies": { "type": "array", "items": { "$ref": "#/$defs/lifecyclePolicy" } },
         "verificationPolicies": { "type": "array", "items": { "$ref": "#/$defs/verificationPolicy" } },

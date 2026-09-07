@@ -41,19 +41,26 @@ authentication boundary for that host. The same profile may therefore have one
 instance on each admitted host without sharing `CODEX_HOME`, auth state, locks,
 SQLite state, or processes.
 
-An `accessPath` is a separate transport record from a source host to a
-destination host. It may expose one or more destination runtime instances, but
-it never changes their identity or custody. A transport failure is an access
-incident, not an authentication failure. Host retirement retires its runtime
-instances and paths; it does not renumber or retire the account or logical
-profile.
+An `accessPath` is a transport-only network record from a source host to a
+destination host. It does not point at a runtime instance. A transport failure
+is an access incident, not an authentication failure. Host retirement retires
+its runtime instances and paths; it does not renumber or retire the account or
+logical profile.
 
-The current admitted topology is intentionally asymmetric: `host:office` is
-the native Codex runtime host, while `host:macbook` is a remote interactive
-client over verified Thunderbolt and Tailscale paths. No MacBook-local Codex
-OAuth is claimed. If a local MacBook Codex runtime is later used, it must be
-admitted as its own `(profile, host)` instance with its own application-owned
-state.
+An `executionConnection` is the separate operational relation from a source
+runtime instance to an execution target (normally a host and workspace). It
+records the protocol (`ssh`, `local`, or another supported protocol), the
+network path used by that protocol, and an optional target runtime instance.
+The optional target runtime is null when the connection only targets a host or
+workspace and must not be inferred from the network path.
+
+The current admitted topology includes a MacBook-local Codex desktop runtime
+for `account:openai.02`, which is also the source of remote SSH execution
+connections to `host:office` and `workspace:brain`. The MacBook runtime is
+operator-attested rather than provider-verified because its application auth
+was not inspected. The Office CLI runtime instances, including
+`account:openai.01`, remain independent host-local application sessions. No
+OAuth state is copied between them.
 
 Account identities and surface bindings are stable semantic records. Account
 switching never renumbers them and never copies application authentication

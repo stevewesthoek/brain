@@ -124,6 +124,7 @@ function validateCatalog({ schema, catalog, label, hostIds = [] }) {
   const profiles = new Map((catalog.runtimeProfiles ?? []).map((entry) => [entry.runtimeProfileId, entry]));
   const runtimeInstances = new Map((catalog.runtimeInstances ?? []).map((entry) => [entry.runtimeInstanceId, entry]));
   const accessPaths = new Map((catalog.accessPaths ?? []).map((entry) => [entry.accessPathId, entry]));
+  const executionConnections = new Map((catalog.executionConnections ?? []).map((entry) => [entry.executionConnectionId, entry]));
   const secretStores = new Map((catalog.secretStoreAdapters ?? []).map((entry) => [entry.adapterId, entry]));
   const lifecycles = new Map((catalog.lifecyclePolicies ?? []).map((entry) => [entry.lifecyclePolicyId, entry]));
   const verifications = new Map((catalog.verificationPolicies ?? []).map((entry) => [entry.verificationPolicyId, entry]));
@@ -136,6 +137,7 @@ function validateCatalog({ schema, catalog, label, hostIds = [] }) {
     ['runtime-profile', catalog.runtimeProfiles, 'runtimeProfileId'],
     ['runtime-instance', catalog.runtimeInstances, 'runtimeInstanceId'],
     ['access-path', catalog.accessPaths, 'accessPathId'],
+    ['execution-connection', catalog.executionConnections, 'executionConnectionId'],
     ['secret-store-adapter', catalog.secretStoreAdapters, 'adapterId'],
     ['lifecycle-policy', catalog.lifecyclePolicies, 'lifecyclePolicyId'],
     ['verification-policy', catalog.verificationPolicies, 'verificationPolicyId'],
@@ -219,6 +221,19 @@ function validateCatalog({ schema, catalog, label, hostIds = [] }) {
       pushUnique(errors, `session ${session.sessionId}: account-bound session requires a surface binding`);
     }
     if (session.runtimeProfileId !== null && !profiles.has(session.runtimeProfileId)) pushUnique(errors, `session ${session.sessionId}: missing runtime profile ${session.runtimeProfileId}`);
+    if (session.runtimeInstanceId !== null) {
+      const instance = runtimeInstances.get(session.runtimeInstanceId);
+      if (!instance) pushUnique(errors, `session ${session.sessionId}: missing runtime instance ${session.runtimeInstanceId}`);
+      else if (session.runtimeProfileId !== null && instance.runtimeProfileId !== session.runtimeProfileId) pushUnique(errors, `session ${session.sessionId}: runtime instance profile mismatch`);
+    }
+    if (session.executionConnectionId !== null) {
+      const connection = executionConnections.get(session.executionConnectionId);
+      if (!connection) pushUnique(errors, `session ${session.sessionId}: missing execution connection ${session.executionConnectionId}`);
+      else {
+        if (session.runtimeInstanceId !== null && connection.sourceRuntimeInstanceId !== session.runtimeInstanceId) pushUnique(errors, `session ${session.sessionId}: execution connection source mismatch`);
+        if (session.executionTargetRef !== null && connection.executionTargetRef !== session.executionTargetRef) pushUnique(errors, `session ${session.sessionId}: execution target mismatch`);
+      }
+    }
     for (const id of session.credentialIds ?? []) if (!credentials.has(id)) pushUnique(errors, `session ${session.sessionId}: missing credential ${id}`);
     if (session.stateOwner === 'application' && (!session.applicationRef || !session.managedStateRef)) {
       pushUnique(errors, `session ${session.sessionId}: application-owned state requires applicationRef and managedStateRef`);
@@ -289,7 +304,13 @@ function validateCatalog({ schema, catalog, label, hostIds = [] }) {
 
   for (const accessPath of catalog.accessPaths ?? []) {
     validateProvenance(accessPath.provenance, `access path ${accessPath.accessPathId}`, errors);
-    for (const id of accessPath.runtimeInstanceIds ?? []) if (!runtimeInstances.has(id)) pushUnique(errors, `access path ${accessPath.accessPathId}: missing runtime instance ${id}`);
+  }
+  for (const connection of catalog.executionConnections ?? []) {
+    validateProvenance(connection.provenance, `execution connection ${connection.executionConnectionId}`, errors);
+    const sourceInstance = runtimeInstances.get(connection.sourceRuntimeInstanceId);
+    if (!sourceInstance) pushUnique(errors, `execution connection ${connection.executionConnectionId}: missing source runtime instance ${connection.sourceRuntimeInstanceId}`);
+    if (connection.networkPathId !== null && !accessPaths.has(connection.networkPathId)) pushUnique(errors, `execution connection ${connection.executionConnectionId}: missing network path ${connection.networkPathId}`);
+    if (connection.targetRuntimeInstanceId !== null && !runtimeInstances.has(connection.targetRuntimeInstanceId)) pushUnique(errors, `execution connection ${connection.executionConnectionId}: missing target runtime instance ${connection.targetRuntimeInstanceId}`);
   }
   errors.push(...validateMultiHostTopology({ catalog, hostIds }).map((error) => `${label}: ${error}`));
 
@@ -318,7 +339,7 @@ function validateCatalog({ schema, catalog, label, hostIds = [] }) {
       pushUnique(errors, `account ${account.accountId}: verification requires an expected principal`);
     }
   }
-  return { errors, counts: { accounts: accounts.size, credentials: credentials.size, sessions: sessions.size, runtimeProfiles: profiles.size, runtimeInstances: runtimeInstances.size, accessPaths: accessPaths.size } };
+  return { errors, counts: { accounts: accounts.size, credentials: credentials.size, sessions: sessions.size, runtimeProfiles: profiles.size, runtimeInstances: runtimeInstances.size, accessPaths: accessPaths.size, executionConnections: executionConnections.size } };
 }
 
 function validateObservations({ schema, snapshot, label }) {
@@ -370,7 +391,7 @@ function main() {
     return;
   }
   const { canonical, alternate, observations } = result.counts;
-  console.log(`infrastructure-identity-access-valid canonicalAccounts=${canonical.accounts} canonicalInstances=${canonical.runtimeInstances} canonicalAccessPaths=${canonical.accessPaths} alternateAccounts=${alternate.accounts} alternateCredentials=${alternate.credentials} alternateSessions=${alternate.sessions} alternateProfiles=${alternate.runtimeProfiles} observations=${observations} mutationEnabled=false rawSecrets=none`);
+  console.log(`infrastructure-identity-access-valid canonicalAccounts=${canonical.accounts} canonicalInstances=${canonical.runtimeInstances} canonicalAccessPaths=${canonical.accessPaths} canonicalExecutionConnections=${canonical.executionConnections} alternateAccounts=${alternate.accounts} alternateCredentials=${alternate.credentials} alternateSessions=${alternate.sessions} alternateProfiles=${alternate.runtimeProfiles} observations=${observations} mutationEnabled=false rawSecrets=none`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

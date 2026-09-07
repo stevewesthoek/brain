@@ -135,6 +135,9 @@
       "managedStateRef": "application-state://synthetic-cli/provider-a.01",
       "credentialIds": ["credential:provider-a.01.refresh"],
       "runtimeProfileId": "runtime_profile:provider-a.01.cli",
+      "runtimeInstanceId": null,
+      "executionTargetRef": null,
+      "executionConnectionId": null,
       "authenticationStorage": {
         "mode": "file",
         "owner": "application",
@@ -188,6 +191,9 @@
       "managedStateRef": "application-state://synthetic-mcp/provider-a.01",
       "credentialIds": [],
       "runtimeProfileId": "runtime_profile:provider-a.01.cli",
+      "runtimeInstanceId": null,
+      "executionTargetRef": null,
+      "executionConnectionId": null,
       "authenticationStorage": {
         "mode": "browser_profile",
         "owner": "application",
@@ -363,6 +369,7 @@
   ],
   "runtimeInstances": [],
   "accessPaths": [],
+  "executionConnections": [],
   "secretStoreAdapters": [
     {
       "adapterId": "secret_store:machine_runtime",

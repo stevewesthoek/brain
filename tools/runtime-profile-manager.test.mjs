@@ -215,10 +215,11 @@ test('CLI surface consumes the shared catalog and returns a machine-checkable st
 test('instances view is read-only and exposes host/path topology without auth contents', async () => {
   const result = await runRuntimeProfileManager(['instances'], { catalog: loadJson(path.join(root, 'operations/infrastructure/catalog/identity-access.v1.json')) });
   assert.equal(result.status, 'OK');
-  assert.equal(result.instances.length, 2);
+  assert.equal(result.instances.length, 3);
   assert.equal(result.accessPaths.length, 2);
-  assert.equal(result.instances.every((instance) => instance.hostId === 'host:office'), true);
+  assert.equal(result.instances.some((instance) => instance.runtimeHostId === 'host:macbook'), true);
   assert.equal(result.accessPaths.every((accessPath) => accessPath.sourceHostId === 'host:macbook' && accessPath.destinationHostId === 'host:office'), true);
+  assert.equal(result.executionConnections.every((connection) => connection.targetRuntimeInstanceId === null), true);
   assert.equal(result.redaction.authContentsRead, false);
 });
 

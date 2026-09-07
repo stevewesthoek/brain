@@ -18,7 +18,8 @@ provider/application
   │    ├─ application-owned session(s)
     │    └─ logical runtime profile(s)
     │         └─ host-local runtime instance(s)
-    ├─ access path(s) to admitted host instances
+    ├─ transport-only network path(s)
+    └─ execution connection(s) from runtime instances to host/workspace targets
   ├─ storage adapter metadata
   ├─ read-only health evidence
   └─ recovery/approval policy
@@ -49,10 +50,21 @@ state.
 
 Host-local runtime instances are part of the access-plane topology, not a new
 credential store. They reference application-owned authentication in the
-owning host/profile namespace. Remote access paths (for example Tailscale or
-Thunderbolt) carry operator access to an instance; they do not copy or
-re-home the instance's OAuth state. This keeps multiple accounts and multiple
-hosts account-agnostic while preserving application custody.
+owning host/profile namespace. A transport-only network path (for example
+Tailscale or Thunderbolt) describes reachability between hosts. An execution
+connection describes how a source runtime uses that reachability to target a
+host/workspace, with an optional target runtime instance. Neither relation
+copies or re-homes OAuth state. The source account remains the source account
+even when execution targets another host, and an unavailable target does not
+invalidate the source runtime's authentication.
+
+For example, a MacBook Codex desktop runtime bound to `account:openai.02` may
+use SSH over either the Thunderbolt or Tailscale network path to target
+`host:office` and `workspace:brain`, while the Office runtime bound to
+`account:openai.01` remains a separate local application session. SSH custody,
+Tailscale state, and any Thunderbolt networking state remain owned by their
+respective applications/hosts; Brain records only opaque custody references
+and redacted health evidence.
 
 One concern has one owner. The catalog is the canonical metadata model; a
 vault is not a second account registry, and a runtime lease is not an identity

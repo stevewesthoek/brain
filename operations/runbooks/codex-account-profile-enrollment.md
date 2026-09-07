@@ -13,16 +13,21 @@ provider
       → surface binding
         → logical runtime profile
           → host-local runtime instance
-            → access path (optional)
+            → application-owned auth/session
+              → execution connection (optional)
+                → host/workspace target
 ~~~
 
 An account identity is an opaque Brain reference. A surface binding says which
 application surface represents that account. A runtime profile is the
 transport-independent logical namespace for that binding, such as a dedicated
 CLI `CODEX_HOME` contract. A runtime instance is the host-local materialization
-of that profile. An access path is only how a client reaches an instance; it is
-not another profile and never carries copied OAuth state. A current session
-never changes the preferred-account policy.
+of that profile and owns the application session/auth boundary for that host. An
+access path is a transport-only network path between hosts. An execution
+connection starts at one runtime instance and targets a host or workspace,
+optionally naming a target runtime instance; it is not an authentication switch
+and never carries copied OAuth state. A current session never changes the
+preferred-account policy.
 
 This tranche is repository-only and synthetic-tested. It does not perform
 OAuth, login, logout, token refresh, token copying, Keychain reads, browser
@@ -71,9 +76,13 @@ contents:
 npm run runtime:profiles -- instances
 ~~~
 
-The output distinguishes `runtime_instance:office.<profile>` from the
-`access_path:macbook.office.<transport>` records. A MacBook remote client does
-not imply a MacBook-local authenticated Codex profile.
+The output distinguishes host-local runtime instances, transport-only
+`access_path:macbook.office.<transport>` records, and
+`execution_connection:macbook...` records. In the admitted topology, the
+MacBook desktop runtime for account 02 is the source of SSH connections to the
+Office host/workspace; `targetRuntimeInstanceId` is intentionally null. A
+remote execution target does not imply shared authentication or a second login
+on the target host.
 
 To prepare a candidate from a private, stable provider reference, use an
 opaque reference rather than an email address, token, cookie, or JWT:

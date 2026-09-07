@@ -18,7 +18,7 @@ const canonical = (() => {
   value.catalogVersion = '0.1.0';
   for (const collection of [
     'accounts', 'credentials', 'sessions', 'surfaceBindings', 'runtimeProfiles',
-    'runtimeInstances', 'accessPaths',
+    'runtimeInstances', 'accessPaths', 'executionConnections',
     'secretStoreAdapters', 'lifecyclePolicies', 'verificationPolicies',
   ]) value[collection] = [];
   return value;

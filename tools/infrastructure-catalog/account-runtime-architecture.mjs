@@ -6,6 +6,7 @@ const SAFE_ID = /^[a-z][a-z0-9._-]*$/;
 const ACCOUNT_ID = /^account:([a-z0-9][a-z0-9._-]*)$/;
 const PROFILE_ID = /^runtime_profile:([a-z0-9][a-z0-9._-]*)$/;
 const HOST_ID = /^host:([a-z0-9][a-z0-9._-]*)$/;
+const REFERENCE_ID = /^[a-z][a-z0-9_-]*:[a-z0-9][a-z0-9._/-]*$/;
 const OPAQUE_IDENTITY_REF = /^(?:opaque-ref|provider-subject):\/\/[^\s@]+$/;
 
 export const CODEX_SURFACES = Object.freeze({
@@ -228,6 +229,12 @@ export function accessPathIdFor(sourceHostId, destinationHostId, transport) {
   return `access_path:${hostSuffix(sourceHostId)}.${hostSuffix(destinationHostId)}.${normalizedTransport}`;
 }
 
+export function executionConnectionIdFor(sourceRuntimeInstanceId, targetHostId, protocol, networkPathId = null) {
+  const sourceSuffix = String(sourceRuntimeInstanceId ?? '').split(':')[1];
+  const pathSuffix = networkPathId ? String(networkPathId).split(':')[1] : 'local';
+  return `execution_connection:${safeSlug(sourceSuffix, 'sourceRuntimeInstanceId')}.${hostSuffix(targetHostId)}.${safeSlug(protocol, 'protocol')}.${safeSlug(pathSuffix, 'networkPathId')}`;
+}
+
 export function matchKnownAccount({ catalog = {}, providerId, identityRef } = {}) {
   const normalizedProvider = providerSlug(providerId);
   const safeRef = safeOpaqueIdentityRef(identityRef);
@@ -428,7 +435,7 @@ export function allocateRuntimeInstance({
     runtimeInstanceId,
     accountId: profile.accountId,
     runtimeProfileId: profile.runtimeProfileId,
-    hostId: normalizedHostId,
+    runtimeHostId: normalizedHostId,
     lifecycleState: 'candidate',
     runtimeRoot,
     stateOwnership: profile.stateOwnership,
@@ -455,7 +462,6 @@ export function allocateAccessPath({
   sourceHostId,
   destinationHostId,
   transport,
-  runtimeInstanceIds,
   accessMode = 'remote',
   availability = 'unknown',
   trustState = 'unknown',
@@ -467,8 +473,6 @@ export function allocateAccessPath({
   const normalizedSource = `host:${hostSuffix(sourceHostId)}`;
   const normalizedDestination = `host:${hostSuffix(destinationHostId)}`;
   const normalizedTransport = safeSlug(transport, 'transport');
-  const targets = sortedUnique(runtimeInstanceIds);
-  if (targets.length === 0) throw new Error('runtimeInstanceIds are required');
   const accessPathId = accessPathIdFor(normalizedSource, normalizedDestination, normalizedTransport);
   const existing = (catalog.accessPaths ?? []).find((entry) => entry.accessPathId === accessPathId);
   if (existing) return { created: false, accessPath: existing, accessPathId };
@@ -478,7 +482,6 @@ export function allocateAccessPath({
     destinationHostId: normalizedDestination,
     transport: normalizedTransport,
     accessMode,
-    runtimeInstanceIds: targets,
     availability,
     trustState,
     healthState,
@@ -487,6 +490,59 @@ export function allocateAccessPath({
     provenance: provenance({ sourceRef, classification: trustState === 'verified' ? 'OBSERVED-VERIFIED' : 'USER-PROPOSED', observedAt }),
   };
   return { created: true, accessPath, accessPathId };
+}
+
+export function allocateExecutionConnection({
+  catalog = {},
+  sourceRuntimeInstanceId,
+  sourceHostId,
+  targetHostId,
+  executionTargetRef,
+  protocol = 'ssh',
+  networkPathId = null,
+  targetRuntimeInstanceId = null,
+  workspaceRef = null,
+  healthState = 'unknown',
+  credentialCustodyRef = 'custody:transport-credential',
+  sourceRef = 'brain:identity-access/execution-connection-allocator',
+  observedAt = new Date(),
+} = {}) {
+  if (typeof sourceRuntimeInstanceId !== 'string' || typeof executionTargetRef !== 'string') throw new Error('sourceRuntimeInstanceId and executionTargetRef are required');
+  const normalizedSourceHost = `host:${hostSuffix(sourceHostId)}`;
+  const normalizedTargetHost = `host:${hostSuffix(targetHostId)}`;
+  const normalizedProtocol = safeSlug(protocol, 'protocol');
+  if (!REFERENCE_ID.test(executionTargetRef)) throw new Error('executionTargetRef is invalid');
+  if (workspaceRef !== null && (typeof workspaceRef !== 'string' || !REFERENCE_ID.test(workspaceRef))) throw new Error('workspaceRef is invalid');
+  if (typeof credentialCustodyRef !== 'string' || !REFERENCE_ID.test(credentialCustodyRef)) throw new Error('credentialCustodyRef is invalid');
+  const sourceInstance = (catalog.runtimeInstances ?? []).find((instance) => instance.runtimeInstanceId === sourceRuntimeInstanceId);
+  if (sourceInstance && sourceInstance.runtimeHostId !== normalizedSourceHost) throw new Error('source runtime instance does not belong to source host');
+  if (networkPathId) {
+    const networkPath = (catalog.accessPaths ?? []).find((accessPath) => accessPath.accessPathId === networkPathId);
+    if (networkPath && (networkPath.sourceHostId !== normalizedSourceHost || networkPath.destinationHostId !== normalizedTargetHost)) throw new Error('network path does not connect source and target hosts');
+  }
+  if (targetRuntimeInstanceId) {
+    const targetInstance = (catalog.runtimeInstances ?? []).find((instance) => instance.runtimeInstanceId === targetRuntimeInstanceId);
+    if (targetInstance && targetInstance.runtimeHostId !== normalizedTargetHost) throw new Error('target runtime instance does not belong to target host');
+  }
+  const executionConnectionId = executionConnectionIdFor(sourceRuntimeInstanceId, normalizedTargetHost, normalizedProtocol, networkPathId);
+  const existing = (catalog.executionConnections ?? []).find((entry) => entry.executionConnectionId === executionConnectionId);
+  if (existing) return { created: false, executionConnection: existing, executionConnectionId };
+  const executionConnection = {
+    executionConnectionId,
+    sourceRuntimeInstanceId,
+    sourceHostId: normalizedSourceHost,
+    targetHostId: normalizedTargetHost,
+    executionTargetRef,
+    protocol: normalizedProtocol,
+    networkPathId,
+    targetRuntimeInstanceId,
+    workspaceRef,
+    healthState,
+    lastObservedAt: iso(observedAt, 'observedAt'),
+    credentialCustodyRef,
+    provenance: provenance({ sourceRef, classification: healthState === 'healthy' ? 'OBSERVED-VERIFIED' : 'USER-PROPOSED', observedAt }),
+  };
+  return { created: true, executionConnection, executionConnectionId };
 }
 
 export function validateMultiHostTopology({ catalog = {}, hostIds = [] } = {}) {
@@ -503,7 +559,7 @@ export function validateMultiHostTopology({ catalog = {}, hostIds = [] } = {}) {
   };
 
   for (const instance of instances.values()) {
-    checkHost(instance.hostId, `runtime_instance:${instance.runtimeInstanceId}`);
+    checkHost(instance.runtimeHostId, `runtime_instance:${instance.runtimeInstanceId}`);
     const profile = profiles.get(instance.runtimeProfileId);
     if (!profile) {
       errors.push(`runtime_instance_missing_profile:${instance.runtimeInstanceId}:${instance.runtimeProfileId}`);
@@ -512,12 +568,12 @@ export function validateMultiHostTopology({ catalog = {}, hostIds = [] } = {}) {
     if (profile.accountId !== instance.accountId) errors.push(`runtime_instance_account_mismatch:${instance.runtimeInstanceId}`);
     if (!profile.runtimeInstanceIds?.includes(instance.runtimeInstanceId)) errors.push(`runtime_profile_missing_runtime_instance:${instance.runtimeProfileId}:${instance.runtimeInstanceId}`);
     try {
-      const expectedId = runtimeInstanceIdFor(instance.runtimeProfileId, instance.hostId);
+      const expectedId = runtimeInstanceIdFor(instance.runtimeProfileId, instance.runtimeHostId);
       if (expectedId !== instance.runtimeInstanceId) errors.push(`runtime_instance_id_mismatch:${instance.runtimeInstanceId}:${expectedId}`);
     } catch {
       // The schema/host check above provides the actionable error.
     }
-    const pair = `${instance.runtimeProfileId}|${instance.hostId}`;
+    const pair = `${instance.runtimeProfileId}|${instance.runtimeHostId}`;
     if (profileHostPairs.has(pair)) errors.push(`duplicate_runtime_profile_host_pair:${pair}`);
     profileHostPairs.add(pair);
     if (typeof instance.runtimeRoot !== 'string' || instance.runtimeRoot.length === 0) errors.push(`runtime_instance_missing_root:${instance.runtimeInstanceId}`);
@@ -543,10 +599,33 @@ export function validateMultiHostTopology({ catalog = {}, hostIds = [] } = {}) {
     } catch {
       // The schema/host check above provides the actionable error.
     }
-    for (const instanceId of accessPath.runtimeInstanceIds ?? []) {
-      const instance = instances.get(instanceId);
-      if (!instance) errors.push(`access_path_missing_runtime_instance:${accessPath.accessPathId}:${instanceId}`);
-      else if (instance.hostId !== accessPath.destinationHostId) errors.push(`access_path_destination_mismatch:${accessPath.accessPathId}:${instanceId}`);
+  }
+
+  for (const connection of catalog.executionConnections ?? []) {
+    checkHost(connection.sourceHostId, `execution_connection:${connection.executionConnectionId}:source`);
+    checkHost(connection.targetHostId, `execution_connection:${connection.executionConnectionId}:target`);
+    const sourceInstance = instances.get(connection.sourceRuntimeInstanceId);
+    if (!sourceInstance) errors.push(`execution_connection_missing_source_instance:${connection.executionConnectionId}:${connection.sourceRuntimeInstanceId}`);
+    else if (sourceInstance.runtimeHostId !== connection.sourceHostId) errors.push(`execution_connection_source_host_mismatch:${connection.executionConnectionId}`);
+    if (connection.targetRuntimeInstanceId) {
+      const targetInstance = instances.get(connection.targetRuntimeInstanceId);
+      if (!targetInstance) errors.push(`execution_connection_missing_target_instance:${connection.executionConnectionId}:${connection.targetRuntimeInstanceId}`);
+      else if (targetInstance.runtimeHostId !== connection.targetHostId) errors.push(`execution_connection_target_host_mismatch:${connection.executionConnectionId}`);
+    }
+    if (connection.networkPathId) {
+      const networkPath = paths.get(connection.networkPathId);
+      if (!networkPath) errors.push(`execution_connection_missing_network_path:${connection.executionConnectionId}:${connection.networkPathId}`);
+      else if (networkPath.sourceHostId !== connection.sourceHostId || networkPath.destinationHostId !== connection.targetHostId) errors.push(`execution_connection_network_path_mismatch:${connection.executionConnectionId}`);
+    }
+    if (connection.executionTargetRef?.startsWith('host:') && connection.executionTargetRef !== connection.targetHostId) {
+      errors.push(`execution_connection_target_ref_host_mismatch:${connection.executionConnectionId}`);
+    }
+    if (connection.protocol === 'ssh' && connection.sourceHostId === connection.targetHostId) errors.push(`ssh_execution_connection_must_cross_hosts:${connection.executionConnectionId}`);
+    try {
+      const expectedId = executionConnectionIdFor(connection.sourceRuntimeInstanceId, connection.targetHostId, connection.protocol, connection.networkPathId);
+      if (expectedId !== connection.executionConnectionId) errors.push(`execution_connection_id_mismatch:${connection.executionConnectionId}:${expectedId}`);
+    } catch {
+      // The schema/host checks above provide the actionable error.
     }
   }
 

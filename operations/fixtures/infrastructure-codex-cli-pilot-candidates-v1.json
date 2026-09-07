@@ -94,6 +94,9 @@
       "managedStateRef": "application-state://codex/default",
       "credentialIds": [],
       "runtimeProfileId": null,
+      "runtimeInstanceId": null,
+      "executionTargetRef": null,
+      "executionConnectionId": null,
       "authenticationStorage": {
         "mode": "unknown",
         "owner": "application",
@@ -316,7 +319,7 @@
       "runtimeInstanceId": "runtime_instance:office.openai.01.cli",
       "accountId": "account:openai.01",
       "runtimeProfileId": "runtime_profile:openai.01.cli",
-      "hostId": "host:office",
+      "runtimeHostId": "host:office",
       "lifecycleState": "candidate",
       "runtimeRoot": "~/.brain/codex-runtime-profiles/openai.01.cli",
       "stateOwnership": "application",
@@ -332,7 +335,7 @@
       "runtimeInstanceId": "runtime_instance:office.openai.02.cli",
       "accountId": "account:openai.02",
       "runtimeProfileId": "runtime_profile:openai.02.cli",
-      "hostId": "host:office",
+      "runtimeHostId": "host:office",
       "lifecycleState": "candidate",
       "runtimeRoot": "~/.brain/codex-runtime-profiles/openai.02.cli",
       "stateOwnership": "application",
@@ -346,6 +349,7 @@
     }
   ],
   "accessPaths": [],
+  "executionConnections": [],
   "secretStoreAdapters": [],
   "lifecyclePolicies": [
     {

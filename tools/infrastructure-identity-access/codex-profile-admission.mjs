@@ -103,6 +103,8 @@ function selectedClosure(candidate, selectedProfileIds, ref, now) {
   const selected = new Set(selectedProfileIds);
   const profiles = (candidate.runtimeProfiles ?? []).filter((profile) => selected.has(profile.runtimeProfileId));
   const selectedRuntimeInstanceIds = new Set(profiles.flatMap((profile) => profile.runtimeInstanceIds ?? []));
+  const admittedConnections = (candidate.executionConnections ?? []).filter((connection) => selectedRuntimeInstanceIds.has(connection.sourceRuntimeInstanceId));
+  const admittedNetworkPathIds = new Set(admittedConnections.map((connection) => connection.networkPathId).filter(Boolean));
   const accountIds = new Set(profiles.map((profile) => profile.accountId).filter(Boolean));
   const bindingIds = new Set(profiles.map((profile) => profile.surfaceBindingId).filter(Boolean));
   const sessions = (candidate.sessions ?? []).filter((session) => selected.has(session.runtimeProfileId));
@@ -174,9 +176,13 @@ function selectedClosure(candidate, selectedProfileIds, ref, now) {
     },
     provenance: withEvidence(instance.provenance, ref, now),
   }));
-  const admittedAccessPaths = (candidate.accessPaths ?? []).filter((accessPath) => accessPath.runtimeInstanceIds?.every((instanceId) => selectedRuntimeInstanceIds.has(instanceId))).map((accessPath) => ({
+  const admittedAccessPaths = (candidate.accessPaths ?? []).filter((accessPath) => admittedNetworkPathIds.has(accessPath.accessPathId)).map((accessPath) => ({
     ...accessPath,
     provenance: withEvidence(accessPath.provenance, ref, now),
+  }));
+  const admittedExecutionConnections = admittedConnections.map((connection) => ({
+    ...connection,
+    provenance: withEvidence(connection.provenance, ref, now),
   }));
   const lifecyclePolicyIds = new Set(admittedProfiles.map((profile) => profile.lifecyclePolicyId));
   const verificationPolicyIds = new Set(admittedAccounts.map((account) => account.verificationPolicyId));
@@ -187,7 +193,8 @@ function selectedClosure(candidate, selectedProfileIds, ref, now) {
     surfaceBindings: admittedBindings,
     runtimeProfiles: admittedProfiles,
     runtimeInstances: admittedRuntimeInstances,
-    accessPaths: admittedAccessPaths,
+    accessPaths: admittedAccessPaths.filter((accessPath) => admittedNetworkPathIds.has(accessPath.accessPathId)),
+    executionConnections: admittedExecutionConnections,
     secretStoreAdapters: [],
     lifecyclePolicies: (candidate.lifecyclePolicies ?? []).filter((policy) => lifecyclePolicyIds.has(policy.lifecyclePolicyId)).map((policy) => ({ ...policy, provenance: withEvidence(policy.provenance, ref, now) })),
     verificationPolicies: (candidate.verificationPolicies ?? []).filter((policy) => verificationPolicyIds.has(policy.verificationPolicyId)).map((policy) => ({ ...policy, provenance: withEvidence(policy.provenance, ref, now) })),
@@ -236,6 +243,7 @@ export function buildCodexProfileAdmissionPlan({ canonicalCatalog, candidateCata
     runtimeProfiles: mergeRecords(canonicalCatalog.runtimeProfiles, closure.runtimeProfiles, 'runtimeProfileId', mergeErrors),
     runtimeInstances: mergeRecords(canonicalCatalog.runtimeInstances, closure.runtimeInstances, 'runtimeInstanceId', mergeErrors),
     accessPaths: mergeRecords(canonicalCatalog.accessPaths, closure.accessPaths, 'accessPathId', mergeErrors),
+    executionConnections: mergeRecords(canonicalCatalog.executionConnections, closure.executionConnections, 'executionConnectionId', mergeErrors),
     secretStoreAdapters: mergeRecords(canonicalCatalog.secretStoreAdapters, closure.secretStoreAdapters, 'adapterId', mergeErrors),
     lifecyclePolicies: mergeRecords(canonicalCatalog.lifecyclePolicies, closure.lifecyclePolicies, 'lifecyclePolicyId', mergeErrors),
     verificationPolicies: mergeRecords(canonicalCatalog.verificationPolicies, closure.verificationPolicies, 'verificationPolicyId', mergeErrors),
@@ -255,6 +263,7 @@ export function buildCodexProfileAdmissionPlan({ canonicalCatalog, candidateCata
       runtimeProfiles: closure.runtimeProfiles.map((record) => record.runtimeProfileId),
       runtimeInstances: closure.runtimeInstances.map((record) => record.runtimeInstanceId),
       accessPaths: closure.accessPaths.map((record) => record.accessPathId),
+      executionConnections: closure.executionConnections.map((record) => record.executionConnectionId),
       sessions: closure.sessions.map((record) => record.sessionId),
       credentials: [],
     },
