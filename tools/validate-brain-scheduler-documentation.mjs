@@ -28,22 +28,22 @@ export function validateBrainSchedulerDocumentation() {
     return grouped;
   }, {});
   const counts = Object.fromEntries(Object.entries(categories).map(([key, jobs]) => [key, jobs.length]));
-  const expectedCounts = { ACTIVE: 4, BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 2 };
-  if (registry.jobs.length !== 16) findings.push(`registry job count is ${registry.jobs.length}, expected 16`);
+  const expectedCounts = { ACTIVE: 5, BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 2 };
+  if (registry.jobs.length !== 17) findings.push(`registry job count is ${registry.jobs.length}, expected 17`);
   for (const [key, expected] of Object.entries(expectedCounts)) if ((counts[key] ?? 0) !== expected) findings.push(`registry ${key} count is ${counts[key] ?? 0}, expected ${expected}`);
   if (registry.scheduler.launchAgentLabel !== 'com.office.nightly-scheduler') findings.push('launch label drift');
   if (registry.scheduler.runner !== 'tools/scripts/brain-scheduler-runner.mjs') findings.push('runner drift');
   if (registry.scheduler.runAtLoad !== false) findings.push('RunAtLoad must be false');
   const activeIds = registry.jobs.filter((job) => job.reviewCategory === 'ACTIVE').map((job) => job.id);
-  const expectedActive = ['mind-steward-dry-run', 'local-apps-report', 'video-runtime-report', 'mind-compile-loop'];
+  const expectedActive = ['credential-health-autopilot', 'mind-steward-dry-run', 'local-apps-report', 'video-runtime-report', 'mind-compile-loop'];
   if (JSON.stringify(activeIds) !== JSON.stringify(expectedActive)) findings.push(`active set drift: ${activeIds.join(', ')}`);
 
   const currentState = read('operations/runbooks/brain-scheduler-current-state.md');
-  for (const required of ['com.office.nightly-scheduler', 'brain-scheduler-runner.mjs', 'RunAtLoad', '16 jobs', '720cbd1ed858a5eb03a4329d2993efb3615b0284', 'Brain Core', 'Brain Console']) {
+  for (const required of ['com.office.nightly-scheduler', 'brain-scheduler-runner.mjs', 'RunAtLoad', '17 jobs', '720cbd1ed858a5eb03a4329d2993efb3615b0284', 'Brain Core', 'Brain Console']) {
     if (!currentState.includes(required)) findings.push(`current state missing ${required}`);
   }
  const runbook = read('operations/runbooks/brain-scheduler.md');
- for (const required of ['RunAtLoad=false', 'The four Active jobs are', 'brain-scheduler-troubleshooting.md', 'Repository-only documentation']) {
+ for (const required of ['RunAtLoad=false', 'The five Active jobs are', 'brain-scheduler-troubleshooting.md', 'Repository-only documentation']) {
    if (!runbook.includes(required)) findings.push(`runbook missing ${required}`);
  }
   const coreRoutes = read('projects/brain-core/src/api/routes.ts');

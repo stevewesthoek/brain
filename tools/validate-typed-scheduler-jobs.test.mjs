@@ -13,8 +13,8 @@ const manifest = path.join(root, 'operations/specs/typed-scheduler-jobs.json');
 
 test('typed registry is the sole canonical inventory and reports lifecycle counts', () => {
   const output = execFileSync(node, [validator], { encoding: 'utf8' });
-  assert.match(output, /jobs=16/);
-  assert.match(output, /"active":4/);
+  assert.match(output, /jobs=17/);
+  assert.match(output, /"active":5/);
   assert.match(output, /"policy-blocked":4/);
 });
 
@@ -35,7 +35,7 @@ test('Google Ads remains disabled and is human-classified as blocked pending har
     BLOCKED: counts.BLOCKED ?? 0,
     'NEEDS REVIEW': counts['NEEDS REVIEW'] ?? 0,
     OBSOLETE: counts.OBSOLETE ?? 0,
-  }, { ACTIVE: 4, BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 2 });
+  }, { ACTIVE: 5, BLOCKED: 10, 'NEEDS REVIEW': 0, OBSOLETE: 2 });
 });
 
 test('memory context refresh is retained for manual use but blocked from automation', () => {

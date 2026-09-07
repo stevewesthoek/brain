@@ -24,8 +24,8 @@ test('dry-run emits one receipt for every registry job and spawns nothing', asyn
   const { directory, env } = tempEnv(); env.BRAIN_SCHEDULER_DRY_RUN = '1'; let calls = 0;
   try {
     const result = await runScheduler({ env, spawnImpl: () => { calls += 1; return child(); } });
-    assert.equal(result.status, 'success'); assert.equal(result.jobCount, 16); assert.equal(calls, 0);
-    assert.equal(fs.readdirSync(path.join(directory, 'state', 'receipts')).length, 16);
+    assert.equal(result.status, 'success'); assert.equal(result.jobCount, 17); assert.equal(calls, 0);
+    assert.equal(fs.readdirSync(path.join(directory, 'state', 'receipts')).length, 17);
     const blocked = JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'ing-bank-statement-download.json')));
     assert.equal(blocked.status, 'blocked');
     const memoryRefresh = JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'memory-context-refresh.json')));
@@ -36,16 +36,16 @@ test('dry-run emits one receipt for every registry job and spawns nothing', asyn
   } finally { cleanup(directory); }
 });
 
-test('only four active report jobs spawn, with redacted output and receipts', async () => {
+test('active report jobs spawn, with redacted output and receipts', async () => {
   const { directory, env } = tempEnv(); const calls = []; let sawRunningReceipt = false;
   try {
     const result = await runScheduler({ env: { ...env, API_KEY: 'super-secret-value' }, spawnImpl: (command, args) => {
       calls.push([command, args]);
-      const running = JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'mind-steward-dry-run.json')));
-      sawRunningReceipt ||= running.status === 'running';
+      const mindReceipt = path.join(directory, 'state', 'receipts', 'mind-steward-dry-run.json');
+      if (fs.existsSync(mindReceipt)) sawRunningReceipt ||= JSON.parse(fs.readFileSync(mindReceipt)).status === 'running';
       return child({ output: 'api_key=super-secret-value' });
     } });
-    assert.equal(result.status, 'success'); assert.equal(calls.length, 4); assert.equal(sawRunningReceipt, true);
+    assert.equal(result.status, 'success'); assert.equal(calls.length, 5); assert.equal(sawRunningReceipt, true);
     const receipt = JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'mind-steward-dry-run.json')));
     assert.equal(receipt.status, 'success'); assert.doesNotMatch(receipt.output, /super-secret-value/); assert.match(receipt.output, /REDACTED/);
     assert.equal(JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'gws-token-refresh.json'))).status, 'blocked');
@@ -55,8 +55,8 @@ test('only four active report jobs spawn, with redacted output and receipts', as
 test('failure blocks its dependent active job and does not retry', async () => {
   const { directory, env } = tempEnv(); let calls = 0;
   try {
-    const result = await runScheduler({ env, spawnImpl: () => { calls += 1; return child({ closeCode: calls === 1 ? 2 : 0 }); } });
-    assert.equal(result.status, 'failed'); assert.equal(calls, 3);
+    const result = await runScheduler({ env, spawnImpl: (_command, args) => { calls += 1; return child({ closeCode: args.some((arg) => arg.includes('mind-steward-dry-run-report')) ? 2 : 0 }); } });
+    assert.equal(result.status, 'failed'); assert.equal(calls, 4);
     assert.equal(JSON.parse(fs.readFileSync(path.join(directory, 'state', 'receipts', 'mind-compile-loop.json'))).status, 'blocked');
   } finally { cleanup(directory); }
 });
@@ -105,7 +105,7 @@ test('completion state accepts absent, prior, and current dates', async () => {
       if (state !== null) { fs.mkdirSync(path.join(directory, 'state'), { recursive: true }); fs.writeFileSync(path.join(directory, 'state', 'last_completed_lisbon_date'), state); }
       const result = await runScheduler({ env: { ...env, FORCE_RUN: state === '2026-08-29\n' ? '' : '1' }, spawnImpl: () => { calls += 1; return child(); } });
       if (state === '2026-08-29\n') { assert.equal(result.status, 'skipped'); assert.equal(calls, 0); }
-      else { assert.equal(result.status, 'success'); assert.equal(calls, 4); }
+      else { assert.equal(result.status, 'success'); assert.equal(calls, 5); }
     } finally { cleanup(directory); }
   }
 });

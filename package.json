@@ -9,6 +9,7 @@
   "scripts": {
     "validate:conversation-evidence": "node tools/validate-conversation-evidence.mjs",
     "vault": "node tools/infrastructure-identity-access/credential-vault-cli.mjs",
+    "credential-health:autopilot": "node tools/infrastructure-identity-access/credential-health-autopilot.mjs --notify",
     "test:credential-vault": "node --test tools/infrastructure-identity-access/credential-vault-core.test.mjs tools/infrastructure-identity-access/credential-vault-cli.test.mjs",
     "validate:learning-candidates": "node tools/validate-learning-candidates.mjs",
     "test:phase7a": "node --test tools/context-learning/codex-code-default.test.mjs tools/context-learning/phase6c-isolated-code-tasks.test.mjs",
@@ -73,6 +74,7 @@
     "test:github-provider-verifier": "node --test tools/infrastructure-identity-access/github-provider-verifier.test.mjs",
     "validate:infrastructure-credential-health": "node tools/validate-infrastructure-credential-health.mjs",
     "test:infrastructure-credential-health": "node --test tools/infrastructure-identity-access/credential-health-orchestrator.test.mjs",
+    "test:credential-autopilot": "node --test tools/infrastructure-identity-access/credential-autopilot-core.test.mjs tools/infrastructure-identity-access/credential-rotation-core.test.mjs tools/infrastructure-identity-access/credential-consumer-resolver.test.mjs",
     "validate:infrastructure-health": "node tools/validate-infrastructure-health.mjs",
     "test:infrastructure-health": "node --test projects/brain-core/src/tests/infrastructure-observation-runtime.test.mjs",
     "validate:infrastructure-incidents": "node tools/validate-infrastructure-incidents.mjs",

@@ -52,6 +52,7 @@
           "authority": { "type": "string", "enum": ["brain", "mind-read-only", "external-review-required", "manual-operator"] },
           "networkAccess": { "type": "string", "enum": ["none", "read-only", "external-write-capable", "unknown"] },
           "credentialSensitive": { "type": "boolean" },
+          "readOnlyCredentialObservation": { "type": "boolean" },
           "destructive": { "type": "boolean" },
           "mindWrite": { "type": "boolean" },
           "timeoutSeconds": { "type": "integer", "minimum": 1 },

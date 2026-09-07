@@ -28,7 +28,14 @@ function assertRegistryInvariants(registry, { rootDir = ROOT_DIR, checkEntrypoin
     if (job.fixedArguments.some((argument) => argument.includes('\0'))) errors.push(`${job.id}: fixed arguments contain NUL`);
     if (job.lifecycle === 'active') {
       if (job.mode === 'disabled') errors.push(`${job.id}: active job is disabled`);
-      if (job.networkAccess === 'external-write-capable' || job.credentialSensitive || job.destructive || job.mindWrite) errors.push(`${job.id}: unsafe capability cannot be active`);
+      const boundedCredentialObservation = job.readOnlyCredentialObservation === true
+        && job.credentialSensitive === true
+        && job.networkAccess === 'read-only'
+        && job.destructive === false
+        && job.mindWrite === false
+        && job.mode === 'report-only'
+        && job.id === 'credential-health-autopilot';
+      if (job.networkAccess === 'external-write-capable' || (job.credentialSensitive && !boundedCredentialObservation) || job.destructive || job.mindWrite) errors.push(`${job.id}: unsafe capability cannot be active`);
       if (!['brain', 'mind-read-only'].includes(job.authority)) errors.push(`${job.id}: active job has unapproved authority`);
       if (!['report-only', 'dry-run-report-only'].includes(job.mode)) errors.push(`${job.id}: active job is not report-only`);
     }

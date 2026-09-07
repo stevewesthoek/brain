@@ -22,6 +22,60 @@ OAuth/session material was moved.
 The catalog stores metadata and opaque references only. It is not a secret
 store and does not become writable through the general vault CLI.
 
+## Automatic operation
+
+The production black-box service is `credential-health-autopilot`, admitted as
+the sole credential-sensitive exception in the canonical Brain Scheduler. The
+existing `com.office.nightly-scheduler` LaunchAgent runs it daily at 03:00
+Europe/Lisbon through the typed registry; no second scheduler or standalone
+vault daemon exists. The job is read-only with respect to providers and
+metadata-only in its persisted state.
+
+Automatic by design:
+
+- discovery of approved catalog and contract references;
+- ownership classification when evidence is sufficient, with unknown and
+  application-owned references left outside the vault;
+- metadata-only Brain admission records and host coverage state;
+- Keychain availability, item existence, bounded provider verification, expiry
+  windows, incident projection, deduplicated notification planning, and
+  recovery verification;
+- provider-managed rotation only when ownership, replacement verification,
+  consumer cutover, rollback, and retirement are all admitted by policy.
+
+Human-only boundaries:
+
+- hidden entry when an eligible secret cannot be transferred safely;
+- provider login or consent, OS unlock/security prompts, and provider flows
+  without an approved rotation API;
+- destructive local deletion, provider revocation, catalog retirement, and
+  any operation that changes consumer authority.
+
+Application-owned OAuth and sessions remain owned by their applications. Brain
+may observe their redacted health and recovery metadata, but never migrates
+their secret material into this vault. Unknown credentials are discovered as
+non-secret candidates only and are never auto-migrated.
+
+## Multi-host and expiry semantics
+
+The canonical host IDs are `host:office` (Office Mac mini authority host) and
+`host:macbook` (MacBook consumer host). Keychain values remain local to the
+host and are never synchronized. Brain tracks required, provisioned, healthy,
+missing, and last-verified host metadata centrally; a missing credential on a
+host where it is not required is not an incident. Offline or locked hosts
+remain unavailable/stale rather than revoked, and escalation waits for the
+configured freshness/availability policy.
+
+Expiry is recorded only from provider or catalog evidence. The autopilot
+distinguishes `normal`, `renewal_window`, `urgent`, `expired`, and `unknown`,
+and records `expiresAt`, provenance, last verification, and next verification
+metadata without inventing dates. Healthy checks produce no notification.
+
+The read-only health state, incident state, notification cursor, scheduler
+receipt, and autopilot snapshot contain metadata only and are bounded to mode
+0600. Notifications identify the credential reference, condition, severity,
+and transition; they never contain secret values.
+
 ## Commands
 
 Run from the Brain repository:

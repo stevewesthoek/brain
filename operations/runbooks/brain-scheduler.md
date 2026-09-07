@@ -40,7 +40,7 @@ Brain Console /scheduler (read-only Control Center)
 
 The registry is the sole job inventory truth. No shell function list, report
 table, duplicate JSON inventory, or UI ordering may define jobs. The current
-canonical inventory is 16 jobs: ACTIVE 4, BLOCKED 10, NEEDS REVIEW 0, and
+canonical inventory is 17 jobs: ACTIVE 5, BLOCKED 10, NEEDS REVIEW 0, and
 OBSOLETE 2. The runner loads the registry on every invocation and executes
 only `lifecycle: active`
 jobs in a report-only or dry-run-report-only mode. It performs no retries.
@@ -100,6 +100,7 @@ local binary fails closed.
 | `gemini-cleanup` | deprecated | disabled | No canonical entrypoint; do not restore. |
 | `google-ads-sync` | disabled | disabled | Blocked pending replacement/hardening before unattended scheduling; keep the current implementation disabled. |
 | `gws-token-refresh` | policy-blocked | disabled | Credential-sensitive; use a secret-safe provider procedure first. |
+| `credential-health-autopilot` | active | report-only | Sole bounded credential-sensitive exception; runs metadata discovery, read-only provider verification, expiry/incident projection, and deduplicated notifications. It cannot mutate credentials. |
 | `mind-steward-dry-run` | active | dry-run-report-only | Run report-only validation; review findings, never apply changes. |
 | `local-apps-report` | active | report-only | Generate local application status; remediation is separate. |
 | `video-runtime-report` | active | report-only | Generate video runtime and aggregate storage telemetry; no queue or video mutation. |
@@ -109,10 +110,14 @@ local binary fails closed.
 | `graphify-nightly` | policy-blocked | disabled | Event-driven semantic gate only; structural Graphify remains frozen. |
 | `ing-bank-statement-download` | policy-blocked | disabled | Financial/credential-sensitive; never enable from this scheduler. |
 
-The four Active jobs are the only jobs admitted to child execution:
-`mind-steward-dry-run`, `local-apps-report`, `video-runtime-report`, and
-`mind-compile-loop`. The registry currently has 16 jobs in total: 4 Active, 10
-Blocked, 0 Needs Review, and 2 Obsolete.
+The five Active jobs are the only jobs admitted to child execution:
+`credential-health-autopilot`, `mind-steward-dry-run`, `local-apps-report`,
+`video-runtime-report`, and `mind-compile-loop`. The registry currently has 17
+jobs in total: 5 Active, 10 Blocked, 0 Needs Review, and 2 Obsolete. The
+credential-health job is active only because its registry contract explicitly
+declares `readOnlyCredentialObservation`; it is provider-read-only,
+non-destructive, non-Mind-writing, and bounded by the registered verifier and
+Keychain adapter.
 
 ## Adding, changing, or retiring a job
 

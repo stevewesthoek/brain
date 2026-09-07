@@ -44,19 +44,21 @@ activation.
 
 ## Canonical inventory
 
-The registry contains **16 jobs**:
+The registry contains **17 jobs**:
 
 | Review category | Count | Job IDs |
 |---|---:|---|
-| `ACTIVE` | 4 | `mind-steward-dry-run`, `local-apps-report`, `video-runtime-report`, `mind-compile-loop` |
+| `ACTIVE` | 5 | `credential-health-autopilot`, `mind-steward-dry-run`, `local-apps-report`, `video-runtime-report`, `mind-compile-loop` |
 | `BLOCKED` | 10 | `stb-pipeline-batch`, `n8n-backup`, `claude-session-cleanup`, `dance-of-life-sync`, `bible-studies-pipeline`, `google-ads-sync`, `gws-token-refresh`, `memory-context-refresh`, `graphify-nightly`, `ing-bank-statement-download` |
 | `NEEDS REVIEW` | 0 | none |
 | `OBSOLETE` | 2 | `gemini-cleanup`, `video-orchestrator-storage-cleanup` |
 
-Only the four `ACTIVE` jobs can reach child execution. They are all local,
-read-only report surfaces. No blocked, disabled, deprecated, obsolete,
-credential-sensitive, destructive, external-write-capable, or Mind-mutating
-job is automatically enabled by this scheduler.
+Only the five `ACTIVE` jobs can reach child execution. Four are local
+read-only report surfaces. `credential-health-autopilot` is the sole bounded
+credential-sensitive exception: it uses the registered provider-neutral
+verification boundary, writes only redacted metadata/incident state, and has
+no mutation authority. No blocked, disabled, deprecated, obsolete, destructive,
+external-write-capable, or Mind-mutating job is automatically enabled.
 
 ## Ownership and evidence
 
