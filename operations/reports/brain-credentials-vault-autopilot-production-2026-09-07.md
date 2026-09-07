@@ -2,7 +2,7 @@
 
 ## Classification
 
-`IMPLEMENTATION_READY_PENDING_LIVE_ACTIVATION`
+`BRAIN_CREDENTIALS_VAULT_AUTOPILOT_READY_EMPTY`
 
 The accepted vault remains `PRODUCTION_READY_EMPTY`: the live Brain catalog and
 macOS Keychain contain zero legitimate Brain-owned production credentials. This
@@ -109,16 +109,41 @@ only through redacted metadata/recovery state.
 - No secret values are accepted through scheduler args, environment, reports,
   notifications, or model context.
 
-## Live activation gate
+## Live activation evidence
 
-Before final classification, advance the clean detached
-`/Users/Office/Repos/stevewesthoek/brain-runtime` checkout to this committed
-main state, verify the installed LaunchAgent points to it, run one explicit
-production-safe zero-item scheduler pass, and confirm the credential-health
-receipt succeeds without enabling any unrelated job.
+The clean detached `/Users/Office/Repos/stevewesthoek/brain-runtime` checkout
+was advanced to `aaafcdc650ea916f2b1215b537f55a404b0ffab7`, the pushed `main`
+commit. The installed `com.office.nightly-scheduler` LaunchAgent points to
+that checkout, remains configured for 03:00 Europe/Lisbon, and has no second
+credential scheduler.
+
+An explicit production-safe acceptance pass ran with trigger
+`credential-autopilot-acceptance`:
+
+- scheduler result: `success`, registry job count 17;
+- executed active jobs: exactly the five admitted active jobs, including
+  `credential-health-autopilot`;
+- failed jobs: none; blocked/disabled jobs: none executed;
+- credential-health receipt: `success`, exit code 0;
+- discovery: 0 Brain-managed, 7 unknown metadata candidates, no auto-migration;
+- health: 0 evaluations, 0 incidents, 0 notification attempts because the
+  healthy zero-item state is intentionally quiet;
+- hosts observed: canonical `host:office` and `host:macbook`;
+- application-owned auth observations: 5;
+- persisted autopilot, health, incident, and notification state: mode 0600,
+  all `containsSecrets=false`.
+
+Synthetic notification acceptance is covered by the existing production-path
+health harness: a wrong-account incident opens, emits exactly one bounded
+attention item, repeated evaluation deduplicates it, and recovery emits one
+recovery item. The harness uses an injected test sender and never sends an
+external notification or includes secret material.
+
+The canonical main worktree was clean after the activation commit and the
+concurrent dirty checkout remained untouched.
 
 Final classification must be either
 `BRAIN_CREDENTIALS_VAULT_AUTOPILOT_READY` or
 `BRAIN_CREDENTIALS_VAULT_AUTOPILOT_READY_EMPTY`; zero production items selects
-the latter only after the live activation and notification acceptance gates
-pass.
+the latter because the live activation, zero-item, and synthetic notification
+acceptance gates passed.

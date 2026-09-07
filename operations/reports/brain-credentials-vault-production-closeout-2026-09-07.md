@@ -106,12 +106,12 @@ host-local and are not silently copied between Macs.
 
 | Required outcome | Result | Evidence |
 | --- | --- | --- |
-| COMMITTED? | yes | Productionization commit `cb670f19cf8d1146e3f5e431165a1b207b8c7089` is on `main`. |
-| PUSHED? | yes | `origin/main` resolves to the same commit; no force push was used. |
-| DOCUMENTED? | yes | This closeout, the operator runbook, strategy, adapter contract, and canonical catalog are present. |
+| COMMITTED? | yes | Vault productionization is an ancestor; autopilot activation/docs commit `aaafcdc650ea916f2b1215b537f55a404b0ffab7` is on `main`. |
+| PUSHED? | yes | `origin/main` resolves to `aaafcdc650ea916f2b1215b537f55a404b0ffab7`; no force push was used. |
+| DOCUMENTED? | yes | This closeout, the autopilot production report, operator runbook, strategy, adapter contract, and canonical catalog are present. |
 | OPERATOR AVAILABLE? | yes | `npm run vault -- status|list|inspect|verify|add|update|rotate|retire|delete|doctor`. |
-| ACTIVATED? | yes | The normal Brain runtime CLI and health-orchestrator entry points are wired; no separate vault daemon is required. |
-| OPERATIONAL? | yes | Live `status`, `list`, `doctor`, and Keychain inventory checks passed. |
+| ACTIVATED? | yes | The clean detached `brain-runtime` checkout runs `aaafcdc6`; the existing 03:00 LaunchAgent executed the credential-health job successfully; no separate vault daemon is required. |
+| OPERATIONAL? | yes | Live `status`, `list`, `doctor`, Keychain inventory, autopilot, and scheduler receipt checks passed. |
 | AUTOMATIC READ-ONLY HEALTH? | yes | The provider-neutral health orchestrator automatically evaluates admitted catalog credentials through the fixed Keychain adapter and bounded verifier; the current empty catalog correctly produced zero evaluations. |
 | AUTOMATIC BOUNDED CONSUMER USE? | yes | Opaque catalog references resolve only through the registered verification boundary; no general raw-secret read exists. |
 | HUMAN-GATED SECRET MUTATION? | yes | Add, update, rotate, and delete require explicit confirmation and native hidden TTY input where applicable. |
@@ -136,9 +136,17 @@ approval-gated and application-owned OAuth remains excluded.
 ## Documentation
 
 - Operator runbook: `operations/runbooks/brain-credentials-vault.md`.
+- Autopilot production report: `operations/reports/brain-credentials-vault-autopilot-production-2026-09-07.md`.
 - Adapter contract: `operations/runbooks/infrastructure-identity-access-macos-keychain-pilot.md`.
 - Strategy: `operations/specs/infinite-brain-credential-vault-strategy.md`.
 - Canonical metadata: `operations/infrastructure/catalog/identity-access.v1.json`.
+
+The vault's continuous-operation contract is the existing Brain Scheduler
+credential-health job. It performs metadata-only discovery, bounded read-only
+health/expiry evaluation, stable incident projection, and deduplicated
+notification planning. Secret entry, provider consent, destructive authority,
+and unsupported rotation remain human-gated. See the autopilot report for the
+live activation receipt and synthetic notification acceptance.
 
 ## Git closeout
 
