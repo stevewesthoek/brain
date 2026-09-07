@@ -1,7 +1,8 @@
 # Infinite Brain credential and session safety strategy
 
-Status: design contract with the Brain-owned macOS Keychain adapter
-operationalized on 2026-09-07. This document does not authorize OAuth
+Status: production contract with the Brain-owned macOS Keychain adapter
+operationalized on 2026-09-07; current production inventory is empty. This
+document does not authorize OAuth
 export/import, login automation, keepalive traffic, provider rotation, or
 unbounded notification-scheduler activation.
 

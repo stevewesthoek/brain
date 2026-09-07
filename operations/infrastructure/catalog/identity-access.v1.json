@@ -1019,7 +1019,7 @@
       "accessibility": "when_unlocked_this_device_only",
       "accessControlModel": "native_security_framework_when_unlocked_operator_gated",
       "provenance": {
-        "sourceRef": "operations/runbooks/infrastructure-identity-access-macos-keychain-pilot.md",
+        "sourceRef": "operations/runbooks/brain-credentials-vault.md",
         "classification": "OBSERVED-VERIFIED",
         "verifiedAt": "2026-09-07T09:42:40Z",
         "freshnessDeadline": "2026-10-07T09:42:40Z",

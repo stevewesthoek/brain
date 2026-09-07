@@ -60,6 +60,21 @@ func wipe(_ data: inout Data) {
     if !data.isEmpty { data.resetBytes(in: 0..<data.count) }
 }
 
+func readHiddenSecret(_ prompt: String) -> Data? {
+    guard isatty(STDIN_FILENO) == 1 else { return nil }
+    var original = termios()
+    guard tcgetattr(STDIN_FILENO, &original) == 0 else { return nil }
+    var hidden = original
+    hidden.c_lflag &= ~tcflag_t(ECHO)
+    guard tcsetattr(STDIN_FILENO, TCSANOW, &hidden) == 0 else { return nil }
+    FileHandle.standardError.write(Data(prompt.utf8))
+    let value = readLine(strippingNewline: true)
+    tcsetattr(STDIN_FILENO, TCSANOW, &original)
+    FileHandle.standardError.write(Data([0x0a]))
+    guard let value, !value.isEmpty else { return nil }
+    return Data(value.utf8)
+}
+
 let arguments = CommandLine.arguments
 guard arguments.count >= 2 else { failure("unknown", "invalid_invocation") }
 let operation = arguments[1]
@@ -69,7 +84,7 @@ if operation == "--availability" {
     emit(["ok": true, "operation": "availability", "storageState": "available", "physicalStore": "login", "containsSecrets": false, "secretValueReturned": false])
 }
 
-guard operation == "create" || operation == "update" || operation == "delete" || operation == "inventory" else {
+guard operation == "create" || operation == "update" || operation == "delete" || operation == "inventory" || operation == "interactive-create" || operation == "interactive-update" else {
     failure(operation, "invalid_invocation")
 }
 
@@ -104,17 +119,19 @@ if operation == "inventory" {
     emit(["ok": true, "operation": operation, "storageState": "available", "count": items.count, "items": items, "containsSecrets": false, "secretValueReturned": false])
 }
 
-let expectedArgumentCount = operation == "create" ? 5 : 4
+let expectedArgumentCount = operation == "create" || operation == "interactive-create" ? 5 : 4
 guard arguments.count == expectedArgumentCount else { failure(operation, "invalid_invocation") }
 let service = arguments[2]
 let account = arguments[3]
 guard isBrainService(service), isSafeSegment(service), isSafeSegment(account) else { failure(operation, "unadmitted_namespace") }
 let itemQuery = query(service: service, account: account)
 
-if operation == "create" {
+if operation == "create" || operation == "interactive-create" {
     let label = arguments[4]
     guard !label.isEmpty, label.count <= 256, !label.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7f }) else { failure(operation, "invalid_label") }
-    var secretData = FileHandle.standardInput.readDataToEndOfFile()
+    var secretData = operation == "interactive-create"
+        ? (readHiddenSecret("Brain credential (input hidden): ") ?? Data())
+        : FileHandle.standardInput.readDataToEndOfFile()
     guard !secretData.isEmpty, secretData.count <= maxSecretBytes else { wipe(&secretData); failure(operation, "invalid_secret_input") }
     var addQuery = itemQuery
     addQuery[kSecAttrLabel as String] = label
@@ -126,17 +143,19 @@ if operation == "create" {
     wipe(&secretData)
     if status == errSecDuplicateItem { failure(operation, "duplicate_item", status) }
     if status != errSecSuccess { failure(operation, "keychain_add_failed", status) }
-    emit(["ok": true, "operation": operation, "storageState": "present", "overwrote": false, "containsSecrets": false, "secretValueReturned": false])
+    emit(["ok": true, "operation": "create", "storageState": "present", "overwrote": false, "containsSecrets": false, "secretValueReturned": false])
 }
 
-if operation == "update" {
-    var secretData = FileHandle.standardInput.readDataToEndOfFile()
+if operation == "update" || operation == "interactive-update" {
+    var secretData = operation == "interactive-update"
+        ? (readHiddenSecret("Replacement credential (input hidden): ") ?? Data())
+        : FileHandle.standardInput.readDataToEndOfFile()
     guard !secretData.isEmpty, secretData.count <= maxSecretBytes else { wipe(&secretData); failure(operation, "invalid_secret_input") }
     let attributes: [String: Any] = [kSecValueData as String: secretData]
     let status = SecItemUpdate(itemQuery as CFDictionary, attributes as CFDictionary)
     wipe(&secretData)
     if status != errSecSuccess { failure(operation, "keychain_update_failed", status) }
-    emit(["ok": true, "operation": operation, "storageState": "present", "overwrote": true, "containsSecrets": false, "secretValueReturned": false])
+    emit(["ok": true, "operation": "update", "storageState": "present", "overwrote": true, "containsSecrets": false, "secretValueReturned": false])
 }
 
 if operation == "delete" {

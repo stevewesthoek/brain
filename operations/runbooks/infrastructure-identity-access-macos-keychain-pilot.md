@@ -3,6 +3,10 @@
 **Status:** production adapter for Brain-owned secrets, activated 2026-09-07;
 no real production credential is currently eligible for enrollment
 
+The production operator surface is documented in
+`operations/runbooks/brain-credentials-vault.md`; this file remains the
+low-level adapter and native-boundary contract.
+
 This runbook defines Brain's local `SecretStoreAdapter` for macOS. It is
 deliberately narrower than a credential manager: Brain owns
 account identity, provider verification, lifecycle state, freshness, incidents,
