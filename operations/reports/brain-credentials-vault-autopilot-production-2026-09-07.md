@@ -115,13 +115,13 @@ only through redacted metadata/recovery state.
 ## Live activation evidence
 
 The clean detached `/Users/Office/Repos/stevewesthoek/brain-runtime` checkout
-was advanced to `aaafcdc650ea916f2b1215b537f55a404b0ffab7`, the pushed `main`
+was advanced to `8f8d6c8d7a1eb8929a7dbdc2329407ebb73a8c51`, the pushed `main`
 commit. The installed `com.office.nightly-scheduler` LaunchAgent points to
 that checkout, remains configured for 03:00 Europe/Lisbon, and has no second
 credential scheduler.
 
 An explicit production-safe acceptance pass ran with trigger
-`credential-autopilot-acceptance`:
+`credential-autopilot-final-acceptance`:
 
 - scheduler result: `success`, registry job count 17;
 - executed active jobs: exactly the five admitted active jobs, including

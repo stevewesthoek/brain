@@ -106,11 +106,11 @@ host-local and are not silently copied between Macs.
 
 | Required outcome | Result | Evidence |
 | --- | --- | --- |
-| COMMITTED? | yes | Vault productionization is an ancestor; autopilot activation/docs commit `aaafcdc650ea916f2b1215b537f55a404b0ffab7` is on `main`. |
-| PUSHED? | yes | `origin/main` resolves to `aaafcdc650ea916f2b1215b537f55a404b0ffab7`; no force push was used. |
+| COMMITTED? | yes | Vault productionization is an ancestor; final autopilot commit `8f8d6c8d7a1eb8929a7dbdc2329407ebb73a8c51` is on `main`. |
+| PUSHED? | yes | `origin/main` resolves to `8f8d6c8d7a1eb8929a7dbdc2329407ebb73a8c51`; no force push was used. |
 | DOCUMENTED? | yes | This closeout, the autopilot production report, operator runbook, strategy, adapter contract, and canonical catalog are present. |
 | OPERATOR AVAILABLE? | yes | `npm run vault -- status|list|inspect|verify|add|update|rotate|retire|delete|doctor`. |
-| ACTIVATED? | yes | The clean detached `brain-runtime` checkout runs `aaafcdc6`; the existing 03:00 LaunchAgent executed the credential-health job successfully; no separate vault daemon is required. |
+| ACTIVATED? | yes | The clean detached `brain-runtime` checkout runs `8f8d6c8d`; the existing 03:00 LaunchAgent executed the credential-health job successfully; no separate vault daemon is required. |
 | OPERATIONAL? | yes | Live `status`, `list`, `doctor`, Keychain inventory, autopilot, and scheduler receipt checks passed. |
 | AUTOMATIC READ-ONLY HEALTH? | yes | The provider-neutral health orchestrator automatically evaluates admitted catalog credentials through the fixed Keychain adapter and bounded verifier; the current empty catalog correctly produced zero evaluations. |
 | AUTOMATIC BOUNDED CONSUMER USE? | yes | Opaque catalog references resolve only through the registered verification boundary; no general raw-secret read exists. |
