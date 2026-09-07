@@ -404,7 +404,7 @@ function createMacOSKeychainAdapterInternal({ runProbe, runBoundary, runStoreCom
     hostScope: 'host_local',
     synchronization: 'disabled',
     accessibility: 'when_unlocked_this_device_only',
-    accessControlModel: 'native_security_framework_with_user_approval',
+    accessControlModel: 'native_security_framework_when_unlocked_operator_gated',
     capabilities: [...MACOS_KEYCHAIN_CAPABILITIES],
     unadmittedCapabilities: [...MACOS_KEYCHAIN_UNADMITTED_CAPABILITIES],
     mutationMode: 'approval_gated',

@@ -1017,7 +1017,7 @@
       "hostScope": "host_local",
       "synchronization": "disabled",
       "accessibility": "when_unlocked_this_device_only",
-      "accessControlModel": "native_security_framework_with_user_approval",
+      "accessControlModel": "native_security_framework_when_unlocked_operator_gated",
       "provenance": {
         "sourceRef": "operations/runbooks/infrastructure-identity-access-macos-keychain-pilot.md",
         "classification": "OBSERVED-VERIFIED",

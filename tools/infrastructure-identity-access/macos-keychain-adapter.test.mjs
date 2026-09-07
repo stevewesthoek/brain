@@ -45,7 +45,7 @@ test('adapter reports redacted metadata and keeps raw resolution unadmitted', as
     hostScope: 'host_local',
     synchronization: 'disabled',
     accessibility: 'when_unlocked_this_device_only',
-    accessControlModel: 'native_security_framework_with_user_approval',
+    accessControlModel: 'native_security_framework_when_unlocked_operator_gated',
     capabilities: ['metadata_read', 'metadata_inventory', 'bounded_consume', 'secret_create', 'secret_update', 'secret_delete'],
     unadmittedCapabilities: ['resolve_for_bound_process', 'version_metadata', 'lease_metadata', 'lease_renewal', 'revocation_metadata', 'audit_metadata', 'offline_recovery'],
     mutationMode: 'approval_gated',
@@ -277,6 +277,8 @@ test('native store uses the login Keychain boundary and never uses security CLI 
   assert.match(source, /SecItemDelete/);
   assert.match(source, /kSecAttrAccessibleWhenUnlockedThisDeviceOnly/);
   assert.match(source, /kSecAttrSynchronizable/);
+  assert.doesNotMatch(source, /SecAccessControlCreateWithFlags/);
+  assert.doesNotMatch(source, /kSecAttrAccessControl/);
   assert.match(source, /FileHandle\.standardInput\.readDataToEndOfFile/);
   assert.doesNotMatch(source, /Process\(|security\\s/);
   assert.doesNotMatch(source, /kSecReturnData/);
