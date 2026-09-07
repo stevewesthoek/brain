@@ -7,7 +7,7 @@ import { createSyntheticProviderAdapter, verifyCredential } from './credential-v
 
 const SWIFT = '/usr/bin/swift';
 const FIXTURE_SCRIPT = new URL('./macos-keychain-synthetic-fixture.swift', import.meta.url).pathname;
-const SERVICE = 'com.brain.identity-access.synthetic.e2e';
+const SERVICE = 'tools.prochat.brain.synthetic.e2e';
 const ACCOUNT = 'brain-verification-e2e';
 const REFERENCE = `keychain-ref://${SERVICE}/${ACCOUNT}`;
 const CREDENTIAL_ID = 'credential:fixture.account.02';

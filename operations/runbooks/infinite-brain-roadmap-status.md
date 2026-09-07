@@ -398,3 +398,26 @@ tunnel checks are healthy, while browser/connector acceptance is deferred
 because the owner diagnostic observed the active Codex turn. See
 `operations/reports/credential-custody-inventory-2026-09-07.md` and
 `operations/reports/ikhp-identity-access-production-readiness-audit-2026-09-07.md`.
+
+## Brain-owned Keychain operationalization — 2026-09-07
+
+The macOS Keychain adapter is now operational for Brain-owned secrets only.
+Brain uses the dedicated logical namespace `tools.prochat.brain` inside the
+user's macOS `login` Keychain by default. Items are host-local,
+non-synchronizing, and protected with
+`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`. Metadata inventory never
+requests secret data.
+
+Create/update/delete are approval-gated and send secret input only through the
+native Security.framework helper's stdin. Authorized read is bounded
+native-to-registered-verifier stdin delivery; there is no generic raw-secret
+getter, `security -w` usage, environment transport, or stdout/stderr secret
+path. Locked/denied/unavailable states fail closed and remain distinct from
+provider health.
+
+The synthetic lifecycle passes create, metadata lookup, existence check,
+bounded verification, update, delete, and absence proof. No production
+Brain-owned credential was eligible for migration in this tranche. Codex,
+WebGPT, MCP, SSH, Tailscale, browser, and provider-owned credentials remain
+outside the Brain namespace. A separate physical Brain keychain remains an
+optional future deployment mode, not the default.

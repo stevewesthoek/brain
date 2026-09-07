@@ -1,8 +1,9 @@
 # Infinite Brain credential and session safety strategy
 
-Status: design contract and staged implementation plan. This document does
-not authorize credential migration, OAuth export/import, login automation,
-keepalive traffic, rotation, or notification-scheduler activation.
+Status: design contract with the Brain-owned macOS Keychain adapter
+operationalized on 2026-09-07. This document does not authorize OAuth
+export/import, login automation, keepalive traffic, provider rotation, or
+unbounded notification-scheduler activation.
 
 ## The architectural decision
 
@@ -36,9 +37,10 @@ The decisive rule is ownership before automation:
 - An application owns its application-managed OAuth/session material.
 - A provider owns issuance, revocation, refresh semantics, and principal
   identity.
-- macOS Keychain is the current/reference local `SecretStoreAdapter` for
-  Brain-managed credential material, subject to the read-only and approval
-  gates in its pilot runbook.
+- macOS Keychain is the production local `SecretStoreAdapter` for Brain-managed
+  credential material. Brain uses a dedicated logical namespace inside the
+  macOS login Keychain by default: `tools.prochat.brain`. A separate physical
+  Brain keychain is optional, not the default security boundary.
 - OnePassword is only a possible future replaceable adapter. It is not the
   current Brain vault, an active dependency, or the intended owner of Codex,
   Desktop, IDE, browser, or MCP application sessions.
@@ -171,10 +173,14 @@ mechanics in `tools/runtime-profile-manager/codex-cli-adapter.mjs`.
    opaque records have independent authenticated CLI roots on `host:office`.
    The MacBook is admitted as a remote client only; no local MacBook OAuth is
    claimed. Do not migrate or copy existing auth state.
-4. **Read-only vault inventory — next.** Admit OnePassword or another store
-   only for selected Brain-owned references; test permissions, auditability,
-   recovery, account namespacing, expiry metadata, and notification delivery.
-5. **Provider-specific renewal — last.** Add only where the provider has a
+4. **Brain-owned Keychain storage — complete (2026-09-07).** The native
+   adapter supports metadata inventory, approval-gated create/update/delete,
+   and authorized read only through a bounded verifier stdin boundary. The
+   default login Keychain is host-local, non-synchronizing, and fail-closed
+   when locked or unavailable. No production secret was eligible for
+   migration in this tranche; the synthetic lifecycle is the acceptance
+   fixture.
+5. **Provider-specific renewal — next/last.** Add only where the provider has a
    supported issuance/rotation API and the adapter has approval, idempotency,
    overlap, rollback, and post-change verification. OAuth refresh remains
    application-owned unless the provider explicitly documents otherwise.

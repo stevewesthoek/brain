@@ -58,6 +58,12 @@ let account = arguments[2]
 let verifierExecutable = arguments[3]
 let verifierArgumentsJSON = arguments[4]
 
+guard service == "tools.prochat.brain" || service.hasPrefix("tools.prochat.brain."),
+      !service.contains("/") && !service.contains(":"),
+      !account.isEmpty && !account.contains("/") && !account.contains(":") else {
+    emitState("unknown", reason: "invalid_invocation")
+}
+
 guard verifierExecutable.hasPrefix("/"),
       !verifierExecutable.contains("\0"),
       let verifierArgumentsData = verifierArgumentsJSON.data(using: .utf8),
@@ -73,6 +79,7 @@ let query: [String: Any] = [
     kSecAttrAccount as String: account,
     kSecReturnData as String: true,
     kSecMatchLimit as String: kSecMatchLimitOne,
+    kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail,
 ]
 
 var result: CFTypeRef?

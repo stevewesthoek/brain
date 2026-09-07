@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 import Security
 
-let githubService = "com.brain.identity-access.github"
+let githubService = "tools.prochat.brain.github"
 let githubAccountPrefix = "github.account."
 let supportedCredentialTypes = ["fine_grained_pat", "classic_pat", "oauth_access_token", "github_app_user_token", "other"]
 
@@ -111,6 +111,7 @@ if overwrote {
         kSecAttrAccount as String: account,
         kSecAttrLabel as String: "Brain GitHub credential",
         kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+        kSecAttrSynchronizable as String: false,
         kSecValueData as String: secretData,
     ]
     let status = SecItemAdd(addQuery as CFDictionary, nil)

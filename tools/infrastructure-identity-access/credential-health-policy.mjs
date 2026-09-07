@@ -14,6 +14,7 @@ const CONDITION_SEVERITY = Object.freeze({
   identity_provider_rejected: 'high',
   identity_credential_missing: 'high',
   identity_secret_store_unavailable: 'high',
+  identity_secret_store_locked: 'high',
   identity_insufficient_scope: 'high',
   identity_interactive_reauthentication_required: 'high',
   identity_credential_expiring: 'medium',
@@ -24,7 +25,7 @@ const CONDITION_SEVERITY = Object.freeze({
   identity_verification_unknown: 'unknown',
 });
 
-const TRANSIENT_STATES = new Set(['provider_unavailable', 'vault_unavailable', 'unknown']);
+const TRANSIENT_STATES = new Set(['provider_unavailable', 'vault_unavailable', 'secret_store_locked', 'secret_store_unavailable', 'unknown']);
 
 function epoch(value, label) {
   const parsed = value instanceof Date ? value.getTime() : Date.parse(value ?? '');
@@ -84,6 +85,8 @@ function defaultConditionForState(detailedState) {
     refresh_available: ['identity_refresh_available'],
     provider_unavailable: ['identity_provider_unavailable'],
     vault_unavailable: ['identity_secret_store_unavailable'],
+    secret_store_locked: ['identity_secret_store_locked'],
+    secret_store_unavailable: ['identity_secret_store_unavailable'],
     credential_missing: ['identity_credential_missing'],
     unknown: ['identity_verification_unknown'],
   };
@@ -93,7 +96,7 @@ function defaultConditionForState(detailedState) {
 function safeStatus(detailedState) {
   if (detailedState === 'verified_healthy' || detailedState === 'credential_present') return 'healthy';
   if (['credential_expired', 'provider_rejected', 'provider_revoked', 'wrong_account', 'insufficient_scope', 'credential_missing'].includes(detailedState)) return 'unhealthy';
-  if (['credential_expiring', 'interactive_reauthentication_required', 'refresh_available', 'provider_unavailable', 'vault_unavailable'].includes(detailedState)) return 'degraded';
+  if (['credential_expiring', 'interactive_reauthentication_required', 'refresh_available', 'provider_unavailable', 'vault_unavailable', 'secret_store_locked', 'secret_store_unavailable'].includes(detailedState)) return 'degraded';
   return 'unknown';
 }
 

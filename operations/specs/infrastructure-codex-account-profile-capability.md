@@ -8,7 +8,7 @@ CLI-only, repository-controlled proof surface; it does not copy
 authentication state, automate login, or change any live application session.
 The canonical catalog now contains the two admitted account/profile bindings,
 host-local runtime instances, bounded legacy/application session metadata, and
-the read-only Keychain adapter contract. Provider identity for the dedicated
+the production Brain-owned Keychain adapter contract. Provider identity for the dedicated
 profiles remains operator-attested where the supported observer exposes no
 stable non-personal principal identifier.
 
@@ -241,10 +241,12 @@ interactive reauthentication. Brain may observe and notify; it does not read
 tokens, refresh generic OAuth, keep sessions alive artificially, or replace
 provider/application state.
 
-macOS Keychain remains the current/reference Brain-managed secret-store
-adapter for Brain-owned credentials. OnePassword is a future replaceable
-adapter only; it is not the active Codex authentication architecture and must
-not become a second copy of application-owned sessions.
+macOS Keychain remains the production Brain-managed secret-store adapter for
+Brain-owned credentials. It uses the logical `tools.prochat.brain` namespace
+inside the host-local macOS login Keychain, with approval-gated lifecycle
+operations and bounded verifier-only reads. OnePassword is a future
+replaceable adapter only; it is not the active Codex authentication
+architecture and must not become a second copy of application-owned sessions.
 
 ## Definition of done
 

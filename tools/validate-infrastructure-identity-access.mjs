@@ -316,7 +316,16 @@ function validateCatalog({ schema, catalog, label, hostIds = [] }) {
 
   for (const adapter of catalog.secretStoreAdapters ?? []) {
     validateProvenance(adapter.provenance, `secret-store adapter ${adapter.adapterId}`, errors);
-    if (adapter.mutationMode !== 'disabled') pushUnique(errors, `secret-store adapter ${adapter.adapterId}: mutation is not allowed in the foundation tranche`);
+    const isOperationalBrainKeychain = adapter.adapterId === 'secret-store:macos-keychain'
+      && adapter.physicalStore === 'login'
+      && adapter.serviceNamespace === 'tools.prochat.brain'
+      && adapter.mutationMode === 'approval_gated'
+      && adapter.capabilities?.includes('secret_create')
+      && adapter.capabilities?.includes('secret_update')
+      && adapter.capabilities?.includes('secret_delete');
+    if (adapter.mutationMode !== 'disabled' && !isOperationalBrainKeychain) {
+      pushUnique(errors, `secret-store adapter ${adapter.adapterId}: mutation is not approved for this catalog`);
+    }
   }
 
   for (const policy of catalog.lifecyclePolicies ?? []) {

@@ -23,6 +23,8 @@
       "enum": [
         "unknown",
         "vault_unavailable",
+        "secret_store_locked",
+        "secret_store_unavailable",
         "credential_missing",
         "credential_present",
         "credential_expiring",
@@ -104,14 +106,46 @@
         "adapterKind": { "enum": ["machine_runtime_store", "human_recovery_store", "os_native_store", "application_managed", "encrypted_bootstrap_store", "external_store"] },
         "capabilities": {
           "type": "array",
-          "items": { "enum": ["metadata_read", "bounded_consume", "resolve_for_bound_process", "version_metadata", "lease_metadata", "lease_renewal", "revocation_metadata", "audit_metadata", "offline_recovery"] },
+          "items": { "enum": ["metadata_read", "metadata_inventory", "bounded_consume", "secret_create", "secret_update", "secret_delete", "resolve_for_bound_process", "version_metadata", "lease_metadata", "lease_renewal", "revocation_metadata", "audit_metadata", "offline_recovery"] },
           "uniqueItems": true
         },
         "secretValueOwner": { "enum": ["adapter", "application", "provider", "human"] },
         "mutationMode": { "enum": ["disabled", "read_only", "approval_gated"] },
         "bootstrapMode": { "enum": ["explicit_human_bootstrap", "application_bootstrap", "external_bootstrap", "not_applicable"] },
         "referenceScheme": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9._-]*$" },
+        "serviceNamespace": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+        "physicalStore": { "enum": ["login", "dedicated_physical", "external", "unknown"] },
+        "hostScope": { "enum": ["host_local", "cross_host_explicit", "unknown"] },
+        "synchronization": { "enum": ["disabled", "explicit_policy", "unknown"] },
+        "accessibility": { "type": ["string", "null"], "maxLength": 256 },
+        "accessControlModel": { "type": ["string", "null"], "maxLength": 512 },
         "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": false
+    },
+    "credentialVersionMetadata": {
+      "type": "object",
+      "required": ["activeVersion", "versions", "rotationPolicy", "replacementState", "retirementState"],
+      "properties": {
+        "activeVersion": { "type": "string", "pattern": "^v[0-9]+$" },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["version", "createdAt", "lastVerifiedAt", "state"],
+            "properties": {
+              "version": { "type": "string", "pattern": "^v[0-9]+$" },
+              "createdAt": { "$ref": "#/$defs/timestamp" },
+              "lastVerifiedAt": { "type": ["string", "null"], "format": "date-time" },
+              "state": { "enum": ["active", "replacement", "retired"] }
+            },
+            "additionalProperties": false
+          },
+          "uniqueItems": true
+        },
+        "rotationPolicy": { "enum": ["forbidden", "provider_managed", "approval_gated"] },
+        "replacementState": { "enum": ["none", "pending", "verified", "cutover", "failed"] },
+        "retirementState": { "enum": ["active", "retired"] }
       },
       "additionalProperties": false
     },
@@ -210,6 +244,7 @@
         "verificationPolicyId": { "$ref": "#/$defs/identifier" },
         "lastVerifiedAt": { "type": ["string", "null"], "format": "date-time" },
         "lastKnownState": { "$ref": "#/$defs/detailedState" },
+        "versionMetadata": { "$ref": "#/$defs/credentialVersionMetadata" },
         "recoveryRunbookRef": { "type": "string", "minLength": 1 },
         "provenance": { "$ref": "#/$defs/provenance" }
       },

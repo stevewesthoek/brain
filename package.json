@@ -63,6 +63,7 @@
     "validate:infrastructure-identity-access": "node tools/validate-infrastructure-identity-access.mjs",
     "test:infrastructure-identity-access": "node --test tools/infrastructure-identity-access.test.mjs",
     "test:macos-keychain-adapter": "node --test tools/infrastructure-identity-access/macos-keychain-adapter.test.mjs",
+    "keychain:inventory": "node tools/infrastructure-identity-access/macos-keychain-inventory-cli.mjs",
     "test:macos-keychain-enrollment": "node --test tools/infrastructure-identity-access/macos-keychain-enrollment.test.mjs",
     "test:credential-verification-boundary": "node --test tools/infrastructure-identity-access/credential-verification-boundary.test.mjs tools/infrastructure-identity-access/credential-verification-boundary.e2e.test.mjs",
     "test:github-provider-verifier": "node --test tools/infrastructure-identity-access/github-provider-verifier.test.mjs",

@@ -4,7 +4,7 @@ import Security
 
 // Test-only fixture. It can touch exactly one synthetic item and never accepts
 // a service or account from the caller.
-let service = "com.brain.identity-access.github"
+let service = "tools.prochat.brain.github"
 let account = "github.account.synthetic"
 
 func emit(_ token: String, exitCode: Int32 = 0) -> Never {
@@ -28,6 +28,8 @@ case "add":
     guard !secretData.isEmpty, secretData.count <= 4096 else { emit("invalid_fixture_secret", exitCode: 64) }
     var addQuery = query
     addQuery[kSecAttrLabel as String] = "Brain synthetic GitHub enrollment fixture"
+    addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    addQuery[kSecAttrSynchronizable as String] = false
     addQuery[kSecValueData as String] = secretData
     let status = SecItemAdd(addQuery as CFDictionary, nil)
     if status == errSecSuccess { emit("added") }

@@ -1,34 +1,43 @@
-# IKHP Identity & Access — macOS Keychain adapter pilot
+# IKHP Identity & Access — macOS Keychain adapter
 
-**Status:** read-only synthetic pilot plus GitHub verifier/enrollment tooling,
-added 2026-09-04; adapter metadata is admitted in the canonical catalog, but
-no real credential is enrolled
+**Status:** production adapter for Brain-owned secrets, activated 2026-09-07;
+no real production credential is currently eligible for enrollment
 
-This runbook defines Brain's first/reference local `SecretStoreAdapter` for
-macOS. It is deliberately narrower than a credential manager: Brain owns
+This runbook defines Brain's local `SecretStoreAdapter` for macOS. It is
+deliberately narrower than a credential manager: Brain owns
 account identity, provider verification, lifecycle state, freshness, incidents,
 and recovery guidance; Keychain owns protected item storage and access control.
+Brain uses a dedicated logical namespace inside the macOS login Keychain by
+default. A separate physical Brain keychain is optional, not the default
+security boundary.
 
 ## Admitted scope
 
 The adapter:
 
 - runs only on macOS;
-- uses a fixed native Security.framework `SecItemCopyMatching` probe for
-  generic-password attributes;
+- uses native Security.framework APIs for generic-password metadata and
+  mutation;
+- uses the user's macOS login Keychain (`physicalStore=login`);
 - accepts only `keychain-ref://<service>/<account>` references in the
-  namespace configured by the adapter (the pilot default is `com.brain.`);
+  `tools.prochat.brain` namespace;
 - reports native availability and reference existence as redacted metadata;
+- provides metadata-only namespace inventory;
+- supports approval-gated create/update/delete with secret input only through
+  the native helper's stdin;
+- supports authorized read only as bounded native-to-verifier stdin delivery;
 - distinguishes present, missing, permission-denied/locked, unavailable, and
   unknown states;
 - its metadata/existence probe never requests `kSecReturnData`;
-- supports `bounded_consume` only through the separate verification boundary;
-- has no generic secret getter, create, update, delete, export, or backup method.
+- never uses Apple's `security` CLI or `-w <secret>`;
+- prevents iCloud synchronization with `kSecAttrSynchronizable=false` and
+  uses `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`;
+- has no generic raw secret getter, export, or backup method.
 
 The fixed synthetic smoke reference is:
 
 ```text
-keychain-ref://com.brain.identity-access.synthetic.pilot/brain-synthetic-pilot
+keychain-ref://tools.prochat.brain.synthetic.pilot/brain-synthetic-pilot
 ```
 
 This reference is a namespace test, not a real account enrollment. No current
@@ -109,7 +118,7 @@ The safe user-facing verifier is:
 ```bash
 node tools/infrastructure-identity-access/github-credential-verification-cli.mjs \
   --credential-id credential:github.account.01 \
-  --credential-ref keychain-ref://com.brain.identity-access.github/github.account.01 \
+  --credential-ref keychain-ref://tools.prochat.brain.github/github.account.01 \
   --expected-principal 123456789 \
   --credential-type fine_grained_pat
 ```
@@ -123,7 +132,7 @@ secret-store namespace as input.
 
 Enrollment is deliberately a separate, interactive operation. It stores one
 credential in the fixed Brain Keychain service
-`com.brain.identity-access.github` under a safe account slot such as
+`tools.prochat.brain.github` under a safe account slot such as
 `github.account.01`. It never creates a GitHub credential, migrates Codex or
 MCP OAuth, infers the account identity, or renews/rotates anything.
 
@@ -157,21 +166,24 @@ npm run test:credential-verification-boundary
 npm run test:github-provider-verifier
 ```
 
-The expected result is ten passing adapter tests, two passing enrollment tests,
+The expected result is twelve passing adapter tests plus two skipped native
+tests on a non-macOS host, and fourteen passing adapter tests on macOS, two
+passing enrollment tests,
 thirteen passing GitHub verifier tests, and six passing verification boundary
-tests, including one native end-to-end test. The adapter suite has a
-read-only native probe of the fixed synthetic reference. A result of `missing`
-is acceptable and is the expected state when the synthetic item has never
-existed. A result of `present` is also safe because the adapter reports
-metadata only. Neither result proves provider authentication health.
+tests, including native lifecycle and verification coverage. A result of
+`missing` is acceptable and is the expected state when the synthetic item has
+never existed. Neither presence nor absence alone proves provider
+authentication health.
 
 The adapter test also proves that:
 
 - namespace and shell-dangerous references fail closed;
 - diagnostics and simulated child-process output do not escape into results;
 - missing and permission-denied/locked states remain distinct;
-- the public adapter exposes metadata and bounded verifier invocation only;
-  generic process resolution and mutation remain unadmitted.
+- the public adapter exposes metadata, bounded verifier invocation, and
+  approval-gated lifecycle methods; it has no generic raw secret read.
+- lifecycle mutation requires explicit `operatorConfirmed=true` and never
+  places the secret in argv, environment, stdout, stderr, logs, or files.
 - the enrollment test exercises hidden TTY input, duplicate refusal, explicit
   overwrite, synthetic post-checks, and cleanup of one fixed test item;
 - the GitHub verifier test exercises identity, failure, scope, rate-limit,
@@ -229,6 +241,47 @@ provider outage/backoff, expiry warning/critical escalation, stale evidence,
 dedupe, recovery, restart-safe notification behavior, and secret absence.
 They do not contact GitHub or read a real credential.
 
+## Keychain behavior and access control
+
+The default physical store is the logged-in user's macOS `login` Keychain.
+Items use the `tools.prochat.brain` service namespace, generic-password
+class, `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, and
+`kSecAttrSynchronizable=false`. Metadata probes request attributes only and
+use `kSecUseAuthenticationUIFail`, so a locked or unavailable Keychain fails
+closed without an unlock prompt in background operation. Authorized provider
+verification is limited to a registered verifier and may require the normal
+macOS Keychain access decision for the user/session. No broad ACL weakening is
+performed.
+
+The adapter reports `permission_denied` for locked/denied access,
+`unavailable` for unavailable storage, and `unknown` for unmapped native
+errors. These states are projected as non-healthy credential-health states.
+They are not reasons to fall back to plaintext, environment variables, or
+application-owned stores.
+
+Keychain Access operators can search the login Keychain for
+`tools.prochat.brain` or `Brain`. Brain items are generic-password entries;
+they do not belong in System Roots or certificate views.
+
+For a metadata-only inventory from Brain:
+
+```bash
+npm run keychain:inventory
+```
+
+The command reports the selected physical store, namespace, host scope,
+synchronization policy, count, and safe item metadata only. It accepts no
+arguments and never prints secret data.
+
+## Optional dedicated physical Keychain
+
+A separate physical Brain keychain is an optional future deployment mode for
+a distinct operator trust domain, unlock policy, or headless/service
+identity. It is not created by this Goal. Enabling it requires explicit
+design for creation, unlock custody, search-list behavior, backup, recovery,
+rotation, and headless operation. Logical namespace separation in the login
+Keychain is the production default.
+
 ## Recovery and portability assurance
 
 Current Brain evidence does not explicitly cover restoration of the user's
@@ -249,18 +302,20 @@ separate recovery-evidence task must, using only a namespaced synthetic item:
 7. record which real provider credentials require human reauthentication or
    provider-side reissue instead of assuming portability.
 
-This pilot does not perform that recovery exercise and does not alter any real
-or application-owned Keychain item. Its end-to-end test temporarily creates
-and removes only the fixed synthetic fixture above.
+The production adapter's native lifecycle test temporarily creates, verifies,
+updates, and removes only the fixed synthetic fixture above on macOS. A
+replacement-machine restoration exercise remains separate and has not been
+claimed as complete.
 
 ## Threat-model findings
 
 - **argv:** only validated non-secret service/account metadata and verifier
-  configuration cross argv; the canary test asserts the secret is absent.
+  configuration cross argv; mutation secrets are never arguments.
 - **environment:** the native boundary uses a minimal inherited environment;
   no secret is placed in it.
-- **stdout/stderr:** the secret travels only on the verifier stdin pipe;
-  verifier stderr is discarded and boundary output is allowlisted.
+- **stdout/stderr:** mutation secrets travel only on the native helper stdin;
+  verification secrets travel only on the verifier stdin pipe; stderr is
+  discarded and all parent-facing output is allowlisted.
 - **exceptions/crashes:** parent-facing errors are fixed codes; the native
   boundary can still retain transient in-memory data during a crash.
 - **child inheritance/cancellation:** the verifier is a short-lived registered
@@ -273,8 +328,8 @@ and removes only the fixed synthetic fixture above.
   execution component and must stay locally registered.
 - **Keychain prompts/permissions:** locked or denied access becomes a
   non-healthy `vault_unavailable` result; no unlock or retry mutation occurs.
-- **concurrency:** the synthetic test uses one fixed item; future scheduling
-  must serialize or isolate same-reference verification.
+- **concurrency:** same-reference mutation is approval-gated; callers must
+  serialize lifecycle operations and version replacements before cutover.
 - **memory lifetime:** the native boundary makes best-effort `Data` cleanup;
   Swift and Node runtimes do not provide a perfect zeroization guarantee.
 - **LLM visibility:** no raw secret is returned in observations, logs, CLI
@@ -284,7 +339,7 @@ and removes only the fixed synthetic fixture above.
 
 The next gates are separate and require explicit approval:
 
-- metadata-only enrollment of reviewed account/credential records;
+- enrollment of reviewed account/credential records;
 - provider-specific read-only verification with expected-principal matching;
 - human-gated enrollment of a reviewed provider credential into the fixed
   Brain Keychain namespace;

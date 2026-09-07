@@ -8,7 +8,7 @@ const root = path.resolve(import.meta.dirname, '../..');
 const schema = loadJson(path.join(root, 'operations/specs/infrastructure-identity-access-v1.schema.json'));
 const baseInput = {
   credentialId: 'credential:fixture.account.02',
-  credentialRef: 'keychain-ref://com.brain.identity-access.synthetic.e2e/brain-verification-e2e',
+  credentialRef: 'keychain-ref://tools.prochat.brain.synthetic.e2e/brain-verification-e2e',
   expectedPrincipal: {
     principalType: 'provider_account',
     principalRef: 'fixture.account.02',
@@ -91,7 +91,7 @@ test('expected-principal mismatch fails closed as wrong_account', async () => {
 test('credential, provider, scope, expiry, refresh, and reauthentication states remain canonical', async () => {
   const cases = [
     [{ boundaryState: 'credential_missing' }, 'credential_missing', 'unhealthy'],
-    [{ boundaryState: 'vault_unavailable' }, 'vault_unavailable', 'degraded'],
+    [{ boundaryState: 'vault_unavailable' }, 'secret_store_unavailable', 'degraded'],
     [{ boundaryState: 'provider_result', resultCode: 'rejected' }, 'provider_rejected', 'unhealthy'],
     [{ boundaryState: 'provider_result', resultCode: 'revoked' }, 'provider_revoked', 'unhealthy'],
     [{ boundaryState: 'provider_result', resultCode: 'provider_unavailable' }, 'provider_unavailable', 'degraded'],
@@ -121,7 +121,7 @@ test('locked or denied Keychain and invalid boundary states never become healthy
       providerAdapter: providerAdapter(),
       secretStoreAdapter: secretStoreAdapter(boundaryResult),
     });
-    assertObservation(observation, boundaryResult.boundaryState === 'permission_denied' ? 'vault_unavailable' : 'unknown', boundaryResult.boundaryState === 'permission_denied' ? 'degraded' : 'unknown');
+    assertObservation(observation, boundaryResult.boundaryState === 'permission_denied' ? 'secret_store_locked' : 'unknown', boundaryResult.boundaryState === 'permission_denied' ? 'degraded' : 'unknown');
   }
 });
 

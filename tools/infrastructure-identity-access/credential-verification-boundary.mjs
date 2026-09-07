@@ -37,7 +37,7 @@ function observationId(credentialId) {
 function normalizedStatus(detailedState) {
   if (detailedState === 'verified_healthy') return 'healthy';
   if (['wrong_account', 'credential_missing', 'credential_expired', 'provider_rejected', 'provider_revoked', 'insufficient_scope'].includes(detailedState)) return 'unhealthy';
-  if (['vault_unavailable', 'provider_unavailable', 'interactive_reauthentication_required', 'credential_expiring', 'refresh_available'].includes(detailedState)) return 'degraded';
+  if (['vault_unavailable', 'secret_store_locked', 'secret_store_unavailable', 'provider_unavailable', 'interactive_reauthentication_required', 'credential_expiring', 'refresh_available'].includes(detailedState)) return 'degraded';
   return 'unknown';
 }
 
@@ -46,6 +46,8 @@ function conditionCode(detailedState) {
     verified_healthy: [],
     credential_missing: ['identity_credential_missing'],
     vault_unavailable: ['identity_secret_store_unavailable'],
+    secret_store_locked: ['identity_secret_store_locked'],
+    secret_store_unavailable: ['identity_secret_store_unavailable'],
     provider_rejected: ['identity_provider_rejected'],
     provider_revoked: ['identity_provider_revoked'],
     wrong_account: ['identity_wrong_account'],
@@ -120,7 +122,8 @@ function normalizeBoundaryResult({ credentialId, expectedPrincipal, verification
 
   let detailedState = 'unknown';
   if (boundaryState === 'credential_missing') detailedState = 'credential_missing';
-  else if (boundaryState === 'permission_denied' || boundaryState === 'vault_unavailable') detailedState = 'vault_unavailable';
+  else if (boundaryState === 'permission_denied') detailedState = 'secret_store_locked';
+  else if (boundaryState === 'vault_unavailable') detailedState = 'secret_store_unavailable';
   else if (boundaryState === 'provider_result') {
     if (providerResult.resultCode === 'rejected') detailedState = 'provider_rejected';
     else if (providerResult.resultCode === 'revoked') detailedState = 'provider_revoked';

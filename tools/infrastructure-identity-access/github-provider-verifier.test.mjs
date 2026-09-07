@@ -92,7 +92,7 @@ test('GitHub invocation is admitted only by the fixed Keychain verifier registry
     },
   });
   const result = await keychainAdapter.invokeBoundedVerification({
-    reference: 'keychain-ref://com.brain.identity-access.github/github.account.01',
+    reference: 'keychain-ref://tools.prochat.brain.github/github.account.01',
     verifierId: invocation.verifierId,
     verifierExecutable: invocation.executable,
     verifierArgs: invocation.args,
@@ -100,7 +100,7 @@ test('GitHub invocation is admitted only by the fixed Keychain verifier registry
   assert.equal(result.boundaryState, 'provider_result');
   assert.equal(result.providerId, 'github');
   assert.deepEqual(calls, [[
-    'com.brain.identity-access.github',
+    'tools.prochat.brain.github',
     'github.account.01',
     process.execPath,
     JSON.stringify(invocation.args),
@@ -143,7 +143,7 @@ test('wrong stable principal becomes wrong_account without using a mutable login
     const providerResult = await verifyGitHubCredential({ token: CANARY, credentialType: 'fine_grained_pat', request: localRequest(origin) });
     const observation = await verifyCredential({
       credentialId: 'credential:github.account.01',
-      credentialRef: 'keychain-ref://com.brain.identity-access.github/github.account.01',
+      credentialRef: 'keychain-ref://tools.prochat.brain.github/github.account.01',
       expectedPrincipal: { principalType: 'provider_account', principalRef: '111111', displayLabel: 'expected-account', matchStrategy: 'provider_asserted_id' },
       verificationPolicy: { probeMode: 'read_only', readOnlyOnly: true, requiredScopes: [] },
       providerAdapter: { buildVerificationInvocation: () => ({ verifierId: GITHUB_VERIFIER_ID, executable: process.execPath, args: [GITHUB_VERIFIER_SCRIPT, '--credential-type', 'fine_grained_pat'] }) },
@@ -279,7 +279,7 @@ test('fine-grained permissions and expiry remain explicitly unobservable from GE
     assert.equal(providerResult.expiryMetadataSource, 'unknown');
     const observation = await verifyCredential({
       credentialId: 'credential:github.account.02',
-      credentialRef: 'keychain-ref://com.brain.identity-access.github/github.account.02',
+      credentialRef: 'keychain-ref://tools.prochat.brain.github/github.account.02',
       expectedPrincipal: { principalType: 'provider_account', principalRef: '777777', displayLabel: 'fine-grained-user', matchStrategy: 'provider_asserted_id' },
       verificationPolicy: { probeMode: 'read_only', readOnlyOnly: true, requiredScopes: ['contents:read'] },
       providerAdapter: { buildVerificationInvocation: () => ({ verifierId: GITHUB_VERIFIER_ID, executable: process.execPath, args: [GITHUB_VERIFIER_SCRIPT, '--credential-type', 'fine_grained_pat'] }) },

@@ -8,10 +8,13 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 const NATIVE_SWIFT = '/usr/bin/swift';
 const PROBE_SCRIPT = path.join(import.meta.dirname, 'macos-keychain-probe.swift');
+const STORE_SCRIPT = path.join(import.meta.dirname, 'macos-keychain-store.swift');
 const BOUNDARY_SCRIPT = path.join(import.meta.dirname, 'macos-keychain-verification-boundary.swift');
-const DEFAULT_SERVICE_PREFIX = 'com.brain.';
+const DEFAULT_SERVICE_PREFIX = 'tools.prochat.brain';
 const SEGMENT_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const ALLOWED_PROBE_RESULTS = new Set(['available', 'present', 'missing', 'permission_denied', 'unavailable', 'unknown']);
+const ALLOWED_STORE_OPERATIONS = new Set(['create', 'update', 'delete', 'inventory']);
+const ALLOWED_STORE_STATES = new Set(['available', 'present', 'missing', 'permission_denied', 'unavailable', 'unknown']);
 const ALLOWED_BOUNDARY_STATES = new Set(['credential_missing', 'permission_denied', 'vault_unavailable', 'provider_result', 'unknown']);
 const ALLOWED_RESULT_CODES = new Set(['accepted', 'rejected', 'revoked', 'provider_unavailable', 'reauthentication_required', 'refresh_available', 'unknown']);
 const ALLOWED_REASON_CODES = new Set([
@@ -22,6 +25,10 @@ const ALLOWED_REASON_CODES = new Set([
   'provider_redirect_rejected', 'provider_timeout', 'provider_tls_failed', 'provider_network_failed',
   'provider_proxy_blocked', 'provider_scope_unavailable', 'provider_credential_type_unknown',
   'provider_response_unexpected', 'provider_input_invalid',
+  'mutation_approval_required', 'invalid_mutation_input', 'invalid_label',
+  'invalid_secret_input', 'duplicate_item', 'keychain_add_failed',
+  'keychain_update_failed', 'keychain_delete_failed', 'keychain_inventory_failed',
+  'native_store_result_rejected', 'unadmitted_namespace',
 ]);
 const ALLOWED_SCOPE_EVIDENCE = new Set(['provider_observed', 'declared_only', 'not_observable', 'unknown']);
 const ALLOWED_METADATA_SOURCES = new Set(['user_declared', 'provider_observed', 'policy_derived', 'unknown']);
@@ -33,7 +40,11 @@ export const MACOS_KEYCHAIN_ADAPTER_ID = 'secret-store:macos-keychain';
 export const MACOS_KEYCHAIN_REFERENCE_SCHEME = 'keychain-ref';
 export const MACOS_KEYCHAIN_CAPABILITIES = Object.freeze([
   'metadata_read',
+  'metadata_inventory',
   'bounded_consume',
+  'secret_create',
+  'secret_update',
+  'secret_delete',
 ]);
 export const MACOS_KEYCHAIN_UNADMITTED_CAPABILITIES = Object.freeze([
   'resolve_for_bound_process',
@@ -45,7 +56,9 @@ export const MACOS_KEYCHAIN_UNADMITTED_CAPABILITIES = Object.freeze([
   'offline_recovery',
 ]);
 
-export const SYNTHETIC_PILOT_REFERENCE = 'keychain-ref://com.brain.identity-access.synthetic.pilot/brain-synthetic-pilot';
+export const MACOS_KEYCHAIN_SERVICE_NAMESPACE = DEFAULT_SERVICE_PREFIX;
+export const MACOS_KEYCHAIN_PHYSICAL_STORE = 'login';
+export const SYNTHETIC_PILOT_REFERENCE = 'keychain-ref://tools.prochat.brain.synthetic.pilot/brain-synthetic-pilot';
 
 function defaultVerifierRegistry() {
   return new Map([
@@ -103,6 +116,68 @@ async function runNativeProbe(args) {
   } catch (error) {
     return { status: typeof error?.status === 'number' ? error.status : null, token: '' };
   }
+}
+
+async function runNativeStore(args, secretInput = null) {
+  return new Promise((resolve) => {
+    let settled = false;
+    let output = '';
+    let outputTooLarge = false;
+    const child = spawn(NATIVE_SWIFT, [STORE_SCRIPT, ...args], {
+      cwd: '/',
+      env: safeProbeEnvironment(),
+      shell: false,
+      detached: true,
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
+    const wipeInput = () => {
+      if (Buffer.isBuffer(secretInput)) secretInput.fill(0);
+    };
+    const finish = (status, safeOutput = '') => {
+      if (settled) return;
+      settled = true;
+      wipeInput();
+      resolve({ status, output: safeOutput });
+    };
+    const terminateProcessTree = () => {
+      if (typeof child.pid !== 'number') return;
+      try {
+        process.kill(-child.pid, 'SIGKILL');
+      } catch {
+        try { child.kill('SIGKILL'); } catch { /* already exited */ }
+      }
+    };
+    const timer = setTimeout(() => {
+      terminateProcessTree();
+      finish(null);
+    }, 30000);
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      if (outputTooLarge) return;
+      if (output.length + chunk.length > 16 * 1024) {
+        outputTooLarge = true;
+        output = '';
+        return;
+      }
+      output += chunk;
+    });
+    child.once('error', () => {
+      clearTimeout(timer);
+      finish(null);
+    });
+    child.once('close', (status) => {
+      clearTimeout(timer);
+      finish(typeof status === 'number' && !outputTooLarge ? status : null, outputTooLarge ? '' : output);
+    });
+    if (Buffer.isBuffer(secretInput) && secretInput.length > 0) {
+      child.stdin.write(secretInput, () => {
+        wipeInput();
+        child.stdin.end();
+      });
+    } else {
+      child.stdin.end();
+    }
+  });
 }
 
 async function runNativeBoundary(args) {
@@ -169,7 +244,7 @@ export function parseMacOSKeychainReference(reference) {
   }
   const service = match[1];
   const account = match[2];
-  if (!service.startsWith(DEFAULT_SERVICE_PREFIX)) {
+  if (!(service === DEFAULT_SERVICE_PREFIX || service.startsWith(`${DEFAULT_SERVICE_PREFIX}.`))) {
     return invalid('unadmitted_namespace', 'Keychain service is outside the Brain-admitted namespace.');
   }
   return Object.freeze({
@@ -192,7 +267,11 @@ function resultForState({ reference, service, account, storageState, diagnosticC
     account,
     storageState,
     providerState: 'unknown',
-    detailedState: present ? 'credential_present' : storageState === 'missing' ? 'credential_missing' : storageState === 'unknown' ? 'unknown' : 'vault_unavailable',
+    detailedState: present ? 'credential_present'
+      : storageState === 'missing' ? 'credential_missing'
+        : storageState === 'permission_denied' ? 'secret_store_locked'
+          : storageState === 'unavailable' ? 'secret_store_unavailable'
+            : 'unknown',
     diagnosticCode,
     containsSecrets: false,
     secretValueReturned: false,
@@ -202,6 +281,16 @@ function resultForState({ reference, service, account, storageState, diagnosticC
 
 function classifyProbeToken(token) {
   return ALLOWED_PROBE_RESULTS.has(token) ? token : 'unknown';
+}
+
+function secretInput(value) {
+  if (Buffer.isBuffer(value)) return value.length > 0 && value.length <= 64 * 1024 ? Buffer.from(value) : null;
+  if (value instanceof Uint8Array) return value.length > 0 && value.length <= 64 * 1024 ? Buffer.from(value) : null;
+  if (typeof value === 'string') {
+    const encoded = Buffer.from(value, 'utf8');
+    return encoded.length > 0 && encoded.length <= 64 * 1024 ? encoded : null;
+  }
+  return null;
 }
 
 function safeBoundaryString(value, maxLength) {
@@ -256,11 +345,39 @@ function parseBoundaryOutput(output) {
   return Object.freeze(safe);
 }
 
+function parseStoreOutput(output) {
+  if (typeof output !== 'string' || output.length === 0 || output.length > 16 * 1024) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(output);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !ALLOWED_STORE_OPERATIONS.has(parsed.operation)) return null;
+  const safe = { operation: parsed.operation };
+  if (typeof parsed.ok === 'boolean') safe.ok = parsed.ok;
+  if (ALLOWED_STORE_STATES.has(parsed.storageState)) safe.storageState = parsed.storageState;
+  if (ALLOWED_REASON_CODES.has(parsed.reasonCode)) safe.reasonCode = parsed.reasonCode;
+  if (typeof parsed.overwrote === 'boolean') safe.overwrote = parsed.overwrote;
+  if (Number.isInteger(parsed.count) && parsed.count >= 0 && parsed.count <= 1000) safe.count = parsed.count;
+  if (Array.isArray(parsed.items) && parsed.items.length <= 1000) {
+    safe.items = parsed.items.flatMap((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+      const service = safeBoundaryString(item.service, 128);
+      const account = safeBoundaryString(item.account, 128);
+      const label = safeBoundaryString(item.label, 256);
+      if (!service || !account) return [];
+      return [{ service, account, ...(label ? { label } : {}) }];
+    });
+  }
+  return Object.freeze(safe);
+}
+
 async function checkAvailability(runProbe) {
   if (process.platform !== 'darwin') {
     return Object.freeze({ ok: false, storageState: 'unavailable', diagnosticCode: 'unsupported_platform' });
   }
-  if (!fs.existsSync(NATIVE_SWIFT) || !fs.existsSync(PROBE_SCRIPT) || !fs.existsSync(BOUNDARY_SCRIPT)) {
+  if (!fs.existsSync(NATIVE_SWIFT) || !fs.existsSync(PROBE_SCRIPT) || !fs.existsSync(STORE_SCRIPT) || !fs.existsSync(BOUNDARY_SCRIPT)) {
     return Object.freeze({ ok: false, storageState: 'unavailable', diagnosticCode: 'native_probe_unavailable' });
   }
   const result = await runProbe(['--availability']);
@@ -270,9 +387,10 @@ async function checkAvailability(runProbe) {
   return Object.freeze({ ok: true, storageState: 'available', diagnosticCode: 'native_keychain_available' });
 }
 
-function createMacOSKeychainAdapterInternal({ runProbe, runBoundary }) {
+function createMacOSKeychainAdapterInternal({ runProbe, runBoundary, runStoreCommand = runNativeStore }) {
   if (typeof runProbe !== 'function') throw new TypeError('runProbe must be a function');
   if (typeof runBoundary !== 'function') throw new TypeError('runBoundary must be a function');
+  if (typeof runStoreCommand !== 'function') throw new TypeError('runStoreCommand must be a function');
   const servicePrefix = DEFAULT_SERVICE_PREFIX;
   const registeredVerifiers = normalizeVerifierRegistry(defaultVerifierRegistry());
 
@@ -282,9 +400,14 @@ function createMacOSKeychainAdapterInternal({ runProbe, runBoundary }) {
     platform: 'darwin',
     referenceScheme: MACOS_KEYCHAIN_REFERENCE_SCHEME,
     serviceNamespace: servicePrefix,
+    physicalStore: MACOS_KEYCHAIN_PHYSICAL_STORE,
+    hostScope: 'host_local',
+    synchronization: 'disabled',
+    accessibility: 'when_unlocked_this_device_only',
+    accessControlModel: 'native_security_framework_with_user_approval',
     capabilities: [...MACOS_KEYCHAIN_CAPABILITIES],
     unadmittedCapabilities: [...MACOS_KEYCHAIN_UNADMITTED_CAPABILITIES],
-    mutationMode: 'disabled',
+    mutationMode: 'approval_gated',
     containsSecrets: false,
     secretValueReturned: false,
   });
@@ -330,6 +453,70 @@ function createMacOSKeychainAdapterInternal({ runProbe, runBoundary }) {
     return Object.freeze({ ok: safeResult.boundaryState === 'provider_result', operation: 'bounded_consume', adapterId: MACOS_KEYCHAIN_ADAPTER_ID, ...safeResult, containsSecrets: false, secretValueReturned: false });
   };
 
+  const mutationDenied = (operation, reasonCode = 'mutation_approval_required') => Object.freeze({
+    ok: false,
+    operation,
+    adapterId: MACOS_KEYCHAIN_ADAPTER_ID,
+    reasonCode,
+    containsSecrets: false,
+    secretValueReturned: false,
+  });
+
+  const approved = (options) => options?.operatorConfirmed === true;
+
+  const runStore = async (operation, parsed, input = null) => {
+    const availability = await checkAvailability(runProbe);
+    if (!availability.ok) return Object.freeze({ ...availability, operation, adapterId: MACOS_KEYCHAIN_ADAPTER_ID, containsSecrets: false, secretValueReturned: false });
+    let result;
+    try {
+      result = await runStoreCommand([operation, parsed.service, parsed.account, ...(operation === 'create' ? [parsed.label] : [])], input);
+    } finally {
+      if (Buffer.isBuffer(input)) input.fill(0);
+    }
+    const safeResult = parseStoreOutput(result?.output);
+    if (!safeResult) {
+      return Object.freeze({ ok: false, operation, adapterId: MACOS_KEYCHAIN_ADAPTER_ID, storageState: 'unknown', reasonCode: 'native_store_result_rejected', containsSecrets: false, secretValueReturned: false });
+    }
+    return Object.freeze({ ok: result?.status === 0 && safeResult.ok === true, adapterId: MACOS_KEYCHAIN_ADAPTER_ID, ...safeResult, containsSecrets: false, secretValueReturned: false });
+  };
+
+  const create = async (reference, { secret, label = 'Brain credential', operatorConfirmed = false } = {}) => {
+    const parsed = parseMacOSKeychainReference(reference);
+    if (!parsed.ok) return Object.freeze({ ...parsed, adapterId: MACOS_KEYCHAIN_ADAPTER_ID, containsSecrets: false, secretValueReturned: false });
+    if (!approved({ operatorConfirmed })) return mutationDenied('create');
+    const safeLabel = safeBoundaryString(label, 256);
+    const input = secretInput(secret);
+    if (!safeLabel || !input) return mutationDenied('create', 'invalid_mutation_input');
+    return runStore('create', { ...parsed, label: safeLabel }, input);
+  };
+
+  const update = async (reference, { secret, operatorConfirmed = false } = {}) => {
+    const parsed = parseMacOSKeychainReference(reference);
+    if (!parsed.ok) return Object.freeze({ ...parsed, adapterId: MACOS_KEYCHAIN_ADAPTER_ID, containsSecrets: false, secretValueReturned: false });
+    if (!approved({ operatorConfirmed })) return mutationDenied('update');
+    const input = secretInput(secret);
+    if (!input) return mutationDenied('update', 'invalid_mutation_input');
+    return runStore('update', parsed, input);
+  };
+
+  const remove = async (reference, { operatorConfirmed = false } = {}) => {
+    const parsed = parseMacOSKeychainReference(reference);
+    if (!parsed.ok) return Object.freeze({ ...parsed, adapterId: MACOS_KEYCHAIN_ADAPTER_ID, containsSecrets: false, secretValueReturned: false });
+    if (!approved({ operatorConfirmed })) return mutationDenied('delete');
+    return runStore('delete', parsed);
+  };
+
+  const inspectNamespace = async () => {
+    const availability = await checkAvailability(runProbe);
+    if (!availability.ok) return Object.freeze({ ...availability, operation: 'inventory', adapterId: MACOS_KEYCHAIN_ADAPTER_ID, containsSecrets: false, secretValueReturned: false });
+    const result = await runStoreCommand(['inventory', servicePrefix]);
+    const safeResult = parseStoreOutput(result?.output);
+    if (result?.status !== 0 || !safeResult) return Object.freeze({ ok: false, operation: 'inventory', adapterId: MACOS_KEYCHAIN_ADAPTER_ID, storageState: 'unknown', reasonCode: 'native_store_result_rejected', containsSecrets: false, secretValueReturned: false });
+    return Object.freeze({ ok: safeResult.ok === true, adapterId: MACOS_KEYCHAIN_ADAPTER_ID, ...safeResult, containsSecrets: false, secretValueReturned: false });
+  };
+
+  const read = async (options) => invokeBoundedVerification(options);
+
   const checkAdapterAvailability = () => checkAvailability(runProbe);
 
   const resolveForBoundProcess = async () => Object.freeze({
@@ -349,6 +536,11 @@ function createMacOSKeychainAdapterInternal({ runProbe, runBoundary }) {
     checkAvailability: checkAdapterAvailability,
     inspectReference,
     invokeBoundedVerification,
+    read,
+    inspectNamespace,
+    create,
+    update,
+    delete: remove,
     resolveForBoundProcess,
   });
 }
@@ -357,8 +549,8 @@ export function createMacOSKeychainAdapter() {
   return createMacOSKeychainAdapterInternal({ runProbe: runNativeProbe, runBoundary: runNativeBoundary });
 }
 
-export function createMacOSKeychainAdapterForTesting({ runProbe = runNativeProbe, runBoundary = runNativeBoundary } = {}) {
-  return createMacOSKeychainAdapterInternal({ runProbe, runBoundary });
+export function createMacOSKeychainAdapterForTesting({ runProbe = runNativeProbe, runBoundary = runNativeBoundary, runStoreCommand = runNativeStore } = {}) {
+  return createMacOSKeychainAdapterInternal({ runProbe, runBoundary, runStoreCommand });
 }
 
 export function redactMacOSKeychainResult(result) {

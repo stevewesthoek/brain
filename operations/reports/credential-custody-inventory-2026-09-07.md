@@ -1,5 +1,8 @@
 # Identity & Access credential-custody inventory — 2026-09-07
 
+> Historical pre-operationalization snapshot. The authoritative re-audit is
+> `operations/reports/credential-custody-inventory-2026-09-07-keychain-operationalization.md`.
+
 ## Scope and conclusion
 
 This is a metadata-only inventory. It records custody, scope, health, and
@@ -56,7 +59,7 @@ provider authentication.
 
 The registered adapter is `secret-store:macos-keychain` with:
 
-- namespace `keychain-ref://` under the Brain-admitted `com.brain.` service
+- namespace `keychain-ref://` under the then-pilot Brain service namespace
   prefix;
 - metadata read and bounded-consume capabilities only;
 - mutation disabled and explicit human bootstrap;

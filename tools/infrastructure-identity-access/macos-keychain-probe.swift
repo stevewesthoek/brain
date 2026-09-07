@@ -19,12 +19,18 @@ guard arguments.count == 3 else {
 
 let service = arguments[1]
 let account = arguments[2]
+guard service == "tools.prochat.brain" || service.hasPrefix("tools.prochat.brain."),
+      !service.contains("/") && !service.contains(":"),
+      !account.isEmpty && !account.contains("/") && !account.contains(":") else {
+    emit("unadmitted_namespace", exitCode: 64)
+}
 let query: [String: Any] = [
     kSecClass as String: kSecClassGenericPassword,
     kSecAttrService as String: service,
     kSecAttrAccount as String: account,
     kSecReturnAttributes as String: true,
     kSecMatchLimit as String: kSecMatchLimitOne,
+    kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail,
 ]
 
 var result: CFTypeRef?

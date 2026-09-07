@@ -71,12 +71,27 @@ test('schema rejects inline secret material and keepalive policy', () => {
   assert.notEqual(validateJsonSchema(schema.$defs.identityAccessCatalog, catalog, schema).length, 0);
 });
 
-test('validator rejects enabling secret-store mutation in the foundation tranche', () => {
+test('schema accepts explicit credential version lifecycle metadata and rejects invalid versions', () => {
+  const schema = loadJson(path.join(root, 'operations/specs/infrastructure-identity-access-v1.schema.json'));
+  const catalog = loadJson(path.join(root, 'operations/fixtures/infrastructure-identity-access-alternate-v1.json'));
+  catalog.credentials[0].versionMetadata = {
+    activeVersion: 'v1',
+    versions: [{ version: 'v1', createdAt: '2026-09-07T00:00:00Z', lastVerifiedAt: null, state: 'active' }],
+    rotationPolicy: 'approval_gated',
+    replacementState: 'none',
+    retirementState: 'active',
+  };
+  assert.deepEqual(validateJsonSchema(schema.$defs.identityAccessCatalog, catalog, schema), []);
+  catalog.credentials[0].versionMetadata.activeVersion = 'current';
+  assert.notEqual(validateJsonSchema(schema.$defs.identityAccessCatalog, catalog, schema).length, 0);
+});
+
+test('validator rejects unapproved secret-store mutation', () => {
   const schema = loadJson(path.join(root, 'operations/specs/infrastructure-identity-access-v1.schema.json'));
   const catalog = loadJson(path.join(root, 'operations/fixtures/infrastructure-identity-access-alternate-v1.json'));
   catalog.secretStoreAdapters[0].mutationMode = 'approval_gated';
   const result = validateIdentityAccessCatalog({ schema, catalog, label: '.mutation' });
-  assert.ok(result.errors.some((error) => error.includes('mutation is not allowed')));
+  assert.ok(result.errors.some((error) => error.includes('mutation is not approved')));
 });
 
 test('profile isolation cannot be marked proven without confirmed evidence', () => {

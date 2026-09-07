@@ -24,17 +24,34 @@ test('Keychain references are opaque, namespace-bound, and shell-safe', () => {
   assert.deepEqual(parsed, {
     ok: true,
     reference: SYNTHETIC_PILOT_REFERENCE,
-    service: 'com.brain.identity-access.synthetic.pilot',
+    service: 'tools.prochat.brain.synthetic.pilot',
     account: 'brain-synthetic-pilot',
   });
   assert.equal(parseMacOSKeychainReference('keychain-ref://com.other/service/account').ok, false);
-  assert.equal(parseMacOSKeychainReference('keychain-ref://com.brain.test/a%2Fb').ok, false);
-  assert.equal(parseMacOSKeychainReference('keychain-ref://com.brain.test/a;rm').ok, false);
+  assert.equal(parseMacOSKeychainReference('keychain-ref://tools.prochat.brainx/a%2Fb').ok, false);
+  assert.equal(parseMacOSKeychainReference('keychain-ref://tools.prochat.brain.test/a;rm').ok, false);
 });
 
-test('adapter reports only redacted metadata and keeps resolution/mutation unadmitted', async () => {
+test('adapter reports redacted metadata and keeps raw resolution unadmitted', async () => {
   const calls = [];
   const adapter = createMacOSKeychainAdapterForTesting({ runProbe: fakeProbeFor('present', calls) });
+  assert.deepEqual(adapter.describe(), {
+    adapterId: MACOS_KEYCHAIN_ADAPTER_ID,
+    adapterKind: 'os_native_store',
+    platform: 'darwin',
+    referenceScheme: 'keychain-ref',
+    serviceNamespace: 'tools.prochat.brain',
+    physicalStore: 'login',
+    hostScope: 'host_local',
+    synchronization: 'disabled',
+    accessibility: 'when_unlocked_this_device_only',
+    accessControlModel: 'native_security_framework_with_user_approval',
+    capabilities: ['metadata_read', 'metadata_inventory', 'bounded_consume', 'secret_create', 'secret_update', 'secret_delete'],
+    unadmittedCapabilities: ['resolve_for_bound_process', 'version_metadata', 'lease_metadata', 'lease_renewal', 'revocation_metadata', 'audit_metadata', 'offline_recovery'],
+    mutationMode: 'approval_gated',
+    containsSecrets: false,
+    secretValueReturned: false,
+  });
   const result = await adapter.inspectReference(SYNTHETIC_PILOT_REFERENCE);
 
   assert.equal(result.ok, true);
@@ -43,11 +60,9 @@ test('adapter reports only redacted metadata and keeps resolution/mutation unadm
   assert.equal(result.containsSecrets, false);
   assert.equal(result.secretValueReturned, false);
   assert.equal(JSON.stringify(result).includes('synthetic-secret-must-never-escape'), false);
-  assert.deepEqual(adapter.capabilities(), ['metadata_read', 'bounded_consume']);
-  assert.equal(typeof adapter.write, 'undefined');
-  assert.equal(typeof adapter.delete, 'undefined');
+  assert.deepEqual(adapter.capabilities(), ['metadata_read', 'metadata_inventory', 'bounded_consume', 'secret_create', 'secret_update', 'secret_delete']);
   assert.equal((await adapter.resolveForBoundProcess()).reasonCode, 'resolution_not_admitted_in_pilot');
-  assert.deepEqual(calls, [['--availability'], ['com.brain.identity-access.synthetic.pilot', 'brain-synthetic-pilot']]);
+  assert.deepEqual(calls, [['--availability'], ['tools.prochat.brain.synthetic.pilot', 'brain-synthetic-pilot']]);
 });
 
 test('bounded verification accepts only a normalized provider result from the native boundary', async () => {
@@ -82,7 +97,7 @@ test('bounded verification accepts only a normalized provider result from the na
   assert.equal(result.secret, undefined);
   assert.equal(JSON.stringify(result).includes('synthetic-secret-must-never-escape'), false);
   assert.deepEqual(calls, [[
-    'com.brain.identity-access.synthetic.pilot',
+    'tools.prochat.brain.synthetic.pilot',
     'brain-synthetic-pilot',
     process.execPath,
     `["${path.join(import.meta.dirname, 'synthetic-provider-verifier.mjs')}","--expected-principal","fixture.account.02"]`,
@@ -104,6 +119,79 @@ test('bounded verification rejects an unregistered executable or verifier identi
   assert.equal(result.reasonCode, 'invalid_verifier_command');
 });
 
+test('approval-gated lifecycle never exposes secret material and keeps metadata separate', async () => {
+  const reference = 'keychain-ref://tools.prochat.brain.synthetic.lifecycle/brain-synthetic-lifecycle';
+  const items = new Map();
+  const storeCalls = [];
+  const runProbe = async (args) => {
+    if (args[0] === '--availability') return { status: 0, token: 'available' };
+    return { status: 0, token: items.has(String(args[0]) + '/' + String(args[1])) ? 'present' : 'missing' };
+  };
+  const runStoreCommand = async (args, input = null) => {
+    const [operation, service, account, label] = args;
+    const key = String(service) + '/' + String(account);
+    storeCalls.push({ args: [...args], inputBytes: input?.length ?? 0 });
+    if (operation === 'create') {
+      if (items.has(key)) return { status: 1, output: JSON.stringify({ operation, ok: false, reasonCode: 'duplicate_item' }) };
+      items.set(key, Buffer.from(input));
+      return { status: 0, output: JSON.stringify({ operation, ok: true, storageState: 'present', overwrote: false }) };
+    }
+    if (operation === 'update') {
+      if (!items.has(key)) return { status: 1, output: JSON.stringify({ operation, ok: false, reasonCode: 'keychain_item_missing' }) };
+      items.set(key, Buffer.from(input));
+      return { status: 0, output: JSON.stringify({ operation, ok: true, storageState: 'present', overwrote: true }) };
+    }
+    if (operation === 'delete') {
+      items.delete(key);
+      return { status: 0, output: JSON.stringify({ operation, ok: true, storageState: 'missing' }) };
+    }
+    if (operation === 'inventory') {
+      return { status: 0, output: JSON.stringify({ operation, ok: true, storageState: 'available', count: items.size, items: [...items.keys()].map((entry) => { const [serviceName, accountName] = entry.split('/'); return { service: serviceName, account: accountName, label: 'Brain synthetic lifecycle' }; }) }) };
+    }
+    return { status: 1, output: '' };
+  };
+  const adapter = createMacOSKeychainAdapterForTesting({
+    runProbe,
+    runStoreCommand,
+    runBoundary: async () => ({
+      status: 0,
+      output: JSON.stringify({ boundaryState: 'provider_result', resultCode: 'accepted', transportCheck: 'stdin_only' }),
+    }),
+  });
+  const firstSecret = Buffer.from('synthetic-first-secret');
+  const secondSecret = Buffer.from('synthetic-second-secret');
+
+  assert.equal((await adapter.create(reference, { secret: firstSecret, operatorConfirmed: false })).reasonCode, 'mutation_approval_required');
+  const created = await adapter.create(reference, { secret: firstSecret, label: 'Brain synthetic lifecycle', operatorConfirmed: true });
+  assert.equal(created.ok, true);
+  assert.equal(created.secretValueReturned, false);
+  assert.equal(JSON.stringify(created).includes('synthetic-first-secret'), false);
+  assert.deepEqual((await adapter.inspectNamespace()).items, [{
+    service: 'tools.prochat.brain.synthetic.lifecycle',
+    account: 'brain-synthetic-lifecycle',
+    label: 'Brain synthetic lifecycle',
+  }]);
+  assert.equal((await adapter.inspectReference(reference)).detailedState, 'credential_present');
+  const verified = await adapter.read({
+    reference,
+    verifierId: 'provider:synthetic-local',
+    verifierExecutable: process.execPath,
+    verifierArgs: [path.join(import.meta.dirname, 'synthetic-provider-verifier.mjs'), '--expected-principal', 'fixture.account.02'],
+  });
+  assert.equal(verified.boundaryState, 'provider_result');
+  const updated = await adapter.update(reference, { secret: secondSecret, operatorConfirmed: true });
+  assert.equal(updated.ok, true);
+  assert.equal(updated.secretValueReturned, false);
+  assert.equal(JSON.stringify(updated).includes('synthetic-second-secret'), false);
+  const deleted = await adapter.delete(reference, { operatorConfirmed: true });
+  assert.equal(deleted.ok, true);
+  assert.equal((await adapter.inspectReference(reference)).detailedState, 'credential_missing');
+  assert.equal((await adapter.delete(reference, { operatorConfirmed: false })).reasonCode, 'mutation_approval_required');
+  assert.equal(storeCalls.every(({ args }) => args.every((arg) => !['synthetic-first-secret', 'synthetic-second-secret'].includes(String(arg)))), true);
+  firstSecret.fill(0);
+  secondSecret.fill(0);
+});
+
 test('missing and denied Keychain states remain distinct from provider health', async () => {
   const missing = createMacOSKeychainAdapterForTesting({ runProbe: fakeProbeFor('missing', []) });
   const missingResult = await missing.inspectReference(SYNTHETIC_PILOT_REFERENCE);
@@ -114,8 +202,30 @@ test('missing and denied Keychain states remain distinct from provider health', 
   const denied = createMacOSKeychainAdapterForTesting({ runProbe: fakeProbeFor('permission_denied', []) });
   const deniedResult = await denied.inspectReference(SYNTHETIC_PILOT_REFERENCE);
   assert.equal(deniedResult.storageState, 'permission_denied');
-  assert.equal(deniedResult.detailedState, 'vault_unavailable');
+  assert.equal(deniedResult.detailedState, 'secret_store_locked');
   assert.equal(deniedResult.providerState, 'unknown');
+});
+
+test('locked or unavailable Keychain mutations fail closed with a distinct storage state', async () => {
+  const denied = createMacOSKeychainAdapterForTesting({
+    runProbe: fakeProbeFor('present', []),
+    runStoreCommand: async () => ({
+      status: 1,
+      output: JSON.stringify({ operation: 'update', ok: false, storageState: 'permission_denied', reasonCode: 'keychain_access_denied' }),
+    }),
+  });
+  const deniedResult = await denied.update(SYNTHETIC_PILOT_REFERENCE, { secret: 'synthetic-secret', operatorConfirmed: true });
+  assert.equal(deniedResult.ok, false);
+  assert.equal(deniedResult.storageState, 'permission_denied');
+  assert.equal(deniedResult.secretValueReturned, false);
+
+  const unavailable = createMacOSKeychainAdapterForTesting({
+    runProbe: async () => ({ status: 0, token: 'unavailable' }),
+  });
+  const unavailableResult = await unavailable.create(SYNTHETIC_PILOT_REFERENCE, { secret: 'synthetic-secret', operatorConfirmed: true });
+  assert.equal(unavailableResult.ok, false);
+  assert.equal(unavailableResult.storageState, 'unavailable');
+  assert.equal(unavailableResult.secretValueReturned, false);
 });
 
 test('probe failures fail closed without returning child-process diagnostics', async () => {
@@ -152,11 +262,74 @@ test('redaction projects only safe health fields', () => {
   });
 });
 
-test('native helper is metadata-only and has no Keychain mutation or data-return path', () => {
+test('native metadata probe is read-only and has no Keychain mutation or data-return path', () => {
   const source = fs.readFileSync(new URL('./macos-keychain-probe.swift', import.meta.url), 'utf8');
   assert.match(source, /SecItemCopyMatching/);
   assert.match(source, /kSecReturnAttributes/);
+  assert.match(source, /kSecUseAuthenticationUIFail/);
   assert.doesNotMatch(source, /kSecReturnData|SecItemAdd|SecItemUpdate|SecItemDelete/);
+});
+
+test('native store uses the login Keychain boundary and never uses security CLI secret arguments', () => {
+  const source = fs.readFileSync(new URL('./macos-keychain-store.swift', import.meta.url), 'utf8');
+  assert.match(source, /SecItemAdd/);
+  assert.match(source, /SecItemUpdate/);
+  assert.match(source, /SecItemDelete/);
+  assert.match(source, /kSecAttrAccessibleWhenUnlockedThisDeviceOnly/);
+  assert.match(source, /kSecAttrSynchronizable/);
+  assert.match(source, /FileHandle\.standardInput\.readDataToEndOfFile/);
+  assert.doesNotMatch(source, /Process\(|security\\s/);
+  assert.doesNotMatch(source, /kSecReturnData/);
+});
+
+test('native synthetic lifecycle stores, verifies, updates, and deletes without secret output', { skip: process.platform !== 'darwin' }, async () => {
+  const service = 'tools.prochat.brain.synthetic.e2e';
+  const account = 'brain-adapter-e2e';
+  const reference = `keychain-ref://${service}/${account}`;
+  const firstSecret = Buffer.from('brain-synthetic:v1:fixture.adapter.01:fixture.read:2099-01-01T00:00:00Z:adapter-first');
+  const secondSecret = Buffer.from('brain-synthetic:v1:fixture.adapter.02:fixture.read:2099-01-01T00:00:00Z:adapter-second');
+  const adapter = createMacOSKeychainAdapter();
+  const verifierArgs = (principal) => [
+    path.join(import.meta.dirname, 'synthetic-provider-verifier.mjs'),
+    '--expected-principal',
+    principal,
+  ];
+  try {
+    await adapter.delete(reference, { operatorConfirmed: true });
+    const created = await adapter.create(reference, { secret: firstSecret, label: 'Brain synthetic adapter lifecycle', operatorConfirmed: true });
+    assert.equal(created.ok, true, JSON.stringify(created));
+    assert.equal(created.secretValueReturned, false);
+    assert.equal((await adapter.inspectReference(reference)).detailedState, 'credential_present');
+    const firstRead = await adapter.read({
+      reference,
+      verifierId: 'provider:synthetic-local',
+      verifierExecutable: process.execPath,
+      verifierArgs: verifierArgs('fixture.adapter.01'),
+    });
+    assert.equal(firstRead.resultCode, 'accepted', JSON.stringify(firstRead));
+    assert.equal(firstRead.principal, 'fixture.adapter.01');
+    assert.equal(JSON.stringify(firstRead).includes(firstSecret.toString()), false);
+    const updated = await adapter.update(reference, { secret: secondSecret, operatorConfirmed: true });
+    assert.equal(updated.ok, true, JSON.stringify(updated));
+    const secondRead = await adapter.read({
+      reference,
+      verifierId: 'provider:synthetic-local',
+      verifierExecutable: process.execPath,
+      verifierArgs: verifierArgs('fixture.adapter.02'),
+    });
+    assert.equal(secondRead.resultCode, 'accepted', JSON.stringify(secondRead));
+    assert.equal(secondRead.principal, 'fixture.adapter.02');
+    const deleted = await adapter.delete(reference, { operatorConfirmed: true });
+    assert.equal(deleted.ok, true, JSON.stringify(deleted));
+    assert.equal((await adapter.inspectReference(reference)).detailedState, 'credential_missing');
+    const inventory = await adapter.inspectNamespace();
+    assert.equal(inventory.containsSecrets, false);
+    assert.equal(inventory.items?.some((item) => item.account === account), false);
+  } finally {
+    await adapter.delete(reference, { operatorConfirmed: true });
+    firstSecret.fill(0);
+    secondSecret.fill(0);
+  }
 });
 
 test('native bounded boundary keeps data inside the registered verifier transport', () => {

@@ -10,7 +10,7 @@ import { createSyntheticProviderAdapter, verifyCredential } from './credential-v
 const SWIFT = '/usr/bin/swift';
 const ENROLL_SCRIPT = path.join(import.meta.dirname, 'macos-keychain-enroll-github.swift');
 const FIXTURE_SCRIPT = path.join(import.meta.dirname, 'macos-keychain-github-enrollment-fixture.swift');
-const SERVICE = 'com.brain.identity-access.github';
+const SERVICE = 'tools.prochat.brain.github';
 const ACCOUNT = 'github.account.synthetic';
 const REFERENCE = `keychain-ref://${SERVICE}/${ACCOUNT}`;
 const EXPECT_SCRIPT = String.raw`
@@ -41,7 +41,7 @@ expect {
 expect eof
 set waitResult [wait]
 exit [lindex $waitResult 3]
-`;
+`.replace('/Users/Office/Repos/stevewesthoek/brain/tools/infrastructure-identity-access/macos-keychain-enroll-github.swift', ENROLL_SCRIPT);
 function safeEnvironment() {
   const environment = { PATH: '/usr/bin:/bin:/usr/sbin:/sbin' };
   for (const key of ['HOME', 'USER', 'LOGNAME', 'TMPDIR']) {
@@ -120,7 +120,7 @@ async function verifyFixture(expectedPrincipal) {
 
 test('GitHub enrollment source is fixed, interactive, and redacted', () => {
   const source = fs.readFileSync(ENROLL_SCRIPT, 'utf8');
-  assert.match(source, /let githubService = "com\.brain\.identity-access\.github"/);
+  assert.match(source, /let githubService = "tools\.prochat\.brain\.github"/);
   assert.match(source, /isatty\(STDIN_FILENO\)/);
   assert.match(source, /kSecAttrAccessibleWhenUnlockedThisDeviceOnly/);
   assert.match(source, /Existing Brain Keychain item found\. Overwrite it\?/);
