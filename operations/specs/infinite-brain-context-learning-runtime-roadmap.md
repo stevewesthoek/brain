@@ -1,6 +1,6 @@
 # Infinite Brain Context & Learning Runtime Roadmap
 
-**Status:** CLR0-CLR4 accepted; CLR5-CLR8 not authorized; no conversation ingestion or learning promotion active
+**Status:** CLR0-CLR5 accepted; CLR6-CLR8 not authorized; CLR5 remains report-only and no learning promotion is active
 **Version:** 0.1
 **Date:** 2026-08-15
 **Architecture:** `operations/specs/infinite-brain-context-learning-runtime-architecture.md`
