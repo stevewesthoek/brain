@@ -183,7 +183,7 @@ an executable provider/model selection.
 | `whisper-m4pro` | whisper | 2 | large-v3, distil-large-v3 |
 | `whisper-m1` | whisper-remote | 1 | large-v3, distil-large-v3 |
 | `codex-cli` | cli | 4 | gpt-5.4-mini, gpt-5.4, gpt-5.5 |
-| `claude-bedrock` | bedrock | 5 | See bedrock model registry below |
+| `amazon-bedrock` | bedrock | 5 | See bedrock model registry below |
 
 ### Registry compatibility references
 
@@ -247,8 +247,8 @@ unknown, or non-admitted references.
   "urgent": true,
   "task_metadata": {
     "quality_tier": "highest",
-    "preferred_providers": ["codex-cli", "claude-bedrock"],
-    "preferred_models": ["codex-cli/gpt-5.5", "claude-bedrock/claude-opus-4-6"],
+    "preferred_providers": ["codex-cli", "amazon-bedrock"],
+    "preferred_models": ["codex-cli/gpt-5.5", "amazon-bedrock/claude-opus-4-6"],
     "fallback_policy": "ordered_then_selector_default"
   }
 }
@@ -264,9 +264,9 @@ unknown, or non-admitted references.
   "task_metadata": {
     "private": true,
     "sensitive": true,
-    "allowed_providers": ["claude-bedrock"],
+    "allowed_providers": ["amazon-bedrock"],
     "allowed_models": ["us.anthropic.claude-sonnet-4-6"],
-    "preferred_providers": ["claude-bedrock"],
+    "preferred_providers": ["amazon-bedrock"],
     "preferred_models": ["us.anthropic.claude-sonnet-4-6"],
     "fallback_policy": "none"
   }

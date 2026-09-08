@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { routeRequest } from '../api/routes.js';
+import { AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
 import { executeLocalAppActionRequest, listLocalAppDefinitions, readLocalAppActionStatus } from '../adapters/local-app-orchestrator.js';
 import { evaluateLocalAppActionDefinition } from '../adapters/local-app-action-executor.js';
 import { isAppAlreadyRunning } from '../adapters/local-app-stack-orchestrator.js';
@@ -299,6 +300,58 @@ test('GET /agent-task-graph returns the read-only agent task graph', async () =>
   assert.ok(body.tasks.some((task) => task.taskId === '0C-C'));
 });
 
+test('Agent Mode observer route augments compatibility surfaces with durable source', async () => {
+  const root = mkdtempSync(path.join('/tmp', 'brain-k0-4-route-'));
+  const previousStateDir = process.env.BRAIN_AGENT_MODE_STATE_DIR;
+  process.env.BRAIN_AGENT_MODE_STATE_DIR = root;
+  const store = new AgentModeSqliteStateStore();
+  store.upsertAgent({ agentId: 'agent:route', agentKind: 'worker', role: 'route-test', displayName: 'Route Worker', policyId: 'policy:route', status: 'active' });
+  store.close();
+  try {
+    const observerResponse = await exercise({ method: 'GET', url: '/agent-mode/observer' });
+    const observer = JSON.parse(observerResponse.body) as { version: string; source: string; availability: string; summary: { agentCount: number } };
+    assert.equal(observerResponse.statusCode, 200);
+    assert.equal(observer.version, 'agent-mode-observer-v1');
+    assert.equal(observer.source, 'agent-mode-state-store');
+    assert.equal(observer.availability, 'available');
+    assert.equal(observer.summary.agentCount, 1);
+
+    const runsResponse = await exercise({ method: 'GET', url: '/agent-runs' });
+    const runs = JSON.parse(runsResponse.body) as { runs: unknown[]; agentMode: { source: string; availability: string } };
+    assert.equal(runsResponse.statusCode, 200);
+    assert.equal(runs.agentMode.source, 'agent-mode-state-store');
+    assert.equal(runs.agentMode.availability, 'available');
+
+    const agentsResponse = await exercise({ method: 'GET', url: '/agents' });
+    const agents = JSON.parse(agentsResponse.body) as { agentMode: { source: string; summary: { agentCount: number } } };
+    assert.equal(agentsResponse.statusCode, 200);
+    assert.equal(agents.agentMode.source, 'agent-mode-state-store');
+    assert.equal(agents.agentMode.summary.agentCount, 1);
+
+    const eventsResponse = await exercise({ method: 'GET', url: '/agent-events' });
+    const events = JSON.parse(eventsResponse.body) as { agentMode: { source: string; availability: string } };
+    assert.equal(eventsResponse.statusCode, 200);
+    assert.equal(events.agentMode.source, 'agent-mode-state-store');
+    assert.equal(events.agentMode.availability, 'available');
+
+    const recoveryResponse = await exercise({ method: 'GET', url: '/recovery' });
+    const recovery = JSON.parse(recoveryResponse.body) as { agentMode: { source: string; availability: string } };
+    assert.equal(recoveryResponse.statusCode, 200);
+    assert.equal(recovery.agentMode.source, 'agent-mode-state-store');
+    assert.equal(recovery.agentMode.availability, 'available');
+
+    const consoleResponse = await exercise({ method: 'GET', url: '/agent-console' });
+    const consoleBody = JSON.parse(consoleResponse.body) as { status: string; agentMode: { source: string } };
+    assert.equal(consoleResponse.statusCode, 200);
+    assert.equal(consoleBody.status, 'read-only');
+    assert.equal(consoleBody.agentMode.source, 'agent-mode-state-store');
+  } finally {
+    if (previousStateDir === undefined) delete process.env.BRAIN_AGENT_MODE_STATE_DIR;
+    else process.env.BRAIN_AGENT_MODE_STATE_DIR = previousStateDir;
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('GET /agent-ledger returns the derived read-only agent ledger', async () => {
   const response = await exercise({ method: 'GET', url: '/agent-ledger' });
   const body = JSON.parse(response.body) as { id: string; status: string; runCount: number; eventCount: number; taskGraph: { id: string } };
@@ -330,7 +383,7 @@ test('GET /agent-executor-plan returns recorded executor selections', async () =
   assert.equal(body.id, 'agent-executor-plan');
   assert.equal(body.status, 'read-only');
   assert.ok(body.stepCount > 0);
-  assert.ok(body.steps.some((step) => step.executorId === 'claude-bedrock'));
+  assert.ok(body.steps.some((step) => step.executorId === 'amazon-bedrock'));
   assert.equal(body.steps.some((step) => step.executorId.startsWith('local-ollama')), false);
 });
 

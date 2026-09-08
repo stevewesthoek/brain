@@ -256,6 +256,7 @@ import { readVideoControlledExecutionImplementationApprovalPacketStartGate } fro
 import { getAgent, listAgents } from '../adapters/agents.js';
 import { getActionSummary, listActionSummaries, requestActionApprovalById } from '../adapters/action-registry.js';
 import { listAgentRuns, getAgentRun, listAgentEvents, listRecoveryItems, getRecoveryItem } from '../adapters/agent-runs.js';
+import { readAgentModeObserver } from '../agent-mode/agent-mode-observer.js';
 import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
 import { redactingJsonReplacer } from '../security/redaction.js';
@@ -923,13 +924,16 @@ export async function routeRequest(
       sendJson(response, 200, readControlledDualRunRequestDesign());
       return;
     case '/agents':
-      sendJson(response, 200, { agents: listAgents() });
+      sendJson(response, 200, { agents: listAgents(), agentMode: readAgentModeObserver() });
       return;
     case '/agent-runs':
-      sendJson(response, 200, { runs: listAgentRuns() });
+      sendJson(response, 200, { runs: listAgentRuns(), agentMode: readAgentModeObserver() });
       return;
     case '/agent-events':
-      sendJson(response, 200, { events: listAgentEvents() });
+      sendJson(response, 200, { events: listAgentEvents(), agentMode: readAgentModeObserver() });
+      return;
+    case '/agent-mode/observer':
+      sendJson(response, 200, readAgentModeObserver());
       return;
     case '/agent-task-graph':
       sendJson(response, 200, readAgentTaskGraph());
@@ -947,7 +951,7 @@ export async function routeRequest(
       sendJson(response, 200, readAgentApprovalGates());
       return;
     case '/agent-console':
-      sendJson(response, 200, readAgentConsoleSummary());
+      sendJson(response, 200, { ...readAgentConsoleSummary(), agentMode: readAgentModeObserver() });
       return;
     case '/agent-cost-summary':
       sendJson(response, 200, readAgentCostSummary());
@@ -956,7 +960,7 @@ export async function routeRequest(
       sendJson(response, 200, { events: listApprovalAuditEvents() });
       return;
     case '/recovery':
-      sendJson(response, 200, { items: listRecoveryItems() });
+      sendJson(response, 200, { items: listRecoveryItems(), agentMode: readAgentModeObserver() });
       return;
     case '/capabilities':
       sendJson(response, 200, getCapabilities());

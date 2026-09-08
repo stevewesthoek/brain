@@ -4,8 +4,9 @@ import {
   selectAI,
 } from './ai-model-selector.js';
 import { executeManagedProvider } from './managed-provider-executor.mjs';
+import { canonicalProviderIds } from './provider-identity.js';
 
-const ADMITTED_PROVIDERS = new Set(['claude-bedrock', 'codex-cli']);
+const ADMITTED_PROVIDERS = new Set(['amazon-bedrock', 'codex-cli']);
 
 export interface ManagedTextResult {
   text: string;
@@ -18,7 +19,7 @@ export async function executeManagedText(
   prompt: string,
   options: { urgent?: boolean; preferredProviders?: string[] } = {},
 ): Promise<ManagedTextResult> {
-  const preferredProviders = options.preferredProviders ?? ['claude-bedrock', 'codex-cli'];
+  const preferredProviders = canonicalProviderIds(options.preferredProviders ?? ['amazon-bedrock', 'codex-cli']);
   if (preferredProviders.length === 0 || preferredProviders.some((provider) => !ADMITTED_PROVIDERS.has(provider))) {
     throw new Error('Managed text execution requires only admitted preferred providers');
   }

@@ -10,7 +10,9 @@ The system has three layers:
 2. **Profiles** live in `docs/skills/profiles/*.txt` and decide which source skills become active for a session type.
 3. **Active skills** live in `ai/skills/active/` and are synced to AI/IDE consumers by `tools/scripts/sync-ai-skills.mjs`.
 
-The user should not need to remember skill names. Orchestrators and the skill index must route natural-language requests to the right profile or dormant capability.
+The user should not need to remember skill names. The shared capability query,
+orchestrators, and the skill index must route natural-language requests to the
+right skill, CLI, MCP surface, profile, or runbook.
 
 ---
 
@@ -28,6 +30,7 @@ review
 qa
 handoff
 careful
+capability-discovery
 ```
 
 Do not add heavy domain orchestrators or tool skills to default unless there is a strong reason. Large skills such as `design`, `video`, `firecrawl`, `playwright`, `ffmpeg`, `n8n`, and `autoresearch` should stay in domain profiles.
@@ -49,6 +52,18 @@ Do not add heavy domain orchestrators or tool skills to default unless there is 
 ## New skill onboarding checklist
 
 When adding a new skill, complete every step below.
+
+### 0. Query before creating anything
+
+Start with the same query used by Claude Code, Codex CLI, Gemini CLI, and other
+Brain-managed agent surfaces:
+
+```bash
+node tools/discover-capabilities.mjs --query "<natural-language request>" --format compact
+```
+
+If a result exists, read its source and runbook and use that route. Continue
+with onboarding only when the query returns no suitable capability.
 
 ### 1. Add the source skill
 
@@ -133,7 +148,15 @@ Use a runbook when the skill has:
 - safety boundaries
 - repeatable procedures
 
-### 7. Validate profiles
+### 7. Validate the shared onboarding contract and profiles
+
+Run the repository-wide consistency gate first:
+
+```bash
+node tools/validate-agent-capability-onboarding.mjs
+```
+
+Then run profile dry-run validation:
 
 Run dry-run validation before applying anything:
 
@@ -181,7 +204,7 @@ node tools/scripts/sync-ai-skills.mjs --check
 find ai/skills/active -maxdepth 1 -mindepth 1 | sort
 ```
 
-Expected default active count: 7.
+Expected default active count: 8.
 
 ### 10. Commit only intended files
 

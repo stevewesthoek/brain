@@ -29,6 +29,7 @@ A Brain module is any reusable part of the AI operating system, including:
 | Policy | canonical AI-agnostic behavior contract in `ai/policy/` |
 | Runbook | human-readable procedure in `operations/runbooks/` |
 | CLI/tool | installed command, wrapper script, custom utility, MCP alternative |
+| MCP provider | Brain-admitted provider, client-managed integration, or documented compatibility surface |
 | Runtime/model surface | Claude Code, Codex CLI, Gemini CLI, IDE/agent surface, future LLM runtime |
 | Config integration | global config, symlink, template, model routing, environment-specific file |
 | Automation | scheduler, sync script, generated artifact, repo maintenance job |
@@ -52,7 +53,12 @@ Runtime scope: <all runtimes | Claude only | Codex only | Gemini only | local re
 
 ### 2. Discover first
 
-Before creating anything new, check existing registries in this order:
+Before creating anything new, run the shared query and then check existing
+registries in this order:
+
+```bash
+node tools/discover-capabilities.mjs --query "<natural-language request>" --format compact
+```
 
 1. `ai/policy/capability-discovery.md`
 2. `00-memory-map.md`
@@ -104,6 +110,7 @@ A module is not onboarded until its source and lookup path are both clear.
 | Policy | `ai/policy/*.md`, `operations/AI-CONFIG-INDEX.md`, runtime references only when needed |
 | Runbook | `operations/runbooks/*.md`, `operations/runbooks/README.md`, `00-memory-map.md` or `operations/AI-CONFIG-INDEX.md` if broadly discoverable |
 | CLI/tool | `operations/CLI-MANIFEST.md`, tool source or install notes, relevant skill/runbook if used by AI workflows |
+| MCP provider | `operations/specs/mcp-provider-admissions.json` or documented client integration, `operations/system-configs/mcp/<provider>/README.md`, client template/config, runtime verification |
 | Runtime/model | `operations/system-configs/<runtime>/`, `operations/AI-CONFIG-INDEX.md`, `ai/policy/context-loading-order.md`, `ai/policy/capability-discovery.md`, and any symlink/config notes |
 | Config integration | owning `operations/system-configs/` folder, template if secrets are involved, `operations/AI-CONFIG-INDEX.md` |
 | Automation | script/source, scheduler/config docs, generated-file policy, validation/runbook if recurring |

@@ -227,7 +227,7 @@ def report_provider_outcome(provider_id, model, *, success, error_type=""):
 
 def execute_managed_provider(provider_id, model, prompt, timeout_sec):
     """Execute one selector-admitted provider without putting content in argv."""
-    if provider_id == "claude-bedrock":
+    if provider_id == "amazon-bedrock":
         request_dir = Path(tempfile.mkdtemp(prefix="brain-video-analyzer-bedrock-"))
         request_file = request_dir / "converse-request.json"
         try:
@@ -347,7 +347,7 @@ def structure_transcript(transcript, focus=None):
                     "urgent": True,
                     "previous_failures": previous_failures,
                     "task_metadata": {
-                        "preferred_providers": ["claude-bedrock", "codex-cli"],
+                        "preferred_providers": ["amazon-bedrock", "codex-cli"],
                         "fallback_policy": "ordered_strict",
                     },
                 },
@@ -368,7 +368,7 @@ def structure_transcript(transcript, focus=None):
             provider_id = sel_data.get("provider_id")
             model = sel_data.get("model")
             timeout_sec = min(max(int(sel_data.get("timeout_inference_sec") or 300), 30), 600)
-            if provider_id not in {"claude-bedrock", "codex-cli"} or not model:
+            if provider_id not in {"amazon-bedrock", "codex-cli"} or not model:
                 log("Selector returned an unapproved provider or incomplete route")
                 return None
 

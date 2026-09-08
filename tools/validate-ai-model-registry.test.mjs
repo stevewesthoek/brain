@@ -28,7 +28,7 @@ test('private Mind routing remains explicit Bedrock-only and fail-closed', () =>
   const tasks = JSON.parse(fs.readFileSync(path.join(ROOT, 'operations/system-configs/model-selector/config/ai-task-types.json'), 'utf8')).task_types;
   for (const taskId of ['mind_capture_classification', 'mind_project_decomposition', 'mind_maintenance_semantic_comparison']) {
     assert.equal(tasks[taskId].privacy_policy, 'private-bedrock-only');
-    assert.equal(tasks[taskId].required_provider, 'claude-bedrock');
+    assert.equal(tasks[taskId].required_provider, 'amazon-bedrock');
     assert.equal(tasks[taskId].preferred_model, 'us.anthropic.claude-sonnet-4-6');
     assert.match(tasks[taskId].notes, /fail closed/i);
   }

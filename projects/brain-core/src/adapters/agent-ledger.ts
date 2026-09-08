@@ -37,7 +37,7 @@ const TASK_GRAPH: BrainCoreAgentTaskSummary[] = [
     status: 'pending',
     dependsOn: ['0C-C'],
     role: 'Coordinator',
-    capabilityIds: ['ai.codex-cli', 'ai.claude-bedrock'],
+    capabilityIds: ['ai.codex-cli', 'ai.amazon-bedrock'],
     aiTaskType: 'executor_selection',
     approvalRequired: false,
     notes: 'Map selected executors without performing execution.',

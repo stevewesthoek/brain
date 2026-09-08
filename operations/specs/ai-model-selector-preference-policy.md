@@ -133,7 +133,7 @@ quality_tier: highest
 selection_policy: ordered_premium
 preferred_models:
   - codex-cli/gpt-5.5
-  - claude-bedrock/claude-opus-4-6
+  - amazon-bedrock/claude-opus-4-6
 fallback_policy: ordered_then_selector_default
 ```
 
@@ -153,7 +153,7 @@ selector.select(
     previous_failures=[...],
     task_metadata=TaskMetadata(
         quality_tier="highest",
-        preferred_models=["codex-cli/gpt-5.5", "claude-bedrock/claude-opus-4-6"],
+        preferred_models=["codex-cli/gpt-5.5", "amazon-bedrock/claude-opus-4-6"],
         fallback_policy="ordered_then_selector_default",
     ),
 )
@@ -215,7 +215,7 @@ result = selector.select(
     urgent=False,
     task_metadata=TaskMetadata(
         quality_tier="highest",
-        preferred_models=["codex-cli/gpt-5.5", "claude-bedrock/claude-opus-4-6"],
+        preferred_models=["codex-cli/gpt-5.5", "amazon-bedrock/claude-opus-4-6"],
         fallback_policy="ordered_then_selector_default",
     ),
 )
@@ -258,7 +258,7 @@ quality_tier: highest
 selection_policy: ordered_premium
 preferred_models:
   - codex-cli/gpt-5.5
-  - claude-bedrock/claude-opus-4-6
+  - amazon-bedrock/claude-opus-4-6
 fallback_policy: ordered_then_selector_default
 ```
 

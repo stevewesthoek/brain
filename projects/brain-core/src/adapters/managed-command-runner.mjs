@@ -11,6 +11,7 @@ export function runManagedCommand(command, args, options) {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     const stdout = [];
+    const stderr = [];
     let outputBytes = 0;
     let failure;
     let killTimer;
@@ -31,6 +32,7 @@ export function runManagedCommand(command, args, options) {
         return;
       }
       if (retain) stdout.push(chunk);
+      else stderr.push(chunk);
     };
 
     child.stdout.on('data', (chunk) => collect(chunk, true));
@@ -48,7 +50,11 @@ export function runManagedCommand(command, args, options) {
       if (failure) {
         reject(failure);
       } else if (code !== 0) {
-        reject(new Error(`${command} exited unsuccessfully`));
+        const error = new Error(`${command} exited unsuccessfully`);
+        const diagnostic = Buffer.concat(stderr).toString('utf8');
+        const awsCode = diagnostic.match(/An error occurred \(([^)]+)\)/)?.[1];
+        if (awsCode) error.code = awsCode;
+        reject(error);
       } else {
         resolve(Buffer.concat(stdout).toString('utf8'));
       }

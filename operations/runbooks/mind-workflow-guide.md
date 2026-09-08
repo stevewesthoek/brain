@@ -48,9 +48,9 @@ apply remains disabled pending approval integration. When invoked, it uses:
   "task_metadata": {
     "private": true,
     "sensitive": true,
-    "allowed_providers": ["claude-bedrock"],
+    "allowed_providers": ["amazon-bedrock"],
     "allowed_models": ["us.anthropic.claude-sonnet-4-6"],
-    "preferred_providers": ["claude-bedrock"],
+    "preferred_providers": ["amazon-bedrock"],
     "preferred_models": ["us.anthropic.claude-sonnet-4-6"],
     "fallback_policy": "none"
   }

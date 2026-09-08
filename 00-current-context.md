@@ -69,6 +69,7 @@ review
 qa
 handoff
 careful
+capability-discovery
 ```
 
 Domain-specific or deeper skills, including design and video, should live in profiles and source folders without bloating the default active set.
@@ -80,6 +81,8 @@ docs/skills/skill-loading-architecture.md
 docs/skills/skill-index.md
 docs/skills/profiles/default.txt
 docs/skills/profiles/research.txt
+tools/discover-capabilities.mjs
+operations/runbooks/agent-capability-discovery.md
 ```
 
 ## Current Research Architecture

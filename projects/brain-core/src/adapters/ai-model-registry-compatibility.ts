@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { canonicalProviderId, canonicalProviderIds } from './provider-identity.js';
 
 export type ModelLifecycleState =
   | 'discovered'
@@ -13,6 +14,7 @@ export type ModelLifecycleState =
 export interface ModelRegistryProvider {
   provider_id: string;
   lifecycle_state: ModelLifecycleState;
+  model_refs?: string[];
 }
 
 export interface ModelRegistryModel {
@@ -73,21 +75,40 @@ export function loadModelRegistry(registryPath = defaultModelRegistryPath()): Mo
   if (!Array.isArray(parsed.providers) || !Array.isArray(parsed.models)) {
     throw new Error('AI model registry providers/models are missing.');
   }
-  return parsed as ModelRegistryDocument;
+  const normalized = structuredClone(parsed) as ModelRegistryDocument;
+  for (const provider of normalized.providers) {
+    provider.provider_id = canonicalProviderId(provider.provider_id);
+  }
+  for (const model of normalized.models) {
+    model.provider_id = canonicalProviderId(model.provider_id);
+    if (model.registry_model_id.startsWith('claude-bedrock/')) {
+      model.registry_model_id = `amazon-bedrock/${model.registry_model_id.split('/', 2)[1]}`;
+    }
+    if (model.replacement_registry_model_id?.startsWith('claude-bedrock/')) {
+      model.replacement_registry_model_id = `amazon-bedrock/${model.replacement_registry_model_id.split('/', 2)[1]}`;
+    }
+  }
+  for (const provider of normalized.providers) {
+    provider.model_refs = provider.model_refs?.map((ref) => (
+      ref.startsWith('claude-bedrock/') ? `amazon-bedrock/${ref.split('/', 2)[1]}` : ref
+    )) ?? [];
+  }
+  return normalized;
 }
 
 export function resolveProviderReference(
   providerReference: string,
   registry: ModelRegistryDocument,
 ): ProviderResolution {
-  const provider = registry.providers.find((candidate) => candidate.provider_id === providerReference);
+  const canonicalReference = canonicalProviderId(providerReference);
+  const provider = registry.providers.find((candidate) => candidate.provider_id === canonicalReference);
   if (!provider) {
     return { ok: false, reason: `Provider reference "${providerReference}" is not present in the model registry.` };
   }
   if (!SELECTABLE_LIFECYCLE_STATES.has(provider.lifecycle_state)) {
     return { ok: false, reason: `Provider "${providerReference}" is not admitted for selection.` };
   }
-  return { ok: true, providerId: provider.provider_id };
+  return { ok: true, providerId: canonicalReference };
 }
 
 export function resolveModelReference(
@@ -106,18 +127,21 @@ function resolveModelReferenceInternal(
 ): ModelResolution {
   const input = modelReference.trim();
   if (!input) return { ok: false, input: modelReference, reason: 'Model reference must not be empty.' };
+  const canonicalInput = input.startsWith('claude-bedrock/')
+    ? `amazon-bedrock/${input.split('/', 2)[1]}`
+    : input;
   if (visited.has(input)) return { ok: false, input, reason: `Model replacement cycle detected for "${input}".` };
   visited.add(input);
 
   const providerIds = options.providerIds && options.providerIds.length > 0
-    ? new Set(options.providerIds)
+    ? new Set(canonicalProviderIds(options.providerIds))
     : null;
   const candidates = registry.models.filter((model) => {
     if (providerIds && !providerIds.has(model.provider_id)) return false;
     const aliases = (model.compatibility_aliases ?? []).map((alias) => alias.value).filter((value): value is string => Boolean(value));
-    return model.registry_model_id === input
-      || model.provider_model_binding.model_id === input
-      || aliases.includes(input);
+    return model.registry_model_id === canonicalInput
+      || model.provider_model_binding.model_id === canonicalInput
+      || aliases.includes(canonicalInput);
   });
 
   if (candidates.length === 0) {

@@ -65,7 +65,7 @@ class TestModelRegistryLifecycle(unittest.TestCase):
         providers = {
             "providers": [
                 {
-                    "id": "claude-bedrock",
+                    "id": "amazon-bedrock",
                     "label": "Amazon Bedrock model portfolio",
                     "type": "bedrock",
                     "cost_per_1k_tokens": 0.0,
@@ -109,8 +109,8 @@ class TestModelRegistryLifecycle(unittest.TestCase):
         source_registry = json.loads(
             (REPO_ROOT / "operations/system-configs/model-selector/config/ai-model-registry.json").read_text()
         )
-        provider = next(item for item in source_registry["providers"] if item["provider_id"] == "claude-bedrock")
-        model = next(item for item in source_registry["models"] if item["registry_model_id"] == "claude-bedrock/claude-opus-4-6")
+        provider = next(item for item in source_registry["providers"] if item["provider_id"] == "amazon-bedrock")
+        model = next(item for item in source_registry["models"] if item["registry_model_id"] == "amazon-bedrock/claude-opus-4-6")
         provider["model_refs"] = [model["registry_model_id"]]
         model["lifecycle_state"] = lifecycle_state
         source_registry["providers"] = [provider]
@@ -124,7 +124,10 @@ class TestModelRegistryLifecycle(unittest.TestCase):
 
     def _selector(self):
         selector = core.ModelSelector()
-        selector._bedrock_access_status = lambda _model: {"available": True, "checked_at": 1}
+        selector._bedrock_access = {
+            selector._bedrock_cache_key(model): {"available": True, "checked_at": 1}
+            for model in selector._bedrock_models
+        }
         return selector
 
     def test_only_admitted_and_preferred_models_are_selectable(self):

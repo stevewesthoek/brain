@@ -96,9 +96,9 @@ Mind Steward requests one exact provider/model route through the AI Model Select
   "task_metadata": {
     "private": true,
     "sensitive": true,
-    "allowed_providers": ["claude-bedrock"],
+    "allowed_providers": ["amazon-bedrock"],
     "allowed_models": ["us.anthropic.claude-sonnet-4-6"],
-    "preferred_providers": ["claude-bedrock"],
+    "preferred_providers": ["amazon-bedrock"],
     "preferred_models": ["us.anthropic.claude-sonnet-4-6"],
     "fallback_policy": "none"
   }
@@ -140,7 +140,7 @@ Mind Steward adds classification metadata during the nightly run:
 ```yaml
 mind_steward_classified: true
 mind_steward_classified_at: "2026-06-03T12:05:00.000Z"
-mind_steward_provider: claude-bedrock
+mind_steward_provider: amazon-bedrock
 mind_steward_model: us.anthropic.claude-sonnet-4-6
 ```
 

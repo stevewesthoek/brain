@@ -62,7 +62,7 @@ class TestBedrockUpgradeCandidates(unittest.TestCase):
         providers = {
             "providers": [
                 {
-                    "id": "claude-bedrock",
+                    "id": "amazon-bedrock",
                     "label": "Amazon Bedrock model portfolio",
                     "type": "bedrock",
                     "cost_per_1k_tokens": 0.0,
@@ -125,10 +125,13 @@ class TestBedrockUpgradeCandidates(unittest.TestCase):
     def test_opus_46_selected_when_47_upgrade_candidate_unavailable(self):
         selector = core.ModelSelector()
 
-        def access(model):
-            return {"available": model["id"] == "claude-opus-4-6", "checked_at": 1}
-
-        selector._bedrock_access_status = access
+        selector._bedrock_access = {
+            selector._bedrock_cache_key(model): {
+                "available": model["id"] == "claude-opus-4-6",
+                "checked_at": 1,
+            }
+            for model in selector._bedrock_models
+        }
 
         result = selector.select("orchestration", input_token_count=1000, urgent=True)
 
@@ -136,7 +139,13 @@ class TestBedrockUpgradeCandidates(unittest.TestCase):
 
     def test_opus_47_upgrade_candidate_not_selected_when_access_available(self):
         selector = core.ModelSelector()
-        selector._bedrock_access_status = lambda model: {"available": True, "checked_at": 1}
+        selector._bedrock_access = {
+            selector._bedrock_cache_key(model): {"available": True, "checked_at": 1}
+            for model in selector._bedrock_models
+        }
+        selector._bedrock_access_status = lambda _model: (_ for _ in ()).throw(
+            AssertionError("selection must not invoke a live Bedrock access probe")
+        )
 
         result = selector.select("orchestration", input_token_count=1000, urgent=True)
 

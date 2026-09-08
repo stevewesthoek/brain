@@ -68,7 +68,7 @@ Validation: Schema valid via `prisma validate`
 
 ### ⏳ Supabase Production Database (pending verification)
 
-- **Requirement:** Family Finance must not use production Supabase (Azure at `100.71.31.88:5433`)
+- **Requirement:** Family Finance must not use production Supabase on `vm-supabase` in Azure subscription `supabase-azure` (Tailscale `100.71.31.88:5433`)
 - **Status:** Supabase cleanup/verification is pending (database credential access not yet restored)
 - **Note:** Production Supabase databases named `finance` or `finance_shadow` are **not necessarily Family Finance** (names are too generic to prove ownership)
 - **If future agent finds such databases:** treat as unrelated; do not delete without explicit owner confirmation

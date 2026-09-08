@@ -29,17 +29,17 @@ export interface ModelRoutingPolicyResult {
   escalationReason?: string;
 }
 
-const SURFACE_PRIORITY: BrainCoreRouteSurface[] = ['claude-bedrock', 'codex-cli'];
+const SURFACE_PRIORITY: BrainCoreRouteSurface[] = ['amazon-bedrock', 'codex-cli'];
 
 const TASK_SURFACE_CAPABILITIES: Record<string, BrainCoreRouteSurface[]> = {
-  metadata_generation: ['claude-bedrock', 'codex-cli'],
-  thumbnail_headline: ['claude-bedrock', 'codex-cli'],
-  seo_keyword_expansion: ['claude-bedrock', 'codex-cli'],
-  transcript_summarization: ['claude-bedrock', 'codex-cli'],
-  subtitle_generation: ['claude-bedrock', 'codex-cli'],
-  background_image: ['claude-bedrock', 'codex-cli'],
-  description_quality_review: ['claude-bedrock', 'codex-cli'],
-  orchestration: ['claude-bedrock', 'codex-cli'],
+  metadata_generation: ['amazon-bedrock', 'codex-cli'],
+  thumbnail_headline: ['amazon-bedrock', 'codex-cli'],
+  seo_keyword_expansion: ['amazon-bedrock', 'codex-cli'],
+  transcript_summarization: ['amazon-bedrock', 'codex-cli'],
+  subtitle_generation: ['amazon-bedrock', 'codex-cli'],
+  background_image: ['amazon-bedrock', 'codex-cli'],
+  description_quality_review: ['amazon-bedrock', 'codex-cli'],
+  orchestration: ['amazon-bedrock', 'codex-cli'],
 };
 
 export async function selectModelRoute(input: ModelRoutingPolicyInput): Promise<ModelRoutingPolicyResult> {
@@ -65,7 +65,7 @@ export function selectModelRouteSnapshot(
     .filter((surface) => allowedSurfaces.includes(surface))
     .sort((left, right) => SURFACE_PRIORITY.indexOf(left) - SURFACE_PRIORITY.indexOf(right));
 
-  const surface = orderedSurfaces[0] ?? allowedSurfaces[0] ?? 'claude-bedrock';
+  const surface = orderedSurfaces[0] ?? allowedSurfaces[0] ?? 'amazon-bedrock';
   const providerId = surface;
   const profile: ModelRoutingProfile = input.qualityPriority === 'quality'
     ? 'deep'
@@ -78,7 +78,7 @@ export function selectModelRouteSnapshot(
   const escalationReason = surface !== allowedSurfaces[0]
     ? `Escalated from ${allowedSurfaces[0]} to ${surface} based on capability and health ordering.`
     : undefined;
-  const rationale = surface === 'claude-bedrock'
+  const rationale = surface === 'amazon-bedrock'
     ? 'Bedrock-backed Claude selected as the default Brain-managed text surface; the admitted registry resolves the model for the requested profile.'
     : 'Codex CLI selected as the secondary managed surface; the admitted registry resolves the model for the requested profile.';
 

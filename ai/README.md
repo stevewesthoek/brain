@@ -18,3 +18,7 @@ Shared AI-facing material for multiple tools.
 If it only exists for one tool’s internal behavior, keep it with that tool under `operations/system-configs/`.
 
 Shared skills live in `ai/skills/` and are available to every agent; do not duplicate them elsewhere.
+
+Agents route natural-language requests through the shared read-only inventory at
+`tools/discover-capabilities.mjs`; runtime-specific config is an adapter, not a
+second skill or capability registry.

@@ -5844,7 +5844,7 @@ export interface BrainCoreAgentConsoleSummary {
 }
 
 export type BrainCoreBudgetStatus = 'ok' | 'warning' | 'throttled' | 'blocked';
-export type BrainCoreRouteSurface = 'codex-cli' | 'claude-bedrock';
+export type BrainCoreRouteSurface = 'codex-cli' | 'amazon-bedrock';
 
 export interface BrainCoreAgentCostLineItem {
   taskId: string;

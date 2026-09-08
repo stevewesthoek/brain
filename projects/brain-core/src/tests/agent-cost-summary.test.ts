@@ -4,7 +4,7 @@ import { readAgentCostSummary, saveAgentCostSummarySnapshot } from '../adapters/
 import { evaluateBudgetStatus, saveCostBudgetSummary } from '../adapters/cost-budgets.js';
 import { describeRouteLineItem, selectModelRouteSnapshot } from '../adapters/model-routing-policy.js';
 
-const bedrock = { id: 'ai.claude-bedrock', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review', 'text/large-context-batch'] };
+const bedrock = { id: 'ai.amazon-bedrock', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review', 'text/large-context-batch'] };
 const codex = { id: 'ai.codex-cli', enabled: true, priority: 2, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] };
 
 test('selectModelRouteSnapshot prefers Bedrock-backed Claude by default', () => {
@@ -20,8 +20,8 @@ test('selectModelRouteSnapshot prefers Bedrock-backed Claude by default', () => 
     [bedrock, codex],
   );
 
-  assert.equal(route.surface, 'claude-bedrock');
-  assert.equal(route.providerId, 'claude-bedrock');
+  assert.equal(route.surface, 'amazon-bedrock');
+  assert.equal(route.providerId, 'amazon-bedrock');
   assert.equal(route.profile, 'standard');
   assert.equal(route.model, undefined);
   assert.ok(route.estimatedCostUsd > 0);
@@ -50,7 +50,7 @@ test('describeRouteLineItem preserves Bedrock route metadata', () => {
   });
 
   assert.equal(item.taskId, 't2');
-  assert.equal(item.surface, 'claude-bedrock');
+  assert.equal(item.surface, 'amazon-bedrock');
   assert.equal(item.routingReason, route.rationale);
 });
 
@@ -90,7 +90,7 @@ test('background-image text planning remains Bedrock-first', () => {
     [bedrock, codex],
   );
 
-  assert.equal(route.surface, 'claude-bedrock');
+  assert.equal(route.surface, 'amazon-bedrock');
   assert.equal(route.profile, 'standard');
   assert.equal(route.model, undefined);
 });

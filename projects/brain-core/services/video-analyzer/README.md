@@ -46,13 +46,13 @@ The selector request is:
   "input_token_count": 3000,
   "urgent": true,
   "task_metadata": {
-    "preferred_providers": ["claude-bedrock", "codex-cli"],
+    "preferred_providers": ["amazon-bedrock", "codex-cli"],
     "fallback_policy": "ordered_strict"
   }
 }
 ```
 
-Only `claude-bedrock` and `codex-cli` responses are executed by this consumer.
+Only `amazon-bedrock` and `codex-cli` responses are executed by this consumer.
 There is no Ollama, MTPLX, Qwen-local, local OpenAI-compatible endpoint, or
 always-on local text dependency.
 

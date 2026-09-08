@@ -17,6 +17,7 @@ IKHP0-IKHP5 are implemented repository capabilities. IKHP4 safety/action contrac
 Verification status:
 - The last broad live estate verification represented in older sections of this page was 2026-05-19 from the `Office` Mac mini.
 - Dokploy production authority was superseded by the observed Azure → AWS cutover completed 2026-08-17: AWS `dokploy-aws` is authoritative production. The former Azure Dokploy environment was decommissioned on 2026-08-26 and is neither a runtime nor a rollback source.
+- On 2026-09-04, the following Dokploy workloads were decommissioned: BuildFlow, BuildFlow Staging, Cedula, Vault Legal, Vault Legal API, and Egg Cooker. Their exact application records, runtime services, target databases, target DNS records, target images, and identified local/remote runtime artifacts are no longer current inventory. GitHub repository deletion and Cloudflare R2 bucket deletion remain incomplete where the available credentials were insufficient. Dated migration and audit reports retain their historical evidence.
 - Packet 2 does not claim a new whole-estate live probe. CloudPanel, provider-access, monitoring, and ongoing backup attributes that were not freshly observed remain explicit UNKNOWNs in IKHP.
 - Historical sources used by this page include `az`, `aws sts`, SSH, Dokploy API, Cloudflare API, Docker Swarm inspection, local SSH config, migration evidence, and runbooks.
 
@@ -141,14 +142,14 @@ Retired infrastructure:
 
 #### Architecture
 
-Dokploy production now runs as a **Docker Swarm** stack on AWS Lightsail host `dokploy-aws`. The core-service table below originated from the pre-cutover inventory and remains useful as topology context, but image versions must be reverified before operational use:
+Dokploy production now runs as a **Docker Swarm** stack on AWS Lightsail host `dokploy-aws`. The core-service table below originated from the pre-cutover inventory; Dokploy and Traefik image versions were reverified live on 2026-09-08:
 
 | Service | Image | Role | Network |
 |---------|-------|------|---------|
-| `dokploy` | `dokploy/dokploy:v0.29.2` | App server (UI + API) | `dokploy-network`, port 3000 published to host |
+| `dokploy` | `dokploy/dokploy:v0.30.6` | App server (UI + API) | `dokploy-network`, port 3000 published to host |
 | `dokploy-postgres` | `postgres:16` | Primary database (user: `dokploy`, db: `dokploy`) | `dokploy-network` |
 | `dokploy-redis` | `redis:7` | Cache / job queue | `dokploy-network` |
-| `dokploy-traefik` | `traefik:v2.x` | Reverse proxy for deployed apps | `dokploy-network`, ports 80/443 published to host |
+| `dokploy-traefik` | `traefik:v3.6.7` | Reverse proxy for deployed apps | `dokploy-network`, ports 80/443 published to host |
 
 All application containers also attach to `dokploy-network`.
 
@@ -183,6 +184,11 @@ Application IDs:
 #### Recovery
 
 - **Recovery evidence**: the 2026-08-17 migration used AWS Lightsail snapshots plus 16/16 version-matched PostgreSQL logical dump/restore verification. Provider snapshots and application-consistent database recovery are separate evidence classes.
+- **Dokploy upgrade evidence (2026-09-03)**: the live `dokploy` Swarm service was updated from `dokploy/dokploy:latest@sha256:72c082d05447f05c2452e1b29c5c664102290ea605e15a0f0dab2731be1ba7df` (v0.29.5) to `dokploy/dokploy:v0.30.5` (resolved digest `sha256:beaab9d816750ea9524e47d6d1a9ba466d6c3442f9943fee8ac81a6d72f73103`). The service remained at one replica with port 3000 published; PostgreSQL, Redis, Traefik, and application services were not updated.
+- **Rollback artifacts (2026-09-03)**: Lightsail snapshot `dokploy-aws-pre-dokploy-v0-30-5-20260903` is available. A verified custom-format Dokploy PostgreSQL backup remains on the host at `/var/lib/dokploy-upgrade-backups/dokploy-postgres-pre-v0.30.5-20260903.dump` with mode 600 and SHA-256 `0e44966a7c50541701a93d771bed6f6373207795eaa2704c69bc087cfc3ea33d`.
+- **Dokploy upgrade evidence (2026-09-08)**: the live `dokploy` Swarm service was updated from `dokploy/dokploy:v0.30.5` to `dokploy/dokploy:v0.30.6@sha256:1d6bd69ba58c1b4e305a9a33d77d8c3e0ee34707169f680cc600ab7ef1c3e6d8`. The service remained at one replica with port 3000 published; PostgreSQL, Redis, Traefik, tenant databases, and application services were not updated, restarted, or reconfigured.
+- **Rollback artifacts (2026-09-08)**: Lightsail snapshot `dokploy-aws-pre-dokploy-v0-30-6-20260908` is available. A verified custom-format Dokploy PostgreSQL backup remains on the host at `/var/lib/dokploy-upgrade-backups/dokploy-postgres-pre-v0.30.6-20260908.dump` with mode 600, size 267,234 bytes, and SHA-256 `0b67514d6d4673894f636cdd2faff5a6decb1162ce0c57d293407eb683ffb6f2`.
+- **Safe update policy**: the 2026-09-08 update used Swarm parallelism 1, `start-first` ordering, a 30-second health monitor, and automatic rollback on update failure. The current service image, task state, port publication, and rollback configuration are part of the upgrade report in `operations/reports/dokploy-upgrade-2026-09-08.md`.
 - **Ongoing backup cadence**: UNKNOWN in Packet 2. The Azure Backup-vault description below is historical rollback evidence, not proof of current AWS production backup health; use IKHP `backup-policies.v1.json` for canonical policy state.
 - **Critical after restore**: Port 3000 MUST be published to host for Cloudflare Tunnel to reach Dokploy: `docker service update dokploy --publish-add 3000:3000`
 - **Service restart**: `docker service update dokploy --force` (restarts without config change)
@@ -193,6 +199,7 @@ Application IDs:
 - The `dokploy-cli` packaged CLI returns 401 for most commands — use direct tRPC API calls instead.
 - The Dokploy database `key` column stores a HASH of the API key; the `start` column stores the first 6 chars of the plaintext. Do not confuse the hash with the actual key.
 - GitHub App webhook endpoint is `/api/deploy/github` (NOT `/api/webhook/github`).
+- The 2026-09-03 and 2026-09-08 Dokploy upgrades changed only the `dokploy` Swarm service; Traefik was intentionally left untouched.
 
 ---
 
@@ -215,12 +222,10 @@ Projects and workloads verified through the Dokploy API on 2026-05-19:
 - Compose: `jpvbootcamp`
 
 `Web`
-- App: `Workbench` (managed relay for ChatGPT Custom Actions)
 - App: `Yeshua Academy`
 - App: `Yeshua Academy Finance`
 - App: `ProChat`
 - App: `Says the Bible`
-- App: `Cedula`
 
 `Clients`
 - App: `Oliveto Organizing`
@@ -246,7 +251,6 @@ Projects and workloads verified through the Dokploy API on 2026-05-19:
 
 `SaaS`
 - App: `Status Link`
-- App: `Egg Cooker`
 - App: `Proofly`
 
 Notable statuses seen in Dokploy:
@@ -458,7 +462,6 @@ Dokploy UI: `https://dokploy.prochat.tools`
 
 | Domain | App | Project | Status | Notes |
 |--------|-----|---------|--------|-------|
-| `buildflow.prochat.tools` | Workbench | Web | Pending provisioning | Managed relay for ChatGPT Custom Actions; router to connected local devices. Status: phase 1 provisioning plan documented. |
 | `dokploy.prochat.tools` | — | Ops | Online | Dokploy UI |
 | `n8n.prochat.tools` | n8n | Ops | Online | Workflow automation |
 | `firecrawl.prochat.tools` | Firecrawl | Ops | Online | Web scraping & search API; PostgreSQL in Docker volume `firecrawl_pgdata`; replaces `/browse` and WebFetch for research |
@@ -467,7 +470,6 @@ Dokploy UI: `https://dokploy.prochat.tools`
 | `finance.yeshua.academy` | Yeshua Academy Finance | Web | Online | — |
 | `prochat.tools` | ProChat | Web | Online | — |
 | `saysthebible.com` | Says the Bible | Web | Online | — |
-| `cedula.prochat.tools` | Cedula | Web | Online | — |
 | `olivetoorganizing.com` | Oliveto Organizing | Clients | Online | — |
 | `jpvbootcamp.com` | JPV Bootcamp | Clients | Online | — |
 | `jccp-management.pro` | JCCP Holdings | Clients | Online | Added to Dokploy tunnel 2026-04-04 |
@@ -477,7 +479,7 @@ Dokploy UI: `https://dokploy.prochat.tools`
 | `onestatus.link` | Status Link | SaaS | Online | `statuslink.io` currently points to an unrelated Framer site and returns 404 |
 | `proofly.io` | Proofly | SaaS | Online | — |
 
-> Domain names for some Dokploy apps (ProChat Accountant, Egg Cooker, Free Resend, ProKit, SaaSKit boilerplates, kutt, umami) are not yet confirmed — verify via Dokploy UI or `/dokploy` skill.
+> Domain names for some remaining Dokploy apps (ProChat Accountant, Free Resend, ProKit, SaaSKit boilerplates, kutt, umami) are not yet confirmed — verify via Dokploy UI or `/dokploy` skill.
 
 ### Supabase
 
@@ -536,7 +538,7 @@ Dokploy connector handoff to AWS is OBSERVED-VERIFIED from the 2026-08-17 cutove
 
 ## Gaps / TODO
 
-- Confirm domain names for remaining Dokploy apps (ProChat Accountant, Egg Cooker, Free Resend, kutt, umami, boilerplates).
+- Confirm domain names for remaining Dokploy apps (ProChat Accountant, Free Resend, kutt, umami, boilerplates).
 - Supabase database password rotation (currently expired; not blocking Family Finance which is local-only)
 - Optional: Clean up stale Cloudflare DNS record for `finance.prochat.tools` (no longer routes anywhere)
 
@@ -545,6 +547,20 @@ Completed (2026-05-19):
 - ✅ GitHub App auto-deploy confirmed working for Via di Eden and Oliveto Organizing
 - ✅ Dokploy recovered from failed upgrade attempt (v0.29.2 restored via Azure disk snapshot)
 - ✅ Port 3000 publishing requirement documented as recovery-critical
+
+Completed (2026-09-03):
+- ✅ Dokploy upgraded from v0.29.5 to v0.30.5 with a fresh Lightsail snapshot and verified PostgreSQL rollback artifact
+- ✅ Start-first Swarm rollout converged with automatic rollback configured; all 23 services remained at 1/1
+- ✅ Dokploy, JPV production, JPV preview, and representative production endpoints passed post-update checks
+- ✅ PostgreSQL, Redis, Traefik, and application services remained on their pre-update tasks
+- ✅ Detailed evidence and rollback procedure recorded in `operations/reports/dokploy-upgrade-2026-09-03.md`
+
+Completed (2026-09-08):
+- ✅ Dokploy upgraded from v0.30.5 to v0.30.6 with a fresh available Lightsail snapshot and verified PostgreSQL rollback artifact
+- ✅ Start-first Swarm rollout converged with automatic rollback configured; all 18 observed services remained at 1/1
+- ✅ Dokploy, JPV production, JPV staging, and representative production endpoints passed post-update checks with no new regression
+- ✅ PostgreSQL, Redis, Traefik, and application services remained on their pre-update tasks
+- ✅ Detailed evidence and rollback procedure recorded in `operations/reports/dokploy-upgrade-2026-09-08.md`
 
 Completed (2026-05-03):
 - ✅ Dokploy API access restored (new key provisioned; direct API calls via `$DOKPLOY_URL/project.all` verified working)
@@ -555,4 +571,6 @@ Completed (2026-05-03):
 - ✅ Brain Console confirmed as sole execution interface for Family Finance lifecycle
 
 Last updated:
+- 2026-09-08 WEST (Dokploy v0.30.6 upgrade and recovery evidence)
+- 2026-09-03 WEST (Dokploy v0.30.5 upgrade and recovery evidence)
 - 2026-05-19 WEST (Dokploy architecture documentation + auto-deploy verification)

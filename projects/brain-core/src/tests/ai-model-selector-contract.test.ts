@@ -102,9 +102,9 @@ test('canonical private maintenance task preserves explicit Bedrock-only constra
     taskMetadata: {
       private: true,
       sensitive: true,
-      allowed_providers: ['claude-bedrock'],
+      allowed_providers: ['amazon-bedrock'],
       allowed_models: ['us.anthropic.claude-sonnet-4-6'],
-      preferred_providers: ['claude-bedrock'],
+      preferred_providers: ['amazon-bedrock'],
       preferred_models: ['us.anthropic.claude-sonnet-4-6'],
       fallback_policy: 'none',
     },
@@ -115,9 +115,9 @@ test('canonical private maintenance task preserves explicit Bedrock-only constra
     assert.deepEqual(normalized.body.task_metadata, {
       private: true,
       sensitive: true,
-      allowed_providers: ['claude-bedrock'],
+      allowed_providers: ['amazon-bedrock'],
       allowed_models: ['us.anthropic.claude-sonnet-4-6'],
-      preferred_providers: ['claude-bedrock'],
+      preferred_providers: ['amazon-bedrock'],
       preferred_models: ['us.anthropic.claude-sonnet-4-6'],
       fallback_policy: 'none',
     });
@@ -164,7 +164,7 @@ test('legacy model aliases normalize through the admitted registry', () => {
     assert.deepEqual(normalized.body, {
       task_type: 'description_quality_review',
       task_metadata: {
-        preferred_providers: ['claude-bedrock'],
+        preferred_providers: ['amazon-bedrock'],
         preferred_models: ['us.anthropic.claude-sonnet-4-6'],
       },
     });

@@ -5,7 +5,7 @@ set -euo pipefail
 # Cursor, Kiro, and Antigravity. Open Design itself lives outside Brain.
 # Keep this wrapper thin: Brain owns the entrypoint, not the upstream app.
 
-repo="${OPEN_DESIGN_REPO:-/Users/Office/Repos/nexu-io/open-design}"
+repo="${OPEN_DESIGN_REPO:-/Users/Office/Repos/vendors/nexu-io/open-design}"
 node_bin="${OPEN_DESIGN_NODE_BIN:-/Users/Office/.nvm/versions/node/v24.12.0/bin/node}"
 pnpm_bin="${OPEN_DESIGN_PNPM_BIN:-/opt/homebrew/bin/pnpm}"
 cli_js="${repo}/apps/daemon/dist/cli.js"

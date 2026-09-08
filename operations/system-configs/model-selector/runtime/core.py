@@ -22,6 +22,12 @@ from pathlib import Path
 from typing import Any
 
 from registry_shadow import load_and_compare, registry_model_lifecycle, registry_model_selectable
+from provider_identity import (
+    CANONICAL_BEDROCK_PROVIDER_ID,
+    canonical_provider_id,
+    canonicalize_provider_document,
+    canonicalize_task_metadata,
+)
 
 log = logging.getLogger(__name__)
 
@@ -270,11 +276,15 @@ class ModelSelector:
     def _load_config(self) -> None:
         with open(PROVIDERS_PATH) as f:
             data = json.load(f)
-        self._providers = data["providers"] if isinstance(data, dict) else data
+        provider_document = data if isinstance(data, dict) else {"providers": data}
+        self._providers = canonicalize_provider_document(provider_document)["providers"]
         self._validate_providers()
 
         with open(TASK_TYPES_PATH) as f:
             self._task_types = json.load(f)["task_types"]
+        for task_spec in self._task_types.values():
+            if isinstance(task_spec, dict) and isinstance(task_spec.get("required_provider"), str):
+                task_spec["required_provider"] = canonical_provider_id(task_spec["required_provider"])
 
         with open(SELECTOR_CONFIG_PATH) as f:
             self._config = json.load(f)
@@ -311,6 +321,18 @@ class ModelSelector:
                     f"Unsupported provider type for {provider_id!r}: {provider_type!r}. "
                     f"Allowed provider types: {allowed}"
                 )
+
+    @staticmethod
+    def _normalize_task_metadata(task_metadata: TaskMetadata) -> TaskMetadata:
+        normalized = canonicalize_task_metadata({
+            "preferred_providers": task_metadata.preferred_providers,
+            "allowed_providers": task_metadata.allowed_providers,
+            "disallowed_providers": task_metadata.disallowed_providers,
+        })
+        task_metadata.preferred_providers = normalized["preferred_providers"]
+        task_metadata.allowed_providers = normalized["allowed_providers"]
+        task_metadata.disallowed_providers = normalized["disallowed_providers"]
+        return task_metadata
 
     def _load_rate_limits(self) -> None:
         if RATE_LIMITS_PATH.exists():
@@ -725,9 +747,9 @@ class ModelSelector:
         available = bool(access.get("available"))
         enabled = bool(model.get("enabled", True))
         selectable = self._bedrock_model_selectable(model, access) and available
-        lifecycle_state = registry_model_lifecycle(self._registry_shadow_report, "claude-bedrock", str(model.get("id", "")))
+        lifecycle_state = registry_model_lifecycle(self._registry_shadow_report, CANONICAL_BEDROCK_PROVIDER_ID, str(model.get("id", "")))
         return {
-            "provider_id": "claude-bedrock",
+            "provider_id": CANONICAL_BEDROCK_PROVIDER_ID,
             "provider_type": "bedrock",
             "model_id": model.get("model_id", ""),
             "model_key": model.get("id", ""),
@@ -758,11 +780,11 @@ class ModelSelector:
         if not model.get("enabled", True):
             return False
         model_id = str(model.get("id", ""))
-        if not registry_model_selectable(self._registry_shadow_report, "claude-bedrock", model_id):
+        if not registry_model_selectable(self._registry_shadow_report, CANONICAL_BEDROCK_PROVIDER_ID, model_id):
             log.debug(
                 "selector  skip bedrock_model_lifecycle  model=%s  lifecycle=%s",
                 model.get("model_id"),
-                registry_model_lifecycle(self._registry_shadow_report, "claude-bedrock", model_id) or "unknown",
+                registry_model_lifecycle(self._registry_shadow_report, CANONICAL_BEDROCK_PROVIDER_ID, model_id) or "unknown",
             )
             return False
         return True
@@ -803,12 +825,14 @@ class ModelSelector:
             max_ctx = model.get("max_context_tokens")
             if max_ctx and input_tokens > int(max_ctx):
                 continue
-            access = self._bedrock_access_status(model)
+            # Selection is pure: only cached evidence may be consulted here.
+            # Live access probes belong to the explicit health-matrix operation.
+            access = self._bedrock_access.get(self._bedrock_cache_key(model), {})
             if not self._bedrock_model_selectable(model, access):
                 log.debug(
                     "selector  skip bedrock_model_not_selectable  model=%s  lifecycle=%s  enabled=%s  access=%s",
                     model.get("model_id"),
-                    registry_model_lifecycle(self._registry_shadow_report, "claude-bedrock", str(model.get("id", ""))) or "unknown",
+                    registry_model_lifecycle(self._registry_shadow_report, CANONICAL_BEDROCK_PROVIDER_ID, str(model.get("id", ""))) or "unknown",
                     bool(model.get("enabled", True)),
                     bool(access.get("available")),
                 )
@@ -984,6 +1008,8 @@ class ModelSelector:
             previous_failures = []
         if task_metadata is None:
             task_metadata = TaskMetadata()
+        task_metadata = self._normalize_task_metadata(task_metadata)
+        previous_failures = [canonical_provider_id(provider_id) for provider_id in previous_failures]
 
         fallback_policy = task_metadata.fallback_policy or "selector_default"
         if fallback_policy not in ALLOWED_FALLBACK_POLICIES:
@@ -1032,7 +1058,7 @@ class ModelSelector:
 
         # Apply preferred provider ordering: honor the caller-supplied list order.
         # Use the index position within preferred_providers so that, e.g.,
-        # ["claude-bedrock", "ollama-m4pro"] always puts claude-bedrock first,
+        # [CANONICAL_BEDROCK_PROVIDER_ID, "ollama-m4pro"] always puts amazon-bedrock first,
         # regardless of global priority numbers. Non-preferred providers rank after
         # all preferred ones. Prior sorts (priority, batch window) are used as a
         # tiebreaker within the non-preferred tail via Python's stable sort guarantee.
@@ -1138,6 +1164,7 @@ class ModelSelector:
         self._save_bedrock_outcomes()
 
     def report_failure(self, provider_id: str, error_type: str, error_message: str = "", model_id: str = "") -> None:
+        provider_id = canonical_provider_id(provider_id)
         state = self._rate_limits.setdefault(provider_id, {})
         if error_type == "rate_limit":
             state["blocked_until"] = time.time() + 60
@@ -1156,6 +1183,7 @@ class ModelSelector:
         log.warning("selector  failure reported  provider=%s  type=%s", provider_id, error_type)
 
     def report_success(self, provider_id: str, model_id: str = "") -> None:
+        provider_id = canonical_provider_id(provider_id)
         self._circuit_breaker.register_success(provider_id)
         self._record_bedrock_outcome(model_id, "success")
 
@@ -1179,7 +1207,7 @@ class ModelSelector:
                         "model_id": model.get("model_id"),
                         "region": model.get("region"),
                         "enabled": bool(model.get("enabled", True)),
-                        "lifecycle_state": registry_model_lifecycle(self._registry_shadow_report, "claude-bedrock", str(model.get("id", ""))),
+                        "lifecycle_state": registry_model_lifecycle(self._registry_shadow_report, CANONICAL_BEDROCK_PROVIDER_ID, str(model.get("id", ""))),
                         "selectable": self._bedrock_model_selectable(model, access) and bool(access.get("available")),
                         "roles": model.get("roles", []),
                         "price_input_per_1m": model.get("price_input_per_1m"),

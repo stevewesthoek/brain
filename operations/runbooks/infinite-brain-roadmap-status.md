@@ -66,6 +66,16 @@ A sibling **Infrastructure Knowledge & Health Plane (IKHP)** program was admitte
 - `operations/reports/infrastructure-knowledge-health-plane-analysis-2026-08-16.md`
 - `operations/reports/ikhp6-packet1-reconciliation-2026-08-22.md`
 
+IKHP-RGO runtime ownership, onboarding, and lifecycle governance was accepted
+as repository-only proof on 2026-09-05. The existing IKHP catalog now has an
+optional provider-neutral governance extension; the pure admission planner,
+coverage validator, Brain Core read-only projection, and guarded-action
+quiescence gate are synthetic-tested. The two-consumer onboarding fixture and
+Codex Web GPT metadata fixture contain no secrets and make no live integration
+claim. Native Codex and Web GPT remain separate adapter surfaces. No scheduler,
+OAuth/session migration, live provider probe, runtime activation, or mutation
+was enabled. Evidence: `operations/reports/ikhp-runtime-ownership-onboarding-acceptance-2026-09-05.md`.
+
 B8.1 v5s was executed on 2026-08-05 (17/20 pass) and rejected as insufficient.
 That run remains immutable infrastructure evidence only.
 B8.1 v7r / 7.1.0 two-subject contract was materialized and executed on 2026-08-06,

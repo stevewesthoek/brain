@@ -3,6 +3,8 @@
 // Active text consumers use managed-text-executor.ts. This lower-level client
 // performs selection and outcome reporting only; it never executes a provider.
 
+import { canonicalProviderId } from './provider-identity.js';
+
 const SELECTOR_URL = process.env.AI_SELECTOR_URL ?? 'http://localhost:4890';
 
 export const TASK_TYPES = {
@@ -128,9 +130,9 @@ export async function selectAI(
   }
 
   const providerId = typeof data.provider_id === 'string'
-    ? data.provider_id
+    ? canonicalProviderId(data.provider_id)
     : typeof data.providerId === 'string'
-      ? data.providerId
+      ? canonicalProviderId(data.providerId)
       : '';
   const model = typeof data.model === 'string'
     ? data.model

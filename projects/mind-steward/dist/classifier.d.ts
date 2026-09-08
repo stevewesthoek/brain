@@ -1,4 +1,4 @@
-declare const APPROVED_BEDROCK_PROVIDER = "claude-bedrock";
+declare const APPROVED_BEDROCK_PROVIDER = "amazon-bedrock";
 declare const APPROVED_BEDROCK_MODEL = "us.anthropic.claude-sonnet-4-6";
 export type MindCaptureParaType = 'project' | 'area' | 'resource' | 'task' | 'decision' | 'research' | 'inbox';
 export type MindCaptureClassification = {

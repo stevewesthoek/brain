@@ -275,7 +275,7 @@ See also:
 
 1. **Use this document** as your primary entry point for deciding which orchestrator to use
 2. **For tasks outside these four orchestrators**, refer to `brain/ai/policy/routing.md` for full routing policy
-3. **For skill installation**, use `/brain-universal-capability-install` (installs to all three AI engines simultaneously)
+3. **For capability discovery or installation**, run `node tools/discover-capabilities.mjs --query "<request>"` first, then follow `operations/runbooks/agent-capability-discovery.md` if no existing route fits
 4. **For memory operations**, use `/memory` (works with Claude, Codex, Gemini, all IDEs)
 
 ---

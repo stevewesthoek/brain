@@ -129,9 +129,9 @@
       "local_viable": false,
       "local_required": false,
       "privacy_policy": "private-bedrock-only",
-      "required_provider": "claude-bedrock",
+      "required_provider": "amazon-bedrock",
       "preferred_model": "us.anthropic.claude-sonnet-4-6",
-      "notes": "Privacy-sensitive Mind Steward classification. Caller must set private=true, sensitive=true, allowed_providers=[claude-bedrock], and allow only the approved Anthropic Bedrock model. If Bedrock is unavailable, fail closed; never fall through to Codex or another provider."
+      "notes": "Privacy-sensitive Mind Steward classification. Caller must set private=true, sensitive=true, allowed_providers=[amazon-bedrock], and allow only the approved Anthropic Bedrock model. If Bedrock is unavailable, fail closed; never fall through to Codex or another provider."
     },
     "mind_project_decomposition": {
       "capability": "text/medium",
@@ -141,9 +141,9 @@
       "local_viable": false,
       "local_required": false,
       "privacy_policy": "private-bedrock-only",
-      "required_provider": "claude-bedrock",
+      "required_provider": "amazon-bedrock",
       "preferred_model": "us.anthropic.claude-sonnet-4-6",
-      "notes": "Privacy-sensitive Mind project decomposition. Caller must set private=true, sensitive=true, allowed_providers=[claude-bedrock], and allow only the approved Anthropic Bedrock model. If Bedrock is unavailable, fail closed; never fall through to Codex or another provider."
+      "notes": "Privacy-sensitive Mind project decomposition. Caller must set private=true, sensitive=true, allowed_providers=[amazon-bedrock], and allow only the approved Anthropic Bedrock model. If Bedrock is unavailable, fail closed; never fall through to Codex or another provider."
     },
     "mind_maintenance_semantic_comparison": {
       "capability": "text/medium",
@@ -153,9 +153,9 @@
       "local_viable": false,
       "local_required": false,
       "privacy_policy": "private-bedrock-only",
-      "required_provider": "claude-bedrock",
+      "required_provider": "amazon-bedrock",
       "preferred_model": "us.anthropic.claude-sonnet-4-6",
-      "notes": "Privacy-sensitive, bounded semantic comparison for the report-only Mind maintenance pilot. Caller must set private=true, sensitive=true, allowed_providers=[claude-bedrock], allowed_models=[us.anthropic.claude-sonnet-4-6], preferred_providers=[claude-bedrock], preferred_models=[us.anthropic.claude-sonnet-4-6], and fallback_policy=none. If Bedrock is unavailable, fail closed; never fall through to local text or Codex, and never authorize Mind source mutation."
+      "notes": "Privacy-sensitive, bounded semantic comparison for the report-only Mind maintenance pilot. Caller must set private=true, sensitive=true, allowed_providers=[amazon-bedrock], allowed_models=[us.anthropic.claude-sonnet-4-6], preferred_providers=[amazon-bedrock], preferred_models=[us.anthropic.claude-sonnet-4-6], and fallback_policy=none. If Bedrock is unavailable, fail closed; never fall through to local text or Codex, and never authorize Mind source mutation."
     }
   }
 }

@@ -10,13 +10,13 @@ Central reference for database provisioning, workflow, and safety across local a
 | Environment | Database | Managed by | Connection |
 |---|---|---|---|
 | **Local** | Plain PostgreSQL in OrbStack | docker-compose | `localhost:544X` (per-app unique port) |
-| **Production** | Full self-hosted Supabase (Azure VM vm-supabase) | Dokploy | Tailscale VPN: `100.71.31.88:5433` (canonical; not 10.0.2.4 which is stale) |
+| **Production** | Full self-hosted Supabase/PostgreSQL on VM `vm-supabase` | `supabase-azure` Azure subscription; Dokploy application runtime on AWS | Tailscale identity `supabase`: `100.71.31.88:5433` (canonical; `10.0.2.4` is the routed private endpoint) |
 
 ## Supabase CLI: Unified Workflow Tool
 
 Supabase CLI is the central tool for both environments:
 - **Locally:** Manages migrations and types against plain PostgreSQL
-- **Production:** Manages migrations and types against self-hosted Supabase on Azure VM
+- **Production:** Manages migrations and types against self-hosted Supabase on Azure VM `vm-supabase` in subscription `supabase-azure`
 
 Use `~/.local/bin/supabase-cli` (not bare `supabase` — that's an SSH alias).
 

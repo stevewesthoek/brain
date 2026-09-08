@@ -57,7 +57,7 @@
       "runtime_compatibility": {"health_check": {"binary_exists": "codex"}, "timeout_connect_sec": 5, "timeout_inference_sec": 300, "max_context_tokens": 200000, "notes": "Secondary Brain-managed text surface under the ChatGPT subscription. Used as fallback or when Codex is explicitly preferred. No OpenAI API use and no always-on local text model."}
     },
     {
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "display_name": "Claude via Amazon Bedrock",
       "adapter_ref": "adapter://amazon-bedrock",
       "lifecycle_state": "admitted",
@@ -67,8 +67,8 @@
       "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
       "safety_constraints": {"private_task_policy": "explicit-private-bedrock-only", "provider_api": false},
       "last_verified_at": null,
-      "model_refs": ["claude-bedrock/nemotron-super-3", "claude-bedrock/qwen3-coder-next", "claude-bedrock/deepseek-v3-2", "claude-bedrock/kimi-k2-thinking", "claude-bedrock/kimi-k2-5", "claude-bedrock/gpt-oss-120b", "claude-bedrock/claude-sonnet-4-6", "claude-bedrock/claude-opus-4-6", "claude-bedrock/claude-opus-4-7"],
-      "compatibility_aliases": [{"value": "bedrock-model-portfolio", "kind": "provider_portfolio_marker", "source": "ai-providers.json"}],
+      "model_refs": ["amazon-bedrock/nemotron-super-3", "amazon-bedrock/qwen3-coder-next", "amazon-bedrock/deepseek-v3-2", "amazon-bedrock/kimi-k2-thinking", "amazon-bedrock/kimi-k2-5", "amazon-bedrock/gpt-oss-120b", "amazon-bedrock/claude-sonnet-4-6", "amazon-bedrock/claude-opus-4-6", "amazon-bedrock/claude-opus-4-7"],
+      "compatibility_aliases": [{"value": "bedrock-model-portfolio", "kind": "provider_portfolio_marker", "source": "ai-providers.json"}, {"value": "claude-bedrock", "kind": "provider_id", "source": "ai-providers.json"}],
       "selection_metadata": {"provider_type": "bedrock", "priority": 1, "cost_per_1k_tokens": 0, "schedule_preference": "any"},
       "runtime_compatibility": {"health_check": {"binary_exists": "aws"}, "timeout_connect_sec": 5, "timeout_inference_sec": 300, "max_context_tokens": 200000, "notes": "Primary Brain-managed text surface. Brain's shell config also runs Claude Code through Bedrock via CLAUDE_CODE_USE_BEDROCK=1. Codex CLI remains the secondary managed text surface. No direct Anthropic API use and no always-on local text model."}
     }
@@ -208,9 +208,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/nemotron-super-3",
+      "registry_model_id": "amazon-bedrock/nemotron-super-3",
       "display_name": "NVIDIA Nemotron 3 Super 120B A12B",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "nvidia.nemotron-super-3-120b", "region": "us-east-1"},
       "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["agentic", "reasoning", "batch", "cost-saving"]},
@@ -227,9 +227,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/qwen3-coder-next",
+      "registry_model_id": "amazon-bedrock/qwen3-coder-next",
       "display_name": "Qwen3 Coder Next",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "qwen.qwen3-coder-next", "region": "us-east-1"},
       "capabilities": ["text/medium", "text/large", "text/review"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["coding", "debugging", "software-engineering"]},
@@ -246,9 +246,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/deepseek-v3-2",
+      "registry_model_id": "amazon-bedrock/deepseek-v3-2",
       "display_name": "DeepSeek V3.2",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "deepseek.v3.2", "region": "us-east-1"},
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["reasoning", "coding", "instruction-following"]},
@@ -265,9 +265,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/kimi-k2-thinking",
+      "registry_model_id": "amazon-bedrock/kimi-k2-thinking",
       "display_name": "Kimi K2 Thinking",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "moonshot.kimi-k2-thinking", "region": "us-east-1"},
       "capabilities": ["text/medium", "text/large", "text/review"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["reasoning", "logic", "coding"]},
@@ -284,9 +284,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/kimi-k2-5",
+      "registry_model_id": "amazon-bedrock/kimi-k2-5",
       "display_name": "Kimi K2.5",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "moonshotai.kimi-k2.5", "region": "us-east-1"},
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["general", "multimodal", "multilingual"]},
@@ -303,9 +303,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/gpt-oss-120b",
+      "registry_model_id": "amazon-bedrock/gpt-oss-120b",
       "display_name": "gpt-oss-120b",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "openai.gpt-oss-120b-1:0", "region": "us-east-1"},
       "capabilities": ["text/small", "text/medium", "text/large"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["general", "reasoning", "exploration"]},
@@ -322,9 +322,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/claude-sonnet-4-6",
+      "registry_model_id": "amazon-bedrock/claude-sonnet-4-6",
       "display_name": "Claude Sonnet 4.6",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "us.anthropic.claude-sonnet-4-6", "region": "us-east-1"},
       "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["premium", "reliable", "fallback"]},
@@ -341,9 +341,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/claude-opus-4-6",
+      "registry_model_id": "amazon-bedrock/claude-opus-4-6",
       "display_name": "Claude Opus 4.6",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "us.anthropic.claude-opus-4-6-v1", "region": "us-east-1"},
       "capabilities": ["text/large", "text/review", "text/large-context-batch"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["premium", "deep-architecture", "last-resort"]},
@@ -360,9 +360,9 @@
       "legacy_selection_flags": {"enabled": true, "upgrade_candidate": false, "access_probe_ttl_hours": null}
     },
     {
-      "registry_model_id": "claude-bedrock/claude-opus-4-7",
+      "registry_model_id": "amazon-bedrock/claude-opus-4-7",
       "display_name": "Claude Opus 4.7",
-      "provider_id": "claude-bedrock",
+      "provider_id": "amazon-bedrock",
       "provider_model_binding": {"binding_type": "bedrock-model-id", "model_id": "us.anthropic.claude-opus-4-7", "region": "us-east-1"},
       "capabilities": ["text/large", "text/review", "text/large-context-batch"],
       "profile_compatibility": {"capability_profiles": [], "quality_tiers": [], "role_labels": ["premium", "deep-architecture", "last-resort"]},

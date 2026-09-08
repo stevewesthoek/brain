@@ -219,18 +219,18 @@ try:
                     tasks = json.loads((selector_config_dir / 'ai-task-types.json').read_text(encoding='utf-8')).get('task_types', {})
                     bedrock_models = json.loads((selector_config_dir / 'ai-bedrock-models.json').read_text(encoding='utf-8')).get('models', [])
                     task = tasks.get(selector_task_type) or {}
-                    provider = next((item for item in providers if item.get('id') == 'claude-bedrock'), None)
+                    provider = next((item for item in providers if item.get('id') == 'amazon-bedrock'), None)
                     model = next((item for item in bedrock_models if item.get('model_id') == 'us.anthropic.claude-sonnet-4-6'), None)
 
                     policy_errors = []
                     if provider is None or provider.get('type') != 'bedrock':
-                        policy_errors.append('claude-bedrock provider is missing or not Bedrock')
+                        policy_errors.append('amazon-bedrock provider is missing or not Bedrock')
                     if model is None or not model.get('enabled', True):
                         policy_errors.append('approved Claude Sonnet 4.6 Bedrock model is missing or disabled')
                     if task.get('privacy_policy') != 'private-bedrock-only':
                         policy_errors.append('task privacy_policy is not private-bedrock-only')
-                    if task.get('required_provider') != 'claude-bedrock':
-                        policy_errors.append('task required_provider is not claude-bedrock')
+                    if task.get('required_provider') != 'amazon-bedrock':
+                        policy_errors.append('task required_provider is not amazon-bedrock')
                     if task.get('preferred_model') != 'us.anthropic.claude-sonnet-4-6':
                         policy_errors.append('task preferred_model is not Claude Sonnet 4.6')
 
@@ -238,7 +238,7 @@ try:
                     input_tokens = max(1, input_tokens // 4) if sampled_files else 0
                     selector_report = {
                         'status': 'policy-validated',
-                        'providerId': 'claude-bedrock',
+                        'providerId': 'amazon-bedrock',
                         'model': 'us.anthropic.claude-sonnet-4-6',
                         'baseUrl': '',
                         'reason': 'exact private Bedrock-only route validated without provider probing or inference',
@@ -251,9 +251,9 @@ try:
                         'taskMetadata': {
                             'private': True,
                             'sensitive': True,
-                            'allowedProviders': ['claude-bedrock'],
+                            'allowedProviders': ['amazon-bedrock'],
                             'allowedModels': ['us.anthropic.claude-sonnet-4-6'],
-                            'preferredProviders': ['claude-bedrock'],
+                            'preferredProviders': ['amazon-bedrock'],
                             'preferredModels': ['us.anthropic.claude-sonnet-4-6'],
                             'fallbackPolicy': 'none',
                         },

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# repos — unified repo picker for Claude, Codex, Gemini, and Qwen.
+# repos — unified repo picker for Claude and Codex.
 # Invoked as the `repos` shell function (defined in ~/.zshrc).
 #
 # Step 1: pick AI tool with fzf.
@@ -10,8 +10,6 @@
 # background on every run to stay fresh. Usage timestamps are tracked in
 # ~/.claude/cache/repo_usage.json so recently opened repos float to the top.
 #
-# Qwen: Local terminal coding agent (Aider) with Qwen 3.6 27B MTP-accelerated.
-
 CACHE_FILE="$HOME/.claude/cache/repos.json"
 USAGE_FILE="$HOME/.claude/cache/repo_usage.json"
 REPOS_ROOT="$HOME/Repos"
@@ -74,16 +72,16 @@ PYEOF
 }
 
 launch_claude() {
-  # Re-source immediately before launch so stale parent shells cannot keep
-  # Claude Code on unavailable Bedrock model IDs. Use the alias rather than the
-  # full Bedrock ID so Claude Code keeps its own /model labels clean.
+  # Re-source immediately before launch so the configured Claude environment
+  # is current. Model choice belongs to that environment and Claude Code's
+  # configured default, not to this repository navigation script.
   # shellcheck source=/dev/null
   source "$SCRIPT_DIR/claude-bedrock-env.sh"
-  exec claude --model haiku
+  exec claude
 }
 
 # Step 1: pick AI tool
-tool=$(printf "Claude\nCodex\nQwen" | fzf \
+tool=$(printf "Claude\nCodex" | fzf \
   --prompt="  open with: " \
   --height=10 \
   --layout=reverse \
@@ -125,6 +123,4 @@ if [[ "$tool" == "Claude" ]]; then
   launch_claude
 elif [[ "$tool" == "Codex" ]]; then
   exec codex
-elif [[ "$tool" == "Qwen" ]]; then
-  exec qwen
 fi

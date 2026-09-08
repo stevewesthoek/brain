@@ -2,6 +2,33 @@
 
 Brain-owned process for admitting and configuring any MCP provider.
 
+## Natural-language discovery
+
+All MCP providers follow the same discovery entry point as skills and CLIs:
+
+```bash
+node tools/discover-capabilities.mjs --query "<the user's request>" --kind mcp
+```
+
+Read the provider README and admission record returned by discovery. Treat
+these states separately: documented, configured, connected, authenticated,
+observed, and verified. A client plugin being listed does not prove that it is
+logged in or that Brain has admitted its tools.
+
+## CLI-only providers
+
+Not every provider needs an MCP server. Stripe is intentionally CLI-only:
+
+- natural-language discovery resolves the Stripe skill and `stripe` CLI;
+- Stripe CLI profiles provide the authenticated account selection;
+- the Stripe MCP/plugin is not enabled or installed in Codex;
+- Stripe MCP OAuth state is separate from Stripe CLI authentication and is not
+  required for Stripe work in this system.
+
+This is a provider-level architecture decision, not a second discovery system.
+CLI-only providers still use the shared capability manifest, skill index,
+runbook, and access-health monitor.
+
 ## Scope
 Use this runbook whenever adding or updating MCP servers (Codex, Antigravity, etc.).
 

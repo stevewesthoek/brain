@@ -9,7 +9,7 @@ export interface AgentAiSurfaceCapabilityManifest {
 
 const FALLBACK_AI_SURFACES: AgentCapabilitySummary[] = [
   {
-    id: 'ai.claude-bedrock',
+    id: 'ai.amazon-bedrock',
     kind: 'ai_surface',
     label: 'Claude via Amazon Bedrock',
     source: 'projects/brain-core/docs/ai-model-selector-architecture.md',

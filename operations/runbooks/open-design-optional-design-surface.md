@@ -2,7 +2,7 @@
 
 **Status:** Installed outside Brain as an optional bridge surface  
 **Repository:** `https://github.com/nexu-io/open-design`  
-**Installed location:** `/Users/Office/Repos/nexu-io/open-design`  
+**Installed location:** `/Users/Office/Repos/vendors/nexu-io/open-design`
 **Command:** `open-design`  
 **Version verified:** `open-design/0.8.1`  
 **Brain integration type:** External IDE-like visual workbench  
@@ -115,8 +115,8 @@ Installed outside Brain:
 
 ```bash
 mkdir -p /Users/Office/Repos/nexu-io
-git clone https://github.com/nexu-io/open-design /Users/Office/Repos/nexu-io/open-design
-cd /Users/Office/Repos/nexu-io/open-design
+git clone https://github.com/nexu-io/open-design /Users/Office/Repos/vendors/nexu-io/open-design
+cd /Users/Office/Repos/vendors/nexu-io/open-design
 PATH=/Users/Office/.nvm/versions/node/v24.12.0/bin:$PATH pnpm install
 PATH=/Users/Office/.nvm/versions/node/v24.12.0/bin:$PATH pnpm --filter @open-design/daemon build
 ```

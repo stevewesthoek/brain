@@ -64,6 +64,49 @@ Large general modules should be split by domain and stable interface. In particu
 
 Runtime data, caches, Graphify history, app binaries, browser state, and generated reports should remain outside canonical source where possible. Git tracks source, contracts, selected fixtures, and deliberate audit evidence.
 
+### Ownership before automation
+
+Every mutable resource must have one resolved authoritative owner. Brain may
+coordinate observation, drift detection, lifecycle checks, and recovery
+proposals while the application/provider/adapter retains custody of its state.
+Discovery is candidate evidence, not admission authority. A new consumer joins
+through the shared `discover → candidate → classify → validate → resolve →
+admit → participate` contract and must declare environment, isolation,
+dependencies, health/recovery coverage, quiescence, and account capacity.
+
+The infrastructure catalog and Identity & Access contracts are the shared
+machine-readable model. Provider-specific runtime adapters translate local
+mechanics—such as a profile directory, browser session, connector, or route—
+into that model; they do not become a second config writer or secret store.
+
+Quiescence is scoped to the exact resource and declared dependency being
+changed. An unrelated process, application, session, or runtime cannot become
+a global admission failure merely because it shares a host.
+
+### Observation and admission plane
+
+The shared observer seam is deliberately small: `discover()` finds
+non-secret candidates, `observe()` returns the latest evidence for a candidate,
+and `verifyRelationship()` tests a claimed dependency or ownership link. A
+local runtime adapter may inspect process and listener metadata without
+capturing command arguments or environment variables. A product adapter may
+interpret supported status/doctor output, but must normalize it into the same
+observation contract.
+
+The resulting flow is:
+
+```text
+observer → observation → candidate → pure admission plan → canonical catalog
+                                  ↘ unknown/conflict backlog + attention
+```
+
+Live observation is ephemeral and redacted; canonical admission is durable and
+reviewable. Current evidence can make a resource degraded or unknown, but it
+cannot silently import account identity, application OAuth, or secret-store
+material. The first/reference local secret-store boundary remains macOS
+Keychain; OnePassword can be added later as a replaceable adapter only after
+the same custody, identity, and verification contract is proven.
+
 ## Context Gateway strategy
 
 The Context Gateway is the primary missing product capability.
@@ -115,6 +158,11 @@ proposal
 
 Retries require idempotency keys. Failed work remains visible. Missing evidence returns `unknown` or `insufficient-evidence`, never a fabricated zero or success.
 
+Lifecycle operations additionally check required dependencies and explicit
+workload/lease evidence. Active work blocks a disruptive operation; missing
+runtime evidence is unknown. Availability policy remains with the owning
+application/provider, so Brain does not invent competing keepalive behavior.
+
 ## Status strategy
 
 `operations/runbooks/infinite-brain-roadmap-status.md` is the only live capability-status page.
@@ -147,6 +195,7 @@ No claimed improvement is accepted without before/after results on the same corp
 Brain should use least privilege and least retention:
 
 - no secrets in context packs;
+- no raw credentials or application-managed session state in the canonical catalog;
 - no full-vault export by default;
 - explicit scope filters;
 - local processing for sensitive classification when suitable;
@@ -154,6 +203,8 @@ Brain should use least privilege and least retention:
 - audit receipts for durable writes;
 - tests for path traversal, symlink escape, approval replay, stale hashes, and unauthorized scope expansion.
 - prompt-injection and data-poisoning fixtures for retrieved source text.
+- ownership, route-writer, environment-isolation, admission, quiescence, and
+  multi-account capacity conflict fixtures.
 
 ## Delivery strategy
 
@@ -169,6 +220,8 @@ Brain should not become:
 - a permanent store for raw personal context;
 - a reason to load more context than the task needs;
 - a system whose success is measured by model calls or automation count.
+- a universal vault or credential janitor that assumes every provider supports
+  refresh, renewal, browser reauthentication, or synthetic keepalive.
 
 ## Strategic rule
 

@@ -103,31 +103,31 @@ function selectExecutorForTask(task: BrainCoreAgentTaskGraphSummary['tasks'][num
 } {
   if (!task) {
     return {
-      executorId: 'claude-bedrock',
-      providerId: 'claude-bedrock',
+      executorId: 'amazon-bedrock',
+      providerId: 'amazon-bedrock',
       reason: 'No matching task found; default to the Bedrock-backed Claude surface and let the registry resolve the model.',
     };
   }
 
   if (task.approvalRequired) {
     return {
-      executorId: 'claude-bedrock',
-      providerId: 'claude-bedrock',
+      executorId: 'amazon-bedrock',
+      providerId: 'amazon-bedrock',
       reason: 'Approval-sensitive coordination uses the primary Bedrock-backed Claude surface; the registry resolves the model.',
     };
   }
 
   if (task.aiTaskType === 'executor_selection' || task.aiTaskType === 'orchestration') {
     return {
-      executorId: 'claude-bedrock',
-      providerId: 'claude-bedrock',
+      executorId: 'amazon-bedrock',
+      providerId: 'amazon-bedrock',
       reason: 'Orchestration and executor-selection work use Bedrock-backed Claude by default; the registry resolves the model.',
     };
   }
 
   return {
-    executorId: 'claude-bedrock',
-    providerId: 'claude-bedrock',
+    executorId: 'amazon-bedrock',
+    providerId: 'amazon-bedrock',
     reason: task.capabilityIds.some((id) => id.startsWith('skill.'))
       ? 'Skill-first work uses Bedrock-backed Claude; the registry resolves the model and no Brain-managed always-on local text executor is admitted.'
       : 'Routine text work uses Bedrock-backed Claude; the registry resolves the model and Codex CLI remains the secondary managed surface.',

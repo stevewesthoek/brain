@@ -7,8 +7,11 @@ legacy configuration remains the sole selection authority.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
+
+from provider_identity import CANONICAL_BEDROCK_PROVIDER_ID, canonical_provider_id
 
 LIFECYCLE_STATES = {
     "discovered",
@@ -34,10 +37,38 @@ def _assert(condition: bool, message: str) -> None:
         raise RegistryShadowValidationError(message)
 
 
+def canonicalize_registry_document(registry: dict[str, Any]) -> dict[str, Any]:
+    """Normalize legacy provider prefixes at the registry compatibility boundary."""
+    normalized = deepcopy(registry)
+    for provider in normalized.get("providers", []):
+        if isinstance(provider, dict):
+            provider_id = provider.get("provider_id")
+            if isinstance(provider_id, str):
+                provider["provider_id"] = canonical_provider_id(provider_id)
+            refs = provider.get("model_refs")
+            if isinstance(refs, list):
+                provider["model_refs"] = [
+                    f"{CANONICAL_BEDROCK_PROVIDER_ID}/{ref.split('/', 1)[1]}"
+                    if isinstance(ref, str) and ref.startswith("claude-bedrock/") else ref
+                    for ref in refs
+                ]
+    for model in normalized.get("models", []):
+        if not isinstance(model, dict):
+            continue
+        provider_id = model.get("provider_id")
+        if isinstance(provider_id, str):
+            model["provider_id"] = canonical_provider_id(provider_id)
+        for field_name in ("registry_model_id", "replacement_registry_model_id"):
+            value = model.get(field_name)
+            if isinstance(value, str) and value.startswith("claude-bedrock/"):
+                model[field_name] = f"{CANONICAL_BEDROCK_PROVIDER_ID}/{value.split('/', 1)[1]}"
+    return normalized
+
+
 def load_registry(path: Path) -> dict[str, Any]:
     """Load and validate only the structural assumptions needed for shadowing."""
     with path.open(encoding="utf-8") as handle:
-        registry = json.load(handle)
+        registry = canonicalize_registry_document(json.load(handle))
 
     _assert(isinstance(registry, dict), "registry must be a JSON object")
     _assert(registry.get("registry_id") == "ai-model-registry", "unexpected registry_id")
@@ -80,8 +111,8 @@ def load_registry(path: Path) -> dict[str, Any]:
 def _legacy_model_candidates(providers: list[dict[str, Any]], bedrock_config: dict[str, Any]) -> dict[str, list[str]]:
     candidates: dict[str, list[str]] = {}
     for provider in providers:
-        provider_id = provider["id"]
-        if provider_id == "claude-bedrock":
+        provider_id = canonical_provider_id(provider["id"])
+        if provider_id == CANONICAL_BEDROCK_PROVIDER_ID:
             candidates[provider_id] = sorted(model["id"] for model in bedrock_config.get("models", []))
         else:
             candidates[provider_id] = sorted(str(model_id) for model_id in provider.get("models", []))
@@ -91,14 +122,14 @@ def _legacy_model_candidates(providers: list[dict[str, Any]], bedrock_config: di
 def _registry_model_candidates(registry: dict[str, Any]) -> dict[str, list[str]]:
     candidates: dict[str, list[str]] = {}
     for model in registry["models"]:
-        provider_id = model["provider_id"]
+        provider_id = canonical_provider_id(model["provider_id"])
         aliases = model.get("compatibility_aliases", [])
         source_aliases = [
             alias["value"]
             for alias in aliases
             if alias.get("source") == "ai-providers.json" and alias.get("kind") == "provider_model_label"
         ]
-        if provider_id == "claude-bedrock":
+        if provider_id == CANONICAL_BEDROCK_PROVIDER_ID:
             source_aliases = [
                 alias["value"]
                 for alias in aliases
@@ -112,14 +143,14 @@ def _registry_model_candidates(registry: dict[str, Any]) -> dict[str, list[str]]
 
 def _legacy_lifecycle(providers: list[dict[str, Any]], bedrock_config: dict[str, Any]) -> dict[str, str]:
     lifecycle: dict[str, str] = {}
-    provider_map = {provider["id"]: provider for provider in providers}
+    provider_map = {canonical_provider_id(provider["id"]): provider for provider in providers}
     for provider_id, provider in provider_map.items():
-        if provider_id != "claude-bedrock":
+        if provider_id != CANONICAL_BEDROCK_PROVIDER_ID:
             for model_id in provider.get("models", []):
                 lifecycle[f"{provider_id}/{model_id}"] = "admitted"
     for model in bedrock_config.get("models", []):
         state = "admitted" if model.get("enabled", True) else "evaluated" if model.get("upgrade_candidate") else "retired"
-        lifecycle[f"claude-bedrock/{model['id']}"] = state
+        lifecycle[f"{CANONICAL_BEDROCK_PROVIDER_ID}/{model['id']}"] = state
     return lifecycle
 
 
@@ -129,7 +160,7 @@ def _registry_lifecycle(registry: dict[str, Any]) -> dict[str, str]:
 
 def registry_model_lifecycle(report: dict[str, Any], provider_id: str, model_id: str) -> str | None:
     """Return the registry lifecycle for a legacy provider/model identity."""
-    return report.get("registry_lifecycle", {}).get(f"{provider_id}/{model_id}")
+    return report.get("registry_lifecycle", {}).get(f"{canonical_provider_id(provider_id)}/{model_id}")
 
 
 def registry_model_selectable(report: dict[str, Any], provider_id: str, model_id: str) -> bool:
@@ -154,6 +185,8 @@ def compare_legacy_to_registry(
     registry_path: str = "",
 ) -> dict[str, Any]:
     """Compare candidate identity and lifecycle without affecting selection."""
+    providers = [{**provider, "id": canonical_provider_id(provider["id"])} for provider in providers]
+    registry = canonicalize_registry_document(registry)
     legacy_providers = sorted(provider["id"] for provider in providers)
     registry_providers = sorted(provider["provider_id"] for provider in registry["providers"])
     legacy_models = _legacy_model_candidates(providers, bedrock_config)

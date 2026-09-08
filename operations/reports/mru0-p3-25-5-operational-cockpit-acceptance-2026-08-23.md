@@ -1,6 +1,6 @@
 # MRU0-P3.25.5 Infinite Brain Operational Cockpit Acceptance
 
-**Status:** USABLE WITH OPERATIONAL CAVEAT
+**Status:** READY / COMPLETE
 
 ## Scope
 
@@ -66,4 +66,8 @@ These are improvement candidates only. No automatic fix or feature expansion is 
 
 The Brain/Mind workflow contracts and compiled Brain Core are usable and safety-preserving in isolated validation. The canonical Brain Console runtime was restored on `localhost:4881` using `npm start` after removing only generated `.next` output and rebuilding. Routes `/`, `/ai-models`, `/infrastructure`, `/monitoring`, and `/settings` returned HTTP 200 and the process remained stable at 0% CPU / approximately 68 MB RSS.
 
-The overall cockpit checkpoint remains **NOT READY** because the compiled Brain Core process on its required `localhost:4877` port still reproduced high CPU/RSS growth and timeouts on `/infinite-brain/status` and `/projections/evolution`, while `/health`, `/status`, and `/projections/promotion` responded. Brain Core was stopped rather than left unstable. This is now the only unresolved runtime gate; no feature expansion should begin before it is repaired.
+The final cockpit checkpoint is **READY**. After the external Dia Browser polling connection was manually cleared, the compiled Brain Core process remained stable on its required `localhost:4877` port during a 20-second observation at approximately 0% CPU and 41–82 MB RSS. `/status`, `/health`, `/infinite-brain/status`, and all 13 projection endpoints returned HTTP 200. Brain Console production startup on `localhost:4881` returned HTTP 200 for `/`, `/infrastructure`, `/monitoring`, and `/settings`; the rendered home surface included the Infinite Brain projection surface.
+
+Follow-up runtime profiling identified the resolved trigger: an existing Dia Browser page was connected to `localhost:4877` and repeatedly polling `/ops/system-metrics`. That route recursively scans `~/.codex/sessions` on every request, producing approximately 90–100% CPU and 600 MB+ RSS on the canonical port. After the page was cleared, the canonical runtime remained stable. No code or architecture change was required; the endpoint’s refresh-cost observation remains a documented maintenance candidate.
+
+R2’s final recheck confirmed the external connection was no longer present before startup, and the canonical validation completed without recurrence. No permission change was made and no Dia process was terminated.

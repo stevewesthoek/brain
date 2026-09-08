@@ -5,7 +5,7 @@ import { execFile } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 const TASK_TYPE = 'mind_capture_classification';
 const DEFAULT_SELECTOR_URL = 'http://127.0.0.1:4890';
-const APPROVED_BEDROCK_PROVIDER = 'claude-bedrock';
+const APPROVED_BEDROCK_PROVIDER = 'amazon-bedrock';
 const APPROVED_BEDROCK_MODEL = 'us.anthropic.claude-sonnet-4-6';
 const DEFAULT_BEDROCK_REGION = 'us-east-1';
 export async function classifyMindCaptureInbox(input) {

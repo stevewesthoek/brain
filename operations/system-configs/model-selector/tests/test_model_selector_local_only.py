@@ -68,7 +68,7 @@ class TestLocalOnlySelection(unittest.TestCase):
                     "models": ["gpt-5.4-mini"],
                 },
                 {
-                    "id": "claude-bedrock",
+                    "id": "amazon-bedrock",
                     "type": "bedrock",
                     "cost_per_1k_tokens": 0.0,
                     "priority": 2,
@@ -248,7 +248,7 @@ class TestMindProjectDecompositionTaskType(unittest.TestCase):
         providers = {
             "providers": [
                 {
-                    "id": "claude-bedrock",
+                    "id": "amazon-bedrock",
                     "type": "bedrock",
                     "cost_per_1k_tokens": 0.0,
                     "priority": 1,
@@ -319,7 +319,7 @@ class TestMindProjectDecompositionTaskType(unittest.TestCase):
             ),
         )
 
-        self.assertNotEqual(result.provider_id, "claude-bedrock")
+        self.assertNotEqual(result.provider_id, "amazon-bedrock")
 
 
 if __name__ == "__main__":

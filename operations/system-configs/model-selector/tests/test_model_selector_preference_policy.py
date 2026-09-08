@@ -68,7 +68,7 @@ class TestPreferencePolicy(unittest.TestCase):
                     "models": ["gpt-5.4-mini"],
                 },
                 {
-                    "id": "claude-bedrock",
+                    "id": "amazon-bedrock",
                     "type": "bedrock",
                     "cost_per_1k_tokens": 0.0,
                     "priority": 2,
@@ -117,7 +117,7 @@ class TestPreferencePolicy(unittest.TestCase):
             urgent=True,
         )
 
-        # Default priority: codex-cli (1) < claude-bedrock (2) < ollama-local (3)
+        # Default priority: codex-cli (1) < amazon-bedrock (2) < ollama-local (3)
         self.assertEqual(result.provider_id, "codex-cli")
 
     def test_preferred_providers_chosen_when_healthy(self):
@@ -354,13 +354,13 @@ class TestPreferencePolicy(unittest.TestCase):
         a higher global priority number (lower precedence) than another listed provider.
 
         Regression test for the Graphify Bedrock-before-Ollama bug:
-        ollama-m4pro has priority=2 (higher precedence) than claude-bedrock (priority=5).
-        When preferred_providers=["claude-bedrock", "ollama-local"], claude-bedrock must
+        ollama-m4pro has priority=2 (higher precedence) than amazon-bedrock (priority=5).
+        When preferred_providers=["amazon-bedrock", "ollama-local"], amazon-bedrock must
         be selected first because it appears first in the list — not because of global priority.
         """
         # Use a fresh providers config where ollama-local has lower priority number (higher
-        # precedence) than claude-bedrock, mirroring the real ollama-m4pro (2) vs
-        # claude-bedrock (5) configuration.
+        # precedence) than amazon-bedrock, mirroring the real ollama-m4pro (2) vs
+        # amazon-bedrock (5) configuration.
         providers = {
             "providers": [
                 {
@@ -373,7 +373,7 @@ class TestPreferencePolicy(unittest.TestCase):
                     "preferred_models": ["qwen2.5:14b"],
                 },
                 {
-                    "id": "claude-bedrock",
+                    "id": "amazon-bedrock",
                     "type": "bedrock",
                     "cost_per_1k_tokens": 0.0,
                     "priority": 5,  # higher number = lower default precedence
@@ -405,8 +405,12 @@ class TestPreferencePolicy(unittest.TestCase):
         selector = _core.ModelSelector()
         selector._check_health = lambda provider: True
         selector._provider_models["ollama-local"] = ["qwen2.5:14b"]
-        # Make Bedrock model appear accessible without a real AWS probe
-        selector._bedrock_access_status = lambda model: {"available": True, "checked_at": 0}
+        # Make Bedrock model appear accessible from explicit cached evidence;
+        # selection must not invoke a real AWS probe.
+        selector._bedrock_access = {
+            selector._bedrock_cache_key(model): {"available": True, "checked_at": 0}
+            for model in selector._bedrock_models
+        }
 
         # Without preferred_providers: ollama-local wins (priority 2 < 5)
         result_default = selector.select(
@@ -417,18 +421,18 @@ class TestPreferencePolicy(unittest.TestCase):
         self.assertEqual(result_default.provider_id, "ollama-local",
                          "Without preferred_providers, lower priority number should win")
 
-        # With preferred_providers listing claude-bedrock first: claude-bedrock must win
+        # With preferred_providers listing amazon-bedrock first: amazon-bedrock must win
         # even though its global priority number is higher (lower default precedence).
         result_preferred = selector.select(
             "text_task",
             input_token_count=1000,
             urgent=True,
             task_metadata=_core.TaskMetadata(
-                preferred_providers=["claude-bedrock", "ollama-local"],
+                preferred_providers=["amazon-bedrock", "ollama-local"],
             ),
         )
-        self.assertEqual(result_preferred.provider_id, "claude-bedrock",
-                         "claude-bedrock must be selected first when listed first in preferred_providers, "
+        self.assertEqual(result_preferred.provider_id, "amazon-bedrock",
+                         "amazon-bedrock must be selected first when listed first in preferred_providers, "
                          "regardless of its higher global priority number")
 
 

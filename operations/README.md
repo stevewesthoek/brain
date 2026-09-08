@@ -35,3 +35,7 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
 
 Keep durable operational knowledge here.
 Keep volatile machine state out of Git.
+
+For natural-language routing across skills, CLIs, MCP servers, and runbooks,
+use `tools/discover-capabilities.mjs` and read
+`operations/runbooks/agent-capability-discovery.md`.

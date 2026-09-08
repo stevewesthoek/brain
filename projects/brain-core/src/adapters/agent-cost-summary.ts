@@ -69,7 +69,7 @@ export function readAgentCostSummary(): BrainCoreAgentCostSummary {
       paidRouteCount: 0,
       perSurface: {
         'codex-cli': 0,
-        'claude-bedrock': 0,
+        'amazon-bedrock': 0,
       } as Record<BrainCoreRouteSurface, number>,
     },
   );
@@ -91,7 +91,7 @@ export function readAgentCostSummary(): BrainCoreAgentCostSummary {
     weekEstimatedUsd,
     monthEstimatedUsd,
     cheapestRouteCount: routeTotals.perSurface['codex-cli'],
-    escalatedRouteCount: routeTotals.perSurface['claude-bedrock'],
+    escalatedRouteCount: routeTotals.perSurface['amazon-bedrock'],
     localRouteCount: routeTotals.localRouteCount,
     subscriptionRouteCount: routeTotals.subscriptionRouteCount,
     paidRouteCount: routeTotals.paidRouteCount,
@@ -116,7 +116,7 @@ export function readAgentCostSummary(): BrainCoreAgentCostSummary {
 }
 
 function isCompatibleSnapshot(snapshot: BrainCoreAgentCostSummary): boolean {
-  const supportedSurfaces = new Set<BrainCoreRouteSurface>(['codex-cli', 'claude-bedrock']);
+  const supportedSurfaces = new Set<BrainCoreRouteSurface>(['codex-cli', 'amazon-bedrock']);
   return snapshot.localRouteCount === 0
     && snapshot.cheapestRouteCount === snapshot.subscriptionRouteCount
     && snapshot.escalatedRouteCount === snapshot.paidRouteCount
@@ -160,7 +160,7 @@ function buildRouteHistory(): BrainCoreAgentCostLineItem[] {
       qualityPriority: task.qualityPriority,
     };
     const selected = selectModelRouteSnapshot(input, [
-      { id: 'ai.claude-bedrock', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review', 'text/large-context-batch'] },
+      { id: 'ai.amazon-bedrock', enabled: true, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review', 'text/large-context-batch'] },
       { id: 'ai.codex-cli', enabled: true, priority: 2, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
     ]);
     return describeRouteLineItem(selected, input);

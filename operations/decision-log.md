@@ -582,3 +582,26 @@ Then monitor: `vo jobs --limit 5`
 - Rationale: Single inference engine eliminates context switching, API key management, and memory contention. Custom graphify provider is more reliable than workarounds. Auto-stop/auto-start ensures the system works reliably without manual intervention.
 - Constraints: M4 Pro has 24GB; MTPLX runtime needs ~21-22 GB. Ollama cannot run simultaneously with large models. Only Speed variant of Qwen 3.6 27B fits (Quality needs 30GB). Memory pressure must stay <90% or inference stalls.
 - Rollback: (1) Delete ~/.graphify/providers.json custom "mtplx" entry; (2) Revert graphify scripts to --backend ollama with Ollama-based models; (3) Remove auto-stop and auto-start logic from qwen, graphify-nightly.sh; (4) Revert CLAUDE.md MTPLX section and runbook references; (5) Set graphify-nightly.sh GRAPHIFY_BACKEND=ollama.
+
+## 2026-09-05 — Account-agnostic Codex CLI profiles and credential custody
+
+- Decision: Treat `runtime profile` as the canonical abstraction for multiple
+  same-provider accounts. The CLI manager consumes the existing Identity &
+  Access catalog and must not create a second account/OAuth registry.
+- Decision: The first Codex adapter is CLI-only and deterministic. It uses one
+  dedicated `CODEX_HOME` per opaque runtime profile and permits explicit
+  `file` storage for the pilot; `keyring` and `auto` remain blocked until
+  profile-specific namespacing is proven.
+- Guardrail: Login is a human handoff; switching selects a new child process
+  and never copies auth state, performs global logout/login, changes the parent
+  environment, kills unrelated processes, or writes WebGPT routes. Desktop,
+  IDE shared-cache behavior, WebGPT, and MCP authorization remain separate
+  application-owned surfaces.
+- Decision: OnePassword is a future replaceable adapter for Brain-owned
+  credentials only. It is not a universal OAuth vault. Provider/application
+  ownership, supported refresh/rotation, expected-principal evidence, and
+  recovery determine whether any lifecycle automation is admissible.
+- Implementation: `tools/runtime-profile-manager.mjs` plus its provider-neutral
+  core and Codex adapter are repository-only and synthetic-tested. The next
+  gate is a separately authorized two-real-account CLI pilot; no OAuth
+  mutation, migration, or push is part of this decision.

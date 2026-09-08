@@ -10,7 +10,7 @@
 # resolved from ~/.codex/session_index.jsonl.
 #
 # On selection, cd to the session's original project directory and resume:
-#   Claude → source Bedrock env, then `claude --resume <session_id>`
+#   Claude → source configured Claude env, then `claude --resume <session_id>`
 #   Codex  → `codex resume <session_id>`
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -242,7 +242,7 @@ if [[ "$tool" == "Claude" ]]; then
   selected_sid=$(echo "$selected" | cut -f5)
   # shellcheck source=/dev/null
   source "$SCRIPT_DIR/claude-bedrock-env.sh"
-  cd "$selected_cwd" && exec claude --resume "$selected_sid" --model haiku
+  cd "$selected_cwd" && exec claude --resume "$selected_sid"
 elif [[ "$tool" == "Codex" ]]; then
   selected=$(list_codex_sessions | fzf \
     --prompt="  session (Codex): " \

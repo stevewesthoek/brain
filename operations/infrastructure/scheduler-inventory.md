@@ -75,8 +75,9 @@ These jobs are ordered by the nightly scheduler rather than owning their own dir
 
 These are not nightly batch jobs, but they still consume machine resources and should be tracked centrally.
 
-| Job | Surface | Trigger model | Verified state on 2026-04-04 | Approx duration | Resource profile | Scheduling rule | Source / notes |
+| Job | Surface | Trigger model | Current verified state | Approx duration | Resource profile | Scheduling rule | Source / notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| `com.office.brain-cli-access-health` | macOS `launchd` LaunchAgent | At login and every 15 minutes | Installed and live-verified on 2026-08-26 | Seconds | Low network/API read load | Read-only probes only; auth/credential changes remain explicit owner actions | Repo source: `operations/system-configs/launchagents/com.office.brain-cli-access-health.plist`; runner: `tools/scripts/cli-access-health-watch.sh`; deduplicated macOS notifications on state transitions. |
 
 ## App-Level Schedulers Found In Brain
 

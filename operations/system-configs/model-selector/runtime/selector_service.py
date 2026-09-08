@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, urlparse
 # Ensure this package is importable when run directly
 sys.path.insert(0, str(Path(__file__).parent))
 from core import DeferredSelection, ModelSelector, NoProviderAvailable, SelectionResult, TaskMetadata
+from provider_identity import canonical_provider_id, canonical_provider_ids, canonicalize_task_metadata
 
 LOG_DIR = Path.home() / ".local/video-orchestrator/logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -115,6 +116,8 @@ def normalize_select_request(body: object) -> dict[str, Any]:
     for field_name in _METADATA_STRING_FIELDS:
         if field_name in metadata and metadata[field_name] is not None and not isinstance(metadata[field_name], str):
             raise ValueError(f"task_metadata.{field_name} must be a string or null")
+
+    metadata = canonicalize_task_metadata(metadata)
 
     return {
         "task_type": task_type.strip(),
@@ -228,11 +231,11 @@ class SelectorHandler(BaseHTTPRequestHandler):
                     external_provider_disallowed=bool(task_metadata_body.get("external_provider_disallowed", False)),
                     quality_tier=task_metadata_body.get("quality_tier") or None,
                     preferred_models=list(task_metadata_body.get("preferred_models") or []),
-                    preferred_providers=list(task_metadata_body.get("preferred_providers") or []),
+                    preferred_providers=canonical_provider_ids(list(task_metadata_body.get("preferred_providers") or [])),
                     allowed_models=list(task_metadata_body.get("allowed_models") or []),
                     disallowed_models=list(task_metadata_body.get("disallowed_models") or []),
-                    allowed_providers=list(task_metadata_body.get("allowed_providers") or []),
-                    disallowed_providers=list(task_metadata_body.get("disallowed_providers") or []),
+                    allowed_providers=canonical_provider_ids(list(task_metadata_body.get("allowed_providers") or [])),
+                    disallowed_providers=canonical_provider_ids(list(task_metadata_body.get("disallowed_providers") or [])),
                     fallback_policy=task_metadata_body.get("fallback_policy") or None,
                     selection_policy=task_metadata_body.get("selection_policy") or None,
                 )
@@ -261,7 +264,7 @@ class SelectorHandler(BaseHTTPRequestHandler):
 
         elif path == "/report-failure":
             body = _read_body(self)
-            provider_id = body.get("provider_id", "")
+            provider_id = canonical_provider_id(body.get("provider_id", ""))
             error_type = body.get("error_type", "error")
             error_message = body.get("error_message", "")
             model_id = body.get("model") or body.get("model_id") or ""
@@ -274,7 +277,7 @@ class SelectorHandler(BaseHTTPRequestHandler):
 
         elif path == "/report-success":
             body = _read_body(self)
-            provider_id = body.get("provider_id", "")
+            provider_id = canonical_provider_id(body.get("provider_id", ""))
             model_id = body.get("model") or body.get("model_id") or ""
             if not provider_id:
                 _json_response(self, 400, {"error": "provider_id is required"})

@@ -71,7 +71,7 @@ class TestHealthMatrix(unittest.TestCase):
                     "health_check": {"endpoint": "http://127.0.0.1:11434/api/tags"},
                 },
                 {
-                    "id": "claude-bedrock",
+                    "id": "amazon-bedrock",
                     "label": "Amazon Bedrock model portfolio",
                     "type": "bedrock",
                     "cost_per_1k_tokens": 0.0,

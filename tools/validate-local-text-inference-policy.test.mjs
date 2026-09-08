@@ -14,7 +14,7 @@ function provider(id) {
 }
 
 test('Bedrock-backed Claude is primary and Codex is secondary', () => {
-  assert.equal(provider('claude-bedrock')?.priority, 1);
+  assert.equal(provider('amazon-bedrock')?.priority, 1);
   assert.equal(provider('codex-cli')?.priority, 2);
 });
 
@@ -29,7 +29,7 @@ test('private Mind tasks are pinned to one approved Bedrock provider/model', () 
   for (const id of ['mind_capture_classification', 'mind_project_decomposition']) {
     const task = tasks[id];
     assert.equal(task?.privacy_policy, 'private-bedrock-only');
-    assert.equal(task?.required_provider, 'claude-bedrock');
+    assert.equal(task?.required_provider, 'amazon-bedrock');
     assert.equal(task?.preferred_model, 'us.anthropic.claude-sonnet-4-6');
     assert.equal(task?.local_required, false);
     assert.match(task?.notes ?? '', /fail closed|fallback_policy=none/i);

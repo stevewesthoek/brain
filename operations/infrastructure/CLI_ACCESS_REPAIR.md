@@ -148,7 +148,7 @@ SUPABASE_ADMIN_USER="supabase_admin"
 
 - Supabase Skill: `ai/skills/custom/supabase/supabase-cli/SKILL.md`
 - Supabase Runbook: `operations/runbooks/supabase.md`
-- Canonical Supabase host: Azure VM `vm-supabase` at Tailscale `100.71.31.88`
+- Canonical Supabase VM: `vm-supabase` in Azure subscription `supabase-azure`, at Tailscale identity `supabase` / `100.71.31.88`
 
 ---
 

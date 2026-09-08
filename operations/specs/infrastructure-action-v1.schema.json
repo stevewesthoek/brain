@@ -82,6 +82,18 @@
       },
       "additionalProperties": false
     },
+    "workloadEvidence": {
+      "type": "object",
+      "required": ["resourceId", "workloadState", "observedAt"],
+      "properties": {
+        "resourceId": { "$ref": "#/$defs/resourceId" },
+        "workloadState": { "enum": ["active", "idle", "unknown", "unavailable"] },
+        "activeLeaseCount": { "type": ["integer", "null"], "minimum": 0 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "evidenceRef": { "type": ["string", "null"], "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "preconditions": {
       "type": "object",
       "required": ["expectedRevisions", "currentRevisions", "healthEvidence", "incidentConstraints", "relationSnapshot", "blastRadius", "providerAvailability", "backupEvidenceRefs", "dryRunEvidenceRefs", "configValidationEvidenceRefs"],
@@ -102,6 +114,7 @@
         "relationSnapshot": { "$ref": "#/$defs/relationSnapshot" },
         "blastRadius": { "$ref": "#/$defs/blastRadius" },
         "providerAvailability": { "type": "array", "items": { "$ref": "#/$defs/providerAvailability" } },
+        "quiescenceEvidence": { "type": "array", "items": { "$ref": "#/$defs/workloadEvidence" }, "uniqueItems": true },
         "backupEvidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
         "dryRunEvidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
         "configValidationEvidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }

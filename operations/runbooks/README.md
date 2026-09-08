@@ -12,7 +12,14 @@ Short, repeatable procedures for operational tasks.
 - supabase.md
 - cloudflare.md
 - mcp-centralization.md
+- skill-profile-onboarding.md
+- stripe-cli.md
+- cli-access-health.md
+- agent-capability-discovery.md
+- infrastructure-identity-access-macos-keychain-pilot.md
+- infrastructure-observation-and-admission.md
 - n8n.md
+- watch-video.md
 - codex-starship-config.md
 - stable-audio-3.md
 - context-compression.md

@@ -5,12 +5,13 @@ Canonical configuration and runtime source for Brain's local routing service at
 
 ## Current text policy
 
-- `claude-bedrock` is the primary managed text provider.
+- `amazon-bedrock` is the primary managed text provider. `claude-bedrock` is
+  accepted only as a temporary compatibility alias at request boundaries.
 - `codex-cli` is the secondary managed text provider.
 - Brain owns no always-on Ollama, MTPLX, Qwen, Gemma, Llama, or other local text
   server.
 - Whisper providers remain optional media-transcription surfaces only.
-- Private Mind classification is restricted to `claude-bedrock` and
+- Private Mind classification is restricted to `amazon-bedrock` and
   `us.anthropic.claude-sonnet-4-6`, with `private=true`, `sensitive=true`, and
   `fallback_policy=none`.
 - Graphify structural navigation is retired. Its bounded semantic event gate has

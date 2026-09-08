@@ -29,6 +29,10 @@ if (args.includes('--output-last-message')) {
 }
 fs.writeFileSync(tracePath, JSON.stringify(data));
 if (process.env.MANAGED_PROVIDER_MODE === 'nonzero') process.exit(7);
+if (process.env.MANAGED_PROVIDER_MODE === 'aws-error') {
+  process.stderr.write('An error occurred (AccessDeniedException) when calling the Converse operation: denied');
+  process.exit(4);
+}
 if (process.env.MANAGED_PROVIDER_MODE === 'hang') {
   process.on('SIGTERM', () => {});
   setInterval(() => {}, 1000);
@@ -104,6 +108,18 @@ test('provider nonzero exit propagates failure and cleans the private directory'
   );
   const trace = JSON.parse(fs.readFileSync(fixture.trace, 'utf8'));
   assert.equal(fs.existsSync(path.dirname(trace.requestPath)), false);
+});
+
+test('managed command preserves structured AWS error codes for gateway classification', async (t) => {
+  const fixture = createFixture();
+  t.after(() => fs.rmSync(fixture.root, { recursive: true, force: true }));
+  await assert.rejects(
+    runManagedCommand(fixture.executable, [], {
+      timeoutMs: 5_000,
+      env: envFor(fixture.trace, 'aws-error'),
+    }),
+    (error) => error?.code === 'AccessDeniedException' && /exited unsuccessfully/.test(error.message),
+  );
 });
 
 test('timeout waits for TERM-to-KILL close before rejecting', async (t) => {

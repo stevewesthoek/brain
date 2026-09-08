@@ -6,6 +6,7 @@ import {
   resolveProviderReference,
   type ModelRegistryDocument,
 } from './ai-model-registry-compatibility.js';
+import { canonicalProviderId, canonicalProviderIds } from './provider-identity.js';
 
 const SELECTOR_URL = process.env.AI_SELECTOR_URL ?? 'http://127.0.0.1:4890';
 const LAUNCHD_LABEL = 'com.office.ai-model-selector';
@@ -449,6 +450,13 @@ export function normalizeAiModelSelectionRequest(
   }
 
   const taskMetadata: Record<string, unknown> = { ...(request.taskMetadata ?? {}) };
+  for (const field of ['allowed_providers', 'disallowed_providers', 'preferred_providers']) {
+    if (Array.isArray(taskMetadata[field])) {
+      taskMetadata[field] = canonicalProviderIds(
+        (taskMetadata[field] as unknown[]).filter((value): value is string => typeof value === 'string'),
+      );
+    }
+  }
   // Preserve the only unambiguous legacy safety signal without inventing a task profile.
   if (request.sensitivity === 'high' && taskMetadata.sensitive === undefined) taskMetadata.sensitive = true;
 
@@ -552,7 +560,7 @@ function providerConstraintIds(taskMetadata: Record<string, unknown>): string[] 
     .filter(Array.isArray)
     .flat()
     .filter((value): value is string => typeof value === 'string');
-  return constrained.length > 0 ? [...new Set(constrained)] : undefined;
+  return constrained.length > 0 ? canonicalProviderIds(constrained) : undefined;
 }
 
 function prependUnique(values: string[], ...items: string[]): string[] {
@@ -582,11 +590,11 @@ function resultFromPayload(payload: Record<string, unknown>, status: number): Ai
       ? payload.modelId
       : null;
   const provider = typeof payload.provider === 'string'
-    ? payload.provider
+    ? canonicalProviderId(payload.provider)
     : typeof payload.provider_id === 'string'
-      ? payload.provider_id
+      ? canonicalProviderId(payload.provider_id)
       : typeof payload.providerId === 'string'
-        ? payload.providerId
+        ? canonicalProviderId(payload.providerId)
         : null;
   const scheduledAfter = typeof payload.scheduled_after === 'string'
     ? payload.scheduled_after

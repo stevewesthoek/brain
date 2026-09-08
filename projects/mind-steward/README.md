@@ -39,7 +39,7 @@ Legacy paths such as `capture/inbox/`, `capture/failed/`, `router/`, and `mind/r
 
 - Dry-run/report-only behavior is the default.
 - Reports and previews are non-authoritative until reviewed.
-- Private Bedrock selection occurs only when the classifier is explicitly invoked by a caller; it is pinned to `claude-bedrock` / `us.anthropic.claude-sonnet-4-6` with no fallback.
+- Private Bedrock selection occurs only when the classifier is explicitly invoked by a caller; it is pinned to `amazon-bedrock` / `us.anthropic.claude-sonnet-4-6` with no fallback.
 - Repository files and package code do not establish that a scheduler or workflow is actively deployed.
 - Retention does not authorize nightly execution, scheduling, watchers, production writes, or continuous automation.
 - Durable changes require a separate approved apply path; authority must not be inferred from a preview or report.

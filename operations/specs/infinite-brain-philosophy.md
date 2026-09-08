@@ -117,6 +117,48 @@ The system should become easier to use as it grows. New schemas, folders, agents
 
 Emails, webpages, transcripts, documents, and notes may contain instructions or adversarial text. Retrieved content may inform reasoning but must not override system policy, user authority, privacy scope, tool permissions, or approval requirements.
 
+### 17. One mutable resource, one authoritative owner
+
+Every mutable resource has one explicitly resolved authoritative owner. Custody
+of state, authority to change it, and responsibility to observe it may belong
+to different actors, but conflicts are surfaced rather than merged. No adapter,
+model, or file-order convention may silently create a second writer.
+
+### 18. Discovery is evidence, not authority
+
+Automatic discovery creates candidates. Admission requires classification,
+validation, provenance, ownership resolution, environment/isolation boundaries,
+health and recovery coverage, and an explicit lifecycle policy. Unknown remains
+unknown until evidence resolves it; a plausible name or a successful probe is
+not permission to admit or mutate a resource.
+
+### 19. Separate lifecycle intelligence from state custody
+
+Brain may observe expiry, health, drift, leases, dependencies, and recovery
+readiness across adapters. It does not thereby own raw credentials,
+application-managed sessions, provider state, or availability policy. State
+custody stays with the application, provider, operating-system store, or
+approved external adapter that is authoritative for that state.
+
+### 20. Contract-driven onboarding is the path to scale
+
+New providers and consumers join through the same versioned contracts and
+admission stages. Provider-specific adapters translate mechanics into the
+shared model; they do not redefine the model. Multi-account capacity,
+concurrency, quiescence, isolation, and recovery limits must be declared or
+reported as unknown rather than inferred.
+
+### 21. Observe broadly, admit narrowly
+
+Infrastructure awareness should be provider-neutral at the contract boundary:
+applications, runtimes, processes, endpoints, dependencies, identities,
+credentials, lifecycle, and isolation are observed as evidence with explicit
+freshness and redaction. Provider-specific observers may discover broadly, but
+they may only emit candidates. Admission is a separate pure decision that
+fails closed on unknown or conflicting ownership, account, custody, route, or
+isolation evidence. This is how Brain becomes more aware without turning
+observation into an unauthorized second config writer or vault.
+
 ## Brain responsibility model
 
 Brain owns:

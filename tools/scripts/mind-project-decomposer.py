@@ -8,7 +8,7 @@ AI-driven Mind mutations.
 
 If project decomposition is ever reintroduced, it requires a new approved
 producer contract. The current approved AI policy for private Mind text work is
-Bedrock-only (claude-bedrock / us.anthropic.claude-sonnet-4-6) with no Codex
+Bedrock-only (amazon-bedrock / us.anthropic.claude-sonnet-4-6) with no Codex
 fallback, but that policy does not reactivate this retired producer.
 """
 

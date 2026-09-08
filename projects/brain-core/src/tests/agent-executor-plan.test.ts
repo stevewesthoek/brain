@@ -22,7 +22,7 @@ test('readAgentExecutorPlan returns a derived executor selection plan', () => {
   assert.equal(plan.id, 'agent-executor-plan');
   assert.equal(plan.status, 'read-only');
   assert.equal(plan.stepCount, taskState.stepCount);
-  assert.ok(plan.steps.some((step) => step.executorId === 'claude-bedrock'));
+  assert.ok(plan.steps.some((step) => step.executorId === 'amazon-bedrock'));
   assert.equal(plan.steps.some((step) => step.executorId.startsWith('local-ollama')), false);
 });
 

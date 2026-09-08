@@ -79,7 +79,10 @@ class TestModelRegistryShadow(unittest.TestCase):
         core.REGISTRY_PATH = registry_path
         selector = core.ModelSelector()
         selector._check_health = lambda _provider: True
-        selector._bedrock_access_status = lambda _model: {"available": True, "checked_at": 1}
+        selector._bedrock_access = {
+            selector._bedrock_cache_key(model): {"available": True, "checked_at": 1}
+            for model in selector._bedrock_models
+        }
         return selector
 
     def test_shadow_report_matches_legacy_candidate_sets(self):
@@ -89,7 +92,7 @@ class TestModelRegistryShadow(unittest.TestCase):
         self.assertEqual(report["status"], "match")
         self.assertEqual(report["selection_authority"], "legacy")
         self.assertFalse(report["selection_affected"])
-        self.assertEqual(report["matching_providers"], ["claude-bedrock", "codex-cli", "whisper-m1", "whisper-m4pro"])
+        self.assertEqual(report["matching_providers"], ["amazon-bedrock", "codex-cli", "whisper-m1", "whisper-m4pro"])
         self.assertEqual(len(report["matching_models"]), 16)
         self.assertEqual(report["missing_models"], [])
         self.assertEqual(report["unexpected_models"], [])
@@ -98,13 +101,13 @@ class TestModelRegistryShadow(unittest.TestCase):
         providers = json.loads((self.config_dir / "ai-providers.json").read_text())["providers"]
         bedrock = json.loads((self.config_dir / "ai-bedrock-models.json").read_text())
         registry = load_registry(core.REGISTRY_PATH)
-        registry["models"] = [model for model in registry["models"] if model["registry_model_id"] != "claude-bedrock/claude-opus-4-7"]
+        registry["models"] = [model for model in registry["models"] if model["registry_model_id"] != "amazon-bedrock/claude-opus-4-7"]
 
         report = compare_legacy_to_registry(providers, bedrock, registry, registry_path="fixture")
 
         self.assertEqual(report["status"], "mismatch")
         self.assertIn(
-            {"provider_id": "claude-bedrock", "model_id": "claude-opus-4-7"},
+            {"provider_id": "amazon-bedrock", "model_id": "claude-opus-4-7"},
             report["missing_models"],
         )
         self.assertFalse(report["selection_affected"])
@@ -126,8 +129,8 @@ class TestModelRegistryShadow(unittest.TestCase):
         selector = self._new_selector(core.REGISTRY_PATH)
         report = selector.registry_shadow_report()
 
-        self.assertNotIn("claude-bedrock/claude-opus-4-7", report["registry_selectable_models"])
-        self.assertIn("claude-bedrock/claude-opus-4-6", report["registry_selectable_models"])
+        self.assertNotIn("amazon-bedrock/claude-opus-4-7", report["registry_selectable_models"])
+        self.assertIn("amazon-bedrock/claude-opus-4-6", report["registry_selectable_models"])
 
     def test_private_mind_constraints_remain_unchanged(self):
         tasks = json.loads((self.config_dir / "ai-task-types.json").read_text())["task_types"]
@@ -137,7 +140,7 @@ class TestModelRegistryShadow(unittest.TestCase):
             "mind_maintenance_semantic_comparison",
         ):
             self.assertEqual(tasks[task_id]["privacy_policy"], "private-bedrock-only")
-            self.assertEqual(tasks[task_id]["required_provider"], "claude-bedrock")
+            self.assertEqual(tasks[task_id]["required_provider"], "amazon-bedrock")
             self.assertEqual(tasks[task_id]["preferred_model"], "us.anthropic.claude-sonnet-4-6")
             self.assertIn("fail closed", tasks[task_id]["notes"].lower())
 

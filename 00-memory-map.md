@@ -19,7 +19,8 @@ Use this before answering AI-system, tooling, skill, config, runbook, automation
 |---|---|---|
 | How brain works | `AGENTS.md`, `00-start-here.md`, `README.md` | `CLAUDE.md` |
 | Current AI-system context | `00-current-context.md`, `operations/runbooks/anthropic-inspired-ai-system-checkpoint.md` | `operations/decision-log.md` |
-| Skills/orchestrators | `docs/skills/skill-index.md`, `ai/skills/` | `docs/skills/skill-loading-architecture.md` |
+| Skills/orchestrators | `tools/discover-capabilities.mjs`, `docs/skills/skill-index.md`, `ai/skills/` | `docs/skills/skill-loading-architecture.md` |
+| CLIs/MCP/tooling | `tools/discover-capabilities.mjs`, `operations/CLI-MANIFEST.md`, `operations/system-configs/mcp/` | `operations/runbooks/agent-capability-discovery.md` |
 | Active skill profiles | `docs/skills/profiles/` | `tools/scripts/switch-skill-profile.mjs` |
 | Claude Code global behavior | `operations/system-configs/claude/CLAUDE.md` | `operations/system-configs/claude/README.md` |
 | Codex global behavior | `operations/system-configs/codex/AGENTS.md` | `operations/system-configs/codex/README.md` |
@@ -37,6 +38,7 @@ Use this before answering AI-system, tooling, skill, config, runbook, automation
 | Need | Search first |
 |---|---|
 | List available skills | `docs/skills/skill-index.md` |
+| Route any natural-language capability request | `tools/discover-capabilities.mjs` |
 | Understand active/default profile | `docs/skills/profiles/default.txt` |
 | Research skills | `ai/skills/custom/research/`, `ai/skills/custom/bible-research/`, `docs/skills/profiles/research.txt` |
 | Scripture sources / Bible API | `ai/skills/custom/scripture-sources/SKILL.md`, `operations/runbooks/scripture-source-stack.md` | `docs/skills/profiles/research.txt` |
@@ -108,7 +110,7 @@ Mind entrypoints:
 | User says | Save default |
 |---|---|
 | "make this AI-wide" | global config under `operations/system-configs/` plus docs |
-| "add a skill" | `ai/skills/custom/` or vendor source; profile docs; sync/check |
+| "add a skill" | query first; `ai/skills/custom/` or vendor source; profile/index/runbook; validator; sync/check |
 | "document this workflow" | `operations/runbooks/` |
 | "record this architecture decision" | `operations/decision-log.md` after confirmation |
 | "save this personal research" | `mind/resources/research/` or `mind/faith/resources/` |
@@ -139,6 +141,7 @@ For skill changes:
 ```bash
 node tools/scripts/switch-skill-profile.mjs default --dry-run --verbose
 node tools/scripts/sync-ai-skills.mjs --check
+node tools/validate-agent-capability-onboarding.mjs
 ```
 
 For profile application:

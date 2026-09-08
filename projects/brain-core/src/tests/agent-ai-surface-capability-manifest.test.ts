@@ -54,7 +54,7 @@ test('listAgentAiSurfaceCapabilities fallback never resurrects local text surfac
   const result = await listAgentAiSurfaceCapabilities(100, 'http://127.0.0.1:9');
 
   assert.ok(result.warning?.includes('AI Model Selector unavailable'));
-  assert.deepEqual(result.capabilities.map((capability) => capability.id), ['ai.claude-bedrock', 'ai.codex-cli']);
+  assert.deepEqual(result.capabilities.map((capability) => capability.id), ['ai.amazon-bedrock', 'ai.codex-cli']);
   assert.equal(result.capabilities[0]?.priority, 1);
   assert.equal(result.capabilities.some((capability) => capability.id.includes('ollama') || capability.id.includes('mtplx')), false);
 });

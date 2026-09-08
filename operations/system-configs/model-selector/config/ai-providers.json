@@ -45,7 +45,7 @@
       "notes": "Secondary Brain-managed text surface under the ChatGPT subscription. Used as fallback or when Codex is explicitly preferred. No OpenAI API use and no always-on local text model."
     },
     {
-      "id": "claude-bedrock",
+      "id": "amazon-bedrock",
       "label": "Claude via Amazon Bedrock",
       "type": "bedrock",
       "cost_per_1k_tokens": 0.0,

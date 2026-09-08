@@ -5,6 +5,8 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const CANONICAL_BEDROCK_PROVIDER_ID = 'amazon-bedrock';
+const LEGACY_BEDROCK_PROVIDER_ID = 'claude-bedrock';
 
 const RELATIVE_PATHS = {
   providers: 'operations/system-configs/model-selector/config/ai-providers.json',
@@ -95,7 +97,7 @@ function validateRegistry(rootDir = ROOT) {
   assertUnique(registry.models.map((model) => model.registry_model_id), 'registry model IDs');
 
   const expectedModelCount = sourceProviders
-    .filter((provider) => provider.id !== 'claude-bedrock')
+    .filter((provider) => provider.id !== CANONICAL_BEDROCK_PROVIDER_ID)
     .reduce((count, provider) => count + provider.models.length, 0) + bedrockDocument.models.length;
   assertCondition(registry.models.length === expectedModelCount, `model count mismatch: ${registry.models.length} != ${expectedModelCount}`);
 
@@ -115,10 +117,14 @@ function validateRegistry(rootDir = ROOT) {
       }
     }
 
-    if (sourceProvider.id === 'claude-bedrock') {
+    if (sourceProvider.id === CANONICAL_BEDROCK_PROVIDER_ID) {
       assertCondition(
         provider.compatibility_aliases.some((alias) => alias.value === 'bedrock-model-portfolio'),
-        'claude-bedrock is missing bedrock-model-portfolio compatibility alias',
+        'amazon-bedrock is missing bedrock-model-portfolio compatibility alias',
+      );
+      assertCondition(
+        provider.compatibility_aliases.some((alias) => alias.value === LEGACY_BEDROCK_PROVIDER_ID && alias.kind === 'provider_id'),
+        'amazon-bedrock is missing claude-bedrock provider compatibility alias',
       );
     } else {
       for (const sourceModelId of sourceProvider.models) {
@@ -139,12 +145,12 @@ function validateRegistry(rootDir = ROOT) {
   }
 
   for (const sourceModel of bedrockDocument.models) {
-    const id = modelKey('claude-bedrock', sourceModel.id);
+    const id = modelKey(CANONICAL_BEDROCK_PROVIDER_ID, sourceModel.id);
     const model = modelsById.get(id);
     assertCondition(model, `missing Bedrock registry model: ${id}`);
-    assertCondition(registryProviderMap.get('claude-bedrock').model_refs.includes(id), `${id} is not linked to claude-bedrock`);
+    assertCondition(registryProviderMap.get(CANONICAL_BEDROCK_PROVIDER_ID).model_refs.includes(id), `${id} is not linked to amazon-bedrock`);
     assertSame(model.display_name, sourceModel.label, `${id} label`);
-    assertSame(model.provider_id, 'claude-bedrock', `${id} provider`);
+    assertSame(model.provider_id, CANONICAL_BEDROCK_PROVIDER_ID, `${id} provider`);
     assertSame(model.provider_model_binding.model_id, sourceModel.model_id, `${id} provider model ID`);
     assertSame(model.provider_model_binding.region, sourceModel.region, `${id} region`);
     assertSame(model.capabilities, sourceModel.capabilities, `${id} capabilities`);
@@ -177,12 +183,12 @@ function validateRegistry(rootDir = ROOT) {
     const task = tasks[taskId];
     assertCondition(task, `missing private Mind task: ${taskId}`);
     assertSame(task.privacy_policy, 'private-bedrock-only', `${taskId} privacy policy`);
-    assertSame(task.required_provider, 'claude-bedrock', `${taskId} required provider`);
+    assertSame(task.required_provider, CANONICAL_BEDROCK_PROVIDER_ID, `${taskId} required provider`);
     assertSame(task.preferred_model, 'us.anthropic.claude-sonnet-4-6', `${taskId} preferred model`);
     assertSame(task.local_required, false, `${taskId} local_required`);
     assertCondition(/fail closed/i.test(task.notes ?? ''), `${taskId} must retain fail-closed policy evidence`);
   }
-  const sonnet = modelsById.get('claude-bedrock/claude-sonnet-4-6');
+  const sonnet = modelsById.get(`${CANONICAL_BEDROCK_PROVIDER_ID}/claude-sonnet-4-6`);
   assertCondition(
     sonnet.safety_constraints.private_task_policy === 'private-bedrock-only',
     'Claude Sonnet registry safety constraint does not preserve private Bedrock policy',
@@ -202,7 +208,7 @@ function validateRegistry(rootDir = ROOT) {
     modelCount: registry.models.length,
     sourceModelCount: expectedModelCount,
     runtimeIntegration: 'shadow-only',
-    privateMindPolicy: 'claude-bedrock/us.anthropic.claude-sonnet-4-6',
+    privateMindPolicy: `${CANONICAL_BEDROCK_PROVIDER_ID}/us.anthropic.claude-sonnet-4-6`,
   };
 }
 

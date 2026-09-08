@@ -44,11 +44,11 @@ function installFixtureBedrock(t: TestContext): (route: MindBedrockRoute, prompt
     assert.equal(request.local_only, undefined);
     assert.equal(request.task_metadata?.private, true);
     assert.equal(request.task_metadata?.sensitive, true);
-    assert.deepEqual(request.task_metadata?.allowed_providers, ['claude-bedrock']);
+    assert.deepEqual(request.task_metadata?.allowed_providers, ['amazon-bedrock']);
     assert.deepEqual(request.task_metadata?.allowed_models, ['us.anthropic.claude-sonnet-4-6']);
     assert.equal(request.task_metadata?.fallback_policy, 'none');
     return new Response(JSON.stringify({
-      provider_id: 'claude-bedrock',
+      provider_id: 'amazon-bedrock',
       model: 'us.anthropic.claude-sonnet-4-6',
       base_url: '',
       timeout_inference_sec: 5,
@@ -59,7 +59,7 @@ function installFixtureBedrock(t: TestContext): (route: MindBedrockRoute, prompt
   });
 
   return async (route, prompt) => {
-    assert.equal(route.provider_id, 'claude-bedrock');
+    assert.equal(route.provider_id, 'amazon-bedrock');
     assert.equal(route.model, 'us.anthropic.claude-sonnet-4-6');
     assert.match(prompt, /Classify this Mind capture/);
     return JSON.stringify({
@@ -221,7 +221,7 @@ test('classifier fails closed if selector returns an unapproved Bedrock model', 
 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({
-    provider_id: 'claude-bedrock',
+    provider_id: 'amazon-bedrock',
     model: 'us.anthropic.claude-opus-4-1',
     timeout_inference_sec: 5,
   }), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -250,7 +250,7 @@ test('Bedrock Converse keeps private Mind content out of argv and removes its pr
   let requestFile = '';
   let requestDir = '';
   const route: MindBedrockRoute = {
-    provider_id: 'claude-bedrock',
+    provider_id: 'amazon-bedrock',
     model: 'us.anthropic.claude-sonnet-4-6',
     timeout_inference_sec: 5,
     region: 'us-east-1',
@@ -295,7 +295,7 @@ test('Bedrock Converse keeps private Mind content out of argv and removes its pr
 
 test('Bedrock Converse removes its private request after failure or timeout', async () => {
   const route: MindBedrockRoute = {
-    provider_id: 'claude-bedrock',
+    provider_id: 'amazon-bedrock',
     model: 'us.anthropic.claude-sonnet-4-6',
     timeout_inference_sec: 1,
     region: 'us-east-1',

@@ -7,6 +7,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const providers = JSON.parse(fs.readFileSync(path.join(ROOT, 'operations/system-configs/model-selector/config/ai-providers.json'), 'utf8'));
 const taskDocument = JSON.parse(fs.readFileSync(path.join(ROOT, 'operations/system-configs/model-selector/config/ai-task-types.json'), 'utf8'));
 const tasks = taskDocument.task_types;
+const CANONICAL_BEDROCK_PROVIDER_ID = 'amazon-bedrock';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -17,16 +18,16 @@ for (const forbidden of ['ollama-m4pro', 'ollama-m1', 'mtplx-m4pro']) {
   assert(!providerIds.includes(forbidden), `forbidden local text provider returned: ${forbidden}`);
 }
 
-const bedrock = providers.providers.find((provider) => provider.id === 'claude-bedrock');
+const bedrock = providers.providers.find((provider) => provider.id === CANONICAL_BEDROCK_PROVIDER_ID);
 const codex = providers.providers.find((provider) => provider.id === 'codex-cli');
-assert(bedrock?.priority === 1, 'claude-bedrock must be priority 1');
+assert(bedrock?.priority === 1, 'amazon-bedrock must be priority 1');
 assert(codex?.priority === 2, 'codex-cli must be priority 2');
 
 for (const taskId of ['mind_capture_classification', 'mind_project_decomposition']) {
   const task = tasks[taskId];
   assert(task, `missing private Mind task: ${taskId}`);
   assert(task.privacy_policy === 'private-bedrock-only', `${taskId} must be private-bedrock-only`);
-  assert(task.required_provider === 'claude-bedrock', `${taskId} must require claude-bedrock`);
+  assert(task.required_provider === CANONICAL_BEDROCK_PROVIDER_ID, `${taskId} must require amazon-bedrock`);
   assert(task.preferred_model === 'us.anthropic.claude-sonnet-4-6', `${taskId} must pin Claude Sonnet 4.6`);
   assert(task.local_required === false, `${taskId} must not require retired local inference`);
 }
@@ -37,7 +38,7 @@ const activeVideoAnalyzer = fs.readFileSync(path.join(ROOT, 'projects/brain-core
 for (const forbiddenPattern of ['local_only', 'ollama', '/chat/completions', '127.0.0.1:11434', '127.0.0.1:11435']) {
   assert(!activeVideoAnalyzer.includes(forbiddenPattern), `active video analyzer contains retired local text pattern: ${forbiddenPattern}`);
 }
-assert(activeVideoAnalyzer.includes('claude-bedrock'), 'active video analyzer must support the Bedrock-primary text route');
+assert(activeVideoAnalyzer.includes(CANONICAL_BEDROCK_PROVIDER_ID), 'active video analyzer must support the Bedrock-primary text route');
 assert(activeVideoAnalyzer.includes('codex-cli'), 'active video analyzer must support the Codex-secondary text route');
 assert(activeVideoAnalyzer.includes('"fallback_policy": "ordered_strict"'), 'active video analyzer must not widen beyond Bedrock and Codex');
 assert(activeVideoAnalyzer.includes('previous_failures'), 'active video analyzer must retry only through selector-declared failures');
@@ -46,7 +47,7 @@ assert(activeVideoAnalyzer.includes("'inbox' / 'new'"), 'active video analyzer m
 assert(!activeVideoAnalyzer.includes("'capture' / 'inbox'"), 'active video analyzer must not recreate the retired Mind capture/inbox path');
 
 const managedTextExecutor = fs.readFileSync(path.join(ROOT, 'projects/brain-core/src/adapters/managed-text-executor.ts'), 'utf8').toLowerCase();
-for (const requiredPattern of ['claude-bedrock', 'codex-cli', 'previousfailures', 'ordered_strict', 'reportaifailure', 'reportaisuccess', 'executemanagedprovider']) {
+for (const requiredPattern of [CANONICAL_BEDROCK_PROVIDER_ID, 'codex-cli', 'previousfailures', 'ordered_strict', 'reportaifailure', 'reportaisuccess', 'executemanagedprovider']) {
   assert(managedTextExecutor.includes(requiredPattern), `managed TypeScript text executor is missing safety contract: ${requiredPattern}`);
 }
 assert(!managedTextExecutor.includes('/chat/completions'), 'managed TypeScript text executor must not assume an Ollama/OpenAI-compatible endpoint');
@@ -123,7 +124,7 @@ console.log(JSON.stringify({
   valid: true,
   bedrockPrimary: true,
   codexSecondary: true,
-  privateMindPolicy: 'claude-bedrock/us.anthropic.claude-sonnet-4-6',
+  privateMindPolicy: `${CANONICAL_BEDROCK_PROVIDER_ID}/us.anthropic.claude-sonnet-4-6`,
   graphifyDefaultLocalModel: false,
   obsoleteLocalTextSurfacesPresent: false,
 }, null, 2));

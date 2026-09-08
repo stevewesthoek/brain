@@ -8,7 +8,7 @@
 
 ## Program objective
 
-Make Brain the fresh, programmable, safety-aware knowledge/control plane for Steve's servers, networks, applications, tunnels, backups, credential references, and infrastructure health without duplicating New Relic or storing secrets in Git.
+Make Brain the fresh, programmable, safety-aware knowledge/control plane for Steve's servers, networks, applications, tunnels, backups, credential references, runtimes, and infrastructure health without duplicating New Relic or storing secrets in Git.
 
 Success means:
 
@@ -20,6 +20,7 @@ Success means:
 - server/app/tunnel/SSH/disk/service monitoring normalized from existing providers;
 - one incident/attention model with dedupe and recovery;
 - safe blast-radius-aware mutation planning;
+- provider-neutral runtime ownership, onboarding, dependency, isolation, and lifecycle intelligence;
 - Obsidian-first visual observability;
 - no automatic high-risk remediation until read-only accuracy is measured.
 
@@ -281,6 +282,227 @@ Only after sustained read-only reliability evidence:
 Exit gate:
 
 - automation demonstrates measurable benefit without weakening safety or creating hidden mutation channels.
+
+## IKHP-IAP — Identity & Access contract foundation
+
+**Status:** Identity & Access contracts, bounded verification, GitHub adapter,
+and scheduled read-only health/incident orchestration are implemented as
+repository-only proof on 2026-09-05. Real enrollment, live provider polling,
+runtime profile activation, and credential mutation remain separately gated.
+
+**Contract:** `operations/specs/infrastructure-identity-access-v1.schema.json`
+
+**Validation:** `node tools/validate-infrastructure-identity-access.mjs`, `node tools/validate-infrastructure-credential-health.mjs`, `node --test tools/infrastructure-identity-access.test.mjs`, `node --test tools/infrastructure-identity-access/macos-keychain-adapter.test.mjs`, `node --test tools/infrastructure-identity-access/macos-keychain-enrollment.test.mjs`, `node --test tools/infrastructure-identity-access/credential-verification-boundary.test.mjs tools/infrastructure-identity-access/credential-verification-boundary.e2e.test.mjs`, `node --test tools/infrastructure-identity-access/github-provider-verifier.test.mjs`, and `node --test tools/infrastructure-identity-access/credential-health-orchestrator.test.mjs`
+
+IKHP-IAP establishes one logical provider-neutral identity/access view with separate entities for:
+
+- accounts/identities, including multiple accounts for one provider;
+- credentials and opaque secret-store references;
+- live or cached application-managed sessions;
+- isolated runtime profiles owned by runtime adapters;
+- replaceable secret-store adapters;
+- explicit lifecycle and read-only verification policies;
+- detailed identity/access evidence mapped to IKHP normalized health and incidents.
+
+The canonical enrollment catalog is intentionally empty. Existing credentials and application-managed OAuth/session state are not imported, copied, extracted, or changed by this tranche.
+
+The first/reference local adapter is the read-only macOS Keychain pilot at
+`tools/infrastructure-identity-access/macos-keychain-adapter.mjs`, backed by a
+fixed Security.framework probe. It admits namespace-bound metadata,
+reference-existence checks, and bounded consumption by the registered synthetic
+verifier. No generic raw-value resolution, item mutation, migration, real
+provider verification, or catalog enrollment is enabled. Other stores remain
+replaceable future adapters behind the same contract; no particular vault
+product is a Brain policy dependency.
+
+Recovery portability for the login Keychain and its application access
+controls is currently `unknown`: the existing repository recovery inventory
+does not contain a Keychain restore proof. The next recovery-evidence tranche
+must test a namespaced synthetic item on a replacement profile/Mac and document
+which provider credentials require human reauthentication or reissue.
+
+Exit gate for this foundation:
+
+- schema validates canonical and source-neutral alternate catalogs;
+- multiple same-provider accounts are represented without provider-specific core fields;
+- sessions are distinct from credentials and may remain application-owned;
+- expected-principal mismatch is a first-class failed state;
+- stale/unknown evidence cannot become healthy;
+- raw secret material, credential mutation, browser login, artificial keepalive behavior, and unadmitted Keychain resolution are rejected or absent.
+
+The first provider/enrollment implementation is now present but remains
+human-gated: no real credential has been enrolled or verified. The next
+operational tranche requires separate owner authorization for reviewed
+metadata enrollment and a live read-only health run. It must not begin with
+credential migration, automatic refresh, or provider mutation.
+
+### IKHP-IAP-CFG — Semantic configuration ownership safety
+
+**Status:** implemented and synthetic-tested on 2026-09-06; live OAuth and
+credential migration remain explicitly deferred.
+
+Runtime configuration is now planned at semantic-resource level through
+`tools/lib/configuration-ownership.mjs`. The profile materializer records an
+opaque source revision, rechecks it immediately before publication, validates
+non-secret output, writes atomically with owner-only permissions, and verifies
+the result. Unknown ownership, ownership transfer, application-journal
+inconsistency, and drift are non-executable outcomes.
+
+The real shared/default `~/.codex` is classified as a legacy/shared native
+surface and is observe-only for normal Brain operations. The generic
+managed-root path refuses that root and refuses a WebGPT integration journal;
+synthetic regression fixtures prove preservation of WebGPT route/model and
+realtime routing, hook trust state, application/user settings, and unknown
+third-party configuration. WebGPT route/journal recovery remains its adapter's
+responsibility. This tranche does not touch OAuth, Keychain values, login,
+logout, credential refresh, or state-database recovery.
+
+### First provider implementation: GitHub (live use not performed)
+
+GitHub is the recommended first real provider because its REST API offers a
+small, read-only identity probe: `GET /user` returns the authenticated user and
+documents explicit `200`, `401`, and `403` outcomes. For OAuth app tokens,
+GitHub also documents `X-OAuth-Scopes` and `X-Accepted-OAuth-Scopes`, giving the
+verifier a concrete scope-evidence path. A first pilot should use one opaque
+credential reference per GitHub account, compare the returned stable user ID
+and login to the expected principal, capture only safe scope/rate-limit
+metadata, and make no write request. The repository now contains this
+verifier and a fixed-namespace interactive Keychain enrollment tool, but this
+is not authorization to use a live token. The real-provider run remains an
+explicit operator step after stable numeric principal review.
+
+### Identity & Access sequence
+
+1. Canonical Identity & Access contracts — **DONE**.
+2. macOS Keychain metadata/existence adapter — **DONE**.
+3. Bounded credential-verification boundary with synthetic end-to-end proof — **DONE in this tranche**.
+4. GitHub fixed-origin read-only verifier and human-gated enrollment — **IMPLEMENTED, synthetic-tested; live run NEXT, separately approved**.
+5. First reviewed real GitHub enrollment and expected numeric-principal verification.
+6. Scheduled health, freshness, cadence/backoff, IKHP incident, and CLR3 attention evaluation — **IMPLEMENTED as synthetic-tested repository proof; scheduler activation remains explicit and unverified**.
+7. Codex multi-account runtime-profile manager and provider-specific OpenAI/Codex adapter.
+8. Generic runtime ownership/admission and lifecycle evidence — **DONE in this tranche**.
+9. Codex Web GPT metadata adapter proof and scoped live integration design — **DONE as metadata-only proof**.
+10. Guided recovery flows.
+11. Narrowly approved provider-supported refresh.
+12. Broader credential lifecycle automation only after evidence.
+
+## IKHP-RGO — Runtime ownership, onboarding, and lifecycle governance
+
+**Status:** complete as repository-only, provider-neutral proof on 2026-09-05.
+No live Codex Web GPT integration, config repair, tunnel/connector mutation,
+credential migration, login/logout, or scheduler activation was performed.
+
+This tranche extends the existing IKHP catalog and I&A model rather than
+introducing a parallel ownership store. It defines:
+
+- one authoritative owner and separate state custody, observer, verifier, drift,
+  and mutation-authority fields;
+- explicit resource/application/runtime, account, credential, session, runtime
+  profile, configuration, route, dependency, environment, and isolation links;
+- candidate-versus-admitted onboarding with discovery kept below authority;
+- route ownership and writer conflict detection;
+- required health/recovery and dependency coverage;
+- active workload/lease and quiescence readiness that fails closed on unknown;
+- one/many/unsupported/unknown account capacity and profile concurrency;
+- a pure admission planner and a read-only Brain Core governance projection.
+
+**Contracts and implementation:**
+
+```text
+operations/specs/infrastructure-catalog-v1.schema.json
+tools/infrastructure-catalog/governance-core.mjs
+tools/validate-infrastructure-governance.mjs
+operations/fixtures/infrastructure-onboarding-alternate-v1.json
+operations/fixtures/infrastructure-codex-web-gpt-metadata-v1.json
+```
+
+The synthetic proof covers two hypothetical consumers. The Codex Web GPT
+fixture maps production and development runtimes, an application-owned browser
+session, connector, loopback/API bridge, route owner, two opaque account
+references, and unknown credential custody. It contains no secrets and makes
+no live-state claim. Native Codex CLI/IDE and Codex Web GPT remain distinct
+adapter surfaces.
+
+The action preflight now consumes optional quiescence evidence and blocks
+mutations when a governed target is active or evidence is missing. It never
+kills processes, enables execution, or takes over availability policy.
+
+**Validation:** `npm run validate:infrastructure-governance`,
+`npm run test:infrastructure-governance`, `npm run test:infrastructure-actions`,
+`npm run validate:infrastructure-actions`, and
+`npm run test:infrastructure-catalog`.
+
+**Prior exact Brain Goal:** add an account-neutral runtime adapter contract and
+human-gated discovery/admission evidence for one real consumer, starting with
+read-only observation of process/profile/session boundaries. That goal is
+implemented below as IKHP-OBS; the follow-on goal is the account/session/
+runtime-profile binding model. Do not begin with OAuth extraction or simultaneous desktop-profile
+claims.
+
+## IKHP-OBS — Generic live observation and account-neutral admission
+
+**Status:** implemented and synthetic-tested on 2026-09-05; live observation
+proof recorded; no live state was mutated.
+
+This tranche closes the conceptual gap between broad infrastructure discovery
+and safe catalog participation. It adds one provider-neutral observation and
+candidate contract for applications, runtimes, servers, processes, endpoints,
+dependencies, identity bindings, custody, lifecycle, health, and isolation.
+Every observer implements `discover()`, `observe(candidate)`, and
+`verifyRelationship()`.
+
+Deliverables:
+
+- `operations/specs/infrastructure-observation-v1.schema.json` — extended
+  observation contract, backward-compatible with existing health snapshots;
+- `operations/specs/infrastructure-candidate-v1.schema.json` — candidate,
+  pure admission-plan, and bounded backlog contract;
+- `tools/infrastructure-catalog/observation-core.mjs` — generic adapter seam,
+  redaction checks, candidate conversion, fail-closed admission, and backlog;
+- `tools/infrastructure-catalog/local-runtime-observer.mjs` — process/listener
+  observation without arguments or environment capture;
+- `tools/infrastructure-catalog/codex-runtime-adapter.mjs` — Codex/WebGPT
+  product proof only;
+- `tools/observe-infrastructure.mjs` — safe live observation output;
+- `tools/validate-infrastructure-observation-admission.mjs` — deterministic
+  OK/NOT OK acceptance gate;
+- synthetic fixtures/tests and the live Codex evidence report.
+
+Acceptance proof:
+
+- two unrelated synthetic consumers admit cleanly with application custody and
+  Brain custody respectively;
+- unknown owner remains a candidate and conflicting owner is rejected;
+- dependency, identity, health, isolation, freshness, redaction, and
+  non-execution invariants are machine-checked;
+- native Codex and WebGPT production/DEV are observed without account or
+  secret disclosure;
+- all 46 current canonical resources remain visible as governance backlog;
+- no observer writes canonical state or activates a scheduler.
+
+## IKHP-IAP-CODEX — Account/session/runtime-profile capability proof
+
+**Status:** capability-proof tranche implemented and synthetic-tested on
+2026-09-05; no live authentication or application state was changed.
+
+This tranche evolves the existing Identity & Access catalog with non-secret
+binding evidence, authentication-storage ownership/isolation metadata, and
+explicit profile concurrency capability. It records the current Codex CLI,
+IDE, Desktop, and Web GPT boundary without creating an OAuth registry or
+claiming that `CODEX_HOME` alone isolates authenticated accounts.
+
+The current result is **partially supported**: CLI configuration and
+`CODEX_HOME` state boundaries are supported, file-mode per-root authentication
+is documented for the CLI, and keyring/auto authenticated-profile isolation,
+concurrency, and Desktop isolation remain unknown. The repository now includes
+the synthetic-tested CLI-only manager at
+`tools/runtime-profile-manager.mjs`; real authentication remains gated on the
+two-account pilot in
+`operations/specs/infrastructure-codex-account-profile-capability.md`.
+
+The account/session/runtime-profile model must attribute health to an account
+before notification or recovery guidance and must not extract application OAuth
+or assume that logout/login preserves multiple profiles.
 
 ## Cross-program ordering
 
