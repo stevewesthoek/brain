@@ -134,7 +134,7 @@ export interface OperationReceipt {
   attemptId: AttemptId;
   scopeHash: string;
   effectHash: string;
-  status: 'succeeded' | 'failed';
+  status: 'succeeded' | 'failed' | 'cancelled';
   recordedAt: string;
 }
 

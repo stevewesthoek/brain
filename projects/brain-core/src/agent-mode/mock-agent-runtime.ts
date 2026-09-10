@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
 import type { BrainNodeCommand, BrainNodeLocalPerimeter, BrainNodeReceipt } from './brain-node.js';
 import { hashNodeReadScope } from './brain-node.js';
+import type { AgentRuntimeExecutionContext, AgentRuntimeResult, AgentModeRuntimeUsage } from './runtime-dispatch.js';
 import type {
   AgentModeAttempt,
   AgentModeBudgetSettlement,
@@ -37,6 +39,19 @@ export type MockAgentRuntimeFixture = {
   controls?: MockAgentRuntimeControls;
   modelResult: MockRuntimeModelResult;
   crashAfterDurableOperation?: boolean;
+  dispatch?: {
+    status?: 'succeeded' | 'failed';
+    runtimeReceiptId?: string;
+    resultHash?: string;
+    evidenceRef?: string | null;
+    usage?: AgentModeRuntimeUsage;
+    failureCode?: string;
+    traceSummary?: readonly string[];
+    crashAfterInvocation?: boolean;
+    started?: () => void;
+    checkpoint?: Promise<void>;
+    reconcile?: AgentRuntimeResult;
+  };
 };
 
 export type MockAgentRuntimeRunResult = {
@@ -50,9 +65,14 @@ export type MockAgentRuntimeRunResult = {
 };
 
 export class MockAgentRuntime {
+  public dispatchInvocationCount = 0;
+
   constructor(private readonly fixture: MockAgentRuntimeFixture) {}
 
-  async run(input: { attempt: AgentModeAttempt }): Promise<MockAgentRuntimeRunResult> {
+  async run(input: { attempt: AgentModeAttempt }): Promise<MockAgentRuntimeRunResult>;
+  async run(input: { context: AgentRuntimeExecutionContext; signal: AbortSignal; isCancellationRequested: () => boolean }): Promise<AgentRuntimeResult>;
+  async run(input: { attempt: AgentModeAttempt } | { context: AgentRuntimeExecutionContext; signal: AbortSignal; isCancellationRequested: () => boolean }): Promise<MockAgentRuntimeRunResult | AgentRuntimeResult> {
+    if ('context' in input) return this.runDispatched(input);
     if (input.attempt.runtimeRef !== this.fixture.runtimeRef) {
       throw new Error('runtime_identity_mismatch');
     }
@@ -72,6 +92,40 @@ export class MockAgentRuntime {
       modelResult: this.fixture.modelResult,
       trace: [`runtime:${this.fixture.runtimeRef}`, `attempt:${input.attempt.attemptId}`, `trace:${this.fixture.modelResult.traceId}`],
       crashAfterDurableOperation: this.fixture.crashAfterDurableOperation ?? false,
+    };
+  }
+
+  async reconcile(input: { context: AgentRuntimeExecutionContext }): Promise<{ status: 'resolved'; result: AgentRuntimeResult } | { status: 'unsupported' }> {
+    const result = this.fixture.dispatch?.reconcile;
+    return result ? { status: 'resolved', result } : { status: 'unsupported' };
+  }
+
+  private async runDispatched(input: { context: AgentRuntimeExecutionContext; signal: AbortSignal; isCancellationRequested: () => boolean }): Promise<AgentRuntimeResult> {
+    this.dispatchInvocationCount += 1;
+    const dispatch = this.fixture.dispatch ?? {};
+    dispatch.started?.();
+    if (dispatch.checkpoint) await dispatch.checkpoint;
+    if (input.signal.aborted || input.isCancellationRequested()) {
+      return {
+        status: 'cancelled',
+        runtimeReceiptId: dispatch.runtimeReceiptId ?? `runtime-receipt:${input.context.attemptId}`,
+        resultHash: dispatch.resultHash ?? createHash('sha256').update(`cancelled:${input.context.operationId}`).digest('hex'),
+        evidenceRef: dispatch.evidenceRef ?? null,
+        usage: dispatch.usage ?? { steps: 0, tokens: 0, cost: 0 },
+        traceSummary: [...(dispatch.traceSummary ?? ['mock-runtime-cancelled'])].slice(0, 8),
+        cancellationObserved: true,
+      };
+    }
+    if (dispatch.crashAfterInvocation) throw new Error('runtime_outcome_uncertain');
+    const status = dispatch.status ?? 'succeeded';
+    return {
+      status,
+      runtimeReceiptId: dispatch.runtimeReceiptId ?? `runtime-receipt:${input.context.attemptId}`,
+      resultHash: dispatch.resultHash ?? createHash('sha256').update(JSON.stringify({ operationId: input.context.operationId, attemptId: input.context.attemptId, status })).digest('hex'),
+      evidenceRef: dispatch.evidenceRef ?? `evidence:mock-runtime:${input.context.attemptId}`,
+      usage: dispatch.usage ?? { steps: 0, tokens: 0, cost: 0 },
+      ...(status === 'failed' ? { failureCode: dispatch.failureCode ?? 'MOCK_RUNTIME_FAILED' } : {}),
+      traceSummary: [...(dispatch.traceSummary ?? ['mock-runtime-result'])].slice(0, 8),
     };
   }
 }

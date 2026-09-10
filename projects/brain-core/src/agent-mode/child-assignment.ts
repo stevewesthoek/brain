@@ -34,7 +34,7 @@ export type AgentModeRuntimeProfile = {
   restrictedHarness: boolean;
 };
 
-export type AgentModeChildAssignmentStatus = 'dispatch_ready' | 'cancelled' | 'expired';
+export type AgentModeChildAssignmentStatus = 'dispatch_ready' | 'running' | 'completed' | 'failed' | 'cancelled' | 'expired' | 'uncertain';
 
 export type AgentModeChildAssignment = {
   assignmentIntentKey: string;

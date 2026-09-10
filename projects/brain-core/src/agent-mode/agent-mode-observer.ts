@@ -53,6 +53,7 @@ export type AgentModeObserverProjection = {
   events: Array<Record<string, unknown>>;
   recovery: Array<Record<string, unknown>>;
   operations: Array<Record<string, unknown>>;
+  runtimeDispatches: Array<Record<string, unknown>>;
   workcells: Array<Record<string, unknown>>;
   workcellWrites: Array<Record<string, unknown>>;
   workcellValidations: Array<Record<string, unknown>>;
@@ -171,7 +172,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [],
     };
   }
 
@@ -339,6 +340,23 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         ...(verification ?? {}),
       };
     });
+    const effectsByOperation = new Map(store.listEffects().map((effect) => [effect.operationId, effect]));
+    const runtimeDispatches = store.listDispatchOutbox().filter((outbox) => outbox.effectKind === 'runtime.dispatch').map((outbox) => {
+      let receipt: Record<string, unknown> | undefined;
+      const receiptJson = effectsByOperation.get(outbox.operationId)?.receiptJson;
+      if (receiptJson) {
+        try {
+          const parsed = JSON.parse(receiptJson) as Record<string, unknown>;
+          receipt = { status: parsed.status, resultHash: parsed.resultHash, evidenceRef: parsed.evidenceRef, usage: parsed.usage, recordedAt: parsed.recordedAt };
+        } catch { /* malformed receipt remains visible through dispatch state */ }
+      }
+      return {
+        operationId: outbox.operationId, dispatchId: outbox.dispatchId, assignmentIntentKey: outbox.assignmentIntentKey,
+        childAgentId: outbox.childAgentId, attemptId: outbox.attemptId, runtimeRef: outbox.runtimeRef, runtimeProfileRef: outbox.runtimeProfileRef,
+        controllerRef: outbox.controllerRef, resourceKey: outbox.leaseResourceKey, leaseId: outbox.leaseId, fence: outbox.leaseFence,
+        state: outbox.state, preparedAt: outbox.preparedAt, dispatchedAt: outbox.dispatchedAt, ...(receipt ? { receipt } : {}),
+      };
+    });
     const recovery = store.listAttempts().map((attempt) => ({
       attemptId: attempt.attemptId,
       runId: attempt.runId,
@@ -388,7 +406,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments,
+      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments,
     };
   } finally {
     store.close();

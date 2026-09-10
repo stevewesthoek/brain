@@ -666,3 +666,31 @@ Focused K4.2-C validation is 58/58; the expanded regression set is 268/268.
 K4.2 remains in progress. Exact next task: **K4.2-D — Bounded AgentRuntime
 Dispatch, Cancellation Propagation and Child Settlement**. Do not start it
 automatically.
+
+## K4.2-D1 — Mock-backed bounded runtime dispatch
+
+K4.2-D1 is complete for the in-process MockAgentRuntime gate. Dispatch uses
+the existing StateStore authority boundary and existing `effects`,
+`dispatch_outbox`, `receipts`, `leases`, budget, cancellation, and lifecycle
+records. At execution time, recheck child/assignment/task/run/attempt/root
+identity, runtime/profile and role/policy bindings, scopes, allocations,
+deadlines, cancellation, kill switches, and budgets before taking the fenced
+`runtime-dispatch:<attempt>` lease.
+
+Persist the dispatch intent before invoking the runtime. Advance only through
+`dispatchable`, `dispatched`, `receipt_recorded`, `verified`, and `settled`, or
+truthful failed/cancelled/uncertain states. Verify the bounded runtime receipt
+before settlement. Duplicate dispatch must not invoke twice; stale fences must
+not dispatch or settle; uncertain outcomes must not be blindly replayed.
+Cancellation observes both `AbortSignal` and durable cancellation state, and
+terminal cancellation requires runtime acknowledgement. Success/failure/
+cancellation release budget, root allocation, active slot, child state, and
+lease exactly once. Observer output exposes bounded state only and excludes
+prompts, hidden reasoning, provider payloads, credentials, and secrets.
+
+This tranche launches no restricted Harness, OS process, model/provider,
+BrainNode, Workcell, scheduler worker, network request, or replacement worker.
+Evidence:
+`operations/reports/agent-mode-k4-2-d1-mock-runtime-dispatch-evidence-2026-09-10.md`.
+Exact next task: **K4.2-D2 — Restricted Harness Process Dispatch, Runtime
+Cancellation and Reconciliation**. Do not start it automatically.

@@ -735,9 +735,34 @@ K4.2-C matrix passes 58/58; the build and expanded K4.0/K4.1/K4.2 regression
 set passes 268/268. Evidence:
 `operations/reports/agent-mode-k4-2-c-runtime-binding-assignment-evidence-2026-09-10.md`.
 
-K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-D — Bounded AgentRuntime
-Dispatch, Cancellation Propagation and Child Settlement**. Do not start it
-automatically.
+K4.2-D1 is now **COMPLETE**. K4.2 remains **IN PROGRESS**. Exact next task:
+**K4.2-D2 — Restricted Harness Process Dispatch, Runtime Cancellation and
+Reconciliation**. Do not start it automatically.
+
+## Current K4.2-D1 mock-backed runtime dispatch — 2026-09-10
+
+K4.2-D1 is **COMPLETE** for the bounded in-process gate. The existing SQLite
+StateStore performs the fresh execution-time authority recheck, acquires the
+fenced runtime-dispatch lease, persists the existing effects/outbox intent,
+invokes only `MockAgentRuntime`, records and verifies a bounded runtime
+receipt, and settles child lifecycle, budget, root allocation, active slot,
+and lease exactly once. Cancellation propagates through `AbortSignal` and a
+durable cancellation check; crashes, conflicts, stale fences, invalid results,
+and unsupported reconciliation remain uncertain without blind replay.
+
+The truthful stages are `dispatchable → dispatched → receipt_recorded →
+verified → settled`, with failed/cancelled/uncertain paths. Observer output
+reconstructs bounded runtime dispatch state without prompts, hidden reasoning,
+provider payloads, credentials, or secrets. No restricted Harness, OS process,
+model/provider, BrainNode, Workcell, scheduler worker, network, or replacement
+worker is launched. Evidence:
+`operations/reports/agent-mode-k4-2-d1-mock-runtime-dispatch-evidence-2026-09-10.md`.
+
+The focused D1 matrix passes 57/57 and the Agent Mode regression set passes
+304/304. The package-wide `brain-core` command separately reports three
+unrelated `OrchestrationExecutor` timeout failures. K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-D2 — Restricted
+Harness Process Dispatch, Runtime Cancellation and Reconciliation**. Do not
+start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 

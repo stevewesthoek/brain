@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, and K4.2-C are complete, K4.2 is in progress, K4 remains in progress, and dynamic workers are not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, and K4.2-D1 are complete, K4.2 is in progress, K4 remains in progress, and K4.2-D2 and dynamic workers are not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -794,7 +794,7 @@ covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
-**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, and K4.2-C complete; K4 remains in progress; K4.2-D and dynamic workers not started
+**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, K4.2-C, and K4.2-D1 complete; K4 remains in progress; K4.2-D2 and dynamic workers not started
 
 ### K4.0 — deterministic event queue, scheduler tick, and no-op heartbeat
 
@@ -999,6 +999,35 @@ K4.2-C focused tests pass 58/58 and the expanded K4.0/K4.1/K4.2 regression set
 passes 268/268. K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-D —
 Bounded AgentRuntime Dispatch, Cancellation Propagation and Child Settlement**.
 Do not start it automatically.
+
+### K4.2-D1 — Mock-backed bounded AgentRuntime dispatch, cancellation and child settlement
+
+K4.2-D1 is **COMPLETE** for its bounded in-process gate. The existing SQLite
+StateStore now owns the fresh execution-time authority recheck, fenced runtime
+dispatch lease, durable `effects`/`dispatch_outbox` intent, bounded
+`AgentRuntime` request/result seam, runtime receipt persistence, receipt
+verification, settlement, cancellation propagation, and uncertain/reconcile
+classification. Only `MockAgentRuntime` is callable in this tranche; no
+restricted Harness, OS process, model/provider, BrainNode, Workcell, scheduler
+worker, network, or replacement worker is launched.
+
+The state sequence is truthful: `dispatchable → dispatched → receipt_recorded →
+verified → settled`, with failed/cancelled/uncertain paths. Fences prevent stale
+dispatch and settlement. Duplicate dispatch invokes the runtime once; duplicate
+receipts and settlement are idempotent; uncertain runtime outcomes retain
+budget and active-slot allocation until explicit reconciliation. Success,
+failure, and acknowledged cancellation settle the child Attempt/Run/Task,
+assignment, Agent, budget, root allocation, and runtime lease exactly once.
+Observer output exposes bounded runtime dispatch state without hidden reasoning,
+prompts, provider payloads, credentials, or secrets. Evidence:
+`operations/reports/agent-mode-k4-2-d1-mock-runtime-dispatch-evidence-2026-09-10.md`.
+
+The focused D1 matrix passes 57/57 and the Agent Mode regression set passes
+304/304. The package-wide `brain-core` command separately reports three
+unrelated `OrchestrationExecutor` timeout failures. K4.2-D1 is complete; K4.2
+remains **IN PROGRESS**. Exact next task:
+**K4.2-D2 — Restricted Harness Process Dispatch, Runtime Cancellation and
+Reconciliation**. Do not start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

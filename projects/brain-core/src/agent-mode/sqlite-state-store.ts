@@ -7,6 +7,8 @@ import type { EffectKind, OperationReceipt } from './agent-mode-contracts.js';
 import type { RuntimeProcessIdentity } from './runtime-process-identity.js';
 import { evaluateSpawnAdmission, getRoleTemplate, getSpawnPolicy, spawnCreationMaterialHash, spawnIntentKey, type SpawnAuthorityFacts, type SpawnDecision, type SpawnRequest } from './spawn-policy.js';
 import { DEFERRED_MODEL_REF, DEFERRED_ROUTE_REF, AGENT_MODE_RUNTIME_PROFILES, assignmentCapabilityScopeHash, assignmentIntentKey, assignmentMaterialHash, getRuntimeProfile, taskSpecHash, validateChildAssignmentRequest, type AgentModeChildAssignment, type AgentModeChildAssignmentReceipt, type AgentModeChildAssignmentRequest, type AgentModeChildAssignmentResult, type AgentModePreparedChildDispatch } from './child-assignment.js';
+import { runtimeDispatchResourceKey, runtimeReceiptEffectHash, validateRuntimeDispatchRequest, validateRuntimeResult } from './runtime-dispatch.js';
+import type { AgentModeRuntimeDispatchMutation, AgentModeRuntimeDispatchPrepared, AgentModeRuntimeDispatchRequest, AgentModeRuntimeDispatchStorePreparation, AgentModeRuntimeReceipt, AgentModeRuntimeReceiptMutation, AgentModeRuntimeSettlement, AgentModeRuntimeVerification, AgentRuntimeResult } from './runtime-dispatch.js';
 
 export type AgentModeAgent = {
   agentId: string;
@@ -14,7 +16,7 @@ export type AgentModeAgent = {
   role: string;
   displayName: string;
   policyId: string;
-  status: 'active' | 'paused' | 'retired' | 'reserved' | 'assigned' | 'cancelled' | 'expired';
+  status: 'active' | 'paused' | 'retired' | 'reserved' | 'assigned' | 'running' | 'completed' | 'failed' | 'cancelled' | 'expired' | 'uncertain';
   roleTemplateId?: string;
   roleTemplateVersion?: number;
   policyVersion?: number;
@@ -497,7 +499,7 @@ export type AgentModeEffect = {
   attemptId: string;
   effectKind: string;
   scopeHash: string;
-  status: 'reserved' | 'prepared' | 'dispatchable' | 'dispatched' | 'effect_applied' | 'receipt_recorded' | 'succeeded' | 'failed' | 'uncertain';
+  status: 'reserved' | 'prepared' | 'dispatchable' | 'dispatched' | 'effect_applied' | 'receipt_recorded' | 'succeeded' | 'failed' | 'cancelled' | 'uncertain';
   receiptJson?: string;
   capabilityId?: string;
   grantId?: string;
@@ -509,9 +511,15 @@ export type AgentModeEffect = {
   preparedAt?: string;
   dispatchedAt?: string;
   observedAt?: string;
+  dispatchId?: string;
+  assignmentIntentKey?: string;
+  childAgentId?: string;
+  runtimeRef?: string;
+  runtimeProfileRef?: string;
+  controllerRef?: string;
 };
 
-export type AgentModeDispatchState = 'dispatchable' | 'dispatched' | 'effect_applied' | 'receipt_recorded' | 'verified' | 'failed' | 'uncertain';
+export type AgentModeDispatchState = 'dispatchable' | 'dispatched' | 'effect_applied' | 'receipt_recorded' | 'verified' | 'failed' | 'cancelled' | 'uncertain';
 
 export type AgentModeDispatchOutbox = {
   operationId: string;
@@ -528,6 +536,12 @@ export type AgentModeDispatchOutbox = {
   state: AgentModeDispatchState;
   preparedAt: string;
   dispatchedAt?: string;
+  dispatchId?: string;
+  assignmentIntentKey?: string;
+  childAgentId?: string;
+  runtimeRef?: string;
+  runtimeProfileRef?: string;
+  controllerRef?: string;
 };
 
 export type AgentModeReceiptState = 'accepted' | 'conflict' | 'stale';
@@ -992,6 +1006,19 @@ function receiptIdFor(receipt: OperationReceipt): string {
   })).digest('hex')}`;
 }
 
+function runtimeResultFromReceipt(receipt: AgentModeRuntimeReceipt): AgentRuntimeResult {
+  return {
+    status: receipt.status,
+    runtimeReceiptId: receipt.receiptId,
+    resultHash: receipt.resultHash,
+    evidenceRef: receipt.evidenceRef,
+    usage: receipt.usage,
+    traceSummary: receipt.traceSummary,
+    ...(receipt.failureCode === undefined ? {} : { failureCode: receipt.failureCode }),
+    ...(receipt.cancellationObserved === undefined ? {} : { cancellationObserved: receipt.cancellationObserved }),
+  };
+}
+
 function writerOperationHash(input: Record<string, unknown>): string {
   return createHash('sha256').update(JSON.stringify(input)).digest('hex');
 }
@@ -1348,7 +1375,13 @@ export class AgentModeSqliteStateStore {
         scope_hash TEXT NOT NULL,
         status TEXT NOT NULL,
         receipt_json TEXT,
-        grant_id TEXT
+        grant_id TEXT,
+        dispatch_id TEXT,
+        assignment_intent_key TEXT,
+        child_agent_id TEXT,
+        runtime_ref TEXT,
+        runtime_profile_ref TEXT,
+        controller_ref TEXT
       );
       CREATE TABLE IF NOT EXISTS tasks (
         task_id TEXT PRIMARY KEY,
@@ -1450,7 +1483,7 @@ export class AgentModeSqliteStateStore {
         budget_scope_id TEXT NOT NULL,
         reservation_id TEXT NOT NULL UNIQUE REFERENCES budget_reservations(reservation_id),
         deadline TEXT NOT NULL,
-        status TEXT NOT NULL CHECK (status IN ('dispatch_ready', 'cancelled', 'expired')),
+        status TEXT NOT NULL CHECK (status IN ('dispatch_ready', 'running', 'completed', 'failed', 'cancelled', 'expired', 'uncertain')),
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         receipt_json TEXT NOT NULL
@@ -1469,7 +1502,13 @@ export class AgentModeSqliteStateStore {
         deadline TEXT NOT NULL,
         state TEXT NOT NULL,
         prepared_at TEXT NOT NULL,
-        dispatched_at TEXT
+        dispatched_at TEXT,
+        dispatch_id TEXT,
+        assignment_intent_key TEXT,
+        child_agent_id TEXT,
+        runtime_ref TEXT,
+        runtime_profile_ref TEXT,
+        controller_ref TEXT
       );
       CREATE TABLE IF NOT EXISTS receipts (
         receipt_id TEXT PRIMARY KEY,
@@ -1886,6 +1925,12 @@ export class AgentModeSqliteStateStore {
       prepared_at: 'TEXT',
       dispatched_at: 'TEXT',
       observed_at: 'TEXT',
+      dispatch_id: 'TEXT',
+      assignment_intent_key: 'TEXT',
+      child_agent_id: 'TEXT',
+      runtime_ref: 'TEXT',
+      runtime_profile_ref: 'TEXT',
+      controller_ref: 'TEXT',
     };
     for (const [name, type] of Object.entries(additions)) {
       if (!existing.has(name)) this.database.exec(`ALTER TABLE effects ADD COLUMN ${name} ${type}`);
@@ -1901,7 +1946,12 @@ export class AgentModeSqliteStateStore {
 
   private migrateOutboxTable(): void {
     const columns = this.database.prepare('PRAGMA table_info(dispatch_outbox)').all() as Array<{ name?: string }>;
-    if (!columns.some((column) => column.name === 'grant_id')) this.database.exec('ALTER TABLE dispatch_outbox ADD COLUMN grant_id TEXT');
+    const existing = new Set(columns.map((column) => column.name));
+    const additions: Record<string, string> = {
+      grant_id: 'TEXT', dispatch_id: 'TEXT', assignment_intent_key: 'TEXT', child_agent_id: 'TEXT',
+      runtime_ref: 'TEXT', runtime_profile_ref: 'TEXT', controller_ref: 'TEXT',
+    };
+    for (const [name, type] of Object.entries(additions)) if (!existing.has(name)) this.database.exec(`ALTER TABLE dispatch_outbox ADD COLUMN ${name} ${type}`);
   }
 
   private migrateRunsTable(): void {
@@ -1966,7 +2016,7 @@ export class AgentModeSqliteStateStore {
         budget_scope_id TEXT NOT NULL,
         reservation_id TEXT NOT NULL UNIQUE REFERENCES budget_reservations(reservation_id),
         deadline TEXT NOT NULL,
-        status TEXT NOT NULL CHECK (status IN ('dispatch_ready', 'cancelled', 'expired')),
+        status TEXT NOT NULL CHECK (status IN ('dispatch_ready', 'running', 'completed', 'failed', 'cancelled', 'expired', 'uncertain')),
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         receipt_json TEXT NOT NULL
@@ -2075,7 +2125,7 @@ export class AgentModeSqliteStateStore {
   reserveSpawnAndCreateChild(input: AgentModeSpawnCreationInput): AgentModeSpawnCreationResult {
     try {
       return this.withTransaction(() => this.reserveSpawnAndCreateChildInternal(input));
-    } catch {
+    } catch (error) {
       return { result: 'denied', reasonCode: 'AUTHORITY_UNAVAILABLE' };
     }
   }
@@ -2277,6 +2327,415 @@ export class AgentModeSqliteStateStore {
     };
   }
 
+  prepareRuntimeDispatch(request: AgentModeRuntimeDispatchRequest): AgentModeRuntimeDispatchStorePreparation {
+    if (this.readOnly || !this.hasChildAssignmentTables || !validateRuntimeDispatchRequest(request)) return { result: 'denied', reasonCode: 'INVALID_REQUEST' };
+    try {
+      return this.withTransaction(() => this.prepareRuntimeDispatchInternal(request));
+    } catch {
+      return { result: 'denied', reasonCode: 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
+  private prepareRuntimeDispatchInternal(request: AgentModeRuntimeDispatchRequest): AgentModeRuntimeDispatchStorePreparation {
+    const existingEffect = this.database.prepare('SELECT * FROM effects WHERE operation_id = ?').get(request.operationId) as Record<string, unknown> | undefined;
+    const existingOutbox = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(request.operationId) as Record<string, unknown> | undefined;
+    if (existingEffect || existingOutbox) {
+      if (!existingEffect || !existingOutbox
+        || existingEffect.attempt_id !== request.attemptId
+        || existingOutbox.attempt_id !== request.attemptId
+        || existingEffect.dispatch_id !== request.dispatchId
+        || existingOutbox.dispatch_id !== request.dispatchId
+        || existingEffect.assignment_intent_key !== request.assignmentIntentKey
+        || existingOutbox.assignment_intent_key !== request.assignmentIntentKey
+        || existingEffect.child_agent_id !== request.childAgentId
+        || existingOutbox.child_agent_id !== request.childAgentId
+        || existingEffect.runtime_ref !== request.runtimeRef
+        || existingOutbox.runtime_ref !== request.runtimeRef
+        || existingEffect.runtime_profile_ref !== request.runtimeProfileRef
+        || existingOutbox.runtime_profile_ref !== request.runtimeProfileRef) return { result: 'denied', reasonCode: 'DISPATCH_IDENTITY_MISMATCH' };
+      const receipt = this.parseRuntimeReceipt(existingEffect.receipt_json);
+      if (existingOutbox.state === 'uncertain' || existingEffect.status === 'uncertain' || existingOutbox.state === 'dispatched' || existingEffect.status === 'dispatched') {
+        return { result: 'uncertain', reasonCode: 'RUNTIME_UNCERTAIN', ...(receipt ? { receipt } : {}) };
+      }
+      if (['verified', 'failed', 'cancelled'].includes(String(existingOutbox.state)) && receipt) return { result: 'terminal', receipt };
+    }
+
+    const assignment = this.getChildAssignment(request.childAgentId);
+    if (!assignment || assignment.assignmentIntentKey !== request.assignmentIntentKey) return { result: 'denied', reasonCode: 'ASSIGNMENT_NOT_READY' };
+    if (assignment.taskId !== request.taskId || assignment.runId !== request.runId || assignment.attemptId !== request.attemptId
+      || assignment.runtimeRef !== request.runtimeRef || assignment.runtimeProfileRef !== request.runtimeProfileRef) return { result: 'denied', reasonCode: 'DISPATCH_IDENTITY_MISMATCH' };
+    const child = this.getAgent(request.childAgentId);
+    const task = this.getTask(request.taskId);
+    const run = this.getRun(request.runId);
+    const attempt = this.getAttempt(request.attemptId);
+    if (!child || !task || !run || !attempt) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+    const continuation = existingOutbox?.state === 'receipt_recorded' || existingOutbox?.state === 'verified';
+    const authorityFailure = this.runtimeDispatchAuthority(request, assignment, child, task, run, attempt, request.requestedAt, !continuation);
+    if (authorityFailure) return { result: 'denied', reasonCode: authorityFailure };
+    const resourceKey = runtimeDispatchResourceKey(request.attemptId);
+    let lease = this.getLease(resourceKey);
+    const storedLeaseId = existingOutbox?.lease_id == null ? undefined : String(existingOutbox.lease_id);
+    const storedFence = existingOutbox?.lease_fence == null ? undefined : Number(existingOutbox.lease_fence);
+    const activeStoredLease = lease && storedLeaseId === lease.leaseId && storedFence === lease.fence && Date.parse(lease.expiresAt) > Date.parse(request.requestedAt);
+    if (lease && Date.parse(lease.expiresAt) > Date.parse(request.requestedAt) && !activeStoredLease) return { result: 'denied', reasonCode: 'LEASE_CONFLICT' };
+    if (!activeStoredLease) {
+      lease = this.acquireLeaseAt({ leaseId: `${resourceKey}:${request.controllerRef}:${request.dispatchId}`, resourceKey, ownerId: request.controllerRef, expiresAt: assignment.deadline }, request.requestedAt);
+      if (!lease) return { result: 'denied', reasonCode: 'LEASE_CONFLICT' };
+      this.database.prepare('UPDATE attempts SET lease_resource_key = ?, lease_id = ?, lease_owner_id = ?, lease_fence = ?, updated_at = ? WHERE attempt_id = ?')
+        .run(resourceKey, lease.leaseId, lease.ownerId, lease.fence, request.requestedAt, request.attemptId);
+    }
+    if (!lease) return { result: 'denied', reasonCode: 'LEASE_CONFLICT' };
+    if (!existingEffect) {
+      const prepared = this.prepareOperation({
+        operationId: request.operationId,
+        attemptId: request.attemptId,
+        effectKind: 'runtime.dispatch',
+        capabilityId: 'runtime.dispatch',
+        scopeHash: attempt.capabilityScopeHash,
+        policyVersion: attempt.policyVersion,
+        leaseResourceKey: resourceKey,
+        leaseId: lease.leaseId,
+        leaseFence: lease.fence,
+        deadline: assignment.deadline,
+        preparedAt: request.requestedAt,
+      });
+      if (prepared === 'conflict') return { result: 'denied', reasonCode: 'DISPATCH_CONFLICT' };
+    } else if (!activeStoredLease) {
+      this.database.prepare('UPDATE effects SET lease_resource_key = ?, lease_id = ?, lease_fence = ?, controller_ref = ? WHERE operation_id = ?')
+        .run(resourceKey, lease.leaseId, lease.fence, request.controllerRef, request.operationId);
+      this.database.prepare('UPDATE dispatch_outbox SET lease_resource_key = ?, lease_id = ?, lease_fence = ?, controller_ref = ? WHERE operation_id = ?')
+        .run(resourceKey, lease.leaseId, lease.fence, request.controllerRef, request.operationId);
+    }
+    this.database.prepare('UPDATE effects SET dispatch_id = ?, assignment_intent_key = ?, child_agent_id = ?, runtime_ref = ?, runtime_profile_ref = ?, controller_ref = ? WHERE operation_id = ?')
+      .run(request.dispatchId, request.assignmentIntentKey, request.childAgentId, request.runtimeRef, request.runtimeProfileRef, request.controllerRef, request.operationId);
+    this.database.prepare('UPDATE dispatch_outbox SET dispatch_id = ?, assignment_intent_key = ?, child_agent_id = ?, runtime_ref = ?, runtime_profile_ref = ?, controller_ref = ? WHERE operation_id = ?')
+      .run(request.dispatchId, request.assignmentIntentKey, request.childAgentId, request.runtimeRef, request.runtimeProfileRef, request.controllerRef, request.operationId);
+    if (!existingEffect) this.appendEventIfAbsent({ eventId: `runtime-dispatch-prepared:${request.operationId}`, entityType: 'attempt', entityId: request.attemptId, eventType: 'runtime_dispatch_prepared', occurredAt: request.requestedAt, payload: { operationId: request.operationId, dispatchId: request.dispatchId, childAgentId: request.childAgentId, assignmentIntentKey: request.assignmentIntentKey, runtimeRef: request.runtimeRef, runtimeProfileRef: request.runtimeProfileRef, leaseId: lease.leaseId, fence: lease.fence, deadline: assignment.deadline } });
+    const outbox = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(request.operationId) as Record<string, unknown>;
+    const phase = outbox.state === 'receipt_recorded' ? 'receipt_recorded' : outbox.state === 'verified' ? 'verified' : 'dispatchable';
+    return { result: 'ready', prepared: this.makeRuntimeDispatchPrepared(request, this.runtimeDispatchAssignment(assignment, child), lease, phase, this.parseRuntimeReceipt(existingEffect?.receipt_json)) };
+  }
+
+  private runtimeDispatchAuthority(
+    request: AgentModeRuntimeDispatchRequest,
+    assignment: AgentModeChildAssignment,
+    child: AgentModeAgent,
+    task: AgentModeTask,
+    run: AgentModeRun,
+    attempt: AgentModeAttempt,
+    now: string,
+    beforeInvocation: boolean,
+  ): string | undefined {
+    if (assignment.rootGoalId !== child.rootGoalId) return 'DISPATCH_IDENTITY_MISMATCH';
+    if (child.rootGoalId !== assignment.rootGoalId || child.status === 'expired') return 'CHILD_EXPIRED';
+    if (beforeInvocation && child.status !== 'assigned') return child.status === 'cancelled' ? 'CANCELLATION_REQUESTED' : 'CHILD_NOT_ASSIGNED';
+    if (!beforeInvocation && child.status !== 'assigned' && child.status !== 'running') return child.status === 'cancelled' ? 'CANCELLATION_REQUESTED' : 'ASSIGNMENT_NOT_READY';
+    if (beforeInvocation && assignment.status !== 'dispatch_ready') return assignment.status === 'uncertain' ? 'RUNTIME_UNCERTAIN' : 'ASSIGNMENT_NOT_READY';
+    if (task.childAgentId !== child.agentId || task.assignmentIntentKey !== assignment.assignmentIntentKey
+      || run.taskId !== task.taskId || run.agentId !== child.agentId || run.childAgentId !== child.agentId || run.assignmentIntentKey !== assignment.assignmentIntentKey
+      || attempt.runId !== run.runId || attempt.agentId !== child.agentId || attempt.childAgentId !== child.agentId || attempt.assignmentIntentKey !== assignment.assignmentIntentKey) return 'DISPATCH_IDENTITY_MISMATCH';
+    if (attempt.runtimeRef !== assignment.runtimeRef || attempt.runtimeProfileRef !== assignment.runtimeProfileRef || assignment.runtimeRef !== request.runtimeRef || assignment.runtimeProfileRef !== request.runtimeProfileRef) return 'RUNTIME_MISMATCH';
+    if (assignment.repositoryScope !== child.repositoryScope || assignment.resourceScope !== child.resourceScope || assignment.requestedSteps > (child.reservedChildSteps ?? -1) || assignment.requestedCost > (child.reservedChildCost ?? -1)) return 'SCOPE_MISMATCH';
+    const policy = getSpawnPolicy(assignment.policyId, assignment.policyVersion);
+    const template = getRoleTemplate(assignment.roleTemplateId, assignment.roleTemplateVersion);
+    if (!policy || !template || template.roleTemplateId !== assignment.roleTemplateId || template.version !== assignment.roleTemplateVersion || policy.policyId !== assignment.policyId || policy.version !== assignment.policyVersion) return 'RUNTIME_PROFILE_INVALID';
+    if (['completed', 'failed', 'cancelled', 'uncertain'].includes(attempt.status)) return attempt.status === 'uncertain' ? 'RUNTIME_UNCERTAIN' : 'ALREADY_SETTLED';
+    if (beforeInvocation && attempt.status !== 'admitted') return attempt.status === 'running' ? 'ALREADY_DISPATCHED' : 'ASSIGNMENT_NOT_READY';
+    if (beforeInvocation && (task.status !== 'admitted' || run.status !== 'created')) return 'ASSIGNMENT_NOT_READY';
+    if (beforeInvocation && attempt.cancellationStatus !== 'running') return 'CANCELLATION_REQUESTED';
+    if (Date.parse(assignment.deadline) <= Date.parse(now) || (child.expiresAt !== undefined && Date.parse(child.expiresAt) <= Date.parse(now))) return 'DEADLINE_EXPIRED';
+    const root = this.getSpawnRootState(assignment.rootGoalId);
+    if (!root || root.rootGoalId !== assignment.rootGoalId || root.policyId !== assignment.policyId || root.policyVersion !== assignment.policyVersion) return 'DISPATCH_IDENTITY_MISMATCH';
+    if (Date.parse(root.deadline) <= Date.parse(now)) return 'DEADLINE_EXPIRED';
+    if (beforeInvocation) {
+      const controls = this.getSpawnAdmissionControls(assignment.rootGoalId);
+      if (controls.global.denied) return 'GLOBAL_KILL_SWITCH';
+      if (controls.root?.denied) return 'ROOT_KILL_SWITCH';
+      if (root.cancellation !== 'active' || this.getTask(root.rootGoalId)?.status === 'cancelled') return 'CANCELLATION_REQUESTED';
+      if (child.parentTaskId && this.getTask(child.parentTaskId)?.status === 'cancelled') return 'CANCELLATION_REQUESTED';
+      if (child.parentRunId && this.getRun(child.parentRunId)?.status === 'cancelled') return 'CANCELLATION_REQUESTED';
+    }
+    const profile = getRuntimeProfile(request.runtimeRef, request.runtimeProfileRef);
+    if (!profile || !profile.allowedRoleTemplateIds.includes(assignment.roleTemplateId) || child.capabilities?.some((capability) => !profile.allowedCapabilities.includes(capability))) return 'RUNTIME_PROFILE_INVALID';
+    const reservation = attempt.reservationId ? this.getReservation(attempt.reservationId) : undefined;
+    const budget = this.getBudget(attempt.budgetScopeId);
+    if (!reservation || reservation.reservationId !== assignment.reservationId || reservation.status !== 'reserved' || !budget
+      || budget.usedSteps + budget.reservedSteps > budget.maxSteps || budget.usedDollars + budget.reservedDollars > budget.maxDollars) return 'AUTHORITY_UNAVAILABLE';
+    return undefined;
+  }
+
+  private runtimeDispatchAssignment(assignment: AgentModeChildAssignment, child: AgentModeAgent): AgentModePreparedChildDispatch {
+    return {
+      assignmentIntentKey: assignment.assignmentIntentKey,
+      childAgentId: assignment.childAgentId,
+      taskId: assignment.taskId,
+      runId: assignment.runId,
+      attemptId: assignment.attemptId,
+      runtimeRef: assignment.runtimeRef,
+      runtimeProfileRef: assignment.runtimeProfileRef,
+      roleTemplateId: assignment.roleTemplateId,
+      roleTemplateVersion: assignment.roleTemplateVersion,
+      policyId: assignment.policyId,
+      policyVersion: assignment.policyVersion,
+      capabilitySetHash: assignment.capabilitySetHash,
+      capabilities: assignment.capabilities,
+      repositoryScope: assignment.repositoryScope,
+      resourceScope: assignment.resourceScope,
+      rootGoalId: assignment.rootGoalId,
+      sourceEventId: assignment.sourceEventId,
+      stepCeiling: assignment.requestedSteps,
+      costCeiling: assignment.requestedCost,
+      remainingSteps: Math.max(0, (child.reservedChildSteps ?? 0) - assignment.requestedSteps),
+      remainingCost: Math.max(0, (child.reservedChildCost ?? 0) - assignment.requestedCost),
+      deadline: assignment.deadline,
+      status: 'dispatch_ready',
+    };
+  }
+
+  private makeRuntimeDispatchPrepared(
+    request: AgentModeRuntimeDispatchRequest,
+    assignment: AgentModePreparedChildDispatch,
+    lease: AgentModeLease,
+    phase: AgentModeRuntimeDispatchPrepared['phase'],
+    receipt?: AgentModeRuntimeReceipt,
+  ): AgentModeRuntimeDispatchPrepared {
+    return { request, assignment, operationId: request.operationId, dispatchId: request.dispatchId, resourceKey: lease.resourceKey, leaseId: lease.leaseId, fence: lease.fence, leaseExpiresAt: lease.expiresAt, preparedAt: request.requestedAt, phase, ...(receipt ? { receipt } : {}) };
+  }
+
+  prepareRuntimeDispatchReconciliation(request: AgentModeRuntimeDispatchRequest): AgentModeRuntimeDispatchStorePreparation {
+    if (this.readOnly || !this.hasChildAssignmentTables || !validateRuntimeDispatchRequest(request)) return { result: 'denied', reasonCode: 'INVALID_REQUEST' };
+    try {
+      return this.withTransaction(() => {
+        const outbox = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(request.operationId) as Record<string, unknown> | undefined;
+        const effect = this.database.prepare('SELECT * FROM effects WHERE operation_id = ?').get(request.operationId) as Record<string, unknown> | undefined;
+        const assignment = this.getChildAssignment(request.childAgentId);
+        const child = this.getAgent(request.childAgentId);
+        const attempt = this.getAttempt(request.attemptId);
+        if (!outbox || !effect || !assignment || !child || !attempt) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+        if (outbox.state !== 'uncertain' || effect.status !== 'uncertain' || outbox.dispatch_id !== request.dispatchId || outbox.assignment_intent_key !== request.assignmentIntentKey || outbox.child_agent_id !== request.childAgentId || outbox.attempt_id !== request.attemptId || outbox.runtime_ref !== request.runtimeRef || outbox.runtime_profile_ref !== request.runtimeProfileRef) return { result: 'denied', reasonCode: 'RECONCILIATION_NOT_REQUIRED' };
+        const resourceKey = runtimeDispatchResourceKey(request.attemptId);
+        let lease = this.getLease(resourceKey);
+        if (lease && lease.ownerId !== request.controllerRef && Date.parse(lease.expiresAt) > Date.parse(request.requestedAt)) return { result: 'denied', reasonCode: 'LEASE_CONFLICT' };
+        if (!lease || lease.ownerId !== request.controllerRef || Date.parse(lease.expiresAt) <= Date.parse(request.requestedAt)) {
+          lease = this.acquireLeaseAt({ leaseId: `${resourceKey}:${request.controllerRef}:${request.dispatchId}:reconcile`, resourceKey, ownerId: request.controllerRef, expiresAt: assignment.deadline }, request.requestedAt);
+        }
+        if (!lease) return { result: 'denied', reasonCode: 'LEASE_CONFLICT' };
+        this.database.prepare('UPDATE attempts SET lease_resource_key = ?, lease_id = ?, lease_owner_id = ?, lease_fence = ?, updated_at = ? WHERE attempt_id = ?').run(resourceKey, lease.leaseId, request.controllerRef, lease.fence, request.requestedAt, request.attemptId);
+        this.database.prepare('UPDATE effects SET lease_resource_key = ?, lease_id = ?, lease_fence = ?, controller_ref = ? WHERE operation_id = ?').run(resourceKey, lease.leaseId, lease.fence, request.controllerRef, request.operationId);
+        this.database.prepare('UPDATE dispatch_outbox SET lease_resource_key = ?, lease_id = ?, lease_fence = ?, controller_ref = ? WHERE operation_id = ?').run(resourceKey, lease.leaseId, lease.fence, request.controllerRef, request.operationId);
+        return { result: 'ready', prepared: this.makeRuntimeDispatchPrepared(request, this.runtimeDispatchAssignment(assignment, child), lease, 'dispatched', this.parseRuntimeReceipt(effect.receipt_json)) };
+      });
+    } catch {
+      return { result: 'denied', reasonCode: 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
+  getRuntimeDispatchPreparation(operationId: string, controllerRef: string, now: string): AgentModeRuntimeDispatchStorePreparation {
+    const row = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+    const effect = this.database.prepare('SELECT receipt_json FROM effects WHERE operation_id = ?').get(operationId) as { receipt_json?: string } | undefined;
+    if (!row || !effect) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+    const receipt = this.parseRuntimeReceipt(effect.receipt_json);
+    if (row.state === 'uncertain') return { result: 'uncertain', reasonCode: 'RUNTIME_UNCERTAIN', ...(receipt ? { receipt } : {}) };
+    if (['verified', 'failed', 'cancelled'].includes(String(row.state)) && receipt) return { result: 'terminal', receipt };
+    const assignment = this.getChildAssignment(String(row.child_agent_id));
+    const child = this.getAgent(String(row.child_agent_id));
+    const lease = this.getLease(String(row.lease_resource_key));
+    if (!assignment || !child || !lease || !row.dispatch_id || !row.assignment_intent_key || !row.controller_ref) return { result: 'denied', reasonCode: 'AUTHORITY_UNAVAILABLE' };
+    const request: AgentModeRuntimeDispatchRequest = { schemaVersion: 1, dispatchId: String(row.dispatch_id), operationId, assignmentIntentKey: String(row.assignment_intent_key), childAgentId: String(row.child_agent_id), taskId: assignment.taskId, runId: assignment.runId, attemptId: assignment.attemptId, runtimeRef: String(row.runtime_ref), runtimeProfileRef: String(row.runtime_profile_ref), controllerRef, requestedAt: now };
+    if (lease.ownerId !== controllerRef && Date.parse(lease.expiresAt) > Date.parse(now)) return { result: 'denied', reasonCode: 'LEASE_CONFLICT' };
+    return { result: 'ready', prepared: this.makeRuntimeDispatchPrepared(request, this.runtimeDispatchAssignment(assignment, child), lease, row.state === 'receipt_recorded' ? 'receipt_recorded' : row.state === 'verified' ? 'verified' : 'dispatchable', receipt) };
+  }
+
+  markRuntimeDispatchStarted(operationId: string, controllerRef: string, leaseId: string, fence: number, now: string): AgentModeRuntimeDispatchMutation {
+    try {
+      return this.withTransaction(() => {
+        const row = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+        if (!row) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+        if (row.state === 'dispatched' || row.state === 'receipt_recorded' || row.state === 'verified' || row.state === 'failed' || row.state === 'cancelled') return { result: 'denied', reasonCode: 'ALREADY_DISPATCHED' };
+        if (row.state !== 'dispatchable' || row.controller_ref !== controllerRef || row.lease_id !== leaseId || Number(row.lease_fence) !== fence) return { result: 'denied', reasonCode: 'STALE_FENCE' };
+        const assignment = this.getChildAssignment(String(row.child_agent_id)); const child = this.getAgent(String(row.child_agent_id)); const task = assignment ? this.getTask(assignment.taskId) : undefined; const run = assignment ? this.getRun(assignment.runId) : undefined; const attempt = this.getAttempt(String(row.attempt_id));
+        if (!assignment || !child || !task || !run || !attempt) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+        this.assertCurrentLease(attempt.attemptId, String(row.lease_resource_key), leaseId, fence, now);
+        const request: AgentModeRuntimeDispatchRequest = { schemaVersion: 1, dispatchId: String(row.dispatch_id), operationId, assignmentIntentKey: String(row.assignment_intent_key), childAgentId: String(row.child_agent_id), taskId: assignment.taskId, runId: assignment.runId, attemptId: String(row.attempt_id), runtimeRef: String(row.runtime_ref), runtimeProfileRef: String(row.runtime_profile_ref), controllerRef, requestedAt: now };
+        const authorityFailure = this.runtimeDispatchAuthority(request, assignment, child, task, run, attempt, now, true);
+        if (authorityFailure) return { result: 'denied', reasonCode: authorityFailure };
+        this.database.prepare("UPDATE dispatch_outbox SET state = 'dispatched', dispatched_at = ? WHERE operation_id = ? AND state = 'dispatchable'").run(now, operationId);
+        this.database.prepare("UPDATE effects SET status = 'dispatched', dispatched_at = ? WHERE operation_id = ? AND status = 'prepared'").run(now, operationId);
+        this.database.prepare("UPDATE agents SET status = 'running' WHERE agent_id = ? AND status = 'assigned'").run(child.agentId);
+        this.database.prepare("UPDATE agent_mode_child_assignments SET status = 'running', updated_at = ? WHERE assignment_intent_key = ? AND status = 'dispatch_ready'").run(now, assignment.assignmentIntentKey);
+        this.database.prepare("UPDATE attempts SET status = 'running', updated_at = ? WHERE attempt_id = ? AND status = 'admitted'").run(now, attempt.attemptId);
+        this.database.prepare("UPDATE runs SET status = 'active' WHERE run_id = ? AND status = 'created'").run(run.runId);
+        this.database.prepare("UPDATE tasks SET status = 'running' WHERE task_id = ? AND status = 'admitted'").run(task.taskId);
+        this.appendEventIfAbsent({ eventId: `runtime-started:${operationId}`, entityType: 'attempt', entityId: attempt.attemptId, eventType: 'runtime_started', occurredAt: now, payload: { operationId, dispatchId: request.dispatchId, runtimeRef: request.runtimeRef, runtimeProfileRef: request.runtimeProfileRef, leaseId, fence } });
+        return { result: 'created' };
+      });
+    } catch (error) {
+      return { result: 'denied', reasonCode: error instanceof Error && error.message.includes('stale lease') ? 'STALE_FENCE' : 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
+  private parseRuntimeReceipt(value: unknown): AgentModeRuntimeReceipt | undefined {
+    if (typeof value !== 'string') return undefined;
+    try {
+      const parsed = JSON.parse(value) as AgentModeRuntimeReceipt;
+      return validateRuntimeResult(runtimeResultFromReceipt(parsed)) && runtimeReceiptEffectHash(parsed) === parsed.effectHash ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  recordRuntimeDispatchReceipt(receipt: AgentModeRuntimeReceipt): AgentModeRuntimeReceiptMutation {
+    try {
+      return this.withTransaction(() => {
+        if (!validateRuntimeResult(runtimeResultFromReceipt(receipt)) || runtimeReceiptEffectHash(receipt) !== receipt.effectHash) return { result: 'denied', reasonCode: 'RUNTIME_RESULT_INVALID' };
+        const effect = this.database.prepare('SELECT * FROM effects WHERE operation_id = ?').get(receipt.operationId) as Record<string, unknown> | undefined;
+        const outbox = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(receipt.operationId) as Record<string, unknown> | undefined;
+        if (!effect || !outbox) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+        if (effect.attempt_id !== receipt.attemptId || outbox.attempt_id !== receipt.attemptId
+          || effect.dispatch_id !== receipt.dispatchId || outbox.dispatch_id !== receipt.dispatchId
+          || effect.assignment_intent_key !== receipt.assignmentIntentKey || outbox.assignment_intent_key !== receipt.assignmentIntentKey
+          || effect.child_agent_id !== receipt.childAgentId || outbox.child_agent_id !== receipt.childAgentId
+          || effect.runtime_ref !== receipt.runtimeRef || outbox.runtime_ref !== receipt.runtimeRef
+          || effect.runtime_profile_ref !== receipt.runtimeProfileRef || outbox.runtime_profile_ref !== receipt.runtimeProfileRef
+          || effect.lease_id !== receipt.leaseId || Number(effect.lease_fence) !== receipt.fence
+          || outbox.lease_id !== receipt.leaseId || Number(outbox.lease_fence) !== receipt.fence) return { result: 'stale', reasonCode: 'STALE_FENCE' };
+        if (outbox.state !== 'dispatched' && outbox.state !== 'receipt_recorded' && outbox.state !== 'uncertain') return { result: 'denied', reasonCode: 'DISPATCH_NOT_STARTED' };
+        const attempt = this.getAttempt(receipt.attemptId);
+        const assignment = this.getChildAssignment(receipt.childAgentId);
+        if (!attempt || !assignment || assignment.reservationId !== attempt.reservationId) return { result: 'denied', reasonCode: 'DISPATCH_IDENTITY_MISMATCH' };
+        const reservation = attempt.reservationId ? this.getReservation(attempt.reservationId) : undefined;
+        if (!reservation || receipt.usage.steps > reservation.steps || receipt.usage.tokens > reservation.tokens || receipt.usage.cost > reservation.dollars) return { result: 'denied', reasonCode: 'RESULT_EXCEEDS_ALLOCATION' };
+        const genericReceipt: OperationReceipt = {
+          operationId: receipt.operationId,
+          attemptId: receipt.attemptId,
+          scopeHash: attempt.capabilityScopeHash,
+          effectHash: receipt.effectHash,
+          status: receipt.status,
+          recordedAt: receipt.recordedAt,
+        };
+        const recorded = this.recordReceipt(genericReceipt);
+        if (recorded === 'stale') return { result: 'stale', reasonCode: 'STALE_FENCE' };
+        if (recorded === 'conflict') return { result: 'conflict', reasonCode: 'RECEIPT_CONFLICT' };
+        this.database.prepare('UPDATE effects SET status = ?, receipt_json = ? WHERE operation_id = ?').run(receipt.status, JSON.stringify(receipt), receipt.operationId);
+        if (recorded === 'recorded') this.appendEventIfAbsent({ eventId: `runtime-receipt-recorded:${receipt.operationId}:${receipt.effectHash}`, entityType: 'attempt', entityId: receipt.attemptId, eventType: 'runtime_receipt_recorded', occurredAt: receipt.recordedAt, payload: { operationId: receipt.operationId, dispatchId: receipt.dispatchId, status: receipt.status, runtimeReceiptId: receipt.receiptId, resultHash: receipt.resultHash, evidenceRef: receipt.evidenceRef } });
+        return { result: recorded === 'duplicate' ? 'duplicate' : 'recorded' };
+      });
+    } catch (error) {
+      return { result: 'denied', reasonCode: error instanceof Error && error.message.includes('stale') ? 'STALE_FENCE' : 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
+  verifyRuntimeDispatch(operationId: string, now: string): AgentModeRuntimeVerification {
+    try {
+      return this.withTransaction(() => {
+        const outbox = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+        const effect = this.database.prepare('SELECT * FROM effects WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+        if (!outbox || !effect) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+        if (outbox.state === 'verified' || outbox.state === 'failed' || outbox.state === 'cancelled') return { result: 'duplicate' };
+        if (outbox.state !== 'receipt_recorded') return { result: 'denied', reasonCode: 'RECEIPT_NOT_RECORDED' };
+        const receipt = this.parseRuntimeReceipt(effect.receipt_json);
+        if (!receipt || receipt.operationId !== operationId) return { result: 'uncertain', reasonCode: 'RECEIPT_INVALID' };
+        const attempt = this.getAttempt(String(outbox.attempt_id));
+        const assignment = this.getChildAssignment(String(outbox.child_agent_id));
+        if (!attempt || !assignment || receipt.attemptId !== attempt.attemptId || receipt.assignmentIntentKey !== assignment.assignmentIntentKey) return { result: 'uncertain', reasonCode: 'DISPATCH_IDENTITY_MISMATCH' };
+        if (!this.isCurrentLease(attempt.attemptId, String(outbox.lease_resource_key), String(outbox.lease_id), Number(outbox.lease_fence), now)) return { result: 'uncertain', reasonCode: 'STALE_FENCE' };
+        if (!validateRuntimeResult(runtimeResultFromReceipt(receipt))) return { result: 'uncertain', reasonCode: 'RECEIPT_INVALID' };
+        if (attempt.cancellationStatus !== 'running' && (receipt.status !== 'cancelled' || receipt.cancellationObserved !== true)) return { result: 'uncertain', reasonCode: 'CANCELLATION_RACE' };
+        const nextState = receipt.status === 'succeeded' ? 'verified' : receipt.status;
+        this.database.prepare('UPDATE effects SET status = ? WHERE operation_id = ?').run(receipt.status, operationId);
+        this.database.prepare('UPDATE dispatch_outbox SET state = ? WHERE operation_id = ?').run(nextState, operationId);
+        this.appendEventIfAbsent({ eventId: `runtime-verified:${operationId}:${receipt.effectHash}`, entityType: 'attempt', entityId: attempt.attemptId, eventType: 'runtime_verified', occurredAt: now, payload: { operationId, dispatchId: receipt.dispatchId, status: receipt.status, resultHash: receipt.resultHash, evidenceRef: receipt.evidenceRef } });
+        return { result: 'verified' };
+      });
+    } catch (error) {
+      return { result: 'denied', reasonCode: error instanceof Error && error.message.includes('stale') ? 'STALE_FENCE' : 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
+  markRuntimeDispatchUncertain(operationId: string, now: string, reasonCode: string): AgentModeRuntimeDispatchMutation {
+    try {
+      return this.withTransaction(() => {
+        const outbox = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+        const effect = this.database.prepare('SELECT * FROM effects WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+        if (!outbox || !effect) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+        if (outbox.state === 'uncertain' || effect.status === 'uncertain') return { result: 'duplicate' };
+        if (['verified', 'failed', 'cancelled'].includes(String(outbox.state))) return { result: 'duplicate' };
+        this.database.prepare("UPDATE effects SET status = 'uncertain' WHERE operation_id = ?").run(operationId);
+        this.database.prepare("UPDATE dispatch_outbox SET state = 'uncertain' WHERE operation_id = ?").run(operationId);
+        this.database.prepare("UPDATE attempts SET status = 'uncertain', updated_at = ? WHERE attempt_id = ? AND status NOT IN ('completed', 'failed', 'cancelled')").run(now, String(outbox.attempt_id));
+        this.database.prepare("UPDATE agents SET status = 'uncertain' WHERE agent_id = ? AND status NOT IN ('completed', 'failed', 'cancelled', 'expired')").run(String(outbox.child_agent_id));
+        this.database.prepare("UPDATE agent_mode_child_assignments SET status = 'uncertain', updated_at = ? WHERE assignment_intent_key = ? AND status NOT IN ('completed', 'failed', 'cancelled', 'expired')").run(now, String(outbox.assignment_intent_key));
+        this.appendEventIfAbsent({ eventId: `runtime-uncertain:${operationId}`, entityType: 'attempt', entityId: String(outbox.attempt_id), eventType: 'runtime_uncertain', occurredAt: now, payload: { operationId, dispatchId: outbox.dispatch_id, reasonCode } });
+        return { result: 'created' };
+      });
+    } catch {
+      return { result: 'denied', reasonCode: 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
+  isRuntimeCancellationRequested(operationId: string, now: string): boolean {
+    try {
+      const row = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+      if (!row) return true;
+      const attempt = this.getAttempt(String(row.attempt_id));
+      const assignment = this.getChildAssignment(String(row.child_agent_id));
+      const child = this.getAgent(String(row.child_agent_id));
+      if (!attempt || !assignment || !child) return true;
+      if (attempt.cancellationStatus !== 'running' || ['cancelled', 'expired', 'uncertain'].includes(child.status) || ['cancelled', 'expired', 'uncertain'].includes(assignment.status)) return true;
+      const root = this.getSpawnRootState(assignment.rootGoalId);
+      if (!root || root.cancellation !== 'active' || this.getTask(root.rootGoalId)?.status === 'cancelled') return true;
+      const controls = this.getSpawnAdmissionControls(assignment.rootGoalId);
+      return controls.global.denied || Boolean(controls.root?.denied) || Date.parse(assignment.deadline) <= Date.parse(now);
+    } catch {
+      return true;
+    }
+  }
+
+  settleRuntimeDispatch(operationId: string, controllerRef: string, leaseId: string, fence: number, now: string): AgentModeRuntimeSettlement {
+    try {
+      return this.withTransaction(() => {
+        const outbox = this.database.prepare('SELECT * FROM dispatch_outbox WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+        const effect = this.database.prepare('SELECT * FROM effects WHERE operation_id = ?').get(operationId) as Record<string, unknown> | undefined;
+        if (!outbox || !effect) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+        const receipt = this.parseRuntimeReceipt(effect.receipt_json);
+        if (!receipt) return { result: 'uncertain', reasonCode: 'RECEIPT_INVALID' };
+        const assignment = this.getChildAssignment(String(outbox.child_agent_id));
+        const child = this.getAgent(String(outbox.child_agent_id));
+        const attempt = this.getAttempt(String(outbox.attempt_id));
+        if (!assignment || !child || !attempt) return { result: 'denied', reasonCode: 'DISPATCH_NOT_FOUND' };
+        const terminal = ['completed', 'failed', 'cancelled'].includes(assignment.status);
+        if (terminal && assignment.status === (receipt.status === 'succeeded' ? 'completed' : receipt.status) && this.getReservation(assignment.reservationId)?.status === 'settled') return { result: 'duplicate', receipt };
+        if (!['verified', 'failed', 'cancelled'].includes(String(outbox.state))) return { result: 'denied', reasonCode: 'DISPATCH_NOT_VERIFIED' };
+        if (outbox.controller_ref !== controllerRef || outbox.lease_id !== leaseId || Number(outbox.lease_fence) !== fence) return { result: 'denied', reasonCode: 'STALE_FENCE' };
+        this.assertCurrentLease(attempt.attemptId, String(outbox.lease_resource_key), leaseId, fence, now);
+        if (receipt.operationId !== operationId || receipt.attemptId !== attempt.attemptId || receipt.assignmentIntentKey !== assignment.assignmentIntentKey || receipt.childAgentId !== child.agentId || receipt.effectHash !== runtimeReceiptEffectHash(receipt)) return { result: 'uncertain', reasonCode: 'RECEIPT_INVALID' };
+        const reservation = this.getReservation(assignment.reservationId);
+        if (!reservation || reservation.status !== 'reserved' || receipt.usage.steps > reservation.steps || receipt.usage.tokens > reservation.tokens || receipt.usage.cost > reservation.dollars) return { result: 'denied', reasonCode: 'RESULT_EXCEEDS_ALLOCATION' };
+        const terminalStatus = receipt.status === 'succeeded' ? 'completed' : receipt.status;
+        if (receipt.status === 'cancelled') {
+          if (attempt.cancellationStatus === 'running') return { result: 'denied', reasonCode: 'CANCELLATION_NOT_REQUESTED' };
+          if (attempt.cancellationStatus === 'requested') this.acknowledgeCancellation(attempt.attemptId, now);
+        }
+        this.finishAttempt(attempt.attemptId, terminalStatus, now);
+        const settled = this.settleBudgetInternal({ reservationId: reservation.reservationId, steps: receipt.usage.steps, tokens: receipt.usage.tokens, dollars: receipt.usage.cost, settledAt: now });
+        if (settled === 'conflict') return { result: 'uncertain', reasonCode: 'BUDGET_CONFLICT' };
+        const root = this.getSpawnRootState(assignment.rootGoalId);
+        if (!root || root.activeChildren < 1 || root.reservedChildSteps < (child.reservedChildSteps ?? 0) || root.reservedChildCost < (child.reservedChildCost ?? 0)) throw new Error('spawn root aggregate release failed');
+        const rootUpdate = this.database.prepare(`UPDATE agent_mode_spawn_roots SET active_children = active_children - 1, reserved_child_steps = reserved_child_steps - ?, reserved_child_cost = reserved_child_cost - ?, updated_at = ? WHERE root_goal_id = ? AND active_children > 0 AND reserved_child_steps >= ? AND reserved_child_cost >= ?`).run(child.reservedChildSteps ?? 0, child.reservedChildCost ?? 0, now, assignment.rootGoalId, child.reservedChildSteps ?? 0, child.reservedChildCost ?? 0);
+        if (rootUpdate.changes !== 1) throw new Error('spawn root aggregate release failed');
+        this.database.prepare('UPDATE agents SET status = ?, reserved_child_steps = 0, reserved_child_cost = 0 WHERE agent_id = ?').run(terminalStatus, child.agentId);
+        this.database.prepare('UPDATE agent_mode_child_assignments SET status = ?, updated_at = ? WHERE assignment_intent_key = ?').run(terminalStatus, now, assignment.assignmentIntentKey);
+        this.database.prepare('UPDATE leases SET expires_at = ? WHERE resource_key = ? AND lease_id = ? AND owner_id = ? AND fence = ?').run(now, String(outbox.lease_resource_key), leaseId, controllerRef, fence);
+        const eventType = receipt.status === 'succeeded' ? 'runtime_completed' : receipt.status === 'failed' ? 'runtime_failed' : 'runtime_cancelled';
+        this.appendEventIfAbsent({ eventId: `${eventType}:${operationId}`, entityType: 'attempt', entityId: attempt.attemptId, eventType, occurredAt: now, payload: { operationId, dispatchId: receipt.dispatchId, childAgentId: child.agentId, resultHash: receipt.resultHash, evidenceRef: receipt.evidenceRef, usage: receipt.usage } });
+        this.appendEventIfAbsent({ eventId: `child-settled:${assignment.assignmentIntentKey}`, entityType: 'child_assignment', entityId: assignment.assignmentIntentKey, eventType: 'child_settled', occurredAt: now, payload: { childAgentId: child.agentId, status: terminalStatus, operationId } });
+        return { result: 'settled', receipt };
+      });
+    } catch (error) {
+      return { result: 'denied', reasonCode: error instanceof Error && error.message.includes('stale lease') ? 'STALE_FENCE' : error instanceof Error && error.message.includes('cancellation') ? 'CANCELLATION_NOT_REQUESTED' : 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
   assignChildAgent(request: AgentModeChildAssignmentRequest): AgentModeChildAssignmentResult {
     try {
       return this.withTransaction(() => this.assignChildAgentInternal(request));
@@ -2361,6 +2820,7 @@ export class AgentModeSqliteStateStore {
     this.ensureBudgetScope({ budgetScopeId, maxSteps: child.reservedChildSteps, maxTokens: 0, maxDollars: child.reservedChildCost });
     const reservationResult = this.reserveBudgetInternal({ reservationId, budgetScopeId, attemptId, steps: request.requestedSteps, tokens: 0, dollars: request.requestedCostCeiling, status: 'reserved', createdAt: request.requestedAt });
     if (reservationResult !== 'created') return { result: 'conflict', reasonCode: 'ASSIGNMENT_CONFLICT' };
+    this.database.prepare('UPDATE attempts SET reservation_id = ? WHERE attempt_id = ?').run(reservationId, attemptId);
     this.database.prepare("UPDATE attempts SET status = 'admitted', updated_at = ? WHERE attempt_id = ? AND status = 'created'").run(request.requestedAt, attemptId);
     const receipt: AgentModeChildAssignmentReceipt = {
       assignmentIntentKey: intent, assignmentId: request.assignmentId, childAgentId: child.agentId, taskId, runId, attemptId,
@@ -3192,6 +3652,12 @@ export class AgentModeSqliteStateStore {
       state: row.state as AgentModeDispatchState,
       preparedAt: String(row.prepared_at),
       ...(row.dispatched_at === null ? {} : { dispatchedAt: String(row.dispatched_at) }),
+      ...(row.dispatch_id == null ? {} : { dispatchId: String(row.dispatch_id) }),
+      ...(row.assignment_intent_key == null ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
+      ...(row.child_agent_id == null ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.runtime_ref == null ? {} : { runtimeRef: String(row.runtime_ref) }),
+      ...(row.runtime_profile_ref == null ? {} : { runtimeProfileRef: String(row.runtime_profile_ref) }),
+      ...(row.controller_ref == null ? {} : { controllerRef: String(row.controller_ref) }),
     };
   }
 
@@ -3212,6 +3678,12 @@ export class AgentModeSqliteStateStore {
       state: row.state as AgentModeDispatchState,
       preparedAt: String(row.prepared_at),
       ...(row.dispatched_at === null ? {} : { dispatchedAt: String(row.dispatched_at) }),
+      ...(row.dispatch_id == null ? {} : { dispatchId: String(row.dispatch_id) }),
+      ...(row.assignment_intent_key == null ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
+      ...(row.child_agent_id == null ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.runtime_ref == null ? {} : { runtimeRef: String(row.runtime_ref) }),
+      ...(row.runtime_profile_ref == null ? {} : { runtimeProfileRef: String(row.runtime_profile_ref) }),
+      ...(row.controller_ref == null ? {} : { controllerRef: String(row.controller_ref) }),
     }));
   }
 
@@ -4458,6 +4930,12 @@ export class AgentModeSqliteStateStore {
       ...(row.prepared_at == null ? {} : { preparedAt: String(row.prepared_at) }),
       ...(row.dispatched_at == null ? {} : { dispatchedAt: String(row.dispatched_at) }),
       ...(row.observed_at == null ? {} : { observedAt: String(row.observed_at) }),
+      ...(row.dispatch_id == null ? {} : { dispatchId: String(row.dispatch_id) }),
+      ...(row.assignment_intent_key == null ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
+      ...(row.child_agent_id == null ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.runtime_ref == null ? {} : { runtimeRef: String(row.runtime_ref) }),
+      ...(row.runtime_profile_ref == null ? {} : { runtimeProfileRef: String(row.runtime_profile_ref) }),
+      ...(row.controller_ref == null ? {} : { controllerRef: String(row.controller_ref) }),
     };
   }
 
@@ -4480,6 +4958,26 @@ export class AgentModeSqliteStateStore {
       ...(row.prepared_at == null ? {} : { preparedAt: String(row.prepared_at) }),
       ...(row.dispatched_at == null ? {} : { dispatchedAt: String(row.dispatched_at) }),
       ...(row.observed_at == null ? {} : { observedAt: String(row.observed_at) }),
+      ...(row.dispatch_id == null ? {} : { dispatchId: String(row.dispatch_id) }),
+      ...(row.assignment_intent_key == null ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
+      ...(row.child_agent_id == null ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.runtime_ref == null ? {} : { runtimeRef: String(row.runtime_ref) }),
+      ...(row.runtime_profile_ref == null ? {} : { runtimeProfileRef: String(row.runtime_profile_ref) }),
+      ...(row.controller_ref == null ? {} : { controllerRef: String(row.controller_ref) }),
+    }));
+  }
+
+  listDispatchOutbox(): AgentModeDispatchOutbox[] {
+    const rows = this.database.prepare('SELECT * FROM dispatch_outbox ORDER BY prepared_at, operation_id').all() as Array<Record<string, unknown>>;
+    return rows.map((row) => ({
+      operationId: String(row.operation_id), attemptId: String(row.attempt_id), effectKind: String(row.effect_kind), capabilityId: String(row.capability_id),
+      ...(row.grant_id == null ? {} : { grantId: String(row.grant_id) }), scopeHash: String(row.scope_hash), policyVersion: String(row.policy_version),
+      ...(row.lease_resource_key == null ? {} : { leaseResourceKey: String(row.lease_resource_key) }), ...(row.lease_id == null ? {} : { leaseId: String(row.lease_id) }),
+      ...(row.lease_fence == null ? {} : { leaseFence: Number(row.lease_fence) }), deadline: String(row.deadline), state: row.state as AgentModeDispatchState,
+      preparedAt: String(row.prepared_at), ...(row.dispatched_at == null ? {} : { dispatchedAt: String(row.dispatched_at) }),
+      ...(row.dispatch_id == null ? {} : { dispatchId: String(row.dispatch_id) }), ...(row.assignment_intent_key == null ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
+      ...(row.child_agent_id == null ? {} : { childAgentId: String(row.child_agent_id) }), ...(row.runtime_ref == null ? {} : { runtimeRef: String(row.runtime_ref) }),
+      ...(row.runtime_profile_ref == null ? {} : { runtimeProfileRef: String(row.runtime_profile_ref) }), ...(row.controller_ref == null ? {} : { controllerRef: String(row.controller_ref) }),
     }));
   }
 
