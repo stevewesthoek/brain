@@ -13,6 +13,8 @@ const execFile = promisify(execFileCallback);
 
 export const GIT_REPOSITORY_REVISION_SOURCE = 'git.repository.revision' as const;
 export const REPOSITORY_COMMIT_OBSERVED_EVENT = 'repository.commit.observed' as const;
+export const BRAIN_TASK_LIFECYCLE_SOURCE = 'brain.task.lifecycle' as const;
+export const TASK_LIFECYCLE_OBSERVED_EVENT = 'task.lifecycle.observed' as const;
 
 export type EventSourceObservationContext = {
   sourceId: string;
@@ -20,6 +22,7 @@ export type EventSourceObservationContext = {
   observedAt: string;
   catchUpLimit: number;
   debounceWindowMs: number;
+  scanLimit?: number;
 };
 
 export type EventSourceObservation<TEvent> = {
@@ -48,6 +51,18 @@ export type GitRepositoryCommitEvent = {
   ref: string;
   observationSequence: number;
   debounceGroupId: string;
+};
+
+export type BrainTaskLifecycleEvent = {
+  sourceEventId: string;
+  sourceSequence: number;
+  entityType: 'task' | 'run' | 'attempt';
+  entityId: string;
+  lifecycleEventType: string;
+  occurredAt: string;
+  taskId: string | null;
+  runId: string | null;
+  attemptId: string | null;
 };
 
 export type GitRepositorySourceReader = {
@@ -157,7 +172,76 @@ export class GitRepositoryEventSourceAdapter implements EventSourceAdapter<GitRe
   }
 }
 
-function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepositoryCommitEvent, now: string): AgentModeSchedulerEventInput {
+const ELIGIBLE_LIFECYCLE_EVENTS = new Set([
+  'attempt_admitted', 'attempt_started', 'attempt_finished',
+  'cancellation_requested', 'cancellation_acknowledged',
+  'run_paused', 'run_resumed', 'controller_lost',
+  'attempt_readmitted_after_process_loss', 'run_cancel_requested',
+  'run_cancelled', 'run_killed',
+]);
+
+function boundedIdentity(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 && value.length <= 256 ? value : null;
+}
+
+export class InternalLifecycleEventSourceAdapter implements EventSourceAdapter<BrainTaskLifecycleEvent> {
+  readonly sourceId: string;
+  readonly sourceType = BRAIN_TASK_LIFECYCLE_SOURCE;
+  private readonly store: AgentModeSqliteStateStore;
+  private readonly scanLimit: number;
+
+  constructor(options: { store: AgentModeSqliteStateStore; sourceId?: string; scanLimit?: number }) {
+    this.store = options.store;
+    this.sourceId = options.sourceId ?? BRAIN_TASK_LIFECYCLE_SOURCE;
+    this.scanLimit = Math.max(1, Math.min(500, Math.floor(options.scanLimit ?? 100)));
+  }
+
+  async observe(context: EventSourceObservationContext): Promise<EventSourceObservation<BrainTaskLifecycleEvent>> {
+    if (context.sourceId !== this.sourceId) throw new Error('event source context identity mismatch');
+    const previous = context.previousWatermark === null ? null : Number(context.previousWatermark);
+    if (previous !== null && (!Number.isSafeInteger(previous) || previous < 0)) throw new Error('lifecycle event sequence watermark is invalid');
+    if (previous === null) {
+      const current = this.store.getHighestEventSequence();
+      return { sourceId: this.sourceId, sourceType: this.sourceType, previousWatermark: null, observedWatermark: String(current), events: [], hasMore: false, observedAt: context.observedAt, status: 'bootstrapped' };
+    }
+    const scanLimit = Math.max(1, Math.min(500, Math.floor(context.scanLimit ?? this.scanLimit)));
+    const rows = this.store.listEventsAfterSequence(previous, scanLimit + 1);
+    const scanRows = rows.slice(0, scanLimit);
+    const events: BrainTaskLifecycleEvent[] = [];
+    let lastScanned = previous;
+    let blockedByEmitLimit = false;
+    for (const row of scanRows) {
+      const sequence = row.sequence;
+      if (typeof sequence !== 'number' || !Number.isSafeInteger(sequence) || sequence <= lastScanned) throw new Error('lifecycle event sequence is invalid or non-monotonic');
+      if (ELIGIBLE_LIFECYCLE_EVENTS.has(row.eventType) && !['task', 'run', 'attempt'].includes(row.entityType)) throw new Error('eligible lifecycle event entity type is invalid');
+      if (ELIGIBLE_LIFECYCLE_EVENTS.has(row.eventType)) {
+        if (events.length >= context.catchUpLimit) { blockedByEmitLimit = true; break; }
+        const taskId = boundedIdentity(row.payload.taskId);
+        const runId = boundedIdentity(row.payload.runId);
+        const attemptId = boundedIdentity(row.payload.attemptId);
+        events.push({ sourceEventId: row.eventId, sourceSequence: sequence, entityType: row.entityType as BrainTaskLifecycleEvent['entityType'], entityId: row.entityId, lifecycleEventType: row.eventType, occurredAt: row.occurredAt, taskId, runId, attemptId });
+      }
+      lastScanned = sequence;
+    }
+    const hasMore = blockedByEmitLimit || rows.length > scanRows.length;
+    return { sourceId: this.sourceId, sourceType: this.sourceType, previousWatermark: context.previousWatermark, observedWatermark: String(lastScanned), events, hasMore, observedAt: context.observedAt, status: events.length ? 'advanced' : lastScanned > previous ? 'advanced' : 'unchanged' };
+  }
+}
+
+function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepositoryCommitEvent | BrainTaskLifecycleEvent, now: string): AgentModeSchedulerEventInput {
+  if ('sourceSequence' in event) return {
+    eventId: `${source.sourceId}:${event.sourceEventId}`,
+    eventType: TASK_LIFECYCLE_OBSERVED_EVENT,
+    source: source.sourceId,
+    occurredAt: event.occurredAt,
+    receivedAt: now,
+    causationId: event.attemptId ?? event.runId ?? event.taskId,
+    correlationId: event.runId ?? event.taskId,
+    deduplicationKey: `${source.sourceId}:${event.sourceEventId}:${event.sourceSequence}`,
+    payloadVersion: 'k4.0',
+    payload: { sourceEventId: event.sourceEventId, sourceSequence: event.sourceSequence, entityType: event.entityType, entityId: event.entityId, lifecycleEventType: event.lifecycleEventType, occurredAt: event.occurredAt, taskId: event.taskId, runId: event.runId, attemptId: event.attemptId },
+    nextEligibleAt: now, deadline: null, maxAttempts: 3,
+  };
   return {
     eventId: `${source.sourceId}:${event.commitSha}`,
     eventType: REPOSITORY_COMMIT_OBSERVED_EVENT,
@@ -175,11 +259,11 @@ function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepo
   };
 }
 
-type AgentModeEventSourceConfigLike = { sourceId: string; repositoryRef: string; debounceWindowMs: number; cooldownWindowMs: number; catchUpLimit: number };
+type AgentModeEventSourceConfigLike = { sourceId: string; sourceType: string; repositoryRef: string; debounceWindowMs: number; cooldownWindowMs: number; catchUpLimit: number };
 
 export type EventSourcePollResult = { observedAt: string; considered: number; deferred: number; sources: AgentModeEventSourceObservationResult[] };
 
-export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStateStore; adapters: readonly EventSourceAdapter<GitRepositoryCommitEvent>[]; now?: string; clock?: () => string; maxSources?: number }): Promise<EventSourcePollResult> {
+export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStateStore; adapters: readonly EventSourceAdapter<GitRepositoryCommitEvent | BrainTaskLifecycleEvent>[]; now?: string; clock?: () => string; maxSources?: number }): Promise<EventSourcePollResult> {
   const observedAt = options.now ?? (options.clock ?? (() => new Date().toISOString()))();
   const maxSources = Math.max(1, Math.min(16, Math.floor(options.maxSources ?? 16)));
   const adapters = new Map(options.adapters.map((adapter) => [adapter.sourceId, adapter]));
@@ -204,7 +288,7 @@ export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStat
       continue;
     }
     try {
-      const observation = await adapter.observe({ sourceId: source.sourceId, previousWatermark: source.watermark ?? source.bootstrapWatermark, observedAt, catchUpLimit: source.catchUpLimit, debounceWindowMs: source.debounceWindowMs });
+      const observation = await adapter.observe({ sourceId: source.sourceId, previousWatermark: source.watermark ?? source.bootstrapWatermark, observedAt, catchUpLimit: source.catchUpLimit, scanLimit: Math.min(500, source.catchUpLimit * 4), debounceWindowMs: source.debounceWindowMs });
       if (observation.status === 'diverged') {
         options.store.recordEventSourceFailure({ sourceId: source.sourceId, observedAt, status: 'diverged', reason: 'watermark_diverged_from_current_HEAD' });
         sources.push({ sourceId: source.sourceId, status: 'diverged', previousWatermark: observation.previousWatermark, observedWatermark: observation.observedWatermark, emittedEventCount: 0, duplicates: 0, hasMore: false, observedAt, errorReason: 'watermark_diverged_from_current_HEAD' });

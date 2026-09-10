@@ -829,9 +829,23 @@ retry eligibility, and do not block other sources. The observer exposes safe
 source state without paths or credentials. Evidence:
 `operations/reports/agent-mode-k4-1-a-git-event-source-evidence-2026-09-10.md`.
 
-Exact next task: **K4.1-B — internal task/lifecycle and host-health event
-sources with shared source-adapter conformance**. Do not start it
-automatically.
+### K4.1-B1 — internal Task/Run/Attempt lifecycle event source
+
+K4.1-B1 is complete for its bounded gate. The `brain.task.lifecycle` adapter
+reads only the canonical append-only Agent Mode `events` table and uses
+monotonic event `sequence` as its durable watermark. Bootstrap records the
+current sequence without replaying history; later finite observations use
+bounded scan and emit limits, filter a narrow Task/Run/Attempt lifecycle set,
+preserve sequence order, and map each source event to one typed
+`task.lifecycle.observed` scheduler event. Transactional ingestion, failure
+preservation, restart recovery, deduplication, observer origin metadata, and
+structural feedback-loop prevention are covered by the B1 evidence report.
+No host-health source, worker, model, daemon, or network path is included.
+
+Evidence: `operations/reports/agent-mode-k4-1-b1-lifecycle-event-source-evidence-2026-09-10.md`.
+
+Exact next task: **K4.1-B2 — Host-Health Event Source Using Existing
+Infrastructure Health Bindings**. Do not start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

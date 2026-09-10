@@ -17,6 +17,7 @@ export type AgentModeAgent = {
 
 export type AgentModeEvent = {
   eventId: string;
+  sequence?: number;
   entityType: string;
   entityId: string;
   eventType: string;
@@ -85,7 +86,7 @@ export type AgentModeEventSourceConfig = {
   sourceId: string;
   sourceType: string;
   repositoryRef: string;
-  adapterType: 'git.repository.revision';
+  adapterType: 'git.repository.revision' | 'brain.task.lifecycle';
   debounceWindowMs: number;
   cooldownWindowMs: number;
   catchUpLimit: number;
@@ -2060,6 +2061,7 @@ export class AgentModeSqliteStateStore {
     const rows = this.database.prepare('SELECT * FROM events WHERE entity_id = ? ORDER BY sequence, event_id').all(entityId) as Array<Record<string, unknown>>;
     return rows.map((row) => ({
       eventId: String(row.event_id),
+      sequence: Number(row.sequence),
       entityType: String(row.entity_type),
       entityId: String(row.entity_id),
       eventType: String(row.event_type),
@@ -2068,11 +2070,34 @@ export class AgentModeSqliteStateStore {
     }));
   }
 
+  listEventsAfterSequence(afterSequence: number, limit = 101): AgentModeEvent[] {
+    if (!Number.isSafeInteger(afterSequence) || afterSequence < 0) throw new Error('event sequence cursor is invalid');
+    const boundedLimit = Math.max(1, Math.min(Math.floor(limit), 501));
+    const rows = this.database.prepare('SELECT * FROM events WHERE sequence > ? ORDER BY sequence ASC LIMIT ?').all(afterSequence, boundedLimit) as Array<Record<string, unknown>>;
+    return rows.map((row) => ({
+      eventId: String(row.event_id),
+      sequence: Number(row.sequence),
+      entityType: String(row.entity_type),
+      entityId: String(row.entity_id),
+      eventType: String(row.event_type),
+      occurredAt: String(row.occurred_at),
+      payload: JSON.parse(String(row.payload_json)) as Record<string, unknown>,
+    }));
+  }
+
+  getHighestEventSequence(): number {
+    const row = this.database.prepare('SELECT COALESCE(MAX(sequence), 0) AS sequence FROM events').get() as { sequence?: number };
+    const sequence = Number(row.sequence ?? 0);
+    if (!Number.isSafeInteger(sequence) || sequence < 0) throw new Error('event sequence state is invalid');
+    return sequence;
+  }
+
   listRecentEvents(limit = 100): AgentModeEvent[] {
     const boundedLimit = Math.max(0, Math.min(Math.floor(limit), 500));
     const rows = this.database.prepare('SELECT * FROM events ORDER BY sequence DESC, event_id DESC LIMIT ?').all(boundedLimit) as Array<Record<string, unknown>>;
     return rows.reverse().map((row) => ({
       eventId: String(row.event_id),
+      sequence: Number(row.sequence),
       entityType: String(row.entity_type),
       entityId: String(row.entity_id),
       eventType: String(row.event_type),
@@ -4259,7 +4284,7 @@ export class AgentModeSqliteStateStore {
   upsertEventSource(config: AgentModeEventSourceConfig): 'created' | 'updated' | 'duplicate' | 'conflict' {
     if (!this.hasEventSourceTables) throw new Error('event source tables are unavailable');
     ensureSchedulerText(config.sourceId, 'sourceId', true); ensureSchedulerText(config.sourceType, 'sourceType', true); ensureSchedulerText(config.repositoryRef, 'repositoryRef', true);
-    if (config.adapterType !== 'git.repository.revision' || !Number.isInteger(config.debounceWindowMs) || config.debounceWindowMs < 0 || config.debounceWindowMs > 300_000 || !Number.isInteger(config.cooldownWindowMs) || config.cooldownWindowMs < 0 || config.cooldownWindowMs > 300_000 || !Number.isInteger(config.catchUpLimit) || config.catchUpLimit < 1 || config.catchUpLimit > 100) throw new Error('event source configuration is outside K4.1-A bounds');
+    if (!['git.repository.revision', 'brain.task.lifecycle'].includes(config.adapterType) || !Number.isInteger(config.debounceWindowMs) || config.debounceWindowMs < 0 || config.debounceWindowMs > 300_000 || !Number.isInteger(config.cooldownWindowMs) || config.cooldownWindowMs < 0 || config.cooldownWindowMs > 300_000 || !Number.isInteger(config.catchUpLimit) || config.catchUpLimit < 1 || config.catchUpLimit > 100) throw new Error('event source configuration is outside K4.1 bounds');
     ensureSchedulerText(config.bootstrapWatermark, 'bootstrapWatermark');
     return this.withTransaction(() => {
       const existing = this.database.prepare('SELECT * FROM agent_mode_event_sources WHERE source_id = ?').get(config.sourceId) as Record<string, unknown> | undefined;

@@ -449,6 +449,32 @@ catch-up, and emitted counts without paths or credentials.
 
 Evidence:
 `operations/reports/agent-mode-k4-1-a-git-event-source-evidence-2026-09-10.md`.
-K4 remains in progress. Next task: **K4.1-B — internal task/lifecycle and
-host-health event sources with shared source-adapter conformance**. Do not
-start it automatically.
+## K4.1-B1 internal Task/Run/Attempt lifecycle event source
+
+K4.1-B1 is complete. The `brain.task.lifecycle` adapter reads only the existing
+append-only Agent Mode `events` table; it never reads K4 scheduler rows,
+heartbeat ticks, or source bookkeeping. Its watermark is the highest durable
+event `sequence`, not a status snapshot or wall-clock timestamp. First
+observation records the current sequence with zero historical emissions.
+
+Later finite observations use bounded scan and emit limits and map only the
+eligible Task/Run/Attempt transitions to `task.lifecycle.observed` scheduler
+events. Non-eligible rows advance the cursor safely; malformed rows fail
+closed. Ingestion and watermark advancement are one transaction, so conflicts
+or failures preserve the previous cursor. Repeated polls deduplicate and
+restart resumes from the stored sequence. Scheduler rows remain a separate
+destination, making recursive feedback structurally impossible.
+
+Use the existing finite operator surface:
+
+```text
+brain-agent sources poll --once --source-type brain.task.lifecycle
+```
+
+Polling may enqueue durable scheduler work but stops before any model, runtime,
+worker, repository, daemon, listener, or network action. K4.1-B2 must reuse
+this contract and the existing infrastructure health provider/catalog
+bindings; it is not implemented here. Evidence:
+`operations/reports/agent-mode-k4-1-b1-lifecycle-event-source-evidence-2026-09-10.md`.
+K4 remains in progress. Next task: **K4.1-B2 — Host-Health Event Source Using
+Existing Infrastructure Health Bindings**. Do not start it automatically.

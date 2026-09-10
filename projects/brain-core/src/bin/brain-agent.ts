@@ -8,7 +8,7 @@ import { runLiveAgentModeSlice } from '../agent-mode/live-agent-mode-slice.js';
 import { verifyRuntimeProcessIdentity } from '../agent-mode/runtime-process-identity.js';
 import { WorkcellManager } from '../agent-mode/workcell.js';
 import { runAgentModeSchedulerTick } from '../agent-mode/scheduler.js';
-import { GIT_REPOSITORY_REVISION_SOURCE, GitRepositoryEventSourceAdapter, pollEventSourcesOnce } from '../agent-mode/event-source.js';
+import { BRAIN_TASK_LIFECYCLE_SOURCE, GIT_REPOSITORY_REVISION_SOURCE, GitRepositoryEventSourceAdapter, InternalLifecycleEventSourceAdapter, pollEventSourcesOnce } from '../agent-mode/event-source.js';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -31,7 +31,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once --source-id ID --repository-ref REF --repository-root PATH [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle --source-id brain.task.lifecycle] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -86,9 +86,12 @@ async function main(): Promise<void> {
       process.exitCode = 1;
       return;
     }
-    const sourceId = requiredFlag('--source-id');
-    const repositoryRef = requiredFlag('--repository-ref');
-    const repositoryRoot = requiredFlag('--repository-root');
+    const sourceType = flag('--source-type') ?? GIT_REPOSITORY_REVISION_SOURCE;
+    if (sourceType !== GIT_REPOSITORY_REVISION_SOURCE && sourceType !== BRAIN_TASK_LIFECYCLE_SOURCE) throw new Error(`unsupported source type: ${sourceType}`);
+    const sourceId = flag('--source-id') ?? (sourceType === BRAIN_TASK_LIFECYCLE_SOURCE ? BRAIN_TASK_LIFECYCLE_SOURCE : requiredFlag('--source-id'));
+    const repositoryRef = flag('--repository-ref') ?? (sourceType === BRAIN_TASK_LIFECYCLE_SOURCE ? 'agent-mode' : requiredFlag('--repository-ref'));
+    const repositoryRoot = flag('--repository-root');
+    if (sourceType === GIT_REPOSITORY_REVISION_SOURCE && !repositoryRoot) throw new Error('missing required --repository-root');
     const numberFlag = (name: string, fallback: number): number => {
       const raw = flag(name);
       if (!raw) return fallback;
@@ -98,9 +101,9 @@ async function main(): Promise<void> {
     };
     const config = {
       sourceId,
-      sourceType: GIT_REPOSITORY_REVISION_SOURCE,
+      sourceType,
       repositoryRef,
-      adapterType: 'git.repository.revision' as const,
+      adapterType: sourceType,
       debounceWindowMs: numberFlag('--debounce-ms', 0),
       cooldownWindowMs: numberFlag('--cooldown-ms', 0),
       catchUpLimit: numberFlag('--catch-up-limit', 10),
@@ -111,7 +114,9 @@ async function main(): Promise<void> {
     const store = new AgentModeSqliteStateStore(databasePath);
     try {
       const configuration = store.upsertEventSource(config);
-      const adapter = new GitRepositoryEventSourceAdapter({ sourceId, repositoryRef, repositoryRoot });
+      const adapter = sourceType === BRAIN_TASK_LIFECYCLE_SOURCE
+        ? new InternalLifecycleEventSourceAdapter({ store })
+        : new GitRepositoryEventSourceAdapter({ sourceId, repositoryRef, repositoryRoot: repositoryRoot as string });
       const result = await pollEventSourcesOnce({ store, adapters: [adapter] });
       process.stdout.write(`${JSON.stringify({ kind: 'agent-mode-event-source-poll', configuration, ...result }, null, 2)}\n`);
     } catch (error) {

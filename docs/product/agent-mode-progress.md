@@ -574,9 +574,24 @@ or semantic commit classification. Observer state is safe and path-free.
 
 Evidence: `operations/reports/agent-mode-k4-1-a-git-event-source-evidence-2026-09-10.md`.
 
-K4 remains **IN PROGRESS**. Exact next task: **K4.1-B — internal task/lifecycle
-and host-health event sources with shared source-adapter conformance**. Do not
-start it automatically.
+## Current K4.1-B1 internal lifecycle event source — 2026-09-10
+
+K4.1-B1 is **COMPLETE** for its bounded gate. The `brain.task.lifecycle`
+adapter consumes the canonical append-only Agent Mode `events` stream, uses
+monotonic sequence as its durable watermark, bootstraps without historical
+replay, filters a narrow Task/Run/Attempt lifecycle set, and emits bounded
+oldest-first `task.lifecycle.observed` scheduler events. Separate scan and
+emit limits prevent irrelevant audit rows from blocking the cursor. Transactional
+failure handling, restart recovery, deduplication, observer origin metadata,
+and structural scheduler feedback-loop prevention are covered by fixtures.
+The finite `sources poll --once` command supports explicit internal polling.
+No host-health source, worker, model, daemon, listener, or network path was
+added. Evidence:
+`operations/reports/agent-mode-k4-1-b1-lifecycle-event-source-evidence-2026-09-10.md`.
+
+K4 remains **IN PROGRESS**. Exact next task: **K4.1-B2 — Host-Health Event
+Source Using Existing Infrastructure Health Bindings**. Do not start it
+automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 
