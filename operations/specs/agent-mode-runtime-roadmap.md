@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A and K4.2-B are complete, K4.2 is in progress, K4 remains in progress, and dynamic workers are not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, and K4.2-C are complete, K4.2 is in progress, K4 remains in progress, and dynamic workers are not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -794,7 +794,7 @@ covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
-**Status:** K4.0 and K4.1 complete; K4.2-A and K4.2-B complete; K4 remains in progress; K4.2-C and dynamic workers not started
+**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, and K4.2-C complete; K4 remains in progress; K4.2-D and dynamic workers not started
 
 ### K4.0 — deterministic event queue, scheduler tick, and no-op heartbeat
 
@@ -932,9 +932,9 @@ does not create child Agent records, call ModelGateway, start AgentRuntime,
 reserve slots, or wire live scheduler events to workers. Evidence:
 `operations/reports/agent-mode-k4-2-a-spawn-policy-admission-evidence-2026-09-10.md`.
 
-K4.2-B is now complete. K4.2 remains **IN PROGRESS**. Exact next task:
-**K4.2-C — Runtime Binding and Child Task/Run Assignment**. Do not start it
-automatically.
+K4.2-B and K4.2-C are now complete. K4.2 remains **IN PROGRESS**. Exact
+next task: **K4.2-D — Bounded AgentRuntime Dispatch, Cancellation Propagation
+and Child Settlement**. Do not start it automatically.
 
 ### K4.2-B — Durable Child Agent Identity, Atomic Spawn-Slot Reservation and Root Aggregate Limits
 
@@ -959,9 +959,46 @@ restart-safe and race-safe. Observer output exposes only bounded child/root
 state without prompts, raw provider data, or secrets. Evidence:
 `operations/reports/agent-mode-k4-2-b-child-agent-reservation-evidence-2026-09-10.md`.
 
-K4.2-B focused tests pass 47/47 and the K4.0/K4.1/K4.2-A regression set passes
-189/189. K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-C — Runtime
-Binding and Child Task/Run Assignment**. Do not start it automatically.
+K4.2-B focused tests pass 47/47 and the prior K4.0/K4.1/K4.2-A regression
+set passes 189/189. K4.2 remains **IN PROGRESS**. K4.2-C is recorded below.
+
+### K4.2-C — Runtime Binding and Durable Child Task/Run Assignment
+
+K4.2-C is **COMPLETE** for its bounded StateStore gate. A typed child
+assignment request is validated against a finite runtime-profile registry and
+derives a deterministic assignment intent from immutable logical material.
+The `assignChildAgent` transaction rechecks the child reservation, root and
+parent lineage, cancellation and kill switches, expiry/deadline, policy and
+template identity, capability and repository/resource scope, allocation
+ceilings, and known runtime/profile admission before writing anything.
+
+One transaction creates the canonical child Task, Run, and Attempt, links
+them to the child and assignment intent, creates a child budget suballocation
+in the existing ledger, advances the child from `reserved` to `assigned`,
+persists a bounded receipt/assignment row, and appends one bounded lifecycle
+event. The root aggregate reservation is reused rather than reserved again.
+Task/Run/Attempt remain pre-dispatch (`admitted`/`created`/`admitted`), with
+deferred route/model references and no runtime identity, process, AgentRuntime
+call, ModelGateway call, scheduler wiring, Workcell, Git, network, or UI
+behavior. A prepared dispatch is an immutable data projection only; K4.2-D
+owns the fresh execution-time authority recheck and actual dispatch.
+
+Retries after a lost response or reopen return the same receipt and canonical
+entities; conflicting immutable material fails closed. Unique child, task,
+run, attempt, and reservation constraints plus the StateStore transaction
+make concurrent duplicate and competing assignments converge safely.
+
+Cancellation, kill-switch changes, and expiry cannot create a new assignment;
+assigned-child retirement/expiry invalidates the prepared dispatch and cancels
+the canonical entities while releasing the child ledger reservation and root
+aggregate allocation atomically. Observer output exposes bounded linkage and
+runtime/profile identifiers without prompts, payloads, or secrets. Evidence:
+`operations/reports/agent-mode-k4-2-c-runtime-binding-assignment-evidence-2026-09-10.md`.
+
+K4.2-C focused tests pass 58/58 and the expanded K4.0/K4.1/K4.2 regression set
+passes 268/268. K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-D —
+Bounded AgentRuntime Dispatch, Cancellation Propagation and Child Settlement**.
+Do not start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

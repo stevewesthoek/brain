@@ -6,6 +6,7 @@ import path from 'node:path';
 import type { EffectKind, OperationReceipt } from './agent-mode-contracts.js';
 import type { RuntimeProcessIdentity } from './runtime-process-identity.js';
 import { evaluateSpawnAdmission, getRoleTemplate, getSpawnPolicy, spawnCreationMaterialHash, spawnIntentKey, type SpawnAuthorityFacts, type SpawnDecision, type SpawnRequest } from './spawn-policy.js';
+import { DEFERRED_MODEL_REF, DEFERRED_ROUTE_REF, AGENT_MODE_RUNTIME_PROFILES, assignmentCapabilityScopeHash, assignmentIntentKey, assignmentMaterialHash, getRuntimeProfile, taskSpecHash, validateChildAssignmentRequest, type AgentModeChildAssignment, type AgentModeChildAssignmentReceipt, type AgentModeChildAssignmentRequest, type AgentModeChildAssignmentResult, type AgentModePreparedChildDispatch } from './child-assignment.js';
 
 export type AgentModeAgent = {
   agentId: string;
@@ -13,7 +14,7 @@ export type AgentModeAgent = {
   role: string;
   displayName: string;
   policyId: string;
-  status: 'active' | 'paused' | 'retired' | 'reserved' | 'cancelled' | 'expired';
+  status: 'active' | 'paused' | 'retired' | 'reserved' | 'assigned' | 'cancelled' | 'expired';
   roleTemplateId?: string;
   roleTemplateVersion?: number;
   policyVersion?: number;
@@ -149,6 +150,38 @@ function mapSpawnRootRow(row: Record<string, unknown>): AgentModeSpawnRootState 
     delegableCapabilities: parseStringArray(row.delegable_capabilities_json),
     repositoryScopes: parseStringArray(row.repository_scopes_json),
     resourceScopes: parseStringArray(row.resource_scopes_json),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+function mapChildAssignmentRow(row: Record<string, unknown>): AgentModeChildAssignment {
+  return {
+    assignmentIntentKey: String(row.assignment_intent_key),
+    assignmentId: String(row.assignment_id),
+    childAgentId: String(row.child_agent_id),
+    rootGoalId: String(row.root_goal_id),
+    sourceEventId: String(row.source_event_id),
+    taskSpecRef: String(row.task_spec_ref),
+    taskId: String(row.task_id),
+    runId: String(row.run_id),
+    attemptId: String(row.attempt_id),
+    runtimeRef: String(row.runtime_ref),
+    runtimeProfileRef: String(row.runtime_profile_ref),
+    roleTemplateId: String(row.role_template_id),
+    roleTemplateVersion: Number(row.role_template_version),
+    policyId: String(row.policy_id),
+    policyVersion: Number(row.policy_version),
+    capabilitySetHash: String(row.capability_set_hash),
+    capabilities: parseStringArray(row.capabilities_json),
+    repositoryScope: row.repository_scope === null ? null : String(row.repository_scope),
+    resourceScope: row.resource_scope === null ? null : String(row.resource_scope),
+    requestedSteps: Number(row.requested_steps),
+    requestedCost: Number(row.requested_cost),
+    budgetScopeId: String(row.budget_scope_id),
+    reservationId: String(row.reservation_id),
+    deadline: String(row.deadline),
+    status: row.status as AgentModeChildAssignment['status'],
+    createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
 }
@@ -352,6 +385,9 @@ export type AgentModeTask = {
   inputHash: string;
   createdAt: string;
   status?: AgentModeTaskStatus;
+  childAgentId?: string | null;
+  assignmentIntentKey?: string | null;
+  taskSpecRef?: string | null;
 };
 
 export type AgentModeRun = {
@@ -362,6 +398,8 @@ export type AgentModeRun = {
   status?: AgentModeRunStatus;
   runtimePid?: number;
   runtimeIdentity?: RuntimeProcessIdentity;
+  childAgentId?: string | null;
+  assignmentIntentKey?: string | null;
 };
 
 export type AgentModeBudgetLimits = {
@@ -424,6 +462,9 @@ export type AgentModeAttempt = {
   cancellationAcknowledgedAt?: string;
   createdAt: string;
   updatedAt: string;
+  runtimeProfileRef?: string;
+  childAgentId?: string | null;
+  assignmentIntentKey?: string | null;
 };
 
 export type AgentModeAttemptInput = {
@@ -438,6 +479,9 @@ export type AgentModeAttemptInput = {
   budgetScopeId: string;
   createdAt: string;
   updatedAt?: string;
+  runtimeProfileRef?: string;
+  childAgentId?: string | null;
+  assignmentIntentKey?: string | null;
 };
 
 export type AgentModeLease = {
@@ -531,6 +575,7 @@ export type AgentModeRecoveryClassification =
 
 export type AgentModePersistenceFailurePoint = 'admission' | 'effect-preparation' | 'receipt' | 'budget-settlement';
 export type AgentModeSpawnReadFailurePoint = 'kill-switch' | 'root-lookup' | 'parent-lookup' | 'cancellation' | 'budget';
+export type AgentModeChildAssignmentReadFailurePoint = 'child' | 'root' | 'cancellation' | 'kill-switch' | 'allocation' | 'runtime-profile';
 
 export type AgentModeOperationResult = 'created' | 'duplicate' | 'conflict';
 
@@ -1161,6 +1206,7 @@ export class AgentModeSqliteStateStore {
   private transactionDepth = 0;
   private readonly injectedFailures = new Set<AgentModePersistenceFailurePoint>();
   private readonly injectedSpawnReadFailures = new Set<AgentModeSpawnReadFailurePoint>();
+  private readonly injectedChildAssignmentReadFailures = new Set<AgentModeChildAssignmentReadFailurePoint>();
 
   private readonly readOnly: boolean;
   private readonly hasRuntimePidColumn: boolean;
@@ -1176,6 +1222,7 @@ export class AgentModeSqliteStateStore {
   private readonly hasSchedulerTables: boolean;
   private readonly hasEventSourceTables: boolean;
   private readonly hasSpawnAdmissionControlTables: boolean;
+  private readonly hasChildAssignmentTables: boolean;
 
   constructor(databasePath = defaultAgentModeDatabasePath(), options: { readOnly?: boolean } = {}) {
     this.databasePath = databasePath;
@@ -1211,6 +1258,7 @@ export class AgentModeSqliteStateStore {
         && this.tableExists('agent_mode_scheduler_observer');
       this.hasEventSourceTables = this.tableExists('agent_mode_event_sources');
       this.hasSpawnAdmissionControlTables = this.tableExists('agent_mode_spawn_admission_controls');
+      this.hasChildAssignmentTables = this.tableExists('agent_mode_child_assignments');
       return;
     }
     this.database.exec('PRAGMA foreign_keys = ON;');
@@ -1307,7 +1355,10 @@ export class AgentModeSqliteStateStore {
         task_type TEXT NOT NULL,
         input_hash TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        status TEXT NOT NULL
+        status TEXT NOT NULL,
+        child_agent_id TEXT,
+        assignment_intent_key TEXT,
+        task_spec_ref TEXT
       );
       CREATE TABLE IF NOT EXISTS runs (
         run_id TEXT PRIMARY KEY,
@@ -1318,7 +1369,9 @@ export class AgentModeSqliteStateStore {
         runtime_pid INTEGER,
         runtime_started_at TEXT,
         runtime_command TEXT,
-        runtime_identity TEXT
+        runtime_identity TEXT,
+        child_agent_id TEXT,
+        assignment_intent_key TEXT
       );
       CREATE TABLE IF NOT EXISTS attempts (
         attempt_id TEXT PRIMARY KEY,
@@ -1340,7 +1393,10 @@ export class AgentModeSqliteStateStore {
         cancellation_requested_at TEXT,
         cancellation_acknowledged_at TEXT,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        runtime_profile_ref TEXT,
+        child_agent_id TEXT,
+        assignment_intent_key TEXT
       );
       CREATE TABLE IF NOT EXISTS budget_scopes (
         budget_scope_id TEXT PRIMARY KEY,
@@ -1367,6 +1423,37 @@ export class AgentModeSqliteStateStore {
         settled_steps INTEGER,
         settled_tokens INTEGER,
         settled_dollars REAL
+      );
+      CREATE TABLE IF NOT EXISTS agent_mode_child_assignments (
+        assignment_intent_key TEXT PRIMARY KEY,
+        material_hash TEXT NOT NULL,
+        assignment_id TEXT NOT NULL UNIQUE,
+        child_agent_id TEXT NOT NULL UNIQUE REFERENCES agents(agent_id),
+        root_goal_id TEXT NOT NULL,
+        source_event_id TEXT NOT NULL,
+        task_spec_ref TEXT NOT NULL,
+        task_id TEXT NOT NULL UNIQUE REFERENCES tasks(task_id),
+        run_id TEXT NOT NULL UNIQUE REFERENCES runs(run_id),
+        attempt_id TEXT NOT NULL UNIQUE REFERENCES attempts(attempt_id),
+        runtime_ref TEXT NOT NULL,
+        runtime_profile_ref TEXT NOT NULL,
+        role_template_id TEXT NOT NULL,
+        role_template_version INTEGER NOT NULL,
+        policy_id TEXT NOT NULL,
+        policy_version INTEGER NOT NULL,
+        capability_set_hash TEXT NOT NULL,
+        capabilities_json TEXT NOT NULL,
+        repository_scope TEXT,
+        resource_scope TEXT,
+        requested_steps INTEGER NOT NULL CHECK (requested_steps >= 0),
+        requested_cost REAL NOT NULL CHECK (requested_cost >= 0),
+        budget_scope_id TEXT NOT NULL,
+        reservation_id TEXT NOT NULL UNIQUE REFERENCES budget_reservations(reservation_id),
+        deadline TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('dispatch_ready', 'cancelled', 'expired')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        receipt_json TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS dispatch_outbox (
         operation_id TEXT PRIMARY KEY REFERENCES effects(operation_id),
@@ -1755,6 +1842,7 @@ export class AgentModeSqliteStateStore {
     this.migrateRunsTable();
     this.migrateReviewTables();
     this.migrateAgentTable();
+    this.migrateChildAssignmentTables();
     this.hasRuntimePidColumn = true;
     this.hasRuntimeIdentityColumns = true;
     this.hasWorkcellTables = true;
@@ -1769,6 +1857,7 @@ export class AgentModeSqliteStateStore {
     this.hasSchedulerTables = true;
     this.hasEventSourceTables = true;
     this.hasSpawnAdmissionControlTables = true;
+    this.hasChildAssignmentTables = true;
   }
 
   static openExisting(databasePath = defaultAgentModeDatabasePath()): AgentModeSqliteStateStore | undefined {
@@ -1836,6 +1925,55 @@ export class AgentModeSqliteStateStore {
     };
     for (const [name, type] of Object.entries(additions)) if (!existing.has(name)) this.database.exec(`ALTER TABLE agents ADD COLUMN ${name} ${type}`);
     this.database.exec('CREATE UNIQUE INDEX IF NOT EXISTS agents_spawn_intent_key ON agents(spawn_intent_key) WHERE spawn_intent_key IS NOT NULL');
+  }
+
+  private migrateChildAssignmentTables(): void {
+    const additions: Record<string, string> = {
+      child_agent_id: 'TEXT', assignment_intent_key: 'TEXT', task_spec_ref: 'TEXT',
+    };
+    const taskColumns = new Set((this.database.prepare('PRAGMA table_info(tasks)').all() as Array<{ name?: string }>).map((column) => column.name));
+    for (const [name, type] of Object.entries(additions)) if (!taskColumns.has(name)) this.database.exec(`ALTER TABLE tasks ADD COLUMN ${name} ${type}`);
+    const runAdditions: Record<string, string> = { child_agent_id: 'TEXT', assignment_intent_key: 'TEXT' };
+    const runColumns = new Set((this.database.prepare('PRAGMA table_info(runs)').all() as Array<{ name?: string }>).map((column) => column.name));
+    for (const [name, type] of Object.entries(runAdditions)) if (!runColumns.has(name)) this.database.exec(`ALTER TABLE runs ADD COLUMN ${name} ${type}`);
+    const attemptAdditions: Record<string, string> = { runtime_profile_ref: 'TEXT', child_agent_id: 'TEXT', assignment_intent_key: 'TEXT' };
+    const attemptColumns = new Set((this.database.prepare('PRAGMA table_info(attempts)').all() as Array<{ name?: string }>).map((column) => column.name));
+    for (const [name, type] of Object.entries(attemptAdditions)) if (!attemptColumns.has(name)) this.database.exec(`ALTER TABLE attempts ADD COLUMN ${name} ${type}`);
+    this.database.exec(`
+      CREATE TABLE IF NOT EXISTS agent_mode_child_assignments (
+        assignment_intent_key TEXT PRIMARY KEY,
+        material_hash TEXT NOT NULL,
+        assignment_id TEXT NOT NULL UNIQUE,
+        child_agent_id TEXT NOT NULL UNIQUE REFERENCES agents(agent_id),
+        root_goal_id TEXT NOT NULL,
+        source_event_id TEXT NOT NULL,
+        task_spec_ref TEXT NOT NULL,
+        task_id TEXT NOT NULL UNIQUE REFERENCES tasks(task_id),
+        run_id TEXT NOT NULL UNIQUE REFERENCES runs(run_id),
+        attempt_id TEXT NOT NULL UNIQUE REFERENCES attempts(attempt_id),
+        runtime_ref TEXT NOT NULL,
+        runtime_profile_ref TEXT NOT NULL,
+        role_template_id TEXT NOT NULL,
+        role_template_version INTEGER NOT NULL,
+        policy_id TEXT NOT NULL,
+        policy_version INTEGER NOT NULL,
+        capability_set_hash TEXT NOT NULL,
+        capabilities_json TEXT NOT NULL,
+        repository_scope TEXT,
+        resource_scope TEXT,
+        requested_steps INTEGER NOT NULL CHECK (requested_steps >= 0),
+        requested_cost REAL NOT NULL CHECK (requested_cost >= 0),
+        budget_scope_id TEXT NOT NULL,
+        reservation_id TEXT NOT NULL UNIQUE REFERENCES budget_reservations(reservation_id),
+        deadline TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('dispatch_ready', 'cancelled', 'expired')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        receipt_json TEXT NOT NULL
+      );
+    `);
+    const assignmentColumns = new Set((this.database.prepare('PRAGMA table_info(agent_mode_child_assignments)').all() as Array<{ name?: string }>).map((column) => column.name));
+    if (!assignmentColumns.has('material_hash')) this.database.exec('ALTER TABLE agent_mode_child_assignments ADD COLUMN material_hash TEXT');
   }
 
   private tableHasColumn(table: string, columnName: string): boolean {
@@ -1962,7 +2100,7 @@ export class AgentModeSqliteStateStore {
     if (!Number.isFinite(Date.parse(now)) || !Number.isSafeInteger(limit) || limit < 1 || limit > 64) return [];
     const rows = this.database.prepare(`
       SELECT agent_id FROM agents
-      WHERE spawn_intent_key IS NOT NULL AND status = 'reserved' AND expires_at <= ?
+      WHERE spawn_intent_key IS NOT NULL AND status IN ('reserved', 'assigned') AND expires_at <= ?
       ORDER BY expires_at, agent_id LIMIT ?
     `).all(now, limit) as Array<{ agent_id?: string }>;
     const retired: string[] = [];
@@ -1977,7 +2115,21 @@ export class AgentModeSqliteStateStore {
     if (!childAgentId || !Number.isFinite(Date.parse(retiredAt))) return { result: 'conflict', childAgentId };
     const child = this.getAgent(childAgentId);
     if (!child?.spawnIntentKey || !child.rootGoalId || child.status === 'active' || child.status === 'paused') return { result: 'conflict', childAgentId };
-    if (child.status !== 'reserved') return { result: 'duplicate', childAgentId };
+    if (child.status !== 'reserved' && child.status !== 'assigned') return { result: 'duplicate', childAgentId };
+    if (child.status === 'assigned') {
+      const assignment = this.database.prepare('SELECT * FROM agent_mode_child_assignments WHERE child_agent_id = ?').get(childAgentId) as Record<string, unknown> | undefined;
+      if (!assignment || assignment.status !== 'dispatch_ready') throw new Error('assigned child has no dispatch-ready assignment');
+      const reservationId = String(assignment.reservation_id);
+      if (this.getReservation(reservationId)?.status === 'reserved') {
+        this.settleBudgetInternal({ reservationId, steps: 0, tokens: 0, dollars: 0, settledAt: retiredAt });
+      }
+      const assignmentStatus = reason === 'expired' ? 'expired' : 'cancelled';
+      this.database.prepare("UPDATE attempts SET status = 'cancelled', cancellation_status = 'completed', updated_at = ? WHERE attempt_id = ? AND status NOT IN ('completed', 'failed', 'cancelled')").run(retiredAt, String(assignment.attempt_id));
+      this.database.prepare("UPDATE runs SET status = 'cancelled' WHERE run_id = ? AND status NOT IN ('completed', 'failed', 'cancelled')").run(String(assignment.run_id));
+      this.database.prepare("UPDATE tasks SET status = 'cancelled' WHERE task_id = ? AND status NOT IN ('completed', 'failed', 'cancelled')").run(String(assignment.task_id));
+      this.database.prepare('UPDATE agent_mode_child_assignments SET status = ?, updated_at = ? WHERE assignment_intent_key = ? AND status = \'dispatch_ready\'').run(assignmentStatus, retiredAt, String(assignment.assignment_intent_key));
+      this.appendEventIfAbsent({ eventId: `child-assignment-${assignmentStatus}:${String(assignment.assignment_intent_key)}`, entityType: 'child_assignment', entityId: String(assignment.assignment_intent_key), eventType: 'child_assignment_invalidated', occurredAt: retiredAt, payload: { assignmentIntentKey: String(assignment.assignment_intent_key), childAgentId, reason: assignmentStatus } });
+    }
     const root = this.getSpawnRootState(child.rootGoalId);
     if (!root || root.activeChildren < 1 || root.reservedChildSteps < (child.reservedChildSteps ?? 0) || root.reservedChildCost < (child.reservedChildCost ?? 0)) throw new Error('spawn root aggregate is inconsistent');
     const result = this.database.prepare(`
@@ -1990,7 +2142,7 @@ export class AgentModeSqliteStateStore {
         AND reserved_child_steps >= ? AND reserved_child_cost >= ?
     `).run(child.reservedChildSteps ?? 0, child.reservedChildCost ?? 0, retiredAt, child.rootGoalId, child.reservedChildSteps ?? 0, child.reservedChildCost ?? 0);
     if (result.changes !== 1) throw new Error('spawn root aggregate release failed');
-    this.database.prepare('UPDATE agents SET status = ?, reserved_child_steps = 0, reserved_child_cost = 0 WHERE agent_id = ? AND status = \'reserved\'').run(reason, childAgentId);
+    this.database.prepare("UPDATE agents SET status = ?, reserved_child_steps = 0, reserved_child_cost = 0 WHERE agent_id = ? AND status IN ('reserved', 'assigned')").run(reason, childAgentId);
     this.appendEventIfAbsent({ eventId: `child-agent-retired:${childAgentId}:${reason}`, entityType: 'agent', entityId: childAgentId, eventType: 'child_agent_retired', occurredAt: retiredAt, payload: { childAgentId, spawnIntentKey: child.spawnIntentKey, rootGoalId: child.rootGoalId, reason, releasedStepAllocation: child.reservedChildSteps ?? 0, releasedCostAllocation: child.reservedChildCost ?? 0 } });
     return { result: 'retired', childAgentId };
   }
@@ -2082,6 +2234,162 @@ export class AgentModeSqliteStateStore {
     return { result: 'created', receipt };
   }
 
+  getChildAssignment(childAgentId: string): AgentModeChildAssignment | undefined {
+    if (!this.hasChildAssignmentTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_child_assignments WHERE child_agent_id = ?').get(childAgentId) as Record<string, unknown> | undefined;
+    return row ? mapChildAssignmentRow(row) : undefined;
+  }
+
+  listChildAssignments(limit = 32): AgentModeChildAssignment[] {
+    if (!this.hasChildAssignmentTables) return [];
+    const boundedLimit = Math.max(0, Math.min(Math.floor(limit), 32));
+    const rows = this.database.prepare('SELECT * FROM agent_mode_child_assignments ORDER BY created_at, assignment_intent_key LIMIT ?').all(boundedLimit) as Array<Record<string, unknown>>;
+    return rows.map(mapChildAssignmentRow);
+  }
+
+  getChildAssignmentReceipt(assignmentIntent: string): AgentModeChildAssignmentReceipt | undefined {
+    if (!this.hasChildAssignmentTables) return undefined;
+    const row = this.database.prepare('SELECT receipt_json FROM agent_mode_child_assignments WHERE assignment_intent_key = ?').get(assignmentIntent) as { receipt_json?: string } | undefined;
+    if (!row?.receipt_json) return undefined;
+    try { return JSON.parse(row.receipt_json) as AgentModeChildAssignmentReceipt; } catch { return undefined; }
+  }
+
+  getPreparedChildDispatch(assignmentIntent: string, now = new Date().toISOString()): AgentModePreparedChildDispatch | undefined {
+    if (!this.hasChildAssignmentTables || !Number.isFinite(Date.parse(now))) return undefined;
+    const row = this.database.prepare("SELECT * FROM agent_mode_child_assignments WHERE assignment_intent_key = ? AND status = 'dispatch_ready'").get(assignmentIntent) as Record<string, unknown> | undefined;
+    if (!row || Date.parse(String(row.deadline)) <= Date.parse(now)) return undefined;
+    const child = this.getAgent(String(row.child_agent_id));
+    if (!child || child.status !== 'assigned' || (child.expiresAt !== undefined && Date.parse(child.expiresAt) <= Date.parse(now))) return undefined;
+    return {
+      assignmentIntentKey: String(row.assignment_intent_key), childAgentId: child.agentId,
+      taskId: String(row.task_id), runId: String(row.run_id), attemptId: String(row.attempt_id),
+      runtimeRef: String(row.runtime_ref), runtimeProfileRef: String(row.runtime_profile_ref),
+      roleTemplateId: String(row.role_template_id), roleTemplateVersion: Number(row.role_template_version),
+      policyId: String(row.policy_id), policyVersion: Number(row.policy_version),
+      capabilitySetHash: String(row.capability_set_hash), capabilities: parseStringArray(row.capabilities_json),
+      repositoryScope: row.repository_scope === null ? null : String(row.repository_scope),
+      resourceScope: row.resource_scope === null ? null : String(row.resource_scope),
+      rootGoalId: String(row.root_goal_id), sourceEventId: String(row.source_event_id),
+      stepCeiling: Number(row.requested_steps), costCeiling: Number(row.requested_cost),
+      remainingSteps: Math.max(0, (child.reservedChildSteps ?? 0) - Number(row.requested_steps)),
+      remainingCost: Math.max(0, (child.reservedChildCost ?? 0) - Number(row.requested_cost)),
+      deadline: String(row.deadline), status: 'dispatch_ready',
+    };
+  }
+
+  assignChildAgent(request: AgentModeChildAssignmentRequest): AgentModeChildAssignmentResult {
+    try {
+      return this.withTransaction(() => this.assignChildAgentInternal(request));
+    } catch {
+      return { result: 'denied', reasonCode: 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
+  private assignChildAgentInternal(request: AgentModeChildAssignmentRequest): AgentModeChildAssignmentResult {
+    try {
+      if (!validateChildAssignmentRequest(request)) return { result: 'denied', reasonCode: 'INVALID_REQUEST' };
+    } catch {
+      return { result: 'denied', reasonCode: 'INVALID_REQUEST' };
+    }
+    if (!this.hasChildAssignmentTables) throw new Error('child assignment authority is unavailable');
+    const intent = assignmentIntentKey(request);
+    const materialHash = assignmentMaterialHash(request);
+    const existingIntent = this.database.prepare('SELECT * FROM agent_mode_child_assignments WHERE assignment_intent_key = ?').get(intent) as Record<string, unknown> | undefined;
+    if (existingIntent) {
+      if (existingIntent.material_hash !== materialHash) return { result: 'conflict', reasonCode: 'ASSIGNMENT_CONFLICT' };
+      const receipt = this.parseChildAssignmentReceipt(existingIntent);
+      if (!receipt) return { result: 'conflict', reasonCode: 'ASSIGNMENT_CONFLICT' };
+      return { result: 'duplicate', receipt, dispatch: this.getPreparedChildDispatch(intent, request.requestedAt) ?? null };
+    }
+    const existingChildAssignment = this.database.prepare('SELECT assignment_intent_key FROM agent_mode_child_assignments WHERE child_agent_id = ?').get(request.childAgentId) as { assignment_intent_key?: string } | undefined;
+    if (existingChildAssignment) return { result: 'denied', reasonCode: 'CHILD_ALREADY_ASSIGNED' };
+    this.consumeChildAssignmentReadFailure('child');
+    let child = this.getAgent(request.childAgentId);
+    if (!child) return { result: 'denied', reasonCode: 'CHILD_NOT_FOUND' };
+    if (child.status === 'reserved' && child.expiresAt && Date.parse(child.expiresAt) <= Date.parse(request.requestedAt)) {
+      this.reconcileExpiredChildAgentsInternal(request.requestedAt, 64);
+      child = this.getAgent(request.childAgentId);
+    }
+    if (!child) return { result: 'denied', reasonCode: 'CHILD_NOT_FOUND' };
+    if (child.status === 'expired' || (child.expiresAt !== undefined && Date.parse(child.expiresAt) <= Date.parse(request.requestedAt))) return { result: 'denied', reasonCode: 'CHILD_EXPIRED' };
+    if (child.status === 'cancelled') return { result: 'denied', reasonCode: 'CHILD_CANCELLED' };
+    if (child.status !== 'reserved') return { result: 'denied', reasonCode: 'CHILD_NOT_RESERVED' };
+    if (child.rootGoalId !== request.rootGoalId) return { result: 'denied', reasonCode: 'ROOT_MISMATCH' };
+    this.consumeChildAssignmentReadFailure('root');
+    const root = child.rootGoalId ? this.getSpawnRootState(child.rootGoalId) : undefined;
+    if (!root || root.rootGoalId !== request.rootGoalId || root.policyId !== child.policyId || root.policyVersion !== child.policyVersion) return { result: 'denied', reasonCode: 'ROOT_MISMATCH' };
+    this.consumeChildAssignmentReadFailure('kill-switch');
+    const controls = this.getSpawnAdmissionControls(request.rootGoalId);
+    if (controls.global.denied) return { result: 'denied', reasonCode: 'GLOBAL_KILL_SWITCH' };
+    if (controls.root?.denied) return { result: 'denied', reasonCode: 'ROOT_KILL_SWITCH' };
+    this.consumeChildAssignmentReadFailure('cancellation');
+    if (root.cancellation !== 'active') return { result: 'denied', reasonCode: 'ROOT_CANCELLED' };
+    if (this.getTask(request.rootGoalId)?.status === 'cancelled') return { result: 'denied', reasonCode: 'ROOT_CANCELLED' };
+    if (Date.parse(root.deadline) <= Date.parse(request.requestedAt) || Date.parse(request.deadline) <= Date.parse(request.requestedAt) || (child.expiresAt && Date.parse(request.deadline) > Date.parse(child.expiresAt))) return { result: 'denied', reasonCode: 'DEADLINE_EXPIRED' };
+    const policy = child.policyVersion === undefined ? undefined : getSpawnPolicy(child.policyId, child.policyVersion);
+    const template = child.roleTemplateId === undefined || child.roleTemplateVersion === undefined ? undefined : getRoleTemplate(child.roleTemplateId, child.roleTemplateVersion);
+    if (!policy || !template || template.roleTemplateId !== child.roleTemplateId || template.version !== child.roleTemplateVersion) return { result: 'denied', reasonCode: 'RUNTIME_PROFILE_INVALID' };
+    if (!child.capabilitySetHash || !child.capabilities || child.repositoryScope === undefined || child.resourceScope === undefined || child.depth === undefined || child.reservedChildSteps === undefined || child.reservedChildCost === undefined) return { result: 'denied', reasonCode: 'AUTHORITY_UNAVAILABLE' };
+    if (child.parentAgentId !== null || child.parentTaskId !== null || child.parentRunId !== null) {
+      if (!child.parentAgentId || !child.parentTaskId || !child.parentRunId) return { result: 'denied', reasonCode: 'PARENT_LINEAGE_MISMATCH' };
+      const parent = this.getAgent(child.parentAgentId);
+      const parentTask = this.getTask(child.parentTaskId);
+      const parentRun = this.getRun(child.parentRunId);
+      const parentAttemptCancelled = this.listAttempts().some((attempt) => attempt.runId === child.parentRunId && attempt.cancellationStatus !== 'running');
+      if (!parent || !parentTask || !parentRun || parent.rootGoalId !== request.rootGoalId || parent.depth !== child.depth - 1 || parentRun.taskId !== parentTask.taskId || parentRun.agentId !== parent.agentId || parentTask.status === 'cancelled' || parentRun.status === 'cancelled' || parentAttemptCancelled) return { result: 'denied', reasonCode: parentTask?.status === 'cancelled' || parentRun?.status === 'cancelled' || parentAttemptCancelled ? 'CHILD_CANCELLED' : 'PARENT_LINEAGE_MISMATCH' };
+    }
+    if (request.requestedSteps > child.reservedChildSteps || request.requestedCostCeiling > child.reservedChildCost) return { result: 'denied', reasonCode: request.requestedSteps > child.reservedChildSteps ? 'STEP_ALLOCATION_EXCEEDED' : 'COST_ALLOCATION_EXCEEDED' };
+    if (request.repositoryScope !== child.repositoryScope || request.resourceScope !== child.resourceScope) return { result: 'denied', reasonCode: 'SCOPE_MISMATCH' };
+    const childCapabilities = new Set(child.capabilities);
+    if (request.requestedCapabilities.some((capability) => !childCapabilities.has(capability))) return { result: 'denied', reasonCode: 'CAPABILITY_MISMATCH' };
+    this.consumeChildAssignmentReadFailure('runtime-profile');
+    const knownRuntime = AGENT_MODE_RUNTIME_PROFILES.some((profile) => profile.runtimeRef === request.runtimeRef);
+    if (!knownRuntime) return { result: 'denied', reasonCode: 'RUNTIME_NOT_ALLOWED' };
+    const runtimeProfile = getRuntimeProfile(request.runtimeRef, request.runtimeProfileRef);
+    if (!runtimeProfile || !runtimeProfile.allowedRoleTemplateIds.includes(child.roleTemplateId) || child.capabilities.some((capability) => !runtimeProfile.allowedCapabilities.includes(capability))) return { result: 'denied', reasonCode: 'RUNTIME_PROFILE_INVALID' };
+    this.consumeChildAssignmentReadFailure('allocation');
+    const taskDigest = createHash('sha256').update(intent).digest('hex');
+    const taskId = `task:child-assignment:${taskDigest}`;
+    const runId = `run:child-assignment:${taskDigest}`;
+    const attemptId = `attempt:child-assignment:${taskDigest}`;
+    const budgetScopeId = `budget:child-assignment:${taskDigest}`;
+    const reservationId = `reservation:child-assignment:${taskDigest}`;
+    if (this.getTask(taskId) || this.getRun(runId) || this.getAttempt(attemptId) || this.getReservation(reservationId)) return { result: 'conflict', reasonCode: 'ASSIGNMENT_CONFLICT' };
+    this.createTask({ taskId, taskType: 'agent-mode.child-assignment', inputHash: taskSpecHash(request.taskSpecRef), createdAt: request.requestedAt, status: 'admitted', childAgentId: child.agentId, assignmentIntentKey: intent, taskSpecRef: request.taskSpecRef });
+    this.createRun({ runId, taskId, agentId: child.agentId, createdAt: request.requestedAt, status: 'created', childAgentId: child.agentId, assignmentIntentKey: intent });
+    this.createAttempt({ attemptId, runId, agentId: child.agentId, runtimeRef: request.runtimeRef, runtimeProfileRef: request.runtimeProfileRef, routeRef: DEFERRED_ROUTE_REF, modelRef: DEFERRED_MODEL_REF, policyVersion: String(child.policyVersion), capabilityScopeHash: assignmentCapabilityScopeHash(request), budgetScopeId, createdAt: request.requestedAt, childAgentId: child.agentId, assignmentIntentKey: intent });
+    this.ensureBudgetScope({ budgetScopeId, maxSteps: child.reservedChildSteps, maxTokens: 0, maxDollars: child.reservedChildCost });
+    const reservationResult = this.reserveBudgetInternal({ reservationId, budgetScopeId, attemptId, steps: request.requestedSteps, tokens: 0, dollars: request.requestedCostCeiling, status: 'reserved', createdAt: request.requestedAt });
+    if (reservationResult !== 'created') return { result: 'conflict', reasonCode: 'ASSIGNMENT_CONFLICT' };
+    this.database.prepare("UPDATE attempts SET status = 'admitted', updated_at = ? WHERE attempt_id = ? AND status = 'created'").run(request.requestedAt, attemptId);
+    const receipt: AgentModeChildAssignmentReceipt = {
+      assignmentIntentKey: intent, assignmentId: request.assignmentId, childAgentId: child.agentId, taskId, runId, attemptId,
+      rootGoalId: request.rootGoalId, sourceEventId: request.sourceEventId, runtimeRef: request.runtimeRef, runtimeProfileRef: request.runtimeProfileRef,
+      stepCeiling: request.requestedSteps, costCeiling: request.requestedCostCeiling, budgetScopeId, reservationId,
+      createdAt: request.requestedAt, deadline: request.deadline, status: 'dispatch_ready',
+    };
+    const receiptJson = JSON.stringify(receipt);
+    if (receiptJson.length > 8_192) throw new Error('child assignment receipt exceeds bounded size');
+    const updateChild = this.database.prepare("UPDATE agents SET status = 'assigned' WHERE agent_id = ? AND status = 'reserved'").run(child.agentId);
+    if (updateChild.changes !== 1) throw new Error('child assignment claim failed');
+    this.database.prepare(`
+      INSERT INTO agent_mode_child_assignments (
+        assignment_intent_key, material_hash, assignment_id, child_agent_id, root_goal_id, source_event_id, task_spec_ref,
+        task_id, run_id, attempt_id, runtime_ref, runtime_profile_ref, role_template_id, role_template_version,
+        policy_id, policy_version, capability_set_hash, capabilities_json, repository_scope, resource_scope,
+        requested_steps, requested_cost, budget_scope_id, reservation_id, deadline, status, created_at, updated_at, receipt_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(intent, materialHash, request.assignmentId, child.agentId, request.rootGoalId, request.sourceEventId, request.taskSpecRef, taskId, runId, attemptId, request.runtimeRef, request.runtimeProfileRef, child.roleTemplateId, child.roleTemplateVersion, child.policyId, child.policyVersion, child.capabilitySetHash, JSON.stringify(child.capabilities), child.repositoryScope, child.resourceScope, request.requestedSteps, request.requestedCostCeiling, budgetScopeId, reservationId, request.deadline, 'dispatch_ready', request.requestedAt, request.requestedAt, receiptJson);
+    this.failIfInjected('admission');
+    this.appendEventIfAbsent({ eventId: `child-assignment-created:${intent}`, entityType: 'child_assignment', entityId: intent, eventType: 'child_assignment_created', occurredAt: request.requestedAt, payload: { assignmentIntentKey: intent, childAgentId: child.agentId, taskId, runId, attemptId, rootGoalId: request.rootGoalId, sourceEventId: request.sourceEventId, runtimeRef: request.runtimeRef, runtimeProfileRef: request.runtimeProfileRef, stepCeiling: request.requestedSteps, costCeiling: request.requestedCostCeiling, status: 'dispatch_ready' } });
+    return { result: 'assigned', receipt, dispatch: this.getPreparedChildDispatch(intent, request.requestedAt) ?? (() => { throw new Error('prepared child dispatch missing'); })() };
+  }
+
+  private parseChildAssignmentReceipt(row: Record<string, unknown>): AgentModeChildAssignmentReceipt | undefined {
+    if (typeof row.receipt_json !== 'string') return undefined;
+    try { return JSON.parse(row.receipt_json) as AgentModeChildAssignmentReceipt; } catch { return undefined; }
+  }
+
   private freshParentFacts(request: SpawnRequest): SpawnAuthorityFacts['parent'] {
     if (!request.parentAgentId || !request.parentTaskId || !request.parentRunId) return null;
     const parent = this.getAgent(request.parentAgentId);
@@ -2113,6 +2421,15 @@ export class AgentModeSqliteStateStore {
 
   injectSpawnReadFailureOnce(point: AgentModeSpawnReadFailurePoint): void {
     this.injectedSpawnReadFailures.add(point);
+  }
+
+  injectChildAssignmentReadFailureOnce(point: AgentModeChildAssignmentReadFailurePoint): void {
+    this.injectedChildAssignmentReadFailures.add(point);
+  }
+
+  private consumeChildAssignmentReadFailure(point: AgentModeChildAssignmentReadFailurePoint): void {
+    if (!this.injectedChildAssignmentReadFailures.delete(point)) return;
+    throw new Error(`injected child assignment authority read failure at ${point}`);
   }
 
   consumeSpawnReadFailure(point: AgentModeSpawnReadFailurePoint): void {
@@ -2168,15 +2485,15 @@ export class AgentModeSqliteStateStore {
 
   createTask(task: AgentModeTask): AgentModeOperationResult {
     return this.withTransaction(() => {
-      const existing = this.database.prepare('SELECT task_type, input_hash, created_at FROM tasks WHERE task_id = ?').get(task.taskId) as Record<string, unknown> | undefined;
+      const existing = this.database.prepare('SELECT task_type, input_hash, created_at, child_agent_id, assignment_intent_key, task_spec_ref FROM tasks WHERE task_id = ?').get(task.taskId) as Record<string, unknown> | undefined;
       if (existing) {
         const same = existing.task_type === task.taskType
           && existing.input_hash === task.inputHash
           && existing.created_at === task.createdAt;
         return same ? 'duplicate' : 'conflict';
       }
-      this.database.prepare('INSERT INTO tasks (task_id, task_type, input_hash, created_at, status) VALUES (?, ?, ?, ?, ?)')
-        .run(task.taskId, task.taskType, task.inputHash, task.createdAt, task.status ?? 'pending');
+      this.database.prepare('INSERT INTO tasks (task_id, task_type, input_hash, created_at, status, child_agent_id, assignment_intent_key, task_spec_ref) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(task.taskId, task.taskType, task.inputHash, task.createdAt, task.status ?? 'pending', task.childAgentId ?? null, task.assignmentIntentKey ?? null, task.taskSpecRef ?? null);
       return 'created';
     });
   }
@@ -2190,6 +2507,9 @@ export class AgentModeSqliteStateStore {
       inputHash: String(row.input_hash),
       createdAt: String(row.created_at),
       status: row.status as AgentModeTaskStatus,
+      ...(row.child_agent_id === null || row.child_agent_id === undefined ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.assignment_intent_key === null || row.assignment_intent_key === undefined ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
+      ...(row.task_spec_ref === null || row.task_spec_ref === undefined ? {} : { taskSpecRef: String(row.task_spec_ref) }),
     };
   }
 
@@ -2201,12 +2521,15 @@ export class AgentModeSqliteStateStore {
       inputHash: String(row.input_hash),
       createdAt: String(row.created_at),
       status: row.status as AgentModeTaskStatus,
+      ...(row.child_agent_id === null || row.child_agent_id === undefined ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.assignment_intent_key === null || row.assignment_intent_key === undefined ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
+      ...(row.task_spec_ref === null || row.task_spec_ref === undefined ? {} : { taskSpecRef: String(row.task_spec_ref) }),
     }));
   }
 
   createRun(run: AgentModeRun): AgentModeOperationResult {
     return this.withTransaction(() => {
-      const existing = this.database.prepare('SELECT task_id, agent_id, created_at FROM runs WHERE run_id = ?').get(run.runId) as Record<string, unknown> | undefined;
+      const existing = this.database.prepare('SELECT task_id, agent_id, created_at, child_agent_id, assignment_intent_key FROM runs WHERE run_id = ?').get(run.runId) as Record<string, unknown> | undefined;
       if (existing) {
         const same = existing.task_id === run.taskId
           && existing.agent_id === run.agentId
@@ -2214,8 +2537,8 @@ export class AgentModeSqliteStateStore {
         return same ? 'duplicate' : 'conflict';
       }
       if (!this.getTask(run.taskId)) throw new Error(`task not found: ${run.taskId}`);
-      this.database.prepare('INSERT INTO runs (run_id, task_id, agent_id, created_at, status) VALUES (?, ?, ?, ?, ?)')
-        .run(run.runId, run.taskId, run.agentId, run.createdAt, run.status ?? 'created');
+      this.database.prepare('INSERT INTO runs (run_id, task_id, agent_id, created_at, status, child_agent_id, assignment_intent_key) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(run.runId, run.taskId, run.agentId, run.createdAt, run.status ?? 'created', run.childAgentId ?? null, run.assignmentIntentKey ?? null);
       return 'created';
     });
   }
@@ -2233,6 +2556,8 @@ export class AgentModeSqliteStateStore {
       createdAt: String(row.created_at),
       status: row.status as AgentModeRunStatus,
       ...(row.runtime_pid === null || row.runtime_pid === undefined ? {} : { runtimePid: Number(row.runtime_pid) }),
+      ...(row.child_agent_id === null || row.child_agent_id === undefined ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.assignment_intent_key === null || row.assignment_intent_key === undefined ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
       ...(row.runtime_started_at && row.runtime_command && row.runtime_identity ? {
         runtimeIdentity: { startedAt: String(row.runtime_started_at), command: String(row.runtime_command), token: String(row.runtime_identity) },
       } : {}),
@@ -2248,6 +2573,8 @@ export class AgentModeSqliteStateStore {
       createdAt: String(row.created_at),
       status: row.status as AgentModeRunStatus,
       ...(row.runtime_pid === null || row.runtime_pid === undefined ? {} : { runtimePid: Number(row.runtime_pid) }),
+      ...(row.child_agent_id === null || row.child_agent_id === undefined ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.assignment_intent_key === null || row.assignment_intent_key === undefined ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
       ...(row.runtime_started_at && row.runtime_command && row.runtime_identity ? {
         runtimeIdentity: { startedAt: String(row.runtime_started_at), command: String(row.runtime_command), token: String(row.runtime_identity) },
       } : {}),
@@ -2424,8 +2751,9 @@ export class AgentModeSqliteStateStore {
         INSERT INTO attempts (
           attempt_id, run_id, agent_id, runtime_ref, route_ref, model_ref,
           policy_version, capability_scope_hash, budget_scope_id, status,
-          cancellation_status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'created', 'running', ?, ?)
+          cancellation_status, created_at, updated_at, runtime_profile_ref,
+          child_agent_id, assignment_intent_key
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'created', 'running', ?, ?, ?, ?, ?)
       `).run(
         attempt.attemptId,
         attempt.runId,
@@ -2438,6 +2766,9 @@ export class AgentModeSqliteStateStore {
         attempt.budgetScopeId,
         attempt.createdAt,
         updatedAt,
+        attempt.runtimeProfileRef ?? null,
+        attempt.childAgentId ?? null,
+        attempt.assignmentIntentKey ?? null,
       );
       return 'created';
     });
@@ -2512,6 +2843,9 @@ export class AgentModeSqliteStateStore {
       ...(row.cancellation_acknowledged_at === null ? {} : { cancellationAcknowledgedAt: String(row.cancellation_acknowledged_at) }),
       createdAt: String(row.created_at),
       updatedAt: String(row.updated_at),
+      ...(row.runtime_profile_ref === null || row.runtime_profile_ref === undefined ? {} : { runtimeProfileRef: String(row.runtime_profile_ref) }),
+      ...(row.child_agent_id === null || row.child_agent_id === undefined ? {} : { childAgentId: String(row.child_agent_id) }),
+      ...(row.assignment_intent_key === null || row.assignment_intent_key === undefined ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
     };
   }
 

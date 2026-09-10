@@ -648,9 +648,10 @@ full-pass ordering prevents starvation within that registered bound. No
 external network or model call is required; no workers are created. Evidence:
 `operations/reports/agent-mode-k4-1-c2-event-source-closure-evidence-2026-09-10.md`.
 
-K4 remains **IN PROGRESS**. K4.2-A and K4.2-B are now **COMPLETE** for their
-bounded gates, and K4.2 is **IN PROGRESS**. Exact next task: **K4.2-C — Runtime
-Binding and Child Task/Run Assignment**. Do not start it automatically.
+K4 remains **IN PROGRESS**. K4.2-A, K4.2-B, and K4.2-C are now **COMPLETE** for
+their bounded gates, and K4.2 is **IN PROGRESS**. Exact next task: **K4.2-D —
+Bounded AgentRuntime Dispatch, Cancellation Propagation and Child Settlement**.
+Do not start it automatically.
 
 ## Current K4.2-A deterministic spawn admission — 2026-09-10
 
@@ -672,9 +673,9 @@ ModelGateway call, worker, reservation, live scheduler wiring, or network
 call was added. Evidence:
 `operations/reports/agent-mode-k4-2-a-spawn-policy-admission-evidence-2026-09-10.md`.
 
-K4.2-B is now complete. K4.2 remains **IN PROGRESS**. Exact next task:
-**K4.2-C — Runtime Binding and Child Task/Run Assignment**. Do not start it
-automatically.
+K4.2-B and K4.2-C are now complete. K4.2 remains **IN PROGRESS**. Exact next
+task: **K4.2-D — Bounded AgentRuntime Dispatch, Cancellation Propagation and
+Child Settlement**. Do not start it automatically.
 
 ## Current K4.2-B durable child reservation — 2026-09-10
 
@@ -701,8 +702,42 @@ The focused K4.2-B matrix passes 47 tests. The build and K4.0/K4.1/K4.2-A
 regression set passes 189 tests. Evidence:
 `operations/reports/agent-mode-k4-2-b-child-agent-reservation-evidence-2026-09-10.md`.
 
-K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-C — Runtime Binding and
-Child Task/Run Assignment**. Do not start it automatically.
+K4.2-C is recorded below. K4.2 remains **IN PROGRESS**. Exact next task:
+**K4.2-D — Bounded AgentRuntime Dispatch, Cancellation Propagation and Child
+Settlement**. Do not start it automatically.
+
+## Current K4.2-C runtime binding and child assignment — 2026-09-10
+
+K4.2-C is **COMPLETE** for its bounded durable StateStore gate. A typed child
+assignment request binds a reserved child to a deterministic assignment intent
+and a known runtime/profile pair without selecting a model or invoking a
+runtime. The transaction rechecks child/root/parent lineage, cancellation and
+kill switches, expiry/deadline, policy/template identity, capability and
+repository/resource scopes, allocation ceilings, and runtime-profile
+admission before any canonical write.
+
+The atomic write creates the canonical child Task, Run, and Attempt, links
+them to the child and intent, creates a child budget suballocation in the
+existing ledger, advances the child to `assigned`, persists one bounded
+receipt/assignment row, and emits one lifecycle event. The root aggregate is
+not reserved twice. Task/Run/Attempt remain pre-dispatch (`admitted`/`created`/
+`admitted`), with deferred route/model references and no AgentRuntime,
+ModelGateway, worker process, scheduler, Workcell, Git, network, or UI path.
+A prepared dispatch is data only and is not execution authority; K4.2-D must
+freshly recheck authority before dispatch.
+
+Deterministic retries after lost response or reopen return the same receipt and
+canonical entities, while conflicting material and concurrent competing
+assignments fail closed. Assigned-child cancellation/expiry invalidates the
+prepared dispatch and cancels canonical entities atomically. Observer output
+exposes bounded safe linkage and runtime/profile identifiers only. The focused
+K4.2-C matrix passes 58/58; the build and expanded K4.0/K4.1/K4.2 regression
+set passes 268/268. Evidence:
+`operations/reports/agent-mode-k4-2-c-runtime-binding-assignment-evidence-2026-09-10.md`.
+
+K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-D — Bounded AgentRuntime
+Dispatch, Cancellation Propagation and Child Settlement**. Do not start it
+automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 

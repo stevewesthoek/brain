@@ -595,9 +595,10 @@ authoritative facts but are deliberately non-atomic; K4.2-B owns slot
 reservation and aggregate enforcement.
 
 K4.2-A creates no child Agent records, workers, runtime processes, model calls,
-reservations, or live scheduler-to-spawn wiring. K4.2-B is now complete. K4
-remains in progress. Exact next task: **K4.2-C — Runtime Binding and Child
-Task/Run Assignment**. Do not start it automatically.
+reservations, or live scheduler-to-spawn wiring. K4.2-B and K4.2-C are now
+complete. K4 remains in progress. Exact next task: **K4.2-D — Bounded
+AgentRuntime Dispatch, Cancellation Propagation and Child Settlement**. Do not
+start it automatically.
 
 ## K4.2-B durable child identity and atomic reservation
 
@@ -628,5 +629,40 @@ gate creates no child task/run/attempt, runtime, model call, worker process,
 live scheduler wiring, Workcell, Git write, or network path. Evidence:
 `operations/reports/agent-mode-k4-2-b-child-agent-reservation-evidence-2026-09-10.md`.
 
-K4.2 remains in progress. Exact next task: **K4.2-C — Runtime Binding and
-Child Task/Run Assignment**. Do not start it automatically.
+K4.2-C is recorded below. K4.2 remains in progress. Exact next task:
+**K4.2-D — Bounded AgentRuntime Dispatch, Cancellation Propagation and Child
+Settlement**. Do not start it automatically.
+
+## K4.2-C runtime binding and durable child assignment
+
+K4.2-C is complete for the durable assignment boundary. The typed
+`assignChildAgent` request uses a deterministic intent key derived from
+immutable logical material, and the existing SQLite StateStore is the sole
+authority. One `BEGIN IMMEDIATE` transaction rechecks the reserved child,
+root and parent lineage, cancellation, global/root kill switches,
+expiry/deadline, policy/template versions, capability and scope ceilings,
+allocation, and finite runtime-profile admission.
+
+The transaction creates exactly one canonical child Task, Run, and Attempt,
+links them to the child and intent, creates a child budget suballocation in
+the existing ledger, moves the child to `assigned`, persists one bounded
+assignment receipt, and appends one bounded event. The root aggregate is not
+reserved a second time. Task/Run/Attempt stay pre-dispatch
+(`admitted`/`created`/`admitted`); route and model are deferred identities, not
+runtime or model selection. No AgentRuntime, ModelGateway, worker process,
+scheduler wiring, Workcell, Git, network, or UI path is invoked.
+
+Retries, reopen, unique constraints, and the transaction make duplicate and
+competing assignments converge safely; conflicting immutable material fails
+closed. Assigned-child retirement/expiry invalidates prepared data and
+cancels canonical entities atomically. Observer output exposes only bounded
+safe linkage and runtime/profile identifiers. `getPreparedChildDispatch` is a
+non-executable projection; K4.2-D must freshly recheck authority and perform
+dispatch/cancellation/settlement.
+
+Evidence:
+`operations/reports/agent-mode-k4-2-c-runtime-binding-assignment-evidence-2026-09-10.md`.
+Focused K4.2-C validation is 58/58; the expanded regression set is 268/268.
+K4.2 remains in progress. Exact next task: **K4.2-D — Bounded AgentRuntime
+Dispatch, Cancellation Propagation and Child Settlement**. Do not start it
+automatically.

@@ -75,6 +75,7 @@ export type AgentModeObserverProjection = {
   ciWorkflowStates: Array<Record<string, unknown>>;
   spawnAdmissionControls: Array<Record<string, unknown>>;
   spawnRootStates: Array<Record<string, unknown>>;
+  childAssignments: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -170,7 +171,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [],
     };
   }
 
@@ -282,6 +283,23 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
       deadline: root.deadline,
       updatedAt: root.updatedAt,
     }));
+    const childAssignments = store.listChildAssignments(32).map((assignment) => ({
+      assignmentIntentKey: assignment.assignmentIntentKey,
+      childAgentId: assignment.childAgentId,
+      taskId: assignment.taskId,
+      runId: assignment.runId,
+      attemptId: assignment.attemptId,
+      rootGoalId: assignment.rootGoalId,
+      sourceEventId: assignment.sourceEventId,
+      runtimeRef: assignment.runtimeRef,
+      runtimeProfileRef: assignment.runtimeProfileRef,
+      status: assignment.status,
+      deadline: assignment.deadline,
+      stepCeiling: assignment.requestedSteps,
+      costCeiling: assignment.requestedCost,
+      createdAt: assignment.createdAt,
+      updatedAt: assignment.updatedAt,
+    }));
     const results = store.listRecentEvents(500).filter((event) => event.eventType === 'jarvis_result_returned').map((event) => {
       const payload = event.payload;
       const usage = payload.usage && typeof payload.usage === 'object' ? payload.usage as Record<string, unknown> : {};
@@ -370,7 +388,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates,
+      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments,
     };
   } finally {
     store.close();
