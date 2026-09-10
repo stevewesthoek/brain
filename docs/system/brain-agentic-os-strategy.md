@@ -2,7 +2,8 @@
 
 **Date:** 2026-05-22
 **Owner:** Steve Westhoek
-**Status:** Active
+**Status:** Historical strategy reference; current Agent Mode architecture is
+defined by operations/specs/agent-mode-runtime-roadmap.md.
 
 ---
 
@@ -164,10 +165,23 @@ The strategy succeeds when:
 
 | Document | Role |
 |----------|------|
-| This file | Strategic direction and architecture model |
-| `brain-agentic-os-roadmap.md` | Phase timeline with goals and status |
-| `brain-agentic-os-implementation-plan.md` | Executable task list for lower-tier models |
-| `ai/policy/routing.md` | Model routing rules (operational) |
-| `ai/policy/guardrails.md` | Safety rules (operational) |
-| `operations/decision-log.md` | Confirmed decisions (append-only) |
-| `.ai/current.md` | Session handoff (ephemeral) |
+ | This file | Strategic direction and architecture model |
+ | `brain-agentic-os-roadmap.md` | Phase timeline with goals and status |
+ | `brain-agentic-os-implementation-plan.md` | Executable task list for lower-tier models |
+ | `ai/policy/routing.md` | Model routing rules (operational) |
+ | `ai/policy/guardrails.md` | Safety rules (operational) |
+ | `operations/decision-log.md` | Confirmed decisions (append-only) |
+ | `.ai/current.md` | Session handoff (ephemeral) |
+
+## Current Agent Mode Foundation (K3.6)
+
+The current executable foundation is narrower than this original strategy
+diagram: Brain owns the durable kernel, Bedrock model gateway, node transport,
+Workcells, validation/review/commit/merge authorization, recovery, and
+observer surfaces. Auto starts MiniMax M2.5 and escalates through GLM-5 to
+Claude Opus 4.6 under Brain policy. Codex remains a separate manual resource.
+K4 event-driven autonomy is planned but not implemented.
+
+Local text LLM routes described in older sections are historical. Keep local
+voice/speech/media utilities only where an active consumer proves need; the
+nightly MLX Whisper transcription pipeline is the current retained example.

@@ -22,6 +22,19 @@ their external interface requires them.
 
 ---
 
+## Agent Mode default
+
+Agent Mode is cloud-text by policy. Auto root/planning admission always starts
+with a MiniMax M2.5 scout and Brain-owned escalation follows:
+
+MiniMax M2.5 → GLM-5 → Claude Opus 4.6
+
+Amazon Bedrock is the default execution resource. Codex is a separate,
+manual/subscription-backed resource and is never an implicit fallback. Unknown
+or stale access/quota evidence fails closed. Local voice, speech, image, and
+media utilities remain separate capabilities; no local text LLM is an Agent
+Mode route.
+
 ## Local AI Tier (Tier 0) — Free, Local, Batch-Window Priority
 
 **LM Studio** is installed at `/Applications/LM Studio.app` with an OpenAI-compatible API at `http://localhost:1234/v1`.  
@@ -59,11 +72,19 @@ Four AI engines now work together. Claude always orchestrates — route sub-task
 | **Codex** | Reviewer / Parallel executor | Isolated well-scoped tasks, code review, second opinions, fast parallel checks |
 | **Gemini Flash** | Preprocessor | Large context ingestion (1M tokens), bulk analysis, free-tier summarization |
 
-**Cost priority (updated):** Local Ollama (free) > Gemini Flash (free preprocessing) > admitted Bedrock value portfolio > Codex low/mini when a subscription-backed surface is a better fit > Sonnet > Opus / Codex max. The registry owns the concrete portfolio and ranking facts.
+**Cost priority (updated):** Gemini Flash for eligible preprocessing, then the
+admitted Bedrock value portfolio, then Codex low/mini when a
+subscription-backed surface is a better fit, followed by premium Bedrock
+models. The registry owns concrete portfolio and ranking facts; local text
+LLM routes are retired.
 
 **Bedrock value portfolio:** The AI Model Selector validates lifecycle admission and account/region access before selecting Bedrock models. Cheap capable models are tried before premium Claude. Evaluated upgrade candidates remain unavailable until separately admitted.
 
-**Manual terminal entrypoint:** `repos` offers `Auto`, `Claude`, `Codex`, and `Gemini`. `Auto` chooses the interactive runtime only: Claude for repo-wide/multi-step work, Codex for isolated review/small execution, and Gemini for large-context preprocessing. Raw Bedrock models stay behind the AI Model Selector and are not exposed as manual top-level choices.
+**Manual terminal entrypoint:** `repos` and `sessions` offer exactly `Auto`,
+`MiniMax M2.5`, `GLM-5`, `Opus 4.6`, and `Codex`. Auto routes through
+`brain-agent`; explicit Brain choices remain policy-gated. Claude Code and
+Gemini remain separate specialist/preprocessing surfaces, not menu labels or
+Agent Mode model choices.
 
 **External IDE/workbench surfaces:** Cursor, Kiro, Antigravity, Oh My Pi, and the Open Design bridge pattern are operating surfaces only. They may auto-detect installed CLIs and drive agents, but provider/model choice remains behind the AI Model Selector (`ai-select` or `POST /select`) whenever Brain-owned automation makes an AI call.
 

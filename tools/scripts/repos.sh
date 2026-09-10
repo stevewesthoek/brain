@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# repos — unified repo picker for Claude and Codex.
+# repos — unified repository picker for Brain and specialist runtimes.
 # Invoked as the `repos` shell function (defined in ~/.zshrc).
 #
-# Step 1: pick AI tool with fzf.
+# Step 1: always present the model/runtime selector; Auto is first and preselected.
 # Step 2: pick a repo from ~/Repos (sorted by most recently used).
 # Opens the selected repo in the chosen interactive runtime.
 #
@@ -71,23 +71,55 @@ with open(usage_file, 'w') as f:
 PYEOF
 }
 
-launch_claude() {
-  # Re-source immediately before launch so the configured Claude environment
-  # is current. Model choice belongs to that environment and Claude Code's
-  # configured default, not to this repository navigation script.
-  # shellcheck source=/dev/null
-  source "$SCRIPT_DIR/claude-bedrock-env.sh"
-  exec claude
+launch_brain() {
+  # brain-agent is the canonical Brain task entrypoint and owns model admission.
+  local model="$1"
+  command -v brain-agent >/dev/null 2>&1 || {
+    echo "brain-agent is not on PATH; install/build Brain Core before launching Brain." >&2
+    return 1
+  }
+  if [[ "$model" == "auto" ]]; then
+    exec brain-agent run
+  fi
+  exec brain-agent run --model "$model"
 }
 
-# Step 1: pick AI tool
-tool=$(printf "Claude\nCodex" | fzf \
-  --prompt="  open with: " \
-  --height=10 \
-  --layout=reverse \
-  --border=rounded \
-  --bind='tab:down,btab:up' \
-  2>/dev/null)
+runtime_menu() {
+  printf '%s\n' \
+    'Auto' \
+    'MiniMax M2.5' \
+    'GLM-5' \
+    'Opus 4.6' \
+    'Codex'
+}
+
+if [[ "${1:-}" == "--runtime-menu" ]]; then
+  runtime_menu
+  exit 0
+fi
+if [[ "${1:-}" == "--choose-model" ]]; then
+  shift
+fi
+
+if [[ "${1:-}" == "--model" ]]; then
+  case "${2:-}" in
+    auto) tool='Auto' ;;
+    minimax-m2.5) tool='MiniMax M2.5' ;;
+    glm-5) tool='GLM-5' ;;
+    opus-4.6) tool='Opus 4.6' ;;
+    codex) tool='Codex' ;;
+    *) echo "Usage: repos [--model auto|minimax-m2.5|glm-5|opus-4.6|codex]" >&2; exit 2 ;;
+  esac
+else
+  tool=$(runtime_menu | fzf \
+    --prompt="  open with: " \
+    --height=10 \
+    --no-sort \
+    --layout=reverse \
+    --border=rounded \
+    --bind='tab:down,btab:up' \
+    2>/dev/null)
+fi
 [[ -z "$tool" ]] && exit 0
 
 # Bootstrap cache if missing
@@ -119,8 +151,14 @@ selected_path=$(echo "$selected" | cut -f2)
 record_usage "$selected_path"
 
 cd "$selected_path" || exit 1
-if [[ "$tool" == "Claude" ]]; then
-  launch_claude
-elif [[ "$tool" == "Codex" ]]; then
+if [[ "$tool" == "Codex" ]]; then
   exec codex
+elif [[ "$tool" == "Auto" ]]; then
+  launch_brain auto
+elif [[ "$tool" == "MiniMax M2.5" ]]; then
+  launch_brain minimax-m2.5
+elif [[ "$tool" == "GLM-5" ]]; then
+  launch_brain glm-5
+elif [[ "$tool" == "Opus 4.6" ]]; then
+  launch_brain opus-4.6
 fi

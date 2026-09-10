@@ -1,19 +1,72 @@
 #!/usr/bin/env bash
-# sessions — unified session picker for Claude and Codex.
+# sessions — unified session picker for Brain and specialist runtimes.
 # Invoked as the `sessions` shell function (defined in ~/.zshrc).
 #
-# Step 1: pick AI tool with fzf (Claude is default).
+# Step 1: always present the model/runtime selector; Auto is first and preselected.
 # Step 2: pick a session from the chosen tool's history, ordered newest first.
 #
-# Claude sessions are read from ~/.claude/projects/**/*.jsonl.
 # Codex sessions are read from ~/.codex/sessions/**/*.jsonl, with names
 # resolved from ~/.codex/session_index.jsonl.
 #
 # On selection, cd to the session's original project directory and resume:
-#   Claude → source configured Claude env, then `claude --resume <session_id>`
+#   Brain  → durable Brain control action for the selected run
 #   Codex  → `codex resume <session_id>`
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+list_brain_sessions() {
+  python3 - "${BRAIN_CORE_URL:-http://127.0.0.1:4877}" "${1:-}" <<'PYEOF'
+import json, sys, urllib.request
+
+url = sys.argv[1].rstrip('/') + '/agent-console'
+selected_model = sys.argv[2]
+try:
+    with urllib.request.urlopen(url, timeout=2) as response:
+        body = json.load(response)
+except Exception:
+    # Missing Brain StateStore/API means no sessions, never synthetic rows.
+    raise SystemExit(0)
+
+agent_mode = body.get('agentMode') or {}
+if agent_mode.get('availability') != 'available':
+    raise SystemExit(0)
+for attempt in agent_mode.get('attempts', []):
+    attempt_id = str(attempt.get('attemptId') or '').strip()
+    if not attempt_id:
+        continue
+    model = str(attempt.get('modelRef') or 'unknown')
+    model_display = {
+        'agent-mode/minimax-m2.5': 'MiniMax M2.5',
+        'agent-mode/glm-5': 'GLM-5',
+        'agent-mode/claude-opus-4.6': 'Opus 4.6',
+    }.get(model, model)
+    if selected_model and selected_model != model_display:
+        continue
+    status = str(attempt.get('status') or 'unknown')
+    runtime = str(attempt.get('runtimeRef') or 'unknown')
+    updated = str(attempt.get('updatedAt') or attempt.get('createdAt') or '?')
+    run_id = str(attempt.get('runId') or attempt_id).strip()
+    # Columns: last activity | repository | session/model | runtime | attempt id | run id
+    view = 'Auto' if not selected_model else model_display
+    print(f"{updated}\tunknown\tBrain · {view} · {model_display} · {status}\t{runtime}\t{attempt_id}\t{run_id}")
+PYEOF
+}
+
+runtime_menu() {
+  printf '%s\n' 'Auto' 'MiniMax M2.5' 'GLM-5' 'Opus 4.6' 'Codex'
+}
+
+if [[ "${1:-}" == "--runtime-menu" ]]; then
+  runtime_menu
+  exit 0
+fi
+if [[ "${1:-}" == "--choose-model" ]]; then
+  shift
+fi
+if [[ "${1:-}" == "--list-brain" ]]; then
+  list_brain_sessions
+  exit 0
+fi
 
 list_claude_sessions() {
   python3 - "$HOME/.claude/projects" <<'PYEOF'
@@ -213,36 +266,56 @@ for s in sessions:
 PYEOF
 }
 
-# Step 1: pick AI tool — Claude is default (first item)
-tool=$(printf "Claude\nCodex" | fzf \
-  --prompt="  open with: " \
-  --height=10 \
-  --layout=reverse \
-  --border=rounded \
-  --bind='tab:down,btab:up' \
-  2>/dev/null)
+if [[ "${1:-}" == "--model" ]]; then
+  case "${2:-}" in
+    auto) tool='Auto' ;;
+    minimax-m2.5) tool='MiniMax M2.5' ;;
+    glm-5) tool='GLM-5' ;;
+    opus-4.6) tool='Opus 4.6' ;;
+    codex) tool='Codex' ;;
+    *) echo "Usage: sessions [--model auto|minimax-m2.5|glm-5|opus-4.6|codex]" >&2; exit 2 ;;
+  esac
+else
+  tool=$(runtime_menu | fzf \
+    --prompt="  open with: " \
+    --height=10 \
+    --no-sort \
+    --layout=reverse \
+    --border=rounded \
+    --bind='tab:down,btab:up' \
+    2>/dev/null)
+fi
 [[ -z "$tool" ]] && exit 0
 
 # Step 2: pick session for the chosen tool
-if [[ "$tool" == "Claude" ]]; then
-  selected=$(list_claude_sessions | fzf \
-    --prompt="  session (Claude): " \
+if [[ "$tool" == "Auto" || "$tool" == "MiniMax M2.5" || "$tool" == "GLM-5" || "$tool" == "Opus 4.6" ]]; then
+  selected=$(list_brain_sessions "$([[ "$tool" == "Auto" ]] || echo "$tool")" | fzf \
+    --prompt="  session (Brain/$tool): " \
     --height=60% \
     --layout=reverse \
     --border=rounded \
     --delimiter=$'\t' \
-    --with-nth=1,2,3 \
-    --header="age        project                  summary" \
-    --preview='printf "  project:  %s\n  session:  %s\n\n  %s" "{4}" "{5}" "{3}"' \
-    --preview-window='down:4:wrap' \
+    --with-nth=1,2,3,4,5 \
+    --header="last activity  repository  session/model  runtime" \
+    --preview='printf "  repository: %s\n  session:    %s\n  runtime:    %s\n  attempt:    %s\n  run:       %s" "{2}" "{3}" "{4}" "{5}" "{6}"' \
+    --preview-window='down:5:wrap' \
     --bind='tab:down,btab:up' \
     2>/dev/null)
   [[ -z "$selected" ]] && exit 0
-  selected_cwd=$(echo "$selected" | cut -f4)
-  selected_sid=$(echo "$selected" | cut -f5)
-  # shellcheck source=/dev/null
-  source "$SCRIPT_DIR/claude-bedrock-env.sh"
-  cd "$selected_cwd" && exec claude --resume "$selected_sid"
+  selected_sid=$(echo "$selected" | cut -f6)
+  action=$(printf '%s\n' inspect pause resume cancel kill | fzf \
+    --prompt="  Brain action ($selected_sid): " \
+    --height=10 \
+    --layout=reverse \
+    --border=rounded \
+    --bind='tab:down,btab:up' \
+    2>/dev/null)
+  [[ -z "$action" ]] && exit 0
+  command -v brain-agent >/dev/null 2>&1 || {
+    echo "brain-agent is not on PATH; cannot control Brain session." >&2
+    exit 1
+  }
+  exec brain-agent "$action" "$selected_sid"
 elif [[ "$tool" == "Codex" ]]; then
   selected=$(list_codex_sessions | fzf \
     --prompt="  session (Codex): " \

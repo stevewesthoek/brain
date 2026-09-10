@@ -67,11 +67,10 @@ The selector reads:
 
 Current selector policy:
 
-1. Use local Ollama first.
-2. Use cheap capable Bedrock models before premium Claude.
-3. Use Codex CLI when the Bedrock value portfolio is unavailable or the subscription-backed surface is a better fit.
-4. Use Sonnet as a premium fallback.
-5. Keep Opus 4.6 enabled as the callable Opus-tier fallback while probing Opus 4.7 as the upgrade candidate.
+1. Use the admitted Bedrock portfolio first for managed text.
+2. Use Codex CLI only when separately admitted and quota-safe.
+3. Use Sonnet as a premium Bedrock fallback.
+4. Keep Opus 4.6 enabled as the callable Opus-tier fallback while probing Opus 4.7 as the upgrade candidate.
 
 Initial Bedrock value roster:
 
@@ -158,4 +157,4 @@ If `/model` still has several built-in entries, that is Claude Code's own select
 - `ai/policy/routing.md`
 - `operations/system-configs/claude/agents/deep-architect.md`
 
-Last updated: 2026-05-24
+Last updated: 2026-09-09

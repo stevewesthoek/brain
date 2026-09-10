@@ -1,7 +1,7 @@
 # Brain Agent Orchestrator Architecture
 
-**Status:** Draft architecture contract
-**Last updated:** 2026-05-24
+**Status:** Current architecture reference; K3.6 foundation audit
+**Last updated:** 2026-09-09
 **Research basis:** `agent-orchestrator-research-2026-05-22.md`
 
 ## Purpose
@@ -31,14 +31,14 @@ User goal
 | CLI adapters | Normalized execution of approved tools | Planning, autonomous policy decisions |
 | Brain Console | Visibility and approval UI | Hidden autonomous execution |
 
-## Provider Policy
+## Current Agent Mode Provider Policy
 
-Every LLM task goes through the AI Model Selector. Provider order:
-
-1. Gemini free-tier for eligible non-sensitive text tasks while RPM/TPM/RPD budgets remain available.
-2. Local Ollama on Mac Mini M4 Pro and MacBook M1 for sensitive, private, offline, external-provider-disallowed, or Gemini-exhausted tasks.
-3. Codex CLI through the ChatGPT subscription surface when Gemini/local quality is insufficient or lower-cost providers are unavailable.
-4. Amazon Bedrock Claude as the paid fallback.
+Every Agent Mode text task goes through Brain admission and the Bedrock
+ModelGateway. Auto root/planning begins with MiniMax M2.5, then escalates only
+through Brain-owned policy to GLM-5 and Claude Opus 4.6. Bedrock is the default
+execution resource. Codex CLI is a separate manual/subscription resource, not
+an automatic fallback. Local text LLM infrastructure is retired; local
+speech, voice, image, and media utilities remain outside this policy.
 
 Direct OpenAI API and direct Anthropic API are not valid executor surfaces.
 

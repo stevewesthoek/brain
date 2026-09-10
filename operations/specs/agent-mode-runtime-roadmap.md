@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0 is complete for the offline kernel and live execution remains gated
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4 is not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -18,13 +18,16 @@ VPS by configuration/adapters rather than host-specific domain code.
 Hard model policy for this lane:
 
 ```text
-MiniMax M2.5  →  GLM-5  →  Claude Opus 4.6
-worker            senior      principal
+Auto root/planning scout: MiniMax M2.5
+quality escalation:       MiniMax M2.5 → GLM-5 → Claude Opus 4.6
+execution package:        cheapest capable admitted tier
 ```
 
-No silent model substitution is permitted. The ladder is policy, not a forced
-failure chain: known difficult work may start at GLM-5 and principal/high-risk
-work may start at Opus 4.6.
+No silent model substitution is permitted. Auto begins every root/planning
+admission with MiniMax, including statically senior/principal work. A bounded
+quality or validation signal may request escalation, but Brain owns the
+decision, budget, quota, and maximum depth. Manual model choices remain
+available for expert/debug use and are still policy-gated.
 
 Codex is a separate ChatGPT-subscription-backed execution runtime, not a
 Bedrock tier. Automation defaults to Bedrock because the grant is the primary
@@ -305,8 +308,9 @@ gate. No LaunchAgent or live-provider change is part of K0.
 
 ## Phase K1 — model/resource gateway
 
-**Status:** in progress. K1.1 is complete; K1.2 remains planned. Live/billable
-probes remain separately admitted per sub-slice evidence.
+**Status:** complete for the offline K1.1/K1.2/K1.3 gates. Live/billable
+invocation remains separately admitted; K2.1-R1 live acceptance is now
+complete under its separate authorization.
 
 **K1.1 status:** complete for the native Amazon Bedrock ModelGateway and
 identity/region/route-scoped access gate. MiniMax M2.5, GLM-5, and Claude Opus
@@ -316,7 +320,25 @@ redacted evidence recorded in
 `operations/reports/agent-mode-k1-1-evidence-2026-09-08.md`. The gateway is
 admitted-only, transport-swappable, deadline-bounded, and normalizes final
 text/usage without leaking MiniMax reasoning content. Selection remains
-disabled until K1.2 defines tier policy. K1.2 and K2 were not started.
+disabled in the legacy selector; Agent Mode selection is now governed by the
+Brain-owned K1.2 policy. K2.1 live completion remains separately gated.
+
+**K1.2 status:** complete for the offline policy gate. The fixed ladder is
+MiniMax M2.5 → GLM-5 → Claude Opus 4.6, with quality escalation only; provider
+failures do not switch resources. All escalations and children reuse the root
+`budgetScopeId`. Opus pricing is fail-closed until AWS publishes a usable
+current token-rate row.
+
+**K1.3 status:** complete for the human/runtime integration surface. `repos.sh`
+and `sessions.sh` always show the model/runtime selector with Auto first and
+preselected; their optional five-entry switch is Auto, MiniMax M2.5, GLM-5,
+Opus 4.6, Codex; historical
+Claude Code launch/resume support remains internal but is not a normal selector
+entry. Brain is
+the control harness, while DeepSeek Harness is internal optional runtime
+machinery, Claude Code and Codex remain specialist runtimes, and Herdr launches
+Brain without becoming an authority. Evidence is recorded in
+`operations/reports/agent-mode-k1-3-runtime-surfaces-evidence-2026-09-09.md`.
 
 - implement native `amazon-bedrock` ModelGateway support for MiniMax M2.5,
   GLM-5, and Claude Opus 4.6;
@@ -339,7 +361,10 @@ Codex is never mislabeled as a Bedrock tier.
 
 ## Phase K2 — one Jarvis + one worker live vertical slice
 
-**Status:** planned after A0/A1/K0/K1
+**Status:** K2 is complete for the bounded one-Jarvis/one-worker read-only
+vertical slice. K2.1-R1 live acceptance and K2.2 operator-control/recovery
+gates pass. The original bounded live acceptance remains historical incomplete
+evidence; it is not rewritten.
 
 Prove exactly one Jarvis identity and one worker can:
 
@@ -366,9 +391,79 @@ is shown explicitly, never substituted. Ship minimal intake, inspect, pause,
 cancel/kill and approval visibility before unattended live use; fleet UI waits
 for U0. Reuse the local node envelope delivered in K0.
 
+### K2.1 historical initial implementation state
+
+The pinned DeepSeek Harness SDK is bootstrapped at commit
+`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8` (`0.1.3-alpha.2`) and Brain owns
+the restricted child launch, explicit environment, Unix-socket model/tool
+bridge, K1.2 MiniMax admission, K0 outbox/lease/receipt path, and durable
+`run`/`inspect`/pre-dispatch `cancel` CLI surfaces. Keyless end-to-end tests
+prove one child model/tool loop, exactly one BrainNode read, and close/reopen
+durability.
+
+The bounded live MiniMax acceptance attempts reached the real route but did not
+produce a verified tool call/final response. The transport defect identified
+from that evidence (`toolSpec.inputSchema.json`) is fixed and covered
+deterministically; no further live attempt is being made in this bounded
+tranche. That initial tranche was superseded by the separately authorized R1
+acceptance below. K2.2 must not begin without separate authorization.
+
+### K2.1-R1 current implementation state
+
+R1 supersedes the initial-selection semantics without rewriting the historical
+K2.1 live report. The versioned policy is now Auto-first: root and planning
+admissions always start with the MiniMax M2.5 scout; structured escalation is
+an untrusted model intent interpreted by Brain; provider failures do not count
+as reasoning failures; completed planning packages receive fresh execution
+admission; and escalation depth is bounded. The principal Bedrock Opus resource
+remains fail-closed when current dollar pricing is unverified. Codex Astra is a
+separate fixture/policy resource only; no Astra or Luna model identifier is
+invented or executed.
+
+The normal `repos` and `sessions` paths always open a model/runtime selector
+with Auto first and preselected; pressing Enter accepts Auto. `--choose-model`
+remains a compatibility alias and `--model VALUE` is available for
+non-interactive callers. Both expose exactly `Auto`, `MiniMax M2.5`, `GLM-5`,
+`Opus 4.6`, and `Codex`. Selecting a Brain session exposes durable inspect,
+pause, resume, cancel, and kill controls, also available through
+`brain-agent <action> RUN_ID` from another terminal. The R1 deterministic
+policy/selector evidence and the single fresh live acceptance are recorded in
+`operations/reports/agent-mode-k2-1-r1-auto-and-live-unblock-2026-09-09.md`.
+No other live model, failover loop, remote transport, C0 cleanup, or K2.2 work
+is authorized by R1. R1 completion evidence confirms one successful MiniMax
+tool-call/final-response path, actual settlement, and reopened observation.
+
+### K2.2 operator controls and process-loss recovery — 2026-09-09
+
+K2.2 is complete. Normal `repos` and `sessions` invocations first show exactly
+`Auto`, `MiniMax M2.5`, `GLM-5`, `Opus 4.6`, and `Codex`, with Auto first and
+preselected. `--model` is the only non-interactive selector; `--choose-model`
+is retained as an alias. Brain session rows expose inspect, pause, resume,
+cancel, and kill against durable run IDs.
+
+The StateStore records owned runtime PID plus start-time/command/token identity.
+Kill signals only an identity-verified owned `brain-agent`; resume requires the
+same check or a new controller re-admission. Normal cancellation is a request
+until the controller truthfully acknowledges termination/reconciliation. A
+lost controller clears its old lease and classifies the durable effect boundary:
+safe work can be re-admitted on the same Task/Run/Attempt lineage with fresh
+access evidence, budget checks, and a new fence; uncertain or receipt-pending
+effects are never replayed automatically. Ten deterministic controller/runtime
+loss fixtures and denial cases are recorded in
+`operations/reports/agent-mode-k2-2-operator-controls-evidence-2026-09-09.md`.
+
+N0.2 is complete. The deterministic clock regression, generic enrollment,
+cross-process duplicate delivery, truthful reconnect uncertainty, synthetic
+macOS/Linux portability, and Office/MacBook parity gates all passed. N0 is
+complete for the approved bounded scope. No model call was made for N0.1 or
+N0.2.
+
 ## Phase N0 — generic Brain Node
 
-**Status:** planned local envelope in K0; remote-node extension after K2.
+**Status:** complete for N0.1/N0.2; K3 is next. Generic local/SSH delivery,
+enrollment, bounded reconnect semantics, cross-process deduplication, and
+two-node parity are proven without adding write, shell, public-listener, or
+daemon behavior.
 
 - extend the local portable node envelope with authenticated remote commands,
   receipt replay, protocol/capability negotiation and reconnect recovery;
@@ -384,9 +479,220 @@ for U0. Reuse the local node envelope delivered in K0.
 Exit gate: the same bounded worker task can target either admitted node without
 application-code forks, and node loss/reconnect fails safely.
 
+### N0.1 authenticated remote BrainNode transport — 2026-09-09
+
+N0.1 is complete for its bounded scope. `NodeTransport` now supports the local
+perimeter and a thin SSH transport using the canonical `host:macbook` /
+`node-instance:host:macbook` identities. Negotiation checks protocol, runner
+version, identity, health freshness, platform metadata, and exactly `repo.read`.
+Commands use node-local HMAC provenance over strict SSH; receipts preserve
+lineage, fence, status, and integrity hashes. Disconnects are nonterminal and
+reconnect performs a fresh handshake without replay.
+
+The MacBook preflight and one harmless live `repo.read` succeeded, with the
+receipt reconciled into the Office StateStore. The runner is short-lived and
+uses temporary node-local state; no database is shared or copied. Evidence is
+in `operations/reports/agent-mode-n0-1-remote-node-evidence-2026-09-09.md`,
+with operating details in `operations/runbooks/agent-mode-node-transport.md`.
+
+### N0.2 generic enrollment, reconnect safety and parity — 2026-09-09
+
+N0.2 is complete. Transport clocks are injectable while production defaults use
+the real clock, so deadline validation remains enabled and deterministic. The
+generic enrollment type uses opaque configuration-driven identities validated
+against trusted resource sets; SSH requires explicit enrollment and the runner
+trusts only its node-local configured resource. Synthetic Darwin and Linux
+enrollments use the same code without Office/MacBook branches.
+
+The node-local dedup store is a bounded, mode-0600 atomic file containing only
+schema version, operation ID, immutable command hash, receipt, and retention
+timestamps. Corruption fails closed. Separate runner processes return the same
+semantic result for identical operations and reject conflicting replay. A
+disconnect before send remains retryable; after send it is represented through
+the existing effect-observed-without-receipt recovery state, never as a false
+failure or blind replay. Office remains the sole authoritative StateStore.
+
+The same logical harmless read passed through Office local transport and
+MacBook SSH transport with identical content, distinct correct identities, and
+both receipts reconciled in Office. Full evidence is in
+`operations/reports/agent-mode-n0-2-multi-node-evidence-2026-09-09.md` and
+operational details are in `operations/runbooks/agent-mode-node-transport.md`.
+
+N0 completion gate: **COMPLETE**. The next roadmap phase was **K3 — safe coding
+autonomy**; K3.0 is now complete and K3.1 is the exact next task.
+
 ## Phase K3 — safe coding autonomy
 
-**Status:** planned after K2 and N0
+**Status:** K3.0–K3.3 foundations complete for their bounded gates; broader autonomy remains separately gated
+
+### K3.0 safe coding Workcell foundation — 2026-09-09
+
+K3.0 adds the first isolated coding Workcell control-plane foundation without
+granting direct repository writes. Workcell identity, status, repository
+binding, owner, branch, and worktree path are durable in the existing SQLite
+WAL StateStore. The only lifecycle actions are `create`, `prepare`, `inspect`,
+and `destroy`; merge, approval, deployment, coding agents, shell, and
+arbitrary commands remain outside this tranche.
+
+Git access is behind a fixed non-shell adapter with allowlisted repository,
+worktree, status, and removal operations. A Workcell target must be an exact
+child of an explicitly configured workcells root outside the primary checkout;
+generated branches are unique `codex/workcell/<uuid>` branches and protected
+branches cannot be selected. Ownership checks prevent another agent from
+preparing or destroying a Workcell.
+
+Every lifecycle action records a durable receipt. Creation, preparation, and
+destruction use `WorkcellCreatedReceipt`, `WorkcellPreparedReceipt`, and
+`WorkcellDestroyedReceipt`; inspection and crash recovery use
+`ValidationReceipt`. Receipts carry task/run/attempt/workcell/repository/actor
+lineage, timestamp, operation hash, and result state, without secrets.
+Interrupted preparation is cleaned up only for an exact target that was absent
+before the operation; stale durable rows are detected and can reconcile a
+valid Git worktree or fail closed without deleting foreign paths.
+
+The foundation names `repo.read` and future `repo.write(workcell)` only.
+`repo.write(main)`, shell, arbitrary process execution, and direct write
+commands are not admitted. Full evidence is recorded in
+`operations/reports/agent-mode-k3-0-workcell-evidence-2026-09-09.md`.
+
+K3.0 completion gate: **COMPLETE**. At that completion point the exact next
+task was **K3.1 — controlled Workcell writer lease, deterministic validation,
+and diff/evidence admission**.
+
+### K3.1 active Workcell writer lease, fencing, and diff admission — 2026-09-09
+
+K3.1 is complete for its bounded safety layer. The existing StateStore now
+persists Workcell writer lease history with one active lease per Workcell,
+owner agent/attempt, expiry, lifecycle status, and monotonically increasing
+per-Workcell fence tokens. Active leases cannot be stolen; expired leases can
+be replaced; old owners and old fence tokens are rejected at the admission
+boundary. Lease grant, release/expiry, and rejected write decisions are
+durable and restart-safe.
+
+The `repo.write(workcell)` boundary is admission-only. It requires a prepared
+or active/testing Workcell, exact repository/worktree binding, active lease,
+matching owner and attempt, and matching fence token. It does not expose an
+editing operation, shell, arbitrary process execution, or `repo.write(main)`.
+
+Diff evidence is captured through the fixed Git adapter, including Workcell,
+repository, branch, base/current revisions, tracked and untracked changed
+files, and a deterministic hash of the complete tracked/untracked diff state.
+Validation admission stores the requested validation result and can produce
+`validation_ready` only after diff evidence exists; no test runner is invoked.
+Writer lease, rejection, diff, and validation receipts include task/run/attempt/
+Workcell/lease/fence/timestamp/operation-hash lineage. Full evidence is in
+`operations/reports/agent-mode-k3-1-writer-lease-evidence-2026-09-09.md`.
+
+K3.1 completion gate: **COMPLETE**. Exact next task: **K3.2 — bounded
+Workcell-local write execution with preimage/snapshot validation**.
+
+### K3.2 bounded Workcell-local text mutation — 2026-09-09
+
+K3.2 is complete for its bounded gate. The single typed primitive is
+`workcell.file.patch`, exposed by `WorkcellFileMutationManager`; it modifies
+one existing regular UTF-8 text file in an admitted Workcell. File creation and
+deletion are intentionally not implemented. The conservative file and
+replacement bound is 256 KiB. Binary data, invalid UTF-8, directories, special
+files, symlinks, traversal, absolute/Windows paths, reserved metadata/runtime
+components, the primary checkout, and another Workcell are rejected.
+
+The primitive resolves the durable Workcell path, then requires exact
+`repo.write(workcell)` admission, the current matching writer lease, owner and
+attempt, and fence token. The StateStore records an immutable operation before
+filesystem effects, expected preimage hash/state, verified preimage hash,
+replacement hash, postimage hash, phase, and operation hash. The current file
+must still match the expected SHA-256 immediately before atomic rename. Writes
+use an exclusive temporary sibling, preserve the existing mode, fsync and
+close the temporary file, then rename it over the target. Full content is never
+persisted.
+
+Applied, rejected, and reconciled receipts bind task/run/attempt/Workcell,
+operation, repository reference, relative target, lease/fence, preimage,
+postimage, timestamp, result, and operation hash. Same-operation replay returns
+the durable result without rewriting. A crash before rename is classified as
+safe to resume; a crash after rename is reconciled from the durable postimage;
+postimage drift rejects without overwrite. K3.1 Git diff capture remains the
+separate evidence step after a successful write; a write is not validation,
+review, commit, merge, or deployment.
+
+The mutation manager uses the existing local StateStore/Workcell writer seam.
+It does not add a parallel BrainNode authority or unrestricted CLI; BrainNode's
+current envelope remains read-only, so remote/future-node write execution is
+explicitly not claimed by K3.2. Portability is provided by the fixed local
+filesystem/Git adapter boundary, with no Office/MacBook-specific write branch.
+Evidence: `operations/reports/agent-mode-k3-2-workcell-write-evidence-2026-09-09.md`.
+
+K3.2 completion gate: **COMPLETE**. Exact next task: **K3.3 — controlled
+Workcell validation with an allowlisted validator registry**.
+
+### K3.3 controlled Workcell validation framework — 2026-09-09
+
+K3.3 is complete for its bounded gate. The typed capability
+`validation.run(workcell)` is admitted only for a durable Workcell with exact
+repository/worktree binding, an active matching writer lease, owner/attempt,
+and current fence token. The existing SQLite WAL StateStore remains the sole
+authority and now persists validation lifecycle, evidence, result, and receipt
+history; no second database or control plane was added.
+
+`WorkcellValidatorRegistry` contains one built-in profile,
+`git.diff.integrity`. Profiles identify a fixed allowed operation, repository
+type, timeout, evidence bound, and evidence format; they contain no caller
+supplied command, shell text, package script, or executable path. The validator
+re-runs the existing fixed non-shell Git diff adapter against the durable
+Workcell and compares base/current revisions, changed files, and diff hash to
+the latest K3.1 diff evidence. It produces bounded deterministic evidence and
+an evidence hash. No arbitrary execution, LLM, coding agent, shell, or package
+execution path was added.
+
+Validation emits `ValidationStartedReceipt`, then either
+`ValidationCompletedReceipt` with passed/failed evidence or
+`ValidationRejectedReceipt` for unknown profile, missing diff, invalid
+capability/binding/lease, timeout, interruption, stale, or destroyed Workcell.
+Completed and rejected requests are idempotent; a started validation recovered
+after interruption is classified as interrupted and cannot become an
+ambiguous success. StateStore close/reopen preserves lifecycle and evidence.
+
+K3.3 completion gate: **COMPLETE**. K3.4 is the next bounded gate: the first
+real coding worker must exercise the Brain-owned Workcell read → patch → diff →
+validation path under the pinned restricted runtime. K4 remains blocked until
+K3.4 and K3.5 (concurrent workers plus explicit review/commit/merge authority)
+are complete. Evidence:
+`operations/reports/agent-mode-k3-3-validation-evidence-2026-09-09.md`.
+
+### K3.4 first bounded live coding worker — 2026-09-09
+
+K3.4 is complete for its bounded gate. The implementation now has one durable Jarvis-delegated
+worker identity and one attempt bounded to one disposable Workcell, one active
+writer lease/fence, two typed bridge tools (`brain_read` and
+`brain_workcell_patch`), three MiniMax-only model turns, and a 768-token model
+output ceiling. Brain constructs the Workcell binding, preimage hash, mutation
+operation, diff capture, `git.diff.integrity` validation, budget settlement, and
+result state. The restricted child receives no filesystem, shell, subprocess,
+arbitrary Git, package/test execution, commit, merge, push, or deploy surface.
+
+Deterministic fixtures prove the successful path, main-checkout isolation,
+absolute-path rejection, failed validation non-promotion, durable restart
+state, and observer visibility. One authorized MiniMax M2.5 live acceptance
+was completed after the deterministic gate; K3.5 is the exact next task and K4
+must not begin before the K3 exit gate is satisfied. Evidence:
+`operations/reports/agent-mode-k3-4-first-coding-worker-evidence-2026-09-09.md`.
+
+### Historical broader K3.5 concurrency, review, commit, and merge record — 2026-09-09
+
+K3.5 adds exactly two statically admitted bounded workers under one root budget.
+They use distinct attempts, Workcells, branches, writer leases, fences, and
+mutation lineage while sharing only the pinned immutable base revision. A
+durable review request/decision boundary and separate fixed Git commit/merge
+effects prevent a coding model from approving itself or mutating the target
+branch directly. Commit admission requires passed current validation and an
+exact approved diff; merge admission separately binds the source commit and
+expected target head, with durable target-ref fencing and reconciliation.
+
+The broader K3.5 deterministic gate and one authorized two-worker MiniMax
+acceptance are retained in
+`operations/reports/agent-mode-k3-5-concurrency-review-merge-evidence-2026-09-09.md`.
+This is historical context for the previously attempted broader tranche; it is
+not the current K3.5-A completion claim.
 
 - isolated Git worktrees for parallel coding workers;
 - one active writer lease per worktree, with multiple safe read-only workers;
@@ -400,6 +706,91 @@ application-code forks, and node loss/reconnect fails safely.
 
 Exit gate: two bounded coding workers can operate concurrently without sharing a
 write surface, and failed validation cannot silently promote a result.
+
+### K3.5-A concurrent worker isolation foundation — 2026-09-09
+
+K3.5-A is complete for its bounded concurrency gate. A deterministic,
+disposable Git fixture proves that exactly two statically admitted workers can
+overlap while using separate identities, attempts, Workcells, branches, writer
+leases, fences, mutation histories, and result records. Both workers share only
+the pinned immutable base revision. Cross-Workcell writes, lease theft, same-
+Workcell contention, and stale fences fail closed; SQLite WAL restart and the
+observer reconstruct the durable state. The main checkout remains unchanged.
+
+Evidence: `operations/reports/agent-mode-k3-5-a-concurrency-evidence-2026-09-09.md`.
+
+K3 remains **IN PROGRESS**. The later K3.5 promotion gates—review, approval,
+Workcell commit, target-ref fencing, merge authorization, and promotion
+restart/reconciliation—remain separate work. K3.5-B has now completed only the
+review and approval portion. K4 must not begin automatically.
+
+### K3.5-B review and approval authorization boundary — 2026-09-09
+
+K3.5-B is complete for its bounded review gate. The existing SQLite WAL
+StateStore now durably binds each review request to one worker, Workcell,
+branch, exact diff, and passed validation evidence. Explicit Brain-controlled
+decisions persist with requested/approved/rejected receipts; coding workers and
+models cannot approve, and duplicate decisions replay idempotently.
+
+Candidate drift or validation-evidence drift marks a request `stale` and cannot
+be silently refreshed or reapproved. The observer exposes bounded review state
+without secrets, paths, or model reasoning. Evidence:
+`operations/reports/agent-mode-k3-5-b-review-evidence-2026-09-09.md`.
+
+K3 remains **IN PROGRESS**. Workcell commit, target-ref fencing, merge
+authorization, and promotion restart/reconciliation remain separate K3.5 work.
+
+### K3.5-C durable Workcell commit authorization boundary — 2026-09-09
+
+K3.5-C is complete for its bounded commit gate. Brain now requires the exact
+approved Workcell candidate, passed matching validation evidence, an unexpired
+writer lease and current fence, unchanged repository binding, and the approved
+Workcell state before any Git mutation. The fixed Git adapter accepts only a
+bounded commit message and exact changed-file scope; it has no shell, reset,
+force, push, or arbitrary Git surface.
+
+Commit operations and requested/completed/rejected/reconciled receipts persist
+through SQLite WAL. The operation moves through `approved → committing →
+committed`; a pre-Git crash leaves a prepared operation without a commit, while
+a post-Git crash is reconciled from the recorded parent and resulting Workcell
+revision. Replays are idempotent and a different candidate under the same
+operation ID rejects. Deterministic disposable fixtures cover approval,
+rejection, drift, fencing, restart, crash recovery, independent Workcells, and
+observer visibility. Evidence:
+`operations/reports/agent-mode-k3-5-c-commit-evidence-2026-09-09.md`.
+
+K3 remains **IN PROGRESS**. Target-ref fencing, merge authorization, and merge
+restart/reconciliation remain separate K3.5 work. K4 is not started.
+
+### K3.5-D merge authorization and target branch safety boundary — 2026-09-09
+
+K3.5-D is complete for its bounded merge gate. A merge approval is a separate
+durable authority from commit approval and binds one merge operation to the
+repository, source Workcell and branch, source commit, review and validation
+evidence, target ref, expected target HEAD, approving actor, timestamps, and
+one-use expiry state. Brain verifies the source and current target immediately
+before acquiring the target-ref lease and again before invoking the fixed
+non-shell merge adapter.
+
+Target-ref authority is scoped only to the shared repository/ref pair; it is
+not a global lock, so independent Workcells remain isolated. The monotonic
+target fence and expected-head preimage reject competing or stale operations.
+No rebase, automatic conflict resolution, force operation, push, or model
+selected Git strategy exists.
+
+Merge operations persist `MergeRequestedReceipt`, `MergeCompletedReceipt`,
+`MergeRejectedReceipt`, and `MergeReconciledReceipt` with source and target
+identity, review/validation IDs, actor, and operation hash. A pre-merge crash
+leaves a prepared operation and no target mutation; a post-merge crash is
+reconciled only while the recorded target authority remains valid and the
+source commit is observed in the target. Duplicate candidates replay
+idempotently; different candidates reject. Evidence:
+`operations/reports/agent-mode-k3-5-d-merge-evidence-2026-09-09.md`.
+
+K3 exit gate: **COMPLETE**. The two-worker isolation and failed-validation
+non-promotion requirements are covered by K3.5-A/B, and the explicit review,
+commit, merge, target-fencing, durability, and restart requirements are now
+covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
@@ -510,6 +901,53 @@ verification, evidence, and kill switch. Production, credential-sensitive,
 financial, deployment, and destructive actions remain outside this roadmap until
 separately authorized.
 
+## Phase K3.6 — foundation audit, consolidation and K4 readiness
+
+**Status:** complete for the 2026-09-09 audit; K4 remains not started
+
+The K3.6 audit verified the current Agent Mode architecture, model policy,
+launcher/session selectors, local-AI boundaries, security invariants, naming,
+documentation, and extension seams. It consolidated current documentation
+around the durable chain:
+
+```text
+Brain Kernel → Model Gateway → Node Transport → Workcells
+→ Validation/Review → Commit → Merge → Observer
+```
+
+Auto starts MiniMax M2.5, Brain-owned escalation is MiniMax M2.5 → GLM-5 →
+Claude Opus 4.6, Amazon Bedrock is the default execution resource, and Codex
+remains separate/manual. Local text LLM routes are retired; local voice,
+speech, image, and media utilities remain separately classified.
+
+The audit found no K4 implementation in the bounded Agent Mode surfaces.
+Foundation readiness is **READY WITH CONDITIONS**: the architecture and
+security gates pass, but the current shared worktree is intentionally dirty
+and must be separated into reviewed commits before any K4 work is landed.
+MacBook local-media inventory also remains unresolved and is not inferred from
+Office.
+
+Evidence: `operations/reports/agent-mode-k3-6-foundation-audit.md`.
+
+## Phase K3.7 — operational baseline cleanup and K4 readiness
+
+**Status:** complete for the 2026-09-09 baseline audit; K4 remains not started
+
+The K3.7 audit classified all current Git status entries: 20 modified files and
+64 untracked files (the audit report itself is included). They are required Agent Mode source, tests, fixtures,
+runbooks, evidence reports, scripts, or documentation. No unknown status item,
+safe obsolete local-AI artifact, or generated artifact was removed. The
+worktree remains intentionally dirty and must be isolated into a reviewed
+landing boundary before K4 implementation.
+
+The audit reconfirmed the cloud-only text policy, retained local voice/speech
+and media consumers, exact Auto/manual selector choices, current architecture
+docs, K4 prerequisites, typecheck/build/focused tests, safety scans, script
+validation, and diff checks. MacBook local-media inventory remains unresolved
+and must not be inferred from Office.
+
+Evidence: operations/reports/agent-mode-k3-7-operational-baseline-evidence.md.
+
 ## Local non-text inference classification
 
 The cloud-only decision applies to general-purpose/text LLM reasoning, not to all
@@ -556,7 +994,7 @@ Do not store authoritative Agent Mode state in the Mind vault. Do not overwrite
 the existing `~/.local/video-orchestrator/state` snapshots during migration.
 Compatibility readers may project old state until the new store is proven.
 
-## Immediate handoff
+## Historical implementation handoff
 
 The completed slices are A1.1 canonical provider identity migration, A1.2
 selector/access-evidence separation, A1.3 provider-neutral repo/session

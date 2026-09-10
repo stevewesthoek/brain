@@ -1,0 +1,386 @@
+# Agent Mode Runtime Surfaces
+
+## One harness principle
+
+Brain is the single control/orchestration harness. It owns durable tasks, runs,
+attempts, routing admission, budgets, permissions, leases, capabilities,
+evidence, scheduling, and recovery. The other entries are execution or
+navigation surfaces, not competing authorities.
+
+```text
+USER → repos.sh / sessions.sh / Herdr
+     → Brain control harness
+       → K1.2 policy + StateStore + ModelGateway
+         → MiniMax M2.5 | GLM-5 | Claude Opus 4.6
+       → optional restricted DeepSeek Harness AgentRuntime
+       → Claude Code runtime (specialist)
+       → Codex runtime (specialist/subscription)
+```
+
+## Normal operation
+
+Run `repos` (the `tools/scripts/repos.sh` shell entry point). It first opens
+the model/runtime selector below, with Auto first and preselected. Press Enter
+to accept Auto, or move down before the repository picker appears.
+`--choose-model` remains a compatibility alias; `--model VALUE` is available
+for non-interactive callers.
+
+```text
+Auto
+MiniMax M2.5
+GLM-5
+Opus 4.6
+Codex
+```
+
+Auto invokes the canonical `brain-agent run` entrypoint. Explicit Brain model
+choices invoke the same entrypoint with an admitted model request; Brain still
+performs access, health, budget, capability, safety, and admission checks.
+Opening the optional menu performs no AWS probe. Claude Code remains supported
+by its dedicated launcher and resume code, but is intentionally absent from
+the normal selector.
+
+`Claude Code` remains a dedicated Claude coding runtime and continues to use
+`claude-bedrock-env.sh` when launched. `Codex` remains a separate
+subscription-backed coding/runtime resource with Brain quota/reserve policy.
+
+## Sessions and authority
+
+Run `sessions` to inspect Brain sessions. It first opens the same selector,
+with Auto first and preselected; pressing Enter opens the Brain/Auto view.
+`sessions --choose-model` remains a compatibility alias and `--model VALUE` is
+available for non-interactive selection. Brain rows
+are read from the durable Brain Core `/agent-console` observer and show the
+Auto view plus the actual latest model reference, runtime, status, and last
+activity when available. If the Brain StateStore/API is missing, the script
+shows no Brain rows; it never manufactures a session from terminal history.
+Selecting a Brain row opens the durable control menu: `inspect`, `pause`,
+`resume`, `cancel`, or `kill`. Claude and Codex retain their native resume
+commands.
+
+The same controls are available from another terminal with the canonical run
+identifier:
+
+```text
+brain-agent inspect RUN_ID
+brain-agent pause RUN_ID
+brain-agent resume RUN_ID
+brain-agent cancel RUN_ID
+brain-agent kill RUN_ID
+```
+
+`inspect` is read-only. `pause` and `resume` durably transition the active
+run/attempt and append audit events; resume fails closed when the owned runtime
+identity cannot be verified. `cancel` records a durable cancellation request;
+the active controller acknowledges only after it stops dispatch and reconciles
+its work. If no owned controller remains, the operator surface may acknowledge
+the request and finish the run after recording that recovery fact. `kill` is
+the explicit force path. It uses the durable run ID plus PID/start-time/command
+identity and sends `SIGTERM` only when all identity checks pass. PID-only or
+stale-identity signals are never sent.
+
+For a non-interactive observer check, use `sessions.sh --list-brain`. A missing
+or unreachable Brain Core returns no rows rather than a fabricated session.
+
+The durable Brain StateStore is authoritative. CLI/harness session files,
+provider logs, Herdr views, and Console projections are observers or runtime
+evidence. A model selection is performed by Brain K1.2 policy, not by Herdr,
+Claude Code, Codex, or the shell scripts.
+
+## DeepSeek Harness and Herdr
+
+DeepSeek Harness is an internal optional `AgentRuntime` implementation behind
+Brain. Its stock application/profile is not a normal user-facing choice and it
+does not own tasks, budgets, routing, or permissions.
+
+Herdr is a workspace/terminal/fleet surface. Its canonical agent command is:
+
+```toml
+# Herdr application-local configuration; do not copy secrets into Brain.
+[agents.brain]
+name = "Brain"
+command = "brain-agent"
+args = ["run"]
+```
+
+If the installed Herdr version uses a different agent-definition schema, map
+the same command/arguments through its local UI/configuration rather than
+mutating external/private Herdr state. Herdr must launch Brain; it does not
+need one agent type per Bedrock model and is not Brain's source of truth.
+
+`jump.sh` remains repository navigation-only and contains no model or runtime
+routing.
+
+## K3.0 Workcell lifecycle
+
+K3.0 provides a safe foundation for future coding workers. A Workcell is a
+durable StateStore record bound to one task/run/attempt, repository reference,
+canonical repository root, owner agent, generated branch, and worktree path.
+The path is created only below an explicitly configured workcells root outside
+the primary checkout. The primary checkout is never a valid Workcell target.
+
+The lifecycle is intentionally narrow:
+
+```text
+brain-agent workcell create \
+  --task-id TASK --run-id RUN --attempt-id ATTEMPT \
+  --repository-ref REPOSITORY --repository-root /path/to/repo \
+  --workcells-root /path/outside/repo/workcells --owner-agent AGENT
+brain-agent workcell inspect --workcell-id WORKCELL --actor ACTOR
+brain-agent workcell destroy --workcell-id WORKCELL --actor OWNER
+```
+
+`create` durably reserves identity and emits `WorkcellCreatedReceipt`.
+`prepare` is the library lifecycle action that creates the fixed Git worktree
+and emits `WorkcellPreparedReceipt`; the current CLI keeps creation and
+preparation separate so an orchestrator must explicitly prepare a recorded
+Workcell. `inspect` validates Git binding and emits `ValidationReceipt`.
+`destroy` removes only a matching clean Workcell and emits
+`WorkcellDestroyedReceipt`; dirty or foreign paths fail closed. No merge,
+approval, deploy, direct write, shell, or arbitrary command exists in K3.0.
+
+The StateStore is the sole authority. Receipts are durable rows plus append-only
+events and contain lineage, actor, timestamp, operation hash, and result state,
+not secrets. A process interruption before Git preparation leaves a durable
+`created` row; stale recovery either reconciles an exact matching worktree or
+marks the row failed without removing a foreign path. Failed creation cleanup
+removes only an exact target that was absent before that attempt.
+
+The capability boundary admits `repo.read` and the future scoped name
+`repo.write(workcell)` only. It does not implement repository-writing commands,
+and there is no `repo.write(main)` or shell/arbitrary-process capability.
+
+## K3.1 writer lease and diff admission
+
+K3.1 adds the durable ownership boundary for future Workcell writers. The
+StateStore persists lease ID, Workcell ID, owner agent, owner attempt, creation
+and expiry times, fence token, and lease status (`active`, `expired`, `released`,
+or `revoked`). A Workcell has at most one active lease. Active leases cannot be
+stolen; an expired lease is closed before a replacement is granted, and the
+replacement receives a strictly higher per-Workcell fence token.
+
+Future write admission must provide:
+
+```text
+Workcell + repo.write(workcell) + repository/worktree binding
+          + owner agent/attempt + active lease + current fence token
+```
+
+Missing lease, expiry, wrong owner/attempt, stale fence, wrong Workcell, main
+checkout binding, invalid capability, or a Workcell state that does not allow
+writing produces a durable `WriteRejectedReceipt`. The admission API performs
+no file edit. There is no `repo.write(main)`, shell, or arbitrary command.
+
+Diff capture is a read-only fixed Git operation after successful admission. It
+stores base revision, current revision, tracked and untracked changed files,
+and a deterministic hash of the complete diff state, with a
+`DiffCapturedReceipt`. Validation admission stores a requested result only
+after a diff exists. A passing stored result yields the separate evidence state
+`validation_ready`; failed or unknown results remain rejected. No test runner,
+merge, approval, deploy, or autonomous coding agent is invoked.
+
+Receipts include task/run/attempt/Workcell/lease/fence/timestamp/operation-hash
+lineage. Lease expiry, process crash, and machine restart are handled by
+reopening the same StateStore and deterministically expiring/replacing leases;
+old fencing tokens remain invalid after replacement. K3.1 is complete; K3.2 is
+the separate gate for bounded Workcell-local writes and preimage/snapshot
+validation.
+
+## K3.2 bounded Workcell-local text mutation
+
+K3.2 exposes exactly one modification-only library primitive:
+`workcell.file.patch`. The caller supplies an operation ID, Workcell and
+repository binding, lease/fence/owner identity, a canonical relative target,
+the expected SHA-256 preimage, one exact old-text anchor, and replacement text.
+The operation applies only to an existing regular UTF-8 text file. It does not
+create or delete files. The file and replacement are each bounded to 256 KiB.
+
+The manager resolves the durable Workcell path itself. Absolute paths, Windows
+drive/UNC forms, traversal, non-canonical components, reserved `.git`/Brain
+metadata/runtime components, symlinks or nested symlink components, the primary
+checkout, another Workcell, directories, special files, binary data, and
+invalid UTF-8 fail closed. The target must remain inside the canonical
+Workcell and must match the expected preimage before the temporary sibling is
+prepared and again immediately before rename.
+
+The write sequence is durable admission → mutation record → preimage
+verification → exclusive temporary sibling → fsync/close → atomic rename →
+postimage verification → receipt. Existing mode bits are preserved; file
+contents are not persisted. `WorkcellWriteAppliedReceipt`,
+`WorkcellWriteRejectedReceipt`, and `WorkcellWriteReconciledReceipt` carry
+task/run/attempt/Workcell/repository/relative-target/lease/fence/preimage/
+postimage/timestamp/result/operation-hash lineage. Replaying a completed
+operation returns its receipt without rewriting. Pre-rename interruption is
+safe to resume; post-rename interruption is reconciled from the durable
+postimage, and changed postimages are rejected without overwrite.
+
+After a successful patch, use the existing K3.1 diff capture for Git evidence.
+A successful write is not validation, review, commit, merge, push, deployment,
+or approval. BrainNode remains read-only for this tranche and no unrestricted
+`brain-agent write` command exists. K3.3 is the controlled validation gate.
+
+## K3.3 controlled Workcell validation
+
+The typed capability is `validation.run(workcell)`. A validation request binds
+the Workcell ID, validator profile ID, repository/worktree authorization,
+owner/attempt, active lease, and current fence token. The StateStore is the
+sole authority; validation does not create a second database or control plane.
+
+The registry currently allowlists only `git.diff.integrity`. Its profile names
+the fixed Git diff integrity operation, repository type, 15-second timeout,
+32 KiB evidence bound, and `git-diff-integrity/v1` evidence format. It has no
+command string, shell option, package script, executable path, or arbitrary
+input channel. The implementation calls the existing fixed non-shell Git
+adapter against the durable Workcell and compares its base/current revisions,
+changed files, and diff hash with the latest K3.1 diff evidence.
+
+The lifecycle is durable admission → `ValidationStartedReceipt` → bounded
+validator → `ValidationCompletedReceipt` (passed/failed evidence) or
+`ValidationRejectedReceipt` (unknown profile, missing diff, invalid capability,
+binding, lease/fence, timeout, interruption, stale/destroyed Workcell, or diff
+drift). Evidence is a bounded deterministic JSON record plus SHA-256; no source
+or command output is stored. Completed and rejected requests replay
+idempotently. A started validation recovered after interruption is marked
+`interrupted` and cannot become an ambiguous success. StateStore restart
+preserves lifecycle, evidence, and receipts.
+
+K3.3 is not itself a coding agent, shell, arbitrary command runner, model/LLM
+worker, package executor, deployer, merger, pusher, or approval decision. K3.4
+and K3.5 are complete for their bounded gates; K3 now has the concurrent
+worker and explicit review/commit/merge authority boundary required before K4.
+
+## K3.4 first bounded live coding worker
+
+Run the deterministic gate from `projects/brain-core` before the one authorized
+live acceptance. The controller creates one disposable Workcell and exposes
+only `brain_read` and `brain_workcell_patch` to the pinned restricted child.
+Brain owns the preimage hash, atomic patch, fixed `git.diff.integrity`
+validation, budget settlement, and `awaiting_review` terminal state. The worker
+is capped at three MiniMax M2.5 turns; no GLM-5, Opus, Codex, package/test
+execution, commit, merge, push, deploy, or general write CLI is allowed. If the
+live acceptance fails, preserve the durable failure evidence and stop without
+retrying.
+
+## K2.1 restricted Harness slice
+
+The K2.1 runtime is bootstrapped reproducibly by
+`node tools/scripts/agent-mode-k21-harness-bootstrap.mjs`. It pins DeepSeek
+Harness `0.1.3-alpha.2` at commit
+`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8` under a machine-local runtime
+root. Brain launches the SDK child internally; users launch `brain-agent`, not
+the stock `dsh` application.
+
+Each attempt applies an ephemeral restricted patch, injects only the Brain
+model/tool bridge, and gives the child a complete allowlisted environment with
+an attempt-private `HOME`/`TMPDIR` and isolated working directory. AWS
+credentials, repository roots, shell, filesystem, subprocess, scheduler,
+editor, job, and subagent services are not provided to the child. Model turns
+and `brain_read` requests cross a local Unix socket; Brain owns K1.2 route and
+budget admission, K0 outbox/lease/receipt handling, and the single typed
+`repo.read`.
+
+`brain-agent inspect RUN_ID` reads the durable observer. The full control set
+is durable across terminals. Process loss is classified from the last durable
+effect boundary; only `safe_to_resume` runs can be re-admitted, with fresh
+access evidence, budget reservation, lease fencing, and owned-runtime
+identity. Dispatched-without-receipt and possible external effects are never
+replayed automatically. Live acceptance evidence is recorded in
+`operations/reports/agent-mode-k2-1-live-slice-evidence-2026-09-09.md`; K2.2
+operator-control evidence is recorded in
+`operations/reports/agent-mode-k2-2-operator-controls-evidence-2026-09-09.md`.
+
+## Historical broader K3.5 bounded promotion surface
+
+K3.5 admits exactly two statically defined coding workers. Their Workcells and
+writer leases are independent, while the root budget and pinned base revision
+are shared durable constraints. Worker tools remain limited to Brain-owned
+read and Workcell patch effects; review, commit, and merge are unavailable to
+the restricted child.
+
+After diff-integrity validation, Brain creates an immutable review request and
+records an explicit non-model decision. `workcell.commit` is a fixed adapter
+effect requiring the exact approved diff and passed validation. `workcell.merge`
+is a separate fixed adapter effect requiring a one-use merge approval, a target
+ref lease, and an immediate expected-head check. No `repo.write(main)`, force,
+push, arbitrary Git flags, or shell path exists. Missing receipts after an
+external Git effect are reconciled from the recorded candidate, source commit,
+and target preimage/postimage evidence. K4 dynamic workers remain out of scope.
+
+### Current K3.5-A gate
+
+The currently authorized K3.5-A gate is concurrency and Workcell isolation
+only. A deterministic disposable fixture must prove exactly two bounded workers
+overlap with separate identities, attempts, Workcells, writer leases, fences,
+and mutation histories while sharing only one pinned base revision. Cross-
+Workcell writes, lease theft, same-Workcell contention, and stale fences must
+reject, with StateStore restart and observer reconstruction. The main checkout
+must remain unchanged.
+
+Evidence:
+`operations/reports/agent-mode-k3-5-a-concurrency-evidence-2026-09-09.md`.
+
+Review and approval are now covered by the separate K3.5-B gate. Workcell
+commit, target-ref fencing, merge authorization, and promotion
+restart/reconciliation remain separate K3.5 work. K3 remains in progress and
+K4 must not begin automatically.
+
+### Current K3.5-B gate — review and approval authorization
+
+K3.5-B records one exact candidate per durable review request: worker identity,
+Workcell, branch, base/current revision, diff identity, and passed validation
+evidence. Explicit Brain-controlled decisions persist as approved or rejected
+with review receipts. Coding workers and models cannot create approvals or
+approve themselves, and duplicate decisions are idempotent.
+
+Candidate or validation drift marks the request `stale`; no silent refresh or
+reapproval is allowed. The observer exposes only bounded review identity and
+status. Evidence:
+`operations/reports/agent-mode-k3-5-b-review-evidence-2026-09-09.md`.
+
+K3 remains in progress. Workcell commit is now covered by the separate K3.5-C
+gate. Target-ref fencing, merge authorization, and promotion
+restart/reconciliation remain separate K3.5 work. Do not begin K4 automatically.
+
+### Current K3.5-C gate — durable Workcell commit authorization
+
+K3.5-C requires Brain-owned proof of the exact approved diff, passed matching
+validation, unchanged repository binding, and a current unexpired Workcell
+writer lease/fence before Git is touched. The fixed commit adapter accepts only
+the exact approved changed-file scope and bounded commit message; it cannot
+run a shell or arbitrary Git, reset, force, push, or target-ref mutation.
+
+The StateStore durably records the commit operation and
+`CommitRequestedReceipt`, `CommitCompletedReceipt`, `CommitRejectedReceipt`,
+or `CommitReconciledReceipt`. Workcell state advances through
+`approved → committing → committed`. A pre-Git crash leaves no commit and a
+prepared operation; a post-Git crash is reconciled from the recorded parent
+and Workcell revision. Replaying the same operation is idempotent, while a
+different candidate rejects. Evidence:
+`operations/reports/agent-mode-k3-5-c-commit-evidence-2026-09-09.md`.
+
+Target-ref fencing, merge authorization, and merge restart/reconciliation
+remain separate work. K4 must not begin automatically.
+
+### Current K3.5-D gate — merge authorization and target branch safety
+
+K3.5-D is complete. A merge approval is a one-use, durable binding for the
+repository, source Workcell/branch/commit, review and validation evidence,
+target ref, expected target HEAD, approver, operation ID, timestamps, and
+expiry. It is distinct from commit approval. Brain rechecks the source and
+target, acquires the scoped target-ref lease/fence, and rechecks the expected
+target head immediately before the fixed merge effect.
+
+Only the bounded non-shell merge adapter is available. It accepts no model
+Git command, arbitrary flag, rebase, force operation, conflict-resolution
+strategy, or push. A competing operation on the same repository/ref rejects
+or becomes stale; Workcells on different refs remain independent.
+
+The StateStore records merge operations plus
+`MergeRequestedReceipt`, `MergeCompletedReceipt`, `MergeRejectedReceipt`, and
+`MergeReconciledReceipt`. Pre-effect crashes leave no target mutation; post-
+effect crashes reconcile only with the recorded operation and current target
+authority. Same-candidate replay is idempotent, while different candidates
+reject. Evidence:
+`operations/reports/agent-mode-k3-5-d-merge-evidence-2026-09-09.md`.
+
+K3 exit gate: **COMPLETE**. K4 remains planned and must not begin automatically.
