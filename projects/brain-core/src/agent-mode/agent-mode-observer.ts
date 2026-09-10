@@ -72,6 +72,7 @@ export type AgentModeObserverProjection = {
   latestSchedulerTick: Record<string, unknown> | null;
   eventSources: Array<Record<string, unknown>>;
   hostHealthStates: Array<Record<string, unknown>>;
+  ciWorkflowStates: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -118,6 +119,23 @@ function mapHostHealthStates(eventSources: Array<Record<string, unknown>>): Arra
   return states;
 }
 
+function mapCiWorkflowStates(eventSources: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  const states: Array<Record<string, unknown>> = [];
+  for (const source of eventSources) {
+    if (source.sourceType !== 'ci.workflow-run' || typeof source.watermark !== 'string') continue;
+    try {
+      const cursor = JSON.parse(source.watermark) as { version?: unknown; states?: unknown };
+      if (cursor.version !== 1 || !Array.isArray(cursor.states)) continue;
+      for (const state of cursor.states.slice(0, 500)) {
+        if (!state || typeof state !== 'object') continue;
+        const value = state as Record<string, unknown>;
+        states.push(safePayload({ sourceId: source.sourceId, providerId: value.providerId, repositoryRef: value.repositoryRef, workflowId: value.workflowId, workflowName: value.workflowName, runId: value.runId, attempt: value.attempt, headSha: value.headSha, status: value.status, conclusion: value.conclusion, queuedAt: value.queuedAt ?? null, startedAt: value.startedAt ?? null, completedAt: value.completedAt ?? null, lastEmittedPhase: value.lastEmittedPhase ?? null }));
+      }
+    } catch { /* malformed source state remains visible through source error status */ }
+  }
+  return states;
+}
+
 export function readAgentModeObserver(now = new Date().toISOString(), databasePath = defaultAgentModeDatabasePath()): AgentModeObserverProjection {
   const store = AgentModeSqliteStateStore.openExisting(databasePath);
   if (!store) {
@@ -150,7 +168,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [],
     };
   }
 
@@ -237,6 +255,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
     const latestSchedulerTick = store.getLatestSchedulerTick() ? { ...store.getLatestSchedulerTick() } : null;
     const eventSources = store.listEventSources().map((source) => ({ ...source }));
     const hostHealthStates = mapHostHealthStates(eventSources);
+    const ciWorkflowStates = mapCiWorkflowStates(eventSources);
     const results = store.listRecentEvents(500).filter((event) => event.eventType === 'jarvis_result_returned').map((event) => {
       const payload = event.payload;
       const usage = payload.usage && typeof payload.usage === 'object' ? payload.usage as Record<string, unknown> : {};
@@ -325,7 +344,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates,
+      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates,
     };
   } finally {
     store.close();

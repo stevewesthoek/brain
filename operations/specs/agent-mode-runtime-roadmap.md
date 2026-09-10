@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, and K4.1-B2 are complete, K4 remains in progress, and K4.1-C is not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4 remains in progress, and K4.1-C2 is not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -863,6 +863,30 @@ cannot recursively feed the source. Evidence:
 
 K4 remains in progress. Exact next task: **K4.1-C — CI Event Source and K4.1
 Event-Source Closure Audit**. Do not start it automatically.
+
+### K4.1-C1 — CI workflow-run event source
+
+K4.1-C1 is complete for its bounded observation gate. The `ci.workflow-run`
+source reuses the shared `EventSourceAdapter` contract and existing durable
+source watermark. It stores a versioned, size-bounded cursor containing only
+provider-neutral workflow-run semantic state and pagination continuation.
+Bootstrap records historical runs without replay; later observations emit
+typed `ci.workflow.started` and `ci.workflow.completed` events, preserve
+run/attempt identity for reruns, order oldest-first, and suppress stale or
+equivalent observations.
+
+GitHub Actions is the first provider adapter. Its raw status/conclusion fields
+are normalized at an injected page-reader boundary; the adapter owns no token,
+HTTP client, webhook, listener, daemon, CI log/artifact/YAML reader, or network
+side effect. Page count, item count, cursor size, and emitted catch-up are
+bounded, and repository/workflow mismatches, malformed responses, invalid
+cursors, pagination failures, and provider errors fail closed while preserving
+the previous watermark. The observer exposes safe CI run state and scheduler
+origin metadata. Evidence:
+`operations/reports/agent-mode-k4-1-c1-ci-event-source-evidence-2026-09-10.md`.
+
+K4 remains in progress. Exact next task: **K4.1-C2 — Event-Source Closure
+Audit and K4.2 Readiness Gate**. Do not start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

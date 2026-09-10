@@ -612,6 +612,26 @@ Evidence:
 K4 remains **IN PROGRESS**. Exact next task: **K4.1-C — CI Event Source and
 K4.1 Event-Source Closure Audit**. Do not start it automatically.
 
+## Current K4.1-C1 CI workflow-run event source — 2026-09-10
+
+K4.1-C1 is **COMPLETE** for its bounded gate. The provider-neutral
+`ci.workflow-run` adapter stores bounded versioned workflow-run state in the
+existing EventSource watermark, bootstraps without history replay, emits only
+typed started/completed semantic events, keeps rerun attempts distinct, and
+orders bounded catch-up oldest-first. GitHub Actions normalization is isolated
+behind an injected read-only page-reader seam; raw provider metadata is not
+retained, and no credentials, network client, webhook, listener, daemon, CI
+logs/artifacts/YAML reader, worker, or model path was added.
+
+Provider failures, malformed responses/cursors, pagination failures, stale
+observations, and repository/workflow binding mismatches fail closed without
+advancing the prior watermark or inventing scheduler work. The observer exposes
+safe CI state and scheduler origin. Evidence:
+`operations/reports/agent-mode-k4-1-c1-ci-event-source-evidence-2026-09-10.md`.
+
+K4 remains **IN PROGRESS**. Exact next task: **K4.1-C2 — Event-Source Closure
+Audit and K4.2 Readiness Gate**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

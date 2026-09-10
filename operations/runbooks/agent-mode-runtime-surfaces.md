@@ -508,3 +508,28 @@ remediation, host mutation, daemon, listener, or network path. K4.1-B2 evidence:
 `operations/reports/agent-mode-k4-1-b2-host-health-event-source-evidence-2026-09-10.md`.
 K4 remains in progress. Next task: **K4.1-C — CI Event Source and K4.1
 Event-Source Closure Audit**. Do not start it automatically.
+
+## K4.1-C1 CI workflow-run event source
+
+K4.1-C1 is complete. The `ci.workflow-run` source uses the shared
+`EventSourceAdapter` seam and the existing durable EventSource watermark. Its
+versioned cursor is bounded to semantic workflow-run state plus pagination
+continuation. Historical bootstrap is quiet; later queued/in-progress/
+completed observations produce only meaningful `ci.workflow.started` and
+`ci.workflow.completed` scheduler events. Run ID and attempt are part of the
+identity, so reruns cannot collapse into one run.
+
+The first provider is GitHub Actions, isolated behind the injected
+`GitHubActionsCiObservationReader` page-reader boundary. Only normalized
+provider-neutral fields enter Agent Mode. Page/items/cursor/emission limits are
+enforced, ordering is oldest-first, and stale observations, malformed provider
+data, invalid cursors, pagination errors, provider failures, and repository or
+workflow mismatches preserve the previous watermark and create no fake event.
+There is no provider credential handling, direct network call, webhook,
+listener, daemon, CI log/artifact/YAML reader, worker, or model invocation.
+
+The source is exercised by the finite injected-reader fixture suite. Its
+observer projection exposes safe CI state and scheduler source origin. Evidence:
+`operations/reports/agent-mode-k4-1-c1-ci-event-source-evidence-2026-09-10.md`.
+K4 remains in progress. Next task: **K4.1-C2 — Event-Source Closure Audit and
+K4.2 Readiness Gate**. Do not start it automatically.

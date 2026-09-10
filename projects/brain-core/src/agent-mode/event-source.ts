@@ -20,6 +20,10 @@ export const BRAIN_TASK_LIFECYCLE_SOURCE = 'brain.task.lifecycle' as const;
 export const TASK_LIFECYCLE_OBSERVED_EVENT = 'task.lifecycle.observed' as const;
 export const INFRASTRUCTURE_HOST_HEALTH_SOURCE = 'infrastructure.host-health' as const;
 export const INFRASTRUCTURE_HOST_HEALTH_CHANGED_EVENT = 'infrastructure.host-health.changed' as const;
+export const CI_WORKFLOW_RUN_SOURCE = 'ci.workflow-run' as const;
+export const CI_WORKFLOW_STARTED_EVENT = 'ci.workflow.started' as const;
+export const CI_WORKFLOW_COMPLETED_EVENT = 'ci.workflow.completed' as const;
+export const GITHUB_ACTIONS_PROVIDER = 'github-actions' as const;
 
 export type EventSourceObservationContext = {
   sourceId: string;
@@ -90,6 +94,279 @@ export type HostHealthTransitionEvent = HostHealthObservation & {
   previousFreshness: HostHealthObservation['freshness'];
   previousConditionCodes: string[];
 };
+
+export type CiWorkflowRunStatus = 'queued' | 'in_progress' | 'completed';
+export type CiWorkflowRunConclusion = 'success' | 'failure' | 'cancelled' | 'timed_out' | 'neutral' | 'skipped' | 'action_required' | 'unknown' | null;
+
+/** Provider-neutral, bounded CI workflow-run observation. Provider payload is never retained. */
+export type CiWorkflowRunObservation = {
+  providerId: string;
+  repositoryRef: string;
+  workflowId: string;
+  workflowName: string;
+  runId: string;
+  attempt: number;
+  headSha: string;
+  status: CiWorkflowRunStatus;
+  conclusion: CiWorkflowRunConclusion;
+  queuedAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  updatedAt: string | null;
+  observedAt: string;
+};
+
+export type CiWorkflowSemanticEvent = CiWorkflowRunObservation & {
+  semanticType: typeof CI_WORKFLOW_STARTED_EVENT | typeof CI_WORKFLOW_COMPLETED_EVENT;
+  previousStatus: CiWorkflowRunStatus | null;
+  previousConclusion: CiWorkflowRunConclusion;
+};
+
+export type CiWorkflowRunReader = {
+  read(input: { repositoryRef: string; workflowId?: string; providerCursor: string | null; maxItems: number; maxPages: number; observedAt?: string }): Promise<{
+    providerId: string;
+    repositoryRef: string;
+    runs: CiWorkflowRunObservation[];
+    nextProviderCursor: string | null;
+    hasMore: boolean;
+  }>;
+};
+
+export type GitHubActionsWorkflowRunRecord = {
+  id: string | number;
+  workflow_id: string | number;
+  name?: unknown;
+  run_attempt?: unknown;
+  head_sha?: unknown;
+  status?: unknown;
+  conclusion?: unknown;
+  created_at?: unknown;
+  run_started_at?: unknown;
+  updated_at?: unknown;
+  completed_at?: unknown;
+};
+
+export type GitHubActionsWorkflowRunPageReader = {
+  readPage(input: { repositoryRef: string; workflowId?: string; providerCursor: string | null; perPage: number }): Promise<{
+    repositoryRef: string;
+    runs: readonly GitHubActionsWorkflowRunRecord[];
+    nextProviderCursor: string | null;
+    hasMore: boolean;
+  }>;
+};
+
+const CI_MAX_CURSOR_BYTES = 64 * 1024;
+const CI_MAX_STATES = 500;
+const CI_MAX_ITEMS = 500;
+const CI_MAX_PAGES = 8;
+const CI_STATUS_RANK: Record<CiWorkflowRunStatus, number> = { queued: 0, in_progress: 1, completed: 2 };
+const CI_CONCLUSIONS = new Set(['success', 'failure', 'cancelled', 'timed_out', 'neutral', 'skipped', 'action_required']);
+
+type CiWorkflowRunState = CiWorkflowRunObservation & { fingerprint: string; lastEmittedPhase: 'started' | 'completed' | null };
+type CiWorkflowCursor = { version: 1; bootstrapping: boolean; providerCursor: string | null; pendingRuns: CiWorkflowRunObservation[]; states: CiWorkflowRunState[] };
+
+function ciBoundedText(value: unknown, limit: number, label: string): string {
+  if (typeof value !== 'string' && typeof value !== 'number') throw new Error(`GitHub Actions ${label} is malformed`);
+  const text = boundedText(String(value), limit);
+  if (!text) throw new Error(`GitHub Actions ${label} is empty`);
+  return text;
+}
+
+function ciOptionalIso(value: unknown, label: string): string | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) throw new Error(`GitHub Actions ${label} is malformed`);
+  return new Date(value).toISOString();
+}
+
+function normalizeGitHubActionsStatus(value: unknown): CiWorkflowRunStatus {
+  if (value === 'queued' || value === 'waiting' || value === 'pending') return 'queued';
+  if (value === 'in_progress' || value === 'in-progress' || value === 'running') return 'in_progress';
+  if (value === 'completed') return 'completed';
+  throw new Error('GitHub Actions workflow-run status is unsupported');
+}
+
+function normalizeGitHubActionsConclusion(value: unknown, status: CiWorkflowRunStatus): CiWorkflowRunConclusion {
+  if (value === null || value === undefined || value === '') return status === 'completed' ? 'unknown' : null;
+  if (typeof value !== 'string') throw new Error('GitHub Actions workflow-run conclusion is malformed');
+  const conclusion = value.toLowerCase().replace(/-/g, '_');
+  return CI_CONCLUSIONS.has(conclusion) ? conclusion as Exclude<CiWorkflowRunConclusion, null | 'unknown'> : 'unknown';
+}
+
+export function normalizeGitHubActionsWorkflowRun(record: GitHubActionsWorkflowRunRecord, repositoryRef: string, observedAt: string): CiWorkflowRunObservation {
+  const workflowId = ciBoundedText(record.workflow_id, 128, 'workflow_id');
+  const runId = ciBoundedText(record.id, 128, 'run id');
+  const attemptValue = record.run_attempt === undefined ? 1 : Number(record.run_attempt);
+  if (!Number.isSafeInteger(attemptValue) || attemptValue < 1 || attemptValue > 1000) throw new Error('GitHub Actions workflow-run attempt is invalid');
+  const status = normalizeGitHubActionsStatus(record.status);
+  return {
+    providerId: GITHUB_ACTIONS_PROVIDER,
+    repositoryRef,
+    workflowId,
+    workflowName: ciBoundedText(record.name ?? workflowId, 256, 'workflow name'),
+    runId,
+    attempt: attemptValue,
+    headSha: ciBoundedText(record.head_sha ?? 'unknown', 128, 'head_sha'),
+    status,
+    conclusion: normalizeGitHubActionsConclusion(record.conclusion, status),
+    queuedAt: ciOptionalIso(record.created_at, 'created_at'),
+    startedAt: ciOptionalIso(record.run_started_at, 'run_started_at'),
+    completedAt: ciOptionalIso(record.completed_at, 'completed_at'),
+    updatedAt: ciOptionalIso(record.updated_at, 'updated_at'),
+    observedAt,
+  };
+}
+
+function validateCiPage(page: { repositoryRef: string; runs: readonly GitHubActionsWorkflowRunRecord[]; nextProviderCursor: string | null; hasMore: boolean }, input: { repositoryRef: string; providerCursor: string | null }): void {
+  if (page.repositoryRef !== input.repositoryRef) throw new Error('GitHub Actions repository binding mismatch');
+  if (!Array.isArray(page.runs) || page.runs.length > CI_MAX_ITEMS) throw new Error('GitHub Actions workflow-run page exceeds bounds');
+  if (page.hasMore && (typeof page.nextProviderCursor !== 'string' || page.nextProviderCursor.length < 1 || page.nextProviderCursor.length > 512)) throw new Error('GitHub Actions pagination cursor is invalid');
+  if (!page.hasMore && page.nextProviderCursor !== null) throw new Error('GitHub Actions pagination cursor is inconsistent');
+  if (page.nextProviderCursor !== null && /[\u0000\r\n]/.test(page.nextProviderCursor)) throw new Error('GitHub Actions pagination cursor is malformed');
+}
+
+/** GitHub Actions stays behind an injected page reader; this class never owns credentials or network access. */
+export class GitHubActionsCiObservationReader implements CiWorkflowRunReader {
+  private readonly pageReader: GitHubActionsWorkflowRunPageReader;
+
+  constructor(pageReader: GitHubActionsWorkflowRunPageReader) { this.pageReader = pageReader; }
+
+  async read(input: { repositoryRef: string; workflowId?: string; providerCursor: string | null; maxItems: number; maxPages: number; observedAt?: string }): Promise<{ providerId: string; repositoryRef: string; runs: CiWorkflowRunObservation[]; nextProviderCursor: string | null; hasMore: boolean }> {
+    const maxItems = Math.max(1, Math.min(CI_MAX_ITEMS, Math.floor(input.maxItems)));
+    const maxPages = Math.max(1, Math.min(CI_MAX_PAGES, Math.floor(input.maxPages)));
+    const runs: CiWorkflowRunObservation[] = [];
+    let providerCursor = input.providerCursor;
+    let hasMore = false;
+    const observedAt = input.observedAt ?? new Date().toISOString();
+    for (let pageNumber = 0; pageNumber < maxPages && runs.length < maxItems; pageNumber += 1) {
+      const page = await this.pageReader.readPage({ repositoryRef: input.repositoryRef, ...(input.workflowId ? { workflowId: input.workflowId } : {}), providerCursor, perPage: Math.min(100, maxItems - runs.length) });
+      validateCiPage(page, input);
+      const remaining = maxItems - runs.length;
+      runs.push(...page.runs.slice(0, remaining).map((record) => normalizeGitHubActionsWorkflowRun(record, input.repositoryRef, observedAt)));
+      hasMore = page.hasMore || page.runs.length > remaining;
+      providerCursor = page.nextProviderCursor;
+      if (!hasMore) break;
+      if (!providerCursor) throw new Error('GitHub Actions pagination ended without a cursor');
+    }
+    return { providerId: GITHUB_ACTIONS_PROVIDER, repositoryRef: input.repositoryRef, runs, nextProviderCursor: hasMore ? providerCursor : null, hasMore };
+  }
+}
+
+function ciRunKey(run: Pick<CiWorkflowRunObservation, 'runId' | 'attempt'>): string { return `${run.runId}:${run.attempt}`; }
+function validateNormalizedCiRun(run: CiWorkflowRunObservation, repositoryRef: string, workflowId?: string): void {
+  if (!run || typeof run !== 'object' || typeof run.providerId !== 'string' || run.providerId.length < 1 || run.providerId.length > 128) throw new Error('normalized CI provider identity is invalid');
+  if (run.repositoryRef !== repositoryRef || (workflowId && run.workflowId !== workflowId)) throw new Error('normalized CI workflow-run binding mismatch');
+  for (const [value, limit, label] of [[run.workflowId, 128, 'workflowId'], [run.workflowName, 256, 'workflowName'], [run.runId, 128, 'runId'], [run.headSha, 128, 'headSha']] as const) {
+    if (typeof value !== 'string' || value.length < 1 || value.length > limit || /[\u0000\r\n]/.test(value)) throw new Error(`normalized CI ${label} is invalid`);
+  }
+  if (!Number.isSafeInteger(run.attempt) || run.attempt < 1 || run.attempt > 1000 || !Object.hasOwn(CI_STATUS_RANK, run.status)) throw new Error('normalized CI workflow-run state is invalid');
+  if (run.conclusion !== null && (typeof run.conclusion !== 'string' || (!CI_CONCLUSIONS.has(run.conclusion) && run.conclusion !== 'unknown'))) throw new Error('normalized CI workflow-run conclusion is invalid');
+  for (const [value, label] of [[run.queuedAt, 'queuedAt'], [run.startedAt, 'startedAt'], [run.completedAt, 'completedAt'], [run.updatedAt, 'updatedAt'], [run.observedAt, 'observedAt']] as const) {
+    if (value !== null && (typeof value !== 'string' || !Number.isFinite(Date.parse(value)))) throw new Error(`normalized CI ${label} is invalid`);
+  }
+}
+function ciRunFingerprint(run: CiWorkflowRunObservation): string {
+  return JSON.stringify([run.providerId, run.repositoryRef, run.workflowId, run.workflowName, run.runId, run.attempt, run.headSha, run.status, run.conclusion, run.queuedAt, run.startedAt, run.completedAt, run.updatedAt]);
+}
+function ciRunOrdering(left: CiWorkflowRunObservation, right: CiWorkflowRunObservation): number {
+  const leftTime = Date.parse(left.queuedAt ?? left.startedAt ?? left.completedAt ?? left.updatedAt ?? left.observedAt);
+  const rightTime = Date.parse(right.queuedAt ?? right.startedAt ?? right.completedAt ?? right.updatedAt ?? right.observedAt);
+  return (Number.isFinite(leftTime) ? leftTime : Number.MAX_SAFE_INTEGER) - (Number.isFinite(rightTime) ? rightTime : Number.MAX_SAFE_INTEGER)
+    || left.runId.localeCompare(right.runId, undefined, { numeric: true }) || left.attempt - right.attempt;
+}
+
+function parseCiCursor(value: string | null): CiWorkflowCursor {
+  if (!value) return { version: 1, bootstrapping: true, providerCursor: null, pendingRuns: [], states: [] };
+  let parsed: unknown;
+  try { parsed = JSON.parse(value); } catch { throw new Error('CI workflow-run watermark is malformed'); }
+  if (!parsed || typeof parsed !== 'object') throw new Error('CI workflow-run watermark is invalid');
+  const cursor = parsed as Partial<CiWorkflowCursor>;
+  if (cursor.version !== 1 || typeof cursor.bootstrapping !== 'boolean' || (cursor.providerCursor !== null && typeof cursor.providerCursor !== 'string') || !Array.isArray(cursor.pendingRuns) || !Array.isArray(cursor.states) || cursor.pendingRuns.length > CI_MAX_ITEMS || cursor.states.length > CI_MAX_STATES) throw new Error('CI workflow-run watermark schema is invalid');
+  return { version: 1, bootstrapping: cursor.bootstrapping, providerCursor: cursor.providerCursor ?? null, pendingRuns: cursor.pendingRuns as CiWorkflowRunObservation[], states: cursor.states as CiWorkflowRunState[] };
+}
+
+function encodeCiCursor(cursor: CiWorkflowCursor): string {
+  const states = [...cursor.states].sort((left, right) => ciRunKey(left).localeCompare(ciRunKey(right))).slice(0, CI_MAX_STATES);
+  const pendingRuns = cursor.pendingRuns.slice(0, CI_MAX_ITEMS);
+  const encoded = JSON.stringify({ version: 1, bootstrapping: cursor.bootstrapping, providerCursor: cursor.providerCursor, pendingRuns, states });
+  if (encoded.length > CI_MAX_CURSOR_BYTES) throw new Error('CI workflow-run watermark exceeds 64 KiB');
+  return encoded;
+}
+
+export type CiWorkflowRunEventSourceOptions = {
+  sourceId: string;
+  repositoryRef: string;
+  workflowId?: string;
+  reader: CiWorkflowRunReader;
+  maxItems?: number;
+  maxPages?: number;
+};
+
+export class CiWorkflowRunEventSourceAdapter implements EventSourceAdapter<CiWorkflowSemanticEvent> {
+  readonly sourceType = CI_WORKFLOW_RUN_SOURCE;
+  readonly sourceId: string;
+  private readonly repositoryRef: string;
+  private readonly workflowId: string | undefined;
+  private readonly reader: CiWorkflowRunReader;
+  private readonly maxItems: number;
+  private readonly maxPages: number;
+
+  constructor(options: CiWorkflowRunEventSourceOptions) {
+    if (!options.sourceId || !options.repositoryRef) throw new Error('CI workflow-run source identity and binding are required');
+    this.sourceId = options.sourceId; this.repositoryRef = options.repositoryRef; this.workflowId = options.workflowId; this.reader = options.reader;
+    this.maxItems = Math.max(1, Math.min(CI_MAX_ITEMS, Math.floor(options.maxItems ?? CI_MAX_ITEMS)));
+    this.maxPages = Math.max(1, Math.min(CI_MAX_PAGES, Math.floor(options.maxPages ?? CI_MAX_PAGES)));
+  }
+
+  async observe(context: EventSourceObservationContext): Promise<EventSourceObservation<CiWorkflowSemanticEvent>> {
+    if (context.sourceId !== this.sourceId) throw new Error('event source context identity mismatch');
+    const initial = context.previousWatermark === null;
+    const cursor = parseCiCursor(context.previousWatermark);
+    const cursorKeys = new Set<string>();
+    for (const state of cursor.states) { validateNormalizedCiRun(state, this.repositoryRef, this.workflowId); const key = ciRunKey(state); if (cursorKeys.has(key)) throw new Error('CI workflow-run watermark contains duplicate run attempts'); cursorKeys.add(key); }
+    for (const pending of cursor.pendingRuns) validateNormalizedCiRun(pending, this.repositoryRef, this.workflowId);
+    let pendingRuns = [...cursor.pendingRuns];
+    let providerCursor = cursor.providerCursor;
+    let pageHasMore = Boolean(providerCursor);
+    if (!pendingRuns.length) {
+      const page = await this.reader.read({ repositoryRef: this.repositoryRef, ...(this.workflowId ? { workflowId: this.workflowId } : {}), providerCursor, maxItems: this.maxItems, maxPages: this.maxPages, observedAt: context.observedAt });
+      if (!page.providerId || page.providerId.length > 128) throw new Error('CI provider identity is invalid');
+      if (page.repositoryRef !== this.repositoryRef) throw new Error('CI repository binding mismatch');
+      if (page.hasMore !== Boolean(page.nextProviderCursor) || (page.nextProviderCursor !== null && (page.nextProviderCursor.length > 512 || /[\u0000\r\n]/.test(page.nextProviderCursor)))) throw new Error('CI provider pagination state is invalid');
+      pendingRuns = [...page.runs].sort(ciRunOrdering);
+      providerCursor = page.nextProviderCursor;
+      pageHasMore = page.hasMore;
+    }
+    const statesByKey = new Map(cursor.states.map((state) => [ciRunKey(state), state]));
+    const nextStates = new Map(statesByKey);
+    const events: CiWorkflowSemanticEvent[] = [];
+    const remaining: CiWorkflowRunObservation[] = [];
+    const limit = Math.max(1, Math.min(100, Math.floor(context.catchUpLimit)));
+    for (const run of pendingRuns) {
+      if (run.repositoryRef !== this.repositoryRef || (this.workflowId && run.workflowId !== this.workflowId)) throw new Error('normalized CI workflow-run binding mismatch');
+      validateNormalizedCiRun(run, this.repositoryRef, this.workflowId);
+      const key = ciRunKey(run);
+      const previous = statesByKey.get(key);
+      if (previous && CI_STATUS_RANK[run.status] < CI_STATUS_RANK[previous.status]) continue;
+      if (previous && previous.updatedAt && run.updatedAt && Date.parse(run.updatedAt) < Date.parse(previous.updatedAt)) continue;
+      const fingerprint = ciRunFingerprint(run);
+      let nextState: CiWorkflowRunState = { ...run, fingerprint, lastEmittedPhase: previous?.lastEmittedPhase ?? null };
+      if (!cursor.bootstrapping && (!previous || previous.fingerprint !== fingerprint)) {
+        const semanticType = run.status === 'completed' ? CI_WORKFLOW_COMPLETED_EVENT : previous?.lastEmittedPhase === 'started' ? null : CI_WORKFLOW_STARTED_EVENT;
+        const changedConclusion = Boolean(previous && previous.status === 'completed' && run.status === 'completed' && previous.conclusion !== run.conclusion);
+        if (semanticType && events.length >= limit) { remaining.push(run); continue; }
+        if (semanticType || changedConclusion) {
+          const effectiveType = changedConclusion ? CI_WORKFLOW_COMPLETED_EVENT : semanticType as typeof CI_WORKFLOW_STARTED_EVENT | typeof CI_WORKFLOW_COMPLETED_EVENT;
+          events.push({ ...run, semanticType: effectiveType, previousStatus: previous?.status ?? null, previousConclusion: previous?.conclusion ?? null });
+          nextState = { ...nextState, lastEmittedPhase: effectiveType === CI_WORKFLOW_COMPLETED_EVENT ? 'completed' : 'started' };
+        }
+      }
+      nextStates.set(key, nextState);
+    }
+    const hasMore = remaining.length > 0 || pageHasMore;
+    const nextCursor = encodeCiCursor({ version: 1, bootstrapping: cursor.bootstrapping && hasMore, providerCursor: hasMore ? providerCursor : null, pendingRuns: remaining, states: [...nextStates.values()] });
+    return { sourceId: this.sourceId, sourceType: this.sourceType, previousWatermark: context.previousWatermark, observedWatermark: nextCursor, events, hasMore, observedAt: context.observedAt, status: initial ? 'bootstrapped' : events.length ? 'advanced' : 'unchanged' };
+  }
+}
 
 type HostHealthCursor = { version: 1; scanOffset: number; states: HostHealthSemanticState[] };
 
@@ -362,7 +639,7 @@ export class HostHealthEventSourceAdapter implements EventSourceAdapter<HostHeal
   }
 }
 
-function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepositoryCommitEvent | BrainTaskLifecycleEvent | HostHealthTransitionEvent, now: string): AgentModeSchedulerEventInput {
+function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepositoryCommitEvent | BrainTaskLifecycleEvent | HostHealthTransitionEvent | CiWorkflowSemanticEvent, now: string): AgentModeSchedulerEventInput {
   if ('sourceSequence' in event) return {
     eventId: `${source.sourceId}:${event.sourceEventId}`,
     eventType: TASK_LIFECYCLE_OBSERVED_EVENT,
@@ -376,7 +653,7 @@ function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepo
     payload: { sourceEventId: event.sourceEventId, sourceSequence: event.sourceSequence, entityType: event.entityType, entityId: event.entityId, lifecycleEventType: event.lifecycleEventType, occurredAt: event.occurredAt, taskId: event.taskId, runId: event.runId, attemptId: event.attemptId },
     nextEligibleAt: now, deadline: null, maxAttempts: 3,
   };
-  if ('previousStatus' in event) return {
+  if ('previousStatus' in event && 'bindingId' in event) return {
     eventId: `${source.sourceId}:${event.bindingId}:${event.observationId}:${event.observedAt}`,
     eventType: INFRASTRUCTURE_HOST_HEALTH_CHANGED_EVENT,
     source: source.sourceId,
@@ -387,6 +664,24 @@ function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepo
     deduplicationKey: `${source.sourceId}:${event.bindingId}:${event.fingerprint}`,
     payloadVersion: 'k4.0',
     payload: { resourceId: event.resourceId, providerId: event.providerId, bindingId: event.bindingId, previousStatus: event.previousStatus, currentStatus: event.status, previousFreshness: event.previousFreshness, currentFreshness: event.freshness, previousConditionCodes: event.previousConditionCodes, conditionCodes: event.conditionCodes, sourceObservationId: event.observationId, observedAt: event.observedAt, evaluatedAt: now },
+    nextEligibleAt: now, deadline: null, maxAttempts: 3,
+  };
+  if ('semanticType' in event) return {
+    eventId: `${source.sourceId}:${event.runId}:${event.attempt}:${event.semanticType}:${event.conclusion ?? 'pending'}`,
+    eventType: event.semanticType,
+    source: source.sourceId,
+    occurredAt: event.status === 'completed' ? event.completedAt ?? event.updatedAt ?? event.observedAt : event.startedAt ?? event.queuedAt ?? event.updatedAt ?? event.observedAt,
+    receivedAt: now,
+    causationId: `${event.runId}:${event.attempt}`,
+    correlationId: event.workflowId,
+    deduplicationKey: `${source.sourceId}:${event.providerId}:${event.repositoryRef}:${event.workflowId}:${event.runId}:${event.attempt}:${event.semanticType}:${event.conclusion ?? 'pending'}`,
+    payloadVersion: 'k4.0',
+    payload: {
+      providerId: event.providerId, repositoryRef: event.repositoryRef, workflowId: event.workflowId, workflowName: event.workflowName,
+      runId: event.runId, attempt: event.attempt, headSha: event.headSha, status: event.status, conclusion: event.conclusion,
+      previousStatus: event.previousStatus, previousConclusion: event.previousConclusion,
+      queuedAt: event.queuedAt, startedAt: event.startedAt, completedAt: event.completedAt,
+    },
     nextEligibleAt: now, deadline: null, maxAttempts: 3,
   };
   return {
@@ -410,7 +705,7 @@ type AgentModeEventSourceConfigLike = { sourceId: string; sourceType: string; re
 
 export type EventSourcePollResult = { observedAt: string; considered: number; deferred: number; sources: AgentModeEventSourceObservationResult[] };
 
-export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStateStore; adapters: readonly EventSourceAdapter<GitRepositoryCommitEvent | BrainTaskLifecycleEvent | HostHealthTransitionEvent>[]; now?: string; clock?: () => string; maxSources?: number }): Promise<EventSourcePollResult> {
+export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStateStore; adapters: readonly EventSourceAdapter<GitRepositoryCommitEvent | BrainTaskLifecycleEvent | HostHealthTransitionEvent | CiWorkflowSemanticEvent>[]; now?: string; clock?: () => string; maxSources?: number }): Promise<EventSourcePollResult> {
   const observedAt = options.now ?? (options.clock ?? (() => new Date().toISOString()))();
   const maxSources = Math.max(1, Math.min(16, Math.floor(options.maxSources ?? 16)));
   const adapters = new Map(options.adapters.map((adapter) => [adapter.sourceId, adapter]));
