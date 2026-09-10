@@ -24,6 +24,170 @@ export type AgentModeEvent = {
   payload: Record<string, unknown>;
 };
 
+export type AgentModeSchedulerItemStatus = 'pending' | 'claimed' | 'completed' | 'failed' | 'dead_letter';
+
+export type AgentModeSchedulerEvent = {
+  eventId: string;
+  eventType: string;
+  source: string;
+  occurredAt: string;
+  receivedAt: string;
+  causationId: string | null;
+  correlationId: string | null;
+  deduplicationKey: string;
+  payloadVersion: string;
+  payload: Record<string, unknown>;
+  status: AgentModeSchedulerItemStatus;
+  attemptCount: number;
+  nextEligibleAt: string;
+  deadline: string | null;
+  maxAttempts: number;
+  contentHash: string;
+  claimOwner: string | null;
+  claimFence: number | null;
+  claimExpiresAt: string | null;
+  lastFailure: string | null;
+  lastFailureAt: string | null;
+  completedAt: string | null;
+  deadLetteredAt: string | null;
+};
+
+export type AgentModeSchedulerSchedule = {
+  scheduleId: string;
+  kind: string;
+  dueAt: string;
+  createdAt: string;
+  status: AgentModeSchedulerItemStatus;
+  deduplicationKey: string;
+  causationId: string | null;
+  correlationId: string | null;
+  payloadVersion: string;
+  payload: Record<string, unknown>;
+  attemptCount: number;
+  nextEligibleAt: string;
+  deadline: string | null;
+  maxAttempts: number;
+  contentHash: string;
+  claimOwner: string | null;
+  claimFence: number | null;
+  claimExpiresAt: string | null;
+  lastFailure: string | null;
+  lastFailureAt: string | null;
+  completedAt: string | null;
+  deadLetteredAt: string | null;
+};
+
+export type AgentModeSourceWatermark = { sourceId: string; watermark: string; updatedAt: string };
+
+export type AgentModeEventSourceStatus = 'ready' | 'cooldown' | 'failed' | 'diverged' | 'disabled';
+
+export type AgentModeEventSourceConfig = {
+  sourceId: string;
+  sourceType: string;
+  repositoryRef: string;
+  adapterType: 'git.repository.revision';
+  debounceWindowMs: number;
+  cooldownWindowMs: number;
+  catchUpLimit: number;
+  enabled: boolean;
+  bootstrapWatermark: string | null;
+};
+
+export type AgentModeEventSourceState = AgentModeEventSourceConfig & {
+  status: AgentModeEventSourceStatus;
+  watermark: string | null;
+  lastObservedAt: string | null;
+  lastSuccessfulObservation: string | null;
+  lastErrorReason: string | null;
+  cooldownNotBefore: string | null;
+  nextEligibleAt: string | null;
+  catchUpPending: boolean;
+  lastEmittedEventCount: number;
+  failureAttemptCount: number;
+};
+
+export type AgentModeEventSourceObservationResult = {
+  sourceId: string;
+  status: 'bootstrapped' | 'advanced' | 'unchanged' | 'cooldown' | 'diverged' | 'failed';
+  previousWatermark: string | null;
+  observedWatermark: string | null;
+  emittedEventCount: number;
+  duplicates: number;
+  hasMore: boolean;
+  observedAt: string;
+  errorReason?: string;
+};
+
+export type AgentModeSchedulerTickSummary = {
+  tickId: string;
+  startedAt: string;
+  completedAt: string;
+  outcome: 'NO_ACTION' | 'PROCESSED' | 'BOUNDED';
+  considered: number;
+  claimed: number;
+  completed: number;
+  deferred: number;
+  deadLettered: number;
+  durationMs: number;
+  noOp: boolean;
+};
+
+export type AgentModeQueueOperationResult = 'created' | 'duplicate' | 'conflict';
+
+export type AgentModeSchedulerEventInput = Omit<AgentModeSchedulerEvent, 'status' | 'attemptCount' | 'contentHash' | 'claimOwner' | 'claimFence' | 'claimExpiresAt' | 'lastFailure' | 'lastFailureAt' | 'completedAt' | 'deadLetteredAt'>;
+export type AgentModeSchedulerScheduleInput = Omit<AgentModeSchedulerSchedule, 'status' | 'attemptCount' | 'contentHash' | 'claimOwner' | 'claimFence' | 'claimExpiresAt' | 'lastFailure' | 'lastFailureAt' | 'completedAt' | 'deadLetteredAt'>;
+export type AgentModeSchedulerClaim = { ownerId: string; fence: number; expiresAt: string };
+export type AgentModeSchedulerSettlement = { itemType: 'event' | 'schedule'; itemId: string; ownerId: string; fence: number; now: string };
+export type AgentModeSchedulerFailure = AgentModeSchedulerSettlement & { reason: string; forceDeadLetter?: boolean };
+
+function schedulerStableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(schedulerStableJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => `${JSON.stringify(key)}:${schedulerStableJson(entry)}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function schedulerPayloadJson(payload: Record<string, unknown>): string {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('scheduler payload must be an object');
+  const json = schedulerStableJson(payload);
+  if (json.length > 32_768) throw new Error('scheduler payload exceeds 32 KiB');
+  const visit = (value: unknown, depth: number): void => {
+    if (depth > 6) throw new Error('scheduler payload exceeds maximum depth');
+    if (value && typeof value === 'object') {
+      if (Array.isArray(value)) value.forEach((entry) => visit(entry, depth + 1));
+      else for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+        if (/^(?:command|commands|exec|shell|spawn|script|handler|code|url|path)$/i.test(key)) throw new Error(`scheduler payload key is not permitted: ${key}`);
+        visit(entry, depth + 1);
+      }
+    } else if (typeof value === 'number' && !Number.isFinite(value)) {
+      throw new Error('scheduler payload contains a non-finite number');
+    } else if (typeof value === 'function' || typeof value === 'symbol' || value === undefined) {
+      throw new Error('scheduler payload contains an executable value');
+    }
+  };
+  visit(payload, 0);
+  return json;
+}
+
+function schedulerContentHash(input: Record<string, unknown>): string {
+  return createHash('sha256').update(schedulerStableJson(input)).digest('hex');
+}
+
+function ensureSchedulerInput(input: { payloadVersion: string; payload: Record<string, unknown>; maxAttempts: number; nextEligibleAt: string; deadline: string | null }): string {
+  if (input.payloadVersion !== 'k4.0') throw new Error('scheduler payloadVersion must be k4.0');
+  if (!Number.isInteger(input.maxAttempts) || input.maxAttempts < 1 || input.maxAttempts > 10) throw new Error('scheduler maxAttempts must be between 1 and 10');
+  if (!Number.isFinite(Date.parse(input.nextEligibleAt))) throw new Error('scheduler nextEligibleAt must be an ISO timestamp');
+  if (input.deadline !== null && !Number.isFinite(Date.parse(input.deadline))) throw new Error('scheduler deadline must be an ISO timestamp');
+  if (input.deadline !== null && input.deadline < input.nextEligibleAt) throw new Error('scheduler deadline must not precede nextEligibleAt');
+  return schedulerPayloadJson(input.payload);
+}
+
+function ensureSchedulerText(value: string | null, label: string, required = false): void {
+  if (required && !value) throw new Error(`scheduler ${label} is required`);
+  if (value !== null && value.length > 256) throw new Error(`scheduler ${label} exceeds 256 characters`);
+}
+
 export type AgentModeTaskStatus = 'pending' | 'admitted' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
 export type AgentModeRunStatus = 'created' | 'active' | 'paused' | 'completed' | 'failed' | 'cancelled';
 export type AgentModeAttemptStatus = 'created' | 'admitted' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled' | 'uncertain' | 'duplicate';
@@ -853,6 +1017,8 @@ export class AgentModeSqliteStateStore {
   private readonly hasReviewReceiptTables: boolean;
   private readonly hasCommitReceiptTables: boolean;
   private readonly hasMergeReceiptTables: boolean;
+  private readonly hasSchedulerTables: boolean;
+  private readonly hasEventSourceTables: boolean;
 
   constructor(databasePath = defaultAgentModeDatabasePath(), options: { readOnly?: boolean } = {}) {
     this.databasePath = databasePath;
@@ -882,6 +1048,11 @@ export class AgentModeSqliteStateStore {
       this.hasReviewReceiptTables = this.tableExists('agent_mode_review_receipts');
       this.hasCommitReceiptTables = this.tableExists('agent_mode_commit_receipts');
       this.hasMergeReceiptTables = this.tableExists('agent_mode_merge_receipts');
+      this.hasSchedulerTables = this.tableExists('agent_mode_scheduler_events')
+        && this.tableExists('agent_mode_scheduler_schedules')
+        && this.tableExists('agent_mode_source_watermarks')
+        && this.tableExists('agent_mode_scheduler_observer');
+      this.hasEventSourceTables = this.tableExists('agent_mode_event_sources');
       return;
     }
     this.database.exec('PRAGMA foreign_keys = ON;');
@@ -1273,6 +1444,93 @@ export class AgentModeSqliteStateStore {
         created_at TEXT NOT NULL, status TEXT NOT NULL, receipt_hash TEXT, reason TEXT,
         operation_json TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS agent_mode_scheduler_events (
+        event_id TEXT PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        source TEXT NOT NULL,
+        occurred_at TEXT NOT NULL,
+        received_at TEXT NOT NULL,
+        causation_id TEXT,
+        correlation_id TEXT,
+        deduplication_key TEXT NOT NULL,
+        payload_version TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        status TEXT NOT NULL,
+        attempt_count INTEGER NOT NULL,
+        next_eligible_at TEXT NOT NULL,
+        deadline TEXT,
+        max_attempts INTEGER NOT NULL,
+        content_hash TEXT NOT NULL,
+        claim_owner TEXT,
+        claim_fence INTEGER,
+        claim_expires_at TEXT,
+        last_failure TEXT,
+        last_failure_at TEXT,
+        completed_at TEXT,
+        dead_lettered_at TEXT
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS agent_mode_scheduler_events_dedup
+        ON agent_mode_scheduler_events (source, deduplication_key);
+      CREATE INDEX IF NOT EXISTS agent_mode_scheduler_events_ready
+        ON agent_mode_scheduler_events (status, next_eligible_at, event_id);
+      CREATE TABLE IF NOT EXISTS agent_mode_scheduler_schedules (
+        schedule_id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,
+        due_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        status TEXT NOT NULL,
+        deduplication_key TEXT NOT NULL,
+        causation_id TEXT,
+        correlation_id TEXT,
+        payload_version TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        attempt_count INTEGER NOT NULL,
+        next_eligible_at TEXT NOT NULL,
+        deadline TEXT,
+        max_attempts INTEGER NOT NULL,
+        content_hash TEXT NOT NULL,
+        claim_owner TEXT,
+        claim_fence INTEGER,
+        claim_expires_at TEXT,
+        last_failure TEXT,
+        last_failure_at TEXT,
+        completed_at TEXT,
+        dead_lettered_at TEXT
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS agent_mode_scheduler_schedules_dedup
+        ON agent_mode_scheduler_schedules (kind, deduplication_key);
+      CREATE INDEX IF NOT EXISTS agent_mode_scheduler_schedules_ready
+        ON agent_mode_scheduler_schedules (status, next_eligible_at, schedule_id);
+      CREATE TABLE IF NOT EXISTS agent_mode_source_watermarks (
+        source_id TEXT PRIMARY KEY,
+        watermark TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS agent_mode_scheduler_observer (
+        singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+        latest_tick_json TEXT
+      );
+      CREATE TABLE IF NOT EXISTS agent_mode_event_sources (
+        source_id TEXT PRIMARY KEY,
+        source_type TEXT NOT NULL,
+        repository_ref TEXT NOT NULL,
+        adapter_type TEXT NOT NULL,
+        debounce_window_ms INTEGER NOT NULL,
+        cooldown_window_ms INTEGER NOT NULL,
+        catch_up_limit INTEGER NOT NULL,
+        enabled INTEGER NOT NULL,
+        bootstrap_watermark TEXT,
+        status TEXT NOT NULL,
+        watermark TEXT,
+        last_observed_at TEXT,
+        last_successful_observation TEXT,
+        last_error_reason TEXT,
+        cooldown_not_before TEXT,
+        next_eligible_at TEXT,
+        catch_up_pending INTEGER NOT NULL,
+        last_emitted_event_count INTEGER NOT NULL,
+        failure_attempt_count INTEGER NOT NULL
+      );
       INSERT INTO store_meta (key, value) VALUES ('schema_version', '7')
         ON CONFLICT(key) DO NOTHING;
     `);
@@ -1292,6 +1550,8 @@ export class AgentModeSqliteStateStore {
     this.hasCommitReceiptTables = true;
     this.hasMergeReceiptTables = true;
     this.database.prepare("UPDATE store_meta SET value = '7' WHERE key = 'schema_version' AND value IN ('1', '2', '3', '4', '5', '6')").run();
+    this.hasSchedulerTables = true;
+    this.hasEventSourceTables = true;
   }
 
   static openExisting(databasePath = defaultAgentModeDatabasePath()): AgentModeSqliteStateStore | undefined {
@@ -3777,6 +4037,282 @@ export class AgentModeSqliteStateStore {
     if (!this.hasPromotionTables) return [];
     const rows = this.database.prepare('SELECT operation_json FROM agent_mode_merge_operations ORDER BY created_at, operation_id').all() as Array<{ operation_json?: string }>;
     return rows.map((row) => JSON.parse(String(row.operation_json)) as AgentModeMergeOperation);
+  }
+
+  get schedulerAvailable(): boolean {
+    return this.hasSchedulerTables;
+  }
+
+  private mapSchedulerEvent(row: Record<string, unknown>): AgentModeSchedulerEvent {
+    return {
+      eventId: String(row.event_id), eventType: String(row.event_type), source: String(row.source),
+      occurredAt: String(row.occurred_at), receivedAt: String(row.received_at),
+      causationId: row.causation_id === null ? null : String(row.causation_id),
+      correlationId: row.correlation_id === null ? null : String(row.correlation_id),
+      deduplicationKey: String(row.deduplication_key), payloadVersion: String(row.payload_version),
+      payload: JSON.parse(String(row.payload_json)) as Record<string, unknown>,
+      status: row.status as AgentModeSchedulerItemStatus, attemptCount: Number(row.attempt_count),
+      nextEligibleAt: String(row.next_eligible_at), deadline: row.deadline === null ? null : String(row.deadline),
+      maxAttempts: Number(row.max_attempts), contentHash: String(row.content_hash),
+      claimOwner: row.claim_owner === null ? null : String(row.claim_owner),
+      claimFence: row.claim_fence === null ? null : Number(row.claim_fence),
+      claimExpiresAt: row.claim_expires_at === null ? null : String(row.claim_expires_at),
+      lastFailure: row.last_failure === null ? null : String(row.last_failure),
+      lastFailureAt: row.last_failure_at === null ? null : String(row.last_failure_at),
+      completedAt: row.completed_at === null ? null : String(row.completed_at),
+      deadLetteredAt: row.dead_lettered_at === null ? null : String(row.dead_lettered_at),
+    };
+  }
+
+  private mapSchedulerSchedule(row: Record<string, unknown>): AgentModeSchedulerSchedule {
+    return {
+      scheduleId: String(row.schedule_id), kind: String(row.kind), dueAt: String(row.due_at), createdAt: String(row.created_at),
+      status: row.status as AgentModeSchedulerItemStatus, deduplicationKey: String(row.deduplication_key),
+      causationId: row.causation_id === null ? null : String(row.causation_id),
+      correlationId: row.correlation_id === null ? null : String(row.correlation_id),
+      payloadVersion: String(row.payload_version), payload: JSON.parse(String(row.payload_json)) as Record<string, unknown>,
+      attemptCount: Number(row.attempt_count), nextEligibleAt: String(row.next_eligible_at),
+      deadline: row.deadline === null ? null : String(row.deadline), maxAttempts: Number(row.max_attempts),
+      contentHash: String(row.content_hash), claimOwner: row.claim_owner === null ? null : String(row.claim_owner),
+      claimFence: row.claim_fence === null ? null : Number(row.claim_fence),
+      claimExpiresAt: row.claim_expires_at === null ? null : String(row.claim_expires_at),
+      lastFailure: row.last_failure === null ? null : String(row.last_failure),
+      lastFailureAt: row.last_failure_at === null ? null : String(row.last_failure_at),
+      completedAt: row.completed_at === null ? null : String(row.completed_at),
+      deadLetteredAt: row.dead_lettered_at === null ? null : String(row.dead_lettered_at),
+    };
+  }
+
+  createSchedulerEvent(input: AgentModeSchedulerEventInput): AgentModeQueueOperationResult {
+    if (!this.hasSchedulerTables) throw new Error('scheduler tables are unavailable');
+    ensureSchedulerText(input.eventId, 'eventId', true); ensureSchedulerText(input.eventType, 'eventType', true); ensureSchedulerText(input.source, 'source', true); ensureSchedulerText(input.deduplicationKey, 'deduplicationKey', true); ensureSchedulerText(input.causationId, 'causationId'); ensureSchedulerText(input.correlationId, 'correlationId');
+    if (!Number.isFinite(Date.parse(input.occurredAt)) || !Number.isFinite(Date.parse(input.receivedAt))) throw new Error('scheduler event timestamps must be ISO timestamps');
+    const payloadJson = ensureSchedulerInput(input);
+    const contentHash = schedulerContentHash({ eventType: input.eventType, source: input.source, occurredAt: input.occurredAt, causationId: input.causationId, correlationId: input.correlationId, deduplicationKey: input.deduplicationKey, payloadVersion: input.payloadVersion, payload: input.payload, nextEligibleAt: input.nextEligibleAt, deadline: input.deadline, maxAttempts: input.maxAttempts });
+    return this.withTransaction(() => {
+      const existing = this.database.prepare('SELECT content_hash FROM agent_mode_scheduler_events WHERE source = ? AND deduplication_key = ?').get(input.source, input.deduplicationKey) as { content_hash?: string } | undefined;
+      if (existing) return existing.content_hash === contentHash ? 'duplicate' : 'conflict';
+      const sameId = this.database.prepare('SELECT content_hash FROM agent_mode_scheduler_events WHERE event_id = ?').get(input.eventId) as { content_hash?: string } | undefined;
+      if (sameId) return sameId.content_hash === contentHash ? 'duplicate' : 'conflict';
+      this.database.prepare(`INSERT INTO agent_mode_scheduler_events
+        (event_id,event_type,source,occurred_at,received_at,causation_id,correlation_id,deduplication_key,payload_version,payload_json,status,attempt_count,next_eligible_at,deadline,max_attempts,content_hash)
+        VALUES (?,?,?,?,?,?,?,?,?,?, 'pending',0,?,?,?,?)`).run(
+        input.eventId, input.eventType, input.source, input.occurredAt, input.receivedAt, input.causationId, input.correlationId,
+        input.deduplicationKey, input.payloadVersion, payloadJson, input.nextEligibleAt, input.deadline, input.maxAttempts, contentHash,
+      );
+      return 'created';
+    });
+  }
+
+  createSchedulerSchedule(input: AgentModeSchedulerScheduleInput): AgentModeQueueOperationResult {
+    if (!this.hasSchedulerTables) throw new Error('scheduler tables are unavailable');
+    ensureSchedulerText(input.scheduleId, 'scheduleId', true); ensureSchedulerText(input.kind, 'kind', true); ensureSchedulerText(input.deduplicationKey, 'deduplicationKey', true); ensureSchedulerText(input.causationId, 'causationId'); ensureSchedulerText(input.correlationId, 'correlationId');
+    if (!Number.isFinite(Date.parse(input.dueAt)) || !Number.isFinite(Date.parse(input.createdAt))) throw new Error('scheduler timestamps must be ISO timestamps');
+    const payloadJson = ensureSchedulerInput(input);
+    const contentHash = schedulerContentHash({ kind: input.kind, dueAt: input.dueAt, deduplicationKey: input.deduplicationKey, causationId: input.causationId, correlationId: input.correlationId, payloadVersion: input.payloadVersion, payload: input.payload, nextEligibleAt: input.nextEligibleAt, deadline: input.deadline, maxAttempts: input.maxAttempts });
+    return this.withTransaction(() => {
+      const existing = this.database.prepare('SELECT content_hash FROM agent_mode_scheduler_schedules WHERE kind = ? AND deduplication_key = ?').get(input.kind, input.deduplicationKey) as { content_hash?: string } | undefined;
+      if (existing) return existing.content_hash === contentHash ? 'duplicate' : 'conflict';
+      const sameId = this.database.prepare('SELECT content_hash FROM agent_mode_scheduler_schedules WHERE schedule_id = ?').get(input.scheduleId) as { content_hash?: string } | undefined;
+      if (sameId) return sameId.content_hash === contentHash ? 'duplicate' : 'conflict';
+      this.database.prepare(`INSERT INTO agent_mode_scheduler_schedules
+        (schedule_id,kind,due_at,created_at,status,deduplication_key,causation_id,correlation_id,payload_version,payload_json,attempt_count,next_eligible_at,deadline,max_attempts,content_hash)
+        VALUES (?,?,?,?, 'pending',?,?,?,?,?,0,?,?,?,?)`).run(
+        input.scheduleId, input.kind, input.dueAt, input.createdAt, input.deduplicationKey, input.causationId, input.correlationId,
+        input.payloadVersion, payloadJson, input.nextEligibleAt, input.deadline, input.maxAttempts, contentHash,
+      );
+      return 'created';
+    });
+  }
+
+  listSchedulerEvents(limit = 100): AgentModeSchedulerEvent[] {
+    if (!this.hasSchedulerTables) return [];
+    const bounded = Math.max(0, Math.min(Math.floor(limit), 500));
+    return (this.database.prepare('SELECT * FROM agent_mode_scheduler_events ORDER BY rowid LIMIT ?').all(bounded) as Array<Record<string, unknown>>).map((row) => this.mapSchedulerEvent(row));
+  }
+
+  listSchedulerSchedules(limit = 100): AgentModeSchedulerSchedule[] {
+    if (!this.hasSchedulerTables) return [];
+    const bounded = Math.max(0, Math.min(Math.floor(limit), 500));
+    return (this.database.prepare('SELECT * FROM agent_mode_scheduler_schedules ORDER BY due_at,schedule_id LIMIT ?').all(bounded) as Array<Record<string, unknown>>).map((row) => this.mapSchedulerSchedule(row));
+  }
+
+  getSchedulerEvent(eventId: string): AgentModeSchedulerEvent | undefined {
+    if (!this.hasSchedulerTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_scheduler_events WHERE event_id = ?').get(eventId) as Record<string, unknown> | undefined;
+    return row ? this.mapSchedulerEvent(row) : undefined;
+  }
+
+  getSchedulerSchedule(scheduleId: string): AgentModeSchedulerSchedule | undefined {
+    if (!this.hasSchedulerTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_scheduler_schedules WHERE schedule_id = ?').get(scheduleId) as Record<string, unknown> | undefined;
+    return row ? this.mapSchedulerSchedule(row) : undefined;
+  }
+
+  private claimSchedulerRow(itemType: 'event' | 'schedule', itemId: string, ownerId: string, expiresAt: string, now: string): AgentModeSchedulerClaim | undefined {
+    const table = itemType === 'event' ? 'agent_mode_scheduler_events' : 'agent_mode_scheduler_schedules';
+    const idColumn = itemType === 'event' ? 'event_id' : 'schedule_id';
+    const resourceKey = `agent-mode-scheduler:${itemType}:${itemId}`;
+    return this.withTransaction(() => {
+      const row = this.database.prepare(`SELECT status,next_eligible_at,claim_expires_at FROM ${table} WHERE ${idColumn} = ?`).get(itemId) as { status?: string; next_eligible_at?: string; claim_expires_at?: string | null } | undefined;
+      if (!row) return undefined;
+      const liveClaim = row.status === 'claimed' && row.claim_expires_at !== null && row.claim_expires_at !== undefined && row.claim_expires_at > now;
+      const eligible = (row.status === 'pending' || row.status === 'failed') && String(row.next_eligible_at) <= now;
+      if (liveClaim || (!eligible && row.status !== 'claimed')) return undefined;
+      const lease = this.acquireLeaseAt({ resourceKey, leaseId: `${resourceKey}:${ownerId}`, ownerId, expiresAt }, now);
+      if (!lease) return undefined;
+      const updated = this.database.prepare(`UPDATE ${table} SET status='claimed',attempt_count=attempt_count+1,claim_owner=?,claim_fence=?,claim_expires_at=? WHERE ${idColumn}=? AND (status IN ('pending','failed') OR (status='claimed' AND claim_expires_at <= ?))`).run(ownerId, lease.fence, expiresAt, itemId, now);
+      if (updated.changes !== 1) return undefined;
+      return { ownerId, fence: lease.fence, expiresAt };
+    });
+  }
+
+  claimSchedulerEvent(eventId: string, ownerId: string, expiresAt: string, now: string): AgentModeSchedulerClaim | undefined {
+    return this.claimSchedulerRow('event', eventId, ownerId, expiresAt, now);
+  }
+
+  claimSchedulerSchedule(scheduleId: string, ownerId: string, expiresAt: string, now: string): AgentModeSchedulerClaim | undefined {
+    return this.claimSchedulerRow('schedule', scheduleId, ownerId, expiresAt, now);
+  }
+
+  private settleSchedulerRow(input: AgentModeSchedulerSettlement, status: 'completed' | 'dead_letter' | 'failed', failure?: AgentModeSchedulerFailure): AgentModeSchedulerItemStatus {
+    const table = input.itemType === 'event' ? 'agent_mode_scheduler_events' : 'agent_mode_scheduler_schedules';
+    const idColumn = input.itemType === 'event' ? 'event_id' : 'schedule_id';
+    const resourceKey = `agent-mode-scheduler:${input.itemType}:${input.itemId}`;
+    return this.withTransaction(() => {
+      const current = this.database.prepare(`SELECT status,claim_owner,claim_fence,claim_expires_at,attempt_count,max_attempts,deadline FROM ${table} WHERE ${idColumn} = ?`).get(input.itemId) as Record<string, unknown> | undefined;
+      if (!current || current.status !== 'claimed' || current.claim_owner !== input.ownerId || Number(current.claim_fence) !== input.fence || current.claim_expires_at === null || String(current.claim_expires_at) <= input.now) throw new Error('stale_scheduler_claim');
+      const lease = this.database.prepare('SELECT owner_id,fence,expires_at FROM leases WHERE resource_key = ?').get(resourceKey) as Record<string, unknown> | undefined;
+      if (!lease || lease.owner_id !== input.ownerId || Number(lease.fence) !== input.fence || String(lease.expires_at) <= input.now) throw new Error('stale_scheduler_fence');
+      const failureText = failure?.reason ?? null;
+      if (status === 'failed') {
+        const attemptCount = Number(current.attempt_count);
+        const backoffMs = Math.min(300_000, 1_000 * (2 ** Math.max(0, attemptCount - 1)));
+        const nextEligibleAt = new Date(Date.parse(input.now) + backoffMs).toISOString();
+        if (attemptCount >= Number(current.max_attempts) || (current.deadline !== null && String(current.deadline) <= nextEligibleAt)) status = 'dead_letter';
+        this.database.prepare(`UPDATE ${table} SET status=?,next_eligible_at=?,last_failure=?,last_failure_at=?,dead_lettered_at=?,claim_owner=NULL,claim_fence=NULL,claim_expires_at=NULL WHERE ${idColumn}=?`).run(status, nextEligibleAt, failureText, input.now, status === 'dead_letter' ? input.now : null, input.itemId);
+      } else {
+        this.database.prepare(`UPDATE ${table} SET status=?,completed_at=?,dead_lettered_at=?,last_failure=?,last_failure_at=?,claim_owner=NULL,claim_fence=NULL,claim_expires_at=NULL WHERE ${idColumn}=?`).run(status, status === 'completed' ? input.now : null, status === 'dead_letter' ? input.now : null, failureText, failure ? input.now : null, input.itemId);
+      }
+      this.database.prepare('UPDATE leases SET expires_at = ? WHERE resource_key = ? AND owner_id = ? AND fence = ?').run(input.now, resourceKey, input.ownerId, input.fence);
+      return status;
+    });
+  }
+
+  completeSchedulerEvent(input: AgentModeSchedulerSettlement): AgentModeSchedulerItemStatus { return this.settleSchedulerRow(input, 'completed'); }
+  completeSchedulerSchedule(input: AgentModeSchedulerSettlement): AgentModeSchedulerItemStatus { return this.settleSchedulerRow(input, 'completed'); }
+  failSchedulerEvent(input: AgentModeSchedulerFailure): AgentModeSchedulerItemStatus { return this.settleSchedulerRow(input, input.forceDeadLetter ? 'dead_letter' : 'failed', input); }
+  failSchedulerSchedule(input: AgentModeSchedulerFailure): AgentModeSchedulerItemStatus { return this.settleSchedulerRow(input, input.forceDeadLetter ? 'dead_letter' : 'failed', input); }
+
+  upsertSourceWatermark(input: AgentModeSourceWatermark): 'advanced' | 'duplicate' | 'stale' {
+    if (!this.hasSchedulerTables || !input.sourceId || !input.watermark || !Number.isFinite(Date.parse(input.updatedAt))) throw new Error('invalid source watermark');
+    return this.withTransaction(() => {
+      const current = this.database.prepare('SELECT watermark FROM agent_mode_source_watermarks WHERE source_id = ?').get(input.sourceId) as { watermark?: string } | undefined;
+      if (!current) {
+        this.database.prepare('INSERT INTO agent_mode_source_watermarks (source_id,watermark,updated_at) VALUES (?,?,?)').run(input.sourceId, input.watermark, input.updatedAt);
+        return 'advanced';
+      }
+      const currentWatermark = current.watermark ?? '';
+      const oldTime = Date.parse(currentWatermark); const newTime = Date.parse(input.watermark);
+      const comparison = Number.isFinite(oldTime) && Number.isFinite(newTime) ? newTime - oldTime : input.watermark.localeCompare(currentWatermark);
+      if (comparison === 0) return 'duplicate';
+      if (comparison < 0) return 'stale';
+      this.database.prepare('UPDATE agent_mode_source_watermarks SET watermark=?,updated_at=? WHERE source_id=?').run(input.watermark, input.updatedAt, input.sourceId);
+      return 'advanced';
+    });
+  }
+
+  listSourceWatermarks(): AgentModeSourceWatermark[] {
+    if (!this.hasSchedulerTables) return [];
+    return (this.database.prepare('SELECT source_id,watermark,updated_at FROM agent_mode_source_watermarks ORDER BY source_id').all() as Array<Record<string, unknown>>).map((row) => ({ sourceId: String(row.source_id), watermark: String(row.watermark), updatedAt: String(row.updated_at) }));
+  }
+
+  saveLatestSchedulerTick(tick: AgentModeSchedulerTickSummary): void {
+    if (!this.hasSchedulerTables) throw new Error('scheduler tables are unavailable');
+    this.withTransaction(() => {
+      this.database.prepare("INSERT INTO agent_mode_scheduler_observer (singleton,latest_tick_json) VALUES (1,?) ON CONFLICT(singleton) DO UPDATE SET latest_tick_json=excluded.latest_tick_json").run(JSON.stringify(tick));
+    });
+  }
+
+  getLatestSchedulerTick(): AgentModeSchedulerTickSummary | undefined {
+    if (!this.hasSchedulerTables) return undefined;
+    const row = this.database.prepare('SELECT latest_tick_json FROM agent_mode_scheduler_observer WHERE singleton = 1').get() as { latest_tick_json?: string | null } | undefined;
+    return row?.latest_tick_json ? JSON.parse(row.latest_tick_json) as AgentModeSchedulerTickSummary : undefined;
+  }
+
+  private mapEventSource(row: Record<string, unknown>): AgentModeEventSourceState {
+    return {
+      sourceId: String(row.source_id), sourceType: String(row.source_type), repositoryRef: String(row.repository_ref),
+      adapterType: row.adapter_type as AgentModeEventSourceConfig['adapterType'],
+      debounceWindowMs: Number(row.debounce_window_ms), cooldownWindowMs: Number(row.cooldown_window_ms), catchUpLimit: Number(row.catch_up_limit),
+      enabled: Number(row.enabled) === 1, bootstrapWatermark: row.bootstrap_watermark === null ? null : String(row.bootstrap_watermark),
+      status: row.status as AgentModeEventSourceStatus, watermark: row.watermark === null ? null : String(row.watermark),
+      lastObservedAt: row.last_observed_at === null ? null : String(row.last_observed_at),
+      lastSuccessfulObservation: row.last_successful_observation === null ? null : String(row.last_successful_observation),
+      lastErrorReason: row.last_error_reason === null ? null : String(row.last_error_reason),
+      cooldownNotBefore: row.cooldown_not_before === null ? null : String(row.cooldown_not_before),
+      nextEligibleAt: row.next_eligible_at === null ? null : String(row.next_eligible_at),
+      catchUpPending: Number(row.catch_up_pending) === 1, lastEmittedEventCount: Number(row.last_emitted_event_count), failureAttemptCount: Number(row.failure_attempt_count),
+    };
+  }
+
+  upsertEventSource(config: AgentModeEventSourceConfig): 'created' | 'updated' | 'duplicate' | 'conflict' {
+    if (!this.hasEventSourceTables) throw new Error('event source tables are unavailable');
+    ensureSchedulerText(config.sourceId, 'sourceId', true); ensureSchedulerText(config.sourceType, 'sourceType', true); ensureSchedulerText(config.repositoryRef, 'repositoryRef', true);
+    if (config.adapterType !== 'git.repository.revision' || !Number.isInteger(config.debounceWindowMs) || config.debounceWindowMs < 0 || config.debounceWindowMs > 300_000 || !Number.isInteger(config.cooldownWindowMs) || config.cooldownWindowMs < 0 || config.cooldownWindowMs > 300_000 || !Number.isInteger(config.catchUpLimit) || config.catchUpLimit < 1 || config.catchUpLimit > 100) throw new Error('event source configuration is outside K4.1-A bounds');
+    ensureSchedulerText(config.bootstrapWatermark, 'bootstrapWatermark');
+    return this.withTransaction(() => {
+      const existing = this.database.prepare('SELECT * FROM agent_mode_event_sources WHERE source_id = ?').get(config.sourceId) as Record<string, unknown> | undefined;
+      if (!existing) {
+        this.database.prepare(`INSERT INTO agent_mode_event_sources
+          (source_id,source_type,repository_ref,adapter_type,debounce_window_ms,cooldown_window_ms,catch_up_limit,enabled,bootstrap_watermark,status,catch_up_pending,last_emitted_event_count,failure_attempt_count)
+          VALUES (?,?,?,?,?,?,?,?,?,'ready',0,0,0)`).run(config.sourceId, config.sourceType, config.repositoryRef, config.adapterType, config.debounceWindowMs, config.cooldownWindowMs, config.catchUpLimit, config.enabled ? 1 : 0, config.bootstrapWatermark);
+        return 'created';
+      }
+      if (existing.source_type !== config.sourceType || existing.repository_ref !== config.repositoryRef || existing.adapter_type !== config.adapterType || existing.bootstrap_watermark !== config.bootstrapWatermark) return 'conflict';
+      const same = Number(existing.debounce_window_ms) === config.debounceWindowMs && Number(existing.cooldown_window_ms) === config.cooldownWindowMs && Number(existing.catch_up_limit) === config.catchUpLimit && Number(existing.enabled) === (config.enabled ? 1 : 0);
+      if (same) return 'duplicate';
+      this.database.prepare('UPDATE agent_mode_event_sources SET debounce_window_ms=?,cooldown_window_ms=?,catch_up_limit=?,enabled=?,status=CASE WHEN ?=0 THEN \'disabled\' WHEN status=\'disabled\' THEN \'ready\' ELSE status END WHERE source_id=?').run(config.debounceWindowMs, config.cooldownWindowMs, config.catchUpLimit, config.enabled ? 1 : 0, config.enabled ? 1 : 0, config.sourceId);
+      return 'updated';
+    });
+  }
+
+  listEventSources(): AgentModeEventSourceState[] {
+    if (!this.hasEventSourceTables) return [];
+    return (this.database.prepare('SELECT * FROM agent_mode_event_sources ORDER BY source_id').all() as Array<Record<string, unknown>>).map((row) => this.mapEventSource(row));
+  }
+
+  getEventSource(sourceId: string): AgentModeEventSourceState | undefined {
+    if (!this.hasEventSourceTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_event_sources WHERE source_id = ?').get(sourceId) as Record<string, unknown> | undefined;
+    return row ? this.mapEventSource(row) : undefined;
+  }
+
+  ingestSchedulerEventsAndAdvanceSource(input: { sourceId: string; observedAt: string; observedWatermark: string; events: AgentModeSchedulerEventInput[]; hasMore: boolean; cooldownNotBefore: string | null }): { created: number; duplicates: number } {
+    if (!this.hasEventSourceTables) throw new Error('event source tables are unavailable');
+    if (!this.getEventSource(input.sourceId)) throw new Error(`event source not found: ${input.sourceId}`);
+    const created = { count: 0 }; const duplicates = { count: 0 };
+    this.withTransaction(() => {
+      for (const event of input.events) {
+        if (event.source !== input.sourceId) throw new Error('scheduler event source does not match event source');
+        const result = this.createSchedulerEvent(event);
+        if (result === 'conflict') throw new Error(`scheduler event conflict: ${event.eventId}`);
+        if (result === 'created') created.count += 1; else duplicates.count += 1;
+      }
+      this.database.prepare(`UPDATE agent_mode_event_sources SET status=?,watermark=?,last_observed_at=?,last_successful_observation=?,last_error_reason=NULL,cooldown_not_before=?,next_eligible_at=?,catch_up_pending=?,last_emitted_event_count=?,failure_attempt_count=0 WHERE source_id=?`).run(input.cooldownNotBefore && input.cooldownNotBefore > input.observedAt ? 'cooldown' : 'ready', input.observedWatermark, input.observedAt, input.observedAt, input.cooldownNotBefore, input.cooldownNotBefore, input.hasMore ? 1 : 0, input.events.length, input.sourceId);
+    });
+    return { created: created.count, duplicates: duplicates.count };
+  }
+
+  recordEventSourceFailure(input: { sourceId: string; observedAt: string; status: 'failed' | 'diverged'; reason: string }): void {
+    if (!this.hasEventSourceTables) throw new Error('event source tables are unavailable');
+    this.withTransaction(() => {
+      const source = this.getEventSource(input.sourceId);
+      if (!source) throw new Error(`event source not found: ${input.sourceId}`);
+      const attempts = input.status === 'diverged' ? source.failureAttemptCount : source.failureAttemptCount + 1;
+      const nextEligibleAt = input.status === 'diverged' ? null : new Date(Date.parse(input.observedAt) + Math.min(300_000, 1_000 * (2 ** Math.max(0, attempts - 1)))).toISOString();
+      this.database.prepare('UPDATE agent_mode_event_sources SET status=?,last_observed_at=?,last_error_reason=?,next_eligible_at=?,failure_attempt_count=? WHERE source_id=?').run(input.status, input.observedAt, input.reason.slice(0, 256), nextEligibleAt, attempts, input.sourceId);
+    });
   }
 
   close(): void {

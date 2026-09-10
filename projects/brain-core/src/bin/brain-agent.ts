@@ -7,6 +7,8 @@ import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agen
 import { runLiveAgentModeSlice } from '../agent-mode/live-agent-mode-slice.js';
 import { verifyRuntimeProcessIdentity } from '../agent-mode/runtime-process-identity.js';
 import { WorkcellManager } from '../agent-mode/workcell.js';
+import { runAgentModeSchedulerTick } from '../agent-mode/scheduler.js';
+import { GIT_REPOSITORY_REVISION_SOURCE, GitRepositoryEventSourceAdapter, pollEventSourcesOnce } from '../agent-mode/event-source.js';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -29,7 +31,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent capabilities | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once --source-id ID --repository-ref REF --repository-root PATH [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -75,6 +77,75 @@ function printModelRequest(rawModel: string): void {
 
 async function main(): Promise<void> {
   const command = process.argv[2];
+
+  if (command === 'sources') {
+    const action = process.argv[3];
+    const once = process.argv[4] === '--once';
+    if (action !== 'poll' || !once) {
+      usage();
+      process.exitCode = 1;
+      return;
+    }
+    const sourceId = requiredFlag('--source-id');
+    const repositoryRef = requiredFlag('--repository-ref');
+    const repositoryRoot = requiredFlag('--repository-root');
+    const numberFlag = (name: string, fallback: number): number => {
+      const raw = flag(name);
+      if (!raw) return fallback;
+      const parsed = Number(raw);
+      if (!Number.isInteger(parsed)) throw new Error(`${name} must be an integer`);
+      return parsed;
+    };
+    const config = {
+      sourceId,
+      sourceType: GIT_REPOSITORY_REVISION_SOURCE,
+      repositoryRef,
+      adapterType: 'git.repository.revision' as const,
+      debounceWindowMs: numberFlag('--debounce-ms', 0),
+      cooldownWindowMs: numberFlag('--cooldown-ms', 0),
+      catchUpLimit: numberFlag('--catch-up-limit', 10),
+      enabled: true,
+      bootstrapWatermark: null,
+    };
+    const databasePath = process.env.BRAIN_AGENT_MODE_DATABASE ?? defaultAgentModeDatabasePath();
+    const store = new AgentModeSqliteStateStore(databasePath);
+    try {
+      const configuration = store.upsertEventSource(config);
+      const adapter = new GitRepositoryEventSourceAdapter({ sourceId, repositoryRef, repositoryRoot });
+      const result = await pollEventSourcesOnce({ store, adapters: [adapter] });
+      process.stdout.write(`${JSON.stringify({ kind: 'agent-mode-event-source-poll', configuration, ...result }, null, 2)}\n`);
+    } catch (error) {
+      console.error(`brain-agent sources poll failed: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    } finally {
+      store.close();
+    }
+    return;
+  }
+
+  if (command === 'heartbeat' || command === 'scheduler') {
+    const valid = command === 'heartbeat' ? process.argv[3] === '--once' && process.argv.length === 4 : process.argv[3] === 'tick' && process.argv.length === 4;
+    if (!valid) {
+      usage();
+      process.exitCode = 1;
+      return;
+    }
+    const databasePath = process.env.BRAIN_AGENT_MODE_DATABASE ?? defaultAgentModeDatabasePath();
+    if (!existsSync(databasePath)) {
+      process.stdout.write(`${JSON.stringify({ kind: 'agent-mode-heartbeat', outcome: 'NO_ACTION', reason: 'state_store_absent', databasePresent: false })}\n`);
+      return;
+    }
+    const store = new AgentModeSqliteStateStore(databasePath);
+    try {
+      process.stdout.write(`${JSON.stringify({ kind: 'agent-mode-heartbeat', databasePresent: true, ...runAgentModeSchedulerTick({ store }) }, null, 2)}\n`);
+    } catch (error) {
+      console.error(`brain-agent heartbeat failed: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    } finally {
+      store.close();
+    }
+    return;
+  }
 
   if (command === 'workcell') {
     const action = process.argv[3];

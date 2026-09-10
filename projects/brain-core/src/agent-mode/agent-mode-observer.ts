@@ -35,6 +35,13 @@ export type AgentModeObserverProjection = {
     mergeApprovalCount: number;
     mergeOperationCount: number;
     mergeReceiptCount: number;
+    schedulerEventCount: number;
+    schedulerScheduleCount: number;
+    schedulerPendingCount: number;
+    schedulerClaimedCount: number;
+    schedulerDeadLetterCount: number;
+    eventSourceCount: number;
+    failedEventSourceCount: number;
     resultCount: number;
     executionSource: 'agent-mode-state-store' | 'none';
     nextSafeState: string;
@@ -59,6 +66,11 @@ export type AgentModeObserverProjection = {
   mergeApprovals: Array<Record<string, unknown>>;
   mergeOperations: Array<Record<string, unknown>>;
   mergeReceipts: Array<Record<string, unknown>>;
+  schedulerEvents: Array<Record<string, unknown>>;
+  schedulerSchedules: Array<Record<string, unknown>>;
+  sourceWatermarks: Array<Record<string, unknown>>;
+  latestSchedulerTick: Record<string, unknown> | null;
+  eventSources: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -114,11 +126,13 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         workcellDiffCount: 0,
         activeWorkcellWriterLeaseCount: 0,
         reviewRequestCount: 0, reviewDecisionCount: 0, targetRefLeaseCount: 0, commitOperationCount: 0, mergeApprovalCount: 0, mergeOperationCount: 0, mergeReceiptCount: 0,
+        schedulerEventCount: 0, schedulerScheduleCount: 0, schedulerPendingCount: 0, schedulerClaimedCount: 0, schedulerDeadLetterCount: 0,
+        eventSourceCount: 0, failedEventSourceCount: 0,
         resultCount: 0,
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [],
     };
   }
 
@@ -199,6 +213,11 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
     const mergeApprovals = store.listMergeApprovals().map((approval) => ({ ...approval }));
     const mergeOperations = store.listMergeOperations().map((operation) => ({ ...operation }));
     const mergeReceipts = store.listMergeReceipts().map((receipt) => ({ ...receipt }));
+    const schedulerEvents = store.listSchedulerEvents(500).map((event) => ({ ...event, payload: safePayload(event.payload) }));
+    const schedulerSchedules = store.listSchedulerSchedules(500).map((schedule) => ({ ...schedule, payload: safePayload(schedule.payload) }));
+    const sourceWatermarks = store.listSourceWatermarks().map((watermark) => ({ ...watermark }));
+    const latestSchedulerTick = store.getLatestSchedulerTick() ? { ...store.getLatestSchedulerTick() } : null;
+    const eventSources = store.listEventSources().map((source) => ({ ...source }));
     const results = store.listRecentEvents(500).filter((event) => event.eventType === 'jarvis_result_returned').map((event) => {
       const payload = event.payload;
       const usage = payload.usage && typeof payload.usage === 'object' ? payload.usage as Record<string, unknown> : {};
@@ -276,11 +295,18 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         mergeApprovalCount: mergeApprovals.length,
         mergeOperationCount: mergeOperations.length,
         mergeReceiptCount: mergeReceipts.length,
+        schedulerEventCount: schedulerEvents.length,
+        schedulerScheduleCount: schedulerSchedules.length,
+        schedulerPendingCount: [...schedulerEvents, ...schedulerSchedules].filter((item) => item.status === 'pending' || item.status === 'failed').length,
+        schedulerClaimedCount: [...schedulerEvents, ...schedulerSchedules].filter((item) => item.status === 'claimed').length,
+        schedulerDeadLetterCount: [...schedulerEvents, ...schedulerSchedules].filter((item) => item.status === 'dead_letter').length,
+        eventSourceCount: eventSources.length,
+        failedEventSourceCount: eventSources.filter((source) => source.status === 'failed' || source.status === 'diverged').length,
         resultCount: results.length,
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts,
+      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources,
     };
   } finally {
     store.close();
