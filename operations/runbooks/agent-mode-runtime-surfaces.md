@@ -384,3 +384,71 @@ reject. Evidence:
 `operations/reports/agent-mode-k3-5-d-merge-evidence-2026-09-09.md`.
 
 K3 exit gate: **COMPLETE**. K4 remains planned and must not begin automatically.
+
+## K4.0 bounded scheduler and heartbeat
+
+K4.0 is the first event-driven substrate and is intentionally finite. The
+existing Agent Mode SQLite WAL StateStore is the sole authority; it contains
+durable scheduler events, schedules, claims, retries, dead letters, source
+watermarks, and the latest tick observation. There is no second database or
+event log.
+
+Ingest only typed `k4.0` payloads with bounded JSON shape and immutable
+deduplication identity. Conflicting content for the same source and
+deduplication key fails closed. A scheduler tick reads an injected/current
+timestamp, considers a bounded eligible set, claims each item with an existing
+lease/fence, dispatches the closed internal `agent_mode.test.noop` handler, and
+settles completion or deterministic retry/dead-letter state. Expired claims
+can be recovered with a fresh fence; stale claimants cannot settle.
+
+Use one pass only:
+
+```text
+brain-agent heartbeat --once
+brain-agent scheduler tick
+```
+
+Both commands open the authoritative StateStore, execute one bounded tick, emit
+JSON, and exit. A no-op tick reports `NO_ACTION` and performs zero
+ModelGateway, AgentRuntime, model-token, cost, worker, shell, network, or
+repository work. No daemon, timer, watcher, external event source, provider
+retry, dynamic worker, or autonomous model call is part of K4.0.
+
+K4.0 is complete for its bounded acceptance gate. Evidence:
+`operations/reports/agent-mode-k4-0-scheduler-heartbeat-evidence-2026-09-10.md`.
+The next task at that historical K4.0 boundary was K4.1; K4.1-A is now tracked
+below and K4.1-B must not start automatically.
+
+## K4.1-A local Git event source
+
+K4.1-A is complete for its bounded source-adapter gate. The generic
+`EventSourceAdapter` is source-neutral; the only concrete adapter is the
+read-only `git.repository.revision` source. Configure it with a stable
+`sourceId` and canonical repository resource reference while passing the
+installation-specific repository root as a runtime binding. The path is never
+stored as source identity.
+
+`brain-agent sources poll --once` performs one bounded observation. First
+success records current HEAD as the bootstrap watermark and emits no history.
+Later observations verify ancestry, enumerate at most `catchUpLimit` commits in
+oldest-first order, and persist each typed `repository.commit.observed` event
+plus the new watermark transactionally. `hasMore` continues bounded catch-up.
+Repeated polls deduplicate by source/repository/commit identity.
+
+Commit metadata is inert bounded data. The fixed Git reader uses only
+non-shell read operations for HEAD/ref, ancestry, bounded revision listing, and
+immutable metadata. It never fetches, pulls, pushes, changes refs, checks out,
+resets, merges, reads diffs, or writes repository files.
+
+The source records deterministic debounce-group identity and cooldown
+not-before state. Repository failures preserve the watermark and record finite
+retry eligibility. Divergence is surfaced as durable `diverged` source state;
+the watermark is preserved and history is not replayed or reset. The observer
+exposes safe source status, watermark, last observation/error, cooldown,
+catch-up, and emitted counts without paths or credentials.
+
+Evidence:
+`operations/reports/agent-mode-k4-1-a-git-event-source-evidence-2026-09-10.md`.
+K4 remains in progress. Next task: **K4.1-B — internal task/lifecycle and
+host-health event sources with shared source-adapter conformance**. Do not
+start it automatically.

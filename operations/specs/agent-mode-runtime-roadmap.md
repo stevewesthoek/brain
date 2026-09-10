@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4 is not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0 and K4.1-A are complete, K4 remains in progress, and K4.1-B is not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -794,7 +794,44 @@ covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
-**Status:** planned after K3
+**Status:** K4.0 and K4.1-A complete; K4 remains in progress; K4.1-B and dynamic workers not started
+
+### K4.0 — deterministic event queue, scheduler tick, and no-op heartbeat
+
+K4.0 is complete for its bounded acceptance gate. The authoritative SQLite WAL StateStore now contains the
+durable scheduler event/schedule queue, source-watermark seam, queue claims
+using the existing lease/fence table, retry/dead-letter settlement, and a
+singleton latest-tick observer record. `brain-agent heartbeat --once` and
+`brain-agent scheduler tick` perform exactly one finite pass and exit.
+
+The only K4.0 handler is the internal `agent_mode.test.noop` fixture. It has no
+model, runtime, worker, shell, network, or repository effect. Dynamic event
+sources, debounce/catch-up, worker creation, autonomous model calls, and K4.1
+remain out of scope. Evidence:
+`operations/reports/agent-mode-k4-0-scheduler-heartbeat-evidence-2026-09-10.md`.
+
+### K4.1-A — durable EventSource seam and local Git revision source
+
+K4.1-A is complete for its bounded gate. A source-neutral
+`EventSourceAdapter` contract now returns bounded observations containing
+source identity, previous/observed watermark, typed events, `hasMore`, time,
+and status. One fixed-argv read-only `git.repository.revision` adapter binds a
+stable source/repository identity to an injected installation path, bootstraps
+at current HEAD without historical replay, emits bounded oldest-first commit
+events for future ancestry advances, and detects divergence without resetting
+the watermark.
+
+Source configuration/status lives in the existing Agent Mode StateStore.
+Successful event ingestion and watermark advancement are transactional.
+Deterministic debounce-group identity and persisted cooldown/not-before state
+are exposed without timers. Source errors preserve watermarks, record bounded
+retry eligibility, and do not block other sources. The observer exposes safe
+source state without paths or credentials. Evidence:
+`operations/reports/agent-mode-k4-1-a-git-event-source-evidence-2026-09-10.md`.
+
+Exact next task: **K4.1-B — internal task/lifecycle and host-health event
+sources with shared source-adapter conformance**. Do not start it
+automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;
@@ -963,9 +1000,9 @@ remaining-status result, and K4 decision are recorded in:
 
 operations/reports/agent-mode-k3-8-foundation-landing-evidence-2026-09-10.md
 
-K4 remains a separately authorized phase. The exact next task is K4.0 —
-deterministic event/scheduler foundation and no-op heartbeat. Do not start it
-automatically.
+At the landing boundary K4 remained separately authorized and K4.0 was the
+exact next task. K4.0 and K4.1-A are now recorded in Phase K4; K4.1-B must not
+start automatically.
 
 ## Local non-text inference classification
 

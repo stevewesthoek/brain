@@ -532,8 +532,51 @@ its own scoped authorization/design review. The exact commit paths and SHAs,
 rollback guidance, validation counts, and final status are recorded in:
 `operations/reports/agent-mode-k3-8-foundation-landing-evidence-2026-09-10.md`.
 
-Exact next task: K4.0 — deterministic event/scheduler foundation and no-op
-heartbeat. Do not start K4.0 automatically.
+At the landing boundary K4.0 was the exact next task. It is now recorded below
+as complete; K4.1-B must not start automatically.
+
+## Current K4.0 deterministic scheduler and no-op heartbeat — 2026-09-10
+
+K4.0 is **COMPLETE** for its bounded acceptance gate. The existing Agent Mode SQLite WAL StateStore now
+contains durable typed scheduler events and schedules, immutable source/key
+deduplication, conflict rejection, bounded JSON payload validation, source
+watermarks, lease/fence claims, restart recovery, deterministic retry/backoff,
+dead-letter settlement, and a singleton latest-tick observer record. The queue
+status is durable across close/reopen; completed items are not rerun and stale
+claimants cannot settle after a fresh fence is acquired.
+
+`brain-agent heartbeat --once` and `brain-agent scheduler tick` execute one
+bounded pass and exit. The only handler is the internal
+`agent_mode.test.noop` fixture, which has no model, runtime, worker, shell,
+network, token, cost, or repository effect. No daemon, timer, external event
+source, provider retry, dynamic worker, or autonomous model call was added.
+
+Focused K4.0 coverage and the no-op zero-call proof are recorded in:
+`operations/reports/agent-mode-k4-0-scheduler-heartbeat-evidence-2026-09-10.md`.
+
+K4 remains **IN PROGRESS**. K4.1-A is recorded below; the exact next task is
+K4.1-B. Do not start it automatically.
+
+## Current K4.1-A local Git event source — 2026-09-10
+
+K4.1-A is **COMPLETE** for its bounded gate. A generic durable
+`EventSourceAdapter` seam and one local read-only `git.repository.revision`
+source now observe bounded Git ancestry, bootstrap at current HEAD without
+history replay, emit oldest-first typed `repository.commit.observed` events,
+advance the existing K4.0 watermark transactionally, deduplicate repeated
+polls, and surface divergence without silently resetting history.
+
+Durable source configuration/status includes bounded debounce grouping,
+cooldown/not-before, catch-up state, and finite source retry state. The
+operator surface is `brain-agent sources poll --once`; there is no watcher,
+daemon, network source, model, runtime, worker, Git write, fetch, pull, push,
+or semantic commit classification. Observer state is safe and path-free.
+
+Evidence: `operations/reports/agent-mode-k4-1-a-git-event-source-evidence-2026-09-10.md`.
+
+K4 remains **IN PROGRESS**. Exact next task: **K4.1-B — internal task/lifecycle
+and host-health event sources with shared source-adapter conformance**. Do not
+start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 
