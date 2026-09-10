@@ -37,13 +37,22 @@ uses a fixed-argument, read-only subprocess boundary.
 ## Landing commits
 
 - `ca062711` — `feat(agent-mode): land durable scheduler and git event source`
-- Documentation/evidence commit: pending at time of this report creation.
+- `679514fa` — `docs(agent-mode): record K4 event foundation`
+- Final evidence update commit: this report's follow-up commit.
 
 ## Post-landing verification
 
-After the documentation commit and final evidence update, verify that the
-worktree is clean and rerun the bounded K4.0/K4.1-A smoke suite with typecheck,
-build, and `git diff --check`.
+Post-landing smoke passed after the documentation commit:
+
+```text
+npm run typecheck
+npm run build
+node --test --test-timeout=60000 dist/tests/k4-0-scheduler-heartbeat.test.js dist/tests/k4-1-a-git-event-source.test.js
+```
+
+Result: 24 passed, 0 failed. The worktree was clean after the documentation
+commit; `git diff --check` was clean for the final working-tree diff. The final
+evidence update is the only remaining scoped change.
 
 ## Readiness
 
