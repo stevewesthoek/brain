@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { executeManagedProvider } from '../adapters/managed-provider-executor.mjs';
+import { executeManagedBedrockConverse, executeManagedProvider } from '../adapters/managed-provider-executor.mjs';
 import { runManagedCommand } from '../adapters/managed-command-runner.mjs';
 
 function createFixture() {
@@ -75,6 +75,21 @@ test('Bedrock uses a 0600 private request, keeps content out of argv, and cleans
   assert.equal(JSON.stringify(trace.args).includes(prompt), false);
   assert.equal(fs.existsSync(trace.requestPath), false);
   assert.equal(fs.existsSync(path.dirname(trace.requestPath)), false);
+});
+
+test('Bedrock maps Brain tool schemas to Converse toolSpec.inputSchema.json', async (t) => {
+  const fixture = createFixture();
+  t.after(() => fs.rmSync(fixture.root, { recursive: true, force: true }));
+  await executeManagedBedrockConverse({
+    modelId: 'minimax.minimax-m2.5', region: 'us-east-1',
+    messages: [{ role: 'user', content: [{ text: 'read' }] }], maxTokens: 16,
+    tools: [{ name: 'brain_read', description: 'read only', inputSchema: { type: 'object', required: ['path'] } }],
+    timeoutMs: 1_000,
+  }, { aws: fixture.executable, env: envFor(fixture.trace) });
+  const trace = JSON.parse(fs.readFileSync(fixture.trace, 'utf8'));
+  assert.deepEqual(trace.request.toolConfig, {
+    tools: [{ toolSpec: { name: 'brain_read', description: 'read only', inputSchema: { json: { type: 'object', required: ['path'] } } } }],
+  });
 });
 
 test('Codex uses stdin, a 0600 private output, empty cwd, and cleans up', async (t) => {

@@ -3,6 +3,10 @@ import {
   AGENT_MODE_MODEL_ROUTES,
   ModelGatewayError,
   type AdmittedModelRequest,
+  type BedrockContentBlock,
+  type BedrockMessage,
+  type BedrockToolDefinition,
+  type BedrockToolUse,
   type BedrockRouteKind,
   type ModelGateway,
   type NormalizedModelResult,
@@ -13,7 +17,8 @@ const ADMITTED_REGION = 'us-east-1';
 interface BedrockConverseTransportRequest {
   modelId: string;
   region: string;
-  messages: readonly [{ role: 'user'; content: readonly [{ text: string }] }];
+  messages: readonly BedrockMessage[];
+  tools?: readonly BedrockToolDefinition[];
   maxTokens: number;
   deadline: string;
 }
@@ -35,12 +40,6 @@ export interface AmazonBedrockModelGatewayOptions {
   region?: string;
   transport?: BedrockConverseTransport;
   now?: () => Date;
-}
-
-interface BedrockContentBlock {
-  text?: unknown;
-  reasoningContent?: unknown;
-  [key: string]: unknown;
 }
 
 const defaultTransport: BedrockConverseTransport = {
@@ -70,8 +69,9 @@ export class AmazonBedrockModelGateway implements ModelGateway {
     if (!route || request.providerId !== 'amazon-bedrock') {
       throw new ModelGatewayError('invalid_request', 'request is outside the admitted Agent Mode Bedrock portfolio');
     }
-    if ([request.modelId, request.routeId, request.prompt, request.operationId, request.attemptId].some((value) => !value.trim())) {
-      throw new ModelGatewayError('invalid_request', 'model, prompt, operation, and attempt fields are required');
+    if ([request.modelId, request.routeId, request.operationId, request.attemptId].some((value) => !value.trim())
+      || (!request.prompt?.trim() && (!request.messages || request.messages.length === 0))) {
+      throw new ModelGatewayError('invalid_request', 'model, message, operation, and attempt fields are required');
     }
     if (!Number.isInteger(request.maxTokens) || request.maxTokens < 1 || request.maxTokens > route.maxOutputTokens) {
       throw new ModelGatewayError('invalid_request', 'maxTokens exceeds the admitted model output bound');
@@ -109,13 +109,15 @@ export class AmazonBedrockModelGateway implements ModelGateway {
       const response = await this.transport.converse({
         modelId: request.modelId,
         region: this.region,
-        messages: [{ role: 'user', content: [{ text: request.prompt }] }],
+        messages: request.messages ?? [{ role: 'user', content: [{ text: request.prompt ?? '' }] }],
+        ...(request.tools ? { tools: request.tools } : {}),
         maxTokens: request.maxTokens,
         deadline: request.deadline,
       });
       const completedAt = this.now();
       return {
         text: normalizeFinalText(response),
+        ...(normalizeToolUses(response).length > 0 ? { toolUses: normalizeToolUses(response) } : {}),
         providerId: 'amazon-bedrock',
         modelRef: request.modelRef,
         modelId: request.modelId,
@@ -150,6 +152,22 @@ function normalizeFinalText(response: BedrockConverseTransportResponse): string 
     .flatMap((block) => typeof block.text === 'string' ? [block.text] : [])
     .join('')
     .trim();
+}
+
+function normalizeToolUses(response: BedrockConverseTransportResponse): BedrockToolUse[] {
+  return (response.output?.message?.content ?? [])
+    .flatMap((block) => {
+      const toolUse = block.toolUse;
+      if (!toolUse || typeof toolUse !== 'object') return [];
+      const candidate = toolUse as unknown as Record<string, unknown>;
+      if (typeof candidate.toolUseId !== 'string' || typeof candidate.name !== 'string') return [];
+      return [{
+        toolUseId: candidate.toolUseId,
+        name: candidate.name,
+        input: candidate.input && typeof candidate.input === 'object'
+          ? candidate.input as Record<string, unknown> : {},
+      }];
+    });
 }
 
 function normalizeUsage(usage: BedrockConverseTransportResponse['usage']): { inputTokens: number; outputTokens: number; totalTokens: number } {

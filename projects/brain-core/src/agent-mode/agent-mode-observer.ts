@@ -22,6 +22,20 @@ export type AgentModeObserverProjection = {
     recentEventCount: number;
     cancellationCount: number;
     recoveryCount: number;
+    workcellCount: number;
+    workcellWriteCount: number;
+    workcellValidationCount: number;
+    verifiedWorkcellResultCount: number;
+    workcellDiffCount: number;
+    activeWorkcellWriterLeaseCount: number;
+    reviewRequestCount: number;
+    reviewDecisionCount: number;
+    targetRefLeaseCount: number;
+    commitOperationCount: number;
+    mergeApprovalCount: number;
+    mergeOperationCount: number;
+    mergeReceiptCount: number;
+    resultCount: number;
     executionSource: 'agent-mode-state-store' | 'none';
     nextSafeState: string;
   };
@@ -32,6 +46,19 @@ export type AgentModeObserverProjection = {
   events: Array<Record<string, unknown>>;
   recovery: Array<Record<string, unknown>>;
   operations: Array<Record<string, unknown>>;
+  workcells: Array<Record<string, unknown>>;
+  workcellWrites: Array<Record<string, unknown>>;
+  workcellValidations: Array<Record<string, unknown>>;
+  workcellLeases: Array<Record<string, unknown>>;
+  workcellDiffs: Array<Record<string, unknown>>;
+  results: Array<Record<string, unknown>>;
+  reviewRequests: Array<Record<string, unknown>>;
+  reviewDecisions: Array<Record<string, unknown>>;
+  targetRefLeases: Array<Record<string, unknown>>;
+  commitOperations: Array<Record<string, unknown>>;
+  mergeApprovals: Array<Record<string, unknown>>;
+  mergeOperations: Array<Record<string, unknown>>;
+  mergeReceipts: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -80,10 +107,18 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         recentEventCount: 0,
         cancellationCount: 0,
         recoveryCount: 0,
+        workcellCount: 0,
+        workcellWriteCount: 0,
+        workcellValidationCount: 0,
+        verifiedWorkcellResultCount: 0,
+        workcellDiffCount: 0,
+        activeWorkcellWriterLeaseCount: 0,
+        reviewRequestCount: 0, reviewDecisionCount: 0, targetRefLeaseCount: 0, commitOperationCount: 0, mergeApprovalCount: 0, mergeOperationCount: 0, mergeReceiptCount: 0,
+        resultCount: 0,
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [],
     };
   }
 
@@ -129,6 +164,56 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
       };
     });
     const events = store.listRecentEvents(100).map(mapEvent);
+    const workcells = store.listWorkcells().map((workcell) => ({
+      workcellId: workcell.workcellId, taskId: workcell.taskId, runId: workcell.runId, attemptId: workcell.attemptId,
+      repositoryRef: workcell.repositoryRef, branch: workcell.branch, ownerAgent: workcell.ownerAgent,
+      baseRef: workcell.baseRef, status: workcell.status, createdAt: workcell.createdAt, updatedAt: workcell.updatedAt,
+      repositoryRoot: '[redacted]', worktreePath: '[redacted]',
+    }));
+    const workcellWrites = store.listWorkcellMutations().map((mutation) => ({
+      operationId: mutation.operationId, taskId: mutation.taskId, runId: mutation.runId, attemptId: mutation.attemptId,
+      workcellId: mutation.workcellId, repositoryRef: mutation.repositoryRef, relativePath: mutation.relativePath,
+      expectedPreimageHash: mutation.expectedPreimageHash, preimageHash: mutation.preimageHash, replacementHash: mutation.replacementHash,
+      postimageHash: mutation.postimageHash, status: mutation.status, createdAt: mutation.createdAt, updatedAt: mutation.updatedAt,
+    }));
+    const workcellValidations = store.listWorkcellValidationRuns().map((validation) => ({
+      validationId: validation.validationId, taskId: validation.taskId, runId: validation.runId, attemptId: validation.attemptId,
+      workcellId: validation.workcellId, repositoryRef: validation.repositoryRef, validatorProfile: validation.validatorProfile,
+      diffId: validation.diffId, status: validation.status, result: validation.result, evidenceHash: validation.evidenceHash,
+      startedAt: validation.startedAt, completedAt: validation.completedAt, updatedAt: validation.updatedAt,
+    }));
+    const workcellLeases = store.listWorkcells().flatMap((workcell) => store.listWorkcellWriterLeases(workcell.workcellId).map((lease) => ({
+      leaseId: lease.leaseId, workcellId: lease.workcellId, ownerAgent: lease.ownerAgent, ownerAttempt: lease.ownerAttempt,
+      createdAt: lease.createdAt, expiresAt: lease.expiresAt, fenceToken: lease.fenceToken, status: lease.status,
+      current: lease.status === 'active' && Date.parse(lease.expiresAt) > Date.parse(now),
+    })));
+    const workcellDiffs = store.listWorkcellDiffs().map((diff) => ({
+      diffId: diff.diffId, taskId: diff.taskId, runId: diff.runId, attemptId: diff.attemptId, workcellId: diff.workcellId,
+      repositoryRef: diff.repositoryRef, branch: diff.branch, baseRevision: diff.baseRevision, currentRevision: diff.currentRevision,
+      changedFiles: diff.changedFiles, diffHash: diff.diffHash, capturedAt: diff.capturedAt,
+    }));
+    const reviewRequests = store.listReviewRequests().map((request) => ({ ...request }));
+    const reviewDecisions = store.listReviewDecisions().map((decision) => ({ ...decision }));
+    const targetRefLeases = store.listTargetRefLeases().map((lease) => ({ ...lease }));
+    const commitOperations = store.listCommitOperations().map((operation) => ({ ...operation }));
+    const mergeApprovals = store.listMergeApprovals().map((approval) => ({ ...approval }));
+    const mergeOperations = store.listMergeOperations().map((operation) => ({ ...operation }));
+    const mergeReceipts = store.listMergeReceipts().map((receipt) => ({ ...receipt }));
+    const results = store.listRecentEvents(500).filter((event) => event.eventType === 'jarvis_result_returned').map((event) => {
+      const payload = event.payload;
+      const usage = payload.usage && typeof payload.usage === 'object' ? payload.usage as Record<string, unknown> : {};
+      return {
+        eventId: event.eventId, attemptId: event.entityId, taskId: typeof payload.taskId === 'string' ? payload.taskId : undefined,
+        runId: typeof payload.runId === 'string' ? payload.runId : undefined, workcellId: typeof payload.workcellId === 'string' ? payload.workcellId : undefined,
+        resultHash: typeof payload.resultHash === 'string' ? payload.resultHash : undefined,
+        validationResult: typeof payload.validationResult === 'string' ? payload.validationResult : undefined,
+        modelTurns: typeof payload.modelTurns === 'number' ? payload.modelTurns : undefined,
+        toolCalls: typeof payload.toolCalls === 'number' ? payload.toolCalls : undefined,
+        usage: { inputTokens: Number(usage.inputTokens ?? 0), outputTokens: Number(usage.outputTokens ?? 0), totalTokens: Number(usage.totalTokens ?? 0) },
+        estimatedCostUsd: typeof payload.actualCostUsd === 'number' ? payload.actualCostUsd : null,
+        status: 'returned', occurredAt: event.occurredAt,
+      };
+    });
     const verified = new Map<string, { resultHash: string; evidenceRef: string }>();
     for (const event of store.listRecentEvents(500)) {
       if (event.eventType === 'operation_verified') {
@@ -178,10 +263,24 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         recentEventCount: events.length,
         cancellationCount: attempts.filter((attempt) => attempt.cancellationStatus !== 'running').length,
         recoveryCount: recovery.length,
+        workcellCount: workcells.length,
+        workcellWriteCount: workcellWrites.length,
+        workcellValidationCount: workcellValidations.length,
+        verifiedWorkcellResultCount: workcellValidations.filter((validation) => validation.result === 'passed').length,
+        workcellDiffCount: workcellDiffs.length,
+        activeWorkcellWriterLeaseCount: workcellLeases.filter((lease) => lease.current).length,
+        reviewRequestCount: reviewRequests.length,
+        reviewDecisionCount: reviewDecisions.length,
+        targetRefLeaseCount: targetRefLeases.length,
+        commitOperationCount: commitOperations.length,
+        mergeApprovalCount: mergeApprovals.length,
+        mergeOperationCount: mergeOperations.length,
+        mergeReceiptCount: mergeReceipts.length,
+        resultCount: results.length,
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations,
+      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts,
     };
   } finally {
     store.close();

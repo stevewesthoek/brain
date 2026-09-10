@@ -72,11 +72,12 @@ export interface RestrictedTopologyDecision {
  */
 export function verifyRestrictedTopology(
   observation: HarnessTopologyObservation,
+  options: { allowedToolNames?: readonly string[] } = {},
 ): RestrictedTopologyDecision {
   const reasons: string[] = [];
   const allowedServices = new Set<string>(BRAIN_RESTRICTED_PROFILE.allowedServiceRows);
   const deniedServices = new Set<string>(BRAIN_RESTRICTED_PROFILE.deniedServiceRows);
-  const allowedTools = new Set<string>(BRAIN_RESTRICTED_PROFILE.allowedToolNames);
+  const allowedTools = new Set<string>(options.allowedToolNames ?? BRAIN_RESTRICTED_PROFILE.allowedToolNames);
 
   if (observation.profile !== BRAIN_RESTRICTED_PROFILE.name) {
     reasons.push('runtime profile is not the Brain restricted profile');

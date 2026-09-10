@@ -52,13 +52,48 @@ export interface AdmittedModelRequest {
   modelId: string;
   routeKind: BedrockRouteKind;
   routeId: string;
-  prompt: string;
+  /** Legacy one-shot prompt. Structured messages are preferred for tool turns. */
+  prompt?: string;
+  messages?: readonly BedrockMessage[];
+  tools?: readonly BedrockToolDefinition[];
   maxTokens: number;
   operationId: string;
   attemptId: string;
   now: string;
   deadline: string;
   accessEvidence: ModelAccessEvidence;
+}
+
+export type BedrockMessageRole = 'user' | 'assistant';
+
+export interface BedrockToolUse {
+  toolUseId: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+export interface BedrockToolResult {
+  toolUseId: string;
+  content: readonly { text: string }[];
+  status?: 'success' | 'error';
+}
+
+export interface BedrockContentBlock {
+  text?: string;
+  toolUse?: BedrockToolUse;
+  toolResult?: BedrockToolResult;
+  reasoningContent?: unknown;
+}
+
+export interface BedrockMessage {
+  role: BedrockMessageRole;
+  content: readonly BedrockContentBlock[];
+}
+
+export interface BedrockToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
 }
 
 export interface ModelUsage {
@@ -76,6 +111,7 @@ export interface ModelCostReceipt {
 
 export interface NormalizedModelResult {
   text: string;
+  toolUses?: readonly BedrockToolUse[];
   providerId: 'amazon-bedrock';
   modelRef: AdmittedModelRef;
   modelId: string;

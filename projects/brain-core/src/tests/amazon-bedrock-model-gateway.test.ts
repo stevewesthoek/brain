@@ -125,6 +125,29 @@ test('normalizes final text without leaking MiniMax reasoning blocks', async () 
   assert.deepEqual(result.usage, { inputTokens: 4, outputTokens: 7, totalTokens: 11 });
 });
 
+test('normalizes structured tool uses while keeping reasoning separate from final text', async () => {
+  let seen: unknown;
+  const result = await gateway({ converse: async (input) => {
+    seen = input;
+    return {
+      output: { message: { content: [
+        { reasoningContent: { reasoningText: 'private' } },
+        { toolUse: { toolUseId: 'read-1', name: 'brain_read', input: { path: 'fixture.txt' } } },
+      ] } },
+      usage: { inputTokens: 11, outputTokens: 9, totalTokens: 20 },
+      stopReason: 'tool_use',
+    };
+  } }).invoke(request('agent-mode/minimax-m2.5', {
+    messages: [{ role: 'user', content: [{ text: 'read the fixture' }] }],
+    tools: [{ name: 'brain_read', description: 'read only', inputSchema: { type: 'object' } }],
+  }));
+  assert.equal(result.text, '');
+  assert.deepEqual(result.toolUses, [{ toolUseId: 'read-1', name: 'brain_read', input: { path: 'fixture.txt' } }]);
+  assert.equal(result.stopReason, 'tool_use');
+  assert.deepEqual((seen as { messages: unknown[] }).messages, [{ role: 'user', content: [{ text: 'read the fixture' }] }]);
+  assert.deepEqual((seen as { tools: unknown[] }).tools, [{ name: 'brain_read', description: 'read only', inputSchema: { type: 'object' } }]);
+});
+
 test('classifies timeout, throttling, unavailable, and provider failures', async () => {
   const failures = [
     [{ name: 'TimeoutError' }, 'timeout'],

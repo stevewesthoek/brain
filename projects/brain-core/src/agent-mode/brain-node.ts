@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import type { AgentModeBudgetSettlement, AgentModeSqliteStateStore } from './sqlite-state-store.js';
@@ -9,6 +9,7 @@ export const BRAIN_NODE_READ_CAPABILITY = 'repo.read';
 export type BrainNodeCapability = {
   capabilityId: typeof BRAIN_NODE_READ_CAPABILITY;
   maxBytes: number;
+  version?: string;
 };
 
 export type BrainNodeResourceBinding = {
@@ -25,6 +26,7 @@ export type BrainNodeDescriptor = {
   bindings: readonly BrainNodeResourceBinding[];
   platform: { os: string; arch: string };
   health: { state: 'available' | 'unavailable'; checkedAt: string };
+  runnerVersion?: string;
 };
 
 export type BrainNodeCommand = {
@@ -70,6 +72,20 @@ export type BrainNodeReceipt = {
   reconciliation?: 'recorded' | 'duplicate' | 'conflict' | 'stale';
 };
 
+export type BrainNodeDeduplicationRecord = {
+  schemaVersion: 1;
+  operationId: string;
+  commandHash: string;
+  receipt: BrainNodeReceipt;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type BrainNodeDeduplicationStore = {
+  lookup: (operationId: string, now: string) => Promise<BrainNodeDeduplicationRecord | undefined>;
+  remember: (record: BrainNodeDeduplicationRecord) => Promise<void>;
+};
+
 export type BrainNodeAuthInput = {
   protocolVersion: string;
   controllerRef: string;
@@ -80,6 +96,26 @@ export type BrainNodeAuthInput = {
 };
 
 export type BrainNodeAuthenticator = (input: BrainNodeAuthInput) => boolean;
+
+export function brainNodeAuthProof(input: BrainNodeAuthInput, secret: string): string {
+  return createHmac('sha256', secret).update(JSON.stringify({
+    protocolVersion: input.protocolVersion,
+    controllerRef: input.controllerRef,
+    nodeId: input.nodeId,
+    operationId: input.operationId,
+    attemptId: input.attemptId,
+  })).digest('hex');
+}
+
+export function createHmacAuthenticator(secret: string): BrainNodeAuthenticator {
+  return (input) => {
+    if (!secret || !input.authProof) return false;
+    const expected = brainNodeAuthProof(input, secret);
+    const supplied = Buffer.from(input.authProof, 'utf8');
+    const wanted = Buffer.from(expected, 'utf8');
+    return supplied.length === wanted.length && timingSafeEqual(supplied, wanted);
+  };
+}
 
 export type BrainNodeFilesystem = {
   readFile: (filePath: string) => Promise<Buffer>;
@@ -113,8 +149,25 @@ export function hashNodeReadScope(resourceId: string, worktreeId: string | undef
   })).digest('hex');
 }
 
+function stableValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right)).map(([key, item]) => [key, stableValue(item)]));
+  }
+  return value;
+}
+
+export function brainNodeCommandHash(command: BrainNodeCommand): string {
+  const { authProof: _authProof, ...immutableCommand } = command;
+  return hashResult(JSON.stringify(stableValue(immutableCommand)));
+}
+
 function hashResult(value: string): string {
   return createHash('sha256').update(value).digest('hex');
+}
+
+export function brainNodeEffectHash(command: Pick<BrainNodeCommand, 'operationId' | 'capabilityId' | 'scopeHash'>, resultHash: string, status: 'succeeded' | 'failed'): string {
+  return hashResult(JSON.stringify({ operationId: command.operationId, capabilityId: command.capabilityId, scopeHash: command.scopeHash, resultHash, status }));
 }
 
 function nonEmpty(value: unknown): value is string {
@@ -145,6 +198,7 @@ export class BrainNodeLocalPerimeter {
     private readonly store: AgentModeSqliteStateStore,
     private readonly authenticate: BrainNodeAuthenticator,
     filesystem?: Partial<BrainNodeFilesystem>,
+    private readonly deduplication?: BrainNodeDeduplicationStore,
   ) {
     this.filesystem = {
       readFile: async (filePath) => readFile(filePath),
@@ -216,6 +270,7 @@ export class BrainNodeLocalPerimeter {
       return this.reject(command, 'stale_lease_fence', startedAt);
     }
     if (attempt.cancellationStatus !== 'running') return this.reject(command, 'cancellation_requested', startedAt);
+    if (attempt.status === 'paused') return this.reject(command, 'run_paused', startedAt);
     if (!Number.isFinite(Date.parse(now)) || !Number.isFinite(Date.parse(command.deadline)) || Date.parse(command.deadline) <= Date.parse(now)) {
       return this.reject(command, 'deadline_expired', startedAt);
     }
@@ -227,9 +282,23 @@ export class BrainNodeLocalPerimeter {
       return this.reject(command, 'scope_mismatch', startedAt);
     }
 
+    const commandHash = brainNodeCommandHash(command);
+    const nodeDeduplication = await this.deduplication?.lookup(command.operationId, now);
+    if (nodeDeduplication) {
+      if (nodeDeduplication.commandHash !== commandHash) return this.reject(command, 'operation_conflict', startedAt);
+      const receipt: BrainNodeReceipt = {
+        ...nodeDeduplication.receipt,
+        status: 'duplicate',
+        startedAt,
+        endedAt: now,
+        reconciliation: 'duplicate',
+      };
+      return receipt;
+    }
+
     const acceptedReceipt = this.store.getReceipt(command.operationId);
     if (acceptedReceipt) {
-      return {
+      const receipt: BrainNodeReceipt = {
         protocolVersion: BRAIN_NODE_PROTOCOL_VERSION,
         nodeId: this.descriptor.nodeId,
         operationId: command.operationId,
@@ -245,6 +314,7 @@ export class BrainNodeLocalPerimeter {
         effectHash: acceptedReceipt.effectHash,
         reconciliation: 'duplicate',
       };
+      return receipt;
     }
     if (outbox.state !== 'dispatchable' && outbox.state !== 'dispatched') return this.reject(command, 'outbox_not_dispatchable', startedAt);
 
@@ -265,7 +335,7 @@ export class BrainNodeLocalPerimeter {
       try {
         this.store.markDispatched(command.operationId, now);
       } catch (error) {
-        return this.reject(command, error instanceof Error && error.message.includes('cancellation') ? 'cancellation_requested' : 'stale_lease_fence', startedAt);
+        return this.reject(command, error instanceof Error && error.message.includes('cancellation') ? 'cancellation_requested' : error instanceof Error && error.message.includes('paused') ? 'run_paused' : 'stale_lease_fence', startedAt);
       }
     }
 
@@ -274,7 +344,7 @@ export class BrainNodeLocalPerimeter {
       if (content.byteLength > capability.maxBytes) return this.recordFailure(command, startedAt, now, 'result_too_large');
       const resultText = content.toString('utf8');
       const resultHash = hashResult(resultText);
-      const effectHash = hashResult(JSON.stringify({ operationId: command.operationId, capabilityId: command.capabilityId, scopeHash: command.scopeHash, resultHash, status: 'succeeded' }));
+      const effectHash = brainNodeEffectHash(command, resultHash, 'succeeded');
       const reconciliation = this.store.recordReceipt({
         operationId: command.operationId,
         attemptId: command.attemptId,
@@ -284,7 +354,7 @@ export class BrainNodeLocalPerimeter {
         recordedAt: now,
       }, settlement);
       if (reconciliation === 'conflict' || reconciliation === 'stale') return this.reject(command, 'receipt_reconciliation_failed', startedAt);
-      return {
+      const receipt: BrainNodeReceipt = {
         protocolVersion: BRAIN_NODE_PROTOCOL_VERSION,
         nodeId: this.descriptor.nodeId,
         operationId: command.operationId,
@@ -301,6 +371,8 @@ export class BrainNodeLocalPerimeter {
         effectHash,
         reconciliation,
       };
+      if (this.deduplication) await this.deduplication.remember({ schemaVersion: 1, operationId: command.operationId, commandHash, receipt, createdAt: now, expiresAt: new Date(Date.parse(now) + 86_400_000).toISOString() });
+      return receipt;
     } catch (error) {
       if (error instanceof BrainNodeCommandError) throw error;
       return this.recordFailure(command, startedAt, now, 'read_failed');
@@ -308,7 +380,7 @@ export class BrainNodeLocalPerimeter {
   }
 
   private async recordFailure(command: BrainNodeCommand, startedAt: string, endedAt: string, errorCode: string): Promise<BrainNodeReceipt> {
-    const effectHash = hashResult(JSON.stringify({ operationId: command.operationId, capabilityId: command.capabilityId, scopeHash: command.scopeHash, errorCode, status: 'failed' }));
+    const effectHash = brainNodeEffectHash(command, hashResult(errorCode), 'failed');
     const reconciliation = this.store.recordReceipt({
       operationId: command.operationId,
       attemptId: command.attemptId,
@@ -317,7 +389,7 @@ export class BrainNodeLocalPerimeter {
       status: 'failed',
       recordedAt: endedAt,
     });
-    return {
+    const receipt: BrainNodeReceipt = {
       protocolVersion: BRAIN_NODE_PROTOCOL_VERSION,
       nodeId: this.descriptor.nodeId,
       operationId: command.operationId,
@@ -332,6 +404,8 @@ export class BrainNodeLocalPerimeter {
       errorCode,
       reconciliation,
     };
+    if (this.deduplication) await this.deduplication.remember({ schemaVersion: 1, operationId: command.operationId, commandHash: brainNodeCommandHash(command), receipt, createdAt: endedAt, expiresAt: new Date(Date.parse(endedAt) + 86_400_000).toISOString() });
+    return receipt;
   }
 
   private reject(command: Partial<BrainNodeCommand> | undefined, errorCode: string, at: string): BrainNodeReceipt {

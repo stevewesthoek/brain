@@ -74,6 +74,13 @@ export async function executeManagedBedrockConverse(request, commands = {}) {
       modelId: request.modelId,
       messages: request.messages,
       inferenceConfig,
+      ...(request.tools ? {
+        toolConfig: {
+          tools: request.tools.map((tool) => ({
+            toolSpec: { ...tool, inputSchema: { json: tool.inputSchema } },
+          })),
+        },
+      } : {}),
     })}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     const timeoutMs = request.timeoutMs ?? Math.max(1, Date.parse(request.deadline) - Date.now());
     const stdout = await runManagedCommand(commands.aws ?? 'aws', [

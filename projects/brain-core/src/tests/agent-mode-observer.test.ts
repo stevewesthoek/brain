@@ -105,3 +105,30 @@ test('observer represents cancellation, uncertain recovery, stale fencing, and s
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('observer exposes Workcell, write, and validation lifecycle without absolute paths', () => {
+  const root = mkdtempSync(path.join('/tmp', 'brain-k3-4-observer-workcell-'));
+  const dbPath = path.join(root, 'agent-mode.db');
+  const store = new AgentModeSqliteStateStore(dbPath);
+  store.admitAttempt({
+    task: { taskId: 'task:k3-4-observer', taskType: 'fixture', inputHash: 'input', createdAt: '2026-09-09T00:00:00.000Z' },
+    run: { runId: 'run:k3-4-observer', taskId: 'task:k3-4-observer', agentId: 'agent:observer', createdAt: '2026-09-09T00:00:00.000Z' },
+    attempt: { attemptId: 'attempt:k3-4-observer', runId: 'run:k3-4-observer', agentId: 'agent:observer', runtimeRef: 'runtime:test', routeRef: 'route:test', modelRef: 'agent-mode/minimax-m2.5', policyVersion: 'policy:test', capabilityScopeHash: 'scope:test', budgetScopeId: 'budget:k3-4-observer', createdAt: '2026-09-09T00:00:00.000Z' },
+    budget: { budgetScopeId: 'budget:k3-4-observer', maxSteps: 2, maxTokens: 10, maxDollars: 1 },
+    estimate: { reservationId: 'reservation:k3-4-observer', steps: 1, tokens: 1, dollars: 0.01 },
+    lease: { leaseId: 'lease:k3-4-observer', resourceKey: 'resource:k3-4-observer', ownerId: 'agent:observer', expiresAt: '2099-09-09T00:00:00.000Z' },
+    now: '2026-09-09T00:00:00.000Z',
+  });
+  store.createWorkcell({ workcellId: 'workcell:00000000-0000-4000-8000-000000000004', taskId: 'task:k3-4-observer', runId: 'run:k3-4-observer', attemptId: 'attempt:k3-4-observer', repositoryRef: 'fixture', repositoryRoot: '/private/repo', worktreePath: '/private/workcell', branch: 'codex/workcell/00000000-0000-4000-8000-000000000004', ownerAgent: 'agent:observer', baseRef: 'HEAD', createdAt: NOW, updatedAt: NOW, status: 'prepared' }, { receiptId: 'receipt:observer-workcell', receiptType: 'WorkcellCreatedReceipt', taskId: 'task:k3-4-observer', runId: 'run:k3-4-observer', attemptId: 'attempt:k3-4-observer', workcellId: 'workcell:00000000-0000-4000-8000-000000000004', repositoryRef: 'fixture', actor: 'agent:observer', timestamp: NOW, operationHash: 'hash', operation: 'create', resultState: 'prepared' });
+  store.close();
+  try {
+    const projection = readAgentModeObserver(NOW, dbPath);
+    assert.equal(projection.summary.workcellCount, 1);
+    assert.equal(projection.workcells[0]?.status, 'prepared');
+    assert.equal(projection.workcells[0]?.repositoryRoot, '[redacted]');
+    assert.equal(projection.summary.workcellDiffCount, 0);
+    assert.equal(projection.summary.activeWorkcellWriterLeaseCount, 0);
+    assert.equal(projection.summary.resultCount, 0);
+    assert.equal(JSON.stringify(projection).includes('/private/repo'), false);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
