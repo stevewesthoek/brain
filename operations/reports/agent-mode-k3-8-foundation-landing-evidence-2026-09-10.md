@@ -168,9 +168,16 @@ runbooks, roadmap/progress, and all prior K1–K3.7 evidence:
 - tools/scripts/repos.sh
 - tools/scripts/sessions.sh
 
+### 22520454 — docs(agent-mode): close K3.8 landing gate
+
+Committed 2 explicit paths:
+
+- operations/specs/agent-mode-runtime-roadmap.md
+- docs/product/agent-mode-progress.md
+
 ## Post-landing state
 
-Immediately after the four landing commits:
+Immediately after the five foundation/doc landing commits:
 
     git status --short
     modified=0
@@ -180,10 +187,14 @@ No expected implementation file disappeared. The completed foundation is
 reproducible from Git history and no required Agent Mode implementation
 remains accidentally untracked.
 
+The evidence receipt itself was committed as 807511a3 and did not change the
+foundation or reintroduce dirty state.
+
 ## Rollback and recovery
 
 Rollback is recoverable with reviewed inverse commits in reverse order:
 
+    22520454
     350aaea9
     ecf6a4cf
     f8a0cd75
