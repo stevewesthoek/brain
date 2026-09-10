@@ -533,3 +533,45 @@ observer projection exposes safe CI state and scheduler source origin. Evidence:
 `operations/reports/agent-mode-k4-1-c1-ci-event-source-evidence-2026-09-10.md`.
 K4 remains in progress. Next task: **K4.1-C2 — Event-Source Closure Audit and
 K4.2 Readiness Gate**. Do not start it automatically.
+
+## K4.1-C2 EventSource closure and K4.2 boundary
+
+K4.1-C2 is complete and K4.1 is closed. The four source types are
+`git.repository.revision`, `brain.task.lifecycle`, `infrastructure.host-health`,
+and `ci.workflow-run`. They share the finite `EventSourceAdapter` lifecycle and
+existing transactional source watermark, but keep their correct cursor forms:
+Git SHA ancestry, lifecycle event sequence, bounded health channel state, and
+bounded CI provider cursor/run-attempt state.
+
+The combined source pass registers and processes at most 16 sources, emits at
+most 100 events per source, and times out an injected observation after 15
+seconds. The global source-pass ceiling is therefore 1,600 events; the
+scheduler heartbeat/tick separately processes at most 64 queue items. Sources
+are processed in deterministic source-ID order in a full pass, so a failing or
+backlogged source cannot starve another source within the registered bound.
+Each source bootstraps quietly, advances only after transactional ingestion,
+preserves its watermark on failure, and remains destination-separated from
+the scheduler rows it creates. Disabled sources retain state and re-enable from
+their cursor; changed immutable identity conflicts rather than inheriting
+another cursor.
+
+The observer exposes bounded safe source state and typed scheduler origin for
+all four classes. The fixed Git subprocess is read-only, fixed-argv, and
+non-shell. There is no model/runtime/worker dispatch, provider network client,
+webhook, listener, watcher, daemon, CI log/artifact/YAML reader, or second
+event store. Evidence:
+`operations/reports/agent-mode-k4-1-c2-event-source-closure-evidence-2026-09-10.md`.
+
+K4.2 is conditionally ready for policy-only work. The frozen scheduler-event
+input is the bounded envelope `eventId`, `eventType`, `source`, `occurredAt`,
+`receivedAt`, nullable `causationId`, nullable `correlationId`, bounded
+`deduplicationKey`, `payloadVersion`, bounded typed `payload`, deadline and
+not-before, plus delivery attempt/status identity. K4.2 must not need provider
+credentials, raw provider data, Git access, or mutable source internals. It
+must require explicit root-goal binding where applicable, check durable task /
+run cancellation before admission, and add the global/root admission-deny
+seam before any worker creation. No root goal is inferred from source events.
+
+K4 remains in progress. Exact next task: **K4.2-A — AgentSpawnPolicy Domain,
+Static Role Templates and Deterministic Spawn Admission**. Do not start it
+automatically.

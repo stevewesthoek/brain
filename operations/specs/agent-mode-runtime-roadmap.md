@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4 remains in progress, and K4.1-C2 is not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4 remains in progress, and K4.2 is not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -794,7 +794,7 @@ covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
-**Status:** K4.0 and K4.1-A complete; K4 remains in progress; K4.1-B and dynamic workers not started
+**Status:** K4.0 and K4.1 complete; K4 remains in progress; K4.2 and dynamic workers not started
 
 ### K4.0 — deterministic event queue, scheduler tick, and no-op heartbeat
 
@@ -887,6 +887,38 @@ origin metadata. Evidence:
 
 K4 remains in progress. Exact next task: **K4.1-C2 — Event-Source Closure
 Audit and K4.2 Readiness Gate**. Do not start it automatically.
+
+### K4.1-C2 — Event-Source Closure Audit and K4.2 Readiness Gate
+
+K4.1-C2 is complete. The four-source observation layer is closed on the
+existing `EventSourceAdapter` contract: Git uses immutable commit ancestry,
+lifecycle uses append-only event sequence, host health uses bounded semantic
+binding state, and CI uses a bounded provider cursor plus run/attempt state.
+Each source bootstraps without historical flood, emits finite typed scheduler
+events, preserves its cursor transactionally, isolates failures, and remains
+restart-safe. The combined poll is bounded to 16 registered/processed sources,
+up to 100 emitted events per source, and a 15-second observation timeout; its
+maximum source-pass event volume is therefore 1,600, while scheduler ticks
+remain independently capped at 64 items. The full enabled set is observed in
+deterministic source order, so one source cannot starve another within the
+registered bound.
+
+The closure audit proves disabled-source retention/re-enable behavior, identity
+drift conflict, payload and metadata inertness, observer reconstruction,
+combined restart, scheduler destination-only routing, and no model/runtime or
+worker behavior. The fixed Git subprocess remains read-only, fixed-argv,
+non-shell. No webhook, listener, watcher, daemon, network client, CI logs,
+artifacts, or workflow YAML was added. Evidence:
+`operations/reports/agent-mode-k4-1-c2-event-source-closure-evidence-2026-09-10.md`.
+
+K4.1 is **COMPLETE**. K4 remains **IN PROGRESS**. K4.2 readiness is
+**CONDITIONALLY READY FOR POLICY-ONLY WORK**: K4.2-A may consume the frozen
+scheduler-event envelope and bounded typed payload, but must require an
+explicit root-goal binding when one exists, check durable task/run cancellation
+state, and add a deterministic global/root admission-deny (kill-switch) seam
+before any worker creation. No root goal is fabricated from source events.
+Exact next task: **K4.2-A — AgentSpawnPolicy Domain, Static Role Templates and
+Deterministic Spawn Admission**. Do not start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

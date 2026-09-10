@@ -24,6 +24,8 @@ export const CI_WORKFLOW_RUN_SOURCE = 'ci.workflow-run' as const;
 export const CI_WORKFLOW_STARTED_EVENT = 'ci.workflow.started' as const;
 export const CI_WORKFLOW_COMPLETED_EVENT = 'ci.workflow.completed' as const;
 export const GITHUB_ACTIONS_PROVIDER = 'github-actions' as const;
+export const MAX_EVENT_SOURCES_PER_PASS = 16;
+export const DEFAULT_EVENT_SOURCE_OBSERVATION_TIMEOUT_MS = 15_000;
 
 export type EventSourceObservationContext = {
   sourceId: string;
@@ -705,9 +707,16 @@ type AgentModeEventSourceConfigLike = { sourceId: string; sourceType: string; re
 
 export type EventSourcePollResult = { observedAt: string; considered: number; deferred: number; sources: AgentModeEventSourceObservationResult[] };
 
-export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStateStore; adapters: readonly EventSourceAdapter<GitRepositoryCommitEvent | BrainTaskLifecycleEvent | HostHealthTransitionEvent | CiWorkflowSemanticEvent>[]; now?: string; clock?: () => string; maxSources?: number }): Promise<EventSourcePollResult> {
+async function observeWithTimeout<TEvent>(adapter: EventSourceAdapter<TEvent>, context: EventSourceObservationContext, timeoutMs: number): Promise<EventSourceObservation<TEvent>> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('event source observation timed out')), timeoutMs); });
+  try { return await Promise.race([adapter.observe(context), timeout]); } finally { if (timer) clearTimeout(timer); }
+}
+
+export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStateStore; adapters: readonly EventSourceAdapter<GitRepositoryCommitEvent | BrainTaskLifecycleEvent | HostHealthTransitionEvent | CiWorkflowSemanticEvent>[]; now?: string; clock?: () => string; maxSources?: number; observationTimeoutMs?: number }): Promise<EventSourcePollResult> {
   const observedAt = options.now ?? (options.clock ?? (() => new Date().toISOString()))();
-  const maxSources = Math.max(1, Math.min(16, Math.floor(options.maxSources ?? 16)));
+  const maxSources = Math.max(1, Math.min(MAX_EVENT_SOURCES_PER_PASS, Math.floor(options.maxSources ?? MAX_EVENT_SOURCES_PER_PASS)));
+  const observationTimeoutMs = Math.max(1, Math.min(60_000, Math.floor(options.observationTimeoutMs ?? DEFAULT_EVENT_SOURCE_OBSERVATION_TIMEOUT_MS)));
   const adapters = new Map(options.adapters.map((adapter) => [adapter.sourceId, adapter]));
   const configured = options.store.listEventSources().filter((source) => source.enabled).slice(0, maxSources);
   const sources: AgentModeEventSourceObservationResult[] = [];
@@ -730,12 +739,13 @@ export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStat
       continue;
     }
     try {
-      const observation = await adapter.observe({ sourceId: source.sourceId, previousWatermark: source.watermark ?? source.bootstrapWatermark, observedAt, catchUpLimit: source.catchUpLimit, scanLimit: Math.min(500, source.catchUpLimit * 4), debounceWindowMs: source.debounceWindowMs });
+      const observation = await observeWithTimeout(adapter, { sourceId: source.sourceId, previousWatermark: source.watermark ?? source.bootstrapWatermark, observedAt, catchUpLimit: source.catchUpLimit, scanLimit: Math.min(500, source.catchUpLimit * 4), debounceWindowMs: source.debounceWindowMs }, observationTimeoutMs);
       if (observation.status === 'diverged') {
         options.store.recordEventSourceFailure({ sourceId: source.sourceId, observedAt, status: 'diverged', reason: 'watermark_diverged_from_current_HEAD' });
         sources.push({ sourceId: source.sourceId, status: 'diverged', previousWatermark: observation.previousWatermark, observedWatermark: observation.observedWatermark, emittedEventCount: 0, duplicates: 0, hasMore: false, observedAt, errorReason: 'watermark_diverged_from_current_HEAD' });
         continue;
       }
+      if (!Array.isArray(observation.events) || observation.events.length > source.catchUpLimit) throw new Error('source emitted event batch exceeds configured bound');
       const events = observation.events.map((event) => toSchedulerEvent(source, event, observedAt));
       const cooldownNotBefore = source.cooldownWindowMs > 0 ? new Date(Date.parse(observedAt) + source.cooldownWindowMs).toISOString() : null;
       const ingested = options.store.ingestSchedulerEventsAndAdvanceSource({ sourceId: source.sourceId, observedAt, observedWatermark: observation.observedWatermark ?? source.watermark ?? '', events, hasMore: observation.hasMore, cooldownNotBefore });

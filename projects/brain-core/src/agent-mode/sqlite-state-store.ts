@@ -94,6 +94,8 @@ export type AgentModeEventSourceConfig = {
   bootstrapWatermark: string | null;
 };
 
+const MAX_EVENT_SOURCE_REGISTRATIONS = 16;
+
 export type AgentModeEventSourceState = AgentModeEventSourceConfig & {
   status: AgentModeEventSourceStatus;
   watermark: string | null;
@@ -4284,11 +4286,13 @@ export class AgentModeSqliteStateStore {
   upsertEventSource(config: AgentModeEventSourceConfig): 'created' | 'updated' | 'duplicate' | 'conflict' {
     if (!this.hasEventSourceTables) throw new Error('event source tables are unavailable');
     ensureSchedulerText(config.sourceId, 'sourceId', true); ensureSchedulerText(config.sourceType, 'sourceType', true); ensureSchedulerText(config.repositoryRef, 'repositoryRef', true);
-    if (!['git.repository.revision', 'brain.task.lifecycle', 'infrastructure.host-health', 'ci.workflow-run'].includes(config.adapterType) || !Number.isInteger(config.debounceWindowMs) || config.debounceWindowMs < 0 || config.debounceWindowMs > 300_000 || !Number.isInteger(config.cooldownWindowMs) || config.cooldownWindowMs < 0 || config.cooldownWindowMs > 300_000 || !Number.isInteger(config.catchUpLimit) || config.catchUpLimit < 1 || config.catchUpLimit > 100) throw new Error('event source configuration is outside K4.1 bounds');
+    if (!['git.repository.revision', 'brain.task.lifecycle', 'infrastructure.host-health', 'ci.workflow-run'].includes(config.adapterType) || config.sourceType !== config.adapterType || !Number.isInteger(config.debounceWindowMs) || config.debounceWindowMs < 0 || config.debounceWindowMs > 300_000 || !Number.isInteger(config.cooldownWindowMs) || config.cooldownWindowMs < 0 || config.cooldownWindowMs > 300_000 || !Number.isInteger(config.catchUpLimit) || config.catchUpLimit < 1 || config.catchUpLimit > 100) throw new Error('event source configuration is outside K4.1 bounds');
     ensureSchedulerText(config.bootstrapWatermark, 'bootstrapWatermark');
     return this.withTransaction(() => {
       const existing = this.database.prepare('SELECT * FROM agent_mode_event_sources WHERE source_id = ?').get(config.sourceId) as Record<string, unknown> | undefined;
       if (!existing) {
+        const count = this.database.prepare('SELECT COUNT(*) AS count FROM agent_mode_event_sources').get() as { count?: number };
+        if (Number(count.count ?? 0) >= MAX_EVENT_SOURCE_REGISTRATIONS) throw new Error('event source registration limit reached');
         this.database.prepare(`INSERT INTO agent_mode_event_sources
           (source_id,source_type,repository_ref,adapter_type,debounce_window_ms,cooldown_window_ms,catch_up_limit,enabled,bootstrap_watermark,status,catch_up_pending,last_emitted_event_count,failure_attempt_count)
           VALUES (?,?,?,?,?,?,?,?,?,'ready',0,0,0)`).run(config.sourceId, config.sourceType, config.repositoryRef, config.adapterType, config.debounceWindowMs, config.cooldownWindowMs, config.catchUpLimit, config.enabled ? 1 : 0, config.bootstrapWatermark);

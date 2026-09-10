@@ -632,6 +632,30 @@ safe CI state and scheduler origin. Evidence:
 K4 remains **IN PROGRESS**. Exact next task: **K4.1-C2 — Event-Source Closure
 Audit and K4.2 Readiness Gate**. Do not start it automatically.
 
+## Current K4.1-C2 EventSource closure and K4.2 readiness — 2026-09-10
+
+K4.1-C2 is **COMPLETE** and K4.1 is **COMPLETE**. The four source adapters
+share one finite durable contract while retaining source-specific cursor
+authority: Git ancestry, lifecycle sequence, host-health semantic state, and
+CI provider/run-attempt state. Bootstrap, deduplication, failure isolation,
+restart, observer, feedback-loop, disabled-source, identity-drift, and
+malicious-metadata gates passed.
+
+The combined poll is bounded to 16 registered/processed sources, 100 emitted
+events per source, and a 15-second observation timeout, for a maximum 1,600
+source-pass events; scheduler ticks remain capped at 64 items. Deterministic
+full-pass ordering prevents starvation within that registered bound. No
+external network or model call is required; no workers are created. Evidence:
+`operations/reports/agent-mode-k4-1-c2-event-source-closure-evidence-2026-09-10.md`.
+
+K4 remains **IN PROGRESS**. K4.2 is **CONDITIONALLY READY FOR POLICY-ONLY
+WORK**. Its first policy slice must consume only the frozen scheduler-event
+contract, require explicit root-goal binding rather than infer one, check
+durable cancellation state, and establish a deterministic admission-deny seam
+before worker creation. Exact next task: **K4.2-A — AgentSpawnPolicy Domain,
+Static Role Templates and Deterministic Spawn Admission**. Do not start it
+automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not
