@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4 remains in progress, and K4.2 is not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A is complete, K4.2 is in progress, K4 remains in progress, and dynamic workers are not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -917,8 +917,24 @@ scheduler-event envelope and bounded typed payload, but must require an
 explicit root-goal binding when one exists, check durable task/run cancellation
 state, and add a deterministic global/root admission-deny (kill-switch) seam
 before any worker creation. No root goal is fabricated from source events.
-Exact next task: **K4.2-A — AgentSpawnPolicy Domain, Static Role Templates and
-Deterministic Spawn Admission**. Do not start it automatically.
+### K4.2-A — AgentSpawnPolicy Domain, Static Role Templates and Deterministic Spawn Admission
+
+K4.2-A is **COMPLETE** for its policy-only gate. The implementation adds a
+versioned pure `AgentSpawnPolicy` evaluator, static role-template manifest,
+bounded `SpawnRequest`/`SpawnDecision` contracts, deterministic intent keys,
+explicit source/event/capability/scope allowlists, root and parent lineage
+checks, cancellation/deadline gates, finite TTL/depth/budget/step checks, and
+fact-based concurrency/total-creation ceilings. Unknown or unsafe manifests,
+authority read failures, missing roots, and unavailable durable facts deny by
+default. Durable global and root admission controls live in the existing
+SQLite StateStore and are visible only as bounded observer state. The layer
+does not create child Agent records, call ModelGateway, start AgentRuntime,
+reserve slots, or wire live scheduler events to workers. Evidence:
+`operations/reports/agent-mode-k4-2-a-spawn-policy-admission-evidence-2026-09-10.md`.
+
+K4.2 is **IN PROGRESS**. Exact next task: **K4.2-B — Durable Child Agent
+Identity, Atomic Spawn-Slot Reservation and Root Aggregate Limits**. Do not
+start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

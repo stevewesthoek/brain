@@ -143,6 +143,19 @@ export type AgentModeSchedulerClaim = { ownerId: string; fence: number; expiresA
 export type AgentModeSchedulerSettlement = { itemType: 'event' | 'schedule'; itemId: string; ownerId: string; fence: number; now: string };
 export type AgentModeSchedulerFailure = AgentModeSchedulerSettlement & { reason: string; forceDeadLetter?: boolean };
 
+export type AgentModeSpawnAdmissionControl = {
+  scope: 'global' | 'root';
+  rootGoalId: string | null;
+  denied: boolean;
+  reason: string;
+  updatedAt: string;
+};
+
+export type AgentModeSpawnAdmissionControls = {
+  global: AgentModeSpawnAdmissionControl;
+  root?: AgentModeSpawnAdmissionControl;
+};
+
 function schedulerStableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(schedulerStableJson).join(',')}]`;
   if (value && typeof value === 'object') {
@@ -379,6 +392,7 @@ export type AgentModeRecoveryClassification =
   | 'terminal_failure';
 
 export type AgentModePersistenceFailurePoint = 'admission' | 'effect-preparation' | 'receipt' | 'budget-settlement';
+export type AgentModeSpawnReadFailurePoint = 'kill-switch' | 'root-lookup' | 'parent-lookup' | 'cancellation' | 'budget';
 
 export type AgentModeOperationResult = 'created' | 'duplicate' | 'conflict';
 
@@ -1008,6 +1022,7 @@ export class AgentModeSqliteStateStore {
   private readonly database: DatabaseSync;
   private transactionDepth = 0;
   private readonly injectedFailures = new Set<AgentModePersistenceFailurePoint>();
+  private readonly injectedSpawnReadFailures = new Set<AgentModeSpawnReadFailurePoint>();
 
   private readonly readOnly: boolean;
   private readonly hasRuntimePidColumn: boolean;
@@ -1022,6 +1037,7 @@ export class AgentModeSqliteStateStore {
   private readonly hasMergeReceiptTables: boolean;
   private readonly hasSchedulerTables: boolean;
   private readonly hasEventSourceTables: boolean;
+  private readonly hasSpawnAdmissionControlTables: boolean;
 
   constructor(databasePath = defaultAgentModeDatabasePath(), options: { readOnly?: boolean } = {}) {
     this.databasePath = databasePath;
@@ -1056,6 +1072,7 @@ export class AgentModeSqliteStateStore {
         && this.tableExists('agent_mode_source_watermarks')
         && this.tableExists('agent_mode_scheduler_observer');
       this.hasEventSourceTables = this.tableExists('agent_mode_event_sources');
+      this.hasSpawnAdmissionControlTables = this.tableExists('agent_mode_spawn_admission_controls');
       return;
     }
     this.database.exec('PRAGMA foreign_keys = ON;');
@@ -1534,6 +1551,15 @@ export class AgentModeSqliteStateStore {
         last_emitted_event_count INTEGER NOT NULL,
         failure_attempt_count INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS agent_mode_spawn_admission_controls (
+        control_id TEXT PRIMARY KEY,
+        scope TEXT NOT NULL CHECK (scope IN ('global', 'root')),
+        root_goal_id TEXT,
+        denied INTEGER NOT NULL CHECK (denied IN (0, 1)),
+        reason TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE (scope, root_goal_id)
+      );
       INSERT INTO store_meta (key, value) VALUES ('schema_version', '7')
         ON CONFLICT(key) DO NOTHING;
     `);
@@ -1555,6 +1581,7 @@ export class AgentModeSqliteStateStore {
     this.database.prepare("UPDATE store_meta SET value = '7' WHERE key = 'schema_version' AND value IN ('1', '2', '3', '4', '5', '6')").run();
     this.hasSchedulerTables = true;
     this.hasEventSourceTables = true;
+    this.hasSpawnAdmissionControlTables = true;
   }
 
   static openExisting(databasePath = defaultAgentModeDatabasePath()): AgentModeSqliteStateStore | undefined {
@@ -1680,6 +1707,56 @@ export class AgentModeSqliteStateStore {
 
   injectPersistenceFailureOnce(point: AgentModePersistenceFailurePoint): void {
     this.injectedFailures.add(point);
+  }
+
+  injectSpawnReadFailureOnce(point: AgentModeSpawnReadFailurePoint): void {
+    this.injectedSpawnReadFailures.add(point);
+  }
+
+  consumeSpawnReadFailure(point: AgentModeSpawnReadFailurePoint): void {
+    if (!this.injectedSpawnReadFailures.delete(point)) return;
+    throw new Error(`injected spawn authority read failure at ${point}`);
+  }
+
+  setSpawnAdmissionControl(input: AgentModeSpawnAdmissionControl): void {
+    if (this.readOnly || !this.hasSpawnAdmissionControlTables) throw new Error('spawn admission controls are unavailable');
+    if (!input.updatedAt || !Number.isFinite(Date.parse(input.updatedAt)) || !input.reason || input.reason.length > 128) throw new Error('invalid spawn admission control');
+    if (input.scope === 'global' && input.rootGoalId !== null) throw new Error('global control cannot bind a root goal');
+    if (input.scope === 'root' && !input.rootGoalId) throw new Error('root control requires a root goal');
+    const controlId = input.scope === 'global' ? 'global' : `root:${input.rootGoalId}`;
+    this.database.prepare(`
+      INSERT INTO agent_mode_spawn_admission_controls (control_id, scope, root_goal_id, denied, reason, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(control_id) DO UPDATE SET denied = excluded.denied, reason = excluded.reason, updated_at = excluded.updated_at
+    `).run(controlId, input.scope, input.rootGoalId, input.denied ? 1 : 0, input.reason, input.updatedAt);
+  }
+
+  getSpawnAdmissionControls(rootGoalId: string | null): AgentModeSpawnAdmissionControls {
+    if (!this.hasSpawnAdmissionControlTables) throw new Error('spawn admission controls are unavailable');
+    this.consumeSpawnReadFailure('kill-switch');
+    const map = (row: Record<string, unknown>): AgentModeSpawnAdmissionControl => ({
+      scope: row.scope as AgentModeSpawnAdmissionControl['scope'],
+      rootGoalId: row.root_goal_id === null || row.root_goal_id === undefined ? null : String(row.root_goal_id),
+      denied: Number(row.denied) === 1,
+      reason: String(row.reason),
+      updatedAt: String(row.updated_at),
+    });
+    const globalRow = this.database.prepare("SELECT * FROM agent_mode_spawn_admission_controls WHERE control_id = 'global'").get() as Record<string, unknown> | undefined;
+    const global: AgentModeSpawnAdmissionControl = globalRow ? map(globalRow) : { scope: 'global', rootGoalId: null, denied: false, reason: 'default-open', updatedAt: new Date(0).toISOString() };
+    if (!rootGoalId) return { global };
+    const rootRow = this.database.prepare('SELECT * FROM agent_mode_spawn_admission_controls WHERE control_id = ?').get(`root:${rootGoalId}`) as Record<string, unknown> | undefined;
+    return rootRow ? { global, root: map(rootRow) } : { global };
+  }
+
+  listSpawnAdmissionControls(): AgentModeSpawnAdmissionControl[] {
+    if (!this.hasSpawnAdmissionControlTables) return [];
+    return (this.database.prepare('SELECT * FROM agent_mode_spawn_admission_controls ORDER BY scope, root_goal_id').all() as Array<Record<string, unknown>>).map((row) => ({
+      scope: row.scope as AgentModeSpawnAdmissionControl['scope'],
+      rootGoalId: row.root_goal_id === null || row.root_goal_id === undefined ? null : String(row.root_goal_id),
+      denied: Number(row.denied) === 1,
+      reason: String(row.reason),
+      updatedAt: String(row.updated_at),
+    }));
   }
 
   private failIfInjected(point: AgentModePersistenceFailurePoint): void {

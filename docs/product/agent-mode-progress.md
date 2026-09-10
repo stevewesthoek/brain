@@ -648,13 +648,34 @@ full-pass ordering prevents starvation within that registered bound. No
 external network or model call is required; no workers are created. Evidence:
 `operations/reports/agent-mode-k4-1-c2-event-source-closure-evidence-2026-09-10.md`.
 
-K4 remains **IN PROGRESS**. K4.2 is **CONDITIONALLY READY FOR POLICY-ONLY
-WORK**. Its first policy slice must consume only the frozen scheduler-event
-contract, require explicit root-goal binding rather than infer one, check
-durable cancellation state, and establish a deterministic admission-deny seam
-before worker creation. Exact next task: **K4.2-A — AgentSpawnPolicy Domain,
-Static Role Templates and Deterministic Spawn Admission**. Do not start it
-automatically.
+K4 remains **IN PROGRESS**. K4.2-A is now **COMPLETE** for its policy-only
+gate, and K4.2 is **IN PROGRESS**. Exact next task: **K4.2-B — Durable Child
+Agent Identity, Atomic Spawn-Slot Reservation and Root Aggregate Limits**. Do
+not start it automatically.
+
+## Current K4.2-A deterministic spawn admission — 2026-09-10
+
+K4.2-A is **COMPLETE**. The pure policy layer consumes only a bounded,
+pre-normalized scheduler event request and evaluates versioned policy and
+static role-template manifests with explicit source/event/capability/scope
+allowlists. It enforces root-goal binding, same-root parent lineage,
+cancellation, durable global/root kill switches, finite TTL/depth, deadline,
+fact-based concurrency and total-creation ceilings, and root/role/policy
+budget and step ceilings. Unknown policy/template/capability/scope, malformed
+manifests, and unavailable authority facts deny by default. Spawn intent keys
+are deterministic and exclude prompts, payloads, commands, credentials,
+provider responses, and model identity. The existing StateStore persists the
+global/root control seam and the observer exposes only bounded persisted
+control state.
+
+The focused K4.2-A matrix passes 63 tests. No Agent, child task, runtime,
+ModelGateway call, worker, reservation, live scheduler wiring, or network
+call was added. Evidence:
+`operations/reports/agent-mode-k4-2-a-spawn-policy-admission-evidence-2026-09-10.md`.
+
+K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-B — Durable Child Agent
+Identity, Atomic Spawn-Slot Reservation and Root Aggregate Limits**. Do not
+start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 

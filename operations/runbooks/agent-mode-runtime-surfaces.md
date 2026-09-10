@@ -572,6 +572,29 @@ must require explicit root-goal binding where applicable, check durable task /
 run cancellation before admission, and add the global/root admission-deny
 seam before any worker creation. No root goal is inferred from source events.
 
-K4 remains in progress. Exact next task: **K4.2-A — AgentSpawnPolicy Domain,
-Static Role Templates and Deterministic Spawn Admission**. Do not start it
-automatically.
+## K4.2-A deterministic spawn admission
+
+K4.2-A is complete for its policy-only boundary. Use
+`projects/brain-core/src/agent-mode/spawn-policy.ts` as the pure evaluator
+boundary. Callers must first normalize a durable K4.1 scheduler event into the
+bounded `SpawnRequest`; the evaluator does not inspect provider adapters,
+payload internals, Git, prompts, commands, credentials, or model responses.
+Unknown policy/template versions, unknown capabilities, unsafe scopes,
+missing root binding, cross-root parents, cancellation, expired deadlines,
+ceiling violations, and unavailable authority facts return `DENY` with a stable
+reason code. The deterministic `spawnIntentKey` excludes request identity so a
+retry of the same logical request remains the same intent while a scope or
+lineage change conflicts.
+
+Global and root admission-deny controls are durable rows in the existing
+StateStore (`setSpawnAdmissionControl` / `getSpawnAdmissionControls`) and
+survive reopen. A control read failure is `AUTHORITY_UNAVAILABLE`; there is no
+allow fallback. Observer output exposes at most 32 persisted control rows and
+does not invent recent decisions. Concurrency and total-creation checks read
+authoritative facts but are deliberately non-atomic; K4.2-B owns slot
+reservation and aggregate enforcement.
+
+K4.2-A creates no child Agent records, workers, runtime processes, model calls,
+reservations, or live scheduler-to-spawn wiring. K4 remains in progress. Exact
+next task: **K4.2-B — Durable Child Agent Identity, Atomic Spawn-Slot
+Reservation and Root Aggregate Limits**. Do not start it automatically.
