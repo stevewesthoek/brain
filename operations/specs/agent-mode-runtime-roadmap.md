@@ -948,6 +948,25 @@ and must not be inferred from Office.
 
 Evidence: operations/reports/agent-mode-k3-7-operational-baseline-evidence.md.
 
+## Phase K3.8 — reviewed foundation landing boundary
+
+**Status:** complete for the 2026-09-10 landing; K4 ready but not started
+
+The completed K0–K3.5 foundation was reconciled against the K3.7 inventory,
+secret-scanned, validated, reviewed, and landed in five local logical commits.
+The final worktree is clean and the implementation is reproducible from Git
+history. No unrelated path, generated binary, credential, private runtime
+state, or K4 implementation was included.
+
+The exact commit grouping, SHA list, validation results, rollback guidance,
+remaining-status result, and K4 decision are recorded in:
+
+operations/reports/agent-mode-k3-8-foundation-landing-evidence-2026-09-10.md
+
+K4 remains a separately authorized phase. The exact next task is K4.0 —
+deterministic event/scheduler foundation and no-op heartbeat. Do not start it
+automatically.
+
 ## Local non-text inference classification
 
 The cloud-only decision applies to general-purpose/text LLM reasoning, not to all

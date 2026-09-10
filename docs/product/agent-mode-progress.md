@@ -520,6 +520,21 @@ GLM-5, Opus 4.6, and Codex. K4 prerequisites are a clean reviewed landing
 boundary and completion of the read-only MacBook inventory. Evidence:
 `operations/reports/agent-mode-k3-7-operational-baseline-evidence.md`.
 
+## Current K3.8 reviewed foundation landing — 2026-09-10
+
+K3.8 is complete. The classified K0–K3.5 implementation and evidence were
+reconciled, secret-scanned, validated, reviewed, and landed in five logical
+local commits. The final worktree is clean, no unrelated state was discarded,
+and no K4 implementation was added.
+
+Foundation landing is **COMPLETE** and K4 is **READY TO START**, subject to
+its own scoped authorization/design review. The exact commit paths and SHAs,
+rollback guidance, validation counts, and final status are recorded in:
+`operations/reports/agent-mode-k3-8-foundation-landing-evidence-2026-09-10.md`.
+
+Exact next task: K4.0 — deterministic event/scheduler foundation and no-op
+heartbeat. Do not start K4.0 automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not
