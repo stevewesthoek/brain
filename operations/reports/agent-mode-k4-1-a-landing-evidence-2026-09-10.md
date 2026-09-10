@@ -38,7 +38,7 @@ uses a fixed-argument, read-only subprocess boundary.
 
 - `ca062711` — `feat(agent-mode): land durable scheduler and git event source`
 - `679514fa` — `docs(agent-mode): record K4 event foundation`
-- Final evidence update commit: this report's follow-up commit.
+- `e256ea89` — `docs(agent-mode): finalize K4.1-A landing evidence`
 
 ## Post-landing verification
 
