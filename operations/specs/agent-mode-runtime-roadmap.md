@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A is complete, K4.2 is in progress, K4 remains in progress, and dynamic workers are not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A and K4.2-B are complete, K4.2 is in progress, K4 remains in progress, and dynamic workers are not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -794,7 +794,7 @@ covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
-**Status:** K4.0 and K4.1 complete; K4 remains in progress; K4.2 and dynamic workers not started
+**Status:** K4.0 and K4.1 complete; K4.2-A and K4.2-B complete; K4 remains in progress; K4.2-C and dynamic workers not started
 
 ### K4.0 — deterministic event queue, scheduler tick, and no-op heartbeat
 
@@ -932,9 +932,36 @@ does not create child Agent records, call ModelGateway, start AgentRuntime,
 reserve slots, or wire live scheduler events to workers. Evidence:
 `operations/reports/agent-mode-k4-2-a-spawn-policy-admission-evidence-2026-09-10.md`.
 
-K4.2 is **IN PROGRESS**. Exact next task: **K4.2-B — Durable Child Agent
-Identity, Atomic Spawn-Slot Reservation and Root Aggregate Limits**. Do not
-start it automatically.
+K4.2-B is now complete. K4.2 remains **IN PROGRESS**. Exact next task:
+**K4.2-C — Runtime Binding and Child Task/Run Assignment**. Do not start it
+automatically.
+
+### K4.2-B — Durable Child Agent Identity, Atomic Spawn-Slot Reservation and Root Aggregate Limits
+
+K4.2-B is **COMPLETE**. The existing SQLite StateStore now persists bounded
+child Agent identity and immutable creation material: role-template and policy
+versions, exact parent/task/run and root lineage, source event, authoritative
+depth, repository/resource scope, capability snapshot, requested/reserved child
+step and cost ceilings, creation time, expiry, and truthful reserved/retired/
+cancelled/expired status. The controller derives the child ID; no runtime,
+model, task, run, or attempt is created by this gate.
+
+`reserveSpawnAndCreateChild` is the single atomic transaction boundary. It
+rechecks the durable kill switches, root and parent lineage/cancellation,
+deadline, policy/template, active and total ceilings, and root aggregate
+reservations before a guarded root-row update, child insert, bounded lifecycle
+event, durable receipt, and commit. The root aggregate row is the sole source
+of active/total counters and reserved child step/cost allocation. Durable
+`spawnIntentKey` receipts make retries idempotent, conflicting immutable
+material fails closed, retirement releases active allocation without reducing
+monotonic total creation count, and bounded expiry reconciliation is
+restart-safe and race-safe. Observer output exposes only bounded child/root
+state without prompts, raw provider data, or secrets. Evidence:
+`operations/reports/agent-mode-k4-2-b-child-agent-reservation-evidence-2026-09-10.md`.
+
+K4.2-B focused tests pass 47/47 and the K4.0/K4.1/K4.2-A regression set passes
+189/189. K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-C — Runtime
+Binding and Child Task/Run Assignment**. Do not start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

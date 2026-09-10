@@ -74,6 +74,7 @@ export type AgentModeObserverProjection = {
   hostHealthStates: Array<Record<string, unknown>>;
   ciWorkflowStates: Array<Record<string, unknown>>;
   spawnAdmissionControls: Array<Record<string, unknown>>;
+  spawnRootStates: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -169,7 +170,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [],
     };
   }
 
@@ -264,6 +265,23 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
       reason: control.reason,
       updatedAt: control.updatedAt,
     }));
+    const spawnRootStates = store.listSpawnRootStates().slice(0, 32).map((root) => ({
+      rootGoalId: root.rootGoalId,
+      policyId: root.policyId,
+      policyVersion: root.policyVersion,
+      maxConcurrentChildren: root.maxConcurrentChildren,
+      maxTotalChildCreations: root.maxTotalChildCreations,
+      maxAggregateChildSteps: root.maxAggregateChildSteps,
+      maxAggregateChildCost: root.maxAggregateChildCost,
+      activeChildren: root.activeChildren,
+      totalChildCreations: root.totalChildCreations,
+      reservedChildSteps: root.reservedChildSteps,
+      reservedChildCost: root.reservedChildCost,
+      depth: root.depth,
+      cancellation: root.cancellation,
+      deadline: root.deadline,
+      updatedAt: root.updatedAt,
+    }));
     const results = store.listRecentEvents(500).filter((event) => event.eventType === 'jarvis_result_returned').map((event) => {
       const payload = event.payload;
       const usage = payload.usage && typeof payload.usage === 'object' ? payload.usage as Record<string, unknown> : {};
@@ -352,7 +370,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls,
+      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates,
     };
   } finally {
     store.close();

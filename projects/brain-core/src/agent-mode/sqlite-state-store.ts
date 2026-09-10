@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 import type { EffectKind, OperationReceipt } from './agent-mode-contracts.js';
 import type { RuntimeProcessIdentity } from './runtime-process-identity.js';
+import { evaluateSpawnAdmission, getRoleTemplate, getSpawnPolicy, spawnCreationMaterialHash, spawnIntentKey, type SpawnAuthorityFacts, type SpawnDecision, type SpawnRequest } from './spawn-policy.js';
 
 export type AgentModeAgent = {
   agentId: string;
@@ -12,8 +13,145 @@ export type AgentModeAgent = {
   role: string;
   displayName: string;
   policyId: string;
-  status: 'active' | 'paused' | 'retired';
+  status: 'active' | 'paused' | 'retired' | 'reserved' | 'cancelled' | 'expired';
+  roleTemplateId?: string;
+  roleTemplateVersion?: number;
+  policyVersion?: number;
+  parentAgentId?: string | null;
+  parentTaskId?: string | null;
+  parentRunId?: string | null;
+  rootGoalId?: string;
+  spawnIntentKey?: string;
+  sourceEventId?: string;
+  depth?: number;
+  repositoryScope?: string | null;
+  resourceScope?: string | null;
+  capabilitySetHash?: string;
+  capabilities?: readonly string[];
+  requestedChildSteps?: number;
+  reservedChildSteps?: number;
+  requestedChildCost?: number;
+  reservedChildCost?: number;
+  childCreatedAt?: string;
+  expiresAt?: string;
 };
+
+export type AgentModeSpawnRootState = {
+  rootGoalId: string;
+  policyId: string;
+  policyVersion: number;
+  maxConcurrentChildren: number;
+  maxTotalChildCreations: number;
+  maxAggregateChildSteps: number;
+  maxAggregateChildCost: number;
+  activeChildren: number;
+  totalChildCreations: number;
+  reservedChildSteps: number;
+  reservedChildCost: number;
+  depth: number;
+  cancellation: 'active' | 'requested' | 'cancelled';
+  deadline: string;
+  delegableCapabilities: readonly string[];
+  repositoryScopes: readonly string[];
+  resourceScopes: readonly string[];
+  updatedAt: string;
+};
+
+export type AgentModeSpawnCreationReceipt = {
+  spawnIntentKey: string;
+  childAgentId: string;
+  rootGoalId: string;
+  parentAgentId: string | null;
+  parentTaskId: string | null;
+  parentRunId: string | null;
+  roleTemplateId: string;
+  roleTemplateVersion: number;
+  policyId: string;
+  policyVersion: number;
+  activeSlotReserved: boolean;
+  stepAllocation: number;
+  costAllocation: number;
+  depth: number;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type AgentModeSpawnCreationResult =
+  | { result: 'created' | 'duplicate'; receipt: AgentModeSpawnCreationReceipt }
+  | { result: 'denied' | 'conflict'; reasonCode: string };
+
+export type AgentModeSpawnCreationInput = {
+  request: SpawnRequest;
+  admission: SpawnDecision;
+  facts: SpawnAuthorityFacts;
+};
+
+function mapAgentRow(row: Record<string, unknown>): AgentModeAgent {
+  let capabilities: unknown;
+  try { capabilities = typeof row.capabilities_json === 'string' ? JSON.parse(row.capabilities_json) as unknown : undefined; } catch { capabilities = undefined; }
+  return {
+    agentId: String(row.agent_id),
+    agentKind: row.agent_kind as AgentModeAgent['agentKind'],
+    role: String(row.role),
+    displayName: String(row.display_name),
+    policyId: String(row.policy_id),
+    status: row.status as AgentModeAgent['status'],
+    ...(typeof row.role_template_id === 'string' ? { roleTemplateId: row.role_template_id } : {}),
+    ...(Number.isSafeInteger(row.role_template_version) ? { roleTemplateVersion: Number(row.role_template_version) } : {}),
+    ...(Number.isSafeInteger(row.policy_version) ? { policyVersion: Number(row.policy_version) } : {}),
+    ...(Object.prototype.hasOwnProperty.call(row, 'parent_agent_id') ? { parentAgentId: row.parent_agent_id === null ? null : String(row.parent_agent_id) } : {}),
+    ...(Object.prototype.hasOwnProperty.call(row, 'parent_task_id') ? { parentTaskId: row.parent_task_id === null ? null : String(row.parent_task_id) } : {}),
+    ...(Object.prototype.hasOwnProperty.call(row, 'parent_run_id') ? { parentRunId: row.parent_run_id === null ? null : String(row.parent_run_id) } : {}),
+    ...(typeof row.root_goal_id === 'string' ? { rootGoalId: row.root_goal_id } : {}),
+    ...(typeof row.spawn_intent_key === 'string' ? { spawnIntentKey: row.spawn_intent_key } : {}),
+    ...(typeof row.source_event_id === 'string' ? { sourceEventId: row.source_event_id } : {}),
+    ...(Number.isSafeInteger(row.spawn_depth) ? { depth: Number(row.spawn_depth) } : {}),
+    ...(Object.prototype.hasOwnProperty.call(row, 'repository_scope') ? { repositoryScope: row.repository_scope === null ? null : String(row.repository_scope) } : {}),
+    ...(Object.prototype.hasOwnProperty.call(row, 'resource_scope') ? { resourceScope: row.resource_scope === null ? null : String(row.resource_scope) } : {}),
+    ...(typeof row.capability_set_hash === 'string' ? { capabilitySetHash: row.capability_set_hash } : {}),
+    ...(Array.isArray(capabilities) ? { capabilities: capabilities.filter((value): value is string => typeof value === 'string') } : {}),
+    ...(Number.isSafeInteger(row.requested_child_steps) ? { requestedChildSteps: Number(row.requested_child_steps) } : {}),
+    ...(Number.isSafeInteger(row.reserved_child_steps) ? { reservedChildSteps: Number(row.reserved_child_steps) } : {}),
+    ...(typeof row.requested_child_cost === 'number' ? { requestedChildCost: Number(row.requested_child_cost) } : {}),
+    ...(typeof row.reserved_child_cost === 'number' ? { reservedChildCost: Number(row.reserved_child_cost) } : {}),
+    ...(typeof row.child_created_at === 'string' ? { childCreatedAt: row.child_created_at } : {}),
+    ...(typeof row.expires_at === 'string' ? { expiresAt: row.expires_at } : {}),
+  };
+}
+
+function stringArrayJson(values: readonly string[]): string {
+  return JSON.stringify([...values]);
+}
+
+function parseStringArray(value: unknown): string[] {
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) as unknown : undefined;
+    return Array.isArray(parsed) ? parsed.filter((entry): entry is string => typeof entry === 'string') : [];
+  } catch { return []; }
+}
+
+function mapSpawnRootRow(row: Record<string, unknown>): AgentModeSpawnRootState {
+  return {
+    rootGoalId: String(row.root_goal_id),
+    policyId: String(row.policy_id),
+    policyVersion: Number(row.policy_version),
+    maxConcurrentChildren: Number(row.max_concurrent_children),
+    maxTotalChildCreations: Number(row.max_total_child_creations),
+    maxAggregateChildSteps: Number(row.max_aggregate_child_steps),
+    maxAggregateChildCost: Number(row.max_aggregate_child_cost),
+    activeChildren: Number(row.active_children),
+    totalChildCreations: Number(row.total_child_creations),
+    reservedChildSteps: Number(row.reserved_child_steps),
+    reservedChildCost: Number(row.reserved_child_cost),
+    depth: Number(row.depth),
+    cancellation: row.cancellation as AgentModeSpawnRootState['cancellation'],
+    deadline: String(row.deadline),
+    delegableCapabilities: parseStringArray(row.delegable_capabilities_json),
+    repositoryScopes: parseStringArray(row.repository_scopes_json),
+    resourceScopes: parseStringArray(row.resource_scopes_json),
+    updatedAt: String(row.updated_at),
+  };
+}
 
 export type AgentModeEvent = {
   eventId: string;
@@ -1076,6 +1214,7 @@ export class AgentModeSqliteStateStore {
       return;
     }
     this.database.exec('PRAGMA foreign_keys = ON;');
+    this.database.exec('PRAGMA busy_timeout = 5000;');
     this.database.exec('PRAGMA journal_mode = WAL;');
     this.database.exec('PRAGMA synchronous = NORMAL;');
     this.database.exec(`
@@ -1089,7 +1228,54 @@ export class AgentModeSqliteStateStore {
         role TEXT NOT NULL,
         display_name TEXT NOT NULL,
         policy_id TEXT NOT NULL,
-        status TEXT NOT NULL
+        status TEXT NOT NULL,
+        role_template_id TEXT,
+        role_template_version INTEGER,
+        policy_version INTEGER,
+        parent_agent_id TEXT,
+        parent_task_id TEXT,
+        parent_run_id TEXT,
+        root_goal_id TEXT,
+        spawn_intent_key TEXT UNIQUE,
+        source_event_id TEXT,
+        spawn_depth INTEGER CHECK (spawn_depth IS NULL OR spawn_depth >= 0),
+        repository_scope TEXT,
+        resource_scope TEXT,
+        capability_set_hash TEXT,
+        capabilities_json TEXT,
+        requested_child_steps INTEGER CHECK (requested_child_steps IS NULL OR requested_child_steps >= 0),
+        reserved_child_steps INTEGER CHECK (reserved_child_steps IS NULL OR reserved_child_steps >= 0),
+        requested_child_cost REAL CHECK (requested_child_cost IS NULL OR requested_child_cost >= 0),
+        reserved_child_cost REAL CHECK (reserved_child_cost IS NULL OR reserved_child_cost >= 0),
+        child_created_at TEXT,
+        expires_at TEXT
+      );
+      CREATE TABLE IF NOT EXISTS agent_mode_spawn_roots (
+        root_goal_id TEXT PRIMARY KEY,
+        policy_id TEXT NOT NULL,
+        policy_version INTEGER NOT NULL CHECK (policy_version > 0),
+        max_concurrent_children INTEGER NOT NULL CHECK (max_concurrent_children >= 0),
+        max_total_child_creations INTEGER NOT NULL CHECK (max_total_child_creations >= 0),
+        max_aggregate_child_steps INTEGER NOT NULL CHECK (max_aggregate_child_steps >= 0),
+        max_aggregate_child_cost REAL NOT NULL CHECK (max_aggregate_child_cost >= 0),
+        active_children INTEGER NOT NULL DEFAULT 0 CHECK (active_children >= 0),
+        total_child_creations INTEGER NOT NULL DEFAULT 0 CHECK (total_child_creations >= 0),
+        reserved_child_steps INTEGER NOT NULL DEFAULT 0 CHECK (reserved_child_steps >= 0),
+        reserved_child_cost REAL NOT NULL DEFAULT 0 CHECK (reserved_child_cost >= 0),
+        depth INTEGER NOT NULL CHECK (depth >= 0),
+        cancellation TEXT NOT NULL CHECK (cancellation IN ('active', 'requested', 'cancelled')),
+        deadline TEXT NOT NULL,
+        delegable_capabilities_json TEXT NOT NULL,
+        repository_scopes_json TEXT NOT NULL,
+        resource_scopes_json TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS agent_mode_spawn_receipts (
+        spawn_intent_key TEXT PRIMARY KEY,
+        child_agent_id TEXT NOT NULL UNIQUE REFERENCES agents(agent_id),
+        immutable_material_hash TEXT NOT NULL,
+        receipt_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS events (
         event_id TEXT PRIMARY KEY,
@@ -1568,6 +1754,7 @@ export class AgentModeSqliteStateStore {
     this.migrateOutboxTable();
     this.migrateRunsTable();
     this.migrateReviewTables();
+    this.migrateAgentTable();
     this.hasRuntimePidColumn = true;
     this.hasRuntimeIdentityColumns = true;
     this.hasWorkcellTables = true;
@@ -1636,6 +1823,21 @@ export class AgentModeSqliteStateStore {
     if (!columns.some((column) => column.name === 'runtime_identity')) this.database.exec('ALTER TABLE runs ADD COLUMN runtime_identity TEXT');
   }
 
+  private migrateAgentTable(): void {
+    const columns = this.database.prepare('PRAGMA table_info(agents)').all() as Array<{ name?: string }>;
+    const existing = new Set(columns.map((column) => column.name));
+    const additions: Record<string, string> = {
+      role_template_id: 'TEXT', role_template_version: 'INTEGER', policy_version: 'INTEGER',
+      parent_agent_id: 'TEXT', parent_task_id: 'TEXT', parent_run_id: 'TEXT', root_goal_id: 'TEXT',
+      spawn_intent_key: 'TEXT', source_event_id: 'TEXT', spawn_depth: 'INTEGER',
+      repository_scope: 'TEXT', resource_scope: 'TEXT', capability_set_hash: 'TEXT', capabilities_json: 'TEXT',
+      requested_child_steps: 'INTEGER', reserved_child_steps: 'INTEGER', requested_child_cost: 'REAL', reserved_child_cost: 'REAL',
+      child_created_at: 'TEXT', expires_at: 'TEXT',
+    };
+    for (const [name, type] of Object.entries(additions)) if (!existing.has(name)) this.database.exec(`ALTER TABLE agents ADD COLUMN ${name} ${type}`);
+    this.database.exec('CREATE UNIQUE INDEX IF NOT EXISTS agents_spawn_intent_key ON agents(spawn_intent_key) WHERE spawn_intent_key IS NOT NULL');
+  }
+
   private tableHasColumn(table: string, columnName: string): boolean {
     const columns = this.database.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: string }>;
     return columns.some((column) => column.name === columnName);
@@ -1683,26 +1885,226 @@ export class AgentModeSqliteStateStore {
   getAgent(agentId: string): AgentModeAgent | undefined {
     const row = this.database.prepare('SELECT * FROM agents WHERE agent_id = ?').get(agentId) as Record<string, unknown> | undefined;
     if (!row) return undefined;
-    return {
-      agentId: String(row.agent_id),
-      agentKind: row.agent_kind as AgentModeAgent['agentKind'],
-      role: String(row.role),
-      displayName: String(row.display_name),
-      policyId: String(row.policy_id),
-      status: row.status as AgentModeAgent['status'],
-    };
+    return mapAgentRow(row);
   }
 
   listAgents(): AgentModeAgent[] {
     const rows = this.database.prepare('SELECT * FROM agents ORDER BY agent_id').all() as Array<Record<string, unknown>>;
-    return rows.map((row) => ({
-      agentId: String(row.agent_id),
-      agentKind: row.agent_kind as AgentModeAgent['agentKind'],
-      role: String(row.role),
-      displayName: String(row.display_name),
-      policyId: String(row.policy_id),
-      status: row.status as AgentModeAgent['status'],
-    }));
+    return rows.map(mapAgentRow);
+  }
+
+  getSpawnRootState(rootGoalId: string): AgentModeSpawnRootState | undefined {
+    if (!this.tableExists('agent_mode_spawn_roots')) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_spawn_roots WHERE root_goal_id = ?').get(rootGoalId) as Record<string, unknown> | undefined;
+    return row ? mapSpawnRootRow(row) : undefined;
+  }
+
+  listSpawnRootStates(): AgentModeSpawnRootState[] {
+    if (!this.tableExists('agent_mode_spawn_roots')) return [];
+    const rows = this.database.prepare('SELECT * FROM agent_mode_spawn_roots ORDER BY root_goal_id').all() as Array<Record<string, unknown>>;
+    return rows.map(mapSpawnRootRow);
+  }
+
+  getSpawnCreationReceipt(spawnIntentKey: string): AgentModeSpawnCreationReceipt | undefined {
+    if (!this.tableExists('agent_mode_spawn_receipts')) return undefined;
+    const row = this.database.prepare('SELECT receipt_json FROM agent_mode_spawn_receipts WHERE spawn_intent_key = ?').get(spawnIntentKey) as { receipt_json?: string } | undefined;
+    if (!row?.receipt_json) return undefined;
+    try { return JSON.parse(row.receipt_json) as AgentModeSpawnCreationReceipt; } catch { return undefined; }
+  }
+
+  setSpawnRootCancellation(rootGoalId: string, cancellation: AgentModeSpawnRootState['cancellation'], updatedAt: string): AgentModeOperationResult {
+    if (this.readOnly || !this.tableExists('agent_mode_spawn_roots')) throw new Error('spawn roots are unavailable');
+    if (!rootGoalId || !['active', 'requested', 'cancelled'].includes(cancellation) || !Number.isFinite(Date.parse(updatedAt))) throw new Error('invalid root cancellation state');
+    return this.withTransaction(() => {
+      const result = this.database.prepare('UPDATE agent_mode_spawn_roots SET cancellation = ?, updated_at = ? WHERE root_goal_id = ?').run(cancellation, updatedAt, rootGoalId);
+      if (result.changes !== 1) return 'conflict';
+      this.appendEventIfAbsent({ eventId: `spawn-root-cancellation:${rootGoalId}:${updatedAt}`, entityType: 'spawn_root', entityId: rootGoalId, eventType: 'spawn_root_cancellation_changed', occurredAt: updatedAt, payload: { cancellation } });
+      return 'created';
+    });
+  }
+
+  setSpawnRootDeadline(rootGoalId: string, deadline: string, updatedAt: string): AgentModeOperationResult {
+    if (this.readOnly || !this.tableExists('agent_mode_spawn_roots')) throw new Error('spawn roots are unavailable');
+    if (!rootGoalId || !Number.isFinite(Date.parse(deadline)) || !Number.isFinite(Date.parse(updatedAt))) throw new Error('invalid root deadline');
+    return this.withTransaction(() => {
+      const result = this.database.prepare('UPDATE agent_mode_spawn_roots SET deadline = ?, updated_at = ? WHERE root_goal_id = ?').run(deadline, updatedAt, rootGoalId);
+      if (result.changes !== 1) return 'conflict';
+      this.appendEventIfAbsent({ eventId: `spawn-root-deadline:${rootGoalId}:${updatedAt}`, entityType: 'spawn_root', entityId: rootGoalId, eventType: 'spawn_root_deadline_changed', occurredAt: updatedAt, payload: { deadline } });
+      return 'created';
+    });
+  }
+
+  reserveSpawnAndCreateChild(input: AgentModeSpawnCreationInput): AgentModeSpawnCreationResult {
+    try {
+      return this.withTransaction(() => this.reserveSpawnAndCreateChildInternal(input));
+    } catch {
+      return { result: 'denied', reasonCode: 'AUTHORITY_UNAVAILABLE' };
+    }
+  }
+
+  retireChildAgent(childAgentId: string, reason: 'retired' | 'cancelled' | 'expired', retiredAt: string): { result: 'retired' | 'duplicate' | 'conflict'; childAgentId: string } {
+    try {
+      return this.withTransaction(() => this.retireChildAgentInternal(childAgentId, reason, retiredAt));
+    } catch {
+      return { result: 'conflict', childAgentId };
+    }
+  }
+
+  reconcileExpiredChildAgents(now: string, limit = 64): string[] {
+    try {
+      return this.withTransaction(() => this.reconcileExpiredChildAgentsInternal(now, limit));
+    } catch {
+      return [];
+    }
+  }
+
+  private reconcileExpiredChildAgentsInternal(now: string, limit: number): string[] {
+    if (!Number.isFinite(Date.parse(now)) || !Number.isSafeInteger(limit) || limit < 1 || limit > 64) return [];
+    const rows = this.database.prepare(`
+      SELECT agent_id FROM agents
+      WHERE spawn_intent_key IS NOT NULL AND status = 'reserved' AND expires_at <= ?
+      ORDER BY expires_at, agent_id LIMIT ?
+    `).all(now, limit) as Array<{ agent_id?: string }>;
+    const retired: string[] = [];
+    for (const row of rows) {
+      const result = this.retireChildAgentInternal(String(row.agent_id), 'expired', now);
+      if (result.result === 'retired') retired.push(result.childAgentId);
+    }
+    return retired;
+  }
+
+  private retireChildAgentInternal(childAgentId: string, reason: 'retired' | 'cancelled' | 'expired', retiredAt: string): { result: 'retired' | 'duplicate' | 'conflict'; childAgentId: string } {
+    if (!childAgentId || !Number.isFinite(Date.parse(retiredAt))) return { result: 'conflict', childAgentId };
+    const child = this.getAgent(childAgentId);
+    if (!child?.spawnIntentKey || !child.rootGoalId || child.status === 'active' || child.status === 'paused') return { result: 'conflict', childAgentId };
+    if (child.status !== 'reserved') return { result: 'duplicate', childAgentId };
+    const root = this.getSpawnRootState(child.rootGoalId);
+    if (!root || root.activeChildren < 1 || root.reservedChildSteps < (child.reservedChildSteps ?? 0) || root.reservedChildCost < (child.reservedChildCost ?? 0)) throw new Error('spawn root aggregate is inconsistent');
+    const result = this.database.prepare(`
+      UPDATE agent_mode_spawn_roots SET
+        active_children = active_children - 1,
+        reserved_child_steps = reserved_child_steps - ?,
+        reserved_child_cost = reserved_child_cost - ?,
+        updated_at = ?
+      WHERE root_goal_id = ? AND active_children > 0
+        AND reserved_child_steps >= ? AND reserved_child_cost >= ?
+    `).run(child.reservedChildSteps ?? 0, child.reservedChildCost ?? 0, retiredAt, child.rootGoalId, child.reservedChildSteps ?? 0, child.reservedChildCost ?? 0);
+    if (result.changes !== 1) throw new Error('spawn root aggregate release failed');
+    this.database.prepare('UPDATE agents SET status = ?, reserved_child_steps = 0, reserved_child_cost = 0 WHERE agent_id = ? AND status = \'reserved\'').run(reason, childAgentId);
+    this.appendEventIfAbsent({ eventId: `child-agent-retired:${childAgentId}:${reason}`, entityType: 'agent', entityId: childAgentId, eventType: 'child_agent_retired', occurredAt: retiredAt, payload: { childAgentId, spawnIntentKey: child.spawnIntentKey, rootGoalId: child.rootGoalId, reason, releasedStepAllocation: child.reservedChildSteps ?? 0, releasedCostAllocation: child.reservedChildCost ?? 0 } });
+    return { result: 'retired', childAgentId };
+  }
+
+  private reserveSpawnAndCreateChildInternal(input: AgentModeSpawnCreationInput): AgentModeSpawnCreationResult {
+    const { request, admission, facts } = input;
+    const intent = request.schemaVersion === 1 ? spawnIntentKey(request) : null;
+    const materialHash = request.schemaVersion === 1 ? spawnCreationMaterialHash(request) : null;
+    if (admission.result !== 'ALLOW' || !intent || admission.spawnIntentKey !== intent || admission.creationMaterialHash !== materialHash) return { result: 'denied', reasonCode: 'INVALID_REQUEST' };
+    const existingRow = this.database.prepare('SELECT immutable_material_hash, receipt_json FROM agent_mode_spawn_receipts WHERE spawn_intent_key = ?').get(intent) as { immutable_material_hash?: string; receipt_json?: string } | undefined;
+    if (existingRow) {
+      if (existingRow.immutable_material_hash !== materialHash) return { result: 'conflict', reasonCode: 'INVALID_REQUEST' };
+      try { return { result: 'duplicate', receipt: JSON.parse(String(existingRow.receipt_json)) as AgentModeSpawnCreationReceipt }; } catch { return { result: 'conflict', reasonCode: 'INVALID_REQUEST' }; }
+    }
+    const policy = getSpawnPolicy(request.policyId, request.policyVersion);
+    const template = getRoleTemplate(request.roleTemplateId, request.roleTemplateVersion);
+    if (!policy || !template) return { result: 'denied', reasonCode: 'POLICY_NOT_FOUND' };
+    if (!request.rootGoalId || !facts.root || facts.root.rootGoalId !== request.rootGoalId) return { result: 'denied', reasonCode: 'ROOT_MISMATCH' };
+    this.reconcileExpiredChildAgentsInternal(facts.now, 64);
+    const controls = this.getSpawnAdmissionControls(request.rootGoalId);
+    let root = this.getSpawnRootState(request.rootGoalId);
+    if (!root) {
+      const maxAggregateChildSteps = Math.min(policy.rootBudgetRules.maxAggregateChildSteps, facts.root.remainingSteps);
+      const maxAggregateChildCost = Math.min(policy.rootBudgetRules.maxAggregateChildBudget, facts.root.remainingBudget);
+      this.database.prepare(`
+        INSERT INTO agent_mode_spawn_roots (
+          root_goal_id, policy_id, policy_version, max_concurrent_children,
+          max_total_child_creations, max_aggregate_child_steps, max_aggregate_child_cost,
+          depth, cancellation, deadline, delegable_capabilities_json,
+          repository_scopes_json, resource_scopes_json, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(request.rootGoalId, policy.policyId, policy.version, policy.maxConcurrentChildren, policy.maxTotalChildCreations, maxAggregateChildSteps, maxAggregateChildCost, facts.root.depth, facts.root.cancellation, facts.root.deadline, stringArrayJson(facts.root.delegableCapabilities), stringArrayJson(facts.root.repositoryScopes), stringArrayJson(facts.root.resourceScopes), facts.now);
+      root = this.getSpawnRootState(request.rootGoalId);
+    }
+    if (!root || root.policyId !== policy.policyId || root.policyVersion !== policy.version) return { result: 'denied', reasonCode: 'PARENT_INVALID' };
+    const rootTask = this.getTask(request.rootGoalId);
+    const rootCancellation = rootTask?.status === 'cancelled' ? 'cancelled' : root.cancellation;
+    const freshFacts: SpawnAuthorityFacts = {
+      now: facts.now,
+      globalKillSwitchDenied: controls.global.denied,
+      rootKillSwitchDenied: controls.root?.denied ?? false,
+      authority: { killSwitch: true, rootLookup: true, parentLookup: true, cancellation: true, budget: true },
+      root: {
+        rootGoalId: root.rootGoalId, depth: root.depth, activeChildren: root.activeChildren, totalChildCreations: root.totalChildCreations,
+        cancellation: rootCancellation, remainingSteps: root.maxAggregateChildSteps - root.reservedChildSteps, remainingBudget: root.maxAggregateChildCost - root.reservedChildCost,
+        deadline: root.deadline, delegableCapabilities: root.delegableCapabilities, repositoryScopes: root.repositoryScopes, resourceScopes: root.resourceScopes,
+      },
+      parent: this.freshParentFacts(request),
+    };
+    const freshDecision = evaluateSpawnAdmission(request, freshFacts);
+    if (freshDecision.result !== 'ALLOW') return { result: 'denied', reasonCode: freshDecision.reasonCode };
+    const update = this.database.prepare(`
+      UPDATE agent_mode_spawn_roots SET
+        active_children = active_children + 1,
+        total_child_creations = total_child_creations + 1,
+        reserved_child_steps = reserved_child_steps + ?,
+        reserved_child_cost = reserved_child_cost + ?,
+        updated_at = ?
+      WHERE root_goal_id = ? AND policy_id = ? AND policy_version = ?
+        AND cancellation = 'active' AND deadline > ?
+        AND active_children < max_concurrent_children
+        AND total_child_creations < max_total_child_creations
+        AND reserved_child_steps + ? <= max_aggregate_child_steps
+        AND reserved_child_cost + ? <= max_aggregate_child_cost
+    `).run(request.requestedStepBudget, request.requestedCostBudget, facts.now, request.rootGoalId, policy.policyId, policy.version, facts.now, request.requestedStepBudget, request.requestedCostBudget);
+    if (update.changes !== 1) return { result: 'denied', reasonCode: this.classifyCurrentSpawnDenial(request.rootGoalId, request.requestedStepBudget, request.requestedCostBudget) };
+    const childAgentId = `agent:child:${createHash('sha256').update(intent).digest('hex')}`;
+    const expiresAt = new Date(Date.parse(request.requestedAt) + request.requestedTtl).toISOString();
+    this.database.prepare(`
+      INSERT INTO agents (
+        agent_id, agent_kind, role, display_name, policy_id, status,
+        role_template_id, role_template_version, policy_version,
+        parent_agent_id, parent_task_id, parent_run_id, root_goal_id,
+        spawn_intent_key, source_event_id, spawn_depth, repository_scope,
+        resource_scope, capability_set_hash, capabilities_json,
+        requested_child_steps, reserved_child_steps, requested_child_cost,
+        reserved_child_cost, child_created_at, expires_at
+      ) VALUES (?, 'worker', ?, ?, ?, 'reserved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(childAgentId, template.roleTemplateId, template.displayName, policy.policyId, template.roleTemplateId, template.version, policy.version, request.parentAgentId, request.parentTaskId, request.parentRunId, request.rootGoalId, intent, request.sourceEventId, request.requestedDepth, request.requestedScope.repositoryRef, request.requestedScope.resourceRef, materialHash, stringArrayJson(request.requestedCapabilities), request.requestedStepBudget, request.requestedStepBudget, request.requestedCostBudget, request.requestedCostBudget, facts.now, expiresAt);
+    const receipt: AgentModeSpawnCreationReceipt = {
+      spawnIntentKey: intent, childAgentId, rootGoalId: request.rootGoalId, parentAgentId: request.parentAgentId, parentTaskId: request.parentTaskId, parentRunId: request.parentRunId,
+      roleTemplateId: template.roleTemplateId, roleTemplateVersion: template.version, policyId: policy.policyId, policyVersion: policy.version,
+      activeSlotReserved: true, stepAllocation: request.requestedStepBudget, costAllocation: request.requestedCostBudget, depth: request.requestedDepth, createdAt: facts.now, expiresAt,
+    };
+    const receiptJson = JSON.stringify(receipt);
+    if (receiptJson.length > 8_192) throw new Error('spawn receipt exceeds bounded size');
+    this.database.prepare('INSERT INTO agent_mode_spawn_receipts (spawn_intent_key, child_agent_id, immutable_material_hash, receipt_json, created_at) VALUES (?, ?, ?, ?, ?)').run(intent, childAgentId, materialHash, receiptJson, facts.now);
+    this.appendEventIfAbsent({ eventId: `child-agent-created:${intent}`, entityType: 'agent', entityId: childAgentId, eventType: 'child_agent_created', occurredAt: facts.now, payload: { childAgentId, spawnIntentKey: intent, rootGoalId: request.rootGoalId, parentAgentId: request.parentAgentId, parentTaskId: request.parentTaskId, parentRunId: request.parentRunId, roleTemplateId: template.roleTemplateId, roleTemplateVersion: template.version, sourceEventId: request.sourceEventId, policyId: policy.policyId, policyVersion: policy.version, depth: request.requestedDepth } });
+    return { result: 'created', receipt };
+  }
+
+  private freshParentFacts(request: SpawnRequest): SpawnAuthorityFacts['parent'] {
+    if (!request.parentAgentId || !request.parentTaskId || !request.parentRunId) return null;
+    const parent = this.getAgent(request.parentAgentId);
+    const task = this.getTask(request.parentTaskId);
+    const run = this.getRun(request.parentRunId);
+    if (!parent || !task || !run || run.taskId !== task.taskId || run.agentId !== parent.agentId || !parent.rootGoalId || parent.depth === undefined || !parent.roleTemplateId || parent.policyVersion === undefined) return null;
+    const attemptCancelled = this.listAttempts().some((attempt) => attempt.runId === run.runId && attempt.cancellationStatus !== 'running');
+    return {
+      agentId: parent.agentId, taskId: task.taskId, runId: run.runId, rootGoalId: parent.rootGoalId, depth: parent.depth,
+      cancellation: task.status === 'cancelled' || run.status === 'cancelled' || attemptCancelled ? 'cancelled' : 'active',
+      delegableCapabilities: parent.capabilities ?? [], repositoryScopes: parent.repositoryScope ? [parent.repositoryScope] : [], resourceScopes: parent.resourceScope ? [parent.resourceScope] : [],
+    };
+  }
+
+  private classifyCurrentSpawnDenial(rootGoalId: string, requestedSteps: number, requestedCost: number): string {
+    const root = this.getSpawnRootState(rootGoalId);
+    if (!root) return 'AUTHORITY_UNAVAILABLE';
+    if (root.cancellation !== 'active') return 'CANCELLED';
+    if (root.activeChildren >= root.maxConcurrentChildren) return 'CONCURRENCY_EXCEEDED';
+    if (root.totalChildCreations >= root.maxTotalChildCreations) return 'TOTAL_CREATIONS_EXCEEDED';
+    if (root.reservedChildSteps + requestedSteps > root.maxAggregateChildSteps) return 'STEP_BUDGET_EXCEEDED';
+    if (root.reservedChildCost + requestedCost > root.maxAggregateChildCost) return 'BUDGET_EXCEEDED';
+    return 'AUTHORITY_UNAVAILABLE';
   }
 
   injectPersistenceFailureOnce(point: AgentModePersistenceFailurePoint): void {

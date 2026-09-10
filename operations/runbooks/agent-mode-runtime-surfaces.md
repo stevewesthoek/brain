@@ -595,6 +595,38 @@ authoritative facts but are deliberately non-atomic; K4.2-B owns slot
 reservation and aggregate enforcement.
 
 K4.2-A creates no child Agent records, workers, runtime processes, model calls,
-reservations, or live scheduler-to-spawn wiring. K4 remains in progress. Exact
-next task: **K4.2-B — Durable Child Agent Identity, Atomic Spawn-Slot
-Reservation and Root Aggregate Limits**. Do not start it automatically.
+reservations, or live scheduler-to-spawn wiring. K4.2-B is now complete. K4
+remains in progress. Exact next task: **K4.2-C — Runtime Binding and Child
+Task/Run Assignment**. Do not start it automatically.
+
+## K4.2-B durable child identity and atomic reservation
+
+K4.2-B is complete. `reserveSpawnAndCreateChild` is the only creation
+operation for this gate and runs under the existing StateStore `BEGIN
+IMMEDIATE` transaction. It rechecks the current durable controls, root and
+parent lineage/cancellation, policy/template versions, deadline, active and
+total limits, and root aggregate reservations rather than trusting an earlier
+ALLOW decision. The guarded root aggregate update, child Agent row, bounded
+`child_agent_created` event, and durable spawn receipt commit or roll back as
+one unit.
+
+Child rows carry controller-owned deterministic identity, exact root and
+parent/task/run references, role/policy versions, source event, depth,
+repository/resource scope, capability hash/set, requested/reserved step and
+cost ceilings, creation time, expiry, and truthful reserved/retired/cancelled/
+expired status. `retireChildAgent` is idempotent and releases active slot and
+unused allocation without decrementing total creation count.
+
+The `agent_mode_spawn_roots` row is the authoritative root aggregate source;
+total creation count is monotonic and includes retired/cancelled/expired
+children. `agent_mode_spawn_receipts` makes a durable `spawnIntentKey` retry
+return the original receipt and child while conflicting immutable material
+fails closed. `reconcileExpiredChildAgents` is bounded to 64 rows per pass and
+uses the same transaction, so expiry races cannot double-release a slot.
+Observer output exposes bounded safe child/root aggregate state only. This
+gate creates no child task/run/attempt, runtime, model call, worker process,
+live scheduler wiring, Workcell, Git write, or network path. Evidence:
+`operations/reports/agent-mode-k4-2-b-child-agent-reservation-evidence-2026-09-10.md`.
+
+K4.2 remains in progress. Exact next task: **K4.2-C — Runtime Binding and
+Child Task/Run Assignment**. Do not start it automatically.

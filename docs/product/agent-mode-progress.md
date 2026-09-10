@@ -648,10 +648,9 @@ full-pass ordering prevents starvation within that registered bound. No
 external network or model call is required; no workers are created. Evidence:
 `operations/reports/agent-mode-k4-1-c2-event-source-closure-evidence-2026-09-10.md`.
 
-K4 remains **IN PROGRESS**. K4.2-A is now **COMPLETE** for its policy-only
-gate, and K4.2 is **IN PROGRESS**. Exact next task: **K4.2-B — Durable Child
-Agent Identity, Atomic Spawn-Slot Reservation and Root Aggregate Limits**. Do
-not start it automatically.
+K4 remains **IN PROGRESS**. K4.2-A and K4.2-B are now **COMPLETE** for their
+bounded gates, and K4.2 is **IN PROGRESS**. Exact next task: **K4.2-C — Runtime
+Binding and Child Task/Run Assignment**. Do not start it automatically.
 
 ## Current K4.2-A deterministic spawn admission — 2026-09-10
 
@@ -673,9 +672,37 @@ ModelGateway call, worker, reservation, live scheduler wiring, or network
 call was added. Evidence:
 `operations/reports/agent-mode-k4-2-a-spawn-policy-admission-evidence-2026-09-10.md`.
 
-K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-B — Durable Child Agent
-Identity, Atomic Spawn-Slot Reservation and Root Aggregate Limits**. Do not
-start it automatically.
+K4.2-B is now complete. K4.2 remains **IN PROGRESS**. Exact next task:
+**K4.2-C — Runtime Binding and Child Task/Run Assignment**. Do not start it
+automatically.
+
+## Current K4.2-B durable child reservation — 2026-09-10
+
+K4.2-B is **COMPLETE**. The existing SQLite StateStore now persists bounded
+child Agent identity and immutable creation material with exact root/parent
+lineage, policy and role-template versions, authoritative depth, scope and
+capability snapshots, child step/cost allocation, expiry, and truthful
+reserved/retired/cancelled/expired status. Child identity is controller-owned;
+this gate creates no child task, run, attempt, runtime, worker process, or
+model call.
+
+The StateStore exposes one atomic `reserveSpawnAndCreateChild` transaction. It
+rechecks durable kill switches, cancellation, lineage, deadlines, policy
+versions, active/total ceilings, and root aggregate step/cost reservations
+inside the transaction. A root aggregate row is the authoritative counter and
+allocation source; child insert, counter update, bounded event, and durable
+receipt commit together. Spawn-intent retries return the same receipt and
+child, conflicting immutable material fails closed, retirement releases active
+allocation without decrementing total creations, and bounded expiry
+reconciliation is idempotent across restart and races. Observer output is
+bounded and excludes prompts, raw provider data, and secrets.
+
+The focused K4.2-B matrix passes 47 tests. The build and K4.0/K4.1/K4.2-A
+regression set passes 189 tests. Evidence:
+`operations/reports/agent-mode-k4-2-b-child-agent-reservation-evidence-2026-09-10.md`.
+
+K4.2 remains **IN PROGRESS**. Exact next task: **K4.2-C — Runtime Binding and
+Child Task/Run Assignment**. Do not start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 

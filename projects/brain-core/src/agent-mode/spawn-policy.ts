@@ -167,6 +167,7 @@ export type SpawnDecision = {
   policyVersion: number | null;
   roleTemplateId: string | null;
   roleTemplateVersion: number | null;
+  creationMaterialHash: string | null;
   evaluatedAt: string;
 };
 
@@ -334,8 +335,31 @@ export function spawnIntentKey(request: SpawnRequest): string {
   return `spawn-intent:sha256:${createHash('sha256').update(canonical(input)).digest('hex')}`;
 }
 
+export function spawnCreationMaterialHash(request: SpawnRequest): string {
+  const input = {
+    rootGoalId: request.rootGoalId,
+    parentAgentId: request.parentAgentId,
+    parentTaskId: request.parentTaskId,
+    parentRunId: request.parentRunId,
+    roleTemplateId: request.roleTemplateId,
+    roleTemplateVersion: request.roleTemplateVersion,
+    policyId: request.policyId,
+    policyVersion: request.policyVersion,
+    sourceEventId: request.sourceEventId,
+    sourceId: request.sourceId,
+    requestedScope: request.requestedScope,
+    requestedCapabilities: [...request.requestedCapabilities].sort(),
+    requestedTtl: request.requestedTtl,
+    requestedStepBudget: request.requestedStepBudget,
+    requestedCostBudget: request.requestedCostBudget,
+    deadline: request.deadline,
+    requestedDepth: request.requestedDepth,
+  };
+  return createHash('sha256').update(canonical(input)).digest('hex');
+}
+
 function deny(reasonCode: SpawnDecisionReasonCode, request: Partial<SpawnRequest>, evaluatedAt: string, intent: string | null = null): SpawnDecision {
-  return { result: DENY, reasonCode, spawnIntentKey: intent, policyId: request.policyId ?? null, policyVersion: request.policyVersion ?? null, roleTemplateId: request.roleTemplateId ?? null, roleTemplateVersion: request.roleTemplateVersion ?? null, evaluatedAt };
+  return { result: DENY, reasonCode, spawnIntentKey: intent, policyId: request.policyId ?? null, policyVersion: request.policyVersion ?? null, roleTemplateId: request.roleTemplateId ?? null, roleTemplateVersion: request.roleTemplateVersion ?? null, creationMaterialHash: null, evaluatedAt };
 }
 
 function requestValid(request: SpawnRequest): boolean {
@@ -401,7 +425,7 @@ export function evaluateSpawnAdmission(
   if (facts.root.activeChildren >= policy.maxConcurrentChildren) return deny('CONCURRENCY_EXCEEDED', request, facts.now, intent);
   if (facts.root.totalChildCreations >= policy.maxTotalChildCreations) return deny('TOTAL_CREATIONS_EXCEEDED', request, facts.now, intent);
   if (request.requestedStepBudget > Math.min(template.maxSteps, policy.maxChildSteps, facts.root.remainingSteps, policy.rootBudgetRules.maxAggregateChildSteps) || request.requestedCostBudget > Math.min(template.maxBudget, policy.maxChildBudget, facts.root.remainingBudget, policy.rootBudgetRules.maxAggregateChildBudget)) return deny(request.requestedStepBudget > Math.min(template.maxSteps, policy.maxChildSteps, facts.root.remainingSteps, policy.rootBudgetRules.maxAggregateChildSteps) ? 'STEP_BUDGET_EXCEEDED' : 'BUDGET_EXCEEDED', request, facts.now, intent);
-  return { result: 'ALLOW', reasonCode: 'ALLOWED', spawnIntentKey: intent, policyId: policy.policyId, policyVersion: policy.version, roleTemplateId: template.roleTemplateId, roleTemplateVersion: template.version, evaluatedAt: facts.now };
+  return { result: 'ALLOW', reasonCode: 'ALLOWED', spawnIntentKey: intent, policyId: policy.policyId, policyVersion: policy.version, roleTemplateId: template.roleTemplateId, roleTemplateVersion: template.version, creationMaterialHash: spawnCreationMaterialHash(request), evaluatedAt: facts.now };
 }
 
 export function evaluateSpawnAdmissionWithDurableControls(
