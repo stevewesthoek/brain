@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0 and K4.1-A are complete, K4 remains in progress, and K4.1-B is not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, and K4.1-B2 are complete, K4 remains in progress, and K4.1-C is not started
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -846,6 +846,23 @@ Evidence: `operations/reports/agent-mode-k4-1-b1-lifecycle-event-source-evidence
 
 Exact next task: **K4.1-B2 — Host-Health Event Source Using Existing
 Infrastructure Health Bindings**. Do not start it automatically.
+
+### K4.1-B2 — Host-Health Event Source Using Existing Infrastructure Health Bindings
+
+K4.1-B2 is complete for its bounded observation gate. The
+`infrastructure.host-health` adapter consumes normalized observations from the
+existing infrastructure health plane, verifies canonical host resources and
+provider bindings, recomputes freshness with the existing helpers, and keeps
+per-binding semantic state in a bounded versioned source-owned watermark.
+Bootstrap establishes a baseline without an alert flood; only meaningful
+status, freshness, or condition-code transitions emit bounded
+`infrastructure.host-health.changed` scheduler events. Multiple providers stay
+provenance-distinct, missing/invalid evidence fails closed, and scheduler rows
+cannot recursively feed the source. Evidence:
+`operations/reports/agent-mode-k4-1-b2-host-health-event-source-evidence-2026-09-10.md`.
+
+K4 remains in progress. Exact next task: **K4.1-C — CI Event Source and K4.1
+Event-Source Closure Audit**. Do not start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

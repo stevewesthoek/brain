@@ -86,7 +86,7 @@ export type AgentModeEventSourceConfig = {
   sourceId: string;
   sourceType: string;
   repositoryRef: string;
-  adapterType: 'git.repository.revision' | 'brain.task.lifecycle';
+  adapterType: 'git.repository.revision' | 'brain.task.lifecycle' | 'infrastructure.host-health';
   debounceWindowMs: number;
   cooldownWindowMs: number;
   catchUpLimit: number;
@@ -4284,7 +4284,7 @@ export class AgentModeSqliteStateStore {
   upsertEventSource(config: AgentModeEventSourceConfig): 'created' | 'updated' | 'duplicate' | 'conflict' {
     if (!this.hasEventSourceTables) throw new Error('event source tables are unavailable');
     ensureSchedulerText(config.sourceId, 'sourceId', true); ensureSchedulerText(config.sourceType, 'sourceType', true); ensureSchedulerText(config.repositoryRef, 'repositoryRef', true);
-    if (!['git.repository.revision', 'brain.task.lifecycle'].includes(config.adapterType) || !Number.isInteger(config.debounceWindowMs) || config.debounceWindowMs < 0 || config.debounceWindowMs > 300_000 || !Number.isInteger(config.cooldownWindowMs) || config.cooldownWindowMs < 0 || config.cooldownWindowMs > 300_000 || !Number.isInteger(config.catchUpLimit) || config.catchUpLimit < 1 || config.catchUpLimit > 100) throw new Error('event source configuration is outside K4.1 bounds');
+    if (!['git.repository.revision', 'brain.task.lifecycle', 'infrastructure.host-health'].includes(config.adapterType) || !Number.isInteger(config.debounceWindowMs) || config.debounceWindowMs < 0 || config.debounceWindowMs > 300_000 || !Number.isInteger(config.cooldownWindowMs) || config.cooldownWindowMs < 0 || config.cooldownWindowMs > 300_000 || !Number.isInteger(config.catchUpLimit) || config.catchUpLimit < 1 || config.catchUpLimit > 100) throw new Error('event source configuration is outside K4.1 bounds');
     ensureSchedulerText(config.bootstrapWatermark, 'bootstrapWatermark');
     return this.withTransaction(() => {
       const existing = this.database.prepare('SELECT * FROM agent_mode_event_sources WHERE source_id = ?').get(config.sourceId) as Record<string, unknown> | undefined;

@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process';
 import { realpath } from 'node:fs/promises';
+import fs from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import {
@@ -8,6 +9,8 @@ import {
   type AgentModeEventSourceObservationResult,
   type AgentModeSchedulerEventInput,
 } from './sqlite-state-store.js';
+import { computeFreshness, effectiveStatus } from '../adapters/infrastructure-observation-runtime.mjs';
+import { readInfrastructureCatalog, readInfrastructureHealth } from '../adapters/infrastructure-plane.mjs';
 
 const execFile = promisify(execFileCallback);
 
@@ -15,6 +18,8 @@ export const GIT_REPOSITORY_REVISION_SOURCE = 'git.repository.revision' as const
 export const REPOSITORY_COMMIT_OBSERVED_EVENT = 'repository.commit.observed' as const;
 export const BRAIN_TASK_LIFECYCLE_SOURCE = 'brain.task.lifecycle' as const;
 export const TASK_LIFECYCLE_OBSERVED_EVENT = 'task.lifecycle.observed' as const;
+export const INFRASTRUCTURE_HOST_HEALTH_SOURCE = 'infrastructure.host-health' as const;
+export const INFRASTRUCTURE_HOST_HEALTH_CHANGED_EVENT = 'infrastructure.host-health.changed' as const;
 
 export type EventSourceObservationContext = {
   sourceId: string;
@@ -64,6 +69,29 @@ export type BrainTaskLifecycleEvent = {
   runId: string | null;
   attemptId: string | null;
 };
+
+export type HostHealthObservation = {
+  observationId: string;
+  resourceId: string;
+  providerId: string;
+  bindingId: string;
+  observedAt: string;
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+  freshness: 'fresh' | 'stale' | 'unknown';
+  conditionCodes: string[];
+};
+
+export type HostHealthObservationReader = (now: Date) => Promise<{ observations: HostHealthObservation[]; expectedBindingKeys: string[] }>;
+
+export type HostHealthSemanticState = HostHealthObservation & { fingerprint: string; lastTransitionAt: string | null };
+export type HostHealthTransitionEvent = HostHealthObservation & {
+  fingerprint: string;
+  previousStatus: HostHealthObservation['status'];
+  previousFreshness: HostHealthObservation['freshness'];
+  previousConditionCodes: string[];
+};
+
+type HostHealthCursor = { version: 1; scanOffset: number; states: HostHealthSemanticState[] };
 
 export type GitRepositorySourceReader = {
   inspect(repositoryRoot: string): Promise<{ root: string; head: string; ref: string }>;
@@ -228,7 +256,113 @@ export class InternalLifecycleEventSourceAdapter implements EventSourceAdapter<B
   }
 }
 
-function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepositoryCommitEvent | BrainTaskLifecycleEvent, now: string): AgentModeSchedulerEventInput {
+function hostHealthChannelKey(observation: Pick<HostHealthObservation, 'resourceId' | 'providerId' | 'bindingId'>): string {
+  return `${observation.resourceId}|${observation.providerId}|${observation.bindingId}`;
+}
+
+function hostHealthFingerprint(observation: Pick<HostHealthObservation, 'resourceId' | 'providerId' | 'bindingId' | 'status' | 'freshness' | 'conditionCodes'>): string {
+  return JSON.stringify([observation.resourceId, observation.providerId, observation.bindingId, observation.status, observation.freshness, [...observation.conditionCodes].sort()]);
+}
+
+function parseHostHealthCursor(value: string | null): HostHealthCursor {
+  if (!value) return { version: 1, scanOffset: 0, states: [] };
+  let parsed: unknown;
+  try { parsed = JSON.parse(value); } catch { throw new Error('host-health watermark is malformed'); }
+  if (!parsed || typeof parsed !== 'object') throw new Error('host-health watermark is invalid');
+  const cursor = parsed as Partial<HostHealthCursor>;
+  if (cursor.version !== 1 || !Number.isSafeInteger(cursor.scanOffset) || (cursor.scanOffset ?? 0) < 0 || !Array.isArray(cursor.states) || cursor.states.length > 500) throw new Error('host-health watermark schema is invalid');
+  return { version: 1, scanOffset: cursor.scanOffset ?? 0, states: cursor.states as HostHealthSemanticState[] };
+}
+
+function encodeHostHealthCursor(cursor: HostHealthCursor): string {
+  const states = [...cursor.states].sort((left, right) => hostHealthChannelKey(left).localeCompare(hostHealthChannelKey(right))).slice(0, 500);
+  const encoded = JSON.stringify({ version: 1, scanOffset: cursor.scanOffset, states });
+  if (encoded.length > 64 * 1024) throw new Error('host-health watermark exceeds 64 KiB');
+  return encoded;
+}
+
+function safeConditionCodes(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((item): item is string => typeof item === 'string' && item.length > 0 && item.length <= 128))].sort();
+}
+
+export function createInfrastructurePlaneHostHealthReader(root?: string): HostHealthObservationReader {
+  return async (now) => {
+    const health = (root ? readInfrastructureHealth({ root, now }) : readInfrastructureHealth({ now })) as unknown as { runtimeState: string; observations: Array<Record<string, unknown>> };
+    if (health.runtimeState !== 'ok') throw new Error(`normalized infrastructure health snapshot unavailable: ${health.runtimeState}`);
+    const catalog = (root ? readInfrastructureCatalog({ root, now }) : readInfrastructureCatalog({ now })) as unknown as { resources: Array<Record<string, unknown>> };
+    const hostResourceIds = new Set(catalog.resources.filter((resource) => resource.resourceClass === 'host').map((resource) => String(resource.resourceId)));
+    const bindingsPath = path.resolve(root ?? path.resolve(new URL('../../../..', import.meta.url).pathname), 'operations/infrastructure/health/provider-bindings.v1.json');
+    let bindingDocument: unknown;
+    try { bindingDocument = JSON.parse(fs.readFileSync(bindingsPath, 'utf8')); } catch (error) { throw new Error(`infrastructure health bindings unavailable: ${error instanceof Error ? error.message : String(error)}`); }
+    const bindings = bindingDocument && typeof bindingDocument === 'object' && Array.isArray((bindingDocument as { bindings?: unknown }).bindings) ? (bindingDocument as { bindings: Array<Record<string, unknown>> }).bindings : [];
+    const hostBindings = bindings.filter((binding) => hostResourceIds.has(String(binding.resourceId)) && typeof binding.bindingId === 'string' && typeof binding.providerId === 'string');
+    if (!hostBindings.length) throw new Error('no admitted host health bindings exist');
+    const observations: HostHealthObservation[] = [];
+    for (const binding of hostBindings) {
+      const normalized = (health.observations as Array<Record<string, unknown>>).find((candidate) => candidate.resourceId === binding.resourceId && candidate.providerId === binding.providerId);
+      if (!normalized) continue;
+      const freshnessResult = computeFreshness({ observedAt: normalized.observedAt, now, freshnessSeconds: Number(binding.freshnessSeconds), providerState: 'ok' });
+      const freshness = freshnessResult.freshness as HostHealthObservation['freshness'];
+      const conditionCodes = safeConditionCodes(normalized.conditionCodes);
+      if (freshness === 'stale' && !conditionCodes.includes('observation_stale')) conditionCodes.push('observation_stale');
+      if (freshness === 'unknown' && !conditionCodes.includes('observation_unknown')) conditionCodes.push('observation_unknown');
+      conditionCodes.sort();
+      observations.push({ observationId: String(normalized.observationId), resourceId: String(binding.resourceId), providerId: String(binding.providerId), bindingId: String(binding.bindingId), observedAt: String(normalized.observedAt), status: effectiveStatus(String(normalized.status), freshness) as HostHealthObservation['status'], freshness, conditionCodes });
+    }
+    return { observations, expectedBindingKeys: hostBindings.map((binding) => `${binding.resourceId}|${binding.providerId}|${binding.bindingId}`).sort() };
+  };
+}
+
+export class HostHealthEventSourceAdapter implements EventSourceAdapter<HostHealthTransitionEvent> {
+  readonly sourceId: string;
+  readonly sourceType = INFRASTRUCTURE_HOST_HEALTH_SOURCE;
+  private readonly reader: HostHealthObservationReader;
+  private readonly maxBindings: number;
+
+  constructor(options: { reader?: HostHealthObservationReader; root?: string; sourceId?: string; maxBindings?: number } = {}) {
+    this.sourceId = options.sourceId ?? INFRASTRUCTURE_HOST_HEALTH_SOURCE;
+    this.reader = options.reader ?? createInfrastructurePlaneHostHealthReader(options.root);
+    this.maxBindings = Math.max(1, Math.min(500, Math.floor(options.maxBindings ?? 100)));
+  }
+
+  async observe(context: EventSourceObservationContext): Promise<EventSourceObservation<HostHealthTransitionEvent>> {
+    if (context.sourceId !== this.sourceId) throw new Error('event source context identity mismatch');
+    const cursor = parseHostHealthCursor(context.previousWatermark);
+    const result = await this.reader(new Date(context.observedAt));
+    const observations = [...result.observations].sort((left, right) => hostHealthChannelKey(left).localeCompare(hostHealthChannelKey(right)));
+    const expected = new Set(result.expectedBindingKeys);
+    if (observations.some((observation) => !expected.has(hostHealthChannelKey(observation)))) throw new Error('normalized host-health observation has no admitted binding');
+    const observedKeys = new Set(observations.map(hostHealthChannelKey));
+    if (expected.size !== observedKeys.size || [...expected].some((key) => !observedKeys.has(key))) throw new Error('normalized host-health observation is missing an admitted binding');
+    if (context.previousWatermark === null) {
+      const baseline = observations.slice(0, 500).map((observation) => ({ ...observation, fingerprint: hostHealthFingerprint(observation), lastTransitionAt: null }));
+      return { sourceId: this.sourceId, sourceType: this.sourceType, previousWatermark: null, observedWatermark: encodeHostHealthCursor({ version: 1, scanOffset: observations.length > this.maxBindings ? this.maxBindings : 0, states: baseline }), events: [], hasMore: observations.length > this.maxBindings, observedAt: context.observedAt, status: 'bootstrapped' };
+    }
+    const start = observations.length ? Math.min(cursor.scanOffset, observations.length) : 0;
+    const scanned = observations.slice(start, start + this.maxBindings);
+    const stateByKey = new Map(cursor.states.map((state) => [hostHealthChannelKey(state), state]));
+    const events: HostHealthTransitionEvent[] = [];
+    const nextStates = new Map(stateByKey);
+    let stoppedForEmitLimit = false;
+    for (const observation of scanned) {
+      const key = hostHealthChannelKey(observation);
+      const previous = stateByKey.get(key);
+      if (previous && Date.parse(observation.observedAt) < Date.parse(previous.observedAt)) continue;
+      const fingerprint = hostHealthFingerprint(observation);
+      if (!previous) { nextStates.set(key, { ...observation, fingerprint, lastTransitionAt: null }); continue; }
+      if (previous.fingerprint !== fingerprint) {
+        if (events.length >= context.catchUpLimit) { stoppedForEmitLimit = true; break; }
+        events.push({ ...observation, fingerprint, previousStatus: previous.status, previousFreshness: previous.freshness, previousConditionCodes: previous.conditionCodes }); nextStates.set(key, { ...observation, fingerprint, lastTransitionAt: context.observedAt });
+      } else nextStates.set(key, { ...observation, fingerprint, lastTransitionAt: previous.lastTransitionAt });
+    }
+    const hasMore = stoppedForEmitLimit || start + scanned.length < observations.length;
+    const scanOffset = hasMore ? (stoppedForEmitLimit ? start : start + scanned.length) : 0;
+    return { sourceId: this.sourceId, sourceType: this.sourceType, previousWatermark: context.previousWatermark, observedWatermark: encodeHostHealthCursor({ version: 1, scanOffset, states: [...nextStates.values()] }), events, hasMore, observedAt: context.observedAt, status: events.length ? 'advanced' : 'unchanged' };
+  }
+}
+
+function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepositoryCommitEvent | BrainTaskLifecycleEvent | HostHealthTransitionEvent, now: string): AgentModeSchedulerEventInput {
   if ('sourceSequence' in event) return {
     eventId: `${source.sourceId}:${event.sourceEventId}`,
     eventType: TASK_LIFECYCLE_OBSERVED_EVENT,
@@ -240,6 +374,19 @@ function toSchedulerEvent(source: AgentModeEventSourceConfigLike, event: GitRepo
     deduplicationKey: `${source.sourceId}:${event.sourceEventId}:${event.sourceSequence}`,
     payloadVersion: 'k4.0',
     payload: { sourceEventId: event.sourceEventId, sourceSequence: event.sourceSequence, entityType: event.entityType, entityId: event.entityId, lifecycleEventType: event.lifecycleEventType, occurredAt: event.occurredAt, taskId: event.taskId, runId: event.runId, attemptId: event.attemptId },
+    nextEligibleAt: now, deadline: null, maxAttempts: 3,
+  };
+  if ('previousStatus' in event) return {
+    eventId: `${source.sourceId}:${event.bindingId}:${event.observationId}:${event.observedAt}`,
+    eventType: INFRASTRUCTURE_HOST_HEALTH_CHANGED_EVENT,
+    source: source.sourceId,
+    occurredAt: event.observedAt,
+    receivedAt: now,
+    causationId: event.bindingId,
+    correlationId: event.resourceId,
+    deduplicationKey: `${source.sourceId}:${event.bindingId}:${event.fingerprint}`,
+    payloadVersion: 'k4.0',
+    payload: { resourceId: event.resourceId, providerId: event.providerId, bindingId: event.bindingId, previousStatus: event.previousStatus, currentStatus: event.status, previousFreshness: event.previousFreshness, currentFreshness: event.freshness, previousConditionCodes: event.previousConditionCodes, conditionCodes: event.conditionCodes, sourceObservationId: event.observationId, observedAt: event.observedAt, evaluatedAt: now },
     nextEligibleAt: now, deadline: null, maxAttempts: 3,
   };
   return {
@@ -263,7 +410,7 @@ type AgentModeEventSourceConfigLike = { sourceId: string; sourceType: string; re
 
 export type EventSourcePollResult = { observedAt: string; considered: number; deferred: number; sources: AgentModeEventSourceObservationResult[] };
 
-export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStateStore; adapters: readonly EventSourceAdapter<GitRepositoryCommitEvent | BrainTaskLifecycleEvent>[]; now?: string; clock?: () => string; maxSources?: number }): Promise<EventSourcePollResult> {
+export async function pollEventSourcesOnce(options: { store: AgentModeSqliteStateStore; adapters: readonly EventSourceAdapter<GitRepositoryCommitEvent | BrainTaskLifecycleEvent | HostHealthTransitionEvent>[]; now?: string; clock?: () => string; maxSources?: number }): Promise<EventSourcePollResult> {
   const observedAt = options.now ?? (options.clock ?? (() => new Date().toISOString()))();
   const maxSources = Math.max(1, Math.min(16, Math.floor(options.maxSources ?? 16)));
   const adapters = new Map(options.adapters.map((adapter) => [adapter.sourceId, adapter]));

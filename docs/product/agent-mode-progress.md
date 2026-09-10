@@ -593,6 +593,25 @@ K4 remains **IN PROGRESS**. Exact next task: **K4.1-B2 — Host-Health Event
 Source Using Existing Infrastructure Health Bindings**. Do not start it
 automatically.
 
+## Current K4.1-B2 host-health event source — 2026-09-10
+
+K4.1-B2 is **COMPLETE** for its bounded gate. The
+`infrastructure.host-health` adapter consumes the existing normalized
+infrastructure-health plane and authoritative catalog/provider bindings. It
+keeps bounded per-resource/provider/binding semantic state, recomputes
+freshness, suppresses metric noise, emits only meaningful transitions and
+recovery, preserves multiple-provider provenance, fails closed on missing or
+invalid evidence, and exposes safe state through the Agent Mode observer.
+Polling is finite and cannot feed scheduler rows back into the source. No
+provider client, host mutation, worker, model, daemon, or network path was
+added.
+
+Evidence:
+`operations/reports/agent-mode-k4-1-b2-host-health-event-source-evidence-2026-09-10.md`.
+
+K4 remains **IN PROGRESS**. Exact next task: **K4.1-C — CI Event Source and
+K4.1 Event-Source Closure Audit**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

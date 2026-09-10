@@ -478,3 +478,33 @@ bindings; it is not implemented here. Evidence:
 `operations/reports/agent-mode-k4-1-b1-lifecycle-event-source-evidence-2026-09-10.md`.
 K4 remains in progress. Next task: **K4.1-B2 — Host-Health Event Source Using
 Existing Infrastructure Health Bindings**. Do not start it automatically.
+
+## K4.1-B2 host-health event source
+
+K4.1-B2 is complete. The `infrastructure.host-health` adapter consumes the
+existing normalized `readInfrastructureHealth` plane, canonical host resources
+from the infrastructure catalog, and the authoritative health provider
+bindings. It does not call provider APIs or duplicate normalizers.
+
+The source maintains a bounded versioned watermark containing current semantic
+state per `resourceId|providerId|bindingId`. Status, freshness, and sorted
+condition-code changes produce `infrastructure.host-health.changed`; observation
+IDs, timestamps, and metric-only changes do not. Existing freshness helpers
+drive deterministic stale/unknown transitions and later recovery. Bootstrap
+stores a baseline without emitting an alert flood. Multiple providers remain
+distinct, and missing/invalid snapshots, unknown resources, mismatched
+bindings, or older observations fail closed without inventing outages.
+
+Polling is finite and uses the existing command:
+
+```text
+brain-agent sources poll --once --source-type infrastructure.host-health
+```
+
+Scheduler rows are destination-only, so no feedback loop is possible. The
+observer exposes bounded source/channel state without private selectors or
+payloads. The source is observation-only: it creates no workers, models,
+remediation, host mutation, daemon, listener, or network path. K4.1-B2 evidence:
+`operations/reports/agent-mode-k4-1-b2-host-health-event-source-evidence-2026-09-10.md`.
+K4 remains in progress. Next task: **K4.1-C — CI Event Source and K4.1
+Event-Source Closure Audit**. Do not start it automatically.

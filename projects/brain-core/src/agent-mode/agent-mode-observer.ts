@@ -71,6 +71,7 @@ export type AgentModeObserverProjection = {
   sourceWatermarks: Array<Record<string, unknown>>;
   latestSchedulerTick: Record<string, unknown> | null;
   eventSources: Array<Record<string, unknown>>;
+  hostHealthStates: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -98,6 +99,23 @@ function mapEvent(event: AgentModeEvent): Record<string, unknown> {
     occurredAt: event.occurredAt,
     payload: safePayload(event.payload),
   };
+}
+
+function mapHostHealthStates(eventSources: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  const states: Array<Record<string, unknown>> = [];
+  for (const source of eventSources) {
+    if (source.sourceType !== 'infrastructure.host-health' || typeof source.watermark !== 'string') continue;
+    try {
+      const cursor = JSON.parse(source.watermark) as { version?: unknown; states?: unknown };
+      if (cursor.version !== 1 || !Array.isArray(cursor.states)) continue;
+      for (const state of cursor.states.slice(0, 500)) {
+        if (!state || typeof state !== 'object') continue;
+        const value = state as Record<string, unknown>;
+        states.push({ sourceId: source.sourceId, resourceId: value.resourceId, providerId: value.providerId, bindingId: value.bindingId, status: value.status, freshness: value.freshness, conditionCodes: Array.isArray(value.conditionCodes) ? value.conditionCodes.slice(0, 32) : [], observedAt: value.observedAt, lastTransitionAt: value.lastTransitionAt ?? null });
+      }
+    } catch { /* malformed source state remains visible through source error status */ }
+  }
+  return states;
 }
 
 export function readAgentModeObserver(now = new Date().toISOString(), databasePath = defaultAgentModeDatabasePath()): AgentModeObserverProjection {
@@ -132,7 +150,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [],
     };
   }
 
@@ -218,6 +236,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
     const sourceWatermarks = store.listSourceWatermarks().map((watermark) => ({ ...watermark }));
     const latestSchedulerTick = store.getLatestSchedulerTick() ? { ...store.getLatestSchedulerTick() } : null;
     const eventSources = store.listEventSources().map((source) => ({ ...source }));
+    const hostHealthStates = mapHostHealthStates(eventSources);
     const results = store.listRecentEvents(500).filter((event) => event.eventType === 'jarvis_result_returned').map((event) => {
       const payload = event.payload;
       const usage = payload.usage && typeof payload.usage === 'object' ? payload.usage as Record<string, unknown> : {};
@@ -306,7 +325,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources,
+      agents, tasks, runs, attempts, events, recovery, operations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates,
     };
   } finally {
     store.close();
