@@ -1,0 +1,18 @@
+{
+  "nodeId": "node-instance:host:macbook",
+  "resourceRef": "host:macbook",
+  "transportRef": "ssh:macbook",
+  "hostAlias": "macbook",
+  "protocolVersion": "brain-node-v1",
+  "runnerVersion": "brain-node-runner-n0.2",
+  "authRef": "node-local-secret:brain-node",
+  "platform": { "os": "Darwin", "arch": "arm64" },
+  "capabilities": [
+    { "capabilityId": "repo.read", "version": "repo.read-v1", "maxBytes": 4096 }
+  ],
+  "binding": {
+    "resourceId": "host:macbook",
+    "rootPath": "~/.local/brain/node/fixtures/n0-2"
+  },
+  "dedupPath": "~/.local/brain/node/dedup.json"
+}
