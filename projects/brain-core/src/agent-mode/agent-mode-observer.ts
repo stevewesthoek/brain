@@ -179,7 +179,19 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
   try {
     const agents = store.listAgents().map((agent) => ({ ...agent }));
     const tasks = store.listTasks().map((task) => ({ ...task }));
-    const runs = store.listRuns().map((run) => ({ ...run }));
+    const runs = store.listRuns().map((run) => ({
+      runId: run.runId,
+      taskId: run.taskId,
+      agentId: run.agentId,
+      createdAt: run.createdAt,
+      status: run.status,
+      ...(run.runtimePid === undefined ? {} : { runtimePid: run.runtimePid }),
+      ...(run.childAgentId === undefined ? {} : { childAgentId: run.childAgentId }),
+      ...(run.assignmentIntentKey === undefined ? {} : { assignmentIntentKey: run.assignmentIntentKey }),
+      ...(run.runtimeIdentity ? {
+        runtimeIdentity: { startedAt: run.runtimeIdentity.startedAt, command: run.runtimeIdentity.command, verified: true },
+      } : {}),
+    }));
     const attempts = store.listAttempts().map((attempt) => {
       const lease = attempt.leaseResourceKey ? store.getLease(attempt.leaseResourceKey) : undefined;
       const currentLease = Boolean(lease && lease.leaseId === attempt.leaseId && lease.fence === attempt.leaseFence && lease.expiresAt > now);
@@ -342,6 +354,12 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
     });
     const effectsByOperation = new Map(store.listEffects().map((effect) => [effect.operationId, effect]));
     const runtimeDispatches = store.listDispatchOutbox().filter((outbox) => outbox.effectKind === 'runtime.dispatch').map((outbox) => {
+      const assignment = outbox.childAgentId ? store.getChildAssignment(outbox.childAgentId) : undefined;
+      const run = assignment ? store.getRun(assignment.runId) : undefined;
+      const attempt = store.getAttempt(outbox.attemptId);
+      const processEvents = run ? store.listEvents(run.runId).filter((event) => event.eventType === 'runtime_process_started' || event.eventType === 'runtime_process_reaped') : [];
+      const processStartedEvent = processEvents.find((event) => event.eventType === 'runtime_process_started');
+      const processEvent = processEvents.filter((event) => event.eventType === 'runtime_process_reaped').at(-1);
       let receipt: Record<string, unknown> | undefined;
       const receiptJson = effectsByOperation.get(outbox.operationId)?.receiptJson;
       if (receiptJson) {
@@ -354,7 +372,16 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         operationId: outbox.operationId, dispatchId: outbox.dispatchId, assignmentIntentKey: outbox.assignmentIntentKey,
         childAgentId: outbox.childAgentId, attemptId: outbox.attemptId, runtimeRef: outbox.runtimeRef, runtimeProfileRef: outbox.runtimeProfileRef,
         controllerRef: outbox.controllerRef, resourceKey: outbox.leaseResourceKey, leaseId: outbox.leaseId, fence: outbox.leaseFence,
-        state: outbox.state, preparedAt: outbox.preparedAt, dispatchedAt: outbox.dispatchedAt, ...(receipt ? { receipt } : {}),
+        state: outbox.state, preparedAt: outbox.preparedAt, dispatchedAt: outbox.dispatchedAt,
+        processState: run?.runtimePid === undefined ? (['verified', 'failed', 'cancelled'].includes(outbox.state) ? 'reaped' : 'not_started') : 'running',
+        processPid: run?.runtimePid ?? processStartedEvent?.payload.pid ?? null,
+        processStartedAt: run?.runtimeIdentity?.startedAt ?? processStartedEvent?.occurredAt ?? null,
+        processIdentityVerified: Boolean(run?.runtimeIdentity || processStartedEvent?.payload.processIdentityVerified === true),
+        dispatchPhase: outbox.state,
+        reconciliationStatus: outbox.state === 'uncertain' ? 'pending' : 'not_required',
+        lastExitClassification: processEvent?.payload.exitClassification ?? null,
+        cancellationState: attempt?.cancellationStatus ?? 'unknown',
+        ...(receipt ? { receipt } : {}),
       };
     });
     const recovery = store.listAttempts().map((attempt) => ({

@@ -694,3 +694,48 @@ Evidence:
 `operations/reports/agent-mode-k4-2-d1-mock-runtime-dispatch-evidence-2026-09-10.md`.
 Exact next task: **K4.2-D2 — Restricted Harness Process Dispatch, Runtime
 Cancellation and Reconciliation**. Do not start it automatically.
+
+## K4.2-D2 — Restricted Harness process dispatch
+
+K4.2-D2 is complete for the process-boundary gate. Use
+`RestrictedHarnessAgentRuntime` behind the existing D1
+`AgentModeRuntimeDispatcher`; do not call the Harness SDK as a second
+control plane and do not wire scheduler-created workers here.
+
+The only admitted runtime is the configured DeepSeek Harness root pinned to
+version `0.1.3-alpha.2`, commit
+`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8`, and profile
+`brain-agent-mode-restricted`. The runtime validates the injected root and
+manifests, constructs a fixed `sdk-minimal` SDK launch, disables the denied
+service rows, injects only the Brain fixture LLM adapter, and supplies an
+explicit complete child environment. Never inherit `process.env`, accept
+executable/argv values from task or model data, or expose the Agent Mode
+SQLite path to the child.
+
+SDK initialization is the finite readiness handshake. Before the admitted
+attempt is sent, verify the pinned version, allowlisted topology, separate
+child boundary, explicit environment policy, and normalized PID/start-time/
+command identity. Persist the run process identity while live; the SDK owns
+EOF → graceful termination → forced termination and returns only after the
+exact child exits. Use the runtime's AbortSignal to trigger this bounded
+shutdown. Cancellation is acknowledged only after the child is reaped.
+
+The D2 fixture uses one local Unix-domain socket bridge. Its response is
+bounded and deterministic, with zero model/provider calls and zero executable
+tools. Parent sentinel variables are probed as presence booleans only; never
+log sentinel values. Child stdout/stderr and fixture evidence are bounded.
+Known startup failures are safe pre-effect failures. A crash after attempt
+delivery is `uncertain`; an uncertain dispatch is never relaunched blindly.
+Reconciliation resolves only identity-bound parent-owned evidence and remains
+uncertain when process disappearance is the only fact.
+
+Observer output includes only bounded runtime/profile, process state, PID/start
+time, identity verification, dispatch phase, exit classification, cancellation
+and reconciliation fields. It excludes raw environment, full argv, prompts,
+hidden reasoning, provider payloads, credentials, and unbounded diagnostics.
+
+Evidence:
+`operations/reports/agent-mode-k4-2-d2-restricted-harness-dispatch-evidence-2026-09-11.md`.
+Focused D2 validation is 12/12. Exact next task:
+**K4.2-E1 — Deterministic Scheduler-to-Spawn Orchestration and End-to-End
+Dynamic Worker Lifecycle**. Do not start it automatically.

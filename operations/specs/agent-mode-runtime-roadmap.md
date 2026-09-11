@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, and K4.2-D1 are complete, K4.2 is in progress, K4 remains in progress, and K4.2-D2 and dynamic workers are not started
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, and K4.2-D2 are complete for their bounded gates, K4.2 is in progress, and K4 remains in progress
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -1028,6 +1028,47 @@ unrelated `OrchestrationExecutor` timeout failures. K4.2-D1 is complete; K4.2
 remains **IN PROGRESS**. Exact next task:
 **K4.2-D2 — Restricted Harness Process Dispatch, Runtime Cancellation and
 Reconciliation**. Do not start it automatically.
+
+### K4.2-D2 — Restricted Harness process dispatch, cancellation and reconciliation
+
+K4.2-D2 is **COMPLETE** for its bounded process-boundary gate. The
+`RestrictedHarnessAgentRuntime` implements the existing D1 `AgentRuntime`
+contract and admits only the pinned DeepSeek Harness version `0.1.3-alpha.2`
+at commit `c389f96bf3a9b6807cb71ed6bdad5849be0df6d8` through the existing
+`runtime:deepseek-harness:<commit>` / `brain-agent-mode-restricted` binding.
+The injected root and package manifests are checked before launch; executable
+and argv authority cannot come from task, event, model or runtime data.
+
+The existing Harness SDK owns one stdio child per attempt. Brain supplies a
+fixed profile/patch composition, an explicit complete environment, isolated
+HOME/TMPDIR/cwd, and a local Unix-socket fixture bridge. SDK initialization is
+the bounded readiness handshake; Brain verifies the pinned version, restricted
+topology, separate-child boundary, sanitized environment, and normalized
+process identity before delivering the admitted attempt. SDK shutdown retains
+the bounded graceful-then-terminate-and-reap ladder. Parent sentinel variables
+are absent from the child; the child receives no Agent Mode database path,
+credentials, external network, BrainNode, Workcell, or scheduler authority.
+
+The deterministic fixture returns `BRAIN_K4_2_D2_HARNESS_PROCESS_PASS`, uses
+zero model/provider calls and zero executable tools, and supports known
+failure, in-flight cancellation, child crash, oversized/malformed bridge
+rejection, and durable parent-owned evidence reconciliation. Startup failures
+before attempt delivery are known failures; a child crash after admitted
+input is `uncertain`; disappearance without durable evidence stays uncertain;
+durable identity-bound evidence can resolve without relaunch. D1 effects,
+outbox, fence, receipt verification, settlement, and observer state remain
+authoritative. Observer exposes only bounded runtime/profile, process state,
+PID/start time, identity verification, dispatch phase, exit classification,
+cancellation and reconciliation fields.
+
+The focused D2 matrix passes 12/12. D1 and affected K4.2/K4.1/K4.0
+regressions remain green; the package-wide `brain-core` suite passes 2444/2444.
+Evidence:
+`operations/reports/agent-mode-k4-2-d2-restricted-harness-dispatch-evidence-2026-09-11.md`.
+
+K4.2-D1 and K4.2-D2 are complete; K4.2 remains **IN PROGRESS**. Exact next
+task: **K4.2-E1 — Deterministic Scheduler-to-Spawn Orchestration and
+End-to-End Dynamic Worker Lifecycle**. Do not start it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

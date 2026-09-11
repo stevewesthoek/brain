@@ -764,6 +764,40 @@ unrelated `OrchestrationExecutor` timeout failures. K4.2 remains **IN PROGRESS**
 Harness Process Dispatch, Runtime Cancellation and Reconciliation**. Do not
 start it automatically.
 
+## Current K4.2-D2 restricted Harness process dispatch — 2026-09-11
+
+K4.2-D2 is now **COMPLETE** for its bounded process-boundary gate.
+`RestrictedHarnessAgentRuntime` implements the existing D1 `AgentRuntime`
+seam and uses only the pinned DeepSeek Harness `0.1.3-alpha.2` /
+`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8` binding. The runtime root is
+injected configuration, checked for the pinned directory and package
+manifests, and launched through the existing Harness SDK's fixed stdio
+subprocess construction.
+
+Brain verifies the bounded SDK readiness handshake, restricted topology,
+separate-child process, explicit complete child environment, and normalized
+PID/start-identity/command binding before sending the attempt. The fixture
+uses a local Unix-socket bridge and returns
+`BRAIN_K4_2_D2_HARNESS_PROCESS_PASS` with zero provider/model usage and no
+executable tools. Each attempt has bounded startup/execution/shutdown
+deadlines and is reaped through the SDK's graceful-then-terminate ladder.
+Parent sentinel variables, credentials, StateStore paths, external network,
+BrainNode, Workcell, and scheduler authority are not passed to the child.
+
+Known startup/failure, in-flight cancellation, crash-after-admission,
+oversized/malformed protocol, environment, PID identity, observer, durable
+evidence reconciliation, and no-evidence uncertainty cases are covered.
+Uncertain dispatches are never blindly relaunched. D1 durable effects,
+outbox, fence, receipt verification, settlement, and restart semantics remain
+authoritative. Focused D2 validation is 12/12; affected Agent Mode/K4
+regressions remain green, and the package-wide test command passes 2444/2444.
+
+Evidence:
+`operations/reports/agent-mode-k4-2-d2-restricted-harness-dispatch-evidence-2026-09-11.md`.
+
+Exact next task: **K4.2-E1 — Deterministic Scheduler-to-Spawn Orchestration
+and End-to-End Dynamic Worker Lifecycle**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not
