@@ -794,7 +794,7 @@ covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
-**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, and K4.2-E1 complete for their bounded gates; K4.2 and K4 remain in progress; K4.2-E2 is next
+**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 complete for their bounded gates; K4.2 is complete; K4 remains in progress; K4.3-A is next
 
 ### K4.0 — deterministic event queue, scheduler tick, and no-op heartbeat
 
@@ -1104,10 +1104,39 @@ secrets.
 Evidence:
 `operations/reports/agent-mode-k4-2-e1-scheduler-dynamic-worker-evidence-2026-09-11.md`.
 Focused E1 validation is 23/23; the Agent Mode regression set is 339/339; the
-package-wide `brain-core` suite is 2467/2467. K4.2 remains **IN PROGRESS** and
-K4 remains **IN PROGRESS**. Exact next task: **K4.2-E2 — Restricted-Harness
-Scheduler-to-Worker Acceptance and K4.2 Closure Gate**. Do not start it
-automatically.
+package-wide `brain-core` suite was 2467/2467 at that gate. E2 is recorded
+below.
+
+### K4.2-E2 — Restricted-Harness Scheduler-to-Worker Acceptance and K4.2 Closure Gate
+
+K4.2-E2 is **COMPLETE**. The same E1 orchestrator and D1 dispatcher now drive
+the actual D2 `RestrictedHarnessAgentRuntime` through one deterministic,
+disabled-by-default, read-only E2 action rule. The rule is separate from
+spawn permission, root-bound, finite, and has zero executable capabilities;
+the E1 rule remains unchanged.
+
+The positive path proves exactly one child, one Task/Run/Attempt, one D1
+runtime-dispatch outbox, one pinned Harness launch, and one exact Harness reap.
+No replacement worker, ModelGateway/Bedrock/live model call, BrainNode,
+Workcell, repository write, or external network effect occurs. The Harness is
+pinned to `0.1.3-alpha.2` at commit
+`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8` with profile
+`brain-agent-mode-restricted`; D2 environment, topology, identity, and
+reconciliation controls remain enforced.
+
+Redelivery, concurrent claims, crash/restart at each tested phase, uncertain
+dispatch with durable evidence, no-evidence uncertainty, cancellation and
+reaping, kill switches, deadlines/TTL, root concurrency/creation/budget,
+recursive-spawn prevention, malicious metadata, bounded batches, quiet no-op,
+and observer reconstruction all pass. The K4.2 closure audit conditions 1–23
+all pass. Evidence:
+`operations/reports/agent-mode-k4-2-e2-harness-dynamic-worker-closure-evidence-2026-09-11.md`.
+
+Focused E2 validation is 16/16; the Agent Mode regression set is 355/355; the
+package-wide `brain-core` suite is 2483/2483, with typecheck and build green.
+**K4.2: COMPLETE. K4: IN PROGRESS.** Exact next task:
+**K4.3-A — One Bounded Live MiniMax Dynamic-Worker Acceptance**. Do not start
+it automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

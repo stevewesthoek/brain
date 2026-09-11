@@ -181,8 +181,8 @@ Workcells, validation/review/commit/merge authorization, recovery, and
 observer surfaces. Auto starts MiniMax M2.5 and escalates through GLM-5 to
 Claude Opus 4.6 under Brain policy. Codex remains a separate manual resource.
 K4 event-driven autonomy is partially implemented through bounded K4.0, K4.1,
-and K4.2-E1 slices; K4 remains in progress and is not a general autonomous
-execution claim.
+and K4.2 A–E2 slices; K4.2 is complete, K4 remains in progress, and this is
+not a general autonomous execution claim.
 
 Local text LLM routes described in older sections are historical. Keep local
 voice/speech/media utilities only where an active consumer proves need; the

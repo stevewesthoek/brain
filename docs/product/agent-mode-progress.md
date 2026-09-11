@@ -827,9 +827,36 @@ assignment, operation, dispatch, phase, and terminal outcome linkage.
 Evidence:
 `operations/reports/agent-mode-k4-2-e1-scheduler-dynamic-worker-evidence-2026-09-11.md`.
 Focused E1 validation is 23/23; the Agent Mode regression set is 339/339; the
-package-wide `brain-core` suite is 2467/2467. K4.2 and K4 remain **IN
-PROGRESS**. Exact next task: **K4.2-E2 — Restricted-Harness Scheduler-to-Worker
-Acceptance and K4.2 Closure Gate**. Do not start it automatically.
+package-wide `brain-core` suite was 2467/2467 at that gate. E2 is recorded
+below.
+
+## Current K4.2-E2 restricted-Harness scheduler-to-worker acceptance — 2026-09-11
+
+K4.2-E2 is **COMPLETE**. The existing E1 scheduler orchestrator now drives the
+actual D2 `RestrictedHarnessAgentRuntime` through the same D1 dispatcher and a
+single static E2 action rule. Action intent remains separate from spawn
+permission; the rule is disabled by default, read-only, root-bound, finite,
+restricted-Harness-only, and requests zero executable capabilities. E1 is
+unchanged.
+
+One positive event creates exactly one child, one Task/Run/Attempt, one D1
+runtime-dispatch outbox, one pinned Harness process, and one exact reap. The
+Harness pin is version `0.1.3-alpha.2`, commit
+`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8`, profile
+`brain-agent-mode-restricted`. No ModelGateway/Bedrock/live model,
+BrainNode, Workcell, repository write, external network, or replacement worker
+effect occurs.
+
+Redelivery, concurrent claims, phase crashes/restarts, uncertain and durable
+or unsupported reconciliation, cancellation/reaping, kill/deadline/TTL,
+root limits, recursive-spawn prevention, malicious metadata, bounded batches,
+quiet passes, and observer reconstruction are covered. The full K4.2 closure
+audit conditions 1–23 pass. Evidence:
+`operations/reports/agent-mode-k4-2-e2-harness-dynamic-worker-closure-evidence-2026-09-11.md`.
+Focused E2 validation is 16/16; Agent Mode regression is 355/355; the
+package-wide `brain-core` suite is 2483/2483. **K4.2 is COMPLETE; K4 remains
+IN PROGRESS.** Exact next task: **K4.3-A — One Bounded Live MiniMax
+Dynamic-Worker Acceptance**. Do not start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 

@@ -769,6 +769,32 @@ creation/budget, and quiet no-op behavior are all covered by the E1 evidence.
 Evidence:
 `operations/reports/agent-mode-k4-2-e1-scheduler-dynamic-worker-evidence-2026-09-11.md`.
 Focused E1 validation is 23/23; Agent Mode regression is 339/339; package-wide
-`brain-core` validation is 2467/2467. K4.2 and K4 remain in progress. Exact
-next task: **K4.2-E2 — Restricted-Harness Scheduler-to-Worker Acceptance and
-K4.2 Closure Gate**. Do not start it automatically.
+`brain-core` validation was 2467/2467 at that gate. K4.2-E2 is recorded below.
+
+## K4.2-E2 — Restricted-Harness Scheduler-to-Worker acceptance and closure
+
+K4.2-E2 is **COMPLETE**. The existing E1 orchestrator composes the same D1
+`AgentModeRuntimeDispatcher` with the actual D2 `RestrictedHarnessAgentRuntime`
+through one disabled-by-default static E2 rule. Action intent remains
+distinct from `AgentSpawnPolicy`; the rule is read-only, root-bound, finite,
+restricted-Harness-only, and requests zero executable capabilities. The E1
+rule is unchanged.
+
+The deterministic positive path creates one child and one Task/Run/Attempt,
+one D1 runtime-dispatch outbox, launches one pinned Harness child, and reaps
+that exact child once. The pinned version is `0.1.3-alpha.2` at commit
+`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8`, profile
+`brain-agent-mode-restricted`. No ModelGateway/Bedrock/live model,
+BrainNode, Workcell, repository write, external network, or replacement worker
+is involved.
+
+The E2 evidence covers redelivery, concurrent claims, crash/restart phases,
+uncertainty and durable/no-evidence reconciliation, cancellation/reaping,
+kill-switch and deadline/TTL gates, root limits, recursive-spawn prevention,
+malicious metadata, bounded/no-op passes, and observer causation/resource
+reconstruction. All 23 K4.2 closure conditions pass. Evidence:
+`operations/reports/agent-mode-k4-2-e2-harness-dynamic-worker-closure-evidence-2026-09-11.md`.
+Focused E2 validation is 16/16; Agent Mode regression is 355/355; package-wide
+`brain-core` validation is 2483/2483. **K4.2 is COMPLETE; K4 remains IN
+PROGRESS.** Exact next task: **K4.3-A — One Bounded Live MiniMax
+Dynamic-Worker Acceptance**. Do not start it automatically.

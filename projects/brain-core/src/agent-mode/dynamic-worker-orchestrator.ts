@@ -29,6 +29,8 @@ import {
   AGENT_MODE_RUNTIME_PROFILES,
   MOCK_AGENT_RUNTIME_PROFILE_REF,
   MOCK_AGENT_RUNTIME_REF,
+  RESTRICTED_HARNESS_PROFILE_REF,
+  RESTRICTED_HARNESS_RUNTIME_REF,
   assignmentIntentKey,
   type AgentModeChildAssignmentRequest,
 } from './child-assignment.js';
@@ -49,6 +51,10 @@ export const E1_FIXTURE_ACTION_RULE_ID = 'agent-mode.action.e1-read-only-fixture
 export const E1_FIXTURE_TASK_SPEC_REF = 'task-spec:agent-mode-read-only-fixture' as const;
 export const E1_FIXTURE_SOURCE_ID = 'source:e1-fixture' as const;
 export const E1_FIXTURE_CONTROLLER_REF = 'controller:agent-mode-e1' as const;
+export const E2_FIXTURE_ACTION_RULE_ID = 'agent-mode.action.e2-restricted-harness-fixture.v1' as const;
+export const E2_FIXTURE_TASK_SPEC_REF = 'task-spec:agent-mode-restricted-harness-fixture' as const;
+export const E2_FIXTURE_SOURCE_ID = 'source:e2-fixture' as const;
+export const E2_FIXTURE_CONTROLLER_REF = 'controller:agent-mode-e2' as const;
 
 const MAX_RULES = 32;
 const MAX_EVENTS_PER_PASS = 16;
@@ -111,7 +117,28 @@ export const E1_FIXTURE_ACTION_RULE: SchedulerEventActionRule = Object.freeze({
   scopeMode: 'event.repository',
 });
 
-export const DEFAULT_SCHEDULER_EVENT_ACTION_RULES: readonly SchedulerEventActionRule[] = Object.freeze([E1_FIXTURE_ACTION_RULE]);
+/** E2 is a deliberately disabled process-backed fixture; it is injected only by its acceptance tests. */
+export const E2_FIXTURE_ACTION_RULE: SchedulerEventActionRule = Object.freeze({
+  ruleId: E2_FIXTURE_ACTION_RULE_ID,
+  version: 1,
+  enabled: false,
+  sourceType: GIT_REPOSITORY_REVISION_SOURCE,
+  eventType: REPOSITORY_COMMIT_OBSERVED_EVENT,
+  spawnPolicyId: SPAWN_POLICY_READ_ONLY,
+  spawnPolicyVersion: 1,
+  roleTemplateId: SPAWN_ROLE_READ_ONLY,
+  roleTemplateVersion: 1,
+  runtimeRef: RESTRICTED_HARNESS_RUNTIME_REF,
+  runtimeProfileRef: RESTRICTED_HARNESS_PROFILE_REF,
+  taskSpecRef: E2_FIXTURE_TASK_SPEC_REF,
+  requestedTtl: 60_000,
+  requestedSteps: 5,
+  requestedCost: 0.05,
+  requestedCapabilities: [],
+  scopeMode: 'event.repository',
+});
+
+export const DEFAULT_SCHEDULER_EVENT_ACTION_RULES: readonly SchedulerEventActionRule[] = Object.freeze([E1_FIXTURE_ACTION_RULE, E2_FIXTURE_ACTION_RULE]);
 
 export type DynamicWorkerPhase =
   | 'claimed'
@@ -209,9 +236,11 @@ function validRule(rule: SchedulerEventActionRule, policies: readonly AgentSpawn
   const template = getRoleTemplate(rule.roleTemplateId, rule.roleTemplateVersion, templates);
   if (!policy) return 'RULE_POLICY_UNKNOWN';
   if (!template) return 'RULE_ROLE_UNKNOWN';
-  if (!AGENT_MODE_RUNTIME_PROFILES.some((profile) => profile.runtimeRef === rule.runtimeRef && profile.runtimeProfileRef === rule.runtimeProfileRef && !profile.restrictedHarness)) return 'RULE_RUNTIME_UNKNOWN';
-  if (rule.runtimeRef !== MOCK_AGENT_RUNTIME_REF || rule.runtimeProfileRef !== MOCK_AGENT_RUNTIME_PROFILE_REF) return 'RULE_RUNTIME_NOT_MOCK';
-  if (rule.taskSpecRef !== E1_FIXTURE_TASK_SPEC_REF || !SAFE_REF.test(rule.taskSpecRef) || rule.taskSpecRef.length > MAX_TASK_SPEC_LENGTH) return 'RULE_TASK_SPEC_INVALID';
+  const runtimeProfile = AGENT_MODE_RUNTIME_PROFILES.find((profile) => profile.runtimeRef === rule.runtimeRef && profile.runtimeProfileRef === rule.runtimeProfileRef);
+  if (!runtimeProfile) return 'RULE_RUNTIME_UNKNOWN';
+  if ((rule.runtimeRef !== MOCK_AGENT_RUNTIME_REF || rule.runtimeProfileRef !== MOCK_AGENT_RUNTIME_PROFILE_REF)
+    && (rule.runtimeRef !== RESTRICTED_HARNESS_RUNTIME_REF || rule.runtimeProfileRef !== RESTRICTED_HARNESS_PROFILE_REF)) return 'RULE_RUNTIME_NOT_ALLOWED';
+  if ((rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF && rule.requestedCapabilities.length !== 0) || (rule.runtimeProfileRef === MOCK_AGENT_RUNTIME_PROFILE_REF && rule.taskSpecRef !== E1_FIXTURE_TASK_SPEC_REF) || (rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF && rule.taskSpecRef !== E2_FIXTURE_TASK_SPEC_REF) || !SAFE_REF.test(rule.taskSpecRef) || rule.taskSpecRef.length > MAX_TASK_SPEC_LENGTH) return 'RULE_TASK_SPEC_INVALID';
   if (!boundedPositive(rule.requestedTtl, 15 * 60 * 1000) || !Number.isSafeInteger(rule.requestedSteps) || rule.requestedSteps < 1 || rule.requestedSteps > 100 || !Number.isFinite(rule.requestedCost) || rule.requestedCost < 0 || rule.requestedCost > 0.25) return 'RULE_LIMIT_INVALID';
   if (rule.scopeMode !== 'event.repository' && rule.scopeMode !== 'none') return 'RULE_SCOPE_MODE_INVALID';
   if (new Set(rule.requestedCapabilities).size !== rule.requestedCapabilities.length || rule.requestedCapabilities.length > 8) return 'RULE_CAPABILITY_INVALID';
@@ -373,6 +402,7 @@ export class AgentModeDynamicWorkerOrchestrator {
   async handleSchedulerEvent(input: { event: AgentModeSchedulerEvent; schedulerClaim?: AgentModeSchedulerClaim; now?: string }): Promise<DynamicWorkerOrchestrationResult> {
     const now = input.now ?? this.options.now ?? this.clock();
     const initial = input.event;
+    const isRedelivery = initial.status === 'failed' || initial.status === 'claimed';
     const base = resultTemplate(initial.eventId, 'DEFERRED', input.schedulerClaim?.fence ?? null, 'CLAIM_UNAVAILABLE');
     try {
       if (initial.status === 'completed') return { ...base, result: 'COMPLETED', reasonCode: 'EVENT_ALREADY_COMPLETED' };
@@ -459,7 +489,11 @@ export class AgentModeDynamicWorkerOrchestrator {
       controllerRef: this.controllerRef,
       requestedAt: now,
     };
-    const dispatched = await this.dispatcher.dispatch(dispatchRequest);
+    let dispatched = await this.dispatcher.dispatch(dispatchRequest);
+    if (isRedelivery && dispatched.result === 'uncertain') {
+      const reconciled = await this.dispatcher.reconcile(dispatchRequest);
+      if (reconciled.result !== 'uncertain') dispatched = reconciled;
+    }
     this.phaseHook?.('runtime_settled', initial);
     let outcome = dispatchOutcome(dispatched);
     let terminal = workerOutcome(dispatched);
