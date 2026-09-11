@@ -5,15 +5,16 @@ import {
   WORKCELL_VALIDATION_CAPABILITY,
   WORKCELL_WRITE_CAPABILITY,
 } from './workcell.js';
-import {
-  CI_WORKFLOW_COMPLETED_EVENT,
-  CI_WORKFLOW_STARTED_EVENT,
-  CI_WORKFLOW_RUN_SOURCE,
-  GIT_REPOSITORY_REVISION_SOURCE,
-  REPOSITORY_COMMIT_OBSERVED_EVENT,
-  BRAIN_TASK_LIFECYCLE_SOURCE,
-  TASK_LIFECYCLE_OBSERVED_EVENT,
-} from './event-source.js';
+// Keep policy manifests dependency-free from the event adapter implementation.
+// These canonical strings are the stable K4.1 envelope values, not executable
+// or model-authored routing inputs.
+const CI_WORKFLOW_COMPLETED_EVENT = 'ci.workflow.completed' as const;
+const CI_WORKFLOW_STARTED_EVENT = 'ci.workflow.started' as const;
+const CI_WORKFLOW_RUN_SOURCE = 'ci.workflow-run' as const;
+const GIT_REPOSITORY_REVISION_SOURCE = 'git.repository.revision' as const;
+const REPOSITORY_COMMIT_OBSERVED_EVENT = 'repository.commit.observed' as const;
+const BRAIN_TASK_LIFECYCLE_SOURCE = 'brain.task.lifecycle' as const;
+const TASK_LIFECYCLE_OBSERVED_EVENT = 'task.lifecycle.observed' as const;
 
 export const SPAWN_REQUEST_SCHEMA_VERSION = 1 as const;
 export const SPAWN_POLICY_SCHEMA_VERSION = 1 as const;

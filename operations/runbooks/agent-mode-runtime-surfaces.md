@@ -736,6 +736,39 @@ hidden reasoning, provider payloads, credentials, and unbounded diagnostics.
 
 Evidence:
 `operations/reports/agent-mode-k4-2-d2-restricted-harness-dispatch-evidence-2026-09-11.md`.
-Focused D2 validation is 12/12. Exact next task:
-**K4.2-E1 — Deterministic Scheduler-to-Spawn Orchestration and End-to-End
-Dynamic Worker Lifecycle**. Do not start it automatically.
+Focused D2 validation is 12/12. K4.2-E1 is recorded below.
+
+## K4.2-E1 — Deterministic scheduler-to-worker orchestration
+
+K4.2-E1 is complete for the bounded scheduler-to-worker gate. Use the closed
+`SchedulerEventActionRule` registry to express event-to-action intent. Keep it
+separate from `AgentSpawnPolicy`: a policy/role allowlist is permission, not an
+instruction to spawn. The default action registry is disabled; unknown,
+disabled, malformed, or payload-selected action data must remain bounded
+`NO_ACTION`/denial.
+
+The orchestrator must claim through the existing scheduler event lease/fence,
+read source type from durable source configuration, require an authoritative
+root binding, and derive all lifecycle identities from immutable event and
+static-rule fields. It then calls the existing K4.2-A `evaluateSpawnAdmission`,
+K4.2-B `reserveSpawnAndCreateChild`, K4.2-C `assignChildAgent`, and K4.2-D1
+`AgentModeRuntimeDispatcher` boundaries in that order. Do not insert canonical
+child/task/run/attempt rows, reserve budgets, or launch runtimes directly from
+the orchestrator. The bounded pass sorts by eligible time and event ID and
+limits the number of events it advances.
+
+The accepted E1 fixture is read-only and invokes only `MockAgentRuntime`.
+Harness, ModelGateway, BrainNode, Workcell, OS process, network, and recursive
+spawn paths remain absent. Redelivery and concurrent claims must converge on
+one lifecycle and one runtime invocation. Temporary denials fail the scheduler
+event for bounded retry; terminal quota/deadline denials complete without a
+replacement worker. D1 uncertain outcomes must never be blindly relaunched.
+Cancellation, kill switch, deadline, crash recovery, root concurrency/total
+creation/budget, and quiet no-op behavior are all covered by the E1 evidence.
+
+Evidence:
+`operations/reports/agent-mode-k4-2-e1-scheduler-dynamic-worker-evidence-2026-09-11.md`.
+Focused E1 validation is 23/23; Agent Mode regression is 339/339; package-wide
+`brain-core` validation is 2467/2467. K4.2 and K4 remain in progress. Exact
+next task: **K4.2-E2 — Restricted-Harness Scheduler-to-Worker Acceptance and
+K4.2 Closure Gate**. Do not start it automatically.

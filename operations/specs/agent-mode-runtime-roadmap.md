@@ -794,7 +794,7 @@ covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
-**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, K4.2-C, and K4.2-D1 complete; K4 remains in progress; K4.2-D2 and dynamic workers not started
+**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, and K4.2-E1 complete for their bounded gates; K4.2 and K4 remain in progress; K4.2-E2 is next
 
 ### K4.0 — deterministic event queue, scheduler tick, and no-op heartbeat
 
@@ -1066,9 +1066,48 @@ regressions remain green; the package-wide `brain-core` suite passes 2444/2444.
 Evidence:
 `operations/reports/agent-mode-k4-2-d2-restricted-harness-dispatch-evidence-2026-09-11.md`.
 
-K4.2-D1 and K4.2-D2 are complete; K4.2 remains **IN PROGRESS**. Exact next
-task: **K4.2-E1 — Deterministic Scheduler-to-Spawn Orchestration and
-End-to-End Dynamic Worker Lifecycle**. Do not start it automatically.
+K4.2-D1 and K4.2-D2 are complete; K4.2 remains **IN PROGRESS**. K4.2-E1 is
+recorded below.
+
+### K4.2-E1 — Deterministic Scheduler-to-Spawn Orchestration and End-to-End Dynamic Worker Lifecycle
+
+K4.2-E1 is **COMPLETE** for its bounded scheduler-to-worker gate. A closed,
+versioned scheduler event-action rule registry now expresses the only allowed
+event-to-action intent and is separate from `AgentSpawnPolicy`: policy and role
+allowing a child does not itself create work. Unknown, disabled, malformed, or
+payload-selected rules produce bounded `NO_ACTION`/denial outcomes. The default
+registry remains disabled, and the fixture rule is the only enabled positive
+path in this tranche.
+
+The orchestrator claims each durable scheduler event through the existing
+StateStore lease/fence, reads source type from authoritative source
+configuration, derives the root binding and all immutable lifecycle identities
+from the event plus the static rule, and composes the existing K4.2-A policy,
+K4.2-B atomic reservation, K4.2-C assignment, and K4.2-D1 dispatch/settlement
+boundaries. It does not insert child/task/run/attempt records directly, mutate
+budgets directly, or create a replacement worker. A bounded pass orders events
+deterministically and caps the batch.
+
+The positive path invokes only `MockAgentRuntime`. It reaches one durable
+child, assignment, Task/Run/Attempt, D1 operation/outbox, runtime receipt and
+settlement. Harness, ModelGateway, BrainNode, Workcell, OS process, network,
+and external-provider counts remain zero. Ten redeliveries and concurrent
+claimers converge on one lifecycle. Crash points before policy, before child
+commit, after child creation, after assignment, and after worker settlement
+resume safely; uncertain runtime state is retryable for the scheduler but is
+never blindly replayed by D1. Cancellation, kill-switch, deadline, root
+concurrency, total-creation, aggregate-budget, recursive-spawn, and no-op
+heartbeat behavior are covered. Observer output exposes bounded causation and
+action/child/assignment/runtime linkage without prompts, raw payloads, or
+secrets.
+
+Evidence:
+`operations/reports/agent-mode-k4-2-e1-scheduler-dynamic-worker-evidence-2026-09-11.md`.
+Focused E1 validation is 23/23; the Agent Mode regression set is 339/339; the
+package-wide `brain-core` suite is 2467/2467. K4.2 remains **IN PROGRESS** and
+K4 remains **IN PROGRESS**. Exact next task: **K4.2-E2 — Restricted-Harness
+Scheduler-to-Worker Acceptance and K4.2 Closure Gate**. Do not start it
+automatically.
 
 - scheduler, heartbeat, repo/CI/host/task event sources, and dead-letter state;
 - no-op heartbeats that do not invoke a model when no useful action exists;

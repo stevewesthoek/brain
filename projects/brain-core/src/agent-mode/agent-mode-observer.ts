@@ -77,6 +77,7 @@ export type AgentModeObserverProjection = {
   spawnAdmissionControls: Array<Record<string, unknown>>;
   spawnRootStates: Array<Record<string, unknown>>;
   childAssignments: Array<Record<string, unknown>>;
+  dynamicWorkerOrchestrations: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -172,7 +173,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [],
     };
   }
 
@@ -313,6 +314,34 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
       createdAt: assignment.createdAt,
       updatedAt: assignment.updatedAt,
     }));
+    const dynamicWorkerOrchestrations = events
+      .filter((event) => event.eventType === 'scheduler_worker_orchestrated')
+      .reduce<Array<Record<string, unknown>>>((latest, event) => {
+        const payload = event.payload as Record<string, unknown>;
+        const schedulerEventId = typeof payload.schedulerEventId === 'string' ? payload.schedulerEventId : event.entityId;
+        const priorIndex = latest.findIndex((item) => item.schedulerEventId === schedulerEventId);
+        const projection = {
+          schedulerEventId,
+          actionRuleId: payload.actionRuleId ?? null,
+          actionRuleVersion: payload.actionRuleVersion ?? null,
+          actionRuleApplicationId: payload.actionRuleApplicationId ?? null,
+          spawnIntentKey: payload.spawnIntentKey ?? null,
+          childAgentId: payload.childAgentId ?? null,
+          assignmentIntentKey: payload.assignmentIntentKey ?? null,
+          taskId: payload.taskId ?? null,
+          runId: payload.runId ?? null,
+          attemptId: payload.attemptId ?? null,
+          operationId: payload.operationId ?? null,
+          dispatchId: payload.dispatchId ?? null,
+          phase: payload.phase ?? null,
+          terminalWorkerOutcome: payload.terminalWorkerOutcome ?? null,
+          reasonCode: payload.reasonCode ?? null,
+          occurredAt: event.occurredAt,
+        };
+        if (priorIndex >= 0) latest[priorIndex] = projection;
+        else latest.push(projection);
+        return latest;
+      }, []);
     const results = store.listRecentEvents(500).filter((event) => event.eventType === 'jarvis_result_returned').map((event) => {
       const payload = event.payload;
       const usage = payload.usage && typeof payload.usage === 'object' ? payload.usage as Record<string, unknown> : {};
@@ -433,7 +462,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments,
+      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations,
     };
   } finally {
     store.close();

@@ -795,8 +795,41 @@ regressions remain green, and the package-wide test command passes 2444/2444.
 Evidence:
 `operations/reports/agent-mode-k4-2-d2-restricted-harness-dispatch-evidence-2026-09-11.md`.
 
-Exact next task: **K4.2-E1 — Deterministic Scheduler-to-Spawn Orchestration
-and End-to-End Dynamic Worker Lifecycle**. Do not start it automatically.
+K4.2-E1 is recorded below.
+
+## Current K4.2-E1 scheduler-to-worker orchestration — 2026-09-11
+
+K4.2-E1 is **COMPLETE** for its bounded scheduler-to-worker gate. The closed
+`SchedulerEventActionRule` registry is separate from `AgentSpawnPolicy`; only
+an enabled static rule can express event-to-action intent, while policy and
+role admission remain independent. The default registry is disabled and
+unknown/disabled/malformed event intent is bounded `NO_ACTION` or denial.
+
+The orchestrator uses the existing scheduler claim/fence and authoritative
+source configuration, then composes the existing K4.2-A policy, K4.2-B atomic
+child reservation, K4.2-C assignment, and K4.2-D1 runtime dispatch/settlement
+contracts. It derives stable action-application, spawn, child, assignment,
+operation, and dispatch identities from immutable event/rule material. It does
+not copy event-selected runtime, model, scope, role, or task metadata and does
+not write canonical lifecycle rows or budgets outside the existing boundaries.
+
+The positive fixture path uses exactly one `MockAgentRuntime` invocation and
+zero Harness processes, ModelGateway calls, BrainNode calls, Workcell state,
+network calls, or replacement workers. Ten redeliveries, concurrent scheduler
+claims, the four-child root concurrency ceiling, total creations, aggregate
+budget, cancellation, kill switch, deadline, recursive-spawn prevention,
+bounded batches, no-op passes, and crash recovery at each orchestration phase
+are covered. Worker settlement crashes resume event completion without runtime
+replay; D1 uncertain outcomes remain uncertain and retryable only for durable
+reconciliation. Observer state includes bounded action, causation, child,
+assignment, operation, dispatch, phase, and terminal outcome linkage.
+
+Evidence:
+`operations/reports/agent-mode-k4-2-e1-scheduler-dynamic-worker-evidence-2026-09-11.md`.
+Focused E1 validation is 23/23; the Agent Mode regression set is 339/339; the
+package-wide `brain-core` suite is 2467/2467. K4.2 and K4 remain **IN
+PROGRESS**. Exact next task: **K4.2-E2 — Restricted-Harness Scheduler-to-Worker
+Acceptance and K4.2 Closure Gate**. Do not start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 
