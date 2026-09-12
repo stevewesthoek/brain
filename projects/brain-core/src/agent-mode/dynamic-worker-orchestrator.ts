@@ -55,6 +55,10 @@ export const E2_FIXTURE_ACTION_RULE_ID = 'agent-mode.action.e2-restricted-harnes
 export const E2_FIXTURE_TASK_SPEC_REF = 'task-spec:agent-mode-restricted-harness-fixture' as const;
 export const E2_FIXTURE_SOURCE_ID = 'source:e2-fixture' as const;
 export const E2_FIXTURE_CONTROLLER_REF = 'controller:agent-mode-e2' as const;
+export const K43A_LIVE_MINIMAX_ACTION_RULE_ID = 'agent-mode.action.k4-3-a-live-minimax.v1' as const;
+export const K43A_LIVE_MINIMAX_TASK_SPEC_REF = 'task-spec:agent-mode-live-minimax-acceptance' as const;
+export const K43A_LIVE_MINIMAX_SOURCE_ID = 'source:k4-3-a-live-minimax' as const;
+export const K43A_LIVE_MINIMAX_CONTROLLER_REF = 'controller:agent-mode-k4-3-a' as const;
 
 const MAX_RULES = 32;
 const MAX_EVENTS_PER_PASS = 16;
@@ -92,6 +96,7 @@ export type SchedulerEventActionRule = {
   requestedTtl: number;
   requestedSteps: number;
   requestedCost: number;
+  requestedTokens?: number;
   requestedCapabilities: readonly string[];
   scopeMode: 'event.repository' | 'none';
 };
@@ -138,7 +143,29 @@ export const E2_FIXTURE_ACTION_RULE: SchedulerEventActionRule = Object.freeze({
   scopeMode: 'event.repository',
 });
 
-export const DEFAULT_SCHEDULER_EVENT_ACTION_RULES: readonly SchedulerEventActionRule[] = Object.freeze([E1_FIXTURE_ACTION_RULE, E2_FIXTURE_ACTION_RULE]);
+/** Live acceptance is explicit-test-only and remains disabled in the production registry. */
+export const K43A_LIVE_MINIMAX_ACTION_RULE: SchedulerEventActionRule = Object.freeze({
+  ruleId: K43A_LIVE_MINIMAX_ACTION_RULE_ID,
+  version: 1,
+  enabled: false,
+  sourceType: GIT_REPOSITORY_REVISION_SOURCE,
+  eventType: REPOSITORY_COMMIT_OBSERVED_EVENT,
+  spawnPolicyId: SPAWN_POLICY_READ_ONLY,
+  spawnPolicyVersion: 1,
+  roleTemplateId: SPAWN_ROLE_READ_ONLY,
+  roleTemplateVersion: 1,
+  runtimeRef: RESTRICTED_HARNESS_RUNTIME_REF,
+  runtimeProfileRef: RESTRICTED_HARNESS_PROFILE_REF,
+  taskSpecRef: K43A_LIVE_MINIMAX_TASK_SPEC_REF,
+  requestedTtl: 60_000,
+  requestedSteps: 1,
+  requestedCost: 0.01,
+  requestedTokens: 6_000,
+  requestedCapabilities: [],
+  scopeMode: 'event.repository',
+});
+
+export const DEFAULT_SCHEDULER_EVENT_ACTION_RULES: readonly SchedulerEventActionRule[] = Object.freeze([E1_FIXTURE_ACTION_RULE, E2_FIXTURE_ACTION_RULE, K43A_LIVE_MINIMAX_ACTION_RULE]);
 
 export type DynamicWorkerPhase =
   | 'claimed'
@@ -240,8 +267,8 @@ function validRule(rule: SchedulerEventActionRule, policies: readonly AgentSpawn
   if (!runtimeProfile) return 'RULE_RUNTIME_UNKNOWN';
   if ((rule.runtimeRef !== MOCK_AGENT_RUNTIME_REF || rule.runtimeProfileRef !== MOCK_AGENT_RUNTIME_PROFILE_REF)
     && (rule.runtimeRef !== RESTRICTED_HARNESS_RUNTIME_REF || rule.runtimeProfileRef !== RESTRICTED_HARNESS_PROFILE_REF)) return 'RULE_RUNTIME_NOT_ALLOWED';
-  if ((rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF && rule.requestedCapabilities.length !== 0) || (rule.runtimeProfileRef === MOCK_AGENT_RUNTIME_PROFILE_REF && rule.taskSpecRef !== E1_FIXTURE_TASK_SPEC_REF) || (rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF && rule.taskSpecRef !== E2_FIXTURE_TASK_SPEC_REF) || !SAFE_REF.test(rule.taskSpecRef) || rule.taskSpecRef.length > MAX_TASK_SPEC_LENGTH) return 'RULE_TASK_SPEC_INVALID';
-  if (!boundedPositive(rule.requestedTtl, 15 * 60 * 1000) || !Number.isSafeInteger(rule.requestedSteps) || rule.requestedSteps < 1 || rule.requestedSteps > 100 || !Number.isFinite(rule.requestedCost) || rule.requestedCost < 0 || rule.requestedCost > 0.25) return 'RULE_LIMIT_INVALID';
+  if ((rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF && rule.requestedCapabilities.length !== 0) || (rule.runtimeProfileRef === MOCK_AGENT_RUNTIME_PROFILE_REF && rule.taskSpecRef !== E1_FIXTURE_TASK_SPEC_REF) || (rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF && ![E2_FIXTURE_TASK_SPEC_REF, K43A_LIVE_MINIMAX_TASK_SPEC_REF].includes(rule.taskSpecRef as typeof E2_FIXTURE_TASK_SPEC_REF | typeof K43A_LIVE_MINIMAX_TASK_SPEC_REF)) || !SAFE_REF.test(rule.taskSpecRef) || rule.taskSpecRef.length > MAX_TASK_SPEC_LENGTH) return 'RULE_TASK_SPEC_INVALID';
+  if (!boundedPositive(rule.requestedTtl, 15 * 60 * 1000) || !Number.isSafeInteger(rule.requestedSteps) || rule.requestedSteps < 1 || rule.requestedSteps > 100 || !Number.isFinite(rule.requestedCost) || rule.requestedCost < 0 || rule.requestedCost > 0.25 || !Number.isSafeInteger(rule.requestedTokens ?? 0) || (rule.requestedTokens ?? 0) < 0 || (rule.requestedTokens ?? 0) > 6_000) return 'RULE_LIMIT_INVALID';
   if (rule.scopeMode !== 'event.repository' && rule.scopeMode !== 'none') return 'RULE_SCOPE_MODE_INVALID';
   if (new Set(rule.requestedCapabilities).size !== rule.requestedCapabilities.length || rule.requestedCapabilities.length > 8) return 'RULE_CAPABILITY_INVALID';
   if (!rule.requestedCapabilities.every((capability) => typeof capability === 'string' && SAFE_ID.test(capability) && policy.capabilityCeiling.includes(capability as never) && template.capabilities.includes(capability as never))) return 'RULE_CAPABILITY_INVALID';
@@ -339,6 +366,7 @@ function deriveLifecycle(store: AgentModeSqliteStateStore, event: AgentModeSched
     runtimeProfileRef: rule.runtimeProfileRef,
     requestedSteps: rule.requestedSteps,
     requestedCostCeiling: rule.requestedCost,
+    ...(rule.requestedTokens === undefined ? {} : { requestedTokenCeiling: rule.requestedTokens }),
     requestedCapabilities: [...rule.requestedCapabilities],
     repositoryScope: repositoryRef,
     resourceScope: null,

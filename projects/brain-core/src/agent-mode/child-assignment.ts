@@ -19,6 +19,8 @@ export type AgentModeChildAssignmentRequest = {
   runtimeProfileRef: string;
   requestedSteps: number;
   requestedCostCeiling: number;
+  /** Optional model-token allocation; legacy fixture assignments remain zero. */
+  requestedTokenCeiling?: number;
   requestedCapabilities: readonly string[];
   repositoryScope: string | null;
   resourceScope: string | null;
@@ -58,6 +60,7 @@ export type AgentModeChildAssignment = {
   resourceScope: string | null;
   requestedSteps: number;
   requestedCost: number;
+  requestedTokens: number;
   budgetScopeId: string;
   reservationId: string;
   deadline: string;
@@ -79,6 +82,7 @@ export type AgentModeChildAssignmentReceipt = {
   runtimeProfileRef: string;
   stepCeiling: number;
   costCeiling: number;
+  tokenCeiling: number;
   budgetScopeId: string;
   reservationId: string;
   createdAt: string;
@@ -106,6 +110,8 @@ export type AgentModePreparedChildDispatch = {
   sourceEventId: string;
   stepCeiling: number;
   costCeiling: number;
+  tokenCeiling: number;
+  remainingTokens: number;
   remainingSteps: number;
   remainingCost: number;
   deadline: string;
@@ -157,6 +163,7 @@ function assignmentMaterial(request: AgentModeChildAssignmentRequest): Record<st
     runtimeProfileRef: request.runtimeProfileRef,
     requestedSteps: request.requestedSteps,
     requestedCostCeiling: request.requestedCostCeiling,
+    requestedTokenCeiling: request.requestedTokenCeiling ?? 0,
     requestedCapabilities: [...request.requestedCapabilities].sort(),
     repositoryScope: request.repositoryScope,
     resourceScope: request.resourceScope,
@@ -199,6 +206,7 @@ export function validateChildAssignmentRequest(request: AgentModeChildAssignment
     && SAFE_ID.test(request.sourceEventId)
     && Number.isSafeInteger(request.requestedSteps) && request.requestedSteps >= 0
     && Number.isFinite(request.requestedCostCeiling) && request.requestedCostCeiling >= 0
+    && Number.isSafeInteger(request.requestedTokenCeiling ?? 0) && (request.requestedTokenCeiling ?? 0) >= 0
     && request.requestedCapabilities.length <= 16
     && request.requestedCapabilities.every((capability) => typeof capability === 'string' && KNOWN_CAPABILITIES.includes(capability as typeof KNOWN_CAPABILITIES[number]))
     && (request.repositoryScope === null || SAFE_REF.test(request.repositoryScope))

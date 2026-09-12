@@ -10,8 +10,12 @@ import { RESTRICTED_HARNESS_PROFILE_REF, RESTRICTED_HARNESS_RUNTIME_REF } from '
 import type { AgentRuntime, AgentRuntimeExecutionContext, AgentRuntimeResult } from './runtime-dispatch.js';
 import type { AgentModeSqliteStateStore } from './sqlite-state-store.js';
 import { readRuntimeProcessIdentity, type RuntimeProcessIdentity } from './runtime-process-identity.js';
+import { ModelGatewayError, type NormalizedModelResult } from './model-gateway.js';
 
 export const RESTRICTED_HARNESS_FIXTURE_RESPONSE = 'BRAIN_K4_2_D2_HARNESS_PROCESS_PASS';
+export const K43A_LIVE_TASK_TEXT = 'BRAIN_K4_3_A_LIVE_MINIMAX_PASS';
+export const RESTRICTED_HARNESS_FIXTURE_TIMEOUT_MS = 10_000;
+export const RESTRICTED_HARNESS_LIVE_MODEL_TIMEOUT_MS = 90_000;
 const MAX_PROTOCOL_BYTES = 16 * 1024;
 const MAX_DIAGNOSTIC_CHARS = 512;
 const PROCESS_COMMAND_IDENTITY = 'deepseek-harness:' + DEEPSEEK_HARNESS_PIN.commit;
@@ -33,10 +37,14 @@ export type RestrictedHarnessAgentRuntimeOptions = {
   startupTimeoutMs?: number;
   executionTimeoutMs?: number;
   shutdownGraceMs?: number;
+  /** Brain-owned bridge; the child never receives provider credentials or SDK access. */
+  modelBridge?: (input: { context: AgentRuntimeExecutionContext; turn: number; maxTokens: number; prompt: string; signal: AbortSignal; isCancellationRequested: () => boolean }) => Promise<NormalizedModelResult>;
 };
 
 type FixtureRequest = { kind: 'fixture'; operationId: string; attemptId: string; environmentHasSentinel?: boolean };
+type ModelRequest = { kind: 'model'; operationId: string; attemptId: string; turn: number; maxTokens: number; prompt: string; awsEnvironmentPresent: boolean };
 type FixtureResponse = { ok: boolean; outcome?: RestrictedHarnessFixtureOutcome; failureCode?: string; error?: string };
+type ModelResponse = { ok: boolean; text?: string; usage?: { inputTokens: number; outputTokens: number; totalTokens: number }; error?: string };
 type HarnessChild = { pid?: number };
 type HarnessClient = { child?: HarnessChild };
 type HarnessInstance = {
@@ -69,10 +77,11 @@ function protocolLine(value: unknown): string {
   return line + '\n';
 }
 
-function createFixtureBridge(context: AgentRuntimeExecutionContext, options: RestrictedHarnessAgentRuntimeOptions): Promise<{ server: Server; socketPath: string; sockets: Set<Socket> }> {
+function createFixtureBridge(context: AgentRuntimeExecutionContext, options: RestrictedHarnessAgentRuntimeOptions, signal: AbortSignal, isCancellationRequested: () => boolean): Promise<{ server: Server; socketPath: string; sockets: Set<Socket> }> {
   return new Promise((resolve, reject) => {
     const socketPath = path.join(tmpdir(), 'brain-k42-d2-' + process.pid + '-' + Date.now() + '-' + Math.random().toString(16).slice(2) + '.sock');
     const sockets = new Set<Socket>();
+    let modelRequestCount = 0;
     const server = createServer((socket: Socket) => {
       sockets.add(socket);
       socket.once('close', () => sockets.delete(socket));
@@ -95,23 +104,40 @@ function createFixtureBridge(context: AgentRuntimeExecutionContext, options: Res
         if (newline < 0) return;
         const line = buffer.slice(0, newline);
         handled = true;
-        let request: FixtureRequest;
+        let request: FixtureRequest | ModelRequest;
         try {
-          const parsed = JSON.parse(line) as Partial<FixtureRequest>;
-          if (parsed.kind !== 'fixture' || parsed.operationId !== context.operationId || parsed.attemptId !== context.attemptId) throw new Error('fixture bridge identity mismatch');
-          request = { kind: 'fixture', operationId: parsed.operationId, attemptId: parsed.attemptId, ...(parsed.environmentHasSentinel === undefined ? {} : { environmentHasSentinel: parsed.environmentHasSentinel }) };
+          const parsed = JSON.parse(line) as Partial<{ kind: string; operationId: string; attemptId: string; environmentHasSentinel: boolean; turn: number; maxTokens: number; prompt: string; awsEnvironmentPresent: boolean }>;
+          if ((parsed.kind !== 'fixture' && parsed.kind !== 'model') || parsed.operationId !== context.operationId || parsed.attemptId !== context.attemptId) throw new Error('fixture bridge identity mismatch');
+          if (parsed.kind === 'model') {
+            if (modelRequestCount !== 0) throw new Error('second model turn denied');
+            modelRequestCount += 1;
+            if (!options.modelBridge || parsed.turn !== 1 || parsed.maxTokens !== 256 || parsed.prompt !== K43A_LIVE_TASK_TEXT || parsed.awsEnvironmentPresent !== false) throw new Error('model bridge request is outside the bounded K4.3-A contract');
+            options.fixtureEnvironmentObserved?.(false);
+            request = { kind: 'model', operationId: parsed.operationId, attemptId: parsed.attemptId, turn: parsed.turn, maxTokens: parsed.maxTokens, prompt: parsed.prompt, awsEnvironmentPresent: false };
+          } else {
+            request = { kind: 'fixture', operationId: parsed.operationId, attemptId: parsed.attemptId, ...(parsed.environmentHasSentinel === undefined ? {} : { environmentHasSentinel: parsed.environmentHasSentinel }) };
+          }
         } catch (error) {
           socket.end(protocolLine({ ok: false, error: boundedDiagnostic(error) }));
           return;
         }
-        options.fixtureEnvironmentObserved?.(request.environmentHasSentinel === true);
-        options.fixtureStarted?.();
+        if (request.kind === 'fixture') {
+          options.fixtureEnvironmentObserved?.(request.environmentHasSentinel === true);
+          options.fixtureStarted?.();
+        }
         if (options.fixtureProtocol === 'malformed') {
           socket.end('{malformed fixture response}\n');
           return;
         }
         if (options.fixtureProtocol === 'oversized') {
           socket.end('x'.repeat(MAX_PROTOCOL_BYTES + 1) + '\n');
+          return;
+        }
+        if (request.kind === 'model') {
+          void options.modelBridge!({ context, turn: request.turn, maxTokens: request.maxTokens, prompt: request.prompt, signal, isCancellationRequested }).then(
+            (value) => socket.end(protocolLine({ ok: true, text: value.text.slice(0, 4096), usage: value.usage } satisfies ModelResponse)),
+            (error) => socket.end(protocolLine({ ok: false, error: boundedDiagnostic(error) } satisfies ModelResponse)),
+          );
           return;
         }
         const outcome = options.fixtureOutcome ?? 'success';
@@ -132,10 +158,15 @@ function createFixtureBridge(context: AgentRuntimeExecutionContext, options: Res
   });
 }
 
-async function writeHarnessFixtureFiles(attemptRoot: string, harnessRoot: string): Promise<{ patchPath: string }> {
+async function writeHarnessFixtureFiles(attemptRoot: string, harnessRoot: string, liveModel: boolean): Promise<{ patchPath: string }> {
   const llmRuntime = pathToFileURL(path.join(harnessRoot, 'packages/llm/llm/lib/index.js')).href;
   const pluginPath = path.join(attemptRoot, 'brain-k42-d2-fixture.mjs');
   const patchPath = path.join(attemptRoot, 'brain-k42-d2-restricted.patch.yml');
+  const parentRequest = liveModel
+    ? 'JSON.stringify({ kind: "model", operationId, attemptId, turn: 1, maxTokens: 256, prompt: "BRAIN_K4_3_A_LIVE_MINIMAX_PASS", awsEnvironmentPresent: Object.keys(process.env).some(key => key.startsWith("AWS_")) })'
+    : 'JSON.stringify({ kind: "fixture", operationId, attemptId, environmentHasSentinel: Object.prototype.hasOwnProperty.call(process.env, "BRAIN_D2_PARENT_SENTINEL") })';
+  const responseText = liveModel ? 'response.text' : '"BRAIN_K4_2_D2_HARNESS_PROCESS_PASS"';
+  const responseUsage = liveModel ? 'response.usage' : '{ inputTokens: 0, outputTokens: 0 }';
   const plugin = [
     'import net from "node:net"',
     'import { LlmAdapter, ReasoningEffortId } from ' + JSON.stringify(llmRuntime),
@@ -143,9 +174,9 @@ async function writeHarnessFixtureFiles(attemptRoot: string, harnessRoot: string
     'const operationId = process.env.BRAIN_K42_D2_OPERATION_ID',
     'const attemptId = process.env.BRAIN_K42_D2_ATTEMPT_ID',
     'if (!socketPath || !operationId || !attemptId) throw new Error("Brain D2 fixture bridge identity is incomplete")',
-    'function callParent() { return new Promise((resolve, reject) => { const socket = net.createConnection(socketPath); let buffer = ""; let settled = false; const finish = (fn, value) => { if (settled) return; settled = true; socket.destroy(); fn(value) }; socket.once("error", error => finish(reject, error)); socket.on("data", chunk => { buffer += chunk.toString("utf8"); if (Buffer.byteLength(buffer, "utf8") > 16384) return finish(reject, new Error("fixture bridge response too large")); const newline = buffer.indexOf("\\n"); if (newline < 0) return; try { finish(resolve, JSON.parse(buffer.slice(0, newline))) } catch (error) { finish(reject, error) } }); socket.once("connect", () => socket.write(JSON.stringify({ kind: "fixture", operationId, attemptId, environmentHasSentinel: Object.prototype.hasOwnProperty.call(process.env, "BRAIN_D2_PARENT_SENTINEL") }) + "\\n")) }) }',
-    'class BrainFixtureAdapter extends LlmAdapter { resolveModel(provider, model) { return Promise.resolve({ provider, id: model, name: model, reasoning: { efforts: [{ id: ReasoningEffortId("default"), name: "Default" }] } }) } async *stream() { const response = await callParent(); if (!response || response.ok !== true) throw new Error(typeof response?.error === "string" ? response.error : "Brain fixture bridge rejected"); if (response.outcome === "failure") throw new Error(typeof response.failureCode === "string" ? response.failureCode : "D2_FIXTURE_FAILURE"); if (response.outcome === "crash") process.exit(17); const text = "BRAIN_K4_2_D2_HARNESS_PROCESS_PASS"; yield { type: "block-start", index: 0, blockType: "text" }; yield { type: "text-delta", index: 0, text }; yield { type: "block-end", index: 0, block: { type: "text", text } }; yield { type: "usage", usage: { inputTokens: 0, outputTokens: 0 } }; yield { type: "finish", reason: { kind: "stop" } } } }',
-    'export const name = "brain-k42-d2-fixture"',
+    `function callParent() { return new Promise((resolve, reject) => { const socket = net.createConnection(socketPath); let buffer = ""; let settled = false; const finish = (fn, value) => { if (settled) return; settled = true; socket.destroy(); fn(value) }; socket.once("error", error => finish(reject, error)); socket.on("data", chunk => { buffer += chunk.toString("utf8"); if (Buffer.byteLength(buffer, "utf8") > 16384) return finish(reject, new Error("fixture bridge response too large")); const newline = buffer.indexOf("\\n"); if (newline < 0) return; try { finish(resolve, JSON.parse(buffer.slice(0, newline))) } catch (error) { finish(reject, error) } }); socket.once("connect", () => socket.write(${parentRequest} + "\\n")) }) }`,
+    `class BrainFixtureAdapter extends LlmAdapter { resolveModel(provider, model) { return Promise.resolve({ provider, id: model, name: model, reasoning: { efforts: [{ id: ReasoningEffortId("default"), name: "Default" }] } }) } async *stream() { const response = await callParent(); if (!response || response.ok !== true) throw new Error(typeof response?.error === "string" ? response.error : "Brain fixture bridge rejected"); if (response.outcome === "failure") throw new Error(typeof response.failureCode === "string" ? response.failureCode : "D2_FIXTURE_FAILURE"); if (response.outcome === "crash") process.exit(17); const text = ${responseText}; if (typeof text !== "string" || text.length === 0) throw new Error("model response text missing"); yield { type: "block-start", index: 0, blockType: "text" }; yield { type: "text-delta", index: 0, text }; yield { type: "block-end", index: 0, block: { type: "text", text } }; yield { type: "usage", usage: ${responseUsage} }; yield { type: "finish", reason: { kind: "stop" } } } }`,
+    'export const name = ' + JSON.stringify(liveModel ? 'brain-k43-a-live-minimax' : 'brain-k42-d2-fixture'),
     'export const inject = ["llm"]',
     'export function apply(ctx) { ctx.llm.registerAdapter(["brain-k42-d2-fixture"], new BrainFixtureAdapter()) }',
   ].join('\n');
@@ -170,14 +201,14 @@ async function validateHarnessRoot(input: string): Promise<string> {
   return root;
 }
 
-function resultFor(context: AgentRuntimeExecutionContext, status: AgentRuntimeResult['status'], failureCode?: string): AgentRuntimeResult {
+function resultFor(context: AgentRuntimeExecutionContext, status: AgentRuntimeResult['status'], failureCode?: string, modelResult?: NormalizedModelResult): AgentRuntimeResult {
   const response = status === 'succeeded' ? RESTRICTED_HARNESS_FIXTURE_RESPONSE : status === 'cancelled' ? 'cancelled' : failureCode ?? 'failed';
   return {
     status,
     runtimeReceiptId: 'runtime-receipt:harness:' + context.attemptId,
     resultHash: hash(context.operationId + ':' + status + ':' + response),
     evidenceRef: 'evidence:harness:' + context.attemptId,
-    usage: { steps: status === 'cancelled' ? 0 : 1, tokens: 0, cost: 0 },
+    usage: { steps: status === 'cancelled' ? 0 : 1, tokens: status === 'succeeded' ? (modelResult?.usage.totalTokens ?? 0) : 0, cost: status === 'succeeded' ? (modelResult?.cost.estimatedUsd ?? 0) : 0 },
     ...(status === 'failed' ? { failureCode: failureCode ?? 'HARNESS_RUNTIME_FAILED' } : {}),
     traceSummary: ['harness:' + DEEPSEEK_HARNESS_PIN.version, 'profile:' + RESTRICTED_HARNESS_PROFILE_REF, 'process:' + status],
     ...(status === 'cancelled' ? { cancellationObserved: true } : {}),
@@ -211,8 +242,18 @@ export class RestrictedHarnessAgentRuntime implements AgentRuntime {
     const childTmp = path.join(attemptRoot, 'tmp');
     await Promise.all([mkdir(childHome), mkdir(childTmp)]);
     await Promise.all([writeFile(path.join(childHome, '.keep'), '', { mode: 0o600 }), writeFile(path.join(childTmp, '.keep'), '', { mode: 0o600 })]);
-    const files = await writeHarnessFixtureFiles(attemptRoot, harnessRoot);
-    const bridge = await createFixtureBridge(context, this.options);
+    const liveModel = Boolean(this.options.modelBridge);
+    const executionTimeoutMs = this.options.executionTimeoutMs
+      ?? (liveModel ? RESTRICTED_HARNESS_LIVE_MODEL_TIMEOUT_MS : RESTRICTED_HARNESS_FIXTURE_TIMEOUT_MS);
+    const files = await writeHarnessFixtureFiles(attemptRoot, harnessRoot, liveModel);
+    let modelResult: NormalizedModelResult | undefined;
+    const bridgeOptions: RestrictedHarnessAgentRuntimeOptions = { ...this.options };
+    if (this.options.modelBridge) bridgeOptions.modelBridge = async (request) => {
+        const value = await this.options.modelBridge!(request);
+        modelResult = value;
+        return value;
+      };
+    const bridge = await createFixtureBridge(context, bridgeOptions, input.signal, input.isCancellationRequested);
     let harness: HarnessInstance | undefined;
     let persistedIdentity: RuntimeProcessIdentity | undefined;
     let runtimePid: number | undefined;
@@ -265,7 +306,7 @@ export class RestrictedHarnessAgentRuntime implements AgentRuntime {
         model: 'brain-k42-d2-fixture',
         maxTokens: 64,
         initializeTimeoutMs: this.options.startupTimeoutMs ?? 5_000,
-        requestTimeoutMs: this.options.executionTimeoutMs ?? 10_000,
+        requestTimeoutMs: executionTimeoutMs,
         shutdownTimeoutMs: this.options.shutdownGraceMs ?? 500,
         disposeEofGraceMs: this.options.shutdownGraceMs ?? 500,
         disposeGraceMs: this.options.shutdownGraceMs ?? 1_000,
@@ -283,13 +324,13 @@ export class RestrictedHarnessAgentRuntime implements AgentRuntime {
       this.options.store.setRunRuntimePid(context.runId, child.pid, identity);
       this.options.store.recordEvent({ eventId: 'runtime-process-started:' + context.operationId, entityType: 'run', entityId: context.runId, eventType: 'runtime_process_started', occurredAt: new Date().toISOString(), payload: { operationId: context.operationId, dispatchId: context.dispatchId, runtimeRef: context.runtimeRef, runtimeProfileRef: context.runtimeProfileRef, pid: runtimePid, processStartedAt: identity.startedAt, processState: 'running', processIdentityVerified: true } });
       admittedToHarness = true;
-      const timer = setTimeout(() => { void closeHarness(); }, this.options.executionTimeoutMs ?? 10_000);
+      const timer = setTimeout(() => { void closeHarness(); }, executionTimeoutMs);
       try {
-        const runResult = await harness.run('Return the deterministic Brain fixture result.', { sessionId: 'brain-k42-d2-' + context.attemptId });
+        const runResult = await harness.run(liveModel ? K43A_LIVE_TASK_TEXT : 'Return the deterministic Brain fixture result.', { sessionId: 'brain-k42-d2-' + context.attemptId });
         if (input.signal.aborted || input.isCancellationRequested()) terminalResult = resultFor(context, 'cancelled');
         else if (Buffer.byteLength(runResult.finalResponse, 'utf8') > MAX_PROTOCOL_BYTES) terminalResult = resultFor(context, 'failed', 'HARNESS_RESULT_TOO_LARGE');
-        else if (runResult.finalResponse.trim() !== RESTRICTED_HARNESS_FIXTURE_RESPONSE) terminalResult = resultFor(context, 'failed', 'HARNESS_RESULT_INVALID');
-        else terminalResult = resultFor(context, 'succeeded');
+        else if (liveModel ? (!modelResult || runResult.finalResponse.trim() !== modelResult.text.trim()) : runResult.finalResponse.trim() !== RESTRICTED_HARNESS_FIXTURE_RESPONSE) terminalResult = resultFor(context, 'failed', 'HARNESS_RESULT_INVALID');
+        else terminalResult = resultFor(context, 'succeeded', undefined, modelResult);
       } finally {
         clearTimeout(timer);
       }
@@ -304,6 +345,7 @@ export class RestrictedHarnessAgentRuntime implements AgentRuntime {
       } catch { /* diagnostic persistence cannot widen the runtime outcome */ }
       if (input.signal.aborted || input.isCancellationRequested()) terminalResult = resultFor(context, 'cancelled');
       else if (admittedToHarness && this.options.fixtureOutcome === 'failure' && boundedDiagnostic(error).includes(this.options.fixtureFailureCode ?? 'D2_FIXTURE_FAILURE')) terminalResult = resultFor(context, 'failed', this.options.fixtureFailureCode ?? 'D2_FIXTURE_FAILURE');
+      else if (admittedToHarness && liveModel && !boundedDiagnostic(error).startsWith('runtime_outcome_uncertain')) terminalResult = resultFor(context, 'failed', error instanceof ModelGatewayError ? `MODEL_${error.code.toUpperCase()}` : boundedDiagnostic(error).split(':', 1)[0] || 'MODEL_FAILURE');
       else if (!admittedToHarness) terminalResult = resultFor(context, 'failed', boundedDiagnostic(error).split(':', 1)[0] || 'HARNESS_START_FAILURE');
       else throw new Error('runtime_outcome_uncertain:' + boundedDiagnostic(error));
       if (terminalResult.status !== 'cancelled' && this.options.evidenceRoot) await this.persistEvidence(context, persistedIdentity, terminalResult);

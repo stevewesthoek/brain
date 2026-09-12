@@ -11,6 +11,7 @@ import {
   type ModelGateway,
   type NormalizedModelResult,
 } from '../agent-mode/model-gateway.js';
+import { AGENT_MODE_PRICING } from '../agent-mode/model-tier-policy.js';
 
 const ADMITTED_REGION = 'us-east-1';
 
@@ -126,10 +127,10 @@ export class AmazonBedrockModelGateway implements ModelGateway {
         region: this.region,
         usage: normalizeUsage(response.usage),
         cost: {
-          inputPerMillionUsd: null,
-          outputPerMillionUsd: null,
-          estimatedUsd: null,
-          pricingSource: 'not-configured-in-k1-1',
+          inputPerMillionUsd: AGENT_MODE_PRICING[request.modelRef].inputPerMillionUsd ?? null,
+          outputPerMillionUsd: AGENT_MODE_PRICING[request.modelRef].outputPerMillionUsd ?? null,
+          estimatedUsd: estimateCost(request.modelRef, normalizeUsage(response.usage)),
+          pricingSource: AGENT_MODE_PRICING[request.modelRef].source,
         },
         ...(response.stopReason ? { stopReason: response.stopReason } : {}),
         ...(response['$metadata']?.requestId || response.requestId
@@ -145,6 +146,13 @@ export class AmazonBedrockModelGateway implements ModelGateway {
       throw new ModelGatewayError(classifyProviderError(error), 'Bedrock Converse invocation failed');
     }
   }
+}
+
+function estimateCost(modelRef: AdmittedModelRequest['modelRef'], usage: { inputTokens: number; outputTokens: number }): number | null {
+  const pricing = AGENT_MODE_PRICING[modelRef];
+  if (!pricing.verified) return null;
+  if (pricing.inputPerMillionUsd === null || pricing.outputPerMillionUsd === null) return null;
+  return Math.round(((usage.inputTokens * pricing.inputPerMillionUsd + usage.outputTokens * pricing.outputPerMillionUsd) / 1_000_000) * 1_000_000) / 1_000_000;
 }
 
 function normalizeFinalText(response: BedrockConverseTransportResponse): string {

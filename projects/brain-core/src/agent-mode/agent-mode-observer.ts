@@ -77,6 +77,7 @@ export type AgentModeObserverProjection = {
   spawnAdmissionControls: Array<Record<string, unknown>>;
   spawnRootStates: Array<Record<string, unknown>>;
   childAssignments: Array<Record<string, unknown>>;
+  modelOperations: Array<Record<string, unknown>>;
   dynamicWorkerOrchestrations: Array<Record<string, unknown>>;
 };
 
@@ -173,7 +174,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [],
     };
   }
 
@@ -311,6 +312,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
       deadline: assignment.deadline,
       stepCeiling: assignment.requestedSteps,
       costCeiling: assignment.requestedCost,
+      tokenCeiling: assignment.requestedTokens,
       createdAt: assignment.createdAt,
       updatedAt: assignment.updatedAt,
     }));
@@ -366,6 +368,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         });
       }
     }
+    const effectsByOperation = new Map(store.listEffects().map((effect) => [effect.operationId, effect]));
     const operations = store.listOutbox().map((outbox) => {
       const verification = verified.get(outbox.operationId);
       return {
@@ -381,7 +384,33 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         ...(verification ?? {}),
       };
     });
-    const effectsByOperation = new Map(store.listEffects().map((effect) => [effect.operationId, effect]));
+    const modelOperations = store.listOutbox().filter((outbox) => outbox.effectKind === 'model.invoke').map((outbox) => {
+      const effect = effectsByOperation.get(outbox.operationId);
+      let receipt: Record<string, unknown> | undefined;
+      if (effect?.receiptJson) {
+        try {
+          const parsed = JSON.parse(effect.receiptJson) as Record<string, unknown>;
+          receipt = {
+            providerId: parsed.providerId,
+            modelRef: parsed.modelRef,
+            modelId: parsed.modelId,
+            route: parsed.route,
+            region: parsed.region,
+            operationId: parsed.operationId,
+            attemptId: parsed.attemptId,
+            requestId: parsed.requestId,
+            usage: parsed.usage,
+            cost: parsed.cost,
+            pricingSource: (parsed.cost as Record<string, unknown> | undefined)?.pricingSource,
+            stopReason: parsed.stopReason,
+            latencyMs: parsed.latencyMs,
+            completedAt: parsed.completedAt,
+            accessEvidenceVersion: parsed.accessEvidenceVersion,
+          };
+        } catch { /* malformed receipt remains visible through dispatch state */ }
+      }
+      return { operationId: outbox.operationId, attemptId: outbox.attemptId, state: outbox.state, capabilityId: outbox.capabilityId, scopeHash: outbox.scopeHash, policyVersion: outbox.policyVersion, preparedAt: outbox.preparedAt, dispatchedAt: outbox.dispatchedAt, ...(receipt ? { receipt } : {}) };
+    });
     const runtimeDispatches = store.listDispatchOutbox().filter((outbox) => outbox.effectKind === 'runtime.dispatch').map((outbox) => {
       const assignment = outbox.childAgentId ? store.getChildAssignment(outbox.childAgentId) : undefined;
       const run = assignment ? store.getRun(assignment.runId) : undefined;
@@ -462,7 +491,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations,
+      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations,
     };
   } finally {
     store.close();
