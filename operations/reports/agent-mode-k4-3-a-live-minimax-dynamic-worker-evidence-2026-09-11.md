@@ -109,3 +109,37 @@ escalation, second turn, redelivery, or restart check after the failure. The
 bounded failure summary preserves only allowlisted IDs, counts, states,
 classification, and timing; it contains no credentials, raw provider payload,
 or hidden reasoning. Phase B was not started.
+
+## Fresh acceptance attempt R2 — 2026-09-12
+
+R2 used the fresh acceptance generation `k4.3-a-r2` and fresh durable
+identities after the protocol repair. The repair separates the Brain-owned
+instructional prompt from the exact expected response token. Deterministic
+validation passed, including proof that the Harness and ModelGateway receive
+the instructional prompt and that verbose or extra response text remains
+invalid.
+
+Fresh access evidence passed for `amazon-bedrock`,
+`minimax.minimax-m2.5`, direct route, and `us-east-1`; catalog lifecycle,
+authorization, agreement, entitlement, region availability, and callable state
+were all positive.
+
+The run created exactly one scheduler event, child, Task, Run, and Attempt;
+launched and reaped exactly one restricted Harness; and made exactly one
+ModelGateway and one MiniMax provider invocation. It made one model turn and
+zero tool, BrainNode, Workcell, repository, replacement-worker, or grandchild
+effects. The Harness sent the explicit instructional prompt, and the parent
+bridge forwarded that prompt through ModelGateway.
+
+The provider result existed with usage `61 / 256 / 317` input / output / total
+tokens, settled-cost calculation `$0.000326`, stop reason `max_tokens`, and
+latency `7689 ms`. No visible response text was available, so strict exact
+token validation failed. No normalized provider receipt was accepted; the
+model operation remains `effect_applied`/unverified. This is a
+post-provider known validation failure, not an uncertain provider effect.
+
+The R2 runner made no retry, fallback, escalation, second turn, or replacement
+worker call. Because acceptance did not succeed, redelivery and restart checks
+were not entered, K4.3-A remains in progress, and K4.3-B was not started. The
+bounded R2 record is preserved in
+`operations/reports/agent-mode-k4-3-a-r2-live-minimax-acceptance-evidence-2026-09-12.md`.
