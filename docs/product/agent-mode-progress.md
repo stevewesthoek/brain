@@ -878,6 +878,33 @@ additional effects. Evidence:
 **K4.3-A: COMPLETE. K4: IN PROGRESS.** Exact next task: **K4.3-B — K4 Live
 Autonomy Closure Audit and Phase Exit Gate**. Do not start it automatically.
 
+## Current K4.3-B K4 live autonomy closure — 2026-09-12
+
+K4.3-B is **COMPLETE**. The bounded closure audit verified all 30 K4 exit
+invariants as **PASS** across the scheduler, EventSources, spawn admission and
+reservation, Task/Run/Attempt assignment, D1/D2 runtime dispatch, restricted
+Harness process boundary, E1/E2 orchestration, and the K4.3-A R3 live MiniMax
+acceptance. The audit found no unresolved runtime/provider uncertainty and no
+known duplicate-effect path.
+
+K4 now provides the deterministic runtime/control-plane foundation needed for
+bounded autonomous Jarvis delegation: Brain can admit, create, assign, execute,
+observe, interrupt, recover, account for, and retire bounded intelligent
+workers. Jarvis executive reasoning and multi-agent organization remain later
+phases; this does not claim unrestricted Jarvis autonomy.
+
+R3 remains the only canonical live K4.3-A acceptance: one fresh direct Bedrock
+call, one child/Task/Run/Attempt, one Harness launch/reap, one ModelGateway and
+provider call, exact response acceptance, durable verified receipt, and one
+settled cost of `$0.000161` for `61 / 119 / 180` tokens. Redelivery and restart
+created no duplicate effects. No live provider call was made during the audit.
+
+Closure evidence:
+`operations/reports/agent-mode-k4-3-b-k4-live-autonomy-closure-evidence-2026-09-12.md`.
+**K4.3-B: COMPLETE. K4: COMPLETE.** Broad production live autonomy remains
+disabled by default. Exact next milestone: **Phase K5 — multi-agent
+organization**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

@@ -817,3 +817,26 @@ zero additional effects. Evidence:
 
 K4 remains **IN PROGRESS**. Exact next task: **K4.3-B — K4 Live Autonomy
 Closure Audit and Phase Exit Gate**. Do not start it automatically.
+
+## K4.3-B K4 live autonomy closure — 2026-09-12
+
+K4.3-B and K4 are **COMPLETE** for the bounded phase-exit gate. The closure
+audit passed all 30 invariants across event authority, action/spawn separation,
+root and aggregate budget authority, deterministic assignment, fenced D1/D2
+dispatch, restricted Harness security, cancellation, kill switches, deadlines,
+TTL, recursive-spawn prevention, provider ownership, effect journaling,
+uncertainty no-replay, accounting, redelivery, restart reconstruction,
+observability, quiet heartbeat, default-off autonomy, and portability.
+
+The canonical live proof remains K4.3-A R3: one fresh MiniMax M2.5 call through
+the scheduler-created restricted Harness and Brain-owned ModelGateway; one
+child/Task/Run/Attempt; one Harness launch/reap; exact response acceptance;
+durable verified provider receipt; and one settled `$0.000161` cost. Redelivery
+and StateStore restart introduced no duplicate effects. No live call is allowed
+or required for this closure surface.
+
+Closure evidence:
+`operations/reports/agent-mode-k4-3-b-k4-live-autonomy-closure-evidence-2026-09-12.md`.
+Production-wide live autonomy remains disabled by default. The exact next
+roadmap milestone is **Phase K5 — multi-agent organization**; do not start it
+automatically.

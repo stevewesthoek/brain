@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is next, and K4 remains in progress
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is complete for its closure gate, K4 is complete, and K5 is the next planned phase
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -794,7 +794,7 @@ covered by K3.5-B–D. K4 remains planned and must not start automatically.
 
 ## Phase K4 — event-driven autonomy and dynamic workers
 
-**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 complete for their bounded gates; K4.2 is complete; K4 remains in progress; K4.3-A is next
+**Status:** K4.0 and K4.1 complete; K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 complete for their bounded gates; K4.2 is complete; K4.3-A and K4.3-B are complete for their bounded gates; K4 is complete; K5 is planned next
 
 ### K4.0 — deterministic event queue, scheduler tick, and no-op heartbeat
 
@@ -1175,6 +1175,30 @@ output-budget exhaustion, remains in
 
 K4 remains **IN PROGRESS**. Exact next task: **K4.3-B — K4 Live Autonomy
 Closure Audit and Phase Exit Gate**. Do not start it automatically.
+
+## K4.3-B — K4 Live Autonomy Closure Audit and Phase Exit Gate
+
+**Status:** COMPLETE. The closure audit verified the complete K4 control plane:
+durable scheduler/event authority, separate action intent and spawn permission,
+atomic child reservation, deterministic assignment, fenced runtime dispatch,
+restricted Harness process security, cancellation/kill/deadline authority,
+bounded budgets/concurrency, recursive-spawn prevention, provider ownership and
+effect journaling, uncertainty no-replay, observer reconstruction, and quiet
+heartbeat behavior.
+
+K4.3-A R3 remains the one canonical bounded live MiniMax acceptance. It used one
+fresh direct `amazon-bedrock` inference through the scheduler-created
+restricted Harness and Brain-owned ModelGateway path; the exact response was
+accepted, the provider receipt was durable and verified, and usage/cost settled
+once. No additional live call was made for this audit. Broad production live
+autonomy remains disabled by default.
+
+All 30 K4 closure invariants are **PASS**. K4.3-B and K4 are **COMPLETE**. The
+closure evidence is
+`operations/reports/agent-mode-k4-3-b-k4-live-autonomy-closure-evidence-2026-09-12.md`.
+
+The exact next roadmap milestone is **Phase K5 — multi-agent organization**,
+which is planned after K4. Do not start it automatically.
 
 ## Phase K5 — multi-agent organization
 
