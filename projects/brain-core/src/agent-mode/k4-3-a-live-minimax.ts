@@ -4,15 +4,16 @@ import { AGENT_MODE_MODEL_ROUTES, type ModelAccessEvidence, type ModelGateway, t
 import { AGENT_MODE_TIER_POLICY_VERSION, AGENT_MODE_PRICING } from './model-tier-policy.js';
 import { runtimeDispatchResourceKey } from './runtime-dispatch.js';
 import type { AgentRuntimeExecutionContext } from './runtime-dispatch.js';
-import { K43A_LIVE_EXPECTED_RESPONSE, K43A_LIVE_MODEL_PROMPT } from './restricted-harness-agent-runtime.js';
+import { K43A_LIVE_EXPECTED_RESPONSE, K43A_LIVE_MODEL_PROMPT, K43A_MAX_TOKENS } from './restricted-harness-agent-runtime.js';
 import type { AgentModeSqliteStateStore } from './sqlite-state-store.js';
+
+export { K43A_MAX_TOKENS } from './restricted-harness-agent-runtime.js';
 
 export const K43A_MODEL_REF = 'agent-mode/minimax-m2.5' as const;
 export const K43A_MODEL_ID = 'minimax.minimax-m2.5' as const;
 export const K43A_ROUTE_KIND = 'direct' as const;
 export const K43A_ROUTE_ID = 'minimax.minimax-m2.5' as const;
 export const K43A_REGION = 'us-east-1' as const;
-export const K43A_MAX_TOKENS = 256 as const;
 export const K43A_MODEL_OPERATION_PREFIX = 'model-op:sha256:' as const;
 
 export type K43AModelReceipt = OperationReceipt & {
@@ -111,6 +112,10 @@ export function createK43AModelBridge(options: {
     }
     const calculatedCost = costFor(result);
     const normalizedText = boundedResponse(result.text);
+    if (result.stopReason === 'max_tokens' && normalizedText.length === 0) {
+      options.store.markEffectObserved(operationId, clock());
+      throw new Error('K43A_MODEL_OUTPUT_BUDGET_EXHAUSTED');
+    }
     if (result.providerId !== 'amazon-bedrock' || result.modelRef !== K43A_MODEL_REF || result.modelId !== K43A_MODEL_ID || result.routeKind !== K43A_ROUTE_KIND || result.routeId !== K43A_ROUTE_ID || result.region !== K43A_REGION || result.operationId !== operationId || result.attemptId !== input.context.attemptId || result.toolUses?.length || result.usage.totalTokens > input.context.tokenCeiling || calculatedCost > input.context.costCeiling || !Number.isFinite(result.cost.estimatedUsd) || result.cost.estimatedUsd !== calculatedCost || !boundedResponse(result.text)) {
       options.store.markEffectObserved(operationId, clock());
       throw new Error('K43A_MODEL_RESULT_INVALID');
