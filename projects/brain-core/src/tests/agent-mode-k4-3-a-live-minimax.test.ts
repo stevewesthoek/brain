@@ -8,7 +8,7 @@ import { readAgentModeObserver } from '../agent-mode/agent-mode-observer.js';
 import { GIT_REPOSITORY_REVISION_SOURCE, REPOSITORY_COMMIT_OBSERVED_EVENT } from '../agent-mode/event-source.js';
 import { createK43AModelBridge, K43A_MODEL_ID, K43A_MODEL_REF, K43A_ROUTE_ID, K43A_REGION, deterministicK43AProviderOperationId } from '../agent-mode/k4-3-a-live-minimax.js';
 import { ModelGatewayError, type ModelAccessEvidence, type ModelGateway, type NormalizedModelResult } from '../agent-mode/model-gateway.js';
-import { RESTRICTED_HARNESS_FIXTURE_TIMEOUT_MS, RESTRICTED_HARNESS_LIVE_MODEL_TIMEOUT_MS, RestrictedHarnessAgentRuntime, K43A_LIVE_TASK_TEXT } from '../agent-mode/restricted-harness-agent-runtime.js';
+import { RESTRICTED_HARNESS_FIXTURE_TIMEOUT_MS, RESTRICTED_HARNESS_LIVE_MODEL_TIMEOUT_MS, RestrictedHarnessAgentRuntime, K43A_LIVE_EXPECTED_RESPONSE, K43A_LIVE_MODEL_PROMPT } from '../agent-mode/restricted-harness-agent-runtime.js';
 import { AgentModeSqliteStateStore, type AgentModeSchedulerEventInput } from '../agent-mode/sqlite-state-store.js';
 
 const NOW = '2026-09-11T10:00:00.000Z';
@@ -25,7 +25,7 @@ const evidence: ModelAccessEvidence = {
 
 function result(request: Parameters<ModelGateway['invoke']>[0]): NormalizedModelResult {
   return {
-    text: K43A_LIVE_TASK_TEXT, providerId: 'amazon-bedrock', modelRef: request.modelRef, modelId: request.modelId,
+    text: K43A_LIVE_EXPECTED_RESPONSE, providerId: 'amazon-bedrock', modelRef: request.modelRef, modelId: request.modelId,
     routeKind: request.routeKind, routeId: request.routeId, region: K43A_REGION,
     usage: { inputTokens: 18, outputTokens: 7, totalTokens: 25 },
     cost: { inputPerMillionUsd: 0.3, outputPerMillionUsd: 1.2, estimatedUsd: 0.000014, pricingSource: 'fixture-authoritative-k1-1' },
@@ -72,11 +72,12 @@ test('K4.3-A deterministic bounded dynamic worker uses one parent-owned model tu
   const store = new AgentModeSqliteStateStore(databasePath);
   let gatewayCalls = 0;
   let observedAwsEnvironment: boolean | undefined;
-  const gateway: ModelGateway = { invoke: async (request) => { gatewayCalls += 1; assert.equal(request.modelRef, K43A_MODEL_REF); assert.equal(request.modelId, K43A_MODEL_ID); assert.equal(request.routeId, K43A_ROUTE_ID); assert.equal(request.maxTokens, 256); assert.equal(request.tools, undefined); return result(request); } };
+  let observedPrompt: string | undefined;
+  const gateway: ModelGateway = { invoke: async (request) => { gatewayCalls += 1; assert.equal(request.modelRef, K43A_MODEL_REF); assert.equal(request.modelId, K43A_MODEL_ID); assert.equal(request.routeId, K43A_ROUTE_ID); assert.equal(request.maxTokens, 256); assert.equal(request.tools, undefined); assert.deepEqual(request.messages, [{ role: 'user', content: [{ text: K43A_LIVE_MODEL_PROMPT }] }]); assert.equal(request.prompt, undefined); return result(request); } };
   try {
     setup(store);
     const bridge = createK43AModelBridge({ store, gateway, accessEvidence: evidence, now: () => NOW });
-    const runtime = new RestrictedHarnessAgentRuntime({ store, harnessRoot: HARNESS_ROOT, evidenceRoot: path.join(root, 'evidence'), modelBridge: bridge, fixtureEnvironmentObserved: (value) => { observedAwsEnvironment = value; } });
+    const runtime = new RestrictedHarnessAgentRuntime({ store, harnessRoot: HARNESS_ROOT, evidenceRoot: path.join(root, 'evidence'), modelBridge: bridge, fixtureEnvironmentObserved: (value) => { observedAwsEnvironment = value; }, modelPromptObserved: (value) => { observedPrompt = value; } });
     const orchestrator = new AgentModeDynamicWorkerOrchestrator({ store, runtime, actionRules: [rule()], rootFacts: (id, now) => id === ROOT ? rootFacts(now) : undefined, ownerId: 'owner:k4-3-a', controllerRef: K43A_LIVE_MINIMAX_CONTROLLER_REF, now: NOW, clock: () => NOW });
     const pass = await orchestrator.advance();
     const decision = pass.decisions[0]!;
@@ -88,6 +89,7 @@ test('K4.3-A deterministic bounded dynamic worker uses one parent-owned model tu
     assert.equal(runtime.processLaunchCount, 1);
     assert.equal(runtime.processReapedCount, 1);
     assert.equal(observedAwsEnvironment, false);
+    assert.equal(observedPrompt, K43A_LIVE_MODEL_PROMPT);
     assert.equal(store.listAgents().filter((agent) => agent.agentKind === 'worker').length, 1);
     assert.equal(store.listTasks().length, 1); assert.equal(store.listRuns().length, 1); assert.equal(store.listAttempts().length, 1);
     const modelOps = store.listOutbox().filter((entry) => entry.effectKind === 'model.invoke');
@@ -118,7 +120,7 @@ test('K4.3-A is disabled by default and stale access evidence fails before gatew
   try {
     const stale = { ...evidence, freshUntil: NOW };
     const bridge = createK43AModelBridge({ store, gateway: { invoke: async () => { calls += 1; throw new Error('must not call'); } }, accessEvidence: stale, now: () => NOW });
-    await assert.rejects(bridge({ context: {} as never, turn: 1, maxTokens: 256, prompt: K43A_LIVE_TASK_TEXT, signal: new AbortController().signal, isCancellationRequested: () => false }), /K43A_ACCESS_EVIDENCE_INVALID/);
+    await assert.rejects(bridge({ context: {} as never, turn: 1, maxTokens: 256, prompt: K43A_LIVE_MODEL_PROMPT, signal: new AbortController().signal, isCancellationRequested: () => false }), /K43A_ACCESS_EVIDENCE_INVALID/);
     assert.equal(calls, 0);
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
 });
@@ -130,9 +132,57 @@ test('K4.3-A model bridge denies a second turn without a second gateway call', a
   try {
     const bridge = createK43AModelBridge({ store, gateway: { invoke: async (request) => { calls += 1; return result(request); } }, accessEvidence: evidence, now: () => NOW });
     const context = { rootGoalId: ROOT, childAgentId: 'agent:child:test', attemptId: 'attempt:test', dispatchId: 'dispatch:test', capabilitySetHash: 'scope', operationId: 'operation:test', controllerRef: 'controller:test', leaseId: 'lease:test', fence: 1, deadline: DEADLINE } as never;
-    await assert.rejects(bridge({ context, turn: 2, maxTokens: 256, prompt: K43A_LIVE_TASK_TEXT, signal: new AbortController().signal, isCancellationRequested: () => false }), /K43A_MODEL_REQUEST_INVALID/);
+    await assert.rejects(bridge({ context, turn: 2, maxTokens: 256, prompt: K43A_LIVE_MODEL_PROMPT, signal: new AbortController().signal, isCancellationRequested: () => false }), /K43A_MODEL_REQUEST_INVALID/);
     assert.equal(calls, 0);
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+});
+
+test('K4.3-A rejects the old bare-token request and cancellation before dispatch', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'brain-agent-mode-k43-a-contract-'));
+  const store = new AgentModeSqliteStateStore(path.join(root, 'agent-mode.db'));
+  let calls = 0;
+  try {
+    const bridge = createK43AModelBridge({ store, gateway: { invoke: async (request) => { calls += 1; return result(request); } }, accessEvidence: evidence, now: () => NOW });
+    const base = { context: {} as never, turn: 1, maxTokens: 256, signal: new AbortController().signal, isCancellationRequested: () => false };
+    await assert.rejects(bridge({ ...base, prompt: K43A_LIVE_EXPECTED_RESPONSE }), /K43A_MODEL_REQUEST_INVALID/);
+    const controller = new AbortController();
+    controller.abort();
+    await assert.rejects(bridge({ ...base, prompt: K43A_LIVE_MODEL_PROMPT, signal: controller.signal }), /K43A_MODEL_CANCELLED_BEFORE_PROVIDER/);
+    assert.equal(calls, 0);
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+});
+
+test('K4.3-A accepts only the exact token after outer whitespace normalization', async () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'brain-agent-mode-k43-a-whitespace-'));
+  const store = new AgentModeSqliteStateStore(path.join(root, 'agent-mode.db'));
+  let calls = 0;
+  try {
+    setup(store);
+    const bridge = createK43AModelBridge({ store, gateway: { invoke: async (request) => { calls += 1; return { ...result(request), text: `\n  ${K43A_LIVE_EXPECTED_RESPONSE}  \n` }; } }, accessEvidence: evidence, now: () => NOW });
+    const runtime = new RestrictedHarnessAgentRuntime({ store, harnessRoot: HARNESS_ROOT, evidenceRoot: path.join(root, 'evidence'), modelBridge: bridge });
+    const orchestrator = new AgentModeDynamicWorkerOrchestrator({ store, runtime, actionRules: [rule()], rootFacts: (id, now) => id === ROOT ? rootFacts(now) : undefined, ownerId: 'owner:k4-3-a-whitespace', controllerRef: K43A_LIVE_MINIMAX_CONTROLLER_REF, now: NOW, clock: () => NOW });
+    const pass = await orchestrator.advance();
+    assert.equal(pass.decisions[0]?.terminalWorkerOutcome, 'succeeded', JSON.stringify(pass));
+    assert.equal(calls, 1);
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+});
+
+test('K4.3-A rejects verbose and extra response text without retry', async () => {
+  for (const [suffix, text] of [['verbose', `Sure! ${K43A_LIVE_EXPECTED_RESPONSE}`], ['extra', `${K43A_LIVE_EXPECTED_RESPONSE}\nextra`]] as const) {
+    const root = mkdtempSync(path.join(tmpdir(), `brain-agent-mode-k43-a-${suffix}-`));
+    const store = new AgentModeSqliteStateStore(path.join(root, 'agent-mode.db'));
+    let calls = 0;
+    try {
+      setup(store);
+      const bridge = createK43AModelBridge({ store, gateway: { invoke: async (request) => { calls += 1; return { ...result(request), text }; } }, accessEvidence: evidence, now: () => NOW });
+      const runtime = new RestrictedHarnessAgentRuntime({ store, harnessRoot: HARNESS_ROOT, evidenceRoot: path.join(root, 'evidence'), modelBridge: bridge });
+      const orchestrator = new AgentModeDynamicWorkerOrchestrator({ store, runtime, actionRules: [rule()], rootFacts: (id, now) => id === ROOT ? rootFacts(now) : undefined, ownerId: `owner:k4-3-a-${suffix}`, controllerRef: K43A_LIVE_MINIMAX_CONTROLLER_REF, now: NOW, clock: () => NOW });
+      const pass = await orchestrator.advance();
+      assert.equal(pass.decisions[0]?.terminalWorkerOutcome, 'failed', JSON.stringify(pass));
+      assert.equal(calls, 1);
+      assert.equal(store.listOutbox().find((entry) => entry.effectKind === 'model.invoke')?.state, 'effect_applied');
+    } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+  }
 });
 
 test('K4.3-A rejects a live response that is not the exact acceptance token', async () => {

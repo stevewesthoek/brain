@@ -4,7 +4,7 @@ import { AGENT_MODE_MODEL_ROUTES, type ModelAccessEvidence, type ModelGateway, t
 import { AGENT_MODE_TIER_POLICY_VERSION, AGENT_MODE_PRICING } from './model-tier-policy.js';
 import { runtimeDispatchResourceKey } from './runtime-dispatch.js';
 import type { AgentRuntimeExecutionContext } from './runtime-dispatch.js';
-import { K43A_LIVE_TASK_TEXT } from './restricted-harness-agent-runtime.js';
+import { K43A_LIVE_EXPECTED_RESPONSE, K43A_LIVE_MODEL_PROMPT } from './restricted-harness-agent-runtime.js';
 import type { AgentModeSqliteStateStore } from './sqlite-state-store.js';
 
 export const K43A_MODEL_REF = 'agent-mode/minimax-m2.5' as const;
@@ -73,7 +73,7 @@ export function createK43AModelBridge(options: {
   let invocationCount = 0;
   return async (input) => {
     const now = clock();
-    if (input.turn !== 1 || input.maxTokens !== K43A_MAX_TOKENS || input.prompt !== 'BRAIN_K4_3_A_LIVE_MINIMAX_PASS') throw new Error('K43A_MODEL_REQUEST_INVALID');
+    if (input.turn !== 1 || input.maxTokens !== K43A_MAX_TOKENS || input.prompt !== K43A_LIVE_MODEL_PROMPT) throw new Error('K43A_MODEL_REQUEST_INVALID');
     if (input.signal.aborted || input.isCancellationRequested()) throw new Error('K43A_MODEL_CANCELLED_BEFORE_PROVIDER');
     if (!isFreshVerified(options.accessEvidence, now)) throw new Error('K43A_ACCESS_EVIDENCE_INVALID');
     if (invocationCount !== 0) throw new Error('K43A_SECOND_MODEL_TURN_DENIED');
@@ -115,7 +115,7 @@ export function createK43AModelBridge(options: {
       options.store.markEffectObserved(operationId, clock());
       throw new Error('K43A_MODEL_RESULT_INVALID');
     }
-    if (normalizedText !== K43A_LIVE_TASK_TEXT) {
+    if (normalizedText !== K43A_LIVE_EXPECTED_RESPONSE) {
       options.store.markEffectObserved(operationId, clock());
       throw new Error('K43A_MODEL_RESPONSE_MISMATCH');
     }

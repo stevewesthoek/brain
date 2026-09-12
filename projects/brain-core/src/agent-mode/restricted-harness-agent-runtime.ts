@@ -13,7 +13,8 @@ import { readRuntimeProcessIdentity, type RuntimeProcessIdentity } from './runti
 import { ModelGatewayError, type NormalizedModelResult } from './model-gateway.js';
 
 export const RESTRICTED_HARNESS_FIXTURE_RESPONSE = 'BRAIN_K4_2_D2_HARNESS_PROCESS_PASS';
-export const K43A_LIVE_TASK_TEXT = 'BRAIN_K4_3_A_LIVE_MINIMAX_PASS';
+export const K43A_LIVE_EXPECTED_RESPONSE = 'BRAIN_K4_3_A_LIVE_MINIMAX_PASS';
+export const K43A_LIVE_MODEL_PROMPT = 'Return exactly the following token and no other text: BRAIN_K4_3_A_LIVE_MINIMAX_PASS';
 export const RESTRICTED_HARNESS_FIXTURE_TIMEOUT_MS = 10_000;
 export const RESTRICTED_HARNESS_LIVE_MODEL_TIMEOUT_MS = 90_000;
 const MAX_PROTOCOL_BYTES = 16 * 1024;
@@ -31,6 +32,7 @@ export type RestrictedHarnessAgentRuntimeOptions = {
   fixtureFailureCode?: string;
   fixtureStarted?: () => void;
   fixtureEnvironmentObserved?: (sentinelPresent: boolean) => void;
+  modelPromptObserved?: (prompt: string) => void;
   fixtureCheckpoint?: Promise<void>;
   fixtureProtocol?: 'malformed' | 'oversized';
   simulateLostResponse?: boolean;
@@ -111,8 +113,9 @@ function createFixtureBridge(context: AgentRuntimeExecutionContext, options: Res
           if (parsed.kind === 'model') {
             if (modelRequestCount !== 0) throw new Error('second model turn denied');
             modelRequestCount += 1;
-            if (!options.modelBridge || parsed.turn !== 1 || parsed.maxTokens !== 256 || parsed.prompt !== K43A_LIVE_TASK_TEXT || parsed.awsEnvironmentPresent !== false) throw new Error('model bridge request is outside the bounded K4.3-A contract');
+            if (!options.modelBridge || parsed.turn !== 1 || parsed.maxTokens !== 256 || parsed.prompt !== K43A_LIVE_MODEL_PROMPT || parsed.awsEnvironmentPresent !== false) throw new Error('model bridge request is outside the bounded K4.3-A contract');
             options.fixtureEnvironmentObserved?.(false);
+            options.modelPromptObserved?.(parsed.prompt);
             request = { kind: 'model', operationId: parsed.operationId, attemptId: parsed.attemptId, turn: parsed.turn, maxTokens: parsed.maxTokens, prompt: parsed.prompt, awsEnvironmentPresent: false };
           } else {
             request = { kind: 'fixture', operationId: parsed.operationId, attemptId: parsed.attemptId, ...(parsed.environmentHasSentinel === undefined ? {} : { environmentHasSentinel: parsed.environmentHasSentinel }) };
@@ -163,7 +166,7 @@ async function writeHarnessFixtureFiles(attemptRoot: string, harnessRoot: string
   const pluginPath = path.join(attemptRoot, 'brain-k42-d2-fixture.mjs');
   const patchPath = path.join(attemptRoot, 'brain-k42-d2-restricted.patch.yml');
   const parentRequest = liveModel
-    ? 'JSON.stringify({ kind: "model", operationId, attemptId, turn: 1, maxTokens: 256, prompt: "BRAIN_K4_3_A_LIVE_MINIMAX_PASS", awsEnvironmentPresent: Object.keys(process.env).some(key => key.startsWith("AWS_")) })'
+    ? `JSON.stringify({ kind: "model", operationId, attemptId, turn: 1, maxTokens: 256, prompt: ${JSON.stringify(K43A_LIVE_MODEL_PROMPT)}, awsEnvironmentPresent: Object.keys(process.env).some(key => key.startsWith("AWS_")) })`
     : 'JSON.stringify({ kind: "fixture", operationId, attemptId, environmentHasSentinel: Object.prototype.hasOwnProperty.call(process.env, "BRAIN_D2_PARENT_SENTINEL") })';
   const responseText = liveModel ? 'response.text' : '"BRAIN_K4_2_D2_HARNESS_PROCESS_PASS"';
   const responseUsage = liveModel ? 'response.usage' : '{ inputTokens: 0, outputTokens: 0 }';
@@ -326,7 +329,7 @@ export class RestrictedHarnessAgentRuntime implements AgentRuntime {
       admittedToHarness = true;
       const timer = setTimeout(() => { void closeHarness(); }, executionTimeoutMs);
       try {
-        const runResult = await harness.run(liveModel ? K43A_LIVE_TASK_TEXT : 'Return the deterministic Brain fixture result.', { sessionId: 'brain-k42-d2-' + context.attemptId });
+        const runResult = await harness.run(liveModel ? K43A_LIVE_MODEL_PROMPT : 'Return the deterministic Brain fixture result.', { sessionId: 'brain-k42-d2-' + context.attemptId });
         if (input.signal.aborted || input.isCancellationRequested()) terminalResult = resultFor(context, 'cancelled');
         else if (Buffer.byteLength(runResult.finalResponse, 'utf8') > MAX_PROTOCOL_BYTES) terminalResult = resultFor(context, 'failed', 'HARNESS_RESULT_TOO_LARGE');
         else if (liveModel ? (!modelResult || runResult.finalResponse.trim() !== modelResult.text.trim()) : runResult.finalResponse.trim() !== RESTRICTED_HARNESS_FIXTURE_RESPONSE) terminalResult = resultFor(context, 'failed', 'HARNESS_RESULT_INVALID');
