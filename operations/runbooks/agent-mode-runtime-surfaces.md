@@ -798,3 +798,22 @@ Focused E2 validation is 16/16; Agent Mode regression is 355/355; package-wide
 `brain-core` validation is 2483/2483. **K4.2 is COMPLETE; K4 remains IN
 PROGRESS.** Exact next task: **K4.3-A — One Bounded Live MiniMax
 Dynamic-Worker Acceptance**. Do not start it automatically.
+
+## K4.3-A live MiniMax acceptance — 2026-09-12
+
+K4.3-A is **COMPLETE** for its bounded live gate. R3 used one fresh authorized
+MiniMax M2.5 call through the scheduler-created restricted Harness and
+Brain-owned ModelGateway path. The canonical live output allowance is `1024`
+tokens; D2 fixture runs retain their separate `64`-token bound. The exact
+response passed, one provider receipt was durably verified, and usage/cost
+settled once at `61 / 119 / 180` tokens and `$0.000161`.
+
+Counts were one child, Task, Run, Attempt, Harness launch/reap, ModelGateway
+call, provider call, and model turn; zero tools, BrainNode, Workcell,
+repository, replacement-worker, grandchild, fallback, and escalation effects.
+StateStore restart reconstruction and quiet scheduler redelivery passed with
+zero additional effects. Evidence:
+`operations/reports/agent-mode-k4-3-a-r3-live-minimax-acceptance-evidence-2026-09-12.md`.
+
+K4 remains **IN PROGRESS**. Exact next task: **K4.3-B — K4 Live Autonomy
+Closure Audit and Phase Exit Gate**. Do not start it automatically.

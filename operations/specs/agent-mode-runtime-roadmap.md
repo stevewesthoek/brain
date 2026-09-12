@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, and K4.2-D2 are complete for their bounded gates, K4.2 is in progress, and K4 remains in progress
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is next, and K4 remains in progress
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -1155,6 +1155,26 @@ runtime and node operation. The scheduler remains deterministic Brain authority.
 Exit gate: Jarvis can safely create, assign, observe, and retire bounded workers,
 and autonomous activity remains inspectable, budgeted, interruptible, and
 restart-safe.
+
+## K4.3-A — One Bounded Live MiniMax Dynamic-Worker Acceptance
+
+**Status:** COMPLETE for the bounded live gate. R3 used one fresh authorized
+MiniMax M2.5 inference through the scheduler-created restricted Harness and
+Brain-owned ModelGateway path. The canonical live output allowance is `1024`
+tokens, while the deterministic D2 fixture allowance remains separate at `64`
+tokens. The exact visible response was accepted, one durable identity-bound
+provider receipt was verified, and usage/cost settled once at `61 / 119 / 180`
+tokens and `$0.000161`. No tools, BrainNode, Workcell, repository,
+replacement-worker, fallback, or escalation effects occurred.
+
+R3 evidence:
+`operations/reports/agent-mode-k4-3-a-r3-live-minimax-acceptance-evidence-2026-09-12.md`.
+The full K4.3-A chronology, including the R1 prompt-contract failure and R2
+output-budget exhaustion, remains in
+`operations/reports/agent-mode-k4-3-a-live-minimax-dynamic-worker-evidence-2026-09-11.md`.
+
+K4 remains **IN PROGRESS**. Exact next task: **K4.3-B — K4 Live Autonomy
+Closure Audit and Phase Exit Gate**. Do not start it automatically.
 
 ## Phase K5 — multi-agent organization
 

@@ -858,6 +858,26 @@ package-wide `brain-core` suite is 2483/2483. **K4.2 is COMPLETE; K4 remains
 IN PROGRESS.** Exact next task: **K4.3-A — One Bounded Live MiniMax
 Dynamic-Worker Acceptance**. Do not start it automatically.
 
+## Current K4.3-A live MiniMax acceptance — 2026-09-12
+
+K4.3-A is now **COMPLETE** for its bounded live gate. R3 used fresh durable
+identities and one authorized MiniMax M2.5 inference through the existing
+scheduler, restricted Harness, Brain-owned ModelGateway, and Bedrock route.
+The live output allowance is canonically `1024` tokens; the D2 fixture bound
+remains separate. The exact visible response passed, the normalized provider
+receipt was persisted and verified, and usage/cost settled once at
+`61 / 119 / 180` tokens and `$0.000161`.
+
+The run had one child, Task, Run, Attempt, Harness launch/reap, ModelGateway
+call, provider call, and model turn. Tools, BrainNode, Workcell, repository,
+replacement-worker, grandchild, fallback, and escalation effects were zero.
+StateStore reopen/reconstruction and quiet scheduler redelivery passed with no
+additional effects. Evidence:
+`operations/reports/agent-mode-k4-3-a-r3-live-minimax-acceptance-evidence-2026-09-12.md`.
+
+**K4.3-A: COMPLETE. K4: IN PROGRESS.** Exact next task: **K4.3-B — K4 Live
+Autonomy Closure Audit and Phase Exit Gate**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

@@ -110,6 +110,34 @@ bounded failure summary preserves only allowlisted IDs, counts, states,
 classification, and timing; it contains no credentials, raw provider payload,
 or hidden reasoning. Phase B was not started.
 
+## Fresh acceptance attempt R3 — 2026-09-12
+
+R3 used fresh acceptance identities and the repaired canonical live output
+allowance of `1024` tokens. The explicit instructional prompt and strict exact
+response validator from the prior repair were preserved.
+
+Fresh access evidence passed for `amazon-bedrock`, `minimax.minimax-m2.5`,
+direct route, and `us-east-1`. The run created exactly one child, Task, Run,
+and Attempt; launched and reaped one pinned restricted Harness; and made
+exactly one ModelGateway and one MiniMax provider call in one model turn.
+Tool, BrainNode, Workcell, repository, replacement-worker, grandchild,
+fallback, and escalation effects were all zero.
+
+The provider returned the exact visible response
+`BRAIN_K4_3_A_LIVE_MINIMAX_PASS` with stop reason `end_turn`. Usage was
+`61 / 119 / 180` input / output / total tokens, and settled cost was
+`$0.000161` with latency `2679 ms`. The provider request ID was unavailable.
+One identity-bound normalized provider receipt was durably persisted and
+verified; the model operation advanced beyond `effect_applied` to its verified
+and settled states.
+
+The R3 run passed StateStore restart reconstruction and one quiet redelivery
+check with no additional worker, Harness, model, provider, or spend effects.
+R3 therefore completes K4.3-A for its bounded live gate. K4 remains in
+progress, and K4.3-B remains the exact next task but was not started. Full R3
+evidence is preserved in
+`operations/reports/agent-mode-k4-3-a-r3-live-minimax-acceptance-evidence-2026-09-12.md`.
+
 ## Fresh acceptance attempt R2 — 2026-09-12
 
 R2 used the fresh acceptance generation `k4.3-a-r2` and fresh durable
