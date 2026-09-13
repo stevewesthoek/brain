@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is complete for its closure gate, K4 is complete, and K5 is the next planned phase
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is complete for its closure gate, K4 is complete, K5-A, K5-B, K5-C, and K5 are complete, and U0 is the next planned phase
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -1202,7 +1202,7 @@ which is planned after K4. Do not start it automatically.
 
 ## Phase K5 — multi-agent organization
 
-**Status:** K5-B complete; K5 in progress
+**Status:** K5 complete; U0 is the next planned phase
 
 Initial logical roles:
 
@@ -1278,6 +1278,45 @@ Exact next bounded slice: **K5-C — Structured Supervisor Aggregation, Auditor
 Gate, and Organization Final Result**. K5-C should prove deterministic,
 evidence-backed organization aggregation and final-result semantics. Do not
 start K5-C automatically.
+
+### K5-C — Structured Supervisor Aggregation, Auditor Gate, and Organization Final Result
+
+**Status:** COMPLETE; K5 phase exit gate PASSED
+
+K5-C adds a versioned, bounded organization aggregation derived exclusively from
+K4 Task/Run/Attempt, runtime receipt/evidence, settlement, K5-A graph, and
+K5-B ownership bindings. Work-item entries are canonically ordered references
+and terminal facts; no prompt, hidden reasoning, provider payload, runtime log,
+or duplicate K4 ledger is stored. Each K5-A result contract is enforced,
+including required status, result-reference presence, and bounded evidence.
+
+The Independent Auditor is exactly one structurally downstream
+`agent-mode.org-role.independent-auditor.v1` item. Its own K4 lifecycle and
+successful result contract are necessary but not sufficient: failed, cancelled,
+dependency-failed, uncertain, cancelled-root, or expired-plan facts cannot
+produce organization success. Known terminal failures may persist one failed
+organization receipt; uncertainty remains explicitly unfinalizable until K4
+reconciliation resolves it.
+
+`AgentModeOrganizationFinalizer` derives a deterministic aggregate digest and
+final-result ID from plan version, canonical work-item terminal references,
+auditor reference, and settled cost. One SQLite transaction inserts the
+immutable organization receipt and transitions the plan lifecycle; repeated or
+concurrent finalization converges on that receipt, while conflicting material
+fails closed. Total cost is reconstructed from settled K4 reservations, not
+requested envelopes. Restart and observer projections reconstruct ownership,
+dependencies, evidence, cost, auditor gate, and final status.
+
+The K5-B three-worker fixture remains exactly three child Agents, Tasks, Runs,
+Attempts, and MockAgentRuntime calls, with zero live model, Harness, tool,
+network, BrainNode, Workcell, or repository effects. K5 is structured
+supervisor-owned organization under Brain policy/control; it does not imply
+unrestricted Jarvis/CEO reasoning. Agents communicate through structured
+tasks, events, results, evidence, review requests, and escalations.
+
+Evidence: `operations/reports/agent-mode-k5-c-organization-final-result-evidence-2026-09-13.md`.
+K5 is COMPLETE. The exact next roadmap phase is **Phase U0 — unified Brain
+Console control surface**. Do not start U0 automatically.
 
 ## Phase U0 — unified Brain Console control surface
 

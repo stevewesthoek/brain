@@ -960,6 +960,41 @@ Evidence: `operations/reports/agent-mode-k5-b-supervisor-delegation-mock-workers
 Exact next task: **K5-C — Structured Supervisor Aggregation, Auditor Gate, and
 Organization Final Result**. Do not start it automatically.
 
+## Current K5-C organization final result — 2026-09-13
+
+K5-C — **Structured Supervisor Aggregation, Auditor Gate, and Organization
+Final Result** — is **COMPLETE**, and the bounded K5 phase-exit gate PASSED.
+K5 is now **COMPLETE**; the next planned phase is U0.
+
+The new versioned `OrganizationAggregation` is a deterministic projection over
+authoritative K4 lifecycle/receipt/evidence/settlement facts, the immutable
+K5-A DAG, and K5-B work-item bindings. Entries are lexical by work-item key,
+bounded to 16 items and 64 evidence references, and contain references/facts
+only. Every successful item satisfies its K5-A result contract. The exact one
+downstream Independent Auditor is a required success gate; auditor success
+cannot override failed, cancelled, dependency-failed, contract-invalid, or
+uncertain worker facts.
+
+`AgentModeOrganizationFinalizer` derives a stable aggregate digest and final
+receipt ID from plan/version, canonical terminal references, auditor reference,
+and settled K4 cost. StateStore persists only one immutable organization-level
+receipt and atomically transitions the plan lifecycle. Repeated and concurrent
+finalization is idempotent/conflict-safe; known terminal failure may produce a
+failed receipt, while uncertainty remains unfinalizable. Close/reopen and the
+observer reconstruct the plan → work item → child/task/run/attempt →
+result/evidence → auditor → final-result chain without copying raw result
+bodies, prompts, reasoning, provider payloads, or runtime logs.
+
+The happy fixture remains exactly three child lifecycles and three
+`MockAgentRuntime` invocations, with zero Harness, ModelGateway, live-provider,
+network, BrainNode, Workcell, tool, or repository effects. K5 now means
+deterministic supervisor-owned organization contracts and evidence-backed
+finalization, not unrestricted Jarvis reasoning.
+
+Evidence: `operations/reports/agent-mode-k5-c-organization-final-result-evidence-2026-09-13.md`.
+Exact next phase: **Phase U0 — unified Brain Console control surface**. Do not
+start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

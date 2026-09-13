@@ -85,6 +85,7 @@ export type AgentModeObserverProjection = {
   organizationPlans: Array<Record<string, unknown>>;
   organizationWorkItems: Array<Record<string, unknown>>;
   organizationExecution: OrganizationExecutionProjection[];
+  organizationFinalResults: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -181,7 +182,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [], organizationPlans: [], organizationWorkItems: [], organizationExecution: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [], organizationPlans: [], organizationWorkItems: [], organizationExecution: [], organizationFinalResults: [],
     };
   }
 
@@ -326,16 +327,40 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
     const organizationPlans: Array<Record<string, unknown>> = [];
     const organizationWorkItems: Array<Record<string, unknown>> = [];
     const organizationExecution: OrganizationExecutionProjection[] = [];
+    const organizationFinalResults: Array<Record<string, unknown>> = [];
     for (const plan of store.listOrganizationPlans(16)) {
       const readiness = store.readOrganizationPlanReadiness(plan.organizationPlanId, now, deriveOrganizationResultFacts(store, plan));
       const execution = deriveOrganizationExecutionProjection(store, plan, now, readiness);
       organizationExecution.push(execution);
+      const finalResult = store.getOrganizationFinalResult(plan.organizationPlanId);
       organizationPlans.push({
         organizationPlanId: plan.organizationPlanId, rootGoalId: plan.rootGoalId, supervisorAgentId: plan.supervisorAgentId,
         supervisorOrganizationRoleId: plan.supervisorOrganizationRoleId, status: plan.status, workItemCount: plan.workItems.length,
         dependencyCount: plan.dependencies.length, planVersion: plan.planVersion, createdAt: plan.createdAt, deadline: plan.deadline,
         readinessState: readiness?.planState ?? 'blocked',
+        finalResultId: finalResult?.organizationFinalResultId ?? null, finalStatus: finalResult?.status ?? null,
+        aggregateDigest: finalResult?.aggregateDigest ?? null, auditorWorkItemId: finalResult?.auditorWorkItemId ?? null,
+        auditorResultRef: finalResult?.auditorResultRef ?? null, workItemResultCount: finalResult?.workItemResults.length ?? 0,
+        evidenceRefCount: finalResult?.workItemResults.reduce((total, item) => total + item.evidenceRefs.length, 0) ?? 0,
+        totalSettledCost: finalResult?.totalSettledCost ?? 0, finalizedAt: finalResult?.finalizedAt ?? null,
       });
+      if (finalResult) {
+        organizationFinalResults.push({
+          organizationPlanId: finalResult.organizationPlanId,
+          organizationFinalResultId: finalResult.organizationFinalResultId,
+          planVersion: finalResult.planVersion,
+          rootGoalId: finalResult.rootGoalId,
+          supervisorAgentId: finalResult.supervisorAgentId,
+          status: finalResult.status,
+          aggregateDigest: finalResult.aggregateDigest,
+          auditorWorkItemId: finalResult.auditorWorkItemId,
+          auditorResultRef: finalResult.auditorResultRef,
+          workItemResultCount: finalResult.workItemResults.length,
+          evidenceRefCount: finalResult.workItemResults.reduce((total, item) => total + item.evidenceRefs.length, 0),
+          totalSettledCost: finalResult.totalSettledCost,
+          finalizedAt: finalResult.finalizedAt,
+        });
+      }
       const readinessById = new Map((readiness?.workItems ?? []).map((item) => [item.workItemId, item.state]));
       const executionById = new Map(execution.workItems.map((item) => [item.workItemId, item]));
       for (const item of store.listOrganizationWorkItems(plan.organizationPlanId).slice(0, 16)) {
@@ -529,7 +554,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations, organizationPlans, organizationWorkItems, organizationExecution,
+      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations, organizationPlans, organizationWorkItems, organizationExecution, organizationFinalResults,
     };
   } finally {
     store.close();

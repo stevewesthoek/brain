@@ -915,3 +915,42 @@ and escalations; K5-B adds no peer chat or supervisor LLM loop.
 Evidence: `operations/reports/agent-mode-k5-b-supervisor-delegation-mock-workers-evidence-2026-09-13.md`.
 Exact next bounded slice: **K5-C — Structured Supervisor Aggregation, Auditor
 Gate, and Organization Final Result**. Do not start K5-C automatically.
+
+## K5-C organization aggregation and finalization — 2026-09-13
+
+K5-C is **COMPLETE** and K5 is **COMPLETE** for the bounded phase-exit gate.
+`AgentModeOrganizationFinalizer` is a finite deterministic controller seam;
+there is no Jarvis LLM loop, background daemon, or free-form organization
+conversation.
+
+The finalizer reads the immutable K5-A graph and K5-B bindings, then derives a
+bounded `OrganizationAggregation` from authoritative K4 child Agent,
+Task/Run/Attempt, runtime receipt/evidence, and settled reservation facts. It
+does not copy raw result bodies, prompts, hidden reasoning, provider payloads,
+or runtime logs, and it does not create a Task/Run/Attempt/result/cost ledger.
+Work-item references are lexical/canonical, evidence is bounded globally, and
+settled cost is summed from K4 facts rather than requested envelopes.
+
+Successful finalization requires exactly one structurally downstream
+`agent-mode.org-role.independent-auditor.v1` work item plus successful,
+contract-valid authoritative facts for every required work item. Failed or
+cancelled predecessors, dependency failure, contract violations, root
+cancellation, plan expiry, and auditor absence/ambiguity cannot become success;
+known terminal failure may be recorded as a failed organization receipt.
+Uncertain K4 state returns an explicit uncertain outcome and is never replayed.
+
+The final-result ID and aggregate digest are deterministic. One StateStore
+transaction persists the immutable organization receipt and the plan lifecycle
+transition. Same-material retries return the existing receipt; conflicting
+material fails closed. Close/reopen and observer reads reconstruct bounded
+ownership, dependencies, result/evidence references, auditor gate, aggregate
+cost, final status, and finalization metadata.
+
+For the K5-B fixture the finalization gate adds no workers: Research,
+Engineering, and Independent Auditor remain three child Agents, Tasks, Runs,
+Attempts, and MockAgentRuntime calls. Harness, ModelGateway, live providers,
+network, BrainNode, Workcells, tools, and repository effects remain zero.
+
+Evidence: `operations/reports/agent-mode-k5-c-organization-final-result-evidence-2026-09-13.md`.
+The exact next roadmap phase is **Phase U0 — unified Brain Console control
+surface**. Do not start U0 automatically.

@@ -10,6 +10,7 @@ import { DEFERRED_MODEL_REF, DEFERRED_ROUTE_REF, AGENT_MODE_RUNTIME_PROFILES, as
 import { runtimeDispatchResourceKey, runtimeReceiptEffectHash, validateRuntimeDispatchRequest, validateRuntimeResult } from './runtime-dispatch.js';
 import type { AgentModeRuntimeDispatchMutation, AgentModeRuntimeDispatchPrepared, AgentModeRuntimeDispatchRequest, AgentModeRuntimeDispatchStorePreparation, AgentModeRuntimeReceipt, AgentModeRuntimeReceiptMutation, AgentModeRuntimeSettlement, AgentModeRuntimeVerification, AgentRuntimeResult } from './runtime-dispatch.js';
 import { deriveOrganizationPlanId, deriveOrganizationWorkItemId, evaluateOrganizationReadiness, organizationPlanMaterial, validateOrganizationPlan, type DelegatedResultFact, type OrganizationPlan, type OrganizationReadiness } from './organization.js';
+import { deriveOrganizationAggregation, organizationFinalResultFromAggregation, organizationFinalResultMaterial, type OrganizationFinalResult } from './organization-finalization.js';
 
 export type AgentModeAgent = {
   agentId: string;
@@ -149,6 +150,34 @@ export type AgentModeOrganizationBindingRequest = {
 export type AgentModeOrganizationBindingResult =
   | { result: 'bound' | 'duplicate' }
   | { result: 'conflict' | 'denied'; reasonCode: string };
+
+export type AgentModeOrganizationFinalizationResult =
+  | { result: 'created' | 'duplicate'; finalResult: OrganizationFinalResult }
+  | { result: 'conflict' | 'denied'; reasonCode: string };
+
+function mapOrganizationFinalResultRow(row: Record<string, unknown>): OrganizationFinalResult {
+  let workItemResults: OrganizationFinalResult['workItemResults'] = [];
+  try {
+    const parsed = JSON.parse(String(row.work_item_results_json)) as unknown;
+    if (!Array.isArray(parsed)) throw new Error('not an array');
+    workItemResults = parsed as OrganizationFinalResult['workItemResults'];
+  } catch { throw new Error('organization final result is corrupt'); }
+  return {
+    schemaVersion: Number(row.schema_version) as 1,
+    organizationFinalResultId: String(row.organization_final_result_id),
+    organizationPlanId: String(row.organization_plan_id),
+    planVersion: Number(row.plan_version) as 1,
+    rootGoalId: String(row.root_goal_id),
+    supervisorAgentId: String(row.supervisor_agent_id),
+    status: row.status as OrganizationFinalResult['status'],
+    auditorWorkItemId: row.auditor_work_item_id === null ? null : String(row.auditor_work_item_id),
+    auditorResultRef: row.auditor_result_ref === null ? null : String(row.auditor_result_ref),
+    workItemResults,
+    totalSettledCost: Number(row.total_settled_cost),
+    aggregateDigest: String(row.aggregate_digest),
+    finalizedAt: String(row.finalized_at),
+  };
+}
 
 function mapOrganizationWorkItemRow(row: Record<string, unknown>): AgentModeOrganizationWorkItem {
   let dependencyKeys: string[] = [];
@@ -1989,6 +2018,22 @@ export class AgentModeSqliteStateStore {
       );
       CREATE INDEX IF NOT EXISTS agent_mode_organization_work_items_plan ON agent_mode_organization_work_items (organization_plan_id, work_item_key);
       CREATE INDEX IF NOT EXISTS agent_mode_organization_dependencies_plan ON agent_mode_organization_dependencies (organization_plan_id, work_item_key);
+      CREATE TABLE IF NOT EXISTS agent_mode_organization_final_results (
+        organization_plan_id TEXT PRIMARY KEY REFERENCES agent_mode_organization_plans(organization_plan_id) ON DELETE CASCADE,
+        organization_final_result_id TEXT NOT NULL UNIQUE,
+        material_hash TEXT NOT NULL,
+        schema_version INTEGER NOT NULL CHECK (schema_version = 1),
+        plan_version INTEGER NOT NULL CHECK (plan_version = 1),
+        root_goal_id TEXT NOT NULL,
+        supervisor_agent_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('succeeded', 'failed', 'cancelled', 'expired')),
+        auditor_work_item_id TEXT,
+        auditor_result_ref TEXT,
+        work_item_results_json TEXT NOT NULL,
+        total_settled_cost REAL NOT NULL CHECK (total_settled_cost >= 0),
+        aggregate_digest TEXT NOT NULL,
+        finalized_at TEXT NOT NULL
+      );
       INSERT INTO store_meta (key, value) VALUES ('schema_version', '7')
         ON CONFLICT(key) DO NOTHING;
     `);
@@ -1999,6 +2044,7 @@ export class AgentModeSqliteStateStore {
     this.migrateReviewTables();
     this.migrateAgentTable();
     this.migrateChildAssignmentTables();
+    this.ensureOrganizationFinalResultTable();
     this.hasRuntimePidColumn = true;
     this.hasRuntimeIdentityColumns = true;
     this.hasWorkcellTables = true;
@@ -2093,6 +2139,27 @@ export class AgentModeSqliteStateStore {
     };
     for (const [name, type] of Object.entries(additions)) if (!existing.has(name)) this.database.exec(`ALTER TABLE agents ADD COLUMN ${name} ${type}`);
     this.database.exec('CREATE UNIQUE INDEX IF NOT EXISTS agents_spawn_intent_key ON agents(spawn_intent_key) WHERE spawn_intent_key IS NOT NULL');
+  }
+
+  private ensureOrganizationFinalResultTable(): void {
+    this.database.exec(`
+      CREATE TABLE IF NOT EXISTS agent_mode_organization_final_results (
+        organization_plan_id TEXT PRIMARY KEY REFERENCES agent_mode_organization_plans(organization_plan_id) ON DELETE CASCADE,
+        organization_final_result_id TEXT NOT NULL UNIQUE,
+        material_hash TEXT NOT NULL,
+        schema_version INTEGER NOT NULL CHECK (schema_version = 1),
+        plan_version INTEGER NOT NULL CHECK (plan_version = 1),
+        root_goal_id TEXT NOT NULL,
+        supervisor_agent_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('succeeded', 'failed', 'cancelled', 'expired')),
+        auditor_work_item_id TEXT,
+        auditor_result_ref TEXT,
+        work_item_results_json TEXT NOT NULL,
+        total_settled_cost REAL NOT NULL CHECK (total_settled_cost >= 0),
+        aggregate_digest TEXT NOT NULL,
+        finalized_at TEXT NOT NULL
+      );
+    `);
   }
 
   private migrateChildAssignmentTables(): void {
@@ -2284,6 +2351,56 @@ export class AgentModeSqliteStateStore {
   listOrganizationWorkItems(organizationPlanId: string): AgentModeOrganizationWorkItem[] {
     if (!this.hasOrganizationTables) return [];
     return (this.database.prepare('SELECT * FROM agent_mode_organization_work_items WHERE organization_plan_id = ? ORDER BY work_item_key LIMIT 16').all(organizationPlanId) as Array<Record<string, unknown>>).map(mapOrganizationWorkItemRow);
+  }
+
+  getOrganizationFinalResult(organizationPlanId: string): OrganizationFinalResult | undefined {
+    if (!this.tableExists('agent_mode_organization_final_results')) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_organization_final_results WHERE organization_plan_id = ?').get(organizationPlanId) as Record<string, unknown> | undefined;
+    return row ? mapOrganizationFinalResultRow(row) : undefined;
+  }
+
+  listOrganizationFinalResults(limit = 16): OrganizationFinalResult[] {
+    if (!this.tableExists('agent_mode_organization_final_results')) return [];
+    const boundedLimit = Math.max(0, Math.min(Math.floor(limit), 16));
+    return (this.database.prepare('SELECT * FROM agent_mode_organization_final_results ORDER BY organization_plan_id LIMIT ?').all(boundedLimit) as Array<Record<string, unknown>>).map(mapOrganizationFinalResultRow);
+  }
+
+  /** Persist only the immutable organization-level receipt; K4 remains the lifecycle ledger. */
+  finalizeOrganizationPlan(result: OrganizationFinalResult): AgentModeOrganizationFinalizationResult {
+    if (this.readOnly || !this.hasOrganizationTables || !this.tableExists('agent_mode_organization_final_results')) return { result: 'denied', reasonCode: 'ORGANIZATION_PERSISTENCE_UNAVAILABLE' };
+    if (!Number.isFinite(Date.parse(result.finalizedAt)) || result.schemaVersion !== 1 || !Number.isFinite(result.totalSettledCost) || result.totalSettledCost < 0) return { result: 'denied', reasonCode: 'INVALID_FINAL_RESULT' };
+    const materialHash = createHash('sha256').update(organizationFinalResultMaterial(result)).digest('hex');
+    try {
+      return this.withTransaction(() => {
+        const plan = this.getOrganizationPlan(result.organizationPlanId);
+        if (!plan || plan.rootGoalId !== result.rootGoalId || plan.supervisorAgentId !== result.supervisorAgentId) return { result: 'denied' as const, reasonCode: 'FINAL_RESULT_LINEAGE_MISMATCH' };
+        const existing = this.database.prepare('SELECT * FROM agent_mode_organization_final_results WHERE organization_plan_id = ?').get(result.organizationPlanId) as Record<string, unknown> | undefined;
+        if (existing) {
+          return String(existing.material_hash) === materialHash
+            ? { result: 'duplicate' as const, finalResult: mapOrganizationFinalResultRow(existing) }
+            : { result: 'conflict' as const, reasonCode: 'ORGANIZATION_FINAL_RESULT_CONFLICT' };
+        }
+        const authoritativeAggregation = deriveOrganizationAggregation(this, plan, result.finalizedAt);
+        if (authoritativeAggregation.aggregateStatus === 'not_ready' || authoritativeAggregation.aggregateStatus === 'uncertain') return { result: 'denied' as const, reasonCode: 'FINAL_RESULT_NOT_AUTHORITATIVE' };
+        const authoritativeResult = organizationFinalResultFromAggregation(authoritativeAggregation, result.finalizedAt);
+        if (organizationFinalResultMaterial(authoritativeResult) !== organizationFinalResultMaterial(result)) return { result: 'denied' as const, reasonCode: 'FINAL_RESULT_NOT_AUTHORITATIVE' };
+        const targetPlanStatus = result.status === 'cancelled' ? 'cancelled' : result.status === 'expired' ? 'expired' : 'completed';
+        if (plan.status !== 'active' && plan.status !== targetPlanStatus) return { result: 'denied' as const, reasonCode: 'PLAN_STATUS_CONFLICT' };
+        this.database.prepare(`
+          INSERT INTO agent_mode_organization_final_results (
+            organization_plan_id, organization_final_result_id, material_hash, schema_version, plan_version,
+            root_goal_id, supervisor_agent_id, status, auditor_work_item_id, auditor_result_ref,
+            work_item_results_json, total_settled_cost, aggregate_digest, finalized_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(result.organizationPlanId, result.organizationFinalResultId, materialHash, result.schemaVersion, result.planVersion, result.rootGoalId, result.supervisorAgentId, result.status, result.auditorWorkItemId, result.auditorResultRef, JSON.stringify(result.workItemResults), result.totalSettledCost, result.aggregateDigest, result.finalizedAt);
+        const planUpdate = this.database.prepare('UPDATE agent_mode_organization_plans SET status = ? WHERE organization_plan_id = ? AND status = ?').run(targetPlanStatus, result.organizationPlanId, plan.status);
+        if (planUpdate.changes !== 1) throw new Error('organization plan lifecycle transition conflict');
+        this.appendEventIfAbsent({ eventId: `organization-finalized:${result.organizationPlanId}:${result.organizationFinalResultId}`, entityType: 'organization_plan', entityId: result.organizationPlanId, eventType: 'organization_plan_finalized', occurredAt: result.finalizedAt, payload: { organizationPlanId: result.organizationPlanId, organizationFinalResultId: result.organizationFinalResultId, status: result.status, aggregateDigest: result.aggregateDigest } });
+        return { result: 'created' as const, finalResult: result };
+      });
+    } catch {
+      return { result: 'conflict', reasonCode: 'ORGANIZATION_FINAL_RESULT_CONFLICT' };
+    }
   }
 
   /** Bind an already-admitted K4 lifecycle to its owning organization item. */
