@@ -258,6 +258,7 @@ import { getActionSummary, listActionSummaries, requestActionApprovalById } from
 import { listAgentRuns, getAgentRun, listAgentEvents, listRecoveryItems, getRecoveryItem } from '../adapters/agent-runs.js';
 import { readAgentModeObserver } from '../agent-mode/agent-mode-observer.js';
 import { readAgentModeConsoleProjection } from '../agent-mode/agent-mode-console-projection.js';
+import { isAgentModeConsoleDetailKind, readAgentModeConsoleDetail } from '../agent-mode/agent-mode-console-detail.js';
 import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
 import { redactingJsonReplacer } from '../security/redaction.js';
@@ -506,6 +507,25 @@ export async function routeRequest(
   const continuousProcessingResponse = getContinuousProcessingRouteResponse(url.pathname);
   if (continuousProcessingResponse) {
     sendJson(response, continuousProcessingResponse.statusCode, continuousProcessingResponse.body);
+    return;
+  }
+
+  const agentModeDetailMatch = /^\/agent-mode\/console\/detail\/([^/]+)\/([^/]+)$/.exec(url.pathname);
+  if (agentModeDetailMatch) {
+    let kind: string;
+    let id: string;
+    try {
+      kind = decodeURIComponent(agentModeDetailMatch[1] ?? '');
+      id = decodeURIComponent(agentModeDetailMatch[2] ?? '');
+    } catch {
+      sendJson(response, 400, { error: { code: 'invalid_agent_mode_detail_path', message: 'Agent Mode detail path encoding is invalid.' } });
+      return;
+    }
+    if (!isAgentModeConsoleDetailKind(kind)) {
+      sendJson(response, 400, { error: { code: 'invalid_agent_mode_detail_kind', message: 'Agent Mode detail kind is not supported.' } });
+      return;
+    }
+    sendJson(response, 200, readAgentModeConsoleDetail(kind, id));
     return;
   }
 

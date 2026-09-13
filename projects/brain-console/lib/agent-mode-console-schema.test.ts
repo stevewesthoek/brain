@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { agentModeConsoleProjectionSchema } from './braincore-schemas';
+import { agentModeConsoleDetailResponseSchema, agentModeConsoleProjectionSchema } from './braincore-schemas';
 
 const emptyProjection = {
   schemaVersion: 'agent-mode-console-v1', generatedAt: '2026-09-13T12:00:00.000Z', source: 'agent-mode-state-store',
@@ -28,4 +28,19 @@ test('canonical schema keeps uncertainty and K5 final-result metadata explicit',
   });
   assert.equal(parsed.summary.uncertainCount, 1);
   assert.equal(parsed.organizations[0]?.finalResultId, 'final:1');
+});
+
+test('detail union parses safe Agent, Organization, and Evidence responses', () => {
+  const freshness = { status: 'fresh', sourceStatus: 'available', generatedAt: '2026-09-13T12:00:00.000Z', stateStorePresent: true, message: 'fresh' } as const;
+  const evidence = { evidenceRef: 'k4:evidence:fixture', evidenceType: 'runtime-receipt', ownerRootGoalId: 'goal:1', ownerAgentId: 'agent:1', ownerTaskId: 'task:1', ownerRunId: 'run:1', ownerAttemptId: 'attempt:1', receiptType: 'k4-runtime-receipt', verificationStatus: 'verified', createdAt: freshness.generatedAt, contentSize: null, digest: 'digest:1', redactionStatus: 'metadata-only', relatedOperationId: 'operation:1', relatedResultRef: 'k4:runtime:result:1' };
+  const parsed = agentModeConsoleDetailResponseSchema.parse({ schemaVersion: 'agent-mode-console-detail-v1', generatedAt: freshness.generatedAt, source: 'agent-mode-state-store', freshness, kind: 'evidence', id: evidence.evidenceRef, status: 'available', detail: { kind: 'evidence', ...evidence } });
+  assert.equal(parsed.status, 'available');
+  if (parsed.status === 'available') assert.equal(parsed.detail.kind, 'evidence');
+});
+
+test('detail schema rejects malformed bodies and unknown discriminants', () => {
+  const base = { schemaVersion: 'agent-mode-console-detail-v1', generatedAt: '2026-09-13T12:00:00.000Z', source: 'agent-mode-state-store', freshness: { status: 'fresh', sourceStatus: 'available', generatedAt: '2026-09-13T12:00:00.000Z', stateStorePresent: true, message: 'fresh' }, kind: 'agent', id: 'agent:1', status: 'available' };
+  assert.equal(agentModeConsoleDetailResponseSchema.safeParse({ ...base, detail: { kind: 'future', agentId: 'agent:1' } }).success, false);
+  assert.equal(agentModeConsoleDetailResponseSchema.safeParse({ ...base, detail: { kind: 'agent', agentId: 'agent:1' } }).success, false);
+  assert.equal(agentModeConsoleDetailResponseSchema.safeParse({ ...base, kind: 'future', detail: null, status: 'not_found', reasonCode: 'DETAIL_NOT_FOUND' }).success, false);
 });

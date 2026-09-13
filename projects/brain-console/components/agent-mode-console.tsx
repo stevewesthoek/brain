@@ -7,6 +7,7 @@ import { brainCoreRequest } from '@/lib/braincore-client';
 import { agentModeConsoleProjectionSchema, type AgentModeConsoleProjection } from '@/lib/braincore-schemas';
 import { formatUsd, timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
+import { AgentModeConsoleDetail, type AgentModeDetailSelection } from '@/components/agent-mode-console-detail';
 
 type ConsoleTab = 'overview' | 'agents' | 'organizations' | 'tasks' | 'failures';
 
@@ -35,7 +36,11 @@ function EmptyTable({ message }: { message: string }) {
   return <div className="card"><div className="card-title">Nothing to show</div><p className="meta">{message}</p></div>;
 }
 
-function OverviewTab({ data }: { data: AgentModeConsoleProjection }) {
+function DetailLink({ selection, onOpen, children }: { selection: AgentModeDetailSelection; onOpen: (selection: AgentModeDetailSelection) => void; children: React.ReactNode }) {
+  return <button type="button" className="agent-console-detail-link" onClick={() => onOpen(selection)}>{children}</button>;
+}
+
+function OverviewTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpen: (selection: AgentModeDetailSelection) => void }) {
   return (
     <div className="stack">
       <section className="grid two">
@@ -43,7 +48,7 @@ function OverviewTab({ data }: { data: AgentModeConsoleProjection }) {
           <div className="card-header"><div><div className="card-title">Organizations</div><div className="card-description">Durable K5 ownership and finalization</div></div><GitBranch size={18} /></div>
           {data.organizations.length === 0 ? <p className="meta">No organization plans are present.</p> : data.organizations.map((organization) => (
             <div className="agent-console-list-row" key={organization.organizationPlanId}>
-              <div className="min-w-0"><div className="card-title">{id(organization.organizationPlanId)}</div><div className="meta">Supervisor {id(organization.supervisorAgentId)}</div></div>
+              <div className="min-w-0"><div className="card-title"><DetailLink selection={{ kind: 'organization', id: organization.organizationPlanId }} onOpen={onOpen}>{id(organization.organizationPlanId)}</DetailLink></div><div className="meta">Supervisor {id(organization.supervisorAgentId)}</div></div>
               <div className="row"><StatusBadge status={organization.finalStatus ?? organization.status} /><span className="meta">{organization.succeededCount}/{organization.workItemCount} succeeded</span></div>
             </div>
           ))}
@@ -61,7 +66,7 @@ function OverviewTab({ data }: { data: AgentModeConsoleProjection }) {
       <section className="grid two">
         <article className="card">
           <div className="card-header"><div><div className="card-title">Budgets</div><div className="card-description">Durable root reservations and settled usage</div></div><Coins size={18} /></div>
-          {data.budgets.length === 0 ? <p className="meta">No root budget facts are available.</p> : data.budgets.map((budget) => <div className="agent-console-list-row" key={budget.rootGoalId}><span>{id(budget.rootGoalId)}</span><span className="meta">reserved {formatUsd(budget.reservedCost)} · settled {formatUsd(budget.settledCost)}</span></div>)}
+          {data.budgets.length === 0 ? <p className="meta">No root budget facts are available.</p> : data.budgets.map((budget) => <div className="agent-console-list-row" key={budget.rootGoalId}><DetailLink selection={{ kind: 'budget', id: budget.rootGoalId }} onOpen={onOpen}>{id(budget.rootGoalId)}</DetailLink><span className="meta">reserved {formatUsd(budget.reservedCost)} · settled {formatUsd(budget.settledCost)}</span></div>)}
         </article>
         <article className="card">
           <div className="card-header"><div><div className="card-title">Read-only queues</div><div className="card-description">Only durable metadata is shown</div></div><ShieldCheck size={18} /></div>
@@ -73,40 +78,42 @@ function OverviewTab({ data }: { data: AgentModeConsoleProjection }) {
           </div>
         </article>
       </section>
-      {data.failures.length > 0 ? <section className="card"><div className="card-title">Latest operational exceptions</div><FailureTable failures={data.failures.slice(0, 5)} /></section> : null}
+      {data.schedules.length > 0 ? <section className="card"><div className="card-title">Schedules</div>{data.schedules.slice(0, 5).map((schedule) => <div className="agent-console-list-row" key={schedule.scheduleId}><DetailLink selection={{ kind: 'schedule', id: schedule.scheduleId }} onOpen={onOpen}>{id(schedule.scheduleId)}</DetailLink><span><StatusBadge status={schedule.status} /> <span className="meta">next {timeAgo(schedule.nextEligibleAt)}</span></span></div>)}</section> : null}
+      {data.failures.length > 0 ? <section className="card"><div className="card-title">Latest operational exceptions</div><FailureTable failures={data.failures.slice(0, 5)} onOpen={onOpen} /></section> : null}
     </div>
   );
 }
 
-function AgentsTab({ data }: { data: AgentModeConsoleProjection }) {
+function AgentsTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpen: (selection: AgentModeDetailSelection) => void }) {
   const [filter, setFilter] = useState<'all' | 'active' | 'terminal' | 'failed' | 'uncertain'>('all');
   const agents = data.agents.filter((agent) => filter === 'all' || (filter === 'active' ? ['active', 'assigned', 'reserved', 'running'].includes(agent.lifecycleStatus) : filter === 'terminal' ? ['completed', 'cancelled', 'failed', 'expired', 'retired'].includes(agent.lifecycleStatus) : agent.lifecycleStatus === filter));
   return (
     <div className="stack">
       <div className="split"><div><div className="card-title">Agent hierarchy</div><div className="card-description">Bounded durable Agent Mode agents; filters are local view state.</div></div><select className="select agent-console-filter" value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}><option value="all">All agents</option><option value="active">Active</option><option value="terminal">Terminal</option><option value="failed">Failed</option><option value="uncertain">Uncertain</option></select></div>
-      {agents.length === 0 ? <EmptyTable message="No agents match this view." /> : <div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Agent</th><th>Role</th><th>Root / parent</th><th>Status</th><th>Depth</th><th>Runtime / model</th><th>Updated</th></tr></thead><tbody>{agents.map((agent) => <tr key={agent.agentId}><td>{id(agent.agentId)}</td><td><div>{agent.organizationRoleId ?? agent.roleTemplateId ?? '—'}</div></td><td><div>{id(agent.rootGoalId)}</div><div className="meta">parent {id(agent.parentAgentId)}</div></td><td><StatusBadge status={agent.lifecycleStatus} /></td><td>{agent.depth ?? '—'}</td><td><div>{agent.runtimeRef ?? '—'}</div><div className="meta">{agent.modelRef ?? 'no model fact'}</div></td><td className="meta">{timeAgo(agent.updatedAt)}</td></tr>)}</tbody></table></div>}
+      {agents.length === 0 ? <EmptyTable message="No agents match this view." /> : <div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Agent</th><th>Role</th><th>Root / parent</th><th>Status</th><th>Depth</th><th>Runtime / model</th><th>Updated</th></tr></thead><tbody>{agents.map((agent) => <tr key={agent.agentId}><td><DetailLink selection={{ kind: 'agent', id: agent.agentId }} onOpen={onOpen}>{id(agent.agentId)}</DetailLink></td><td><div>{agent.organizationRoleId ?? agent.roleTemplateId ?? '—'}</div></td><td><div>{id(agent.rootGoalId)}</div><div className="meta">parent {id(agent.parentAgentId)}</div></td><td><StatusBadge status={agent.lifecycleStatus} /></td><td>{agent.depth ?? '—'}</td><td><div>{agent.runtimeRef ?? '—'}</div><div className="meta">{agent.modelRef ?? 'no model fact'}</div></td><td className="meta">{timeAgo(agent.updatedAt)}</td></tr>)}</tbody></table></div>}
     </div>
   );
 }
 
-function OrganizationsTab({ data }: { data: AgentModeConsoleProjection }) {
-  return data.organizations.length === 0 ? <EmptyTable message="No durable organization plans are present." /> : <div className="stack">{data.organizations.map((organization) => <article className="card" key={organization.organizationPlanId}><div className="card-header"><div><div className="card-title">{id(organization.organizationPlanId)}</div><div className="meta">Root {id(organization.rootGoalId)} · supervisor {id(organization.supervisorAgentId)}</div></div><StatusBadge status={organization.finalStatus ?? organization.status} /></div><div className="mini-stats"><div><span>Ready</span><strong>{organization.readyCount}</strong></div><div><span>Running</span><strong>{organization.runningCount}</strong></div><div><span>Succeeded</span><strong>{organization.succeededCount}</strong></div><div><span>Failed / uncertain</span><strong>{organization.failedCount} / {organization.uncertainCount}</strong></div></div><div className="agent-console-list-row"><span>Auditor {organization.auditorStatus ?? 'not yet selected'}</span><span className="meta">cost {formatUsd(organization.aggregateCost)} · final {id(organization.finalResultId)}</span></div><div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Work item</th><th>Role</th><th>Readiness</th><th>Delegation</th><th>Lifecycle</th><th>Evidence / cost</th></tr></thead><tbody>{organization.workItems.map((item) => <tr key={item.workItemId}><td><div>{item.workItemKey}</div><div className="meta">{id(item.workItemId)}</div></td><td>{item.organizationRoleId}</td><td><StatusBadge status={item.readiness} /></td><td><StatusBadge status={item.delegationState} /></td><td><div>{id(item.childAgentId)}</div><div className="meta">{id(item.taskId)}</div></td><td>{item.evidenceRefCount} refs · {formatUsd(item.settledCost)}</td></tr>)}</tbody></table></div></article>)}</div>;
+function OrganizationsTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpen: (selection: AgentModeDetailSelection) => void }) {
+  return data.organizations.length === 0 ? <EmptyTable message="No durable organization plans are present." /> : <div className="stack">{data.organizations.map((organization) => <article className="card" key={organization.organizationPlanId}><div className="card-header"><div><div className="card-title"><DetailLink selection={{ kind: 'organization', id: organization.organizationPlanId }} onOpen={onOpen}>{id(organization.organizationPlanId)}</DetailLink></div><div className="meta">Root {id(organization.rootGoalId)} · supervisor {id(organization.supervisorAgentId)}</div></div><StatusBadge status={organization.finalStatus ?? organization.status} /></div><div className="mini-stats"><div><span>Ready</span><strong>{organization.readyCount}</strong></div><div><span>Running</span><strong>{organization.runningCount}</strong></div><div><span>Succeeded</span><strong>{organization.succeededCount}</strong></div><div><span>Failed / uncertain</span><strong>{organization.failedCount} / {organization.uncertainCount}</strong></div></div><div className="agent-console-list-row"><span>Auditor {organization.auditorStatus ?? 'not yet selected'}</span><span className="meta">cost {formatUsd(organization.aggregateCost)} · final {id(organization.finalResultId)}</span></div><div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Work item</th><th>Role</th><th>Readiness</th><th>Delegation</th><th>Lifecycle</th><th>Evidence / cost</th></tr></thead><tbody>{organization.workItems.map((item) => <tr key={item.workItemId}><td><div>{item.workItemKey}</div><div className="meta">{id(item.workItemId)}</div></td><td>{item.organizationRoleId}</td><td><StatusBadge status={item.readiness} /></td><td><StatusBadge status={item.delegationState} /></td><td><div><DetailLink selection={{ kind: 'agent', id: item.childAgentId ?? '' }} onOpen={onOpen}>{id(item.childAgentId)}</DetailLink></div><div className="meta"><DetailLink selection={{ kind: 'task', id: item.taskId ?? '' }} onOpen={onOpen}>{id(item.taskId)}</DetailLink></div></td><td>{item.evidenceRefCount} refs · {formatUsd(item.settledCost)}</td></tr>)}</tbody></table></div></article>)}</div>;
 }
 
-function TasksTab({ data }: { data: AgentModeConsoleProjection }) {
-  return data.tasks.length === 0 ? <EmptyTable message="No durable tasks are present." /> : <div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Task</th><th>Run</th><th>Attempt</th><th>Agent / root</th><th>Status</th><th>Runtime / model</th><th>Updated</th></tr></thead><tbody>{data.tasks.map((task) => <tr key={task.taskId}><td>{id(task.taskId)}</td><td>{id(task.runId)}</td><td>{id(task.attemptId)}</td><td><div>{id(task.agentId)}</div><div className="meta">{id(task.rootGoalId)}</div></td><td><StatusBadge status={task.uncertaintyState ?? task.status} /></td><td><div>{task.runtimeRef ?? '—'}</div><div className="meta">{task.modelRef ?? 'no model fact'}</div></td><td className="meta">{timeAgo(task.updatedAt)}</td></tr>)}</tbody></table></div>;
+function TasksTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpen: (selection: AgentModeDetailSelection) => void }) {
+  return data.tasks.length === 0 ? <EmptyTable message="No durable tasks are present." /> : <div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Task</th><th>Run</th><th>Attempt</th><th>Agent / root</th><th>Status</th><th>Runtime / model</th><th>Updated</th></tr></thead><tbody>{data.tasks.map((task) => <tr key={task.taskId}><td><DetailLink selection={{ kind: 'task', id: task.taskId }} onOpen={onOpen}>{id(task.taskId)}</DetailLink></td><td><DetailLink selection={{ kind: 'run', id: task.runId ?? '' }} onOpen={onOpen}>{id(task.runId)}</DetailLink></td><td><DetailLink selection={{ kind: 'attempt', id: task.attemptId ?? '' }} onOpen={onOpen}>{id(task.attemptId)}</DetailLink></td><td><div><DetailLink selection={{ kind: 'agent', id: task.agentId ?? '' }} onOpen={onOpen}>{id(task.agentId)}</DetailLink></div><div className="meta">{id(task.rootGoalId)}</div></td><td><StatusBadge status={task.uncertaintyState ?? task.status} /></td><td><div>{task.runtimeRef ?? '—'}</div><div className="meta">{task.modelRef ?? 'no model fact'}</div></td><td className="meta">{timeAgo(task.updatedAt)}</td></tr>)}</tbody></table></div>;
 }
 
-function FailureTable({ failures }: { failures: AgentModeConsoleProjection['failures'] }) {
-  return <div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Object</th><th>ID</th><th>Root</th><th>Status</th><th>Reason</th><th>Updated</th></tr></thead><tbody>{failures.map((failure) => <tr key={`${failure.objectType}:${failure.objectId}`}><td>{failure.objectType}</td><td>{id(failure.objectId)}</td><td>{id(failure.rootGoalId)}</td><td><StatusBadge status={failure.status} /></td><td><code>{failure.reasonCode}</code></td><td className="meta">{timeAgo(failure.updatedAt)}</td></tr>)}</tbody></table></div>;
+function FailureTable({ failures, onOpen }: { failures: AgentModeConsoleProjection['failures']; onOpen: (selection: AgentModeDetailSelection) => void }) {
+  return <div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Object</th><th>ID</th><th>Root</th><th>Status</th><th>Reason</th><th>Updated</th></tr></thead><tbody>{failures.map((failure) => <tr key={`${failure.objectType}:${failure.objectId}`}><td>{failure.objectType}</td><td><DetailLink selection={{ kind: 'failure', id: failure.objectId }} onOpen={onOpen}>{id(failure.objectId)}</DetailLink></td><td>{id(failure.rootGoalId)}</td><td><StatusBadge status={failure.status} /></td><td><code>{failure.reasonCode}</code></td><td className="meta">{timeAgo(failure.updatedAt)}</td></tr>)}</tbody></table></div>;
 }
 
-function FailuresTab({ data }: { data: AgentModeConsoleProjection }) {
-  return data.failures.length === 0 ? <EmptyTable message="No failed, blocked, cancelled, uncertain, or dead-letter entries are currently visible." /> : <FailureTable failures={data.failures} />;
+function FailuresTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpen: (selection: AgentModeDetailSelection) => void }) {
+  return data.failures.length === 0 ? <EmptyTable message="No failed, blocked, cancelled, uncertain, or dead-letter entries are currently visible." /> : <FailureTable failures={data.failures} onOpen={onOpen} />;
 }
 
 export function AgentModeConsole() {
   const [tab, setTab] = useState<ConsoleTab>('overview');
+  const [selection, setSelection] = useState<AgentModeDetailSelection | null>(null);
   const query = useQuery({
     queryKey: ['agent-mode-console'],
     queryFn: () => brainCoreRequest('/agent-mode/console', agentModeConsoleProjectionSchema),
@@ -131,11 +138,12 @@ export function AgentModeConsole() {
         {query.isError ? <div className="card"><div className="card-title">Showing stale durable state</div><p className="meta">The latest projection is retained by TanStack Query with a visible stale indicator; it is not treated as fresh.</p></div> : null}
         <section className="grid cards agent-console-summary"><SummaryCard label="Active agents" value={data.summary.activeAgentCount} detail={`${data.summary.activeRootGoalCount} active roots`} icon={Bot} /><SummaryCard label="Running work" value={data.summary.runningTaskCount} detail={`${data.summary.runningAttemptCount} attempts`} icon={ListChecks} /><SummaryCard label="Uncertain" value={data.summary.uncertainCount} detail="requires durable reconciliation" icon={CircleAlert} /><SummaryCard label="Pending approvals" value={data.summary.pendingApprovalCount} detail={`${data.summary.activeScheduleCount} active schedules`} icon={ShieldCheck} /><SummaryCard label="Reserved cost" value={formatUsd(data.summary.reservedCost)} detail="root reservations" icon={Coins} /><SummaryCard label="Settled cost" value={formatUsd(data.summary.settledCost)} detail="durable settled facts" icon={Activity} /></section>
         <div className="tabs" role="tablist" aria-label="Agent Mode views">{tabs.map((candidate) => <button type="button" role="tab" aria-selected={tab === candidate.id} className={tab === candidate.id ? 'active' : ''} key={candidate.id} onClick={() => setTab(candidate.id)}>{candidate.label}</button>)}</div>
-        {tab === 'overview' ? <OverviewTab data={data} /> : null}
-        {tab === 'agents' ? <AgentsTab data={data} /> : null}
-        {tab === 'organizations' ? <OrganizationsTab data={data} /> : null}
-        {tab === 'tasks' ? <TasksTab data={data} /> : null}
-        {tab === 'failures' ? <FailuresTab data={data} /> : null}
+        {tab === 'overview' ? <OverviewTab data={data} onOpen={setSelection} /> : null}
+        {tab === 'agents' ? <AgentsTab data={data} onOpen={setSelection} /> : null}
+        {tab === 'organizations' ? <OrganizationsTab data={data} onOpen={setSelection} /> : null}
+        {tab === 'tasks' ? <TasksTab data={data} onOpen={setSelection} /> : null}
+        {tab === 'failures' ? <FailuresTab data={data} onOpen={setSelection} /> : null}
+        <AgentModeConsoleDetail selection={selection} onClose={() => setSelection(null)} onOpen={setSelection} />
         <div className="meta agent-console-source">Source: {data.freshness.sourceStatus}; StateStore present: {String(data.freshness.stateStorePresent)}; schema {data.schemaVersion}; refresh every 7 seconds.</div>
       </> : null}
     </div>

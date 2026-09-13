@@ -55,12 +55,35 @@ performs no provider/runtime probe, so repeated reads are side-effect free.
 
 The `/agents` page uses the existing `brainCoreRequest()` client, TanStack
 Query, Zod validation, Lucide icons, and the existing compact tabbed layout.
-Loading, fresh, stale, offline/error, and empty states are distinct. U0-A is
-read-only: lifecycle controls, notification mutations, detailed drill-down,
-and currently unavailable Jarvis intake/node/worktree/quota inventory are
-deferred to later U0 slices. Legacy `/agent-console` remains compatible and
-continues to include its legacy summary adapter; it is not the canonical Agent
-Mode projection.
+Loading, fresh, stale, offline/error, and empty states are distinct. U0-A and
+U0-B remain read-only: lifecycle controls, notification mutations, and
+currently unavailable Jarvis intake/node/worktree/quota inventory are deferred
+to later U0 slices. Legacy `/agent-console` remains compatible and continues
+to include its legacy summary adapter; it is not the canonical Agent Mode
+projection.
+
+## Agent Mode detail drill-down
+
+U0-B adds one canonical detail route:
+
+```text
+GET /agent-mode/console/detail/:kind/:id
+```
+
+The versioned `agent-mode-console-detail-v1` response is derived from the same
+durable observer/StateStore authority as the summary projection. Its closed
+detail kinds are agent, task, run, attempt, organization, budget, schedule,
+failure, and evidence. Every list is bounded and deterministically ordered;
+freshness, not-found, and unavailable states are explicit. Evidence is limited
+to safe metadata and references, never raw bodies. The route does not create a
+Console ledger, read SQLite in the browser, call providers, or mutate runtime
+state.
+
+Stable IDs on `/agents` open an ephemeral read-only detail panel with safe
+cross-links between ownership objects and visible stale/error/loading states.
+No lifecycle, approval, budget, scheduler, spawn, retry, or model controls are
+present in U0-A/U0-B. The next bounded UI slice is U0-C guarded lifecycle and
+approval actions.
 
 ## Design reference
 

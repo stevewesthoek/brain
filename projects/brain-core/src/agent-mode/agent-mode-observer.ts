@@ -368,6 +368,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         organizationWorkItems.push({
           organizationPlanId: plan.organizationPlanId, workItemId: item.workItemId, workItemKey: item.workItemKey,
           organizationRoleId: item.organizationRoleId, dependencyCount: item.dependencyKeys.length,
+          dependencyKeys: item.dependencyKeys.slice(0, 32),
           readinessState: readinessById.get(item.workItemId) ?? 'blocked', readiness: itemExecution?.readiness ?? 'blocked',
           delegationState: itemExecution?.delegationState ?? 'unbound', delegationIntentKey: itemExecution?.delegationIntentKey ?? null,
           childAgentId: itemExecution?.childAgentId ?? null, taskId: itemExecution?.taskId ?? null,

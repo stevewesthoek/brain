@@ -1026,6 +1026,29 @@ Evidence: `operations/reports/agent-mode-u0-a-console-projection-evidence-2026-0
 Exact next task: **U0-B — Agent Detail, Evidence, Budget, Schedule, and Failure
 Drill-Down**. Do not start it automatically.
 
+## Current U0-B Agent Mode detail drill-down — 2026-09-13
+
+U0-B — **Agent Detail, Evidence, Budget, Schedule, and Failure Drill-Down** —
+is **COMPLETE** for the bounded read-only detail gate. U0 remains **IN
+PROGRESS**.
+
+Brain Core now exposes the versioned `agent-mode-console-detail-v1` response at
+`GET /agent-mode/console/detail/:kind/:id`. It supports bounded Agent, Task,
+Run, Attempt, Organization, Budget, Schedule, Failure, and Evidence details,
+derived from the existing durable Agent Mode observer/StateStore. Detail
+responses preserve K4/K5 authority, expose safe cross-links and evidence
+metadata, and explicitly report unavailable or missing state.
+
+Brain Console `/agents` now opens these details from stable IDs in a read-only
+panel. The panel uses the existing client, strict Zod validation, ephemeral
+selection state, and visible loading/stale/error states. It adds no controls,
+provider probes, Console ledger, raw prompt/result material, or browser
+authority.
+
+Evidence: `operations/reports/agent-mode-u0-b-console-drilldown-evidence-2026-09-13.md`.
+Exact next task: **U0-C — Guarded Agent Lifecycle Controls and Approval
+Actions**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

@@ -1320,7 +1320,7 @@ Console control surface**. Do not start U0 automatically.
 
 ## Phase U0 — unified Brain Console control surface
 
-**Status:** IN PROGRESS; U0-A is complete
+**Status:** IN PROGRESS; U0-A and U0-B are complete
 
 Borrow Orca-like fleet/worktree/usage/notification patterns while keeping Brain
 Console as the primary control/dashboard surface. Show Jarvis intake, agent
@@ -1359,6 +1359,29 @@ drill-down, and lifecycle control mutations remain later U0 slices. Legacy
 Evidence: `operations/reports/agent-mode-u0-a-console-projection-evidence-2026-09-13.md`.
 Exact next bounded slice: **U0-B — Agent Detail, Evidence, Budget, Schedule,
 and Failure Drill-Down**. Do not start it automatically.
+
+### U0-B — Agent Detail, Evidence, Budget, Schedule, and Failure Drill-Down
+
+**Status:** COMPLETE for the bounded read-only detail gate.
+
+Brain Core now exposes `GET /agent-mode/console/detail/:kind/:id` with the
+versioned `agent-mode-console-detail-v1` contract. The closed detail kinds are
+Agent, Task, Run, Attempt, Organization, Budget, Schedule, Failure, and
+Evidence. Brain Core derives every response from the existing Agent Mode
+observer and durable StateStore; no Console database or second lifecycle,
+result, budget, or evidence ledger exists.
+
+Responses are bounded, deterministically ordered, and explicit about fresh,
+not-found, and unavailable StateStore conditions. Evidence is metadata-only,
+with no prompts, hidden reasoning, provider payloads, credentials, or raw
+logs. The `/agents` page provides ephemeral clickable cross-links and a
+read-only detail panel using the existing Brain Core client, strict Zod schema,
+and side-effect-free TanStack Query refresh. No lifecycle mutation or provider
+probe is exposed.
+
+Evidence: `operations/reports/agent-mode-u0-b-console-drilldown-evidence-2026-09-13.md`.
+Exact next bounded slice: **U0-C — Guarded Agent Lifecycle Controls and
+Approval Actions**. Do not start it automatically.
 
 ## Phase V0 — Jarvis voice gateway
 

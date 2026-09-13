@@ -994,3 +994,29 @@ remains available for compatibility and is not redefined.
 Evidence: `operations/reports/agent-mode-u0-a-console-projection-evidence-2026-09-13.md`.
 Exact next bounded slice: **U0-B — Agent Detail, Evidence, Budget, Schedule,
 and Failure Drill-Down**. Do not start U0-B automatically.
+
+## U0-B read-only Agent Mode detail drill-down — 2026-09-13
+
+U0-B is **COMPLETE** and U0 remains **IN PROGRESS**. The canonical detail
+endpoint is:
+
+```text
+GET /agent-mode/console/detail/:kind/:id
+```
+
+It returns `agent-mode-console-detail-v1` for the closed kinds `agent`, `task`,
+`run`, `attempt`, `organization`, `budget`, `schedule`, `failure`, and
+`evidence`. Responses are request-time projections from the existing observer
+and StateStore, with explicit available/not-found/unavailable freshness and
+bounded collections. Organization dependencies, K4 lifecycle links, budgets,
+schedules, failure reasons, and evidence ownership metadata are visible.
+
+Evidence remains metadata-only. Never add prompts, hidden reasoning, provider
+payloads, credentials, environment values, or unbounded logs to this surface.
+The route and `/agents` detail panel are read-only and must not perform provider
+probes or mutate Agent, Task, Run, Attempt, budget, scheduler, runtime, or
+organization state. Existing `/agent-mode/console`, `/agent-mode/observer`, and
+legacy `/agent-console` compatibility remain unchanged.
+
+Exact next bounded slice: **U0-C — Guarded Agent Lifecycle Controls and
+Approval Actions**. Do not start U0-C automatically.
