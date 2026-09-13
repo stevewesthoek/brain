@@ -995,6 +995,37 @@ Evidence: `operations/reports/agent-mode-k5-c-organization-final-result-evidence
 Exact next phase: **Phase U0 — unified Brain Console control surface**. Do not
 start it automatically.
 
+## Current U0-A Agent Mode Console projection — 2026-09-13
+
+U0-A — **Canonical Agent Mode Console Projection and Read-Only Brain Console
+Operations Surface** — is **COMPLETE** for the bounded read-only projection
+gate. U0 remains **IN PROGRESS**.
+
+Brain Core now exposes the strongly typed, versioned `agent-mode-console-v1`
+projection at `GET /agent-mode/console`. It derives from the existing durable
+Agent Mode observer and StateStore only; every collection is bounded and
+ordered by lifecycle activity, update time, and stable ID. Fresh, empty, and
+unavailable StateStore conditions are explicit. No Console database, UI ledger,
+provider probe, runtime dispatch, model call, or mutation is introduced.
+
+Brain Console adds the read-only `/agents` surface using the existing
+`brainCoreRequest()` and TanStack Query client with a strict Zod contract. Its
+tabbed Overview, Agents, Organizations, Tasks, and Failures views expose
+bounded K0-K5 state, K5 final results, K4 runtime/model facts when durably
+known, root budget facts, schedules, pending Agent Mode review approvals,
+evidence metadata, and failure/uncertainty state. Browser cache remains a
+temporary view cache, never authority; a refresh or second client reconstructs
+the domain projection from Brain Core.
+
+Jarvis intake, notifications, detailed evidence/budget/schedule/failure
+drill-down, node/worktree/quota inventory gaps, and lifecycle control actions
+remain later U0 work. Legacy `/agent-console` remains available for existing
+consumers and is not redefined by U0-A.
+
+Evidence: `operations/reports/agent-mode-u0-a-console-projection-evidence-2026-09-13.md`.
+Exact next task: **U0-B — Agent Detail, Evidence, Budget, Schedule, and Failure
+Drill-Down**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

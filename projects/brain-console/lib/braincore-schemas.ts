@@ -49,6 +49,228 @@ export const opsAiCostsSchema = z.object({
 
 export const brainCoreStatusSchema = z.record(z.unknown());
 
+const agentModeConsoleAgentSchema = z.object({
+  agentId: z.string(),
+  rootGoalId: z.string().nullable(),
+  parentAgentId: z.string().nullable(),
+  organizationRoleId: z.string().nullable(),
+  roleTemplateId: z.string().nullable(),
+  lifecycleStatus: z.string(),
+  depth: z.number().nullable(),
+  childCount: z.number().nonnegative(),
+  activeChildCount: z.number().nonnegative(),
+  deadline: z.string().nullable(),
+  cancellationState: z.string().nullable(),
+  runtimeRef: z.string().nullable(),
+  modelRef: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleTaskSchema = z.object({
+  taskId: z.string(),
+  runId: z.string().nullable(),
+  attemptId: z.string().nullable(),
+  agentId: z.string().nullable(),
+  rootGoalId: z.string().nullable(),
+  parentAgentId: z.string().nullable(),
+  status: z.string(),
+  runtimeRef: z.string().nullable(),
+  runtimeProfileRef: z.string().nullable(),
+  modelRef: z.string().nullable(),
+  startedAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  uncertaintyState: z.string().nullable(),
+  cancellationState: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleRunSchema = z.object({
+  runId: z.string(),
+  taskId: z.string(),
+  attemptId: z.string().nullable(),
+  agentId: z.string().nullable(),
+  rootGoalId: z.string().nullable(),
+  status: z.string(),
+  runtimeRef: z.string().nullable(),
+  runtimeProfileRef: z.string().nullable(),
+  modelRef: z.string().nullable(),
+  startedAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  uncertaintyState: z.string().nullable(),
+  cancellationState: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleAttemptSchema = z.object({
+  attemptId: z.string(),
+  runId: z.string(),
+  agentId: z.string(),
+  rootGoalId: z.string().nullable(),
+  status: z.string(),
+  runtimeRef: z.string().nullable(),
+  runtimeProfileRef: z.string().nullable(),
+  modelRef: z.string().nullable(),
+  startedAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  uncertaintyState: z.string().nullable(),
+  cancellationState: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleOrganizationWorkItemSchema = z.object({
+  workItemId: z.string(),
+  workItemKey: z.string(),
+  organizationRoleId: z.string(),
+  dependencyCount: z.number().nonnegative(),
+  readiness: z.string(),
+  delegationState: z.string(),
+  childAgentId: z.string().nullable(),
+  taskId: z.string().nullable(),
+  runId: z.string().nullable(),
+  attemptId: z.string().nullable(),
+  terminalStatus: z.string().nullable(),
+  resultRef: z.string().nullable(),
+  evidenceRefCount: z.number().nonnegative(),
+  settledCost: z.number().nonnegative(),
+}).strict();
+
+const agentModeConsoleOrganizationSchema = z.object({
+  organizationPlanId: z.string(),
+  rootGoalId: z.string(),
+  supervisorAgentId: z.string(),
+  supervisorOrganizationRoleId: z.string(),
+  status: z.string(),
+  workItemCount: z.number().nonnegative(),
+  dependencyCount: z.number().nonnegative(),
+  readyCount: z.number().nonnegative(),
+  runningCount: z.number().nonnegative(),
+  succeededCount: z.number().nonnegative(),
+  failedCount: z.number().nonnegative(),
+  uncertainCount: z.number().nonnegative(),
+  auditorStatus: z.string().nullable(),
+  finalResultId: z.string().nullable(),
+  finalStatus: z.string().nullable(),
+  aggregateCost: z.number().nonnegative(),
+  updatedAt: z.string().nullable(),
+  workItems: z.array(agentModeConsoleOrganizationWorkItemSchema),
+}).strict();
+
+const agentModeConsoleRuntimeSchema = z.object({
+  dispatchId: z.string().nullable(),
+  attemptId: z.string().nullable(),
+  runtimeRef: z.string().nullable(),
+  runtimeProfileRef: z.string().nullable(),
+  status: z.string(),
+  startedAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  uncertaintyState: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleBudgetSchema = z.object({
+  rootGoalId: z.string(),
+  maxSteps: z.number().nonnegative(),
+  reservedSteps: z.number().nonnegative(),
+  maxCost: z.number().nonnegative(),
+  reservedCost: z.number().nonnegative(),
+  settledCost: z.number().nonnegative(),
+  remainingCost: z.number().nonnegative().nullable(),
+  activeChildren: z.number().nonnegative(),
+  totalChildCreations: z.number().nonnegative(),
+  updatedAt: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleScheduleSchema = z.object({
+  scheduleId: z.string(),
+  kind: z.string(),
+  status: z.string(),
+  dueAt: z.string(),
+  nextEligibleAt: z.string(),
+  completedAt: z.string().nullable(),
+  deadLetteredAt: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleApprovalSchema = z.object({
+  approvalId: z.string(),
+  objectType: z.string(),
+  status: z.string(),
+  requestedAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleFailureSchema = z.object({
+  objectType: z.string(),
+  objectId: z.string(),
+  rootGoalId: z.string().nullable(),
+  status: z.string(),
+  reasonCode: z.string(),
+  updatedAt: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleModelResourceSchema = z.object({
+  operationId: z.string(),
+  attemptId: z.string(),
+  status: z.string(),
+  providerId: z.string().nullable(),
+  modelRef: z.string().nullable(),
+  route: z.string().nullable(),
+  region: z.string().nullable(),
+  completedAt: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleNodeResourceSchema = z.object({
+  sourceId: z.string(),
+  resourceId: z.string().nullable(),
+  providerId: z.string().nullable(),
+  bindingId: z.string().nullable(),
+  status: z.string().nullable(),
+  freshness: z.string().nullable(),
+  observedAt: z.string().nullable(),
+}).strict();
+
+export const agentModeConsoleProjectionSchema = z.object({
+  schemaVersion: z.literal('agent-mode-console-v1'),
+  generatedAt: z.string(),
+  source: z.literal('agent-mode-state-store'),
+  freshness: z.object({
+    status: z.enum(['fresh', 'empty', 'unavailable']),
+    sourceStatus: z.enum(['available', 'unavailable']),
+    generatedAt: z.string(),
+    stateStorePresent: z.boolean(),
+    message: z.string(),
+  }).strict(),
+  summary: z.object({
+    activeRootGoalCount: z.number().nonnegative(),
+    activeAgentCount: z.number().nonnegative(),
+    runningTaskCount: z.number().nonnegative(),
+    runningAttemptCount: z.number().nonnegative(),
+    blockedCount: z.number().nonnegative(),
+    failedCount: z.number().nonnegative(),
+    uncertainCount: z.number().nonnegative(),
+    pendingApprovalCount: z.number().nonnegative(),
+    activeScheduleCount: z.number().nonnegative(),
+    reservedCost: z.number().nonnegative(),
+    settledCost: z.number().nonnegative(),
+  }).strict(),
+  agents: z.array(agentModeConsoleAgentSchema).max(100),
+  organizations: z.array(agentModeConsoleOrganizationSchema).max(50),
+  tasks: z.array(agentModeConsoleTaskSchema).max(100),
+  runs: z.array(agentModeConsoleRunSchema).max(100),
+  attempts: z.array(agentModeConsoleAttemptSchema).max(100),
+  runtimes: z.array(agentModeConsoleRuntimeSchema).max(100),
+  budgets: z.array(agentModeConsoleBudgetSchema).max(100),
+  schedules: z.array(agentModeConsoleScheduleSchema).max(50),
+  approvals: z.array(agentModeConsoleApprovalSchema).max(50),
+  evidenceSummary: z.object({
+    evidenceCount: z.number().nonnegative(),
+    receiptCount: z.number().nonnegative(),
+    latestEvidenceRefs: z.array(z.string()).max(100),
+  }).strict(),
+  failures: z.array(agentModeConsoleFailureSchema).max(50),
+  modelResources: z.array(agentModeConsoleModelResourceSchema).max(100),
+  nodeResources: z.array(agentModeConsoleNodeResourceSchema).max(100),
+}).strict();
+export type AgentModeConsoleProjection = z.infer<typeof agentModeConsoleProjectionSchema>;
+
 export const aiModelSelectorHealthMatrixSchema = z.object({
   id: z.literal('ai-model-selector-health-matrix'),
   generated_at: z.string(),

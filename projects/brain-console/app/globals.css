@@ -809,6 +809,54 @@ tr:last-child td {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
+.agent-console-screen {
+  gap: 20px;
+}
+
+.agent-console-summary .metric {
+  font-size: 30px;
+}
+
+.agent-console-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.agent-console-list-row:last-child {
+  border-bottom: 0;
+}
+
+.agent-console-list-row > * {
+  min-width: 0;
+}
+
+.agent-console-filter {
+  width: auto;
+  min-width: 140px;
+}
+
+.agent-console-table {
+  min-width: 980px;
+}
+
+.console-id {
+  display: inline-block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.agent-console-source {
+  padding-top: 2px;
+}
+
 .local-summary-strip,
 .mini-stats {
   display: grid;

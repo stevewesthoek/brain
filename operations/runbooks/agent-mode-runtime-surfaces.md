@@ -954,3 +954,43 @@ network, BrainNode, Workcells, tools, and repository effects remain zero.
 Evidence: `operations/reports/agent-mode-k5-c-organization-final-result-evidence-2026-09-13.md`.
 The exact next roadmap phase is **Phase U0 — unified Brain Console control
 surface**. Do not start U0 automatically.
+
+## U0-A canonical Agent Mode Console projection — 2026-09-13
+
+U0-A is **COMPLETE** and U0 remains **IN PROGRESS**. The canonical read-only
+Brain Console Agent Mode surface is `/agents`, backed by the single Brain Core
+endpoint `GET /agent-mode/console` and schema version
+`agent-mode-console-v1`.
+
+Brain Core derives this bounded response from `readAgentModeObserver()` and
+the existing durable Agent Mode StateStore. It does not read the legacy
+`~/.local/video-orchestrator/state/agent-console.json` snapshot for Agent Mode,
+create a Console database, expose a second lifecycle/result ledger, or perform
+provider/runtime probes. All visible collections have explicit caps (100
+agents/tasks/runs/attempts/runtimes/budgets/model/node resources, 50
+organizations/schedules/approvals/failures, and 100 evidence refs). Ordering is
+active before terminal, then latest durable update, then stable ID.
+
+The response includes explicit `fresh`, `empty`, or `unavailable` freshness;
+durable Agent Mode/K5 organization/final-result state; K4 lifecycle and
+runtime/model facts; root budget reservations and safely derived settlement;
+schedules; pending Agent Mode review approvals; bounded evidence metadata; and
+stable failure/uncertainty reason codes. Secrets, prompts, hidden reasoning,
+provider payloads, credentials, environment values, and unbounded logs are not
+projected.
+
+Brain Console consumes the response through the existing `brainCoreRequest()`
+client, strict Zod validation, and a seven-second TanStack Query refresh. The
+`/agents` page is read-only with Overview, Agents, Organizations, Tasks, and
+Failures tabs. Loading, fresh, stale, offline/error, and empty states remain
+distinct. No pause/resume/cancel/kill/approve/retry/spawn or other mutation
+control is exposed in U0-A.
+
+Current coverage intentionally leaves Jarvis intake, durable notifications,
+deep evidence/budget/schedule/failure drill-down, richer node/worktree/quota
+inventory, and lifecycle controls to later U0 slices. Legacy `/agent-console`
+remains available for compatibility and is not redefined.
+
+Evidence: `operations/reports/agent-mode-u0-a-console-projection-evidence-2026-09-13.md`.
+Exact next bounded slice: **U0-B — Agent Detail, Evidence, Budget, Schedule,
+and Failure Drill-Down**. Do not start U0-B automatically.

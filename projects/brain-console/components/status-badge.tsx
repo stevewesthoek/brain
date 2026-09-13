@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
 
 const positive = new Set(['fresh', 'available', 'ok', 'running', 'healthy', 'success', 'enabled', 'published', 'generated']);
-const warning = new Set(['stale', 'partial', 'unknown', 'starting', 'planned', 'awaiting_approval', 'draft', 'generating']);
-const negative = new Set(['error', 'failed', 'unavailable', 'not_instrumented', 'stopped', 'blocked', 'disabled']);
+const warning = new Set(['stale', 'partial', 'unknown', 'uncertain', 'starting', 'planned', 'awaiting_approval', 'draft', 'generating']);
+const negative = new Set(['error', 'failed', 'cancelled', 'unavailable', 'not_instrumented', 'stopped', 'blocked', 'dependency_failed', 'disabled']);
 
 export function statusClass(status: string | null | undefined): string {
   const normalized = String(status ?? 'unknown').toLowerCase();

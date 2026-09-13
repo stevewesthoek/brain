@@ -1320,7 +1320,7 @@ Console control surface**. Do not start U0 automatically.
 
 ## Phase U0 — unified Brain Console control surface
 
-**Status:** planned after durable agent state is proven
+**Status:** IN PROGRESS; U0-A is complete
 
 Borrow Orca-like fleet/worktree/usage/notification patterns while keeping Brain
 Console as the primary control/dashboard surface. Show Jarvis intake, agent
@@ -1331,6 +1331,34 @@ surfaces remain complementary tools over the same Brain APIs/events.
 
 Exit gate: UI state is fully reconstructible from durable Brain state and never
 becomes a competing source of truth.
+
+### U0-A — Canonical Agent Mode Console Projection and Read-Only Operations Surface
+
+**Status:** COMPLETE for the bounded read-only projection gate.
+
+Brain Core now exposes one versioned `agent-mode-console-v1` projection at
+`GET /agent-mode/console`. It is derived at request time from the existing
+Agent Mode observer and durable StateStore, with bounded collections,
+deterministic operational ordering, and explicit fresh/empty/unavailable
+freshness. It does not create Console-owned tables, copy lifecycle ledgers, or
+probe providers.
+
+Brain Console exposes this contract at `/agents` through the existing
+`brainCoreRequest()` and TanStack Query client path. The page is read-only and
+has Overview, Agents, Organizations, Tasks, and Failures views. Zod validates
+the exact response shape; query refresh state is visibly stale/error-aware and
+the browser remains non-authoritative.
+
+U0-A surfaces durable Agent Mode/K5 lifecycle, organization final-result,
+runtime/model facts, root budget reservations/settlement, scheduler metadata,
+pending Agent Mode review approvals, bounded evidence metadata, and failures.
+Jarvis intake, notifications, richer node/worktree/quota inventory, detail
+drill-down, and lifecycle control mutations remain later U0 slices. Legacy
+`/agent-console` remains compatible and is not the canonical Agent Mode page.
+
+Evidence: `operations/reports/agent-mode-u0-a-console-projection-evidence-2026-09-13.md`.
+Exact next bounded slice: **U0-B — Agent Detail, Evidence, Budget, Schedule,
+and Failure Drill-Down**. Do not start it automatically.
 
 ## Phase V0 — Jarvis voice gateway
 

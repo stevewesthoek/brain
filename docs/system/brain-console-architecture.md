@@ -30,6 +30,38 @@ Brain Console uses:
 
 The browser must never run shell commands. Operational actions must go through Brain Core.
 
+## Canonical Agent Mode operations projection
+
+The read-only Agent Mode operations surface is `/agents` in Brain Console and
+uses only `GET /agent-mode/console`. The response is the Brain-owned,
+versioned `agent-mode-console-v1` projection. Brain Core derives it at request
+time from the existing Agent Mode observer and durable StateStore; the browser
+never reads SQLite, filesystem state, AWS, or model providers directly.
+
+The projection is bounded to 100 agents, 50 organizations, 100 tasks, 100
+runs, 100 attempts, 100 runtimes, 100 budgets, 50 schedules, 50 approvals, 50
+failures, 100 evidence references, 100 model resources, and 100 node resources.
+Collections use active-before-terminal ordering, then most-recent update, then
+stable ID. `freshness.status` explicitly reports `fresh`, `empty`, or
+`unavailable`, with StateStore presence and source status.
+
+The response includes bounded Agent Mode/K5 organization and final-result
+metadata, K4 task/run/attempt and runtime/model facts when durably known, root
+budget reservations/settlement, scheduler metadata, pending Agent Mode review
+approvals, evidence IDs/counts, and stable failure reason codes. It never
+contains prompts, hidden reasoning, raw provider payloads, credentials,
+environment values, or unbounded logs. It creates no Console-owned ledger and
+performs no provider/runtime probe, so repeated reads are side-effect free.
+
+The `/agents` page uses the existing `brainCoreRequest()` client, TanStack
+Query, Zod validation, Lucide icons, and the existing compact tabbed layout.
+Loading, fresh, stale, offline/error, and empty states are distinct. U0-A is
+read-only: lifecycle controls, notification mutations, detailed drill-down,
+and currently unavailable Jarvis intake/node/worktree/quota inventory are
+deferred to later U0 slices. Legacy `/agent-console` remains compatible and
+continues to include its legacy summary adapter; it is not the canonical Agent
+Mode projection.
+
 ## Design reference
 
 Use the shadcnblocks admin dashboard pattern as the visual reference:

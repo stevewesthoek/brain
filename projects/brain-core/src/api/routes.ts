@@ -257,6 +257,7 @@ import { getAgent, listAgents } from '../adapters/agents.js';
 import { getActionSummary, listActionSummaries, requestActionApprovalById } from '../adapters/action-registry.js';
 import { listAgentRuns, getAgentRun, listAgentEvents, listRecoveryItems, getRecoveryItem } from '../adapters/agent-runs.js';
 import { readAgentModeObserver } from '../agent-mode/agent-mode-observer.js';
+import { readAgentModeConsoleProjection } from '../agent-mode/agent-mode-console-projection.js';
 import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
 import { redactingJsonReplacer } from '../security/redaction.js';
@@ -934,6 +935,9 @@ export async function routeRequest(
       return;
     case '/agent-mode/observer':
       sendJson(response, 200, readAgentModeObserver());
+      return;
+    case '/agent-mode/console':
+      sendJson(response, 200, readAgentModeConsoleProjection());
       return;
     case '/agent-task-graph':
       sendJson(response, 200, readAgentTaskGraph());
