@@ -16,6 +16,11 @@ const REPOSITORY_COMMIT_OBSERVED_EVENT = 'repository.commit.observed' as const;
 const BRAIN_TASK_LIFECYCLE_SOURCE = 'brain.task.lifecycle' as const;
 const TASK_LIFECYCLE_OBSERVED_EVENT = 'task.lifecycle.observed' as const;
 
+// K5's supervisor is an internal control-plane caller.  These identifiers are
+// deliberately closed and are not an external event-source adapter.
+export const ORGANIZATION_DELEGATION_SOURCE = 'brain.organization.delegation' as const;
+export const ORGANIZATION_WORK_ITEM_READY_EVENT = 'organization.work-item.ready' as const;
+
 export const SPAWN_REQUEST_SCHEMA_VERSION = 1 as const;
 export const SPAWN_POLICY_SCHEMA_VERSION = 1 as const;
 export const ROLE_TEMPLATE_SCHEMA_VERSION = 1 as const;
@@ -213,8 +218,8 @@ export const AGENT_MODE_SPAWN_POLICIES: readonly AgentSpawnPolicy[] = Object.fre
     policyId: SPAWN_POLICY_READ_ONLY,
     version: 1,
     enabled: true,
-    allowedSourceTypes: [GIT_REPOSITORY_REVISION_SOURCE, BRAIN_TASK_LIFECYCLE_SOURCE, CI_WORKFLOW_RUN_SOURCE],
-    allowedEventTypes: [REPOSITORY_COMMIT_OBSERVED_EVENT, TASK_LIFECYCLE_OBSERVED_EVENT, CI_WORKFLOW_STARTED_EVENT, CI_WORKFLOW_COMPLETED_EVENT],
+    allowedSourceTypes: [GIT_REPOSITORY_REVISION_SOURCE, BRAIN_TASK_LIFECYCLE_SOURCE, CI_WORKFLOW_RUN_SOURCE, ORGANIZATION_DELEGATION_SOURCE],
+    allowedEventTypes: [REPOSITORY_COMMIT_OBSERVED_EVENT, TASK_LIFECYCLE_OBSERVED_EVENT, CI_WORKFLOW_STARTED_EVENT, CI_WORKFLOW_COMPLETED_EVENT, ORGANIZATION_WORK_ITEM_READY_EVENT],
     allowedRoleTemplateIds: [SPAWN_ROLE_READ_ONLY],
     maxSpawnDepth: 1,
     maxConcurrentChildren: 4,

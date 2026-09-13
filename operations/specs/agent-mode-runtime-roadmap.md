@@ -1202,7 +1202,7 @@ which is planned after K4. Do not start it automatically.
 
 ## Phase K5 — multi-agent organization
 
-**Status:** K5-A complete; K5 in progress
+**Status:** K5-B complete; K5 in progress
 
 Initial logical roles:
 
@@ -1243,10 +1243,41 @@ unbounded text.
 
 Evidence: `operations/reports/agent-mode-k5-a-organization-contracts-evidence-2026-09-13.md`.
 
-Exact next bounded slice: **K5-B — Deterministic Supervisor Delegation
-Orchestrator with Mock Workers**. K5-B must compose these contracts through the
-existing K4 SpawnRequest / SpawnPolicy / Task / Run / Attempt / runtime and
-structured result paths. Do not start K5-B automatically.
+K5-B composes these contracts through the existing K4 SpawnRequest / SpawnPolicy
+/ Task / Run / Attempt / runtime and structured result paths; its bounded gate
+is recorded below.
+
+### K5-B — Deterministic Supervisor Delegation Orchestrator with Mock Workers
+
+**Status:** COMPLETE for the bounded deterministic/mock-worker execution gate;
+K5 remains IN PROGRESS
+
+K5-B adds a closed Brain-owned organization delegation mapping. Organization
+roles remain identity-only; the mapping separately selects the existing K4
+read-only policy/template and the deterministic `MockAgentRuntime` fixture.
+Ready work items derive stable delegation and K4 spawn identities, pass through
+K4 SpawnPolicy, atomic child reservation, child assignment, runtime dispatch,
+leases, cancellation, deadlines, budgets, and settlement, then derive bounded
+structured result/evidence facts from authoritative K4 receipts. K5 persists
+only ownership binding (`work item → child/task`); it does not create a second
+Task/Run/Attempt or result ledger.
+
+The supervisor API is one finite `advanceOrganizationPlanOnce` pass with a
+maximum of four declared-order-by-key work items. It gates dependents with the
+K5-A DAG, preserves root concurrency/creation/budget limits, and converges
+under redelivery, restart, concurrent controllers, child-before-binding
+crashes, failures, cancellation, kill-switch, deadline, and uncertain runtime
+states. The three-item Research → Auditor / Engineering → Auditor fixture
+creates exactly three worker lifecycles and invokes only MockAgentRuntime;
+Harness, ModelGateway, providers, network, BrainNode, Workcells, and repository
+effects remain zero.
+
+Evidence: `operations/reports/agent-mode-k5-b-supervisor-delegation-mock-workers-evidence-2026-09-13.md`.
+
+Exact next bounded slice: **K5-C — Structured Supervisor Aggregation, Auditor
+Gate, and Organization Final Result**. K5-C should prove deterministic,
+evidence-backed organization aggregation and final-result semantics. Do not
+start K5-C automatically.
 
 ## Phase U0 — unified Brain Console control surface
 

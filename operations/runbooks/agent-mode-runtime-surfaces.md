@@ -874,7 +874,44 @@ provider response, credential, or free-form agent-to-agent conversation is
 stored or exposed.
 
 Evidence: `operations/reports/agent-mode-k5-a-organization-contracts-evidence-2026-09-13.md`.
-Exact next bounded slice: **K5-B — Deterministic Supervisor Delegation
-Orchestrator with Mock Workers**. K5-B must route ready items through the
-existing K4 SpawnRequest / SpawnPolicy / reservation / assignment / runtime
-contracts. Do not start K5-B automatically.
+K5-B completion is recorded below; it routes ready items through the existing
+K4 SpawnRequest / SpawnPolicy / reservation / assignment / runtime contracts.
+
+## K5-B deterministic supervisor delegation — 2026-09-13
+
+K5-B is **COMPLETE** for the bounded mock-worker gate; K5 remains **IN
+PROGRESS**. `AgentModeOrganizationDelegationOrchestrator` is an explicit,
+finite advancement seam. It reads the immutable K5-A plan and readiness,
+applies a closed Brain-owned delegation rule, and routes each ready item through
+K4 SpawnPolicy → atomic child reservation → assignment → D1 runtime dispatch.
+It never inserts an Agent/Task/Run/Attempt, reserves budget directly, invokes a
+runtime directly, or creates a second result ledger.
+
+The organization role registry remains identity-only. Delegation rules map the
+Research, Engineering, and Independent Auditor fixture roles separately to the
+K4 read-only role/policy and `MockAgentRuntime`; Jarvis, Operations, and Memory /
+Archivist rules are closed/disabled. The internal source/event pair is
+`brain.organization.delegation` / `organization.work-item.ready` and is not an
+external event adapter. Delegation identity is deterministic over plan, work
+item, rule, and version; K4 spawn, assignment, and dispatch identities remain
+stable on restart and redelivery.
+
+After K4 assignment creates the authoritative Task/Run/Attempt, one atomic
+StateStore binding records `work item → child Agent/task`. Repeating the binding
+is idempotent and conflicting rebinds fail closed. Results are derived from the
+existing K4 runtime receipt/effect and settled reservation, exposing only
+bounded result/evidence references and cost. The DAG is recomputed after each
+bounded pass, so Auditor waits for both predecessor successes; failures,
+cancellation, kill-switch, deadlines, concurrency, budgets, and uncertain
+runtime state remain K4/K5 readiness gates. The observer exposes bounded plan,
+work-item, lifecycle, result/evidence, cost, and organization totals only.
+
+The deterministic fixture creates three worker lifecycles and invokes
+`MockAgentRuntime` three times. Harness, ModelGateway, providers, network,
+BrainNode, Workcells, tools, and repository effects remain zero. Agents
+communicate through durable tasks, events, results, evidence, review requests,
+and escalations; K5-B adds no peer chat or supervisor LLM loop.
+
+Evidence: `operations/reports/agent-mode-k5-b-supervisor-delegation-mock-workers-evidence-2026-09-13.md`.
+Exact next bounded slice: **K5-C — Structured Supervisor Aggregation, Auditor
+Gate, and Organization Final Result**. Do not start K5-C automatically.

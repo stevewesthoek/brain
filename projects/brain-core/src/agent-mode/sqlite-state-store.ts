@@ -138,6 +138,18 @@ export type AgentModeOrganizationDependency = {
   type: 'requires_success';
 };
 
+export type AgentModeOrganizationBindingRequest = {
+  organizationPlanId: string;
+  workItemId: string;
+  childAgentId: string;
+  taskId: string;
+  occurredAt: string;
+};
+
+export type AgentModeOrganizationBindingResult =
+  | { result: 'bound' | 'duplicate' }
+  | { result: 'conflict' | 'denied'; reasonCode: string };
+
 function mapOrganizationWorkItemRow(row: Record<string, unknown>): AgentModeOrganizationWorkItem {
   let dependencyKeys: string[] = [];
   let resultContract: OrganizationPlan['workItems'][number]['resultContract'];
@@ -2178,7 +2190,29 @@ export class AgentModeSqliteStateStore {
     `).run(agent.agentId, agent.agentKind, agent.role, agent.displayName, agent.policyId, agent.status);
     // Root ownership is an authoritative fact used by K5 organization plans.
     // Preserve the historical compatibility behavior for callers that omit it.
-    if (agent.rootGoalId !== undefined) this.database.prepare('UPDATE agents SET root_goal_id = ? WHERE agent_id = ?').run(agent.rootGoalId, agent.agentId);
+    const updates: string[] = [];
+    const values: Array<string | number | null> = [];
+    const set = (column: string, value: string | number | null | undefined): void => { if (value !== undefined) { updates.push(`${column} = ?`); values.push(value); } };
+    set('role_template_id', agent.roleTemplateId);
+    set('role_template_version', agent.roleTemplateVersion);
+    set('policy_version', agent.policyVersion);
+    set('parent_agent_id', agent.parentAgentId);
+    set('parent_task_id', agent.parentTaskId);
+    set('parent_run_id', agent.parentRunId);
+    set('root_goal_id', agent.rootGoalId);
+    set('source_event_id', agent.sourceEventId);
+    set('spawn_depth', agent.depth);
+    set('repository_scope', agent.repositoryScope);
+    set('resource_scope', agent.resourceScope);
+    set('capability_set_hash', agent.capabilitySetHash);
+    if (agent.capabilities !== undefined) set('capabilities_json', JSON.stringify([...agent.capabilities]));
+    set('requested_child_steps', agent.requestedChildSteps);
+    set('reserved_child_steps', agent.reservedChildSteps);
+    set('requested_child_cost', agent.requestedChildCost);
+    set('reserved_child_cost', agent.reservedChildCost);
+    set('child_created_at', agent.childCreatedAt);
+    set('expires_at', agent.expiresAt);
+    if (updates.length > 0) this.database.prepare(`UPDATE agents SET ${updates.join(', ')} WHERE agent_id = ?`).run(...values, agent.agentId);
   }
 
   getAgent(agentId: string): AgentModeAgent | undefined {
@@ -2250,6 +2284,41 @@ export class AgentModeSqliteStateStore {
   listOrganizationWorkItems(organizationPlanId: string): AgentModeOrganizationWorkItem[] {
     if (!this.hasOrganizationTables) return [];
     return (this.database.prepare('SELECT * FROM agent_mode_organization_work_items WHERE organization_plan_id = ? ORDER BY work_item_key LIMIT 16').all(organizationPlanId) as Array<Record<string, unknown>>).map(mapOrganizationWorkItemRow);
+  }
+
+  /** Bind an already-admitted K4 lifecycle to its owning organization item. */
+  bindOrganizationWorkItem(input: AgentModeOrganizationBindingRequest): AgentModeOrganizationBindingResult {
+    if (this.readOnly || !this.hasOrganizationTables) return { result: 'denied', reasonCode: 'ORGANIZATION_PERSISTENCE_UNAVAILABLE' };
+    if (!Number.isFinite(Date.parse(input.occurredAt))) return { result: 'denied', reasonCode: 'INVALID_TIMESTAMP' };
+    try {
+      return this.withTransaction(() => {
+        const item = this.database.prepare('SELECT * FROM agent_mode_organization_work_items WHERE organization_plan_id = ? AND work_item_id = ?').get(input.organizationPlanId, input.workItemId) as Record<string, unknown> | undefined;
+        const plan = this.getOrganizationPlan(input.organizationPlanId);
+        const child = this.getAgent(input.childAgentId);
+        const task = this.getTask(input.taskId);
+        const assignment = this.getChildAssignment(input.childAgentId);
+        if (!item || !plan || !child || !task) return { result: 'denied' as const, reasonCode: 'ORGANIZATION_BINDING_NOT_FOUND' };
+        if (child.rootGoalId !== plan.rootGoalId || task.childAgentId !== child.agentId || task.taskType !== 'agent-mode.child-assignment' || assignment?.taskId !== task.taskId) return { result: 'denied' as const, reasonCode: 'ORGANIZATION_BINDING_LINEAGE_MISMATCH' };
+        const existingChild = item.bound_child_agent_id === null ? null : String(item.bound_child_agent_id);
+        const existingTask = item.bound_task_id === null ? null : String(item.bound_task_id);
+        if (existingChild !== null || existingTask !== null) {
+          return existingChild === input.childAgentId && existingTask === input.taskId
+            ? { result: 'duplicate' as const }
+            : { result: 'conflict' as const, reasonCode: 'ORGANIZATION_BINDING_CONFLICT' };
+        }
+        const result = this.database.prepare(`
+          UPDATE agent_mode_organization_work_items
+          SET bound_child_agent_id = ?, bound_task_id = ?
+          WHERE organization_plan_id = ? AND work_item_id = ?
+            AND bound_child_agent_id IS NULL AND bound_task_id IS NULL
+        `).run(input.childAgentId, input.taskId, input.organizationPlanId, input.workItemId);
+        if (result.changes !== 1) return { result: 'conflict' as const, reasonCode: 'ORGANIZATION_BINDING_CONFLICT' };
+        this.appendEventIfAbsent({ eventId: `organization-binding:${input.organizationPlanId}:${input.workItemId}`, entityType: 'organization_work_item', entityId: input.workItemId, eventType: 'organization_work_item_bound', occurredAt: input.occurredAt, payload: { organizationPlanId: input.organizationPlanId, workItemId: input.workItemId, childAgentId: input.childAgentId, taskId: input.taskId } });
+        return { result: 'bound' as const };
+      });
+    } catch {
+      return { result: 'denied', reasonCode: 'ORGANIZATION_BINDING_UNAVAILABLE' };
+    }
   }
 
   readOrganizationPlanReadiness(organizationPlanId: string, now: string, resultFacts: readonly DelegatedResultFact[] = []): OrganizationReadiness | undefined {

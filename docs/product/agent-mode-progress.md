@@ -929,8 +929,36 @@ future child/task bindings without prompts, hidden reasoning, raw provider
 payloads, credentials, or free-form agent chat.
 
 Evidence: `operations/reports/agent-mode-k5-a-organization-contracts-evidence-2026-09-13.md`.
-Exact next task: **K5-B — Deterministic Supervisor Delegation Orchestrator with
-Mock Workers**. Do not start it automatically.
+K5-B completion is recorded below.
+
+## Current K5-B supervisor delegation — 2026-09-13
+
+K5-B — **Deterministic Supervisor Delegation Orchestrator with Mock Workers** —
+is **COMPLETE** for its bounded deterministic execution gate. K5 remains
+**IN PROGRESS**.
+
+K5-B composes K5-A readiness through the existing K4 SpawnPolicy, atomic child
+reservation, assignment, D1 runtime dispatcher, leases, cancellation, deadline,
+budget, and settlement paths. A closed delegation mapping keeps organization
+roles separate from K4 execution policy and maps the fixture to the safe
+read-only template plus `MockAgentRuntime`; no model is selected. Stable
+delegation/spawn/assignment/dispatch identities and a transactional work-item
+binding make redelivery, restart, and child-before-binding crashes converge on
+one child lifecycle.
+
+The bounded supervisor pass executes at most four work items in canonical key
+order. Research and Engineering complete first; only authoritative K4 terminal
+receipts satisfying the K5-A result/evidence contract make Independent Auditor
+ready. The happy fixture reconstructs three child Agents, Tasks, Runs, Attempts,
+structured result/evidence references, ownership, and settled cost. K4 root
+concurrency, creation, budget, cancellation, kill-switch, deadline, failure,
+and uncertainty remain authoritative. No second result ledger, peer chat,
+unbounded loop, Harness, ModelGateway, provider, network, BrainNode, Workcell,
+or repository effect is introduced.
+
+Evidence: `operations/reports/agent-mode-k5-b-supervisor-delegation-mock-workers-evidence-2026-09-13.md`.
+Exact next task: **K5-C — Structured Supervisor Aggregation, Auditor Gate, and
+Organization Final Result**. Do not start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 
