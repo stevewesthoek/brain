@@ -840,3 +840,41 @@ Closure evidence:
 Production-wide live autonomy remains disabled by default. The exact next
 roadmap milestone is **Phase K5 — multi-agent organization**; do not start it
 automatically.
+
+## K5-A durable organization contracts — 2026-09-13
+
+K5-A — **Durable Multi-Agent Organization Contracts and Delegation DAG
+Foundation** — is **COMPLETE** for the offline contract/persistence gate;
+K5 remains **IN PROGRESS**.
+
+K5 organization sits above K4 and does not create a second control plane. The
+closed Brain-owned organization-role registry contains only Jarvis / CEO,
+Engineering, Research, Operations, Memory / Archivist, and Independent
+Auditor. These are organizational identities, not AgentRoleTemplates,
+AgentRuntimes, models, providers, capabilities, credentials, shells, or
+repository permissions.
+
+An `OrganizationPlan` binds one existing root goal to one existing root-bound
+Jarvis supervisor. It contains bounded delegated work items and only
+`requires_success` dependency edges. Plan and work-item IDs are deterministic;
+the plan version is explicit; active graph mutation is not supported. Creation
+persists the plan, work items, and edges in one existing SQLite StateStore
+transaction. Same canonical material is idempotent, while conflicting material
+for the same identity fails closed. K5-A does not reserve budget, create child
+agents, create Task/Run/Attempt state, assign runtime/model/capability
+authority, or dispatch anything.
+
+Readiness is pure/deterministic over the immutable graph and supplied
+authoritative terminal result facts. Indegree-zero items are ready, successful
+predecessors unlock dependents, failed/cancelled predecessors produce terminal
+dependency failure, and cancelled/killed roots or expired plans block the graph.
+The observer exposes only bounded plan/work-item ownership, counts, readiness,
+roles, and nullable future child/task IDs. No prompt, hidden reasoning, raw
+provider response, credential, or free-form agent-to-agent conversation is
+stored or exposed.
+
+Evidence: `operations/reports/agent-mode-k5-a-organization-contracts-evidence-2026-09-13.md`.
+Exact next bounded slice: **K5-B — Deterministic Supervisor Delegation
+Orchestrator with Mock Workers**. K5-B must route ready items through the
+existing K4 SpawnRequest / SpawnPolicy / reservation / assignment / runtime
+contracts. Do not start K5-B automatically.

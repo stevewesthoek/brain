@@ -905,6 +905,33 @@ Closure evidence:
 disabled by default. Exact next milestone: **Phase K5 — multi-agent
 organization**. Do not start it automatically.
 
+## Current K5-A organization contracts — 2026-09-13
+
+K5-A — **Durable Multi-Agent Organization Contracts and Delegation DAG
+Foundation** — is **COMPLETE** for its bounded offline foundation. K5 remains
+**IN PROGRESS**.
+
+The existing Agent Mode StateStore now persists a closed Brain-owned registry
+of six logical roles and versioned organization plans with deterministic plan /
+work-item IDs, finite envelopes, `requires_success` dependency DAGs, and
+structured result/evidence contracts. Plans bind to an existing root goal and
+root-bound Jarvis supervisor, are created atomically, and converge under
+restart or concurrent duplicate requests. Conflicting same-identity material
+fails closed.
+
+Readiness is a deterministic projection over the organization graph plus
+authoritative terminal result facts. Root cancellation/kill and plan expiry
+block readiness; no dependency is executed by this slice. K5-A reserves zero
+K4 budget, creates zero children or Tasks/Runs/Attempts, and makes zero runtime,
+Harness, ModelGateway, provider, network, Workcell, or BrainNode calls. The
+observer exposes bounded ownership/dependency/readiness state and nullable
+future child/task bindings without prompts, hidden reasoning, raw provider
+payloads, credentials, or free-form agent chat.
+
+Evidence: `operations/reports/agent-mode-k5-a-organization-contracts-evidence-2026-09-13.md`.
+Exact next task: **K5-B — Deterministic Supervisor Delegation Orchestrator with
+Mock Workers**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

@@ -43,6 +43,8 @@ export type AgentModeObserverProjection = {
     eventSourceCount: number;
     failedEventSourceCount: number;
     resultCount: number;
+    organizationPlanCount: number;
+    organizationWorkItemCount: number;
     executionSource: 'agent-mode-state-store' | 'none';
     nextSafeState: string;
   };
@@ -79,6 +81,8 @@ export type AgentModeObserverProjection = {
   childAssignments: Array<Record<string, unknown>>;
   modelOperations: Array<Record<string, unknown>>;
   dynamicWorkerOrchestrations: Array<Record<string, unknown>>;
+  organizationPlans: Array<Record<string, unknown>>;
+  organizationWorkItems: Array<Record<string, unknown>>;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
@@ -171,10 +175,11 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         schedulerEventCount: 0, schedulerScheduleCount: 0, schedulerPendingCount: 0, schedulerClaimedCount: 0, schedulerDeadLetterCount: 0,
         eventSourceCount: 0, failedEventSourceCount: 0,
         resultCount: 0,
+        organizationPlanCount: 0, organizationWorkItemCount: 0,
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [], organizationPlans: [], organizationWorkItems: [],
     };
   }
 
@@ -316,6 +321,25 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
       createdAt: assignment.createdAt,
       updatedAt: assignment.updatedAt,
     }));
+    const organizationPlans: Array<Record<string, unknown>> = [];
+    const organizationWorkItems: Array<Record<string, unknown>> = [];
+    for (const plan of store.listOrganizationPlans(16)) {
+      const readiness = store.readOrganizationPlanReadiness(plan.organizationPlanId, now);
+      organizationPlans.push({
+        organizationPlanId: plan.organizationPlanId, rootGoalId: plan.rootGoalId, supervisorAgentId: plan.supervisorAgentId,
+        supervisorOrganizationRoleId: plan.supervisorOrganizationRoleId, status: plan.status, workItemCount: plan.workItems.length,
+        dependencyCount: plan.dependencies.length, planVersion: plan.planVersion, createdAt: plan.createdAt, deadline: plan.deadline,
+        readinessState: readiness?.planState ?? 'blocked',
+      });
+      const readinessById = new Map((readiness?.workItems ?? []).map((item) => [item.workItemId, item.state]));
+      for (const item of store.listOrganizationWorkItems(plan.organizationPlanId).slice(0, 16)) {
+        organizationWorkItems.push({
+          organizationPlanId: plan.organizationPlanId, workItemId: item.workItemId, workItemKey: item.workItemKey,
+          organizationRoleId: item.organizationRoleId, dependencyCount: item.dependencyKeys.length,
+          readinessState: readinessById.get(item.workItemId) ?? 'blocked', boundChildAgentId: item.boundChildAgentId, boundTaskId: item.boundTaskId,
+        });
+      }
+    }
     const dynamicWorkerOrchestrations = events
       .filter((event) => event.eventType === 'scheduler_worker_orchestrated')
       .reduce<Array<Record<string, unknown>>>((latest, event) => {
@@ -454,7 +478,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
     return {
       version: AGENT_MODE_OBSERVER_VERSION,
       source: 'agent-mode-state-store',
-      availability: agents.length || tasks.length || runs.length || attempts.length || events.length ? 'available' : 'empty',
+      availability: agents.length || tasks.length || runs.length || attempts.length || events.length || organizationPlans.length ? 'available' : 'empty',
       generatedAt: now,
       persistence: { databasePresent: true },
       summary: {
@@ -488,10 +512,12 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         eventSourceCount: eventSources.length,
         failedEventSourceCount: eventSources.filter((source) => source.status === 'failed' || source.status === 'diverged').length,
         resultCount: results.length,
+        organizationPlanCount: organizationPlans.length,
+        organizationWorkItemCount: organizationWorkItems.length,
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations,
+      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations, organizationPlans, organizationWorkItems,
     };
   } finally {
     store.close();

@@ -9,6 +9,7 @@ import { evaluateSpawnAdmission, getRoleTemplate, getSpawnPolicy, spawnCreationM
 import { DEFERRED_MODEL_REF, DEFERRED_ROUTE_REF, AGENT_MODE_RUNTIME_PROFILES, assignmentCapabilityScopeHash, assignmentIntentKey, assignmentMaterialHash, getRuntimeProfile, taskSpecHash, validateChildAssignmentRequest, type AgentModeChildAssignment, type AgentModeChildAssignmentReceipt, type AgentModeChildAssignmentRequest, type AgentModeChildAssignmentResult, type AgentModePreparedChildDispatch } from './child-assignment.js';
 import { runtimeDispatchResourceKey, runtimeReceiptEffectHash, validateRuntimeDispatchRequest, validateRuntimeResult } from './runtime-dispatch.js';
 import type { AgentModeRuntimeDispatchMutation, AgentModeRuntimeDispatchPrepared, AgentModeRuntimeDispatchRequest, AgentModeRuntimeDispatchStorePreparation, AgentModeRuntimeReceipt, AgentModeRuntimeReceiptMutation, AgentModeRuntimeSettlement, AgentModeRuntimeVerification, AgentRuntimeResult } from './runtime-dispatch.js';
+import { deriveOrganizationPlanId, deriveOrganizationWorkItemId, evaluateOrganizationReadiness, organizationPlanMaterial, validateOrganizationPlan, type DelegatedResultFact, type OrganizationPlan, type OrganizationReadiness } from './organization.js';
 
 export type AgentModeAgent = {
   agentId: string;
@@ -88,6 +89,66 @@ export type AgentModeSpawnCreationInput = {
   admission: SpawnDecision;
   facts: SpawnAuthorityFacts;
 };
+
+export type AgentModeOrganizationPlanResult =
+  | { result: 'created' | 'duplicate'; plan: OrganizationPlan }
+  | { result: 'conflict'; reasonCode: 'ORGANIZATION_PLAN_CONFLICT' };
+
+function mapOrganizationPlanRow(row: Record<string, unknown>, workItems: AgentModeOrganizationWorkItem[], dependencies: AgentModeOrganizationDependency[]): OrganizationPlan {
+  return {
+    schemaVersion: Number(row.schema_version) as 1,
+    organizationPlanId: String(row.organization_plan_id),
+    planVersion: Number(row.plan_version) as 1,
+    rootGoalId: String(row.root_goal_id),
+    supervisorAgentId: String(row.supervisor_agent_id),
+    supervisorOrganizationRoleId: String(row.supervisor_organization_role_id),
+    planKey: String(row.plan_key),
+    status: row.status as OrganizationPlan['status'],
+    createdAt: String(row.created_at),
+    deadline: String(row.deadline),
+    workItems: workItems.map((item) => ({
+      workItemId: item.workItemId, workItemKey: item.workItemKey, organizationRoleId: item.organizationRoleId, taskSpecRef: item.taskSpecRef,
+      dependencyKeys: item.dependencyKeys, requestedTtl: item.requestedTtl, requestedSteps: item.requestedSteps, requestedCost: item.requestedCost,
+      requestedTokens: item.requestedTokens, resultContract: item.resultContract,
+    })),
+    dependencies: dependencies.map((dependency) => ({ workItemKey: dependency.workItemKey, dependsOnWorkItemKey: dependency.dependsOnWorkItemKey, type: dependency.type })),
+  };
+}
+
+export type AgentModeOrganizationWorkItem = {
+  organizationPlanId: string;
+  workItemId: string;
+  workItemKey: string;
+  organizationRoleId: string;
+  taskSpecRef: string;
+  dependencyKeys: string[];
+  requestedTtl: number;
+  requestedSteps: number;
+  requestedCost: number;
+  requestedTokens: number;
+  resultContract: OrganizationPlan['workItems'][number]['resultContract'];
+  boundChildAgentId: string | null;
+  boundTaskId: string | null;
+};
+
+export type AgentModeOrganizationDependency = {
+  organizationPlanId: string;
+  workItemKey: string;
+  dependsOnWorkItemKey: string;
+  type: 'requires_success';
+};
+
+function mapOrganizationWorkItemRow(row: Record<string, unknown>): AgentModeOrganizationWorkItem {
+  let dependencyKeys: string[] = [];
+  let resultContract: OrganizationPlan['workItems'][number]['resultContract'];
+  try { dependencyKeys = JSON.parse(String(row.dependency_keys_json)) as string[]; } catch { dependencyKeys = []; }
+  try { resultContract = JSON.parse(String(row.result_contract_json)) as OrganizationPlan['workItems'][number]['resultContract']; } catch { throw new Error('organization result contract is corrupt'); }
+  return {
+    organizationPlanId: String(row.organization_plan_id), workItemId: String(row.work_item_id), workItemKey: String(row.work_item_key), organizationRoleId: String(row.organization_role_id),
+    taskSpecRef: String(row.task_spec_ref), dependencyKeys, requestedTtl: Number(row.requested_ttl), requestedSteps: Number(row.requested_steps), requestedCost: Number(row.requested_cost), requestedTokens: Number(row.requested_tokens), resultContract,
+    boundChildAgentId: row.bound_child_agent_id === null ? null : String(row.bound_child_agent_id), boundTaskId: row.bound_task_id === null ? null : String(row.bound_task_id),
+  };
+}
 
 function mapAgentRow(row: Record<string, unknown>): AgentModeAgent {
   let capabilities: unknown;
@@ -1251,6 +1312,7 @@ export class AgentModeSqliteStateStore {
   private readonly hasEventSourceTables: boolean;
   private readonly hasSpawnAdmissionControlTables: boolean;
   private readonly hasChildAssignmentTables: boolean;
+  private readonly hasOrganizationTables: boolean;
 
   constructor(databasePath = defaultAgentModeDatabasePath(), options: { readOnly?: boolean } = {}) {
     this.databasePath = databasePath;
@@ -1287,6 +1349,9 @@ export class AgentModeSqliteStateStore {
       this.hasEventSourceTables = this.tableExists('agent_mode_event_sources');
       this.hasSpawnAdmissionControlTables = this.tableExists('agent_mode_spawn_admission_controls');
       this.hasChildAssignmentTables = this.tableExists('agent_mode_child_assignments');
+      this.hasOrganizationTables = this.tableExists('agent_mode_organization_plans')
+        && this.tableExists('agent_mode_organization_work_items')
+        && this.tableExists('agent_mode_organization_dependencies');
       return;
     }
     this.database.exec('PRAGMA foreign_keys = ON;');
@@ -1874,6 +1939,44 @@ export class AgentModeSqliteStateStore {
         updated_at TEXT NOT NULL,
         UNIQUE (scope, root_goal_id)
       );
+      CREATE TABLE IF NOT EXISTS agent_mode_organization_plans (
+        organization_plan_id TEXT PRIMARY KEY,
+        material_hash TEXT NOT NULL,
+        schema_version INTEGER NOT NULL CHECK (schema_version = 1),
+        plan_version INTEGER NOT NULL CHECK (plan_version = 1),
+        root_goal_id TEXT NOT NULL,
+        supervisor_agent_id TEXT NOT NULL,
+        supervisor_organization_role_id TEXT NOT NULL,
+        plan_key TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        deadline TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS agent_mode_organization_work_items (
+        work_item_id TEXT PRIMARY KEY,
+        organization_plan_id TEXT NOT NULL REFERENCES agent_mode_organization_plans(organization_plan_id) ON DELETE CASCADE,
+        work_item_key TEXT NOT NULL,
+        organization_role_id TEXT NOT NULL,
+        task_spec_ref TEXT NOT NULL,
+        dependency_keys_json TEXT NOT NULL,
+        requested_ttl INTEGER NOT NULL CHECK (requested_ttl > 0),
+        requested_steps INTEGER NOT NULL CHECK (requested_steps > 0),
+        requested_cost REAL NOT NULL CHECK (requested_cost > 0),
+        requested_tokens INTEGER NOT NULL CHECK (requested_tokens > 0),
+        result_contract_json TEXT NOT NULL,
+        bound_child_agent_id TEXT,
+        bound_task_id TEXT,
+        UNIQUE (organization_plan_id, work_item_key)
+      );
+      CREATE TABLE IF NOT EXISTS agent_mode_organization_dependencies (
+        organization_plan_id TEXT NOT NULL REFERENCES agent_mode_organization_plans(organization_plan_id) ON DELETE CASCADE,
+        work_item_key TEXT NOT NULL,
+        depends_on_work_item_key TEXT NOT NULL,
+        dependency_type TEXT NOT NULL CHECK (dependency_type = 'requires_success'),
+        PRIMARY KEY (organization_plan_id, work_item_key, depends_on_work_item_key)
+      );
+      CREATE INDEX IF NOT EXISTS agent_mode_organization_work_items_plan ON agent_mode_organization_work_items (organization_plan_id, work_item_key);
+      CREATE INDEX IF NOT EXISTS agent_mode_organization_dependencies_plan ON agent_mode_organization_dependencies (organization_plan_id, work_item_key);
       INSERT INTO store_meta (key, value) VALUES ('schema_version', '7')
         ON CONFLICT(key) DO NOTHING;
     `);
@@ -1899,6 +2002,7 @@ export class AgentModeSqliteStateStore {
     this.hasEventSourceTables = true;
     this.hasSpawnAdmissionControlTables = true;
     this.hasChildAssignmentTables = true;
+    this.hasOrganizationTables = true;
   }
 
   static openExisting(databasePath = defaultAgentModeDatabasePath()): AgentModeSqliteStateStore | undefined {
@@ -2072,6 +2176,9 @@ export class AgentModeSqliteStateStore {
         policy_id = excluded.policy_id,
         status = excluded.status
     `).run(agent.agentId, agent.agentKind, agent.role, agent.displayName, agent.policyId, agent.status);
+    // Root ownership is an authoritative fact used by K5 organization plans.
+    // Preserve the historical compatibility behavior for callers that omit it.
+    if (agent.rootGoalId !== undefined) this.database.prepare('UPDATE agents SET root_goal_id = ? WHERE agent_id = ?').run(agent.rootGoalId, agent.agentId);
   }
 
   getAgent(agentId: string): AgentModeAgent | undefined {
@@ -2083,6 +2190,83 @@ export class AgentModeSqliteStateStore {
   listAgents(): AgentModeAgent[] {
     const rows = this.database.prepare('SELECT * FROM agents ORDER BY agent_id').all() as Array<Record<string, unknown>>;
     return rows.map(mapAgentRow);
+  }
+
+  private assertOrganizationRootBinding(plan: OrganizationPlan): void {
+    if (!this.getTask(plan.rootGoalId)) throw new Error('organization plan root goal is not authoritative');
+    const supervisor = this.getAgent(plan.supervisorAgentId);
+    if (!supervisor || supervisor.agentKind !== 'jarvis' || supervisor.rootGoalId !== plan.rootGoalId) throw new Error('organization plan supervisor is not bound to the root goal');
+  }
+
+  createOrganizationPlan(plan: OrganizationPlan, now: string): AgentModeOrganizationPlanResult {
+    if (this.readOnly || !this.hasOrganizationTables) throw new Error('organization plan persistence is unavailable');
+    const normalized = validateOrganizationPlan(plan, now);
+    this.assertOrganizationRootBinding(normalized);
+    const materialHash = organizationPlanMaterial(normalized);
+    return this.withTransaction(() => {
+      const existing = this.database.prepare('SELECT material_hash FROM agent_mode_organization_plans WHERE organization_plan_id = ?').get(normalized.organizationPlanId) as { material_hash?: string } | undefined;
+      if (existing) return existing.material_hash === materialHash ? { result: 'duplicate' as const, plan: this.getOrganizationPlan(normalized.organizationPlanId)! } : { result: 'conflict' as const, reasonCode: 'ORGANIZATION_PLAN_CONFLICT' as const };
+      this.database.prepare(`
+        INSERT INTO agent_mode_organization_plans (
+          organization_plan_id, material_hash, schema_version, plan_version, root_goal_id,
+          supervisor_agent_id, supervisor_organization_role_id, plan_key, status, created_at, deadline
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(normalized.organizationPlanId, materialHash, normalized.schemaVersion, normalized.planVersion, normalized.rootGoalId, normalized.supervisorAgentId, normalized.supervisorOrganizationRoleId, normalized.planKey, normalized.status, normalized.createdAt, normalized.deadline);
+      for (const item of normalized.workItems) {
+        this.database.prepare(`
+          INSERT INTO agent_mode_organization_work_items (
+            work_item_id, organization_plan_id, work_item_key, organization_role_id, task_spec_ref,
+            dependency_keys_json, requested_ttl, requested_steps, requested_cost, requested_tokens,
+            result_contract_json, bound_child_agent_id, bound_task_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)
+        `).run(item.workItemId, normalized.organizationPlanId, item.workItemKey, item.organizationRoleId, item.taskSpecRef, JSON.stringify(item.dependencyKeys), item.requestedTtl, item.requestedSteps, item.requestedCost, item.requestedTokens, JSON.stringify(item.resultContract));
+      }
+      for (const dependency of normalized.dependencies) {
+        this.database.prepare(`
+          INSERT INTO agent_mode_organization_dependencies (organization_plan_id, work_item_key, depends_on_work_item_key, dependency_type)
+          VALUES (?, ?, ?, ?)
+        `).run(normalized.organizationPlanId, dependency.workItemKey, dependency.dependsOnWorkItemKey, dependency.type);
+      }
+      return { result: 'created' as const, plan: this.getOrganizationPlan(normalized.organizationPlanId)! };
+    });
+  }
+
+  getOrganizationPlan(organizationPlanId: string): OrganizationPlan | undefined {
+    if (!this.hasOrganizationTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_organization_plans WHERE organization_plan_id = ?').get(organizationPlanId) as Record<string, unknown> | undefined;
+    if (!row) return undefined;
+    const workItems = (this.database.prepare('SELECT * FROM agent_mode_organization_work_items WHERE organization_plan_id = ? ORDER BY work_item_key LIMIT 16').all(organizationPlanId) as Array<Record<string, unknown>>).map(mapOrganizationWorkItemRow);
+    const dependencies = (this.database.prepare('SELECT * FROM agent_mode_organization_dependencies WHERE organization_plan_id = ? ORDER BY work_item_key, depends_on_work_item_key LIMIT 32').all(organizationPlanId) as Array<Record<string, unknown>>).map((dependency) => ({ organizationPlanId, workItemKey: String(dependency.work_item_key), dependsOnWorkItemKey: String(dependency.depends_on_work_item_key), type: dependency.dependency_type as 'requires_success' }));
+    return mapOrganizationPlanRow(row, workItems, dependencies);
+  }
+
+  listOrganizationPlans(limit = 16): OrganizationPlan[] {
+    if (!this.hasOrganizationTables) return [];
+    const boundedLimit = Math.max(0, Math.min(Math.floor(limit), 16));
+    const rows = this.database.prepare('SELECT * FROM agent_mode_organization_plans ORDER BY organization_plan_id LIMIT ?').all(boundedLimit) as Array<Record<string, unknown>>;
+    return rows.map((row) => this.getOrganizationPlan(String(row.organization_plan_id))).filter((plan): plan is OrganizationPlan => plan !== undefined);
+  }
+
+  listOrganizationWorkItems(organizationPlanId: string): AgentModeOrganizationWorkItem[] {
+    if (!this.hasOrganizationTables) return [];
+    return (this.database.prepare('SELECT * FROM agent_mode_organization_work_items WHERE organization_plan_id = ? ORDER BY work_item_key LIMIT 16').all(organizationPlanId) as Array<Record<string, unknown>>).map(mapOrganizationWorkItemRow);
+  }
+
+  readOrganizationPlanReadiness(organizationPlanId: string, now: string, resultFacts: readonly DelegatedResultFact[] = []): OrganizationReadiness | undefined {
+    const plan = this.getOrganizationPlan(organizationPlanId);
+    if (!plan) return undefined;
+    const task = this.getTask(plan.rootGoalId);
+    const spawnRoot = this.getSpawnRootState(plan.rootGoalId);
+    const controls = this.getSpawnAdmissionControls(plan.rootGoalId);
+    return evaluateOrganizationReadiness(plan, {
+      now,
+      root: {
+        exists: task !== undefined,
+        cancelled: task?.status === 'cancelled' || (spawnRoot !== undefined && spawnRoot.cancellation !== 'active'),
+        killed: controls.global.denied || controls.root?.denied === true,
+      },
+      resultFacts,
+    });
   }
 
   getSpawnRootState(rootGoalId: string): AgentModeSpawnRootState | undefined {

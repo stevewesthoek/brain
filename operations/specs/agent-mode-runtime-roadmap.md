@@ -1202,7 +1202,7 @@ which is planned after K4. Do not start it automatically.
 
 ## Phase K5 — multi-agent organization
 
-**Status:** planned after K4
+**Status:** K5-A complete; K5 in progress
 
 Initial logical roles:
 
@@ -1219,6 +1219,34 @@ selection remains policy-driven and independent from agent identity.
 
 Exit gate: one supervisor can delegate a multi-step bounded goal to several
 workers and reconstruct ownership, cost, evidence, dependencies, and final result.
+
+### K5-A — Durable Multi-Agent Organization Contracts and Delegation DAG Foundation
+
+**Status:** COMPLETE for the bounded offline foundation; K5 remains IN PROGRESS
+
+K5-A adds Brain-owned, versioned logical organization-role manifests for Jarvis /
+CEO, Engineering, Research, Operations, Memory / Archivist, and Independent
+Auditor. It adds a bounded durable `OrganizationPlan` with deterministic plan
+and work-item identities, `requires_success` dependency edges, finite result /
+evidence contracts, authoritative root/supervisor binding, and SQLite
+transactional persistence in the existing Agent Mode StateStore.
+
+Plan creation is idempotent and conflict-safe across restart and concurrent
+controllers. The readiness projection is pure/deterministic and consumes only
+supplied authoritative terminal result facts; cancelled, killed, or expired
+roots/plans remain blocked. Requested work-item envelopes are declarations only:
+K5-A does not reserve K4 budget, create children, create Tasks/Runs/Attempts,
+dispatch runtimes, call models, or create a second result ledger. Observer output
+exposes bounded ownership, dependency, readiness, and future child/task binding
+identity without prompts, hidden reasoning, provider payloads, credentials, or
+unbounded text.
+
+Evidence: `operations/reports/agent-mode-k5-a-organization-contracts-evidence-2026-09-13.md`.
+
+Exact next bounded slice: **K5-B — Deterministic Supervisor Delegation
+Orchestrator with Mock Workers**. K5-B must compose these contracts through the
+existing K4 SpawnRequest / SpawnPolicy / Task / Run / Attempt / runtime and
+structured result paths. Do not start K5-B automatically.
 
 ## Phase U0 — unified Brain Console control surface
 
