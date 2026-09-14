@@ -6300,6 +6300,36 @@ export class AgentModeSqliteStateStore {
     }
   }
 
+  private listAttentionAttemptIds(limit: number): string[] {
+    return (this.database.prepare("SELECT attempt_id FROM attempts WHERE status = 'uncertain' ORDER BY created_at, attempt_id LIMIT ?").all(limit) as Array<{ attempt_id?: unknown }>)
+      .map((row) => String(row.attempt_id));
+  }
+
+  private listAttentionValidationIds(limit: number): string[] {
+    return (this.database.prepare("SELECT validation_id FROM workcell_validations WHERE result IN ('failed', 'rejected', 'timed_out', 'interrupted') ORDER BY updated_at, validation_id LIMIT ?").all(limit) as Array<{ validation_id?: unknown }>)
+      .map((row) => String(row.validation_id));
+  }
+
+  private listAttentionReviewIds(limit: number): string[] {
+    return (this.database.prepare("SELECT review_id FROM agent_mode_review_requests WHERE status = 'pending' ORDER BY created_at, review_id LIMIT ?").all(limit) as Array<{ review_id?: unknown }>)
+      .map((row) => String(row.review_id));
+  }
+
+  private attentionSourceStillQualifies(escalation: AgentModeEscalation): boolean | undefined {
+    if (escalation.kind === 'uncertain_attempt') {
+      const attempt = this.getAttempt(escalation.sourceId);
+      return attempt ? attempt.status === 'uncertain' : undefined;
+    }
+    if (escalation.kind === 'scheduler_dead_letter') {
+      const source = escalation.sourceType === 'scheduler_event'
+        ? this.getSchedulerEvent(escalation.sourceId)
+        : this.getSchedulerSchedule(escalation.sourceId);
+      return source ? source.status === 'dead_letter' : undefined;
+    }
+    const validation = this.getWorkcellValidationRun(escalation.sourceId);
+    return validation ? ['failed', 'rejected', 'timed_out', 'interrupted'].includes(validation.result) : undefined;
+  }
+
   /** Reconcile bounded canonical transitions into the durable attention index. Never called by GET projections. */
   reconcileAgentModeAttention(now: string, limit = AGENT_MODE_ATTENTION_MAX_ITEMS): AgentModeAttentionReconcileResult {
     if (this.readOnly || !this.hasAttentionTables) throw new Error('attention persistence is unavailable');
@@ -6308,7 +6338,9 @@ export class AgentModeSqliteStateStore {
     const counts: AgentModeAttentionReconcileResult = { createdEscalations: 0, resolvedEscalations: 0, createdNotifications: 0, existingNotifications: 0 };
     return this.withTransaction(() => {
       const activeEscalationKeys = new Set<string>();
-      for (const attempt of this.listAttempts().filter((candidate) => candidate.status === 'uncertain').slice(0, boundedLimit)) {
+      for (const attemptId of this.listAttentionAttemptIds(boundedLimit)) {
+        const attempt = this.getAttempt(attemptId);
+        if (!attempt) continue;
         const agent = this.getAgent(attempt.agentId);
         const escalation = this.attentionEscalation({ kind: 'uncertain_attempt', severity: 'critical', sourceType: 'attempt', sourceId: attempt.attemptId, rootGoalId: agent?.rootGoalId ?? null, agentId: attempt.agentId, taskId: this.getRun(attempt.runId)?.taskId ?? null, runId: attempt.runId, attemptId: attempt.attemptId, reasonCode: 'UNCERTAIN_RUNTIME', createdAt: attempt.updatedAt, status: 'open' });
         activeEscalationKeys.add(escalation.escalationId);
@@ -6321,12 +6353,16 @@ export class AgentModeSqliteStateStore {
         activeEscalationKeys.add(escalation.escalationId);
         this.reconcileAttentionCandidate(escalation, `scheduler-dead-letter:${sourceType}:${sourceId}:${item.deadLetteredAt ?? item.lastFailureAt ?? now}`, counts);
       }
-      for (const validation of this.listWorkcellValidationRuns().filter((candidate) => ['failed', 'rejected', 'timed_out', 'interrupted'].includes(candidate.result)).slice(0, boundedLimit)) {
+      for (const validationId of this.listAttentionValidationIds(boundedLimit)) {
+        const validation = this.getWorkcellValidationRun(validationId);
+        if (!validation) continue;
         const escalation = this.attentionEscalation({ kind: 'workcell_validation_failure', severity: 'warning', sourceType: 'workcell_validation', sourceId: validation.validationId, workcellId: validation.workcellId, taskId: validation.taskId, runId: validation.runId, attemptId: validation.attemptId, reasonCode: 'WORKCELL_VALIDATION_FAILED', createdAt: validation.updatedAt, status: 'open' });
         activeEscalationKeys.add(escalation.escalationId);
         this.reconcileAttentionCandidate(escalation, `workcell-validation:${validation.validationId}`, counts);
       }
-      for (const review of this.listReviewRequests().filter((candidate) => candidate.status === 'pending').slice(0, boundedLimit)) {
+      for (const reviewId of this.listAttentionReviewIds(boundedLimit)) {
+        const review = this.getReviewRequest(reviewId);
+        if (!review) continue;
         const notification: AgentModeNotification = {
           schemaVersion: AGENT_MODE_ATTENTION_SCHEMA_VERSION,
           notificationId: deriveNotificationId({ kind: 'pending_review', sourceType: 'review', sourceId: review.reviewId, transitionId: `review-requested:${review.reviewId}` }),
@@ -6343,6 +6379,7 @@ export class AgentModeSqliteStateStore {
       for (const row of openRows) {
         const escalation = mapEscalationRow(row);
         if (activeEscalationKeys.has(escalation.escalationId)) continue;
+        if (this.attentionSourceStillQualifies(escalation) !== false) continue;
         const resolved = { ...escalation, status: 'resolved' as const, updatedAt: now, resolvedAt: now };
         const result = this.persistAttentionEscalation(resolved);
         if (result === 'conflict') throw new Error(`attention escalation conflict: ${escalation.escalationId}`);
@@ -6371,8 +6408,17 @@ export class AgentModeSqliteStateStore {
   getAgentModeAttentionSummary(operatorId?: string): { openEscalationCount: number; pendingReviewCount: number; uncertainItemCount: number; deadLetterCount: number; notificationCount: number; unreadNotificationCount: number | null } {
     if (!this.hasAttentionTables) return { openEscalationCount: 0, pendingReviewCount: 0, uncertainItemCount: 0, deadLetterCount: 0, notificationCount: 0, unreadNotificationCount: operatorId === undefined ? null : 0 };
     const count = (sql: string, ...params: Array<string>): number => Number((this.database.prepare(sql).get(...params) as { count?: number } | undefined)?.count ?? 0);
-    const deadLetterCount = this.listSchedulerEvents(AGENT_MODE_ATTENTION_MAX_ITEMS).filter((item) => item.status === 'dead_letter').length + this.listSchedulerSchedules(AGENT_MODE_ATTENTION_MAX_ITEMS).filter((item) => item.status === 'dead_letter').length;
-    const summary = { openEscalationCount: count("SELECT COUNT(*) AS count FROM agent_mode_escalations WHERE status = 'open'"), pendingReviewCount: this.listReviewRequests().filter((review) => review.status === 'pending').length, uncertainItemCount: this.listAttempts().filter((attempt) => attempt.status === 'uncertain').length, deadLetterCount, notificationCount: count('SELECT COUNT(*) AS count FROM agent_mode_notifications'), unreadNotificationCount: null as number | null };
+    const deadLetterCount = this.hasSchedulerTables
+      ? count("SELECT COUNT(*) AS count FROM agent_mode_scheduler_events WHERE status = 'dead_letter'") + count("SELECT COUNT(*) AS count FROM agent_mode_scheduler_schedules WHERE status = 'dead_letter'")
+      : 0;
+    const summary = {
+      openEscalationCount: count("SELECT COUNT(*) AS count FROM agent_mode_escalations WHERE status = 'open'"),
+      pendingReviewCount: this.hasPromotionTables ? count("SELECT COUNT(*) AS count FROM agent_mode_review_requests WHERE status = 'pending'") : 0,
+      uncertainItemCount: count("SELECT COUNT(*) AS count FROM attempts WHERE status = 'uncertain'"),
+      deadLetterCount,
+      notificationCount: count('SELECT COUNT(*) AS count FROM agent_mode_notifications'),
+      unreadNotificationCount: null as number | null,
+    };
     if (operatorId !== undefined) {
       if (operatorId.length === 0 || operatorId.length > 128) throw new Error('operator identity is invalid');
       summary.unreadNotificationCount = count('SELECT COUNT(*) AS count FROM agent_mode_notifications n WHERE NOT EXISTS (SELECT 1 FROM agent_mode_notification_reads r WHERE r.notification_id = n.notification_id AND r.operator_id = ?)', operatorId);

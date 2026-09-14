@@ -1268,3 +1268,25 @@ inventory remain later U0 work.
 Evidence: `operations/reports/agent-mode-u0-f-escalations-notifications-evidence-2026-09-14.md`.
 Exact next bounded slice: **U0-G — Unified Brain Console Phase Exit Audit**; do
 not start it automatically.
+
+## U0-G unified Brain Console phase-exit audit — 2026-09-14
+
+U0-G is **COMPLETE** and the U0 exit gate **PASSED**. U0 is **COMPLETE**;
+Phase V0 — Jarvis voice gateway is planned next and has not started.
+
+The audit confirms that `/agents`, `GET /agent-mode/console`, the bounded
+detail route, authenticated guarded controls, and authenticated notification
+read receipts are all projections or commands over durable Brain authority.
+The browser has no authoritative Agent Mode state, mutation ledger, runtime
+identity, budget, organization, evidence, escalation, or notification copy.
+Root/Jarvis ownership is the current accepted intake visibility; conversational
+Jarvis intake and live Codex quota telemetry remain later/unavailable because
+no canonical durable source exists.
+
+The audit found and narrowly repaired bounded attention reconciliation: an open
+escalation is resolved only after its exact source is inspected and confirmed
+non-qualifying. Boundary omission is never treated as source resolution.
+
+Evidence: `operations/reports/agent-mode-u0-g-unified-console-exit-audit-2026-09-14.md`.
+Exact next phase: **Phase V0 — Jarvis voice gateway**; do not start it
+automatically.

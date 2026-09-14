@@ -1320,7 +1320,7 @@ Console control surface**. Do not start U0 automatically.
 
 ## Phase U0 — unified Brain Console control surface
 
-**Status:** IN PROGRESS; U0-A, U0-B, U0-C1, U0-C2, U0-C3A, U0-C3B, and U0-D are complete; U0-C is complete and U0 remains in progress
+**Status:** COMPLETE; U0-A, U0-B, U0-C1, U0-C2, U0-C3A, U0-C3B, U0-D, U0-E, U0-F, and U0-G are complete; U0 exit gate passed
 
 Borrow Orca-like fleet/worktree/usage/notification patterns while keeping Brain
 Console as the primary control/dashboard surface. Show Jarvis intake, agent
@@ -1615,6 +1615,29 @@ surfaced where no canonical durable producer exists. U0-F records quota as
 `unavailable` with reason `no_canonical_durable_source`; it does not probe,
 scrape, guess, or create a parallel inventory ledger. The exact next bounded
 slice is **U0-G — Unified Brain Console Phase Exit Audit**; do not start it
+automatically.
+
+### U0-G — Unified Brain Console Phase Exit Audit
+
+**Status:** COMPLETE; U0 phase exit gate PASSED.
+
+The final audit verifies that Brain Console is one bounded observer over durable
+Brain authority. U0-A through U0-F contracts and implementation seams were
+reconciled against source and focused/full regression evidence. The audit
+confirmed request-time projections and detail responses derive from StateStore,
+observer, and bounded Brain-owned derivations; the browser owns no Agent Mode,
+control, organization, budget, evidence, attention, or runtime authority.
+
+Jarvis intake is satisfied for the current operator surface by durable accepted
+Root Goal/Jarvis ownership visibility; conversational intake remains later V0
+work. Codex quota remains explicitly unavailable because Brain has no canonical
+durable telemetry source, and the Console does not probe or synthesize it.
+The audit found and repaired one bounded-attention omission bug: an open
+escalation is now resolved only after its exact canonical source is inspected
+and found non-qualifying, never merely because it fell outside a scan window.
+
+Evidence: `operations/reports/agent-mode-u0-g-unified-console-exit-audit-2026-09-14.md`.
+Exact next phase: **Phase V0 — Jarvis voice gateway**. Do not start it
 automatically.
 
 ## Phase V0 — Jarvis voice gateway

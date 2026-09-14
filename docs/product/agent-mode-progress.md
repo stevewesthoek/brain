@@ -1284,6 +1284,30 @@ Evidence: `operations/reports/agent-mode-u0-f-escalations-notifications-evidence
 Exact next bounded slice: **U0-G — Unified Brain Console Phase Exit Audit**; do
 not start it automatically.
 
+## Current U0-G unified console phase-exit audit — 2026-09-14
+
+U0-G — **Unified Brain Console Phase Exit Audit** — is **COMPLETE** and the
+authoritative U0 exit gate **PASSED**. U0 is **COMPLETE**; V0 is planned and
+has not started.
+
+The audit reconciled U0-A through U0-F against their implementation seams,
+durable StateStore/observer authority, bounded versioned APIs, authenticated
+control paths, attention/read receipts, restart behavior, and full regression
+evidence. The Console remains a non-authoritative observer: it owns no Agent,
+Task, Run, Attempt, organization, budget, evidence, runtime, provider,
+notification, or escalation ledger.
+
+Durable accepted Root Goal/Jarvis ownership visibility satisfies the current
+operator intake requirement; conversational Jarvis intake remains later voice
+work. Codex quota is explicitly unavailable with reason
+`no_canonical_durable_source`; no provider or subscription probe is performed.
+The audit also repaired bounded attention reconciliation so an omitted source
+cannot falsely resolve an open escalation.
+
+Evidence: `operations/reports/agent-mode-u0-g-unified-console-exit-audit-2026-09-14.md`.
+Exact next phase: **Phase V0 — Jarvis voice gateway**; do not start it
+automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

@@ -56,9 +56,9 @@ performs no provider/runtime probe, so repeated reads are side-effect free.
 The `/agents` page uses the existing `brainCoreRequest()` client, TanStack
 Query, Zod validation, Lucide icons, and the existing compact tabbed layout.
 Loading, fresh, stale, offline/error, and empty states are distinct. U0-A and
-U0-B remain read-only: lifecycle controls, notification mutations, and
-currently unavailable Jarvis intake/node/worktree/quota inventory are deferred
-to later U0 slices. Legacy `/agent-console` remains compatible and continues
+U0-B are the read-only projection/detail foundations; guarded lifecycle and
+review controls are defined below, and individual notification acknowledgement
+is covered by U0-F. Legacy `/agent-console` remains compatible and continues
 to include its legacy summary adapter; it is not the canonical Agent Mode
 projection.
 
