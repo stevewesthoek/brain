@@ -3,6 +3,7 @@ import {
   AgentModeSqliteStateStore,
   type AgentModeEvent,
 } from './sqlite-state-store.js';
+import type { AgentModeAttentionSummary, AgentModeEscalation, AgentModeNotification } from './agent-mode-attention.js';
 import { deriveOrganizationExecutionProjection, deriveOrganizationResultFacts, type OrganizationExecutionProjection } from './organization-delegation-orchestrator.js';
 
 export const AGENT_MODE_OBSERVER_VERSION = 'agent-mode-observer-v1';
@@ -87,6 +88,9 @@ export type AgentModeObserverProjection = {
   organizationExecution: OrganizationExecutionProjection[];
   organizationFinalResults: Array<Record<string, unknown>>;
   controlAudits: AgentModeControlAuditProjection[];
+  escalations: AgentModeEscalation[];
+  notifications: AgentModeNotification[];
+  attentionSummary: AgentModeAttentionSummary;
 };
 
 export type AgentModeControlAuditProjection = {
@@ -207,7 +211,7 @@ function mapCiWorkflowStates(eventSources: Array<Record<string, unknown>>): Arra
   return states;
 }
 
-export function readAgentModeObserver(now = new Date().toISOString(), databasePath = defaultAgentModeDatabasePath()): AgentModeObserverProjection {
+export function readAgentModeObserver(now = new Date().toISOString(), databasePath = defaultAgentModeDatabasePath(), operatorId?: string): AgentModeObserverProjection {
   const store = AgentModeSqliteStateStore.openExisting(databasePath);
   if (!store) {
     return {
@@ -240,7 +244,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [], organizationPlans: [], organizationWorkItems: [], organizationExecution: [], organizationFinalResults: [], controlAudits: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [], organizationPlans: [], organizationWorkItems: [], organizationExecution: [], organizationFinalResults: [], controlAudits: [], escalations: [], notifications: [], attentionSummary: { openEscalationCount: 0, pendingReviewCount: 0, uncertainItemCount: 0, deadLetterCount: 0, notificationCount: 0, unreadNotificationCount: operatorId === undefined ? null : 0 },
     };
   }
 
@@ -299,6 +303,9 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
     });
     const controlAuditEvents = store.listRecentEvents(500);
     const controlAudits = mapControlAudits(controlAuditEvents);
+    const escalations = store.listAgentModeEscalations();
+    const notifications = store.listAgentModeNotifications(100, operatorId);
+    const attentionSummary = store.getAgentModeAttentionSummary(operatorId);
     const events = controlAuditEvents.slice(-100).map(mapEvent);
     const workcells = store.listWorkcells().map((workcell) => ({
       workcellId: workcell.workcellId, taskId: workcell.taskId, runId: workcell.runId, attemptId: workcell.attemptId,
@@ -615,7 +622,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations, organizationPlans, organizationWorkItems, organizationExecution, organizationFinalResults, controlAudits,
+      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations, organizationPlans, organizationWorkItems, organizationExecution, organizationFinalResults, controlAudits, escalations, notifications, attentionSummary,
     };
   } finally {
     store.close();

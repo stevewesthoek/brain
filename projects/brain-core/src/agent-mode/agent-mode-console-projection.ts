@@ -1,5 +1,6 @@
 import { defaultAgentModeDatabasePath } from './sqlite-state-store.js';
 import { readAgentModeObserver, type AgentModeControlAuditProjection, type AgentModeObserverProjection } from './agent-mode-observer.js';
+import type { AgentModeAttentionSummary, AgentModeEscalation, AgentModeNotification } from './agent-mode-attention.js';
 
 export const AGENT_MODE_CONSOLE_PROJECTION_VERSION = 'agent-mode-console-v1' as const;
 
@@ -336,6 +337,9 @@ export type AgentModeConsoleProjection = {
   workcells: AgentModeConsoleWorkcell[];
   executionResources: AgentModeConsoleExecutionResource[];
   controlAudits: AgentModeConsoleControlAudit[];
+  attentionSummary: AgentModeAttentionSummary;
+  escalations: AgentModeEscalation[];
+  notifications: AgentModeNotification[];
 };
 
 type Row = Record<string, unknown>;
@@ -816,6 +820,9 @@ function buildProjection(observer: AgentModeObserverProjection, now: string): Ag
     workcells,
     executionResources,
     controlAudits,
+    attentionSummary: observer.attentionSummary ?? { openEscalationCount: 0, pendingReviewCount: 0, uncertainItemCount: 0, deadLetterCount: 0, notificationCount: 0, unreadNotificationCount: null },
+    escalations: observer.escalations ?? [],
+    notifications: observer.notifications ?? [],
   };
 }
 
@@ -825,4 +832,33 @@ export function buildAgentModeConsoleProjection(observer: AgentModeObserverProje
 
 export function readAgentModeConsoleProjection(now = new Date().toISOString(), databasePath = defaultAgentModeDatabasePath()): AgentModeConsoleProjection {
   return buildProjection(readAgentModeObserver(now, databasePath), now);
+}
+
+export type AgentModeAttentionProjection = {
+  schemaVersion: 'agent-mode-attention-v1';
+  generatedAt: string;
+  source: 'agent-mode-state-store';
+  freshness: AgentModeConsoleFreshness;
+  summary: AgentModeAttentionSummary;
+  escalations: AgentModeEscalation[];
+  notifications: AgentModeNotification[];
+};
+
+export function readAgentModeAttentionProjection(now = new Date().toISOString(), databasePath = defaultAgentModeDatabasePath(), operatorId?: string): AgentModeAttentionProjection {
+  const observer = readAgentModeObserver(now, databasePath, operatorId);
+  return {
+    schemaVersion: 'agent-mode-attention-v1',
+    generatedAt: now,
+    source: 'agent-mode-state-store',
+    freshness: {
+      status: observer.availability === 'unavailable' ? 'unavailable' : observer.availability === 'empty' ? 'empty' : 'fresh',
+      sourceStatus: observer.persistence.databasePresent ? 'available' : 'unavailable',
+      generatedAt: now,
+      stateStorePresent: observer.persistence.databasePresent,
+      message: observer.availability === 'unavailable' ? 'Agent Mode StateStore is unavailable; no attention state was read.' : observer.availability === 'empty' ? 'Agent Mode StateStore is present but contains no attention records.' : 'Attention projection derived from the durable Agent Mode StateStore.',
+    },
+    summary: observer.attentionSummary,
+    escalations: observer.escalations.slice(0, 100),
+    notifications: observer.notifications.slice(0, 100),
+  };
 }

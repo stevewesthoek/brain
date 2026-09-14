@@ -361,6 +361,43 @@ const agentModeConsoleControlAuditSchema = z.object({
   signalSent: z.boolean().nullable(),
 }).strict();
 
+const agentModeAttentionEscalationSchema = z.object({
+  schemaVersion: z.literal('agent-mode-attention-v1'),
+  escalationId: z.string().min(1).max(256),
+  kind: z.enum(['uncertain_attempt', 'scheduler_dead_letter', 'workcell_validation_failure']),
+  severity: z.enum(['warning', 'critical']),
+  rootGoalId: z.string().nullable(), agentId: z.string().nullable(), taskId: z.string().nullable(), runId: z.string().nullable(), attemptId: z.string().nullable(), workcellId: z.string().nullable(), reviewId: z.string().nullable(),
+  sourceType: z.enum(['attempt', 'scheduler_event', 'scheduler_schedule', 'workcell_validation']),
+  sourceId: z.string().min(1).max(256), reasonCode: z.string().min(1).max(128), status: z.enum(['open', 'resolved']), createdAt: z.string(), updatedAt: z.string(), resolvedAt: z.string().nullable(),
+}).strict();
+
+const agentModeAttentionNotificationSchema = z.object({
+  schemaVersion: z.literal('agent-mode-attention-v1'),
+  notificationId: z.string().min(1).max(256),
+  kind: z.enum(['operator_escalation', 'pending_review', 'uncertain_attempt', 'scheduler_dead_letter']),
+  severity: z.enum(['warning', 'critical']),
+  sourceType: z.enum(['attempt', 'scheduler_event', 'scheduler_schedule', 'workcell_validation', 'review']),
+  sourceId: z.string().min(1).max(256), escalationId: z.string().nullable(), reviewId: z.string().nullable(), rootGoalId: z.string().nullable(), agentId: z.string().nullable(), taskId: z.string().nullable(), runId: z.string().nullable(), attemptId: z.string().nullable(), workcellId: z.string().nullable(),
+  titleCode: z.string().min(1).max(128), messageCode: z.string().min(1).max(128), createdAt: z.string(), read: z.boolean().nullable(), readAt: z.string().nullable(),
+}).strict();
+
+const agentModeAttentionSummarySchema = z.object({
+  openEscalationCount: z.number().nonnegative(), pendingReviewCount: z.number().nonnegative(), uncertainItemCount: z.number().nonnegative(), deadLetterCount: z.number().nonnegative(), notificationCount: z.number().nonnegative(), unreadNotificationCount: z.number().nonnegative().nullable(),
+}).strict();
+
+export const agentModeAttentionProjectionSchema = z.object({
+  schemaVersion: z.literal('agent-mode-attention-v1'), generatedAt: z.string(), source: z.literal('agent-mode-state-store'),
+  freshness: z.object({ status: z.enum(['fresh', 'empty', 'unavailable']), sourceStatus: z.enum(['available', 'unavailable']), generatedAt: z.string(), stateStorePresent: z.boolean(), message: z.string() }).strict(),
+  summary: agentModeAttentionSummarySchema,
+  escalations: z.array(agentModeAttentionEscalationSchema).max(100),
+  notifications: z.array(agentModeAttentionNotificationSchema).max(100),
+}).strict();
+export type AgentModeAttentionProjection = z.infer<typeof agentModeAttentionProjectionSchema>;
+
+export const agentModeNotificationReadResponseSchema = z.object({
+  schemaVersion: z.literal('agent-mode-notification-read-v1'), notificationId: z.string().min(1).max(256), readAt: z.string().nullable(), result: z.enum(['created', 'duplicate', 'denied']), reasonCode: z.string().max(128).nullable(),
+}).strict();
+
 export const agentModeConsoleProjectionSchema = z.object({
   schemaVersion: z.literal('agent-mode-console-v1'),
   generatedAt: z.string(),
@@ -406,6 +443,9 @@ export const agentModeConsoleProjectionSchema = z.object({
   workcells: z.array(agentModeConsoleWorkcellSchema).max(100),
   executionResources: z.array(agentModeConsoleExecutionResourceSchema).max(100),
   controlAudits: z.array(agentModeConsoleControlAuditSchema).max(100),
+  attentionSummary: agentModeAttentionSummarySchema,
+  escalations: z.array(agentModeAttentionEscalationSchema).max(100),
+  notifications: z.array(agentModeAttentionNotificationSchema).max(100),
 }).strict();
 export type AgentModeConsoleProjection = z.infer<typeof agentModeConsoleProjectionSchema>;
 

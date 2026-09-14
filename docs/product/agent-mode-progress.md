@@ -1246,6 +1246,44 @@ Evidence: `operations/reports/agent-mode-u0-e-resource-visibility-evidence-2026-
 Exact next bounded slice: **U0-F — Durable Escalations, Unread Notifications,
 and Remaining Resource/Quota Visibility Gaps**; do not start it automatically.
 
+## Current U0-F durable operator attention — 2026-09-14
+
+U0-F — **Durable Escalations, Unread Notifications, and Remaining
+Resource/Quota Visibility Gaps** — is **COMPLETE** for its bounded gate. U0
+remains **IN PROGRESS**.
+
+Brain now owns a small immutable attention index in the existing Agent Mode
+StateStore. The explicit bounded reconciliation seam derives escalations from
+uncertain Attempts, scheduler dead letters, and failed Workcell validations;
+pending review requests produce notification metadata only and remain subject
+to the existing review authority. Ordinary failures, cancellation, model
+escalation requests, and maximum-depth conditions retain their existing
+canonical classifications rather than generating noisy duplicate escalations.
+Model-originated `AgentModeEscalationRequest` remains `model-untrusted` intent
+and has no execution authority.
+
+Notification and escalation IDs are deterministic from bounded source and
+transition material. Records contain codes, severity, stable source/lineage
+references, and timestamps only. Operator read receipts are keyed by the
+authenticated server-side operator identity; read is not resolution or
+approval. The canonical public console projection exposes non-personal
+attention metadata, while personalized unread counts and individual mark-read
+acknowledgements use the authenticated service boundary:
+`GET /agent-mode/notifications` and
+`POST /agent-mode/notifications/:notificationId/read`, proxied by the local
+Console under `/api/agent-mode/notifications`.
+
+The `/agents` page adds a compact read-only Attention tab with durable unread
+state and individual Mark read acknowledgement. It adds no mark-all, resolve,
+approve, retry, or lifecycle action. Repeated reads do not reconcile, mutate
+budgets, advance scheduling, launch runtimes, call providers, or write browser
+storage. Codex quota remains explicitly `unavailable` with reason
+`no_canonical_durable_source`; no provider probe or guessed quota was added.
+
+Evidence: `operations/reports/agent-mode-u0-f-escalations-notifications-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-G — Unified Brain Console Phase Exit Audit**; do
+not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

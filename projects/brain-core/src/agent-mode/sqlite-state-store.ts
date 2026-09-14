@@ -11,6 +11,7 @@ import { runtimeDispatchResourceKey, runtimeReceiptEffectHash, validateRuntimeDi
 import type { AgentModeRuntimeDispatchMutation, AgentModeRuntimeDispatchPrepared, AgentModeRuntimeDispatchRequest, AgentModeRuntimeDispatchStorePreparation, AgentModeRuntimeReceipt, AgentModeRuntimeReceiptMutation, AgentModeRuntimeSettlement, AgentModeRuntimeVerification, AgentRuntimeResult } from './runtime-dispatch.js';
 import { deriveOrganizationPlanId, deriveOrganizationWorkItemId, evaluateOrganizationReadiness, organizationPlanMaterial, validateOrganizationPlan, type DelegatedResultFact, type OrganizationPlan, type OrganizationReadiness } from './organization.js';
 import { deriveOrganizationAggregation, organizationFinalResultFromAggregation, organizationFinalResultMaterial, type OrganizationFinalResult } from './organization-finalization.js';
+import { AGENT_MODE_ATTENTION_MAX_ITEMS, AGENT_MODE_ATTENTION_SCHEMA_VERSION, deriveEscalationId, deriveNotificationId, escalationMaterial, notificationMaterial, type AgentModeAttentionReconcileResult, type AgentModeAttentionSourceType, type AgentModeEscalation, type AgentModeEscalationKind, type AgentModeEscalationSeverity, type AgentModeEscalationStatus, type AgentModeNotification, type AgentModeNotificationKind } from './agent-mode-attention.js';
 
 export type AgentModeAgent = {
   agentId: string;
@@ -176,6 +177,53 @@ function mapOrganizationFinalResultRow(row: Record<string, unknown>): Organizati
     totalSettledCost: Number(row.total_settled_cost),
     aggregateDigest: String(row.aggregate_digest),
     finalizedAt: String(row.finalized_at),
+  };
+}
+
+function mapEscalationRow(row: Record<string, unknown>): AgentModeEscalation {
+  return {
+    schemaVersion: String(row.schema_version) as typeof AGENT_MODE_ATTENTION_SCHEMA_VERSION,
+    escalationId: String(row.escalation_id),
+    kind: String(row.kind) as AgentModeEscalationKind,
+    severity: String(row.severity) as AgentModeEscalationSeverity,
+    rootGoalId: row.root_goal_id == null ? null : String(row.root_goal_id),
+    agentId: row.agent_id == null ? null : String(row.agent_id),
+    taskId: row.task_id == null ? null : String(row.task_id),
+    runId: row.run_id == null ? null : String(row.run_id),
+    attemptId: row.attempt_id == null ? null : String(row.attempt_id),
+    workcellId: row.workcell_id == null ? null : String(row.workcell_id),
+    reviewId: row.review_id == null ? null : String(row.review_id),
+    sourceType: String(row.source_type) as AgentModeAttentionSourceType,
+    sourceId: String(row.source_id),
+    reasonCode: String(row.reason_code),
+    status: String(row.status) as AgentModeEscalationStatus,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+    resolvedAt: row.resolved_at == null ? null : String(row.resolved_at),
+  };
+}
+
+function mapNotificationRow(row: Record<string, unknown>): AgentModeNotification {
+  return {
+    schemaVersion: String(row.schema_version) as typeof AGENT_MODE_ATTENTION_SCHEMA_VERSION,
+    notificationId: String(row.notification_id),
+    kind: String(row.kind) as AgentModeNotificationKind,
+    severity: String(row.severity) as AgentModeNotification['severity'],
+    sourceType: String(row.source_type) as AgentModeNotification['sourceType'],
+    sourceId: String(row.source_id),
+    escalationId: row.escalation_id == null ? null : String(row.escalation_id),
+    reviewId: row.review_id == null ? null : String(row.review_id),
+    rootGoalId: row.root_goal_id == null ? null : String(row.root_goal_id),
+    agentId: row.agent_id == null ? null : String(row.agent_id),
+    taskId: row.task_id == null ? null : String(row.task_id),
+    runId: row.run_id == null ? null : String(row.run_id),
+    attemptId: row.attempt_id == null ? null : String(row.attempt_id),
+    workcellId: row.workcell_id == null ? null : String(row.workcell_id),
+    titleCode: String(row.title_code),
+    messageCode: String(row.message_code),
+    createdAt: String(row.created_at),
+    read: row.operator_id === undefined || row.operator_id === null ? null : row.read_at != null,
+    readAt: row.read_at == null ? null : String(row.read_at),
   };
 }
 
@@ -1354,6 +1402,7 @@ export class AgentModeSqliteStateStore {
   private readonly hasSpawnAdmissionControlTables: boolean;
   private readonly hasChildAssignmentTables: boolean;
   private readonly hasOrganizationTables: boolean;
+  private readonly hasAttentionTables: boolean;
 
   constructor(databasePath = defaultAgentModeDatabasePath(), options: { readOnly?: boolean } = {}) {
     this.databasePath = databasePath;
@@ -1393,6 +1442,9 @@ export class AgentModeSqliteStateStore {
       this.hasOrganizationTables = this.tableExists('agent_mode_organization_plans')
         && this.tableExists('agent_mode_organization_work_items')
         && this.tableExists('agent_mode_organization_dependencies');
+      this.hasAttentionTables = this.tableExists('agent_mode_escalations')
+        && this.tableExists('agent_mode_notifications')
+        && this.tableExists('agent_mode_notification_reads');
       return;
     }
     this.database.exec('PRAGMA foreign_keys = ON;');
@@ -2034,6 +2086,56 @@ export class AgentModeSqliteStateStore {
         aggregate_digest TEXT NOT NULL,
         finalized_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS agent_mode_escalations (
+        escalation_id TEXT PRIMARY KEY,
+        material_hash TEXT NOT NULL,
+        schema_version TEXT NOT NULL CHECK (schema_version = 'agent-mode-attention-v1'),
+        kind TEXT NOT NULL CHECK (kind IN ('uncertain_attempt', 'scheduler_dead_letter', 'workcell_validation_failure')),
+        severity TEXT NOT NULL CHECK (severity IN ('warning', 'critical')),
+        root_goal_id TEXT,
+        agent_id TEXT,
+        task_id TEXT,
+        run_id TEXT,
+        attempt_id TEXT,
+        workcell_id TEXT,
+        review_id TEXT,
+        source_type TEXT NOT NULL CHECK (source_type IN ('attempt', 'scheduler_event', 'scheduler_schedule', 'workcell_validation')),
+        source_id TEXT NOT NULL,
+        reason_code TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('open', 'resolved')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        resolved_at TEXT
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS agent_mode_escalations_source ON agent_mode_escalations (kind, source_type, source_id, reason_code);
+      CREATE TABLE IF NOT EXISTS agent_mode_notifications (
+        notification_id TEXT PRIMARY KEY,
+        material_hash TEXT NOT NULL,
+        schema_version TEXT NOT NULL CHECK (schema_version = 'agent-mode-attention-v1'),
+        kind TEXT NOT NULL CHECK (kind IN ('operator_escalation', 'pending_review', 'uncertain_attempt', 'scheduler_dead_letter')),
+        severity TEXT NOT NULL CHECK (severity IN ('warning', 'critical')),
+        source_type TEXT NOT NULL CHECK (source_type IN ('attempt', 'scheduler_event', 'scheduler_schedule', 'workcell_validation', 'review')),
+        source_id TEXT NOT NULL,
+        escalation_id TEXT,
+        review_id TEXT,
+        root_goal_id TEXT,
+        agent_id TEXT,
+        task_id TEXT,
+        run_id TEXT,
+        attempt_id TEXT,
+        workcell_id TEXT,
+        title_code TEXT NOT NULL,
+        message_code TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS agent_mode_notifications_source_transition ON agent_mode_notifications (kind, source_type, source_id, created_at);
+      CREATE TABLE IF NOT EXISTS agent_mode_notification_reads (
+        notification_id TEXT NOT NULL REFERENCES agent_mode_notifications(notification_id) ON DELETE CASCADE,
+        operator_id TEXT NOT NULL,
+        read_at TEXT NOT NULL,
+        PRIMARY KEY (notification_id, operator_id)
+      );
+      CREATE INDEX IF NOT EXISTS agent_mode_notifications_created ON agent_mode_notifications (created_at DESC, notification_id);
       INSERT INTO store_meta (key, value) VALUES ('schema_version', '7')
         ON CONFLICT(key) DO NOTHING;
     `);
@@ -2045,6 +2147,7 @@ export class AgentModeSqliteStateStore {
     this.migrateAgentTable();
     this.migrateChildAssignmentTables();
     this.ensureOrganizationFinalResultTable();
+    this.ensureAttentionTables();
     this.hasRuntimePidColumn = true;
     this.hasRuntimeIdentityColumns = true;
     this.hasWorkcellTables = true;
@@ -2055,12 +2158,13 @@ export class AgentModeSqliteStateStore {
     this.hasReviewReceiptTables = true;
     this.hasCommitReceiptTables = true;
     this.hasMergeReceiptTables = true;
-    this.database.prepare("UPDATE store_meta SET value = '7' WHERE key = 'schema_version' AND value IN ('1', '2', '3', '4', '5', '6')").run();
+    this.database.prepare("UPDATE store_meta SET value = '8' WHERE key = 'schema_version' AND value IN ('1', '2', '3', '4', '5', '6', '7')").run();
     this.hasSchedulerTables = true;
     this.hasEventSourceTables = true;
     this.hasSpawnAdmissionControlTables = true;
     this.hasChildAssignmentTables = true;
     this.hasOrganizationTables = true;
+    this.hasAttentionTables = true;
   }
 
   static openExisting(databasePath = defaultAgentModeDatabasePath()): AgentModeSqliteStateStore | undefined {
@@ -2159,6 +2263,42 @@ export class AgentModeSqliteStateStore {
         aggregate_digest TEXT NOT NULL,
         finalized_at TEXT NOT NULL
       );
+    `);
+  }
+
+  private ensureAttentionTables(): void {
+    this.database.exec(`
+      CREATE TABLE IF NOT EXISTS agent_mode_escalations (
+        escalation_id TEXT PRIMARY KEY,
+        material_hash TEXT NOT NULL,
+        schema_version TEXT NOT NULL CHECK (schema_version = 'agent-mode-attention-v1'),
+        kind TEXT NOT NULL CHECK (kind IN ('uncertain_attempt', 'scheduler_dead_letter', 'workcell_validation_failure')),
+        severity TEXT NOT NULL CHECK (severity IN ('warning', 'critical')),
+        root_goal_id TEXT, agent_id TEXT, task_id TEXT, run_id TEXT, attempt_id TEXT, workcell_id TEXT, review_id TEXT,
+        source_type TEXT NOT NULL CHECK (source_type IN ('attempt', 'scheduler_event', 'scheduler_schedule', 'workcell_validation')),
+        source_id TEXT NOT NULL, reason_code TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('open', 'resolved')),
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL, resolved_at TEXT
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS agent_mode_escalations_source ON agent_mode_escalations (kind, source_type, source_id, reason_code);
+      CREATE TABLE IF NOT EXISTS agent_mode_notifications (
+        notification_id TEXT PRIMARY KEY,
+        material_hash TEXT NOT NULL,
+        schema_version TEXT NOT NULL CHECK (schema_version = 'agent-mode-attention-v1'),
+        kind TEXT NOT NULL CHECK (kind IN ('operator_escalation', 'pending_review', 'uncertain_attempt', 'scheduler_dead_letter')),
+        severity TEXT NOT NULL CHECK (severity IN ('warning', 'critical')),
+        source_type TEXT NOT NULL CHECK (source_type IN ('attempt', 'scheduler_event', 'scheduler_schedule', 'workcell_validation', 'review')),
+        source_id TEXT NOT NULL, escalation_id TEXT, review_id TEXT,
+        root_goal_id TEXT, agent_id TEXT, task_id TEXT, run_id TEXT, attempt_id TEXT, workcell_id TEXT,
+        title_code TEXT NOT NULL, message_code TEXT NOT NULL, created_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS agent_mode_notifications_source_transition ON agent_mode_notifications (kind, source_type, source_id, created_at);
+      CREATE TABLE IF NOT EXISTS agent_mode_notification_reads (
+        notification_id TEXT NOT NULL REFERENCES agent_mode_notifications(notification_id) ON DELETE CASCADE,
+        operator_id TEXT NOT NULL, read_at TEXT NOT NULL,
+        PRIMARY KEY (notification_id, operator_id)
+      );
+      CREATE INDEX IF NOT EXISTS agent_mode_notifications_created ON agent_mode_notifications (created_at DESC, notification_id);
     `);
   }
 
@@ -6033,6 +6173,222 @@ export class AgentModeSqliteStateStore {
       const attempts = input.status === 'diverged' ? source.failureAttemptCount : source.failureAttemptCount + 1;
       const nextEligibleAt = input.status === 'diverged' ? null : new Date(Date.parse(input.observedAt) + Math.min(300_000, 1_000 * (2 ** Math.max(0, attempts - 1)))).toISOString();
       this.database.prepare('UPDATE agent_mode_event_sources SET status=?,last_observed_at=?,last_error_reason=?,next_eligible_at=?,failure_attempt_count=? WHERE source_id=?').run(input.status, input.observedAt, input.reason.slice(0, 256), nextEligibleAt, attempts, input.sourceId);
+    });
+  }
+
+  private persistAttentionEscalation(escalation: AgentModeEscalation): 'created' | 'duplicate' | 'conflict' {
+    const materialHash = createHash('sha256').update(escalationMaterial(escalation), 'utf8').digest('hex');
+    const existing = this.database.prepare('SELECT * FROM agent_mode_escalations WHERE escalation_id = ?').get(escalation.escalationId) as Record<string, unknown> | undefined;
+    if (existing) {
+      if (String(existing.material_hash) !== materialHash) return 'conflict';
+      const changed = String(existing.status) !== escalation.status || (existing.resolved_at ?? null) !== escalation.resolvedAt;
+      if (changed) {
+        this.database.prepare('UPDATE agent_mode_escalations SET status=?,updated_at=?,resolved_at=? WHERE escalation_id=?').run(escalation.status, escalation.updatedAt, escalation.resolvedAt, escalation.escalationId);
+      }
+      return 'duplicate';
+    }
+    this.database.prepare(`
+      INSERT INTO agent_mode_escalations (
+        escalation_id, material_hash, schema_version, kind, severity, root_goal_id, agent_id, task_id,
+        run_id, attempt_id, workcell_id, review_id, source_type, source_id, reason_code, status,
+        created_at, updated_at, resolved_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      escalation.escalationId, materialHash, escalation.schemaVersion, escalation.kind, escalation.severity,
+      escalation.rootGoalId, escalation.agentId, escalation.taskId, escalation.runId, escalation.attemptId,
+      escalation.workcellId, escalation.reviewId, escalation.sourceType, escalation.sourceId, escalation.reasonCode,
+      escalation.status, escalation.createdAt, escalation.updatedAt, escalation.resolvedAt,
+    );
+    return 'created';
+  }
+
+  private persistAttentionNotification(notification: AgentModeNotification): 'created' | 'duplicate' | 'conflict' {
+    const materialHash = createHash('sha256').update(notificationMaterial(notification), 'utf8').digest('hex');
+    const existing = this.database.prepare('SELECT material_hash FROM agent_mode_notifications WHERE notification_id = ?').get(notification.notificationId) as { material_hash?: string } | undefined;
+    if (existing) return existing.material_hash === materialHash ? 'duplicate' : 'conflict';
+    this.database.prepare(`
+      INSERT INTO agent_mode_notifications (
+        notification_id, material_hash, schema_version, kind, severity, source_type, source_id,
+        escalation_id, review_id, root_goal_id, agent_id, task_id, run_id, attempt_id, workcell_id,
+        title_code, message_code, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      notification.notificationId, materialHash, notification.schemaVersion, notification.kind, notification.severity,
+      notification.sourceType, notification.sourceId, notification.escalationId, notification.reviewId,
+      notification.rootGoalId, notification.agentId, notification.taskId, notification.runId, notification.attemptId,
+      notification.workcellId, notification.titleCode, notification.messageCode, notification.createdAt,
+    );
+    return 'created';
+  }
+
+  private attentionNotificationForEscalation(escalation: AgentModeEscalation, transitionId: string): AgentModeNotification {
+    const kind: AgentModeNotificationKind = escalation.kind === 'uncertain_attempt'
+      ? 'uncertain_attempt'
+      : escalation.kind === 'scheduler_dead_letter' ? 'scheduler_dead_letter' : 'operator_escalation';
+    return {
+      schemaVersion: AGENT_MODE_ATTENTION_SCHEMA_VERSION,
+      notificationId: deriveNotificationId({ kind, sourceType: escalation.sourceType, sourceId: escalation.sourceId, transitionId }),
+      kind,
+      severity: escalation.severity,
+      sourceType: escalation.sourceType,
+      sourceId: escalation.sourceId,
+      escalationId: escalation.escalationId,
+      reviewId: escalation.reviewId,
+      rootGoalId: escalation.rootGoalId,
+      agentId: escalation.agentId,
+      taskId: escalation.taskId,
+      runId: escalation.runId,
+      attemptId: escalation.attemptId,
+      workcellId: escalation.workcellId,
+      titleCode: escalation.kind === 'uncertain_attempt' ? 'AGENT_ATTEMPT_UNCERTAIN' : escalation.kind === 'scheduler_dead_letter' ? 'SCHEDULER_ITEM_DEAD_LETTERED' : 'WORKCELL_VALIDATION_REQUIRES_ATTENTION',
+      messageCode: escalation.reasonCode,
+      createdAt: escalation.createdAt,
+      read: null,
+      readAt: null,
+    };
+  }
+
+  private attentionEscalation(input: {
+    kind: AgentModeEscalationKind;
+    severity: AgentModeEscalationSeverity;
+    sourceType: AgentModeAttentionSourceType;
+    sourceId: string;
+    rootGoalId?: string | null;
+    agentId?: string | null;
+    taskId?: string | null;
+    runId?: string | null;
+    attemptId?: string | null;
+    workcellId?: string | null;
+    reviewId?: string | null;
+    reasonCode: string;
+    createdAt: string;
+    status: AgentModeEscalationStatus;
+    resolvedAt?: string | null;
+  }): AgentModeEscalation {
+    const base = {
+      schemaVersion: AGENT_MODE_ATTENTION_SCHEMA_VERSION,
+      escalationId: deriveEscalationId(input),
+      kind: input.kind,
+      severity: input.severity,
+      rootGoalId: input.rootGoalId ?? null,
+      agentId: input.agentId ?? null,
+      taskId: input.taskId ?? null,
+      runId: input.runId ?? null,
+      attemptId: input.attemptId ?? null,
+      workcellId: input.workcellId ?? null,
+      reviewId: input.reviewId ?? null,
+      sourceType: input.sourceType,
+      sourceId: input.sourceId,
+      reasonCode: input.reasonCode,
+      status: input.status,
+      createdAt: input.createdAt,
+      updatedAt: input.createdAt,
+      resolvedAt: input.resolvedAt ?? null,
+    } satisfies AgentModeEscalation;
+    return base;
+  }
+
+  private reconcileAttentionCandidate(escalation: AgentModeEscalation, transitionId: string, counts: AgentModeAttentionReconcileResult): void {
+    const persisted = this.persistAttentionEscalation(escalation);
+    if (persisted === 'conflict') throw new Error(`attention escalation conflict: ${escalation.escalationId}`);
+    if (persisted === 'created') counts.createdEscalations += 1;
+    if (escalation.status === 'open') {
+      const notification = this.attentionNotificationForEscalation(escalation, transitionId);
+      const notificationResult = this.persistAttentionNotification(notification);
+      if (notificationResult === 'conflict') throw new Error(`attention notification conflict: ${notification.notificationId}`);
+      if (notificationResult === 'created') counts.createdNotifications += 1; else counts.existingNotifications += 1;
+    }
+  }
+
+  /** Reconcile bounded canonical transitions into the durable attention index. Never called by GET projections. */
+  reconcileAgentModeAttention(now: string, limit = AGENT_MODE_ATTENTION_MAX_ITEMS): AgentModeAttentionReconcileResult {
+    if (this.readOnly || !this.hasAttentionTables) throw new Error('attention persistence is unavailable');
+    if (!Number.isFinite(Date.parse(now))) throw new Error('attention timestamp is invalid');
+    const boundedLimit = Math.max(1, Math.min(Math.floor(limit), AGENT_MODE_ATTENTION_MAX_ITEMS));
+    const counts: AgentModeAttentionReconcileResult = { createdEscalations: 0, resolvedEscalations: 0, createdNotifications: 0, existingNotifications: 0 };
+    return this.withTransaction(() => {
+      const activeEscalationKeys = new Set<string>();
+      for (const attempt of this.listAttempts().filter((candidate) => candidate.status === 'uncertain').slice(0, boundedLimit)) {
+        const agent = this.getAgent(attempt.agentId);
+        const escalation = this.attentionEscalation({ kind: 'uncertain_attempt', severity: 'critical', sourceType: 'attempt', sourceId: attempt.attemptId, rootGoalId: agent?.rootGoalId ?? null, agentId: attempt.agentId, taskId: this.getRun(attempt.runId)?.taskId ?? null, runId: attempt.runId, attemptId: attempt.attemptId, reasonCode: 'UNCERTAIN_RUNTIME', createdAt: attempt.updatedAt, status: 'open' });
+        activeEscalationKeys.add(escalation.escalationId);
+        this.reconcileAttentionCandidate(escalation, `runtime-uncertain:${attempt.attemptId}`, counts);
+      }
+      for (const item of [...this.listSchedulerEvents(boundedLimit), ...this.listSchedulerSchedules(boundedLimit)].filter((candidate) => candidate.status === 'dead_letter').slice(0, boundedLimit)) {
+        const sourceType: AgentModeAttentionSourceType = 'eventId' in item ? 'scheduler_event' : 'scheduler_schedule';
+        const sourceId = 'eventId' in item ? item.eventId : item.scheduleId;
+        const escalation = this.attentionEscalation({ kind: 'scheduler_dead_letter', severity: 'warning', sourceType, sourceId, reasonCode: 'SCHEDULER_DEAD_LETTER', createdAt: item.deadLetteredAt ?? item.lastFailureAt ?? now, status: 'open' });
+        activeEscalationKeys.add(escalation.escalationId);
+        this.reconcileAttentionCandidate(escalation, `scheduler-dead-letter:${sourceType}:${sourceId}:${item.deadLetteredAt ?? item.lastFailureAt ?? now}`, counts);
+      }
+      for (const validation of this.listWorkcellValidationRuns().filter((candidate) => ['failed', 'rejected', 'timed_out', 'interrupted'].includes(candidate.result)).slice(0, boundedLimit)) {
+        const escalation = this.attentionEscalation({ kind: 'workcell_validation_failure', severity: 'warning', sourceType: 'workcell_validation', sourceId: validation.validationId, workcellId: validation.workcellId, taskId: validation.taskId, runId: validation.runId, attemptId: validation.attemptId, reasonCode: 'WORKCELL_VALIDATION_FAILED', createdAt: validation.updatedAt, status: 'open' });
+        activeEscalationKeys.add(escalation.escalationId);
+        this.reconcileAttentionCandidate(escalation, `workcell-validation:${validation.validationId}`, counts);
+      }
+      for (const review of this.listReviewRequests().filter((candidate) => candidate.status === 'pending').slice(0, boundedLimit)) {
+        const notification: AgentModeNotification = {
+          schemaVersion: AGENT_MODE_ATTENTION_SCHEMA_VERSION,
+          notificationId: deriveNotificationId({ kind: 'pending_review', sourceType: 'review', sourceId: review.reviewId, transitionId: `review-requested:${review.reviewId}` }),
+          kind: 'pending_review', severity: 'warning', sourceType: 'review', sourceId: review.reviewId,
+          escalationId: null, reviewId: review.reviewId, rootGoalId: this.getAgent(review.workerAgentId)?.rootGoalId ?? null,
+          agentId: review.workerAgentId, taskId: review.taskId, runId: review.runId, attemptId: review.attemptId,
+          workcellId: review.workcellId, titleCode: 'PENDING_REVIEW_REQUEST', messageCode: 'REVIEW_DECISION_REQUIRED', createdAt: review.createdAt, read: null, readAt: null,
+        };
+        const result = this.persistAttentionNotification(notification);
+        if (result === 'conflict') throw new Error(`attention notification conflict: ${notification.notificationId}`);
+        if (result === 'created') counts.createdNotifications += 1; else counts.existingNotifications += 1;
+      }
+      const openRows = this.database.prepare("SELECT * FROM agent_mode_escalations WHERE status = 'open' ORDER BY updated_at, escalation_id LIMIT ?").all(AGENT_MODE_ATTENTION_MAX_ITEMS) as Array<Record<string, unknown>>;
+      for (const row of openRows) {
+        const escalation = mapEscalationRow(row);
+        if (activeEscalationKeys.has(escalation.escalationId)) continue;
+        const resolved = { ...escalation, status: 'resolved' as const, updatedAt: now, resolvedAt: now };
+        const result = this.persistAttentionEscalation(resolved);
+        if (result === 'conflict') throw new Error(`attention escalation conflict: ${escalation.escalationId}`);
+        if (result === 'duplicate') counts.resolvedEscalations += 1;
+      }
+      return counts;
+    });
+  }
+
+  listAgentModeEscalations(limit = AGENT_MODE_ATTENTION_MAX_ITEMS): AgentModeEscalation[] {
+    if (!this.hasAttentionTables) return [];
+    const bounded = Math.max(0, Math.min(Math.floor(limit), AGENT_MODE_ATTENTION_MAX_ITEMS));
+    return (this.database.prepare('SELECT * FROM agent_mode_escalations ORDER BY CASE status WHEN \'open\' THEN 0 ELSE 1 END, updated_at DESC, escalation_id LIMIT ?').all(bounded) as Array<Record<string, unknown>>).map(mapEscalationRow);
+  }
+
+  listAgentModeNotifications(limit = AGENT_MODE_ATTENTION_MAX_ITEMS, operatorId?: string): AgentModeNotification[] {
+    if (!this.hasAttentionTables) return [];
+    const bounded = Math.max(0, Math.min(Math.floor(limit), AGENT_MODE_ATTENTION_MAX_ITEMS));
+    if (operatorId === undefined) {
+      return (this.database.prepare('SELECT *, NULL AS operator_id, NULL AS read_at FROM agent_mode_notifications ORDER BY created_at DESC, notification_id LIMIT ?').all(bounded) as Array<Record<string, unknown>>).map(mapNotificationRow);
+    }
+    if (operatorId.length === 0 || operatorId.length > 128) throw new Error('operator identity is invalid');
+    return (this.database.prepare('SELECT n.*, ? AS operator_id, r.read_at FROM agent_mode_notifications n LEFT JOIN agent_mode_notification_reads r ON r.notification_id = n.notification_id AND r.operator_id = ? ORDER BY CASE WHEN r.read_at IS NULL THEN 0 ELSE 1 END, n.created_at DESC, n.notification_id LIMIT ?').all(operatorId, operatorId, bounded) as Array<Record<string, unknown>>).map(mapNotificationRow);
+  }
+
+  getAgentModeAttentionSummary(operatorId?: string): { openEscalationCount: number; pendingReviewCount: number; uncertainItemCount: number; deadLetterCount: number; notificationCount: number; unreadNotificationCount: number | null } {
+    if (!this.hasAttentionTables) return { openEscalationCount: 0, pendingReviewCount: 0, uncertainItemCount: 0, deadLetterCount: 0, notificationCount: 0, unreadNotificationCount: operatorId === undefined ? null : 0 };
+    const count = (sql: string, ...params: Array<string>): number => Number((this.database.prepare(sql).get(...params) as { count?: number } | undefined)?.count ?? 0);
+    const deadLetterCount = this.listSchedulerEvents(AGENT_MODE_ATTENTION_MAX_ITEMS).filter((item) => item.status === 'dead_letter').length + this.listSchedulerSchedules(AGENT_MODE_ATTENTION_MAX_ITEMS).filter((item) => item.status === 'dead_letter').length;
+    const summary = { openEscalationCount: count("SELECT COUNT(*) AS count FROM agent_mode_escalations WHERE status = 'open'"), pendingReviewCount: this.listReviewRequests().filter((review) => review.status === 'pending').length, uncertainItemCount: this.listAttempts().filter((attempt) => attempt.status === 'uncertain').length, deadLetterCount, notificationCount: count('SELECT COUNT(*) AS count FROM agent_mode_notifications'), unreadNotificationCount: null as number | null };
+    if (operatorId !== undefined) {
+      if (operatorId.length === 0 || operatorId.length > 128) throw new Error('operator identity is invalid');
+      summary.unreadNotificationCount = count('SELECT COUNT(*) AS count FROM agent_mode_notifications n WHERE NOT EXISTS (SELECT 1 FROM agent_mode_notification_reads r WHERE r.notification_id = n.notification_id AND r.operator_id = ?)', operatorId);
+    }
+    return summary;
+  }
+
+  markAgentModeNotificationRead(input: { notificationId: string; operatorId: string; readAt: string }): { result: 'created' | 'duplicate' | 'denied'; readAt?: string; reasonCode?: string } {
+    if (this.readOnly || !this.hasAttentionTables) return { result: 'denied', reasonCode: 'ATTENTION_PERSISTENCE_UNAVAILABLE' };
+    if (!input.notificationId || input.notificationId.length > 256 || !input.operatorId || input.operatorId.length > 128 || !Number.isFinite(Date.parse(input.readAt))) return { result: 'denied', reasonCode: 'INVALID_NOTIFICATION_READ' };
+    return this.withTransaction(() => {
+      if (!this.database.prepare('SELECT 1 FROM agent_mode_notifications WHERE notification_id = ?').get(input.notificationId)) return { result: 'denied' as const, reasonCode: 'NOTIFICATION_NOT_FOUND' };
+      const existing = this.database.prepare('SELECT read_at FROM agent_mode_notification_reads WHERE notification_id = ? AND operator_id = ?').get(input.notificationId, input.operatorId) as { read_at?: string } | undefined;
+      if (existing) return { result: 'duplicate' as const, readAt: String(existing.read_at) };
+      this.database.prepare('INSERT INTO agent_mode_notification_reads (notification_id, operator_id, read_at) VALUES (?, ?, ?)').run(input.notificationId, input.operatorId, input.readAt);
+      return { result: 'created' as const, readAt: input.readAt };
     });
   }
 

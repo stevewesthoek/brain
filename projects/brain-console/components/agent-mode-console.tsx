@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Bot, CircleAlert, Coins, GitBranch, ListChecks, Server, ShieldCheck } from 'lucide-react';
 import { brainCoreRequest } from '@/lib/braincore-client';
-import { agentModeConsoleProjectionSchema, type AgentModeConsoleProjection } from '@/lib/braincore-schemas';
+import { agentModeConsoleProjectionSchema, type AgentModeAttentionProjection, type AgentModeConsoleProjection, type OperatorSessionResponse } from '@/lib/braincore-schemas';
 import { formatUsd, timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 import { AgentModeConsoleDetail, type AgentModeDetailSelection } from '@/components/agent-mode-console-detail';
 import { OperatorSessionPanel, ReviewControlButtons, RunControlButtons } from '@/components/operator-controls';
+import { markOperatorNotificationRead, readOperatorAttention, readOperatorSession } from '@/lib/operator-client';
 
-type ConsoleTab = 'overview' | 'roots' | 'agents' | 'organizations' | 'workcells' | 'tasks' | 'resources' | 'failures';
+type ConsoleTab = 'overview' | 'attention' | 'roots' | 'agents' | 'organizations' | 'workcells' | 'tasks' | 'resources' | 'failures';
 
 function id(value: string | null): React.ReactNode {
   return value ? <code className="console-id" title={value}>{value}</code> : <span className="meta">—</span>;
@@ -130,6 +131,17 @@ function FailuresTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpe
   return data.failures.length === 0 ? <EmptyTable message="No failed, blocked, cancelled, uncertain, or dead-letter entries are currently visible." /> : <FailureTable failures={data.failures} onOpen={onOpen} />;
 }
 
+function AttentionTab({ attention, session }: { attention: AgentModeAttentionProjection | undefined; session: OperatorSessionResponse | undefined }) {
+  const queryClient = useQueryClient();
+  const read = useMutation({
+    mutationFn: ({ notificationId, csrfToken }: { notificationId: string; csrfToken: string }) => markOperatorNotificationRead(notificationId, csrfToken),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['agent-mode-attention'] }),
+  });
+  if (!session?.authenticated) return <EmptyTable message="Sign in with the local operator session to view personalized unread notifications." />;
+  if (!attention) return <EmptyTable message="Attention state is unavailable." />;
+  return <div className="stack"><section className="card"><div className="card-header"><div><div className="card-title">Attention</div><div className="card-description">Durable Brain notifications and escalation references. Read acknowledgement does not resolve or approve work.</div></div><StatusBadge status={attention.freshness.status} /></div><div className="mini-stats"><div><span>Unread</span><strong>{attention.summary.unreadNotificationCount ?? '—'}</strong></div><div><span>Open escalations</span><strong>{attention.summary.openEscalationCount}</strong></div><div><span>Uncertain</span><strong>{attention.summary.uncertainItemCount}</strong></div><div><span>Dead letters</span><strong>{attention.summary.deadLetterCount}</strong></div></div></section>{attention.notifications.length === 0 ? <EmptyTable message="No durable notifications are available." /> : <section className="card"><div className="stack compact-detail-stack">{attention.notifications.map((notification) => <div className="agent-console-list-row" key={notification.notificationId}><div className="min-w-0"><div><StatusBadge status={notification.severity} /> <span>{notification.titleCode}</span>{notification.read === false ? <span className="meta"> · unread</span> : null}</div><div className="meta"><code className="console-id">{notification.notificationId}</code> · {notification.messageCode} · {timeAgo(notification.createdAt)}</div></div>{notification.read === false ? <button type="button" className="button compact secondary" disabled={read.isPending} onClick={() => read.mutate({ notificationId: notification.notificationId, csrfToken: session.csrfToken })}>Mark read</button> : null}</div>)}</div></section>}</div>;
+}
+
 export function AgentModeConsole() {
   const [tab, setTab] = useState<ConsoleTab>('overview');
   const [selection, setSelection] = useState<AgentModeDetailSelection | null>(null);
@@ -138,10 +150,13 @@ export function AgentModeConsole() {
     queryFn: () => brainCoreRequest('/agent-mode/console', agentModeConsoleProjectionSchema),
     refetchInterval: 7_000,
   });
+  const session = useQuery({ queryKey: ['operator-session'], queryFn: readOperatorSession, retry: 0 });
+  const attentionQuery = useQuery({ queryKey: ['agent-mode-attention'], queryFn: readOperatorAttention, refetchInterval: 7_000, retry: 0 });
   const data = query.data;
   const freshness = query.isError ? 'unavailable' : query.isFetching && data ? 'stale' : data?.freshness.status ?? 'loading';
   const tabs: Array<{ id: ConsoleTab; label: string }> = [
     { id: 'overview', label: 'Overview' },
+    { id: 'attention', label: `Attention${attentionQuery.data?.summary.unreadNotificationCount ? ` (${attentionQuery.data.summary.unreadNotificationCount})` : ''}` },
     { id: 'roots', label: 'Roots' },
     { id: 'agents', label: 'Agents' },
     { id: 'organizations', label: 'Organizations' },
@@ -162,6 +177,7 @@ export function AgentModeConsole() {
         <section className="grid cards agent-console-summary"><SummaryCard label="Active agents" value={data.summary.activeAgentCount} detail={`${data.summary.activeRootGoalCount} active roots`} icon={Bot} /><SummaryCard label="Running work" value={data.summary.runningTaskCount} detail={`${data.summary.runningAttemptCount} attempts`} icon={ListChecks} /><SummaryCard label="Uncertain" value={data.summary.uncertainCount} detail="requires durable reconciliation" icon={CircleAlert} /><SummaryCard label="Pending approvals" value={data.summary.pendingApprovalCount} detail={`${data.summary.activeScheduleCount} active schedules`} icon={ShieldCheck} /><SummaryCard label="Reserved cost" value={formatUsd(data.summary.reservedCost)} detail="root reservations" icon={Coins} /><SummaryCard label="Settled cost" value={formatUsd(data.summary.settledCost)} detail="durable settled facts" icon={Activity} /></section>
         <div className="tabs" role="tablist" aria-label="Agent Mode views">{tabs.map((candidate) => <button type="button" role="tab" aria-selected={tab === candidate.id} className={tab === candidate.id ? 'active' : ''} key={candidate.id} onClick={() => setTab(candidate.id)}>{candidate.label}</button>)}</div>
         {tab === 'overview' ? <OverviewTab data={data} onOpen={setSelection} /> : null}
+        {tab === 'attention' ? <AttentionTab attention={attentionQuery.data} session={session.data} /> : null}
         {tab === 'roots' ? <RootsTab data={data} onOpen={setSelection} /> : null}
         {tab === 'agents' ? <AgentsTab data={data} onOpen={setSelection} /> : null}
         {tab === 'organizations' ? <OrganizationsTab data={data} onOpen={setSelection} /> : null}

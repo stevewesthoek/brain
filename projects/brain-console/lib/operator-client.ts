@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { operatorSessionErrorResponseSchema, operatorSessionResponseSchema, agentModeControlResponseSchema } from './braincore-schemas';
+import { agentModeNotificationReadResponseSchema, agentModeAttentionProjectionSchema, operatorSessionErrorResponseSchema, operatorSessionResponseSchema, agentModeControlResponseSchema } from './braincore-schemas';
 
 export class OperatorClientError extends Error {
   constructor(readonly code: string, readonly status?: number) {
@@ -45,5 +45,16 @@ export function submitOperatorControl(path: string, body: unknown, csrfToken: st
     method: 'POST',
     headers: { 'x-brain-console-csrf': csrfToken },
     body: JSON.stringify(body),
+  });
+}
+
+export function readOperatorAttention() {
+  return operatorRequest('/api/agent-mode/notifications', agentModeAttentionProjectionSchema);
+}
+
+export function markOperatorNotificationRead(notificationId: string, csrfToken: string) {
+  return operatorRequest(`/api/agent-mode/notifications/${encodeURIComponent(notificationId)}/read`, agentModeNotificationReadResponseSchema, {
+    method: 'POST',
+    headers: { 'x-brain-console-csrf': csrfToken },
   });
 }

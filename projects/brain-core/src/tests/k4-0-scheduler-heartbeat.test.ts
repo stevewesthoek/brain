@@ -51,7 +51,7 @@ test('K4.0 durable event ingestion, deduplication, conflict, and reopen', () => 
       assert.equal(store.getSchedulerEvent('event:1')?.status, 'pending');
     });
     withStore(fixture.databasePath, (store) => {
-      assert.equal(store.schemaVersion, 7);
+      assert.equal(store.schemaVersion, 8);
       assert.equal(store.listSchedulerEvents().length, 2);
       assert.equal(store.getSchedulerEvent('event:1')?.deduplicationKey, 'dedupe:1');
     });

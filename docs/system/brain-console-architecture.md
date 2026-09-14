@@ -356,3 +356,42 @@ Related docs:
 - `docs/system/brain-console-phase-1-parity-checklist.md`
 - `docs/system/brain-console-local-apps-hardening.md`
 - `operations/runbooks/brain-console-manual-qa.md`
+
+## U0-F operator attention and unread notifications
+
+U0-F adds bounded durable attention state without creating a Console database
+or a second Agent Mode result/approval ledger. Brain's existing StateStore is
+the source for immutable escalation records, immutable notification references,
+and operator-keyed notification read receipts. A bounded explicit
+`reconcileAgentModeAttention()` seam derives attention from canonical uncertain
+Attempts, scheduler dead letters, failed Workcell validations, and pending
+review requests. Console GETs never invoke reconciliation or write state.
+
+The non-personal `agent-mode-console-v1` response includes bounded attention
+metadata. Personalized reads use the versioned authenticated endpoint
+`GET /agent-mode/notifications` and individual acknowledgement uses
+`POST /agent-mode/notifications/:notificationId/read`. The browser reaches
+these only through same-origin Next server proxies. The server derives the
+operator identity from the authenticated `brain-console-operator-v1` session;
+the browser cannot select an operator. POST requests require the session-bound
+CSRF nonce and Brain Core service authentication with the narrow
+`agent-mode.notifications` capability. There is deliberately no mark-all,
+resolve, approve, retry, or lifecycle action in this slice.
+
+Attention payloads contain only bounded codes, severity, source IDs, lineage
+references, timestamps, and read metadata. They exclude prompts, hidden
+reasoning, raw provider/runtime payloads, credentials, environment values, and
+unbounded logs. `read` is `null` for non-personal projections, and unread
+counts are `null` without an operator identity rather than being guessed.
+The `/agents` page adds a compact Attention tab with explicit loading,
+unavailable, empty, stale, and authenticated-session states. Mark read
+invalidates the temporary TanStack Query cache and does not alter source
+resolution.
+
+Codex quota remains explicitly unavailable with reason
+`no_canonical_durable_source`; U0-F does not probe or scrape a subscription.
+Jarvis intake, durable notifications from additional domains, richer node /
+worktree inventory, and broader operator controls remain later U0 slices.
+Evidence: `operations/reports/agent-mode-u0-f-escalations-notifications-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-G — Unified Brain Console Phase Exit Audit**; do
+not start it automatically.

@@ -1213,3 +1213,58 @@ provider payload, raw prompt, or browser authority was introduced. Evidence:
 Exact next bounded U0 slice: **U0-F — Durable Escalations, Unread
 Notifications, and Remaining Resource/Quota Visibility Gaps**; do not start it
 automatically.
+
+## U0-F durable escalations and operator notifications — 2026-09-14
+
+U0-F is **COMPLETE** for the bounded operator-attention gate; U0 remains
+**IN PROGRESS**. The existing Agent Mode StateStore now contains three narrow
+attention records: Brain-owned escalations, immutable notification references,
+and operator-keyed read receipts. It is not a Task/Run/Attempt, provider,
+runtime, result, cost, or approval ledger.
+
+Run the bounded Brain-owned reconciliation seam from a trusted domain
+transition/maintenance caller:
+
+```text
+store.reconcileAgentModeAttention(ISO_TIMESTAMP)
+```
+
+It is bounded to 100 candidates and is never called by a GET projection. It
+indexes uncertain Attempts, scheduler dead letters, failed Workcell
+validations, and pending review requests. It resolves an escalation only when
+the authoritative source is no longer active. A pending-review notification
+does not create a second approval object, and marking a notification read does
+not resolve or approve its source.
+
+Personalized attention uses the separate authenticated service path:
+
+```text
+GET  /agent-mode/notifications?operatorId=TRUSTED_SERVER_ID
+POST /agent-mode/notifications/:notificationId/read
+```
+
+The browser never supplies `operatorId` to Brain Core. The local Console
+server derives it from the signed `brain-console-operator-v1` session, enforces
+loopback transport and same-origin CSRF for POST, and signs the Core request
+with the narrow `agent-mode.notifications` capability. There is no mark-all
+endpoint. The unauthenticated `/agent-mode/console` response reports
+`unreadNotificationCount: null` and notification `read: null`.
+
+The `/agents` Attention tab is a read-only operational view with individual
+Mark read acknowledgement only. It uses TanStack Query cache as temporary UI
+cache; refresh, a second browser, and StateStore close/reopen reconstruct the
+same domain state. No provider probe, runtime launch, scheduler mutation,
+budget mutation, BrainNode command, Workcell operation, prompt, reasoning,
+credential, or raw provider payload is exposed.
+
+Current source classification is intentionally narrow: ordinary failed or
+cancelled workers stay in existing failure projections; model escalation
+requests remain model-untrusted intent; max-depth stays a policy reason;
+approval state remains in the existing review tables; and Codex quota remains
+`unavailable`/`no_canonical_durable_source` because no production durable
+quota producer exists. Jarvis conversational intake and richer resource
+inventory remain later U0 work.
+
+Evidence: `operations/reports/agent-mode-u0-f-escalations-notifications-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-G — Unified Brain Console Phase Exit Audit**; do
+not start it automatically.

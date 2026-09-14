@@ -1,17 +1,31 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { agentModeConsoleDetailResponseSchema, agentModeConsoleProjectionSchema } from './braincore-schemas';
+import { agentModeAttentionProjectionSchema, agentModeConsoleDetailResponseSchema, agentModeConsoleProjectionSchema } from './braincore-schemas';
 
 const emptyProjection = {
   schemaVersion: 'agent-mode-console-v1', generatedAt: '2026-09-13T12:00:00.000Z', source: 'agent-mode-state-store',
   freshness: { status: 'empty', sourceStatus: 'available', generatedAt: '2026-09-13T12:00:00.000Z', stateStorePresent: true, message: 'empty' },
   summary: { activeRootGoalCount: 0, activeAgentCount: 0, runningTaskCount: 0, runningAttemptCount: 0, blockedCount: 0, failedCount: 0, uncertainCount: 0, pendingApprovalCount: 0, activeScheduleCount: 0, reservedCost: 0, settledCost: 0 },
   agents: [], organizations: [], tasks: [], runs: [], attempts: [], runtimes: [], budgets: [], schedules: [], approvals: [],
-  evidenceSummary: { evidenceCount: 0, receiptCount: 0, latestEvidenceRefs: [] }, failures: [], modelResources: [], nodeResources: [], rootGoals: [], workcells: [], executionResources: [], controlAudits: [],
+  evidenceSummary: { evidenceCount: 0, receiptCount: 0, latestEvidenceRefs: [] }, failures: [], modelResources: [], nodeResources: [], rootGoals: [], workcells: [], executionResources: [], controlAudits: [], attentionSummary: { openEscalationCount: 0, pendingReviewCount: 0, uncertainItemCount: 0, deadLetterCount: 0, notificationCount: 0, unreadNotificationCount: null }, escalations: [], notifications: [],
+};
+
+const emptyAttention = {
+  schemaVersion: 'agent-mode-attention-v1', generatedAt: '2026-09-14T12:00:00.000Z', source: 'agent-mode-state-store',
+  freshness: { status: 'empty', sourceStatus: 'available', generatedAt: '2026-09-14T12:00:00.000Z', stateStorePresent: true, message: 'empty' },
+  summary: { openEscalationCount: 0, pendingReviewCount: 0, uncertainItemCount: 0, deadLetterCount: 0, notificationCount: 0, unreadNotificationCount: 0 }, escalations: [], notifications: [],
 };
 
 test('canonical Agent Mode Console projection parses its empty state', () => {
   assert.equal(agentModeConsoleProjectionSchema.parse(emptyProjection).freshness.status, 'empty');
+});
+
+test('attention projection is strict, bounded, and distinguishes unread notifications', () => {
+  assert.equal(agentModeAttentionProjectionSchema.parse(emptyAttention).summary.unreadNotificationCount, 0);
+  const notification = { schemaVersion: 'agent-mode-attention-v1', notificationId: 'agent-mode-notification:1', kind: 'uncertain_attempt', severity: 'critical', sourceType: 'attempt', sourceId: 'attempt:1', escalationId: 'agent-mode-escalation:1', reviewId: null, rootGoalId: 'goal:1', agentId: 'agent:1', taskId: 'task:1', runId: 'run:1', attemptId: 'attempt:1', workcellId: null, titleCode: 'AGENT_ATTEMPT_UNCERTAIN', messageCode: 'UNCERTAIN_RUNTIME', createdAt: '2026-09-14T12:00:00.000Z', read: false, readAt: null } as const;
+  assert.equal(agentModeAttentionProjectionSchema.parse({ ...emptyAttention, summary: { ...emptyAttention.summary, notificationCount: 1, unreadNotificationCount: 1 }, notifications: [notification] }).notifications[0]?.read, false);
+  assert.equal(agentModeAttentionProjectionSchema.safeParse({ ...emptyAttention, notifications: [{ ...notification, severity: 'future' }] }).success, false);
+  assert.equal(agentModeAttentionProjectionSchema.safeParse({ ...emptyAttention, notifications: [{ ...notification, rawPrompt: 'must-not-parse' }] }).success, false);
 });
 
 test('canonical Agent Mode Console schema rejects malformed and unknown critical status', () => {

@@ -257,7 +257,7 @@ import { getAgent, listAgents } from '../adapters/agents.js';
 import { getActionSummary, listActionSummaries, requestActionApprovalById } from '../adapters/action-registry.js';
 import { listAgentRuns, getAgentRun, listAgentEvents, listRecoveryItems, getRecoveryItem } from '../adapters/agent-runs.js';
 import { readAgentModeObserver } from '../agent-mode/agent-mode-observer.js';
-import { readAgentModeConsoleProjection } from '../agent-mode/agent-mode-console-projection.js';
+import { readAgentModeAttentionProjection, readAgentModeConsoleProjection } from '../agent-mode/agent-mode-console-projection.js';
 import { isAgentModeConsoleDetailKind, readAgentModeConsoleDetail } from '../agent-mode/agent-mode-console-detail.js';
 import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
@@ -315,7 +315,7 @@ import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-
 import { OrchestrationExecutor, recordApprovalDecision } from '../adapters/agent-orchestrator-executor.js';
 import { AGENT_MODE_CONTROL_ACTIONS, AgentModeControlService, parseAgentModeOperatorAttribution, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
 import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
-import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
+import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
 
 const getStatus = createStatusAdapter({
   startedAt: new Date(),
@@ -334,6 +334,7 @@ function isContainedHighImpactMutation(url: URL): boolean {
   const pathname = url.pathname;
 
   if (/^\/agent-mode\/control(?:\/|$)/u.test(pathname)) return true;
+  if (/^\/agent-mode\/notifications\/[^/]+\/read$/u.test(pathname)) return true;
 
   if (new Set([
     '/api/mind-maintenance/run',
@@ -389,6 +390,14 @@ function isAgentModeControlPath(url: URL): boolean {
 
 function isAgentModeControlNamespace(url: URL): boolean {
   return /^\/agent-mode\/control(?:\/|$)/u.test(url.pathname);
+}
+
+function isAgentModeNotificationNamespace(url: URL): boolean {
+  return /^\/agent-mode\/notifications(?:\/|$)/u.test(url.pathname);
+}
+
+function isAgentModeNotificationPath(url: URL): boolean {
+  return url.pathname === '/agent-mode/notifications' || /^\/agent-mode\/notifications\/[^/]+\/read$/u.test(url.pathname);
 }
 
 function rejectContainedHighImpactMutation(response: ServerResponse): void {
@@ -579,6 +588,86 @@ async function routeAgentModeControlRequest(url: URL, request: IncomingMessage, 
   }
 }
 
+async function routeAgentModeNotificationRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try {
+    authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() });
+  } catch {
+    sendAgentModeAuthFailure(response, 'service_identity_missing');
+    return;
+  }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest(
+    { method: request.method ?? 'GET', pathname: url.pathname, headers: requestHeaders },
+    BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY,
+  );
+  if (!auth.ok) {
+    sendAgentModeAuthFailure(response, auth.code);
+    return;
+  }
+  const databasePath = defaultAgentModeDatabasePath();
+  if (!existsSync(databasePath)) {
+    if (request.method === 'GET') sendAgentModeControlJson(response, 200, readAgentModeAttentionProjection(auth.identity.requestTimestamp, databasePath));
+    else sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } });
+    return;
+  }
+  if (request.method === 'GET' && url.pathname === '/agent-mode/notifications') {
+    const operatorId = url.searchParams.get('operatorId');
+    if (!operatorId || operatorId.length > 128) {
+      sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'operator_identity_invalid', message: 'Authenticated operator identity is invalid.' } });
+      return;
+    }
+    sendAgentModeControlJson(response, 200, readAgentModeAttentionProjection(auth.identity.requestTimestamp, databasePath, operatorId));
+    return;
+  }
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    store = new AgentModeSqliteStateStore(databasePath);
+    if (request.method !== 'POST') {
+      sendAgentModeControlJson(response, 405, { ok: false, error: { code: 'agent_mode_notification_method_not_allowed', message: 'Agent Mode notification route is not supported.' } });
+      return;
+    }
+    const match = /^\/agent-mode\/notifications\/([^/]+)\/read$/u.exec(url.pathname);
+    if (!match) {
+      sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_notification_not_found', message: 'Agent Mode notification route is not supported.' } });
+      return;
+    }
+    const parsed = await readBoundedRequestBody(request);
+    if (parsed.error || !parsed.body || !parsed.digest) {
+      sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid');
+      return;
+    }
+    const signedDigest = requestHeaders['x-brain-content-sha256'];
+    const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+    if (!signedDigestValue || signedDigestValue !== parsed.digest) {
+      sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } });
+      return;
+    }
+    const body = parsed.body;
+    if (!exactBodyKeys(body, ['schemaVersion', 'operatorId'])) {
+      sendAgentModeBodyError(response, 'notification_read_fields_invalid');
+      return;
+    }
+    const schemaVersion = requiredBodyText(body, 'schemaVersion', 64);
+    const operatorId = requiredBodyText(body, 'operatorId', 128);
+    if (schemaVersion !== 'agent-mode-notification-read-v1' || !operatorId) {
+      sendAgentModeBodyError(response, 'notification_read_fields_invalid');
+      return;
+    }
+    const notificationId = decodeURIComponent(match[1] ?? '');
+    if (!notificationId || notificationId.length > 256 || notificationId.includes('/')) {
+      sendAgentModeBodyError(response, 'notification_id_invalid');
+      return;
+    }
+    const result = store.markAgentModeNotificationRead({ notificationId, operatorId, readAt: auth.identity.requestTimestamp });
+    sendAgentModeControlJson(response, result.result === 'denied' ? 503 : 200, { schemaVersion: 'agent-mode-notification-read-v1', notificationId, readAt: result.readAt ?? null, result: result.result, reasonCode: result.reasonCode ?? null });
+  } catch {
+    sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'agent_mode_notifications_unavailable', message: 'Agent Mode notifications are unavailable.' } });
+  } finally {
+    store?.close();
+  }
+}
+
 export async function routeRequest(
   request: IncomingMessage,
   response: ServerResponse,
@@ -627,7 +716,7 @@ export async function routeRequest(
   }
 
   if (method === 'OPTIONS') {
-    if (isAgentModeControlNamespace(url)) {
+    if (isAgentModeControlNamespace(url) || isAgentModeNotificationNamespace(url)) {
       response.writeHead(204, {
         'access-control-allow-methods': 'GET, HEAD, OPTIONS',
         'access-control-allow-headers': 'content-type',
@@ -662,6 +751,11 @@ export async function routeRequest(
 
   if (method === 'POST' && isAgentModeControlPath(url)) {
     await routeAgentModeControlRequest(url, request, response);
+    return;
+  }
+
+  if (isAgentModeNotificationPath(url) && (method === 'GET' || method === 'POST')) {
+    await routeAgentModeNotificationRequest(url, request, response);
     return;
   }
 

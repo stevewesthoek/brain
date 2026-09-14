@@ -33,14 +33,14 @@ export function OperatorSessionPanel() {
     onSuccess: (result) => {
       setOperatorSecret('');
       if (!result.authenticated) setLoginError('Operator authentication failed.');
-      else { setLoginError(null); void queryClient.invalidateQueries({ queryKey: ['operator-session'] }); }
+      else { setLoginError(null); void queryClient.invalidateQueries({ queryKey: ['operator-session'] }); void queryClient.invalidateQueries({ queryKey: ['agent-mode-attention'] }); }
     },
     onError: (error) => { setOperatorSecret(''); setLoginError(error instanceof OperatorClientError && error.code === 'operator_auth_unavailable' ? 'Operator authentication is unavailable.' : 'Operator authentication failed.'); },
   });
   const logout = useMutation({
     mutationFn: () => operatorRequest('/api/operator/session', operatorSessionResponseSchema, { method: 'DELETE' }),
     retry: 0,
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['operator-session'] }),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['operator-session'] }); void queryClient.invalidateQueries({ queryKey: ['agent-mode-attention'] }); },
   });
   const authenticatedSession = session.data?.authenticated ? session.data : null;
   return <section className="card operator-session-card"><div className="card-header"><div><div className="card-title">Operator session</div><div className="card-description">Mutation controls require a local authenticated session and CSRF-bound request.</div></div><StatusBadge status={authenticatedSession ? 'authenticated' : session.isError ? 'unavailable' : 'read-only'} label={authenticatedSession ? `signed in · ${authenticatedSession.operatorId}` : 'read-only'} /></div>{authenticatedSession ? <div className="split"><span className="meta">Expires {new Date(authenticatedSession.expiresAt).toLocaleString()}</span><button type="button" className="button compact secondary" disabled={logout.isPending} onClick={() => logout.mutate()}>Sign out</button></div> : <form className="operator-login-form" onSubmit={(event) => { event.preventDefault(); setLoginError(null); login.mutate(); }}><label>Operator ID<input value={operatorId} maxLength={128} autoComplete="off" onChange={(event) => setOperatorId(event.target.value)} /></label><label>Operator secret<input type="password" value={operatorSecret} maxLength={512} autoComplete="off" onChange={(event) => setOperatorSecret(event.target.value)} /></label><button type="submit" className="button compact primary" disabled={login.isPending || operatorId.length === 0 || operatorSecret.length === 0}>{login.isPending ? 'Signing in…' : 'Sign in'}</button></form>}{loginError ? <p className="compact-error" role="alert">{loginError}</p> : null}{logout.isError ? <p className="compact-error" role="alert">Unable to clear the operator session.</p> : null}</section>;

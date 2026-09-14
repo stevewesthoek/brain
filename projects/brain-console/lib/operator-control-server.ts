@@ -48,15 +48,21 @@ function errorResponse(code: string, status: number, message = 'Agent Mode contr
   return json({ ok: false, error: { code, message } }, status);
 }
 
-export function admitOperatorMutation(request: NextRequest): OperatorAdmission {
+export function admitOperatorSession(request: NextRequest, requireSameOrigin = false): OperatorAdmission {
   if (!loopbackTransport(request)) return { ok: false, response: errorResponse('operator_transport_unsupported', 403, 'Operator controls are supported only from the local Brain Console transport.') };
-  if (!sameOriginRequest(request)) return { ok: false, response: errorResponse('operator_origin_invalid', 403, 'Operator control provenance is invalid.') };
+  if (requireSameOrigin && !sameOriginRequest(request)) return { ok: false, response: errorResponse('operator_origin_invalid', 403, 'Operator control provenance is invalid.') };
   const configuration = loadOperatorConfiguration();
   const verification = verifyOperatorSession({ token: request.cookies.get(OPERATOR_SESSION_COOKIE_NAME)?.value, configuration });
   if (!verification.authenticated) return { ok: false, response: errorResponse(verification.reason === 'configuration_missing' ? 'operator_auth_unavailable' : 'operator_session_required', verification.reason === 'configuration_missing' ? 503 : 401, 'Authenticated operator session is required.') };
-  const csrf = request.headers.get('x-brain-console-csrf');
-  if (!csrf || csrf.length > OPERATOR_CSRF_TOKEN_MAX_LENGTH || csrf !== verification.session.csrfNonce) return { ok: false, response: errorResponse('operator_csrf_invalid', 403, 'Operator control provenance is invalid.') };
   return { ok: true, session: verification.session };
+}
+
+export function admitOperatorMutation(request: NextRequest): OperatorAdmission {
+  const admission = admitOperatorSession(request, true);
+  if (!admission.ok) return admission;
+  const csrf = request.headers.get('x-brain-console-csrf');
+  if (!csrf || csrf.length > OPERATOR_CSRF_TOKEN_MAX_LENGTH || csrf !== admission.session.csrfNonce) return { ok: false, response: errorResponse('operator_csrf_invalid', 403, 'Operator control provenance is invalid.') };
+  return admission;
 }
 
 export function operatorSessionAuditId(session: OperatorSession): string {

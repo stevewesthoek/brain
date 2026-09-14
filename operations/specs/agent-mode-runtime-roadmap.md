@@ -1580,6 +1580,43 @@ Exact next bounded U0 slice: **U0-F — Durable Escalations, Unread
 Notifications, and Remaining Resource/Quota Visibility Gaps** (subject to the
 next roadmap review); do not start it automatically.
 
+### U0-F — Durable Escalations, Unread Notifications, and Remaining Resource/Quota Visibility Gaps
+
+**Status:** COMPLETE for the bounded durable operator-attention and quota-gap
+slice; U0 remains IN PROGRESS.
+
+U0-F adds Brain-owned, bounded escalation and notification contracts backed by
+the existing Agent Mode StateStore. A deterministic reconciliation seam indexes
+uncertain Attempts, scheduler dead letters, failed Workcell validations, and
+pending review requests. Ordinary worker failures, root cancellation, maximum
+escalation depth, and model-request escalation remain visible through existing
+failure/review state and do not automatically become operator escalations.
+GET projections never reconcile or write state.
+
+Escalation and notification identities are deterministic and immutable by
+source transition. Notifications contain only closed kind/severity/source
+codes and durable object references; they never contain prompts, reasoning,
+provider payloads, credentials, or raw result bodies. A separate composite-key
+notification-read receipt is operator-scoped. Reading is not resolving,
+approving, cancelling, or settling an item.
+
+Personalized unread state is available only through authenticated
+`GET /agent-mode/notifications` and the Brain Console same-origin proxy
+`GET /api/agent-mode/notifications`; individual acknowledgement uses the
+CSRF-protected `POST /api/agent-mode/notifications/:notificationId/read` proxy.
+Brain Core service authentication uses the narrow `agent-mode.notifications`
+capability, never a wildcard or the lifecycle-control capability. The public
+`agent-mode-console-v1` projection exposes only non-personal attention
+metadata, with `read: null` when no operator identity is present.
+
+Codex quota, Jarvis intake, richer node/worktree inventory, and durable
+notifications before this slice remain explicitly unavailable/not yet
+surfaced where no canonical durable producer exists. U0-F records quota as
+`unavailable` with reason `no_canonical_durable_source`; it does not probe,
+scrape, guess, or create a parallel inventory ledger. The exact next bounded
+slice is **U0-G — Unified Brain Console Phase Exit Audit**; do not start it
+automatically.
+
 ## Phase V0 — Jarvis voice gateway
 
 **Status:** planned after U0 foundations; local non-text inference remains allowed
