@@ -82,8 +82,28 @@ state.
 Stable IDs on `/agents` open an ephemeral read-only detail panel with safe
 cross-links between ownership objects and visible stale/error/loading states.
 No lifecycle, approval, budget, scheduler, spawn, retry, or model controls are
-present in U0-A/U0-B. The next bounded UI slice is U0-C guarded lifecycle and
-approval actions.
+present in U0-A/U0-B. U0-C1 adds the shared Brain Core lifecycle/review control
+service and CLI composition, but the browser remains read-only until an
+authenticated BS0.5 service identity exists. The reserved HTTP control paths
+remain BS0.1-contained before request-body read, and no Console control buttons
+are enabled.
+
+## U0-C1 control boundary
+
+`AgentModeControlService` is the canonical Brain-owned domain seam for bounded
+pause, resume, cancel, kill, and review-decision commands. It composes the
+existing StateStore/K4 lifecycle and review authority, persists bounded
+operation receipts in the existing Agent Mode events stream, and never creates
+a Console-owned ledger. Resume and kill require verified durable runtime
+identity; kill does not accept arbitrary process identifiers and does not
+blindly redeliver a signal after a durable signal receipt.
+
+The CLI lifecycle commands use this service. Network and Console mutation
+surfaces are intentionally deferred: the repository has no usable authenticated
+HTTP service identity, and localhost, Origin, or caller-supplied headers are
+not authorization. A future authenticated gate must be added only after the
+authoritative BS0.5 identity contract is implemented. Evidence:
+`operations/reports/agent-mode-u0-c1-guarded-controls-evidence-2026-09-14.md`.
 
 ## Design reference
 

@@ -361,6 +361,7 @@ function isContainedHighImpactMutation(url: URL): boolean {
 
   return [
     /^\/credentials\//,
+    /^\/agent-mode\/control\/(?:run|review)\/[^/]+$/,
     /^\/local-apps\/[^/]+\/(?:start|stop|restart)$/,
     /^\/approvals\/[^/]+\/(?:approve|reject)$/,
     /^\/infra\/video-orchestrator\/jobs\/[^/]+\/(?:approve|reject)$/,

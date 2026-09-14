@@ -80,6 +80,20 @@ test('caller-supplied authorization header cannot bypass containment', async () 
   assertContained(response);
 });
 
+test('Agent Mode lifecycle and review controls remain contained before request body read', async () => {
+  for (const url of ['/agent-mode/control/run/run:fixture', '/agent-mode/control/review/review:fixture']) {
+    const response = await exercise({
+      method: 'POST',
+      url,
+      headers: { origin: 'http://localhost:4881' },
+      on() {
+        throw new Error('contained Agent Mode control must not read its body');
+      },
+    });
+    assertContained(response);
+  }
+});
+
 test('contained mutation preflight does not advertise POST as an allowed cross-origin method', async () => {
   const response = await exercise({
     method: 'OPTIONS',

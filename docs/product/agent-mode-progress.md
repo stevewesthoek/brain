@@ -1049,6 +1049,40 @@ Evidence: `operations/reports/agent-mode-u0-b-console-drilldown-evidence-2026-09
 Exact next task: **U0-C — Guarded Agent Lifecycle Controls and Approval
 Actions**. Do not start it automatically.
 
+## Current U0-C1 Agent Mode control-service foundation — 2026-09-14
+
+U0-C1 — **Brain-Owned Lifecycle Control Service and CLI/HTTP Safety Boundary**
+— is **COMPLETE** for its bounded shared-control foundation. U0-C remains **IN
+PROGRESS**.
+
+Brain Core now exposes the versioned `AgentModeControlService` domain seam for
+pause, resume, cancel, kill, and review decisions. Commands use bounded
+trusted-actor identities and deterministic operation material. Receipts are
+durable records in the existing Agent Mode events stream, so repeated commands
+are idempotent and conflicting operation reuse fails closed. The service calls
+the existing StateStore lifecycle methods and `recordReviewDecision`; it does
+not create a second task/run/attempt/result ledger or mutate budget authority.
+
+Resume requires verified recorded runtime ownership. Kill accepts only the
+durably recorded run identity and never an arbitrary PID; a durable signal
+receipt prevents blind redelivery. Existing controller-absent cancellation
+recovery and worker/model self-approval restrictions remain intact. The CLI
+`brain-agent pause|resume|cancel|kill` routes through this service and retains
+its established output semantics.
+
+BS0.1 remains the network boundary. The repository still has no usable
+authenticated HTTP service identity: the new lifecycle/review control paths
+are explicitly rejected before request-body read, and no functional HTTP or
+Brain Console mutation controls are enabled. Localhost, Origin, or a caller
+header is not treated as authorization. This is a deliberate completion of the
+shared Brain-owned control foundation, not a claim that U0-C network/operator
+actions are available.
+
+Evidence: `operations/reports/agent-mode-u0-c1-guarded-controls-evidence-2026-09-14.md`.
+Exact next task: the authoritative **BS0.5 authenticated service identity
+prerequisite**, followed by the authenticated HTTP/Console mutation gate. Do
+not start that gate until the identity contract is usable.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

@@ -1020,3 +1020,39 @@ legacy `/agent-console` compatibility remain unchanged.
 
 Exact next bounded slice: **U0-C — Guarded Agent Lifecycle Controls and
 Approval Actions**. Do not start U0-C automatically.
+
+## U0-C1 Brain-owned lifecycle control service — 2026-09-14
+
+U0-C1 is **COMPLETE** for the shared Brain-owned control-service foundation;
+U0-C remains **IN PROGRESS**. The canonical domain seam is
+`AgentModeControlService` in Brain Core. It accepts bounded versioned commands
+for `pauseRun`, `resumeRun`, `cancelRun`, `killRun`, and `decideReview`.
+
+The service composes the existing StateStore lifecycle operations and
+`recordReviewDecision`. It records bounded control receipts in the existing
+append-only Agent Mode `events` stream, keyed by operation material. Repeating
+the same operation is idempotent; conflicting reuse fails closed. Resume and
+kill require fresh verification of the exact durable runtime identity. Kill
+does not accept a caller PID and records signal state before attempting the
+external process signal, so uncertain or failed signaling is not blindly
+redelivered. Existing K4 lifecycle, cancellation, approval, and receipt
+authority remains in force.
+
+The CLI `brain-agent pause|resume|cancel|kill RUN_ID` now uses this service and
+retains the established output/recovery contract. The CLI may supply explicit
+`--operation-id` and `--reason` values. Review decisions retain the existing
+worker/model self-approval prohibition and durable review receipts/events.
+
+BS0.1 still contains network mutations before request-body read. Because no
+usable authenticated HTTP service identity is implemented (BS0.5 is currently
+descriptive contract-registry material only), no functional HTTP control route
+or Console mutation button is enabled. `/agent-mode/control/run/:runId` and
+`/agent-mode/control/review/:reviewId` are reserved and fail closed with
+`mutable_capability_contained`; localhost, Origin, and caller-supplied headers
+are not authorization. There are no provider probes, runtime dispatches,
+budget mutations, or browser-side authority changes from this slice.
+
+Evidence: `operations/reports/agent-mode-u0-c1-guarded-controls-evidence-2026-09-14.md`.
+Exact next bounded prerequisite: implement/reconcile the authoritative BS0.5
+authenticated service identity, then add the authenticated HTTP/Console control
+gate. Do not expose unauthenticated lifecycle or approval actions.

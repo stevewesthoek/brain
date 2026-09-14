@@ -1320,7 +1320,7 @@ Console control surface**. Do not start U0 automatically.
 
 ## Phase U0 — unified Brain Console control surface
 
-**Status:** IN PROGRESS; U0-A and U0-B are complete
+**Status:** IN PROGRESS; U0-A, U0-B, and U0-C1 are complete; U0-C remains in progress
 
 Borrow Orca-like fleet/worktree/usage/notification patterns while keeping Brain
 Console as the primary control/dashboard surface. Show Jarvis intake, agent
@@ -1382,6 +1382,35 @@ probe is exposed.
 Evidence: `operations/reports/agent-mode-u0-b-console-drilldown-evidence-2026-09-13.md`.
 Exact next bounded slice: **U0-C — Guarded Agent Lifecycle Controls and
 Approval Actions**. Do not start it automatically.
+
+### U0-C1 — Brain-Owned Lifecycle Control Service and CLI/HTTP Safety Boundary
+
+**Status:** COMPLETE for the Brain-owned control-service foundation; U0-C
+remains IN PROGRESS.
+
+Brain Core now has a versioned `AgentModeControlService` for pause, resume,
+cancel, kill, and review decisions. It validates bounded trusted-actor
+commands, derives stable control receipt identities, persists receipts in the
+existing durable `events` stream, and composes the existing StateStore
+lifecycle methods plus `recordReviewDecision`. Resume and kill remain bound to
+fresh verified durable runtime identity; kill never accepts an arbitrary PID or
+redelivers a signal after a durable signal receipt. Existing worker/model
+self-approval restrictions remain authoritative.
+
+`brain-agent pause|resume|cancel|kill` now uses this service while preserving
+its existing output and recovery semantics. No Agent/Task/Run/Attempt ledger,
+budget ledger, runtime control plane, HTTP mutation handler, or Brain Console
+mutation control was added. BS0.1 remains active: because the repository has no
+usable authenticated HTTP service identity, `/agent-mode/control/run/:runId`
+and `/agent-mode/control/review/:reviewId` remain contained before request-body
+read with the existing fail-closed response. U0-C1 therefore lands the shared
+domain control foundation without claiming authenticated network authority.
+
+Evidence: `operations/reports/agent-mode-u0-c1-guarded-controls-evidence-2026-09-14.md`.
+Exact next bounded prerequisite: reconcile/implement the authoritative BS0.5
+authenticated service identity contract, then add the authenticated HTTP and
+Console mutation gate. Do not substitute UI polish or unauthenticated browser
+headers for service identity.
 
 ## Phase V0 — Jarvis voice gateway
 

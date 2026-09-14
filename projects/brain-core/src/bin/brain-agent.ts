@@ -4,8 +4,8 @@ import { AGENT_MODE_MODEL_ROUTES, type AdmittedModelRef, type ModelAccessEvidenc
 import { admitManualModelOverride } from '../agent-mode/model-tier-policy.js';
 import type { RouteEvidence } from '../agent-mode/model-tier-policy.js';
 import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
+import { AGENT_MODE_CONTROL_SCHEMA_VERSION, AgentModeControlService, deriveAgentModeControlOperationId } from '../agent-mode/agent-mode-control-service.js';
 import { runLiveAgentModeSlice } from '../agent-mode/live-agent-mode-slice.js';
-import { verifyRuntimeProcessIdentity } from '../agent-mode/runtime-process-identity.js';
 import { WorkcellManager } from '../agent-mode/workcell.js';
 import { runAgentModeSchedulerTick } from '../agent-mode/scheduler.js';
 import { BRAIN_TASK_LIFECYCLE_SOURCE, GIT_REPOSITORY_REVISION_SOURCE, INFRASTRUCTURE_HOST_HEALTH_SOURCE, GitRepositoryEventSourceAdapter, HostHealthEventSourceAdapter, InternalLifecycleEventSourceAdapter, pollEventSourcesOnce } from '../agent-mode/event-source.js';
@@ -31,7 +31,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID [--operation-id ID] [--reason TEXT] | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -43,18 +43,6 @@ function requiredFlag(name: string): string {
   const value = flag(name);
   if (!value) throw new Error(`missing required ${name}`);
   return value;
-}
-
-function signalRecordedRuntime(runId: string, runtimePid: number | undefined, runtimeIdentity: Parameters<typeof verifyRuntimeProcessIdentity>[2]): { sent: boolean; reason?: string } {
-  if (!runtimePid) return { sent: false, reason: 'no_recorded_runtime_pid' };
-  if (!runtimeIdentity) return { sent: false, reason: 'no_recorded_runtime_identity' };
-  if (!verifyRuntimeProcessIdentity(runtimePid, runId, runtimeIdentity)) return { sent: false, reason: 'runtime_identity_unverified' };
-  try {
-    process.kill(runtimePid, 'SIGTERM');
-    return { sent: true };
-  } catch (error) {
-    return { sent: false, reason: error instanceof Error ? error.message : String(error) };
-  }
 }
 
 function printModelRequest(rawModel: string): void {
@@ -236,10 +224,25 @@ async function main(): Promise<void> {
 
   if (['inspect', 'pause', 'resume', 'cancel', 'kill'].includes(command ?? '')) {
     const runId = process.argv[3];
-    if (!runId || process.argv.length > 4) {
+    if (!runId) {
       usage();
       process.exitCode = 1;
       return;
+    }
+    if (command === 'inspect' && process.argv.length > 4) {
+      usage();
+      process.exitCode = 1;
+      return;
+    }
+    if (command !== 'inspect') {
+      for (let index = 4; index < process.argv.length; index += 2) {
+        const name = process.argv[index];
+        if (name !== '--operation-id' && name !== '--reason' || !process.argv[index + 1] || process.argv[index + 1]!.startsWith('--')) {
+          usage();
+          process.exitCode = 1;
+          return;
+        }
+      }
     }
     const databasePath = process.env.BRAIN_AGENT_MODE_DATABASE ?? defaultAgentModeDatabasePath();
     const store = command === 'inspect'
@@ -260,27 +263,25 @@ async function main(): Promise<void> {
       }
       if (command === 'pause' || command === 'resume' || command === 'cancel' || command === 'kill') {
         const now = new Date().toISOString();
-        const runtimePid = run.runtimePid;
-        const runtimeOwned = verifyRuntimeProcessIdentity(runtimePid, runId, run.runtimeIdentity);
-        let result = command === 'pause'
-          ? store.pauseRun(runId, now)
-          : command === 'resume'
-            ? runtimeOwned ? store.resumeRun(runId, now) : 'conflict'
-            : store.cancelRun(runId, now, command === 'kill' ? 'kill' : 'cancel');
-        let recovery: string | undefined;
-        if (command === 'resume' && !runtimeOwned) recovery = 're-admission_required';
-        if (command === 'cancel' && !runtimeOwned) {
-          const currentAttempt = store.listAttempts().find((attempt) => attempt.runId === runId && attempt.cancellationStatus === 'requested');
-          if (currentAttempt) {
-            store.acknowledgeCancellation(currentAttempt.attemptId, now);
-            store.finishAttempt(currentAttempt.attemptId, 'cancelled', now);
-            result = 'created';
-            recovery = 'controller_absent_cancel_acknowledged';
-          }
-        }
-        const signal = command === 'kill' ? signalRecordedRuntime(runId, runtimePid, run.runtimeIdentity) : undefined;
+        const reason = flag('--reason') ?? `brain-agent ${command}`;
+        const control = new AgentModeControlService(store);
+        const commandWithoutOperationId = {
+          schemaVersion: AGENT_MODE_CONTROL_SCHEMA_VERSION,
+          action: command,
+          runId,
+          actor: { source: 'cli', actorId: 'brain-agent' },
+          requestedAt: now,
+          reason,
+        } as const;
+        const operationId = flag('--operation-id') ?? deriveAgentModeControlOperationId(commandWithoutOperationId);
+        const controlCommand = { ...commandWithoutOperationId, operationId } as const;
+        const result = command === 'pause' ? control.pauseRun(controlCommand)
+          : command === 'resume' ? control.resumeRun(controlCommand)
+            : command === 'cancel' ? control.cancelRun(controlCommand)
+              : control.killRun(controlCommand);
         const current = store.getRun(runId);
-        process.stdout.write(`${JSON.stringify({ action: command, runId, attemptId: attempts[0]?.attemptId, operation: result, status: current?.status, durable: true, ...(recovery ? { recovery } : {}), ...(signal ? { runtimePid, signal } : {}) }, null, 2)}\n`);
+        const operation = result.outcome === 'completed' ? 'created' : result.outcome === 'already_applied' ? 'duplicate' : result.outcome === 'conflict' ? 'conflict' : result.outcome;
+        process.stdout.write(`${JSON.stringify({ action: command, runId, attemptId: attempts[0]?.attemptId, operation, status: current?.status, durable: true, ...(result.receipt?.recoveryCode ? { recovery: result.outcome === 're_admission_required' ? 're-admission_required' : result.receipt.recoveryCode.toLowerCase() } : {}), ...(result.signal ? { runtimePid: current?.runtimePid, signal: { sent: result.signal.sent, reason: result.signal.reasonCode.toLowerCase() } } : {}) }, null, 2)}\n`);
         return;
       }
       process.stdout.write(`${JSON.stringify({ run, task: store.getTask(run.taskId), attempts, events: store.listRecentEvents(500).filter((event) => event.entityId === runId || attempts.some((attempt) => event.entityId === attempt.attemptId)) }, null, 2)}\n`);
