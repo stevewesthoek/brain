@@ -7,6 +7,7 @@ import { brainCoreRequest } from '@/lib/braincore-client';
 import { agentModeConsoleDetailResponseSchema, type AgentModeConsoleDetailResponse } from '@/lib/braincore-schemas';
 import { formatUsd, timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
+import { RunControlButtons } from '@/components/operator-controls';
 
 export type AgentModeDetailSelection = {
   kind: 'agent' | 'task' | 'run' | 'attempt' | 'organization' | 'budget' | 'schedule' | 'failure' | 'evidence';
@@ -60,7 +61,7 @@ function TaskDetail({ detail, onOpen }: { detail: Extract<AgentModeConsoleDetail
 }
 
 function RunDetail({ detail, onOpen }: { detail: Extract<AgentModeConsoleDetailResponse, { status: 'available' }>['detail'] & { kind: 'run' }; onOpen: (selection: AgentModeDetailSelection) => void }) {
-  return <DetailDefinition><DetailField label="Run"><Value value={detail.runId} /></DetailField><DetailField label="Task"><DetailLink selection={{ kind: 'task', id: detail.taskId }} onOpen={onOpen}><Value value={detail.taskId} /></DetailLink></DetailField><DetailField label="Agent"><DetailLink selection={{ kind: 'agent', id: detail.agentId ?? '' }} onOpen={onOpen}><Value value={detail.agentId} /></DetailLink></DetailField><DetailField label="Root"><Value value={detail.rootGoalId} /></DetailField><DetailField label="Status"><StatusBadge status={detail.status} /></DetailField><DetailField label="Lifecycle"><LifecycleSummary lifecycle={detail.lifecycle} onOpen={onOpen} /></DetailField></DetailDefinition>;
+  return <div className="stack"><DetailDefinition><DetailField label="Run"><Value value={detail.runId} /></DetailField><DetailField label="Task"><DetailLink selection={{ kind: 'task', id: detail.taskId }} onOpen={onOpen}><Value value={detail.taskId} /></DetailLink></DetailField><DetailField label="Agent"><DetailLink selection={{ kind: 'agent', id: detail.agentId ?? '' }} onOpen={onOpen}><Value value={detail.agentId} /></DetailLink></DetailField><DetailField label="Root"><Value value={detail.rootGoalId} /></DetailField><DetailField label="Status"><StatusBadge status={detail.status} /></DetailField><DetailField label="Lifecycle"><LifecycleSummary lifecycle={detail.lifecycle} onOpen={onOpen} /></DetailField></DetailDefinition><section className="card compact-card"><div className="card-title">Guarded controls</div><p className="meta">Brain Core revalidates the current run and runtime identity before applying any action.</p><RunControlButtons runId={detail.runId} status={detail.status} /></section></div>;
 }
 
 function EvidenceList({ evidence, onOpen }: { evidence: Array<{ evidenceRef: string; verificationStatus: string; digest: string | null; createdAt: string | null }>; onOpen: (selection: AgentModeDetailSelection) => void }) {

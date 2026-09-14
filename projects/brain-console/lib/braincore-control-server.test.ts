@@ -107,3 +107,14 @@ test('server-only control client fails closed without identity, rejects invalid 
     );
   });
 });
+
+test('server-only control client preserves typed non-success Brain Core outcomes', async () => {
+  await withEnv(async () => {
+    const result = await brainCoreControlRequest({
+      pathname: '/agent-mode/control/run/run:fixture',
+      body: lifecycleBody(),
+      fetchImpl: async () => new Response(JSON.stringify({ ok: false, result: { outcome: 'stale', reasonCode: 'RUN_NOT_PAUSABLE' } }), { status: 409 }),
+    });
+    assert.deepEqual(result, { ok: false, result: { outcome: 'stale', reasonCode: 'RUN_NOT_PAUSABLE' } });
+  });
+});

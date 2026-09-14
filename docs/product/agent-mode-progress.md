@@ -1146,6 +1146,45 @@ Evidence: `operations/reports/agent-mode-u0-c3-console-guarded-controls-evidence
 Exact next task: **U0-C3B — Authenticated Operator Session and Console Control
 Admission**. Do not start it automatically.
 
+## Current U0-C3B authenticated operator session and Console controls — 2026-09-14
+
+U0-C3B — **Authenticated Operator Session and Console Control Admission** — is
+**COMPLETE** for the bounded local-operator gate. U0-C3 is complete and U0
+remains **IN PROGRESS**.
+
+The prerequisite audit found no existing Brain Console Ory/Clerk/session
+integration, so this slice uses the intentionally narrow
+`brain-console-operator-v1` fallback. A server-only operator ID and secret
+configure an eight-hour maximum signed HttpOnly, SameSite=Strict `/api` cookie;
+its HMAC key is HKDF-derived with a separate purpose and the session carries a
+CSRF nonce. Login failures are generic and bounded, logout clears the cookie,
+and no operator secret enters responses, browser storage, client code, or
+logs. The transport accepts only loopback requests with consistent forwarding
+headers.
+
+The same-origin proxy admits only the promoted Agent Mode run and review paths.
+It requires the authenticated cookie and matching session-bound CSRF header,
+validates strict bounded bodies, and calls the existing server-only
+`brainCoreControlRequest()` client. The Agents page now exposes pause, resume,
+cancel, kill, approve, and reject controls; destructive/review actions require
+confirmation, operation IDs remain stable for a mounted intent, mutations do
+not retry automatically or update optimistically, and Brain Core rechecks
+current authority. Unknown actions/extra authority fields are rejected before
+the Core client. Core's other high-impact routes remain contained.
+
+The session/proxy tests cover tamper, expiry, key separation, generic failure,
+loopback/origin/CSRF admission, bounded body rejection, review forwarding, and
+zero downstream calls on denial. The Core regression suite remains green after
+explicit unknown-action rejection. This is authenticated local operator
+access, not Ory/Clerk integration, multi-user identity, revocation storage, or
+broader authorization; those and control auditing/hardening remain later U0
+work. U0-A/U0-B projection/detail reads remain available and the browser still
+has no direct Brain Core, SQLite, provider, filesystem, or runtime access.
+
+Evidence: `operations/reports/agent-mode-u0-c3b-operator-session-controls-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-D — Agent Mode Control Audit, Evidence, and
+Operator Session Hardening**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

@@ -313,7 +313,7 @@ import { readVideoAnalysisHistory, recordVideoAnalysisHistory } from '../adapter
 import { defaultAlertManager } from '../adapters/alerting.js';
 import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-orchestrator-planner.js';
 import { OrchestrationExecutor, recordApprovalDecision } from '../adapters/agent-orchestrator-executor.js';
-import { AgentModeControlService, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
+import { AGENT_MODE_CONTROL_ACTIONS, AgentModeControlService, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
 import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
 import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
 
@@ -543,7 +543,7 @@ async function routeAgentModeControlRequest(url: URL, request: IncomingMessage, 
       const operationId = requiredBodyText(body, 'operationId', 128);
       const action = requiredBodyText(body, 'action', 16) as AgentModeLifecycleControlAction | undefined;
       const reason = requiredBodyText(body, 'reason', 512);
-      if (!schemaVersion || !operationId || !action || !reason) {
+      if (!schemaVersion || !operationId || !action || !reason || !AGENT_MODE_CONTROL_ACTIONS.includes(action)) {
         sendAgentModeBodyError(response, 'control_fields_invalid');
         return;
       }

@@ -184,7 +184,16 @@ export type AgentModeConsoleSchedule = {
 
 export type AgentModeConsoleApproval = {
   approvalId: string;
+  reviewId: string | null;
   objectType: string;
+  workerAgentId: string | null;
+  taskId: string | null;
+  runId: string | null;
+  attemptId: string | null;
+  repositoryRef: string | null;
+  branch: string | null;
+  diffHash: string | null;
+  evidenceHash: string | null;
   status: string;
   requestedAt: string | null;
   updatedAt: string | null;
@@ -506,7 +515,16 @@ function buildProjection(observer: AgentModeObserverProjection, now: string): Ag
 
   const approvals = limit(observer.reviewRequests.map(recordValue).filter((row): row is Row => row !== null).filter((row) => ['pending', 'requested', 'awaiting_approval'].includes(stringValue(row, 'status') ?? '')).map((row) => ({
     approvalId: stringValue(row, 'requestId') ?? stringValue(row, 'reviewId') ?? stringValue(row, 'id') ?? 'unknown-approval',
+    reviewId: stringValue(row, 'reviewId'),
     objectType: stringValue(row, 'requestType') ?? stringValue(row, 'objectType') ?? 'review',
+    workerAgentId: stringValue(row, 'workerAgentId'),
+    taskId: stringValue(row, 'taskId'),
+    runId: stringValue(row, 'runId'),
+    attemptId: stringValue(row, 'attemptId'),
+    repositoryRef: stringValue(row, 'repositoryRef'),
+    branch: stringValue(row, 'branch'),
+    diffHash: stringValue(row, 'diffHash'),
+    evidenceHash: stringValue(row, 'validationEvidenceHash'),
     status: stringValue(row, 'status') ?? 'unknown',
     requestedAt: stringValue(row, 'requestedAt') ?? stringValue(row, 'createdAt'),
     updatedAt: stringValue(row, 'updatedAt') ?? stringValue(row, 'createdAt'),

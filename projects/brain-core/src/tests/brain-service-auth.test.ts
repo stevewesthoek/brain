@@ -199,6 +199,10 @@ test('authenticated request verifies body digest and rejects caller actor or PID
       const actorResponse = await route({ method: 'POST', pathname: '/agent-mode/control/run/run:missing', headers: headersFor({ method: 'POST', pathname: '/agent-mode/control/run/run:missing', body: actorBody, timestamp: requestTimestamp }), body: actorBody });
       assert.equal(actorResponse.statusCode, 400);
       assert.equal((JSON.parse(actorResponse.body) as { error: { code: string } }).error.code, 'control_fields_invalid');
+      const unknownActionBody = JSON.stringify({ schemaVersion: 'agent-mode-control-v1', operationId: 'control:unknown-action', action: 'spawn', reason: 'fixture' });
+      const unknownActionResponse = await route({ method: 'POST', pathname: '/agent-mode/control/run/run:missing', headers: headersFor({ method: 'POST', pathname: '/agent-mode/control/run/run:missing', body: unknownActionBody, timestamp: requestTimestamp }), body: unknownActionBody });
+      assert.equal(unknownActionResponse.statusCode, 400);
+      assert.equal((JSON.parse(unknownActionResponse.body) as { error: { code: string } }).error.code, 'control_fields_invalid');
       const reviewBody = JSON.stringify({ schemaVersion: 'agent-mode-control-v1', operationId: 'control:review-body', decision: 'approved', reason: 'fixture', evidenceHash: 'hash:fixture', actor: 'operator:forged' });
       const reviewResponse = await route({ method: 'POST', pathname: '/agent-mode/control/review/review:missing', headers: headersFor({ method: 'POST', pathname: '/agent-mode/control/review/review:missing', body: reviewBody, timestamp: requestTimestamp }), body: reviewBody });
       assert.equal(reviewResponse.statusCode, 400);

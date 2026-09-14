@@ -1320,7 +1320,7 @@ Console control surface**. Do not start U0 automatically.
 
 ## Phase U0 — unified Brain Console control surface
 
-**Status:** IN PROGRESS; U0-A, U0-B, U0-C1, U0-C2, and U0-C3A are complete; U0-C remains in progress
+**Status:** IN PROGRESS; U0-A, U0-B, U0-C1, U0-C2, U0-C3A, and U0-C3B are complete; U0-C is complete and U0 remains in progress
 
 Borrow Orca-like fleet/worktree/usage/notification patterns while keeping Brain
 Console as the primary control/dashboard surface. Show Jarvis intake, agent
@@ -1476,6 +1476,45 @@ does not claim human/operator authentication.
 Evidence: `operations/reports/agent-mode-u0-c3-console-guarded-controls-evidence-2026-09-14.md`.
 Exact next bounded task: **U0-C3B — Authenticated Operator Session and Console
 Control Admission**. Do not start it automatically.
+
+### U0-C3B — Authenticated Operator Session and Console Control Admission
+
+**Status:** COMPLETE for the bounded authenticated local-operator gate; U0-C3
+is complete and U0 remains IN PROGRESS.
+
+The U0-C3A audit found no existing Brain Console Ory/Clerk/session integration
+or compatible operator cookie boundary. U0-C3B therefore adds the deliberately
+small `brain-console-operator-v1` fallback: one server-configured operator
+identity (`BRAIN_CONSOLE_OPERATOR_ID` plus server-only
+`BRAIN_CONSOLE_OPERATOR_SECRET`), a signed HKDF/HMAC session cookie with an
+eight-hour maximum lifetime, and a session-bound CSRF nonce. The cookie is
+HttpOnly, SameSite=Strict, scoped to `/api`, never returned with the secret,
+and only accepted over the loopback Brain Console transport.
+
+The same-origin Console proxy admits only the existing Agent Mode run and
+review control paths. It validates bounded lifecycle/review bodies, requires
+the authenticated session and CSRF nonce, and forwards to the server-only
+`brainCoreControlRequest()` helper; the helper remains the sole holder of the
+`brain-service-auth-v1` service identity. Pause, resume, cancel, kill, approve,
+and reject are explicit controls with confirmation for destructive/review
+actions, no optimistic state or automatic mutation retry, and stable
+operation IDs for a mounted control intent. Brain Core rechecks all existing
+lifecycle, runtime-identity, cancellation, kill, deadline, review, and policy
+authority; no browser field widens it. Unknown actions and authority fields
+are rejected before delegation.
+
+The positive and denial tests cover session tamper/expiry/key separation,
+generic login failures, loopback/origin/CSRF admission, strict request bounds,
+review forwarding, no downstream call on denial, and browser-safe bundling.
+The existing `/agents` projection/detail reads remain read-only apart from
+these explicitly guarded Agent Mode controls. Other high-impact Core routes
+remain contained, and Ory/Clerk integration, revocation storage, multi-user
+identity, notifications, and richer authorization are explicitly deferred.
+
+Evidence: `operations/reports/agent-mode-u0-c3b-operator-session-controls-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-D — Agent Mode Control Audit, Evidence, and
+Operator Session Hardening** (or the exact successor recorded after the next
+roadmap review). Do not start it automatically.
 
 ## Phase V0 — Jarvis voice gateway
 

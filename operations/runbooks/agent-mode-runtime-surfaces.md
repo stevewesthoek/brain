@@ -1107,3 +1107,47 @@ without mutation credentials. Evidence:
 
 Exact next bounded task: **U0-C3B — Authenticated Operator Session and Console
 Control Admission**. Do not start it automatically.
+
+## U0-C3B authenticated local operator controls — 2026-09-14
+
+U0-C3B is **COMPLETE** for the bounded authenticated local-operator gate; U0-C
+is complete and U0 remains **IN PROGRESS**.
+
+The current Brain Console has no Ory/Clerk integration or existing compatible
+operator session. The bounded fallback is `brain-console-operator-v1`, backed
+by server-only `BRAIN_CONSOLE_OPERATOR_ID` and
+`BRAIN_CONSOLE_OPERATOR_SECRET`. Login establishes an eight-hour maximum
+HKDF/HMAC-signed session cookie with `HttpOnly`, `SameSite=Strict`, `/api`
+scope, and a session-bound CSRF nonce. Login failures are generic; logout
+clears the cookie. Keep the secret out of client code, browser storage, URLs,
+responses, logs, and committed configuration. This stateless cookie is not a
+revocation ledger. The session endpoint and control proxy accept loopback
+transport only and reject inconsistent forwarding headers.
+
+The browser may call only the same-origin proxies:
+
+```text
+POST /api/agent-mode/control/run/:runId
+POST /api/agent-mode/control/review/:reviewId
+```
+
+Each request requires the session cookie and its matching
+`x-brain-console-csrf` value, then passes a strict bounded body to the
+server-only `brainCoreControlRequest()` helper. That helper signs the
+server-to-server `brain-service-auth-v1` request to Brain Core. The UI exposes
+pause/resume/cancel/kill and approve/reject; cancel, kill, and review decisions
+require explicit confirmation. Mutations have no optimistic update or
+automatic retry and reuse a stable operation ID for a mounted intent. Brain
+Core remains authoritative for all lifecycle, runtime-identity, cancellation,
+kill, review, policy, budget, and deadline checks. Unknown actions and extra
+actor/PID/signal/runtime fields are rejected before the Core call.
+
+The read-only `/agents` projection/detail surfaces remain available without an
+operator session. No browser request starts a runtime, provider, scheduler,
+BrainNode, Workcell, or other unrelated mutation. Other high-impact Core
+routes remain contained. Ory/Clerk integration, multi-user identity,
+revocation, notifications, and broader control auditing are later U0 work.
+
+Evidence: `operations/reports/agent-mode-u0-c3b-operator-session-controls-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-D — Agent Mode Control Audit, Evidence, and
+Operator Session Hardening**. Do not start it automatically.

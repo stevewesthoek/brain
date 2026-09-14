@@ -72,7 +72,7 @@ const agentModeControlResultSchema = z.object({
 }).strict();
 
 export const agentModeControlResultResponseSchema = z.object({
-  ok: z.literal(true),
+  ok: z.boolean(),
   result: agentModeControlResultSchema,
 }).strict();
 
@@ -87,6 +87,41 @@ export const agentModeControlResponseSchema = z.union([
 ]);
 
 export type AgentModeControlResponse = z.infer<typeof agentModeControlResponseSchema>;
+
+const operatorSessionBaseSchema = {
+  schemaVersion: z.literal('brain-console-operator-v1'),
+};
+
+export const operatorSessionAuthenticatedResponseSchema = z.object({
+  ...operatorSessionBaseSchema,
+  authenticated: z.literal(true),
+  operatorId: z.string().min(1).max(128),
+  expiresAt: z.string(),
+  csrfToken: z.string().min(1).max(128),
+}).strict();
+
+export const operatorSessionUnauthenticatedResponseSchema = z.object({
+  ...operatorSessionBaseSchema,
+  authenticated: z.literal(false),
+  operatorId: z.null(),
+  expiresAt: z.null(),
+  csrfToken: z.null(),
+}).strict();
+
+export const operatorSessionResponseSchema = z.union([
+  operatorSessionAuthenticatedResponseSchema,
+  operatorSessionUnauthenticatedResponseSchema,
+]);
+
+export const operatorSessionErrorResponseSchema = z.object({
+  ok: z.literal(false),
+  error: z.object({
+    code: z.string().min(1).max(128),
+    message: z.string().min(1).max(256),
+  }).strict(),
+}).strict();
+
+export type OperatorSessionResponse = z.infer<typeof operatorSessionResponseSchema>;
 
 const agentModeConsoleAgentSchema = z.object({
   agentId: z.string(),
@@ -230,7 +265,16 @@ const agentModeConsoleScheduleSchema = z.object({
 
 const agentModeConsoleApprovalSchema = z.object({
   approvalId: z.string(),
+  reviewId: z.string().nullable(),
   objectType: z.string(),
+  workerAgentId: z.string().nullable(),
+  taskId: z.string().nullable(),
+  runId: z.string().nullable(),
+  attemptId: z.string().nullable(),
+  repositoryRef: z.string().nullable(),
+  branch: z.string().nullable(),
+  diffHash: z.string().nullable(),
+  evidenceHash: z.string().nullable(),
   status: z.string(),
   requestedAt: z.string().nullable(),
   updatedAt: z.string().nullable(),

@@ -83,10 +83,10 @@ Stable IDs on `/agents` open an ephemeral read-only detail panel with safe
 cross-links between ownership objects and visible stale/error/loading states.
 No lifecycle, approval, budget, scheduler, spawn, retry, or model controls are
 present in U0-A/U0-B. U0-C1 adds the shared Brain Core lifecycle/review control
-service and CLI composition, but the browser remains read-only. The reserved
-HTTP control paths remain BS0.1-contained before request-body read, and no
-Console control buttons are enabled. U0-C2 below implements the separate
-trusted-service prerequisite without reopening canonical BS0.5.
+service and CLI composition. U0-C2 and U0-C3B below provide the authenticated
+server-to-server and local-operator boundaries required before the browser can
+request the two promoted Agent Mode control paths; all other control surfaces
+remain contained.
 
 ## U0-C1 control boundary
 
@@ -148,6 +148,35 @@ No same-origin mutation route or lifecycle/review control is enabled. The
 The exact next bounded task is **U0-C3B — Authenticated Operator Session and
 Console Control Admission**. Evidence:
 `operations/reports/agent-mode-u0-c3-console-guarded-controls-evidence-2026-09-14.md`.
+
+## U0-C3B authenticated operator session and guarded Console controls
+
+The U0-C3A audit classified the missing existing operator boundary as C: no
+Brain Console Ory/Clerk/session integration or compatible cookie contract was
+present. U0-C3B uses the bounded local fallback protocol
+`brain-console-operator-v1`, not an invented multi-user identity platform. The
+Console server reads `BRAIN_CONSOLE_OPERATOR_ID` and
+`BRAIN_CONSOLE_OPERATOR_SECRET` from server-only configuration, and issues an
+eight-hour maximum signed session cookie. The signing key is HKDF-derived with
+purpose separation, the cookie is HttpOnly, SameSite=Strict, `/api` scoped,
+and carries a session-bound CSRF nonce. No secret is returned to or bundled in
+the browser; stateless logout clears the cookie and does not claim revocation
+of a copied token.
+
+The same-origin, loopback-only proxy accepts only bounded Agent Mode run and
+review commands and forwards them through the existing server-only
+`brainCoreControlRequest()` HMAC client. The UI exposes pause, resume, cancel,
+kill, approve, and reject with confirmation for destructive/review actions,
+stable operation IDs per mounted intent, no optimistic state, and no automatic
+mutation retry. Brain Core remains authoritative for lifecycle, runtime
+identity, cancellation, kill, review, and all K4 policy checks; unknown action
+and browser authority fields are rejected before delegation. Existing
+projection/detail reads remain read-only and unrelated Core mutation routes
+remain contained.
+
+Evidence: `operations/reports/agent-mode-u0-c3b-operator-session-controls-evidence-2026-09-14.md`.
+The next bounded U0 gap is **U0-D — Agent Mode Control Audit, Evidence, and
+Operator Session Hardening**; do not start it automatically.
 
 ## Design reference
 

@@ -8,6 +8,7 @@ import { agentModeConsoleProjectionSchema, type AgentModeConsoleProjection } fro
 import { formatUsd, timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 import { AgentModeConsoleDetail, type AgentModeDetailSelection } from '@/components/agent-mode-console-detail';
+import { OperatorSessionPanel, ReviewControlButtons, RunControlButtons } from '@/components/operator-controls';
 
 type ConsoleTab = 'overview' | 'agents' | 'organizations' | 'tasks' | 'failures';
 
@@ -79,6 +80,7 @@ function OverviewTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpe
         </article>
       </section>
       {data.schedules.length > 0 ? <section className="card"><div className="card-title">Schedules</div>{data.schedules.slice(0, 5).map((schedule) => <div className="agent-console-list-row" key={schedule.scheduleId}><DetailLink selection={{ kind: 'schedule', id: schedule.scheduleId }} onOpen={onOpen}>{id(schedule.scheduleId)}</DetailLink><span><StatusBadge status={schedule.status} /> <span className="meta">next {timeAgo(schedule.nextEligibleAt)}</span></span></div>)}</section> : null}
+      {data.approvals.length > 0 ? <section className="card"><div className="card-header"><div><div className="card-title">Pending Agent Mode reviews</div><div className="card-description">Decisions remain subject to Brain Core review authority.</div></div><ShieldCheck size={18} /></div>{data.approvals.map((approval) => <div className="agent-console-list-row" key={approval.approvalId}><div><div><code className="console-id">{approval.reviewId ?? approval.approvalId}</code></div><div className="meta">{approval.workerAgentId ?? approval.objectType} · evidence {approval.evidenceHash ? 'bound' : 'unavailable'}</div></div><ReviewControlButtons reviewId={approval.reviewId ?? approval.approvalId} evidenceHash={approval.evidenceHash} /></div>)}</section> : null}
       {data.failures.length > 0 ? <section className="card"><div className="card-title">Latest operational exceptions</div><FailureTable failures={data.failures.slice(0, 5)} onOpen={onOpen} /></section> : null}
     </div>
   );
@@ -100,7 +102,7 @@ function OrganizationsTab({ data, onOpen }: { data: AgentModeConsoleProjection; 
 }
 
 function TasksTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpen: (selection: AgentModeDetailSelection) => void }) {
-  return data.tasks.length === 0 ? <EmptyTable message="No durable tasks are present." /> : <div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Task</th><th>Run</th><th>Attempt</th><th>Agent / root</th><th>Status</th><th>Runtime / model</th><th>Updated</th></tr></thead><tbody>{data.tasks.map((task) => <tr key={task.taskId}><td><DetailLink selection={{ kind: 'task', id: task.taskId }} onOpen={onOpen}>{id(task.taskId)}</DetailLink></td><td><DetailLink selection={{ kind: 'run', id: task.runId ?? '' }} onOpen={onOpen}>{id(task.runId)}</DetailLink></td><td><DetailLink selection={{ kind: 'attempt', id: task.attemptId ?? '' }} onOpen={onOpen}>{id(task.attemptId)}</DetailLink></td><td><div><DetailLink selection={{ kind: 'agent', id: task.agentId ?? '' }} onOpen={onOpen}>{id(task.agentId)}</DetailLink></div><div className="meta">{id(task.rootGoalId)}</div></td><td><StatusBadge status={task.uncertaintyState ?? task.status} /></td><td><div>{task.runtimeRef ?? '—'}</div><div className="meta">{task.modelRef ?? 'no model fact'}</div></td><td className="meta">{timeAgo(task.updatedAt)}</td></tr>)}</tbody></table></div>;
+  return data.tasks.length === 0 ? <EmptyTable message="No durable tasks are present." /> : <div className="table-wrap"><table className="agent-console-table"><thead><tr><th>Task</th><th>Run</th><th>Attempt</th><th>Agent / root</th><th>Status</th><th>Runtime / model</th><th>Updated</th><th>Controls</th></tr></thead><tbody>{data.tasks.map((task) => <tr key={task.taskId}><td><DetailLink selection={{ kind: 'task', id: task.taskId }} onOpen={onOpen}>{id(task.taskId)}</DetailLink></td><td><DetailLink selection={{ kind: 'run', id: task.runId ?? '' }} onOpen={onOpen}>{id(task.runId)}</DetailLink></td><td><DetailLink selection={{ kind: 'attempt', id: task.attemptId ?? '' }} onOpen={onOpen}>{id(task.attemptId)}</DetailLink></td><td><div><DetailLink selection={{ kind: 'agent', id: task.agentId ?? '' }} onOpen={onOpen}>{id(task.agentId)}</DetailLink></div><div className="meta">{id(task.rootGoalId)}</div></td><td><StatusBadge status={task.uncertaintyState ?? task.status} /></td><td><div>{task.runtimeRef ?? '—'}</div><div className="meta">{task.modelRef ?? 'no model fact'}</div></td><td className="meta">{timeAgo(task.updatedAt)}</td><td>{task.runId ? <RunControlButtons runId={task.runId} status={task.status} /> : <span className="meta">No run</span>}</td></tr>)}</tbody></table></div>;
 }
 
 function FailureTable({ failures, onOpen }: { failures: AgentModeConsoleProjection['failures']; onOpen: (selection: AgentModeDetailSelection) => void }) {
@@ -131,7 +133,8 @@ export function AgentModeConsole() {
 
   return (
     <div className="stack agent-console-screen">
-      <section className="page-heading"><div><div className="eyebrow">Agent Mode</div><h1>Agents</h1><p>Read-only operational state reconstructed from Brain Core’s durable Agent Mode StateStore. No browser action changes runtime state.</p></div><div className="row"><StatusBadge status={freshness} label={freshness} /><span className="meta">{data ? `generated ${timeAgo(data.generatedAt)}` : 'waiting for Brain Core'}</span></div></section>
+      <section className="page-heading"><div><div className="eyebrow">Agent Mode</div><h1>Agents</h1><p>Operational state is reconstructed from Brain Core’s durable Agent Mode StateStore. Lifecycle and review controls remain guarded by Brain Core.</p></div><div className="row"><StatusBadge status={freshness} label={freshness} /><span className="meta">{data ? `generated ${timeAgo(data.generatedAt)}` : 'waiting for Brain Core'}</span></div></section>
+      <OperatorSessionPanel />
       {query.isError && !data ? <div className="card"><div className="card-title">Agent Mode unavailable</div><p>Brain Core did not return the canonical Agent Mode console projection.</p></div> : null}
       {query.isFetching && !data ? <div className="card"><div className="card-title">Loading Agent Mode</div><p className="meta">Reading the bounded projection from Brain Core…</p></div> : null}
       {data ? <>
