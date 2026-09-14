@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -313,6 +313,9 @@ import { readVideoAnalysisHistory, recordVideoAnalysisHistory } from '../adapter
 import { defaultAlertManager } from '../adapters/alerting.js';
 import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-orchestrator-planner.js';
 import { OrchestrationExecutor, recordApprovalDecision } from '../adapters/agent-orchestrator-executor.js';
+import { AgentModeControlService, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
+import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
+import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
 
 const getStatus = createStatusAdapter({
   startedAt: new Date(),
@@ -322,13 +325,15 @@ const getStatus = createStatusAdapter({
 /**
  * BS0.1 containment boundary.
  *
- * Brain Core has no authenticated HTTP service identity yet.  Loopback address,
- * browser Origin, and caller-supplied headers are therefore not authorization.
- * Until the contract registry establishes an exact service identity (BS0.5), the
- * high-impact endpoints below must fail closed before their request body is read.
+ * High-impact mutations are contained by default. The two explicitly promoted
+ * Agent Mode control paths authenticate through brain-service-auth-v1 before
+ * request-body read; loopback address, browser Origin, and caller-supplied
+ * headers are never authorization.
  */
 function isContainedHighImpactMutation(url: URL): boolean {
   const pathname = url.pathname;
+
+  if (/^\/agent-mode\/control(?:\/|$)/u.test(pathname)) return true;
 
   if (new Set([
     '/api/mind-maintenance/run',
@@ -361,7 +366,6 @@ function isContainedHighImpactMutation(url: URL): boolean {
 
   return [
     /^\/credentials\//,
-    /^\/agent-mode\/control\/(?:run|review)\/[^/]+$/,
     /^\/local-apps\/[^/]+\/(?:start|stop|restart)$/,
     /^\/approvals\/[^/]+\/(?:approve|reject)$/,
     /^\/infra\/video-orchestrator\/jobs\/[^/]+\/(?:approve|reject)$/,
@@ -379,6 +383,14 @@ function isContainedHighImpactMutation(url: URL): boolean {
   ].some((pattern) => pattern.test(pathname));
 }
 
+function isAgentModeControlPath(url: URL): boolean {
+  return /^\/agent-mode\/control\/(?:run|review)\/[^/]+$/u.test(url.pathname);
+}
+
+function isAgentModeControlNamespace(url: URL): boolean {
+  return /^\/agent-mode\/control(?:\/|$)/u.test(url.pathname);
+}
+
 function rejectContainedHighImpactMutation(response: ServerResponse): void {
   sendJson(response, 503, {
     ok: false,
@@ -393,6 +405,176 @@ function rejectContainedHighImpactMutation(response: ServerResponse): void {
       credentialValuesAccepted: false,
     },
   });
+}
+
+type AgentModeControlBody = Record<string, unknown>;
+const AGENT_MODE_CONTROL_BODY_MAX_BYTES = 16_384;
+
+function sendAgentModeControlJson(response: ServerResponse, statusCode: number, body: unknown): void {
+  const payload = JSON.stringify(body, redactingJsonReplacer, 2);
+  response.writeHead(statusCode, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'access-control-allow-methods': 'OPTIONS',
+    'access-control-allow-headers': 'content-type',
+  });
+  response.end(`${payload}\n`);
+}
+
+function sendAgentModeAuthFailure(response: ServerResponse, code: BrainServiceAuthFailureCode): void {
+  sendAgentModeControlJson(response, code === 'service_capability_denied' ? 403 : 401, {
+    ok: false,
+    error: { code, message: 'Authenticated Brain service identity is required for this Agent Mode mutation.' },
+  });
+}
+
+function controlHttpStatus(outcome: string): number {
+  if (outcome === 'completed' || outcome === 'already_applied') return 200;
+  if (outcome === 'not_found') return 404;
+  if (outcome === 'forbidden') return 403;
+  if (outcome === 'unavailable') return 503;
+  return 409;
+}
+
+function exactBodyKeys(body: AgentModeControlBody, allowed: readonly string[]): boolean {
+  const allowedSet = new Set(allowed);
+  return Object.keys(body).every((key) => allowedSet.has(key));
+}
+
+function requiredBodyText(body: AgentModeControlBody, key: string, maxLength: number): string | undefined {
+  const value = body[key];
+  return typeof value === 'string' && value.length > 0 && value.length <= maxLength ? value : undefined;
+}
+
+async function readBoundedRequestBody(request: IncomingMessage): Promise<{ body?: AgentModeControlBody; digest?: string; error?: string }> {
+  if (!request.on) return { error: 'request_body_unavailable' };
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    let byteLength = 0;
+    let tooLarge = false;
+    request.on!('data', (chunk: Buffer | string) => {
+      if (tooLarge) return;
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      byteLength += bytes.length;
+      if (byteLength > AGENT_MODE_CONTROL_BODY_MAX_BYTES) {
+        tooLarge = true;
+        chunks.length = 0;
+        return;
+      }
+      chunks.push(bytes);
+    });
+    request.on!('end', () => {
+      if (tooLarge) {
+        resolve({ error: 'request_body_too_large' });
+        return;
+      }
+      const raw = Buffer.concat(chunks);
+      try {
+        const parsed: unknown = JSON.parse(raw.toString('utf8'));
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          resolve({ error: 'request_body_invalid' });
+          return;
+        }
+        resolve({ body: parsed as AgentModeControlBody, digest: brainServiceContentSha256(raw) });
+      } catch {
+        resolve({ error: 'request_body_invalid' });
+      }
+    });
+    request.on!('error', () => resolve({ error: 'request_body_unavailable' }));
+  });
+}
+
+function sendAgentModeBodyError(response: ServerResponse, code: string): void {
+  const status = code === 'request_body_too_large' ? 413 : 400;
+  sendAgentModeControlJson(response, status, { ok: false, error: { code, message: 'Agent Mode control request is invalid.' } });
+}
+
+async function routeAgentModeControlRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try {
+    authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() });
+  } catch {
+    sendAgentModeAuthFailure(response, 'service_identity_missing');
+    return;
+  }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest(
+    { method: request.method ?? 'POST', pathname: url.pathname, headers: requestHeaders },
+    BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY,
+  );
+  if (!auth.ok) {
+    sendAgentModeAuthFailure(response, auth.code);
+    return;
+  }
+
+  const parsed = await readBoundedRequestBody(request);
+  if (parsed.error || !parsed.body || !parsed.digest) {
+    sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid');
+    return;
+  }
+  const signedDigest = requestHeaders['x-brain-content-sha256'];
+  const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+  if (!signedDigestValue || signedDigestValue !== parsed.digest) {
+    sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } });
+    return;
+  }
+
+  const runMatch = /^\/agent-mode\/control\/run\/([^/]+)$/u.exec(url.pathname);
+  const reviewMatch = /^\/agent-mode\/control\/review\/([^/]+)$/u.exec(url.pathname);
+  const body = parsed.body;
+  const actor = { source: 'service' as const, actorId: auth.identity.serviceId };
+  const requestedAt = auth.identity.requestTimestamp;
+  let result: ReturnType<AgentModeControlService['pauseRun']>;
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    const databasePath = defaultAgentModeDatabasePath();
+    if (!existsSync(databasePath)) {
+      sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } });
+      return;
+    }
+    store = new AgentModeSqliteStateStore(databasePath);
+    const service = new AgentModeControlService(store);
+    if (runMatch) {
+      if (!exactBodyKeys(body, ['schemaVersion', 'operationId', 'action', 'reason'])) {
+        sendAgentModeBodyError(response, 'control_fields_invalid');
+        return;
+      }
+      const schemaVersion = requiredBodyText(body, 'schemaVersion', 64);
+      const operationId = requiredBodyText(body, 'operationId', 128);
+      const action = requiredBodyText(body, 'action', 16) as AgentModeLifecycleControlAction | undefined;
+      const reason = requiredBodyText(body, 'reason', 512);
+      if (!schemaVersion || !operationId || !action || !reason) {
+        sendAgentModeBodyError(response, 'control_fields_invalid');
+        return;
+      }
+      const command = { schemaVersion: schemaVersion as 'agent-mode-control-v1', operationId, action, runId: decodeURIComponent(runMatch[1] ?? ''), actor, requestedAt, reason };
+      result = action === 'pause' ? service.pauseRun(command) : action === 'resume' ? service.resumeRun(command) : action === 'cancel' ? service.cancelRun(command) : service.killRun(command);
+    } else if (reviewMatch) {
+      if (!exactBodyKeys(body, ['schemaVersion', 'operationId', 'decision', 'reason', 'evidenceHash'])) {
+        sendAgentModeBodyError(response, 'control_fields_invalid');
+        return;
+      }
+      const schemaVersion = requiredBodyText(body, 'schemaVersion', 64);
+      const operationId = requiredBodyText(body, 'operationId', 128);
+      const decision = requiredBodyText(body, 'decision', 16) as AgentModeReviewDecisionCommandV1['decision'] | undefined;
+      const reason = requiredBodyText(body, 'reason', 512);
+      const evidenceHash = requiredBodyText(body, 'evidenceHash', 256);
+      if (!schemaVersion || !operationId || !decision || !reason || !evidenceHash) {
+        sendAgentModeBodyError(response, 'control_fields_invalid');
+        return;
+      }
+      const command: AgentModeReviewDecisionCommandV1 = { schemaVersion: schemaVersion as 'agent-mode-control-v1', operationId, reviewId: decodeURIComponent(reviewMatch[1] ?? ''), decision, actor, decidedAt: requestedAt, reason, evidenceHash };
+      result = service.decideReview(command);
+    } else {
+      sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_control_not_found', message: 'Agent Mode control route is not supported.' } });
+      return;
+    }
+    sendAgentModeControlJson(response, controlHttpStatus(result.outcome), { ok: result.outcome === 'completed' || result.outcome === 'already_applied', result });
+  } catch {
+    sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'agent_mode_control_unavailable', message: 'Agent Mode control is unavailable.' } });
+  } finally {
+    store?.close();
+  }
 }
 
 export async function routeRequest(
@@ -443,6 +625,15 @@ export async function routeRequest(
   }
 
   if (method === 'OPTIONS') {
+    if (isAgentModeControlNamespace(url)) {
+      response.writeHead(204, {
+        'access-control-allow-methods': 'GET, HEAD, OPTIONS',
+        'access-control-allow-headers': 'content-type',
+        'access-control-max-age': '86400',
+      });
+      response.end();
+      return;
+    }
     response.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'access-control-allow-methods': thumbnailPathMatch || isContainedHighImpactMutation(url)
@@ -464,6 +655,11 @@ export async function routeRequest(
       'Allow': 'GET, HEAD',
     });
     response.end(body);
+    return;
+  }
+
+  if (method === 'POST' && isAgentModeControlPath(url)) {
+    await routeAgentModeControlRequest(url, request, response);
     return;
   }
 

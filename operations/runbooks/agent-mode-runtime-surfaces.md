@@ -1043,16 +1043,41 @@ retains the established output/recovery contract. The CLI may supply explicit
 `--operation-id` and `--reason` values. Review decisions retain the existing
 worker/model self-approval prohibition and durable review receipts/events.
 
-BS0.1 still contains network mutations before request-body read. Because no
-usable authenticated HTTP service identity is implemented (BS0.5 is currently
-descriptive contract-registry material only), no functional HTTP control route
-or Console mutation button is enabled. `/agent-mode/control/run/:runId` and
-`/agent-mode/control/review/:reviewId` are reserved and fail closed with
-`mutable_capability_contained`; localhost, Origin, and caller-supplied headers
-are not authorization. There are no provider probes, runtime dispatches,
-budget mutations, or browser-side authority changes from this slice.
+At the U0-C1 landing point BS0.1 still contained network mutations before
+request-body read because no usable authenticated service identity existed.
+Canonical BS0.5 — **Create the contract registry** — remained complete and
+descriptive; U0-C2 below resolves the separate trusted-service prerequisite.
+Localhost, Origin, and caller-supplied headers remain non-authorizing.
 
 Evidence: `operations/reports/agent-mode-u0-c1-guarded-controls-evidence-2026-09-14.md`.
-Exact next bounded prerequisite: implement/reconcile the authoritative BS0.5
-authenticated service identity, then add the authenticated HTTP/Console control
-gate. Do not expose unauthenticated lifecycle or approval actions.
+Exact next bounded prerequisite at U0-C1 was the authenticated service identity,
+then the authenticated HTTP/Console control gate. Do not expose unauthenticated
+lifecycle or approval actions.
+
+## U0-C2 authenticated Agent Mode service boundary — 2026-09-14
+
+U0-C2 is **COMPLETE** for the server-to-server Agent Mode mutation boundary;
+U0-C remains **IN PROGRESS**. The canonical BS0.5 contract registry is not
+reopened or renamed. The trusted-service identity gap identified by BS0.1 is
+implemented separately as versioned `brain-service-auth-v1` HMAC
+authentication.
+
+Brain Core reads one bounded server-only identity from
+`BRAIN_CORE_SERVICE_ID`/`BRAIN_CORE_SERVICE_SECRET` and grants only the
+explicit `agent-mode.control` capability. Signed protocol, service ID, method,
+exact pathname, request ID, freshness timestamp, and SHA-256 body digest are
+verified with timing-safe comparison before the bounded body is read. Only
+`POST /agent-mode/control/run/:runId` and
+`POST /agent-mode/control/review/:reviewId` are promoted into the existing
+`AgentModeControlService`; all other contained mutation routes remain
+fail-closed. Mutation responses do not enable wildcard CORS.
+
+The service actor is derived from the authenticated identity. Caller actor,
+PID, signal, model, retry, Origin, Referer, and localhost values are not
+authority. Existing K4 lifecycle/runtime identity, kill, review, and
+self-approval restrictions remain authoritative. No browser signing or
+Console mutation controls are included.
+
+Evidence: `operations/reports/agent-mode-u0-c2-service-identity-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-C3 — Brain Console Guarded Mutation Proxy and
+Lifecycle/Approval Controls**. Do not start it automatically.

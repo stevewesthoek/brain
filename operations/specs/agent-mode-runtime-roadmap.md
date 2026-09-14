@@ -1406,11 +1406,47 @@ and `/agent-mode/control/review/:reviewId` remain contained before request-body
 read with the existing fail-closed response. U0-C1 therefore lands the shared
 domain control foundation without claiming authenticated network authority.
 
+Clarification: canonical BS0.5 — **Create the contract registry** — remains
+COMPLETE and is not being reopened. The missing item identified by BS0.1 was a
+trusted authenticated service identity; U0-C1 recorded that residual gap, and
+U0-C2 below resolves it as a U0 prerequisite rather than relabeling BS0.5.
+
 Evidence: `operations/reports/agent-mode-u0-c1-guarded-controls-evidence-2026-09-14.md`.
 Exact next bounded prerequisite: reconcile/implement the authoritative BS0.5
 authenticated service identity contract, then add the authenticated HTTP and
 Console mutation gate. Do not substitute UI polish or unauthenticated browser
 headers for service identity.
+
+### U0-C2 — Authenticated Brain Core Service Identity and Agent Mode Mutation Admission
+
+**Status:** COMPLETE for the authenticated server-to-server Agent Mode
+mutation boundary; U0-C remains IN PROGRESS.
+
+Canonical BS0.5 remains the completed descriptive contract-registry milestone.
+U0-C2 fulfills the unresolved trusted-service identity requirement originally
+identified by BS0.1 without changing historical BS0 evidence or reopening BS0.5.
+
+Brain Core now uses the separate versioned `brain-service-auth-v1` HMAC
+protocol. Configured server-only `BRAIN_CORE_SERVICE_ID` and
+`BRAIN_CORE_SERVICE_SECRET` material form a bounded identity registry entry
+with the explicit `agent-mode.control` capability. Requests bind protocol,
+service ID, method, canonical pathname, request ID, freshness timestamp, and
+SHA-256 body digest in timing-safe HMAC verification. Authentication and
+capability admission happen before request-body read; the bounded body is then
+hashed and compared before the trusted service actor is passed to
+`AgentModeControlService`.
+
+Only `POST /agent-mode/control/run/:runId` and
+`POST /agent-mode/control/review/:reviewId` are promoted. Caller actor, PID,
+signal, model, and retry fields are not accepted. All other routes covered by
+`isContainedHighImpactMutation()` remain contained, and mutation responses do
+not enable wildcard CORS. Missing configuration, stale/future requests,
+invalid signatures, missing capability, and digest mismatch fail closed without
+secret disclosure. Browser and human/operator authentication remain deferred.
+
+Evidence: `operations/reports/agent-mode-u0-c2-service-identity-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-C3 — Brain Console Guarded Mutation Proxy and
+Lifecycle/Approval Controls**. Do not start U0-C3 automatically.
 
 ## Phase V0 — Jarvis voice gateway
 

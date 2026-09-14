@@ -1083,6 +1083,42 @@ Exact next task: the authoritative **BS0.5 authenticated service identity
 prerequisite**, followed by the authenticated HTTP/Console mutation gate. Do
 not start that gate until the identity contract is usable.
 
+Clarification: canonical BS0.5 — **Create the contract registry** — is already
+COMPLETE and is not reopened by U0-C work. The trusted-service identity noted
+as future work by BS0.1 was absent from that descriptive registry; U0-C2 below
+implements that unresolved U0 prerequisite without rewriting historical BS0
+evidence.
+
+## Current U0-C2 authenticated Agent Mode mutation boundary — 2026-09-14
+
+U0-C2 — **Authenticated Brain Core Service Identity and Agent Mode Mutation
+Admission** — is **COMPLETE** for the server-to-server Agent Mode boundary. U0-C
+remains **IN PROGRESS**.
+
+Brain Core now verifies the separate versioned `brain-service-auth-v1` HMAC
+contract. A configured server-only service identity is loaded from
+`BRAIN_CORE_SERVICE_ID` and `BRAIN_CORE_SERVICE_SECRET`; it receives only the
+explicit `agent-mode.control` capability. Signed method, pathname, request ID,
+freshness timestamp, and SHA-256 body digest are checked with timing-safe HMAC
+comparison. Invalid identity/signature/freshness/capability requests are
+rejected before body read. After authentication, a bounded body digest check
+precedes typed command parsing and trusted service-actor mapping.
+
+Only the Agent Mode run-control and review-control paths are promoted. They
+call the U0-C1 service and preserve K4 StateStore/runtime identity/review
+authority. Caller-supplied actor, PID, signal, model, retry, Origin, Referer,
+and localhost values cannot widen authority. Credentials, publishing,
+deployment, local-app, legacy approval, webhook, and other mutable routes
+remain under the existing BS0.1 containment boundary. Mutation responses do not
+enable wildcard CORS.
+
+No service secret enters Brain Console/browser code, URLs, logs, responses, or
+repository fixtures. Human/browser authentication and the same-origin
+server-held mutation proxy are intentionally deferred to **U0-C3 — Brain
+Console Guarded Mutation Proxy and Lifecycle/Approval Controls**.
+
+Evidence: `operations/reports/agent-mode-u0-c2-service-identity-evidence-2026-09-14.md`.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

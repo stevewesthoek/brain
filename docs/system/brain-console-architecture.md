@@ -83,10 +83,10 @@ Stable IDs on `/agents` open an ephemeral read-only detail panel with safe
 cross-links between ownership objects and visible stale/error/loading states.
 No lifecycle, approval, budget, scheduler, spawn, retry, or model controls are
 present in U0-A/U0-B. U0-C1 adds the shared Brain Core lifecycle/review control
-service and CLI composition, but the browser remains read-only until an
-authenticated BS0.5 service identity exists. The reserved HTTP control paths
-remain BS0.1-contained before request-body read, and no Console control buttons
-are enabled.
+service and CLI composition, but the browser remains read-only. The reserved
+HTTP control paths remain BS0.1-contained before request-body read, and no
+Console control buttons are enabled. U0-C2 below implements the separate
+trusted-service prerequisite without reopening canonical BS0.5.
 
 ## U0-C1 control boundary
 
@@ -99,11 +99,31 @@ identity; kill does not accept arbitrary process identifiers and does not
 blindly redeliver a signal after a durable signal receipt.
 
 The CLI lifecycle commands use this service. Network and Console mutation
-surfaces are intentionally deferred: the repository has no usable authenticated
-HTTP service identity, and localhost, Origin, or caller-supplied headers are
-not authorization. A future authenticated gate must be added only after the
-authoritative BS0.5 identity contract is implemented. Evidence:
+surfaces were intentionally deferred at the U0-C1 boundary because the
+repository had no usable authenticated HTTP service identity; localhost,
+Origin, or caller-supplied headers are not authorization. Evidence:
 `operations/reports/agent-mode-u0-c1-guarded-controls-evidence-2026-09-14.md`.
+
+## U0-C2 server-to-server Agent Mode mutation authentication
+
+Canonical BS0.5 — **Create the contract registry** — remains complete; it is
+not relabeled to absorb this work. U0-C2 adds the distinct versioned
+`brain-service-auth-v1` HMAC boundary for Brain Core service-to-service calls.
+The server-only `BRAIN_CORE_SERVICE_ID` and `BRAIN_CORE_SERVICE_SECRET`
+configuration grants only `agent-mode.control`. Signed protocol, identity,
+method, exact pathname, request ID, freshness timestamp, and body digest are
+verified before bounded request-body read, then typed commands are delegated to
+the existing `AgentModeControlService`.
+
+Only the Agent Mode run and review control paths are promoted. The authenticated
+service actor is derived by Brain Core; caller actor/PID/signal/model/retry
+fields are rejected, mutation responses do not enable wildcard CORS, and all
+other high-impact mutation routes remain contained. No browser signing, Console
+mutation UI, provider probe, runtime dispatch, or secret exposure is part of
+U0-C2. Evidence:
+`operations/reports/agent-mode-u0-c2-service-identity-evidence-2026-09-14.md`.
+Exact next slice: **U0-C3 — Brain Console Guarded Mutation Proxy and
+Lifecycle/Approval Controls**.
 
 ## Design reference
 

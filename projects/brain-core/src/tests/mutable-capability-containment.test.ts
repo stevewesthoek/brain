@@ -80,7 +80,7 @@ test('caller-supplied authorization header cannot bypass containment', async () 
   assertContained(response);
 });
 
-test('Agent Mode lifecycle and review controls remain contained before request body read', async () => {
+test('Agent Mode lifecycle and review controls require authenticated service identity before request body read', async () => {
   for (const url of ['/agent-mode/control/run/run:fixture', '/agent-mode/control/review/review:fixture']) {
     const response = await exercise({
       method: 'POST',
@@ -90,7 +90,14 @@ test('Agent Mode lifecycle and review controls remain contained before request b
         throw new Error('contained Agent Mode control must not read its body');
       },
     });
-    assertContained(response);
+    assert.equal(response.statusCode, 401);
+    assert.deepEqual(JSON.parse(response.body), {
+      ok: false,
+      error: {
+        code: 'service_identity_missing',
+        message: 'Authenticated Brain service identity is required for this Agent Mode mutation.',
+      },
+    });
   }
 });
 
