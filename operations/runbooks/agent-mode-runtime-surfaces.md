@@ -1081,3 +1081,29 @@ Console mutation controls are included.
 Evidence: `operations/reports/agent-mode-u0-c2-service-identity-evidence-2026-09-14.md`.
 Exact next bounded slice: **U0-C3 — Brain Console Guarded Mutation Proxy and
 Lifecycle/Approval Controls**. Do not start it automatically.
+
+## U0-C3A server-only control boundary prerequisite — 2026-09-14
+
+U0-C3A is **COMPLETE** for the bounded prerequisite; U0-C remains **IN
+PROGRESS**. The Brain Console tree has no authenticated operator/session
+boundary: no middleware, session, operator identity, CSRF/session binding, or
+authoritative human-auth design is present. Classification is **C — no
+authenticated operator boundary exists**.
+
+Do not treat localhost, Origin, Referer, CORS, a CSRF token alone, browser
+randomness, or caller-supplied actor fields as operator authentication. Because
+that boundary is missing, this slice deliberately does not add a functional
+same-origin mutation proxy, browser control buttons, OAuth, password storage,
+or an invented identity system.
+
+The server-only `brainCoreControlRequest()` helper is protected by the
+`server-only` package, reads `BRAIN_CORE_SERVICE_ID` and
+`BRAIN_CORE_SERVICE_SECRET` only on the Console server, signs the existing
+`brain-service-auth-v1` request contract, bounds lifecycle/review bodies, and
+parses strict control responses. It is an independently testable building
+block, not browser authority. U0-A/U0-B read-only surfaces remain operational
+without mutation credentials. Evidence:
+`operations/reports/agent-mode-u0-c3-console-guarded-controls-evidence-2026-09-14.md`.
+
+Exact next bounded task: **U0-C3B — Authenticated Operator Session and Console
+Control Admission**. Do not start it automatically.

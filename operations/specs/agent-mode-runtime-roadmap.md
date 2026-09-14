@@ -1320,7 +1320,7 @@ Console control surface**. Do not start U0 automatically.
 
 ## Phase U0 — unified Brain Console control surface
 
-**Status:** IN PROGRESS; U0-A, U0-B, and U0-C1 are complete; U0-C remains in progress
+**Status:** IN PROGRESS; U0-A, U0-B, U0-C1, U0-C2, and U0-C3A are complete; U0-C remains in progress
 
 Borrow Orca-like fleet/worktree/usage/notification patterns while keeping Brain
 Console as the primary control/dashboard surface. Show Jarvis intake, agent
@@ -1447,6 +1447,35 @@ secret disclosure. Browser and human/operator authentication remain deferred.
 Evidence: `operations/reports/agent-mode-u0-c2-service-identity-evidence-2026-09-14.md`.
 Exact next bounded slice: **U0-C3 — Brain Console Guarded Mutation Proxy and
 Lifecycle/Approval Controls**. Do not start U0-C3 automatically.
+
+### U0-C3A — Server-Only Brain Core Control Client and Operator Boundary Audit
+
+**Status:** COMPLETE for the bounded security prerequisite; U0-C remains IN
+PROGRESS.
+
+The existing Brain Console tree has no middleware, session, operator identity,
+CSRF/session binding, server action, or documented human/browser authentication
+boundary. It is therefore classification **C — no authenticated operator
+boundary exists**. U0-C3A does not invent OAuth, password storage, or a broad
+identity system, and it does not create an unauthenticated power proxy.
+
+Brain Console now contains a server-only `brainCoreControlRequest()` helper
+using the `server-only` boundary. It reads `BRAIN_CORE_SERVICE_ID` and
+`BRAIN_CORE_SERVICE_SECRET` only on the server, signs the existing
+`brain-service-auth-v1` method/path/request/timestamp/content contract, sends
+only bounded Agent Mode control bodies, and parses strict bounded control
+responses. Missing service configuration, invalid paths/bodies, transport
+failure, and malformed responses fail closed without revealing configuration.
+
+No browser signing, same-origin mutation route, lifecycle button, review button,
+CSRF token, operator claim, or Console mutation control is enabled. Existing
+`/agents` and U0-A/U0-B reads remain available without mutation credentials.
+U0-C3A proves the Brain Console→Brain Core service boundary independently but
+does not claim human/operator authentication.
+
+Evidence: `operations/reports/agent-mode-u0-c3-console-guarded-controls-evidence-2026-09-14.md`.
+Exact next bounded task: **U0-C3B — Authenticated Operator Session and Console
+Control Admission**. Do not start it automatically.
 
 ## Phase V0 — Jarvis voice gateway
 

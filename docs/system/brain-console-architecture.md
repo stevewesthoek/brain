@@ -125,6 +125,30 @@ U0-C2. Evidence:
 Exact next slice: **U0-C3 — Brain Console Guarded Mutation Proxy and
 Lifecycle/Approval Controls**.
 
+## U0-C3A operator-boundary audit and server-only control client
+
+The existing Brain Console has no middleware, session, operator identity,
+CSRF/session binding, server action, or authoritative human/browser
+authentication design. Its operator boundary is therefore classification
+**C — no authenticated operator/session boundary exists**. Localhost, Origin,
+Referer, CORS, CSRF alone, browser IDs, and caller-supplied actors are not
+authentication.
+
+U0-C3A intentionally does not create an unauthenticated power proxy or invent
+OAuth/password identity. It adds only the server-only
+`lib/braincore-control-server.ts` helper, protected by `server-only`. The helper
+reads the server-held `BRAIN_CORE_SERVICE_ID` and
+`BRAIN_CORE_SERVICE_SECRET`, signs the existing `brain-service-auth-v1`
+contract, sends bounded Agent Mode lifecycle/review bodies, and parses strict
+bounded responses. It is not imported by client components, and its secret,
+HMAC, and headers do not cross the browser boundary.
+
+No same-origin mutation route or lifecycle/review control is enabled. The
+`/agents` read-only surface remains available without mutation credentials.
+The exact next bounded task is **U0-C3B — Authenticated Operator Session and
+Console Control Admission**. Evidence:
+`operations/reports/agent-mode-u0-c3-console-guarded-controls-evidence-2026-09-14.md`.
+
 ## Design reference
 
 Use the shadcnblocks admin dashboard pattern as the visual reference:

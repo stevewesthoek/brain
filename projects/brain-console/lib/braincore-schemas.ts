@@ -49,6 +49,45 @@ export const opsAiCostsSchema = z.object({
 
 export const brainCoreStatusSchema = z.record(z.unknown());
 
+const agentModeControlReceiptSchema = z.object({
+  schemaVersion: z.literal('agent-mode-control-v1'),
+  operationId: z.string().min(1).max(128),
+  action: z.enum(['pause', 'resume', 'cancel', 'kill', 'review_decision']),
+  targetId: z.string().min(1).max(256),
+  actor: z.string().min(1).max(256),
+  status: z.enum(['completed', 'already_applied', 'conflict', 'stale', 're_admission_required', 'runtime_identity_unverified', 'not_found', 'forbidden', 'unavailable', 'uncertain']),
+  previousState: z.string().max(128).nullable(),
+  resultingState: z.string().max(128).nullable(),
+  occurredAt: z.string(),
+  reasonCode: z.string().min(1).max(128),
+  recoveryCode: z.string().max(128).nullable(),
+  signalState: z.enum(['not_attempted', 'pending', 'sent', 'not_sent']).nullable(),
+}).strict();
+
+const agentModeControlResultSchema = z.object({
+  outcome: z.enum(['completed', 'already_applied', 'conflict', 'stale', 're_admission_required', 'runtime_identity_unverified', 'not_found', 'forbidden', 'unavailable', 'uncertain']),
+  reasonCode: z.string().min(1).max(128),
+  receipt: agentModeControlReceiptSchema.optional(),
+  signal: z.object({ sent: z.boolean(), reasonCode: z.string().min(1).max(128) }).strict().optional(),
+}).strict();
+
+export const agentModeControlResultResponseSchema = z.object({
+  ok: z.literal(true),
+  result: agentModeControlResultSchema,
+}).strict();
+
+export const agentModeControlErrorResponseSchema = z.object({
+  ok: z.literal(false),
+  error: z.object({ code: z.string().min(1).max(128), message: z.string().min(1).max(512) }).strict(),
+}).strict();
+
+export const agentModeControlResponseSchema = z.union([
+  agentModeControlResultResponseSchema,
+  agentModeControlErrorResponseSchema,
+]);
+
+export type AgentModeControlResponse = z.infer<typeof agentModeControlResponseSchema>;
+
 const agentModeConsoleAgentSchema = z.object({
   agentId: z.string(),
   rootGoalId: z.string().nullable(),

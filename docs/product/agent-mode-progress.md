@@ -1119,6 +1119,33 @@ Console Guarded Mutation Proxy and Lifecycle/Approval Controls**.
 
 Evidence: `operations/reports/agent-mode-u0-c2-service-identity-evidence-2026-09-14.md`.
 
+## Current U0-C3A Console control-boundary prerequisite — 2026-09-14
+
+U0-C3A — **Server-Only Brain Core Control Client and Operator Boundary Audit**
+— is **COMPLETE** for its bounded security prerequisite. U0-C remains **IN
+PROGRESS**.
+
+The complete Brain Console tree was audited for middleware, sessions, operator
+identity, CSRF/session binding, server actions, cookies, and security
+documentation. None provides an authenticated browser/operator boundary, so
+the result is classification **C — no authenticated operator/session boundary
+exists**. Localhost, Origin, Referer, CORS, a CSRF token alone, browser IDs,
+and caller-supplied actor fields are not operator authentication.
+
+Per that classification, no unauthenticated browser→Console→Brain Core power
+proxy was added and no mutation buttons are rendered. Brain Console now has a
+server-only `brainCoreControlRequest()` helper protected by `server-only`.
+It reads the server-held Brain Core service identity, signs the existing
+`brain-service-auth-v1` contract, sends bounded Agent Mode lifecycle/review
+commands, and parses strict bounded responses. Missing identity, invalid
+path/body, transport failure, and malformed response fail closed. The helper
+is not imported by client components, and the existing read-only `/agents`
+surface remains credential-free.
+
+Evidence: `operations/reports/agent-mode-u0-c3-console-guarded-controls-evidence-2026-09-14.md`.
+Exact next task: **U0-C3B — Authenticated Operator Session and Console Control
+Admission**. Do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not
