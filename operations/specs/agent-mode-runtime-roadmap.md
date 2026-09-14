@@ -1642,7 +1642,7 @@ automatically.
 
 ## Phase V0 — Jarvis voice gateway
 
-**Status:** planned after U0 foundations; local non-text inference remains allowed
+**Status:** V0-A COMPLETE; V0 remains IN PROGRESS; local non-text inference remains allowed
 
 - microphone / push-to-talk / future wake-word input;
 - speech-to-text transport into Jarvis;
@@ -1658,6 +1658,29 @@ policies from the cloud-only text-LLM policy.
 
 Exit gate: voice is a transport over the same durable Jarvis/task/control-plane
 contracts and can be replaced without changing agent identity or orchestration.
+
+### V0-A — Jarvis voice transport contracts and deterministic gateway fixture
+
+V0-A establishes the provider-neutral `agent-mode.jarvis-voice-gateway.v1`
+contracts for input/session correlation, bounded STT transcripts, canonical text
+intake, Jarvis-only TTS output, and transport-only interruption. The deterministic
+fixture maps `fixture://voice/hello-jarvis` to the bounded transcript
+`Jarvis, summarize the current task.` and the bounded Jarvis response
+`The current task is ready.`; it produces no Agent Mode, K4, ModelGateway,
+runtime, Harness, network, or provider side effects.
+
+The fixture uses an explicit fixture-only receipt store for replay/conflict
+behavior. Brain currently has durable Root Goal/Jarvis ownership but no
+canonical conversational text-intake queue, so V0-A does not claim production
+exactly-once intake. MLX Whisper and FluidVoice remain separate retained media
+capabilities and are not invoked or modified. Voice control intents require a
+non-voice confirmation path, and `interrupt_output` can affect only transport
+output; it cannot cancel Brain work. Workers cannot emit user-facing voice.
+
+Evidence: `operations/reports/agent-mode-v0-a-voice-transport-contracts-evidence-2026-09-14.md`.
+Exact next bounded slice: **V0-B — Push-to-Talk Input and Local Speech-to-Text
+Adapter**, including the production durable text-intake prerequisite; do not
+start it automatically.
 
 ## Phase D0 — distribution and always-on options
 

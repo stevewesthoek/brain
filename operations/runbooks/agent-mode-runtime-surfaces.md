@@ -1290,3 +1290,52 @@ non-qualifying. Boundary omission is never treated as source resolution.
 Evidence: `operations/reports/agent-mode-u0-g-unified-console-exit-audit-2026-09-14.md`.
 Exact next phase: **Phase V0 — Jarvis voice gateway**; do not start it
 automatically.
+
+## V0-A Jarvis voice transport contracts and fixture
+
+V0-A is a contract-only voice seam. `projects/brain-core/src/agent-mode/jarvis-voice-gateway.ts`
+defines the versioned `agent-mode.jarvis-voice-gateway.v1` transport types and
+the provider-neutral `SpeechToTextProvider`, `JarvisTextIntake`, and
+`JarvisTextToSpeechProvider` ports. The bounded flow is:
+
+```text
+VoiceInputRequestV1
+  -> SpeechToTextProvider
+  -> normalized bounded VoiceTranscriptV1
+  -> JarvisTextIntake
+  -> bounded Jarvis response
+  -> Jarvis-only VoiceOutputRequestV1
+  -> VoiceOutputReceiptV1
+```
+
+`voiceRequestId` and derived intake/output IDs are stable correlation and
+idempotency identities; `sessionId` is transport correlation only and is not an
+Agent, Task, Run, Attempt, or root identity. Audio refs are opaque bounded
+fixture refs; filesystem paths, raw audio bytes, prompts, reasoning, provider
+payloads, credentials, and logs are not accepted or retained by this seam.
+
+The fixture uses an explicit in-memory receipt-store port and reports
+`idempotency: fixture-only`; it is not a production exactly-once claim. Brain
+currently has durable Root Goal/Jarvis ownership but no canonical conversational
+text-intake queue. V0-B must add or adopt that durable adapter before claiming
+production intake. The gateway never calls StateStore, K4 SpawnPolicy,
+AgentRuntime, ModelGateway, BrainNode, Workcell, AWS, or network providers.
+
+Only Jarvis may request user-facing TTS. Worker speech is denied. Typed voice
+control intents (`approve`, `reject`, `cancel`, `kill`, `pause`, `resume`,
+`retry`, `spawn`) return `requires_non_voice_confirmation` and do not call the
+control service. `interrupt_output` can stop/abandon transport output only;
+spoken stop/never-mind language is not parsed as a lifecycle mutation.
+
+The deterministic fixture maps `fixture://voice/hello-jarvis` to
+`Jarvis, summarize the current task.` and emits
+`fixture://voice/jarvis-response` for `The current task is ready.`. It uses no
+microphone, wake word, MLX Whisper, FluidVoice, Polly, Azure, live model,
+Harness, runtime, tool, repository, or network effect. MLX Whisper and
+FluidVoice remain retained external/media capabilities and are intentionally
+untouched.
+
+Evidence: `operations/reports/agent-mode-v0-a-voice-transport-contracts-evidence-2026-09-14.md`.
+Exact next bounded slice: **V0-B — Push-to-Talk Input and Local Speech-to-Text
+Adapter**, including the production durable text-intake prerequisite; do not
+start it automatically.

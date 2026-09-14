@@ -1308,6 +1308,31 @@ Evidence: `operations/reports/agent-mode-u0-g-unified-console-exit-audit-2026-09
 Exact next phase: **Phase V0 — Jarvis voice gateway**; do not start it
 automatically.
 
+## Current V0-A deterministic Jarvis voice gateway — 2026-09-14
+
+V0-A is **COMPLETE** for the provider-neutral transport-contract and
+deterministic fixture gate. V0 remains **IN PROGRESS**. Brain now defines a
+versioned voice session/input/transcript/turn/output/interrupt contract and a
+`JarvisVoiceGateway` seam that composes STT, the canonical-text-intake port,
+and Jarvis-only TTS without creating Agent Mode work or selecting a model.
+
+The fixture deterministically transcribes `fixture://voice/hello-jarvis`, routes
+the bounded text through an explicit fixture-only `JarvisTextIntake`, and emits
+`fixture://voice/jarvis-response`. Replay uses deterministic intake/output
+identities and returns a duplicate without replaying logical intake or TTS;
+conflicting material fails closed. STT/TTS failure, uncertainty, transport-only
+interruption, worker speech, and voice control intents are all typed and tested.
+
+This slice does not claim production durable conversational intake: the existing
+Brain source has Root Goal/Jarvis ownership but no canonical intake queue. The
+production adapter and push-to-talk/local STT integration are the exact next
+V0-B prerequisite. MLX Whisper, FluidVoice, video Polly/Azure TTS, K4, and the
+Console remain unchanged.
+
+Evidence: `operations/reports/agent-mode-v0-a-voice-transport-contracts-evidence-2026-09-14.md`.
+Exact next bounded slice: **V0-B — Push-to-Talk Input and Local Speech-to-Text
+Adapter**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not
