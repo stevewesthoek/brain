@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { createHash } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { brainCoreControlRequest, BrainCoreControlError, type BrainCoreLifecycleControlBody, type BrainCoreReviewControlBody } from './braincore-control-server';
@@ -10,6 +11,7 @@ import {
   verifyOperatorSession,
   type OperatorSession,
 } from './operator-session-server';
+import { loopbackTransport, sameOriginRequest } from './operator-request-boundary';
 
 const operatorControlBodySchema = z.object({
   schemaVersion: z.literal('agent-mode-control-v1'),
@@ -27,8 +29,6 @@ const reviewControlBodySchema = operatorControlBodySchema.extend({
 }).strict();
 
 const MAX_PROXY_BODY_BYTES = 16_384;
-const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
-
 type OperatorAdmission =
   | { ok: true; session: OperatorSession }
   | { ok: false; response: NextResponse };
@@ -48,31 +48,8 @@ function errorResponse(code: string, status: number, message = 'Agent Mode contr
   return json({ ok: false, error: { code, message } }, status);
 }
 
-function supportedLoopbackRequest(request: NextRequest): boolean {
-  const hostname = request.nextUrl.hostname.toLowerCase();
-  if (!LOOPBACK_HOSTS.has(hostname)) return false;
-  const forwardedHost = request.headers.get('x-forwarded-host');
-  if (forwardedHost && forwardedHost.split(',')[0]?.trim() !== request.headers.get('host')) return false;
-  const forwardedProto = request.headers.get('x-forwarded-proto');
-  return !forwardedProto || forwardedProto.split(',')[0]?.trim() === request.nextUrl.protocol.replace(':', '');
-}
-
-function sameOriginRequest(request: NextRequest): boolean {
-  const origin = request.headers.get('origin');
-  if (!origin || origin === 'null') return false;
-  try {
-    return new URL(origin).origin === request.nextUrl.origin;
-  } catch {
-    return false;
-  }
-}
-
-function secureTransport(request: NextRequest): boolean {
-  return request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
-}
-
 export function admitOperatorMutation(request: NextRequest): OperatorAdmission {
-  if (!supportedLoopbackRequest(request)) return { ok: false, response: errorResponse('operator_transport_unsupported', 403, 'Operator controls are supported only from the local Brain Console transport.') };
+  if (!loopbackTransport(request)) return { ok: false, response: errorResponse('operator_transport_unsupported', 403, 'Operator controls are supported only from the local Brain Console transport.') };
   if (!sameOriginRequest(request)) return { ok: false, response: errorResponse('operator_origin_invalid', 403, 'Operator control provenance is invalid.') };
   const configuration = loadOperatorConfiguration();
   const verification = verifyOperatorSession({ token: request.cookies.get(OPERATOR_SESSION_COOKIE_NAME)?.value, configuration });
@@ -80,6 +57,10 @@ export function admitOperatorMutation(request: NextRequest): OperatorAdmission {
   const csrf = request.headers.get('x-brain-console-csrf');
   if (!csrf || csrf.length > OPERATOR_CSRF_TOKEN_MAX_LENGTH || csrf !== verification.session.csrfNonce) return { ok: false, response: errorResponse('operator_csrf_invalid', 403, 'Operator control provenance is invalid.') };
   return { ok: true, session: verification.session };
+}
+
+export function operatorSessionAuditId(session: OperatorSession): string {
+  return createHash('sha256').update(`${session.protocolVersion}:${session.sessionId}`, 'utf8').digest('hex');
 }
 
 async function readBody(request: NextRequest): Promise<unknown | undefined> {
@@ -109,7 +90,7 @@ export async function handleLifecycleControl(request: NextRequest, runId: string
   const body = await readBody(request);
   const parsed = lifecycleControlBodySchema.safeParse(body);
   if (!parsed.success || runId.length === 0 || runId.length > 256 || runId.includes('/')) return errorResponse('control_body_invalid', 400, 'Agent Mode control request is invalid.');
-  const controlBody: BrainCoreLifecycleControlBody = parsed.data;
+  const controlBody: BrainCoreLifecycleControlBody = { ...parsed.data, operator: { operatorId: admission.session.operatorId, sessionAuditId: operatorSessionAuditId(admission.session) } };
   try {
     return json(await (dependencies?.controlRequest ?? brainCoreControlRequest)({ pathname: `/agent-mode/control/run/${encodeURIComponent(runId)}`, body: controlBody }), 200);
   } catch (error) {
@@ -123,12 +104,10 @@ export async function handleReviewControl(request: NextRequest, reviewId: string
   const body = await readBody(request);
   const parsed = reviewControlBodySchema.safeParse(body);
   if (!parsed.success || reviewId.length === 0 || reviewId.length > 256 || reviewId.includes('/')) return errorResponse('control_body_invalid', 400, 'Agent Mode control request is invalid.');
-  const controlBody: BrainCoreReviewControlBody = parsed.data;
+  const controlBody: BrainCoreReviewControlBody = { ...parsed.data, operator: { operatorId: admission.session.operatorId, sessionAuditId: operatorSessionAuditId(admission.session) } };
   try {
     return json(await (dependencies?.controlRequest ?? brainCoreControlRequest)({ pathname: `/agent-mode/control/review/${encodeURIComponent(reviewId)}`, body: controlBody }), 200);
   } catch (error) {
     return coreErrorResponse(error);
   }
 }
-
-export { secureTransport };

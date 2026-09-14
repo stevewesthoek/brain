@@ -7,10 +7,12 @@ import {
   AGENT_MODE_CONTROL_SCHEMA_VERSION,
   AgentModeControlService,
   deriveAgentModeControlOperationId,
+  type AgentModeOperatorAttributionV1,
   type AgentModeLifecycleControlCommandV1,
   type AgentModeReviewDecisionCommandV1,
 } from '../agent-mode/agent-mode-control-service.js';
 import { AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
+import { readAgentModeObserver } from '../agent-mode/agent-mode-observer.js';
 
 const NOW = '2026-09-14T10:00:00.000Z';
 
@@ -27,8 +29,8 @@ function admit(store: AgentModeSqliteStateStore): void {
   store.setRunRuntimePid('run:controls-service', 12345, { startedAt: 'fixture', command: 'brain-agent fixture', token: 'fixture-token' });
 }
 
-function lifecycle(action: AgentModeLifecycleControlCommandV1['action'], operationId: string, runId = 'run:controls-service'): AgentModeLifecycleControlCommandV1 {
-  return { schemaVersion: AGENT_MODE_CONTROL_SCHEMA_VERSION, operationId, action, runId, actor: { source: 'operator', actorId: 'operator:fixture' }, requestedAt: NOW, reason: `fixture ${action}` };
+function lifecycle(action: AgentModeLifecycleControlCommandV1['action'], operationId: string, runId = 'run:controls-service', operator?: AgentModeOperatorAttributionV1): AgentModeLifecycleControlCommandV1 {
+  return { schemaVersion: AGENT_MODE_CONTROL_SCHEMA_VERSION, operationId, action, runId, actor: { source: 'operator', actorId: 'operator:fixture' }, requestedAt: NOW, reason: `fixture ${action}`, ...(operator ? { operator } : {}) };
 }
 
 function tempStore(): { root: string; store: AgentModeSqliteStateStore; databasePath: string } {
@@ -42,10 +44,17 @@ test('control service applies pause/cancel through StateStore and preserves idem
   try {
     admit(fixture.store);
     const service = new AgentModeControlService(fixture.store, { verifyRuntimeIdentity: () => false });
-    const pause = service.pauseRun(lifecycle('pause', 'control:pause'));
+    const pause = service.pauseRun(lifecycle('pause', 'control:pause', 'run:controls-service', { operatorId: 'operator:fixture', sessionAuditId: 'a'.repeat(64) }));
     assert.equal(pause.outcome, 'completed');
+    assert.deepEqual(pause.receipt?.operator, { operatorId: 'operator:fixture', sessionAuditId: 'a'.repeat(64) });
+    assert.equal(pause.receipt?.serviceActor, null);
+    assert.equal(pause.receipt?.reason, 'fixture pause');
+    const audit = readAgentModeObserver(NOW, fixture.databasePath).controlAudits[0];
+    assert.equal(audit?.operatorId, 'operator:fixture');
+    assert.equal(audit?.targetType, 'run');
+    assert.equal(audit?.targetId, 'run:controls-service');
     assert.equal(fixture.store.getRun('run:controls-service')?.status, 'paused');
-    const repeated = service.pauseRun(lifecycle('pause', 'control:pause'));
+    const repeated = service.pauseRun(lifecycle('pause', 'control:pause', 'run:controls-service', { operatorId: 'operator:fixture', sessionAuditId: 'a'.repeat(64) }));
     assert.equal(repeated.outcome, 'already_applied');
     const conflicting = service.cancelRun(lifecycle('cancel', 'control:pause'));
     assert.equal(conflicting.outcome, 'conflict');
@@ -137,6 +146,7 @@ test('review decision service delegates to the existing StateStore review path w
   const command: AgentModeReviewDecisionCommandV1 = { schemaVersion: AGENT_MODE_CONTROL_SCHEMA_VERSION, operationId: 'control:review', reviewId: 'review:fixture', decision: 'approved', actor: { source: 'operator', actorId: 'operator:reviewer' }, decidedAt: NOW, reason: 'fixture approval', evidenceHash: 'hash:fixture' };
   const result = new AgentModeControlService(fakeStore).decideReview(command);
   assert.equal(result.outcome, 'completed');
+  assert.equal(result.receipt?.decision, 'approved');
   assert.equal(recorded?.reviewId, command.reviewId);
   assert.equal(recorded?.actor.actorId, command.actor.actorId);
 });

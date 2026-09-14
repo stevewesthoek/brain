@@ -17,6 +17,7 @@ const lifecycleBodySchema = z.object({
   operationId: z.string().min(1).max(128),
   action: z.enum(['pause', 'resume', 'cancel', 'kill']),
   reason: z.string().min(1).max(512),
+  operator: z.object({ operatorId: z.string().min(1).max(128), sessionAuditId: z.string().regex(/^[A-Fa-f0-9]{64}$/u) }).strict().optional(),
 }).strict();
 
 const reviewBodySchema = z.object({
@@ -25,6 +26,7 @@ const reviewBodySchema = z.object({
   decision: z.enum(['approved', 'rejected']),
   reason: z.string().min(1).max(512),
   evidenceHash: z.string().min(1).max(256),
+  operator: z.object({ operatorId: z.string().min(1).max(128), sessionAuditId: z.string().regex(/^[A-Fa-f0-9]{64}$/u) }).strict().optional(),
 }).strict();
 
 export type BrainCoreLifecycleControlBody = {
@@ -32,6 +34,7 @@ export type BrainCoreLifecycleControlBody = {
   operationId: string;
   action: 'pause' | 'resume' | 'cancel' | 'kill';
   reason: string;
+  operator?: { operatorId: string; sessionAuditId: string };
 };
 
 export type BrainCoreReviewControlBody = {
@@ -40,6 +43,7 @@ export type BrainCoreReviewControlBody = {
   decision: 'approved' | 'rejected';
   reason: string;
   evidenceHash: string;
+  operator?: { operatorId: string; sessionAuditId: string };
 };
 
 export type BrainCoreControlBody = BrainCoreLifecycleControlBody | BrainCoreReviewControlBody;

@@ -86,12 +86,31 @@ export type AgentModeObserverProjection = {
   organizationWorkItems: Array<Record<string, unknown>>;
   organizationExecution: OrganizationExecutionProjection[];
   organizationFinalResults: Array<Record<string, unknown>>;
+  controlAudits: AgentModeControlAuditProjection[];
+};
+
+export type AgentModeControlAuditProjection = {
+  operationId: string;
+  action: string;
+  decision: 'approved' | 'rejected' | null;
+  targetType: 'run' | 'review';
+  targetId: string;
+  actor: string;
+  serviceActor: string | null;
+  operatorId: string | null;
+  status: string;
+  reason: string | null;
+  reasonCode: string;
+  occurredAt: string;
+  receiptRef: string;
+  processIdentityVerified: boolean | null;
+  signalSent: boolean | null;
 };
 
 function safePayload(payload: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(payload)) {
-    if (/(auth|proof|token|secret|password|credential|private|provider.?payload)/i.test(key)) {
+    if (/(auth|proof|token|secret|password|credential|private|provider.?payload|csrf|session.?id|session.?audit)/i.test(key)) {
       result[key] = '[redacted]';
     } else if (typeof value === 'string' && (/^(?:[A-Za-z]:[\\/]|\\\\|\/)/.test(value) || value.includes('://'))) {
       result[key] = '[redacted]';
@@ -102,6 +121,45 @@ function safePayload(payload: Record<string, unknown>): Record<string, unknown> 
     }
   }
   return result;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function mapControlAudits(events: AgentModeEvent[]): AgentModeControlAuditProjection[] {
+  return events
+    .filter((event) => event.eventType === 'agent_mode_control_receipt' && isRecord(event.payload.receipt))
+    .map((event) => {
+      const receipt = event.payload.receipt as Record<string, unknown>;
+      const signalEvent = events.find((candidate) => candidate.eventType === 'agent_mode_control_signal' && candidate.entityId === event.entityId);
+      const signalPayload = signalEvent && isRecord(signalEvent.payload) ? signalEvent.payload : undefined;
+      const action = typeof receipt.action === 'string' ? receipt.action : 'unknown';
+      const decision: AgentModeControlAuditProjection['decision'] = receipt.decision === 'approved' || receipt.decision === 'rejected' ? receipt.decision : null;
+      const signalState = typeof signalPayload?.signalState === 'string' ? signalPayload.signalState : typeof receipt.signalState === 'string' ? receipt.signalState : null;
+      const operator = isRecord(receipt.operator) ? receipt.operator : undefined;
+      const actor = typeof receipt.actor === 'string' ? receipt.actor : 'unknown-actor';
+      const targetType: AgentModeControlAuditProjection['targetType'] = action === 'review_decision' ? 'review' : 'run';
+      return {
+        operationId: typeof receipt.operationId === 'string' ? receipt.operationId : event.entityId,
+        action,
+        decision,
+        targetType,
+        targetId: typeof receipt.targetId === 'string' ? receipt.targetId : 'unknown-target',
+        actor,
+        serviceActor: typeof receipt.serviceActor === 'string' ? receipt.serviceActor : actor.startsWith('service:') ? actor : null,
+        operatorId: typeof operator?.operatorId === 'string' ? operator.operatorId : null,
+        status: typeof receipt.status === 'string' ? receipt.status : 'unknown',
+        reason: typeof receipt.reason === 'string' ? receipt.reason : null,
+        reasonCode: typeof receipt.reasonCode === 'string' ? receipt.reasonCode : 'CONTROL_RESULT_UNKNOWN',
+        occurredAt: typeof receipt.occurredAt === 'string' ? receipt.occurredAt : event.occurredAt,
+        receiptRef: event.eventId,
+        processIdentityVerified: action === 'kill' ? signalState !== null && signalState !== 'not_attempted' : null,
+        signalSent: action === 'kill' ? signalState === 'sent' : null,
+      };
+    })
+    .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt) || right.receiptRef.localeCompare(left.receiptRef))
+    .slice(0, 100);
 }
 
 function mapEvent(event: AgentModeEvent): Record<string, unknown> {
@@ -182,7 +240,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'none',
         nextSafeState: 'No Agent Mode StateStore exists; no execution history is available.',
       },
-      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [], organizationPlans: [], organizationWorkItems: [], organizationExecution: [], organizationFinalResults: [],
+      agents: [], tasks: [], runs: [], attempts: [], events: [], recovery: [], operations: [], runtimeDispatches: [], modelOperations: [], workcells: [], workcellWrites: [], workcellValidations: [], workcellLeases: [], workcellDiffs: [], results: [], reviewRequests: [], reviewDecisions: [], targetRefLeases: [], commitOperations: [], mergeApprovals: [], mergeOperations: [], mergeReceipts: [], schedulerEvents: [], schedulerSchedules: [], sourceWatermarks: [], latestSchedulerTick: null, eventSources: [], hostHealthStates: [], ciWorkflowStates: [], spawnAdmissionControls: [], spawnRootStates: [], childAssignments: [], dynamicWorkerOrchestrations: [], organizationPlans: [], organizationWorkItems: [], organizationExecution: [], organizationFinalResults: [], controlAudits: [],
     };
   }
 
@@ -239,7 +297,9 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         } : undefined,
       };
     });
-    const events = store.listRecentEvents(100).map(mapEvent);
+    const controlAuditEvents = store.listRecentEvents(500);
+    const controlAudits = mapControlAudits(controlAuditEvents);
+    const events = controlAuditEvents.slice(-100).map(mapEvent);
     const workcells = store.listWorkcells().map((workcell) => ({
       workcellId: workcell.workcellId, taskId: workcell.taskId, runId: workcell.runId, attemptId: workcell.attemptId,
       repositoryRef: workcell.repositoryRef, branch: workcell.branch, ownerAgent: workcell.ownerAgent,
@@ -555,7 +615,7 @@ export function readAgentModeObserver(now = new Date().toISOString(), databasePa
         executionSource: 'agent-mode-state-store',
         nextSafeState: blockedOrUncertainCount ? 'Inspect durable recovery classifications before resuming.' : 'Durable Agent Mode state is observable; no observer action is required.',
       },
-      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations, organizationPlans, organizationWorkItems, organizationExecution, organizationFinalResults,
+      agents, tasks, runs, attempts, events, recovery, operations, runtimeDispatches, modelOperations, workcells, workcellWrites, workcellValidations, workcellLeases, workcellDiffs, results, reviewRequests, reviewDecisions, targetRefLeases, commitOperations, mergeApprovals, mergeOperations, mergeReceipts, schedulerEvents, schedulerSchedules, sourceWatermarks, latestSchedulerTick, eventSources, hostHealthStates, ciWorkflowStates, spawnAdmissionControls, spawnRootStates, childAssignments, dynamicWorkerOrchestrations, organizationPlans, organizationWorkItems, organizationExecution, organizationFinalResults, controlAudits,
     };
   } finally {
     store.close();

@@ -313,7 +313,7 @@ import { readVideoAnalysisHistory, recordVideoAnalysisHistory } from '../adapter
 import { defaultAlertManager } from '../adapters/alerting.js';
 import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-orchestrator-planner.js';
 import { OrchestrationExecutor, recordApprovalDecision } from '../adapters/agent-orchestrator-executor.js';
-import { AGENT_MODE_CONTROL_ACTIONS, AgentModeControlService, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
+import { AGENT_MODE_CONTROL_ACTIONS, AgentModeControlService, parseAgentModeOperatorAttribution, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
 import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
 import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
 
@@ -535,7 +535,7 @@ async function routeAgentModeControlRequest(url: URL, request: IncomingMessage, 
     store = new AgentModeSqliteStateStore(databasePath);
     const service = new AgentModeControlService(store);
     if (runMatch) {
-      if (!exactBodyKeys(body, ['schemaVersion', 'operationId', 'action', 'reason'])) {
+      if (!exactBodyKeys(body, ['schemaVersion', 'operationId', 'action', 'reason', 'operator'])) {
         sendAgentModeBodyError(response, 'control_fields_invalid');
         return;
       }
@@ -543,14 +543,15 @@ async function routeAgentModeControlRequest(url: URL, request: IncomingMessage, 
       const operationId = requiredBodyText(body, 'operationId', 128);
       const action = requiredBodyText(body, 'action', 16) as AgentModeLifecycleControlAction | undefined;
       const reason = requiredBodyText(body, 'reason', 512);
-      if (!schemaVersion || !operationId || !action || !reason || !AGENT_MODE_CONTROL_ACTIONS.includes(action)) {
+      const operator = parseAgentModeOperatorAttribution(body.operator);
+      if (!schemaVersion || !operationId || !action || !reason || !AGENT_MODE_CONTROL_ACTIONS.includes(action) || (body.operator !== undefined && !operator)) {
         sendAgentModeBodyError(response, 'control_fields_invalid');
         return;
       }
-      const command = { schemaVersion: schemaVersion as 'agent-mode-control-v1', operationId, action, runId: decodeURIComponent(runMatch[1] ?? ''), actor, requestedAt, reason };
+      const command = { schemaVersion: schemaVersion as 'agent-mode-control-v1', operationId, action, runId: decodeURIComponent(runMatch[1] ?? ''), actor, requestedAt, reason, ...(operator ? { operator } : {}) };
       result = action === 'pause' ? service.pauseRun(command) : action === 'resume' ? service.resumeRun(command) : action === 'cancel' ? service.cancelRun(command) : service.killRun(command);
     } else if (reviewMatch) {
-      if (!exactBodyKeys(body, ['schemaVersion', 'operationId', 'decision', 'reason', 'evidenceHash'])) {
+      if (!exactBodyKeys(body, ['schemaVersion', 'operationId', 'decision', 'reason', 'evidenceHash', 'operator'])) {
         sendAgentModeBodyError(response, 'control_fields_invalid');
         return;
       }
@@ -559,11 +560,12 @@ async function routeAgentModeControlRequest(url: URL, request: IncomingMessage, 
       const decision = requiredBodyText(body, 'decision', 16) as AgentModeReviewDecisionCommandV1['decision'] | undefined;
       const reason = requiredBodyText(body, 'reason', 512);
       const evidenceHash = requiredBodyText(body, 'evidenceHash', 256);
-      if (!schemaVersion || !operationId || !decision || !reason || !evidenceHash) {
+      const operator = parseAgentModeOperatorAttribution(body.operator);
+      if (!schemaVersion || !operationId || !decision || !reason || !evidenceHash || !['approved', 'rejected'].includes(decision) || (body.operator !== undefined && !operator)) {
         sendAgentModeBodyError(response, 'control_fields_invalid');
         return;
       }
-      const command: AgentModeReviewDecisionCommandV1 = { schemaVersion: schemaVersion as 'agent-mode-control-v1', operationId, reviewId: decodeURIComponent(reviewMatch[1] ?? ''), decision, actor, decidedAt: requestedAt, reason, evidenceHash };
+      const command: AgentModeReviewDecisionCommandV1 = { schemaVersion: schemaVersion as 'agent-mode-control-v1', operationId, reviewId: decodeURIComponent(reviewMatch[1] ?? ''), decision, actor, decidedAt: requestedAt, reason, evidenceHash, ...(operator ? { operator } : {}) };
       result = service.decideReview(command);
     } else {
       sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_control_not_found', message: 'Agent Mode control route is not supported.' } });

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { NextRequest } from 'next/server';
+import { NextRequest, type NextResponse } from 'next/server';
 import { POST as login, GET as sessionCheck, DELETE as logout } from '../app/api/operator/session/route';
-import { handleLifecycleControl, handleReviewControl } from './operator-control-server';
+import { handleLifecycleControl, handleReviewControl, operatorSessionAuditId } from './operator-control-server';
 import { operatorSessionAuthenticatedResponseSchema, operatorSessionResponseSchema, type AgentModeControlResponse } from './braincore-schemas';
 import {
   OPERATOR_SESSION_COOKIE_NAME,
   OPERATOR_SESSION_MAX_AGE_SECONDS,
   createOperatorSession,
+  OPERATOR_LOGIN_MAX_FAILURES,
   loadOperatorConfiguration,
   operatorSessionCookieOptions,
   serializeOperatorSession,
@@ -31,14 +32,16 @@ function withEnv(callback: () => Promise<void>): Promise<void> {
 }
 
 function request(url: string, init?: ConstructorParameters<typeof NextRequest>[1]): NextRequest {
-  return new NextRequest(url, init);
+  const headers = new Headers(init?.headers);
+  if (!headers.has('host')) headers.set('host', new URL(url).host);
+  return new NextRequest(url, { ...init, headers });
 }
 
 function loginBody(operatorId = CONFIG.operatorId, operatorSecret = CONFIG.operatorSecret) {
   return JSON.stringify({ schemaVersion: 'brain-console-operator-v1', operatorId, operatorSecret });
 }
 
-function controlRequest(url: string, token: string | undefined, csrfToken: string | undefined, body: unknown, origin = 'http://localhost:4881'): NextRequest {
+function controlRequest(url: string, token: string | undefined, csrfToken: string | undefined, body: unknown, origin = 'http://localhost:4881', extraHeaders: Record<string, string> = {}): NextRequest {
   return request(url, {
     method: 'POST',
     headers: {
@@ -46,6 +49,7 @@ function controlRequest(url: string, token: string | undefined, csrfToken: strin
       origin,
       ...(token ? { cookie: `${OPERATOR_SESSION_COOKIE_NAME}=${token}` } : {}),
       ...(csrfToken ? { 'x-brain-console-csrf': csrfToken } : {}),
+      ...extraHeaders,
     },
     body: JSON.stringify(body),
   });
@@ -127,6 +131,20 @@ test('login uses generic bounded failures and missing configuration stays unavai
   }
 });
 
+test('login applies a bounded cooldown after repeated failures without disclosing account state', async () => {
+  await withEnv(async () => {
+    const operatorId = 'operator:throttle-fixture';
+    const responses: NextResponse[] = [];
+    for (let attempt = 0; attempt < OPERATOR_LOGIN_MAX_FAILURES; attempt += 1) {
+      responses.push(await login(request('http://localhost:4881/api/operator/session', { method: 'POST', body: loginBody(operatorId, 'wrong-secret-0123456789') })));
+    }
+    assert.equal(responses.every((response) => response.status === 401), true);
+    const throttled = await login(request('http://localhost:4881/api/operator/session', { method: 'POST', body: loginBody(operatorId, 'wrong-secret-0123456789') }));
+    assert.equal(throttled.status, 429);
+    assert.deepEqual(await throttled.json(), { ok: false, error: { code: 'operator_login_throttled', message: 'Operator authentication failed.' } });
+  });
+});
+
 test('session check and logout reconstruct and clear the browser session', async () => {
   await withEnv(async () => {
     const { token } = await establishSession();
@@ -157,6 +175,22 @@ test('proxy requires session, same-origin provenance, and the session-bound CSRF
   });
 });
 
+test('proxy rejects forwarded or malformed transport provenance before Brain Core', async () => {
+  await withEnv(async () => {
+    const { token, csrfToken } = await establishSession();
+    const body = { schemaVersion: 'agent-mode-control-v1', operationId: 'operation:boundary', action: 'pause', reason: 'boundary fixture' };
+    const controlRequestStub = async (): Promise<AgentModeControlResponse> => ({ ok: true, result: { outcome: 'completed', reasonCode: 'PAUSE_APPLIED' } });
+    const forwarded = await handleLifecycleControl(controlRequest('http://localhost:4881/api/agent-mode/control/run/run:fixture', token, csrfToken, body, 'http://localhost:4881', { 'x-forwarded-host': 'localhost:4881' }), 'run:fixture', { controlRequest: controlRequestStub });
+    const forwardedFor = await handleLifecycleControl(controlRequest('http://localhost:4881/api/agent-mode/control/run/run:fixture', token, csrfToken, body, 'http://localhost:4881', { 'x-forwarded-for': '127.0.0.1' }), 'run:fixture', { controlRequest: controlRequestStub });
+    const foreignHost = await handleLifecycleControl(controlRequest('http://localhost:4881/api/agent-mode/control/run/run:fixture', token, csrfToken, body, 'http://localhost:4881', { host: 'evil.example' }), 'run:fixture', { controlRequest: controlRequestStub });
+    const missingOrigin = await handleLifecycleControl(request('http://localhost:4881/api/agent-mode/control/run/run:fixture', { method: 'POST', headers: { 'content-type': 'application/json', cookie: `${OPERATOR_SESSION_COOKIE_NAME}=${token}`, 'x-brain-console-csrf': csrfToken }, body: JSON.stringify(body) }), 'run:fixture', { controlRequest: controlRequestStub });
+    assert.equal(forwarded.status, 403);
+    assert.equal(forwardedFor.status, 403);
+    assert.equal(foreignHost.status, 403);
+    assert.equal(missingOrigin.status, 403);
+  });
+});
+
 test('proxy rejects unknown actions and extra browser authority fields before Brain Core', async () => {
   await withEnv(async () => {
     const { token, csrfToken } = await establishSession();
@@ -180,9 +214,15 @@ test('review proxy forwards only the bounded review decision contract', async ()
       schemaVersion: 'agent-mode-control-v1', operationId: 'operation:review-fixture', decision: 'approved', reason: 'operator fixture', evidenceHash: 'evidence:fixture',
     }), 'review:fixture', { controlRequest: controlRequestStub as typeof import('./braincore-control-server').brainCoreControlRequest });
     assert.equal(response.status, 200);
+    const verified = verifyOperatorSession({ token, configuration: CONFIG });
+    assert.equal(verified.authenticated, true);
+    if (!verified.authenticated) return;
     assert.deepEqual(forwarded, {
       pathname: '/agent-mode/control/review/review%3Afixture',
-      body: { schemaVersion: 'agent-mode-control-v1', operationId: 'operation:review-fixture', decision: 'approved', reason: 'operator fixture', evidenceHash: 'evidence:fixture' },
+      body: { schemaVersion: 'agent-mode-control-v1', operationId: 'operation:review-fixture', decision: 'approved', reason: 'operator fixture', evidenceHash: 'evidence:fixture', operator: { operatorId: CONFIG.operatorId, sessionAuditId: operatorSessionAuditId(verified.session) } },
     });
+    assert.equal(operatorSessionAuditId(verified.session).length, 64);
+    assert.equal(JSON.stringify(forwarded).includes(verified.session.sessionId), false);
+    assert.equal(JSON.stringify(forwarded).includes(verified.session.csrfNonce), false);
   });
 });

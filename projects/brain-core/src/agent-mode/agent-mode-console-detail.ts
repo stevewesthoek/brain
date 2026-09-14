@@ -1,5 +1,5 @@
 import { defaultAgentModeDatabasePath } from './sqlite-state-store.js';
-import { readAgentModeObserver, type AgentModeObserverProjection } from './agent-mode-observer.js';
+import { readAgentModeObserver, type AgentModeControlAuditProjection, type AgentModeObserverProjection } from './agent-mode-observer.js';
 
 export const AGENT_MODE_CONSOLE_DETAIL_VERSION = 'agent-mode-console-detail-v1' as const;
 
@@ -20,6 +20,7 @@ export const AGENT_MODE_CONSOLE_DETAIL_BOUNDS = Object.freeze({
   budgetSettlements: 100,
   schedulerHistory: 50,
   failureEvents: 50,
+  controlAudits: 50,
 });
 
 type Row = Record<string, unknown>;
@@ -148,6 +149,7 @@ export type AgentModeConsoleRunDetail = {
   status: string;
   createdAt: string | null;
   lifecycle: AgentModeConsoleDetailLifecycle;
+  controlAudits: AgentModeControlAuditProjection[];
 };
 
 export type AgentModeConsoleAttemptDetail = {
@@ -527,7 +529,7 @@ function buildDetail(observer: AgentModeObserverProjection, now: string, kind: A
     if (!run) return null;
     const attempt = attemptByRun(id);
     const agent = agentById(text(run.agentId));
-    return { kind, runId: id, taskId: text(run.taskId) ?? 'unknown-task', agentId: text(run.agentId), rootGoalId: text(agent?.rootGoalId), status: text(run.status) ?? 'unknown', createdAt: text(run.createdAt), lifecycle: lifecycle(observer, attempt, text(run.taskId), id) };
+    return { kind, runId: id, taskId: text(run.taskId) ?? 'unknown-task', agentId: text(run.agentId), rootGoalId: text(agent?.rootGoalId), status: text(run.status) ?? 'unknown', createdAt: text(run.createdAt), lifecycle: lifecycle(observer, attempt, text(run.taskId), id), controlAudits: observer.controlAudits.filter((audit) => audit.targetType === 'run' && audit.targetId === id).slice(0, AGENT_MODE_CONSOLE_DETAIL_BOUNDS.controlAudits) };
   }
 
   if (kind === 'attempt') {

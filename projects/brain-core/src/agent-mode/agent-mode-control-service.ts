@@ -10,6 +10,8 @@ export const AGENT_MODE_CONTROL_MAX_OPERATION_ID_LENGTH = 128;
 export const AGENT_MODE_CONTROL_MAX_TARGET_ID_LENGTH = 256;
 export const AGENT_MODE_CONTROL_MAX_REASON_LENGTH = 512;
 export const AGENT_MODE_CONTROL_MAX_EVIDENCE_HASH_LENGTH = 256;
+export const AGENT_MODE_CONTROL_MAX_OPERATOR_ID_LENGTH = 128;
+export const AGENT_MODE_CONTROL_MAX_SESSION_AUDIT_ID_LENGTH = 128;
 
 export const AGENT_MODE_CONTROL_ACTIONS = ['pause', 'resume', 'cancel', 'kill'] as const;
 export type AgentModeLifecycleControlAction = typeof AGENT_MODE_CONTROL_ACTIONS[number];
@@ -36,6 +38,11 @@ export type AgentModeTrustedActor = {
   actorId: string;
 };
 
+export type AgentModeOperatorAttributionV1 = {
+  operatorId: string;
+  sessionAuditId: string;
+};
+
 export type AgentModeLifecycleControlCommandV1 = {
   schemaVersion: typeof AGENT_MODE_CONTROL_SCHEMA_VERSION;
   operationId: string;
@@ -45,6 +52,7 @@ export type AgentModeLifecycleControlCommandV1 = {
   expectedState?: string;
   requestedAt: string;
   reason: string;
+  operator?: AgentModeOperatorAttributionV1;
 };
 
 export type AgentModeReviewDecisionCommandV1 = {
@@ -56,6 +64,7 @@ export type AgentModeReviewDecisionCommandV1 = {
   decidedAt: string;
   reason: string;
   evidenceHash: string;
+  operator?: AgentModeOperatorAttributionV1;
 };
 
 export type AgentModeControlSignalState = 'not_attempted' | 'pending' | 'sent' | 'not_sent';
@@ -64,15 +73,19 @@ export type AgentModeControlReceiptV1 = {
   schemaVersion: typeof AGENT_MODE_CONTROL_SCHEMA_VERSION;
   operationId: string;
   action: AgentModeLifecycleControlAction | 'review_decision';
+  decision: AgentModeReviewDecisionValue | null;
   targetId: string;
   actor: string;
   status: AgentModeControlOutcome;
   previousState: string | null;
   resultingState: string | null;
   occurredAt: string;
+  reason: string;
   reasonCode: string;
   recoveryCode: string | null;
   signalState: AgentModeControlSignalState | null;
+  serviceActor: string | null;
+  operator: AgentModeOperatorAttributionV1 | null;
 };
 
 export type AgentModeControlResult = {
@@ -106,6 +119,15 @@ function boundedText(value: string, label: string, maxLength: number, required =
   }
 }
 
+function operatorAttribution(value: AgentModeOperatorAttributionV1 | undefined): AgentModeOperatorAttributionV1 | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value) || Object.keys(value).some((key) => !['operatorId', 'sessionAuditId'].includes(key))) throw new AgentModeControlValidationError('operator_attribution_invalid');
+  boundedText(value.operatorId, 'operator_id', AGENT_MODE_CONTROL_MAX_OPERATOR_ID_LENGTH);
+  boundedText(value.sessionAuditId, 'session_audit_id', AGENT_MODE_CONTROL_MAX_SESSION_AUDIT_ID_LENGTH);
+  if (!/^[A-Fa-f0-9]{64}$/u.test(value.sessionAuditId)) throw new AgentModeControlValidationError('session_audit_id_invalid');
+  return { operatorId: value.operatorId, sessionAuditId: value.sessionAuditId.toLowerCase() };
+}
+
 function validTimestamp(value: string, label: string): void {
   boundedText(value, label, 64);
   if (!Number.isFinite(Date.parse(value))) throw new AgentModeControlValidationError(`${label}_invalid`);
@@ -120,9 +142,9 @@ function actorRef(actor: AgentModeTrustedActor): string {
 
 function canonicalCommand(value: AgentModeLifecycleControlCommandV1 | AgentModeReviewDecisionCommandV1): string {
   if ('runId' in value) {
-    return JSON.stringify({ schemaVersion: value.schemaVersion, operationId: value.operationId, action: value.action, runId: value.runId, actor: value.actor, expectedState: value.expectedState ?? null, requestedAt: value.requestedAt, reason: value.reason });
+    return JSON.stringify({ schemaVersion: value.schemaVersion, operationId: value.operationId, action: value.action, runId: value.runId, actor: value.actor, operator: value.operator ?? null, expectedState: value.expectedState ?? null, requestedAt: value.requestedAt, reason: value.reason });
   }
-  return JSON.stringify({ schemaVersion: value.schemaVersion, operationId: value.operationId, reviewId: value.reviewId, decision: value.decision, actor: value.actor, decidedAt: value.decidedAt, reason: value.reason, evidenceHash: value.evidenceHash });
+  return JSON.stringify({ schemaVersion: value.schemaVersion, operationId: value.operationId, reviewId: value.reviewId, decision: value.decision, actor: value.actor, operator: value.operator ?? null, decidedAt: value.decidedAt, reason: value.reason, evidenceHash: value.evidenceHash });
 }
 
 function commandHash(value: AgentModeLifecycleControlCommandV1 | AgentModeReviewDecisionCommandV1): string {
@@ -131,8 +153,8 @@ function commandHash(value: AgentModeLifecycleControlCommandV1 | AgentModeReview
 
 export function deriveAgentModeControlOperationId(command: Omit<AgentModeLifecycleControlCommandV1, 'operationId'> | Omit<AgentModeReviewDecisionCommandV1, 'operationId'>): string {
   const material = 'runId' in command
-    ? { schemaVersion: command.schemaVersion, action: command.action, runId: command.runId, actor: command.actor, expectedState: command.expectedState ?? null, requestedAt: command.requestedAt, reason: command.reason }
-    : { schemaVersion: command.schemaVersion, action: 'review_decision', reviewId: command.reviewId, decision: command.decision, actor: command.actor, decidedAt: command.decidedAt, reason: command.reason, evidenceHash: command.evidenceHash };
+    ? { schemaVersion: command.schemaVersion, action: command.action, runId: command.runId, actor: command.actor, operator: command.operator ?? null, expectedState: command.expectedState ?? null, requestedAt: command.requestedAt, reason: command.reason }
+    : { schemaVersion: command.schemaVersion, action: 'review_decision', reviewId: command.reviewId, decision: command.decision, actor: command.actor, operator: command.operator ?? null, decidedAt: command.decidedAt, reason: command.reason, evidenceHash: command.evidenceHash };
   return `agent-mode-control:${createHash('sha256').update(JSON.stringify(material)).digest('hex')}`;
 }
 
@@ -174,6 +196,7 @@ function validateLifecycleCommand(command: AgentModeLifecycleControlCommandV1): 
   boundedText(command.runId, 'run_id', AGENT_MODE_CONTROL_MAX_TARGET_ID_LENGTH);
   validTimestamp(command.requestedAt, 'requested_at');
   if (command.expectedState !== undefined) boundedText(command.expectedState, 'expected_state', 64);
+  operatorAttribution(command.operator);
   return actor;
 }
 
@@ -184,7 +207,18 @@ function validateReviewCommand(command: AgentModeReviewDecisionCommandV1): strin
   boundedText(command.reviewId, 'review_id', AGENT_MODE_CONTROL_MAX_TARGET_ID_LENGTH);
   boundedText(command.evidenceHash, 'evidence_hash', AGENT_MODE_CONTROL_MAX_EVIDENCE_HASH_LENGTH);
   validTimestamp(command.decidedAt, 'decided_at');
+  operatorAttribution(command.operator);
   return actor;
+}
+
+export function parseAgentModeOperatorAttribution(value: unknown): AgentModeOperatorAttributionV1 | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value) || typeof value.operatorId !== 'string' || typeof value.sessionAuditId !== 'string') return undefined;
+  try {
+    return operatorAttribution(value as AgentModeOperatorAttributionV1);
+  } catch {
+    return undefined;
+  }
 }
 
 function outcomeForOperation(result: 'created' | 'duplicate' | 'conflict'): AgentModeControlOutcome {
@@ -223,20 +257,26 @@ function makeReceipt(input: {
   reasonCode: string;
   recoveryCode?: string | null;
   signalState?: AgentModeControlSignalState | null;
+  serviceActor?: string | null;
+  operator?: AgentModeOperatorAttributionV1;
 }): AgentModeControlReceiptV1 {
   return {
     schemaVersion: AGENT_MODE_CONTROL_SCHEMA_VERSION,
     operationId: input.command.operationId,
     action: input.action,
+    decision: 'decision' in input.command ? input.command.decision : null,
     targetId: input.targetId,
     actor: input.actor,
     status: input.status,
     previousState: input.previousState,
     resultingState: input.resultingState,
     occurredAt: 'requestedAt' in input.command ? input.command.requestedAt : input.command.decidedAt,
+    reason: input.command.reason,
     reasonCode: input.reasonCode,
     recoveryCode: input.recoveryCode ?? null,
     signalState: input.signalState ?? null,
+    serviceActor: input.serviceActor ?? (input.command.actor.source === 'service' ? input.actor : null),
+    operator: input.operator ?? input.command.operator ?? null,
   };
 }
 

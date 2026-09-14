@@ -178,6 +178,37 @@ Evidence: `operations/reports/agent-mode-u0-c3b-operator-session-controls-eviden
 The next bounded U0 gap is **U0-D — Agent Mode Control Audit, Evidence, and
 Operator Session Hardening**; do not start it automatically.
 
+## U0-D control audit and operator session hardening
+
+U0-D is **COMPLETE** for the bounded local-operator audit and session-hardening
+gate; U0-C is complete and U0 remains **IN PROGRESS**. The existing
+`AgentModeControlService` receipt/event stream is the sole control-audit
+authority. Receipts retain bounded operator attribution separately from the
+authenticated Brain Core service actor. The Console projection exposes at most
+100 audit entries and run detail at most 50, with action, target, outcome,
+reason code, receipt reference, operator ID, service actor, and kill signal
+metadata only. Session audit hashes are intentionally omitted from the Console
+projection; CSRF values, cookies, secrets, PIDs, prompts, reasoning, provider
+payloads, and raw logs never cross the boundary.
+
+The six existing controls are unchanged: pause, resume, cancel, kill, approve,
+and reject. The server-only Console proxy injects operator attribution only
+after verifying the finite local session and then signs the existing
+`brain-service-auth-v1` request. Brain Core remains authoritative for all
+runtime identity, kill, cancellation, review, deadline, and idempotency checks.
+No direct browser authority or second ledger is introduced.
+
+The local session boundary requires direct loopback transport, an exact Host
+match, same-origin Origin, session cookie, and matching CSRF nonce. With no
+trusted proxy configured, any forwarded header is rejected. Login failures are
+bounded by a five-failure short cooldown; cookies are finite HKDF/HMAC-signed,
+HttpOnly, SameSite=Strict, and `/api` scoped. Logout is stateless cookie
+clearing under the current local-only threat model; a revocation ledger is not
+claimed. Evidence:
+`operations/reports/agent-mode-u0-d-control-audit-session-hardening-evidence-2026-09-14.md`.
+The next U0 task is to inspect remaining roadmap gaps and define one bounded
+slice; do not start it automatically.
+
 ## Design reference
 
 Use the shadcnblocks admin dashboard pattern as the visual reference:

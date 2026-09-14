@@ -150,7 +150,7 @@ test('authenticated Agent Mode pause reaches the control service, derives the se
     now: NOW,
   });
   store.close();
-  const body = JSON.stringify({ schemaVersion: 'agent-mode-control-v1', operationId: 'control:http-pause', action: 'pause', reason: 'authenticated fixture pause' });
+  const body = JSON.stringify({ schemaVersion: 'agent-mode-control-v1', operationId: 'control:http-pause', action: 'pause', reason: 'authenticated fixture pause', operator: { operatorId: 'operator:console-fixture', sessionAuditId: 'b'.repeat(64) } });
   const requestTimestamp = new Date().toISOString();
   let reads = 0;
   try {
@@ -159,10 +159,12 @@ test('authenticated Agent Mode pause reaches the control service, derives the se
       const first = await route(input);
       assert.equal(first.statusCode, 200);
       assert.equal(first.headers['access-control-allow-origin'], undefined);
-      const firstBody = JSON.parse(first.body) as { ok: boolean; result: { outcome: string; receipt: { actor: string } } };
+      const firstBody = JSON.parse(first.body) as { ok: boolean; result: { outcome: string; receipt: { actor: string; serviceActor: string | null; operator: { operatorId: string; sessionAuditId: string } } } };
       assert.equal(firstBody.ok, true);
       assert.equal(firstBody.result.outcome, 'completed');
       assert.equal(firstBody.result.receipt.actor, SERVICE_ID);
+      assert.equal(firstBody.result.receipt.serviceActor, SERVICE_ID);
+      assert.deepEqual(firstBody.result.receipt.operator, { operatorId: 'operator:console-fixture', sessionAuditId: 'b'.repeat(64) });
       const repeated = await route(input);
       assert.equal(repeated.statusCode, 200);
       assert.equal((JSON.parse(repeated.body) as { result: { outcome: string } }).result.outcome, 'already_applied');
@@ -207,6 +209,10 @@ test('authenticated request verifies body digest and rejects caller actor or PID
       const reviewResponse = await route({ method: 'POST', pathname: '/agent-mode/control/review/review:missing', headers: headersFor({ method: 'POST', pathname: '/agent-mode/control/review/review:missing', body: reviewBody, timestamp: requestTimestamp }), body: reviewBody });
       assert.equal(reviewResponse.statusCode, 400);
       assert.equal((JSON.parse(reviewResponse.body) as { error: { code: string } }).error.code, 'control_fields_invalid');
+      const malformedOperatorBody = JSON.stringify({ schemaVersion: 'agent-mode-control-v1', operationId: 'control:operator-invalid', action: 'pause', reason: 'fixture', operator: { operatorId: 'operator:fixture', sessionAuditId: 'not-a-digest' } });
+      const malformedOperatorResponse = await route({ method: 'POST', pathname: '/agent-mode/control/run/run:missing', headers: headersFor({ method: 'POST', pathname: '/agent-mode/control/run/run:missing', body: malformedOperatorBody, timestamp: requestTimestamp }), body: malformedOperatorBody });
+      assert.equal(malformedOperatorResponse.statusCode, 400);
+      assert.equal((JSON.parse(malformedOperatorResponse.body) as { error: { code: string } }).error.code, 'control_fields_invalid');
     });
   } finally {
     rmSync(root, { recursive: true, force: true });

@@ -53,15 +53,19 @@ const agentModeControlReceiptSchema = z.object({
   schemaVersion: z.literal('agent-mode-control-v1'),
   operationId: z.string().min(1).max(128),
   action: z.enum(['pause', 'resume', 'cancel', 'kill', 'review_decision']),
+  decision: z.enum(['approved', 'rejected']).nullable().optional(),
   targetId: z.string().min(1).max(256),
   actor: z.string().min(1).max(256),
   status: z.enum(['completed', 'already_applied', 'conflict', 'stale', 're_admission_required', 'runtime_identity_unverified', 'not_found', 'forbidden', 'unavailable', 'uncertain']),
   previousState: z.string().max(128).nullable(),
   resultingState: z.string().max(128).nullable(),
   occurredAt: z.string(),
+  reason: z.string().max(512).optional(),
   reasonCode: z.string().min(1).max(128),
   recoveryCode: z.string().max(128).nullable(),
   signalState: z.enum(['not_attempted', 'pending', 'sent', 'not_sent']).nullable(),
+  serviceActor: z.string().max(256).nullable().optional(),
+  operator: z.object({ operatorId: z.string().min(1).max(128), sessionAuditId: z.string().regex(/^[A-Fa-f0-9]{64}$/u) }).strict().nullable().optional(),
 }).strict();
 
 const agentModeControlResultSchema = z.object({
@@ -310,6 +314,24 @@ const agentModeConsoleNodeResourceSchema = z.object({
   observedAt: z.string().nullable(),
 }).strict();
 
+const agentModeConsoleControlAuditSchema = z.object({
+  operationId: z.string().min(1).max(128),
+  action: z.enum(['pause', 'resume', 'cancel', 'kill', 'review_decision']),
+  decision: z.enum(['approved', 'rejected']).nullable(),
+  targetType: z.enum(['run', 'review']),
+  targetId: z.string().min(1).max(256),
+  actor: z.string().min(1).max(256),
+  serviceActor: z.string().max(256).nullable(),
+  operatorId: z.string().max(128).nullable(),
+  status: z.enum(['completed', 'already_applied', 'conflict', 'stale', 're_admission_required', 'runtime_identity_unverified', 'not_found', 'forbidden', 'unavailable', 'uncertain']),
+  reason: z.string().max(512).nullable(),
+  reasonCode: z.string().min(1).max(128),
+  occurredAt: z.string(),
+  receiptRef: z.string().min(1).max(256),
+  processIdentityVerified: z.boolean().nullable(),
+  signalSent: z.boolean().nullable(),
+}).strict();
+
 export const agentModeConsoleProjectionSchema = z.object({
   schemaVersion: z.literal('agent-mode-console-v1'),
   generatedAt: z.string(),
@@ -351,6 +373,7 @@ export const agentModeConsoleProjectionSchema = z.object({
   failures: z.array(agentModeConsoleFailureSchema).max(50),
   modelResources: z.array(agentModeConsoleModelResourceSchema).max(100),
   nodeResources: z.array(agentModeConsoleNodeResourceSchema).max(100),
+  controlAudits: z.array(agentModeConsoleControlAuditSchema).max(100),
 }).strict();
 export type AgentModeConsoleProjection = z.infer<typeof agentModeConsoleProjectionSchema>;
 
@@ -425,6 +448,7 @@ const agentModeConsoleTaskDetailSchema = z.object({
 
 const agentModeConsoleRunDetailSchema = z.object({
   kind: z.literal('run'), runId: z.string(), taskId: z.string(), agentId: z.string().nullable(), rootGoalId: z.string().nullable(), status: z.string(), createdAt: z.string().nullable(), lifecycle: agentModeConsoleDetailLifecycleSchema,
+  controlAudits: z.array(agentModeConsoleControlAuditSchema).max(50),
 }).strict();
 
 const agentModeConsoleAttemptDetailSchema = z.object({

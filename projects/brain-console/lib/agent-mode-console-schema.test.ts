@@ -7,7 +7,7 @@ const emptyProjection = {
   freshness: { status: 'empty', sourceStatus: 'available', generatedAt: '2026-09-13T12:00:00.000Z', stateStorePresent: true, message: 'empty' },
   summary: { activeRootGoalCount: 0, activeAgentCount: 0, runningTaskCount: 0, runningAttemptCount: 0, blockedCount: 0, failedCount: 0, uncertainCount: 0, pendingApprovalCount: 0, activeScheduleCount: 0, reservedCost: 0, settledCost: 0 },
   agents: [], organizations: [], tasks: [], runs: [], attempts: [], runtimes: [], budgets: [], schedules: [], approvals: [],
-  evidenceSummary: { evidenceCount: 0, receiptCount: 0, latestEvidenceRefs: [] }, failures: [], modelResources: [], nodeResources: [],
+  evidenceSummary: { evidenceCount: 0, receiptCount: 0, latestEvidenceRefs: [] }, failures: [], modelResources: [], nodeResources: [], controlAudits: [],
 };
 
 test('canonical Agent Mode Console projection parses its empty state', () => {
@@ -28,6 +28,14 @@ test('canonical schema keeps uncertainty and K5 final-result metadata explicit',
   });
   assert.equal(parsed.summary.uncertainCount, 1);
   assert.equal(parsed.organizations[0]?.finalResultId, 'final:1');
+});
+
+test('canonical schema parses bounded control audit metadata and rejects unknown control status', () => {
+  const audit = { operationId: 'agent-mode-control:fixture', action: 'kill', decision: null, targetType: 'run', targetId: 'run:fixture', actor: 'service:brain-console', serviceActor: 'service:brain-console', operatorId: 'operator:fixture', status: 'completed', reason: 'operator fixture', reasonCode: 'KILL_APPLIED', occurredAt: '2026-09-14T12:00:00.000Z', receiptRef: 'event:control-receipt', processIdentityVerified: true, signalSent: true } as const;
+  const parsed = agentModeConsoleProjectionSchema.parse({ ...emptyProjection, controlAudits: [audit] });
+  assert.equal(parsed.controlAudits[0]?.operatorId, 'operator:fixture');
+  assert.equal(agentModeConsoleProjectionSchema.safeParse({ ...emptyProjection, controlAudits: [{ ...audit, status: 'future' }] }).success, false);
+  assert.equal(agentModeConsoleProjectionSchema.safeParse({ ...emptyProjection, controlAudits: [{ ...audit, operatorId: 'operator:fixture', sessionAuditId: 'should-not-be-exposed' }] }).success, false);
 });
 
 test('detail union parses safe Agent, Organization, and Evidence responses', () => {

@@ -1185,6 +1185,40 @@ Evidence: `operations/reports/agent-mode-u0-c3b-operator-session-controls-eviden
 Exact next bounded slice: **U0-D — Agent Mode Control Audit, Evidence, and
 Operator Session Hardening**. Do not start it automatically.
 
+## Current U0-D control audit and session hardening — 2026-09-14
+
+U0-D — **Agent Mode Control Audit, Evidence, and Operator Session Hardening** —
+is **COMPLETE** for the bounded local-operator gate. U0-C and U0-D are complete;
+U0 remains **IN PROGRESS**.
+
+The existing durable control receipt/event path now preserves bounded trusted
+operator attribution separately from the authenticated Brain Console service
+actor. The observer and `/agent-mode/console` projection expose at most 100
+metadata-only control audits, and run detail exposes at most 50 matching
+receipts. They contain action, target, outcome, reason code, operator ID,
+service actor, receipt reference, and kill signal metadata only; session hashes
+are not exposed in the Console projection and no secrets, CSRF values, PIDs,
+prompts, hidden reasoning, provider payloads, or raw logs are returned.
+
+All six existing guarded controls remain Brain Core-owned: pause, resume,
+cancel, kill, approve, and reject. Core continues to enforce runtime identity,
+kill/cancellation/review restrictions, deadlines, and idempotent operation
+identity. The local session boundary now rejects any forwarded headers in the
+absence of a trusted proxy, requires a direct loopback Host match and same
+Origin, applies strict body limits, and uses a bounded five-failure cooldown.
+Cookie logout is intentionally stateless clearing under the current local-only
+threat model; no revocation ledger is claimed. Repeated reads or denied
+requests perform no downstream control call.
+
+The browser cannot supply operator attribution: the server-only proxy adds it
+from the verified session before signing the existing Brain Core service
+request. Existing K4 lifecycle/runtime authority and the single durable Agent
+Mode event stream remain the sources of truth.
+
+Evidence: `operations/reports/agent-mode-u0-d-control-audit-session-hardening-evidence-2026-09-14.md`.
+Exact next U0 task: inspect the remaining U0 gaps and record one bounded next
+slice after this audit; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

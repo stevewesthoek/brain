@@ -25,6 +25,9 @@ const successfulResult = {
       reasonCode: 'PAUSE_APPLIED',
       recoveryCode: null,
       signalState: null,
+      reason: 'operator fixture',
+      serviceActor: SERVICE_ID,
+      operator: { operatorId: 'operator:fixture', sessionAuditId: 'c'.repeat(64) },
     },
   },
 };
@@ -43,7 +46,7 @@ function withEnv(callback: () => Promise<void>): Promise<void> {
 }
 
 function lifecycleBody() {
-  return { schemaVersion: 'agent-mode-control-v1' as const, operationId: 'operation:fixture', action: 'pause' as const, reason: 'operator fixture' };
+  return { schemaVersion: 'agent-mode-control-v1' as const, operationId: 'operation:fixture', action: 'pause' as const, reason: 'operator fixture', operator: { operatorId: 'operator:fixture', sessionAuditId: 'c'.repeat(64) } };
 }
 
 test('server-only control client signs the exact Brain service contract and parses a bounded response', async () => {

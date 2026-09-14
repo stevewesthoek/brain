@@ -1320,7 +1320,7 @@ Console control surface**. Do not start U0 automatically.
 
 ## Phase U0 — unified Brain Console control surface
 
-**Status:** IN PROGRESS; U0-A, U0-B, U0-C1, U0-C2, U0-C3A, and U0-C3B are complete; U0-C is complete and U0 remains in progress
+**Status:** IN PROGRESS; U0-A, U0-B, U0-C1, U0-C2, U0-C3A, U0-C3B, and U0-D are complete; U0-C is complete and U0 remains in progress
 
 Borrow Orca-like fleet/worktree/usage/notification patterns while keeping Brain
 Console as the primary control/dashboard surface. Show Jarvis intake, agent
@@ -1515,6 +1515,35 @@ Evidence: `operations/reports/agent-mode-u0-c3b-operator-session-controls-eviden
 Exact next bounded slice: **U0-D — Agent Mode Control Audit, Evidence, and
 Operator Session Hardening** (or the exact successor recorded after the next
 roadmap review). Do not start it automatically.
+
+### U0-D — Agent Mode Control Audit, Evidence, and Operator Session Hardening
+
+**Status:** COMPLETE for the bounded local-operator audit and session-hardening gate; U0-C and U0-D are complete and U0 remains IN PROGRESS.
+
+U0-D closes the local control-audit gap without adding a second ledger. The
+existing Brain Core `AgentModeControlService` receipts/events now carry bounded
+operator attribution (`operatorId` plus a non-secret session audit hash) and
+the authenticated service actor separately. The observer and Console expose a
+bounded, metadata-only control-audit projection and run-detail audit list;
+session identifiers, CSRF values, secrets, process IDs, prompts, provider
+payloads, and raw logs are never projected.
+
+The six promoted controls remain the existing pause, resume, cancel, kill,
+approve, and reject paths. Brain Core remains authoritative for runtime
+identity, kill signaling, cancellation, review restrictions, deadlines, and
+all other lifecycle checks. The Console proxy injects operator attribution
+after local session admission; browser bodies cannot provide actor, PID,
+runtime, model, or attribution authority. A bounded five-failure login
+cooldown was added. Session cookies remain finite HKDF/HMAC-signed,
+HttpOnly/SameSite=Strict and `/api` scoped. In the current local loopback
+threat model logout is stateless cookie clearing; token revocation storage is
+explicitly not claimed. The proxy rejects all forwarded headers because no
+trusted proxy is configured, requires a direct Host match, same-origin Origin,
+session, and CSRF nonce, and retains strict bounded bodies.
+
+Evidence: `operations/reports/agent-mode-u0-d-control-audit-session-hardening-evidence-2026-09-14.md`.
+Exact next bounded U0 slice: inspect the remaining roadmap gaps and define the
+next explicitly authorized U0 task; do not start it automatically.
 
 ## Phase V0 — Jarvis voice gateway
 

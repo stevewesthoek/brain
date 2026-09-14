@@ -1151,3 +1151,36 @@ revocation, notifications, and broader control auditing are later U0 work.
 Evidence: `operations/reports/agent-mode-u0-c3b-operator-session-controls-evidence-2026-09-14.md`.
 Exact next bounded slice: **U0-D — Agent Mode Control Audit, Evidence, and
 Operator Session Hardening**. Do not start it automatically.
+
+## U0-D control audit and operator session hardening — 2026-09-14
+
+U0-D is **COMPLETE** for the bounded local-operator audit; U0-C is complete and
+U0 remains **IN PROGRESS**. The canonical control audit is derived from the
+existing Agent Mode `events` stream. It adds no Console database and no second
+Task/Run/Attempt/result ledger.
+
+Brain Core receipts record the authenticated service actor and, when the
+request came through the local Console proxy, bounded operator attribution:
+the configured operator ID and a SHA-256 session audit ID. The observer projects
+at most 100 control receipts, and run detail at most 50. The Console shows
+action, target, status, reason code, receipt reference, and kill identity/signal
+metadata; it does not show session audit hashes, CSRF values, secrets, PIDs,
+prompts, hidden reasoning, provider payloads, or raw logs.
+
+The six existing controls remain pause, resume, cancel, kill, approve, and
+reject. The Console still routes through the same-origin loopback proxy and
+Brain Core service-auth client. The proxy rejects all forwarded headers because
+no trusted proxy is configured, requires a direct loopback Host and matching
+Origin, enforces the session-bound CSRF nonce and strict bounded bodies, and
+applies a five-failure/short-cooldown login throttle. Cookies remain finite
+HKDF/HMAC signed, HttpOnly, SameSite=Strict, and `/api` scoped. Logout clears
+the cookie statelessly; revocation storage is not claimed for this local-only
+threat model.
+
+Existing Core/K4 checks remain authoritative for runtime identity, kill,
+cancellation, review restrictions, deadline, and idempotency. The proxy injects
+operator attribution after session verification, so browser request bodies do
+not widen authority. Evidence:
+`operations/reports/agent-mode-u0-d-control-audit-session-hardening-evidence-2026-09-14.md`.
+Exact next U0 task: inspect the remaining U0 gaps and define the next bounded
+slice; do not start it automatically.

@@ -12,6 +12,13 @@ export const OPERATOR_SECRET_MAX_LENGTH = 512;
 export const OPERATOR_SESSION_TOKEN_MAX_LENGTH = 4096;
 export const OPERATOR_CSRF_TOKEN_MAX_LENGTH = 128;
 export const OPERATOR_LOGIN_BODY_MAX_BYTES = 4096;
+export const OPERATOR_LOGIN_MAX_FAILURES = 5;
+export const OPERATOR_LOGIN_FAILURE_WINDOW_MS = 30_000;
+export const OPERATOR_LOGIN_COOLDOWN_MS = 5_000;
+const OPERATOR_LOGIN_BUCKET_LIMIT = 256;
+
+type LoginFailureBucket = { failures: number; firstFailureAt: number; lastFailureAt: number; blockedUntil: number };
+const loginFailureBuckets = new Map<string, LoginFailureBucket>();
 
 const operatorSessionPayloadSchema = z.object({
   protocolVersion: z.literal(OPERATOR_SESSION_PROTOCOL_VERSION),
@@ -177,6 +184,38 @@ export function verifyOperatorLogin(input: { body: OperatorLoginBody; configurat
   if (!input.configuration) return false;
   return timingSafeStringEqual(input.body.operatorId, input.configuration.operatorId)
     && timingSafeStringEqual(input.body.operatorSecret, input.configuration.operatorSecret);
+}
+
+function pruneLoginFailureBuckets(now: number): void {
+  for (const [key, bucket] of loginFailureBuckets) {
+    if (bucket.blockedUntil <= now && now - bucket.lastFailureAt > OPERATOR_LOGIN_FAILURE_WINDOW_MS) loginFailureBuckets.delete(key);
+  }
+  while (loginFailureBuckets.size > OPERATOR_LOGIN_BUCKET_LIMIT) {
+    const oldest = [...loginFailureBuckets.entries()].sort((left, right) => left[1].lastFailureAt - right[1].lastFailureAt)[0];
+    if (!oldest) break;
+    loginFailureBuckets.delete(oldest[0]);
+  }
+}
+
+export function operatorLoginAdmission(operatorId: string, now = Date.now()): 'allowed' | 'cooldown' {
+  pruneLoginFailureBuckets(now);
+  const bucket = loginFailureBuckets.get(operatorId);
+  return bucket && bucket.blockedUntil > now ? 'cooldown' : 'allowed';
+}
+
+export function recordOperatorLoginFailure(operatorId: string, now = Date.now()): void {
+  pruneLoginFailureBuckets(now);
+  const previous = loginFailureBuckets.get(operatorId);
+  const bucket = previous && now - previous.firstFailureAt <= OPERATOR_LOGIN_FAILURE_WINDOW_MS
+    ? { ...previous, failures: previous.failures + 1, lastFailureAt: now }
+    : { failures: 1, firstFailureAt: now, lastFailureAt: now, blockedUntil: 0 };
+  if (bucket.failures >= OPERATOR_LOGIN_MAX_FAILURES) bucket.blockedUntil = now + OPERATOR_LOGIN_COOLDOWN_MS;
+  loginFailureBuckets.set(operatorId, bucket);
+  pruneLoginFailureBuckets(now);
+}
+
+export function clearOperatorLoginFailures(operatorId: string): void {
+  loginFailureBuckets.delete(operatorId);
 }
 
 export function operatorSessionCookieOptions(input: { secure: boolean; expiresAt: number; now?: number }): {

@@ -41,6 +41,10 @@ function DetailLink({ selection, onOpen, children }: { selection: AgentModeDetai
   return <button type="button" className="agent-console-detail-link" onClick={() => onOpen(selection)}>{children}</button>;
 }
 
+function ControlAuditPanel({ audits }: { audits: AgentModeConsoleProjection['controlAudits'] }) {
+  return <section className="card"><div className="card-header"><div><div className="card-title">Recent control audit</div><div className="card-description">Bounded durable lifecycle and review receipts; operator sessions remain server-side.</div></div><ShieldCheck size={18} /></div>{audits.length === 0 ? <p className="meta">No recent control receipts are available.</p> : <div className="stack compact-detail-stack">{audits.slice(0, 5).map((audit) => <div className="agent-console-list-row" key={audit.receiptRef}><div className="min-w-0"><div><StatusBadge status={audit.status} /> <span>{audit.decision ?? audit.action} · {audit.operatorId ?? audit.serviceActor ?? audit.actor}</span></div><div className="meta">{id(audit.targetId)} · {audit.reasonCode} · {timeAgo(audit.occurredAt)}</div></div><div className="meta">{audit.processIdentityVerified === true ? 'identity verified' : audit.signalSent === true ? 'signal sent' : ''}</div></div>)}</div>}</section>;
+}
+
 function OverviewTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpen: (selection: AgentModeDetailSelection) => void }) {
   return (
     <div className="stack">
@@ -81,6 +85,7 @@ function OverviewTab({ data, onOpen }: { data: AgentModeConsoleProjection; onOpe
       </section>
       {data.schedules.length > 0 ? <section className="card"><div className="card-title">Schedules</div>{data.schedules.slice(0, 5).map((schedule) => <div className="agent-console-list-row" key={schedule.scheduleId}><DetailLink selection={{ kind: 'schedule', id: schedule.scheduleId }} onOpen={onOpen}>{id(schedule.scheduleId)}</DetailLink><span><StatusBadge status={schedule.status} /> <span className="meta">next {timeAgo(schedule.nextEligibleAt)}</span></span></div>)}</section> : null}
       {data.approvals.length > 0 ? <section className="card"><div className="card-header"><div><div className="card-title">Pending Agent Mode reviews</div><div className="card-description">Decisions remain subject to Brain Core review authority.</div></div><ShieldCheck size={18} /></div>{data.approvals.map((approval) => <div className="agent-console-list-row" key={approval.approvalId}><div><div><code className="console-id">{approval.reviewId ?? approval.approvalId}</code></div><div className="meta">{approval.workerAgentId ?? approval.objectType} · evidence {approval.evidenceHash ? 'bound' : 'unavailable'}</div></div><ReviewControlButtons reviewId={approval.reviewId ?? approval.approvalId} evidenceHash={approval.evidenceHash} /></div>)}</section> : null}
+      <ControlAuditPanel audits={data.controlAudits} />
       {data.failures.length > 0 ? <section className="card"><div className="card-title">Latest operational exceptions</div><FailureTable failures={data.failures.slice(0, 5)} onOpen={onOpen} /></section> : null}
     </div>
   );

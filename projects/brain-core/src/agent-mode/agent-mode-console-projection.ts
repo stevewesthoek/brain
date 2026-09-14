@@ -1,5 +1,5 @@
 import { defaultAgentModeDatabasePath } from './sqlite-state-store.js';
-import { readAgentModeObserver, type AgentModeObserverProjection } from './agent-mode-observer.js';
+import { readAgentModeObserver, type AgentModeControlAuditProjection, type AgentModeObserverProjection } from './agent-mode-observer.js';
 
 export const AGENT_MODE_CONSOLE_PROJECTION_VERSION = 'agent-mode-console-v1' as const;
 
@@ -214,6 +214,8 @@ export type AgentModeConsoleFailure = {
   updatedAt: string | null;
 };
 
+export type AgentModeConsoleControlAudit = AgentModeControlAuditProjection;
+
 export type AgentModeConsoleFreshness = {
   status: 'fresh' | 'empty' | 'unavailable';
   sourceStatus: 'available' | 'unavailable';
@@ -255,6 +257,7 @@ export type AgentModeConsoleProjection = {
   failures: AgentModeConsoleFailure[];
   modelResources: AgentModeConsoleModelResource[];
   nodeResources: AgentModeConsoleNodeResource[];
+  controlAudits: AgentModeConsoleControlAudit[];
 };
 
 type Row = Record<string, unknown>;
@@ -583,6 +586,8 @@ function buildProjection(observer: AgentModeObserverProjection, now: string): Ag
     observedAt: stringValue(row, 'observedAt'),
   } satisfies AgentModeConsoleNodeResource)), AGENT_MODE_CONSOLE_BOUNDS.nodeResources);
 
+  const controlAudits = observer.controlAudits.slice(0, 100).map((audit) => ({ ...audit }));
+
   const activeRootGoalCount = observer.spawnRootStates.filter((row) => {
     const value = recordValue(row);
     return value && stringValue(value, 'cancellation') === 'active' && (Date.parse(stringValue(value, 'deadline') ?? '') > Date.parse(now));
@@ -635,6 +640,7 @@ function buildProjection(observer: AgentModeObserverProjection, now: string): Ag
     failures: boundedFailures,
     modelResources,
     nodeResources,
+    controlAudits,
   };
 }
 
