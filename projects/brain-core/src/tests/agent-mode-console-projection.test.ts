@@ -38,6 +38,10 @@ function fixtureObserver(): AgentModeObserverProjection {
     organizationFinalResults: [{ organizationPlanId: 'agent-mode.organization-plan:fixture', organizationFinalResultId: 'agent-mode.organization-final-result:fixture', status: 'succeeded', aggregateDigest: 'digest:fixture', auditorWorkItemId: 'work:auditor', auditorResultRef: 'k4:runtime:receipt-auditor', workItemResultCount: 3, evidenceRefCount: 3, totalSettledCost: 0, finalizedAt: NOW }],
     reviewRequests: [{ requestId: 'approval:fixture', requestType: 'review', status: 'pending', requestedAt: NOW, updatedAt: NOW }],
     schedulerSchedules: [{ scheduleId: 'schedule:fixture', kind: 'heartbeat', status: 'pending', dueAt: NOW, nextEligibleAt: NOW, completedAt: null, deadLetteredAt: null }],
+    workcells: [{ workcellId: 'workcell:fixture', taskId: 'task:worker', runId: 'run:worker', attemptId: 'attempt:uncertain', repositoryRef: 'brain', branch: 'agent/fixture', baseRef: 'main', ownerAgent: 'agent:worker', status: 'active', createdAt: NOW, updatedAt: NOW }],
+    workcellLeases: [{ leaseId: 'lease:fixture', workcellId: 'workcell:fixture', ownerAgent: 'agent:worker', ownerAttempt: 'attempt:uncertain', status: 'active', current: true, expiresAt: '2026-09-14T12:30:00.000Z' }],
+    workcellValidations: [{ validationId: 'validation:fixture', workcellId: 'workcell:fixture', validatorProfile: 'fixture-validator', status: 'completed', result: 'passed', diffId: 'diff:fixture', evidenceHash: 'hash:evidence', updatedAt: NOW }],
+    workcellDiffs: [{ diffId: 'diff:fixture', workcellId: 'workcell:fixture', baseRevision: 'base:1', currentRevision: 'head:1', changedFiles: ['src/a.ts'], diffHash: 'hash:diff', capturedAt: NOW }],
   };
 }
 
@@ -76,19 +80,46 @@ test('projection joins durable lifecycle state and exposes K5 without secrets', 
   assert.equal(projection.organizations[0]?.finalResultId, 'agent-mode.organization-final-result:fixture');
   assert.equal(projection.organizations[0]?.succeededCount, 3);
   assert.equal(projection.organizations[0]?.workItems[2]?.workItemKey, 'research');
+  assert.equal(projection.rootGoals[0]?.rootGoalId, 'goal:root');
+  assert.equal(projection.rootGoals[0]?.jarvisAgentId, 'agent:jarvis');
+  assert.equal(projection.workcells[0]?.repositoryRef, 'brain');
+  assert.equal(projection.workcells[0]?.lease?.leaseId, 'lease:fixture');
+  assert.equal(projection.workcells[0]?.diff?.changedFileCount, 1);
+  assert.equal(projection.executionResources.length, 2);
+  assert.equal(projection.executionResources.find((resource) => resource.attemptId === 'attempt:cancelled')?.freshness, 'unknown');
   assert.equal(projection.tasks[0]?.rootGoalId, 'goal:root');
   assert.equal(projection.attempts.some((attempt) => attempt.uncertaintyState === 'uncertain'), true);
   assert.equal(projection.failures.some((failure) => failure.status === 'cancelled'), true);
   assert.equal('secret' in projection.agents[0]!, false);
   assert.equal(JSON.stringify(projection).includes('must-not-project'), false);
+  assert.equal(JSON.stringify(projection).includes('fenceToken'), false);
+  assert.equal(JSON.stringify(projection).includes('worktreePath'), false);
+});
+
+test('Workcell path-like references are redacted and missing dispatch freshness stays unknown', () => {
+  const observer = fixtureObserver();
+  observer.workcells = [{ workcellId: 'workcell:path', taskId: 'task:worker', runId: 'run:worker', attemptId: 'attempt:uncertain', repositoryRef: '/private/checkout', branch: 'https://example.invalid/branch', baseRef: 'C:\\private\\base', ownerAgent: 'agent:worker', status: 'active', createdAt: NOW, updatedAt: NOW }];
+  observer.runtimeDispatches = [];
+  const projection = buildAgentModeConsoleProjection(observer, NOW);
+  assert.equal(projection.workcells[0]?.repositoryRef, '[redacted]');
+  assert.equal(projection.workcells[0]?.branch, '[redacted]');
+  assert.equal(projection.workcells[0]?.baseRef, '[redacted]');
+  assert.equal(projection.executionResources[0]?.freshness, 'unknown');
+  assert.equal(JSON.stringify(projection).includes('/private/checkout'), false);
 });
 
 test('projection is deterministically ordered and bounded', () => {
   const observer = fixtureObserver();
   observer.agents = Array.from({ length: 101 }, (_, index) => ({ agentId: `agent:${String(index).padStart(3, '0')}`, agentKind: 'worker', status: index === 100 ? 'completed' : 'running', childCreatedAt: NOW }));
+  observer.spawnRootStates = Array.from({ length: 101 }, (_, index) => ({ rootGoalId: `goal:${String(index).padStart(3, '0')}`, policyId: 'policy:fixture', policyVersion: 1, maxConcurrentChildren: 1, maxTotalChildCreations: 1, maxAggregateChildSteps: 1, maxAggregateChildCost: 1, activeChildren: 0, totalChildCreations: 0, reservedChildSteps: 0, reservedChildCost: 0, depth: 0, cancellation: 'active', deadline: '2026-09-14T12:00:00.000Z', delegableCapabilities: [], repositoryScopes: [], resourceScopes: [], updatedAt: NOW }));
+  observer.workcells = Array.from({ length: 101 }, (_, index) => ({ workcellId: `workcell:${String(index).padStart(3, '0')}`, taskId: `task:${index}`, runId: `run:${index}`, attemptId: `attempt:${index}`, repositoryRef: 'brain', branch: 'agent/fixture', baseRef: 'main', ownerAgent: 'agent:worker', status: index === 100 ? 'completed' : 'active', createdAt: NOW, updatedAt: NOW }));
+  observer.attempts = Array.from({ length: 101 }, (_, index) => ({ attemptId: `attempt:${String(index).padStart(3, '0')}`, runId: `run:${index}`, agentId: 'agent:worker', status: index === 100 ? 'completed' : 'running', cancellationStatus: 'running', runtimeRef: 'agent-mode.mock-runtime', runtimeProfileRef: 'agent-mode.mock.v1', modelRef: 'deferred:none', createdAt: NOW, updatedAt: NOW }));
   const first = buildAgentModeConsoleProjection(observer, NOW);
   const second = buildAgentModeConsoleProjection(observer, NOW);
   assert.equal(first.agents.length, 100);
+  assert.equal(first.rootGoals.length, 100);
+  assert.equal(first.workcells.length, 100);
+  assert.equal(first.executionResources.length, 100);
   assert.deepEqual(first, second);
   assert.equal(first.agents[0]?.lifecycleStatus, 'running');
   assert.equal(first.agents.at(-1)?.lifecycleStatus, 'running');

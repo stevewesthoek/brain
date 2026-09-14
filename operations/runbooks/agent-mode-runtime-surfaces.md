@@ -1184,3 +1184,32 @@ not widen authority. Evidence:
 `operations/reports/agent-mode-u0-d-control-audit-session-hardening-evidence-2026-09-14.md`.
 Exact next U0 task: inspect the remaining U0 gaps and define the next bounded
 slice; do not start it automatically.
+
+## U0-E durable root and execution-resource visibility — 2026-09-14
+
+U0-E is **COMPLETE** for the bounded read-only resource visibility gate; U0
+remains **IN PROGRESS**. Brain Core's existing `GET /agent-mode/console`
+projection now derives bounded Root Goal/Jarvis, Workcell, and execution-
+resource records from the Agent Mode observer and StateStore. The observer's
+durable host-health source is the only node-health input; refresh never probes
+hosts, runtimes, models, AWS, SSH, Tailscale, BrainNode, or Harness.
+
+The `/agents` page keeps the existing read-only controls boundary and adds
+Roots, Workcells, and Resources tabs. Workcell display includes safe repository
+reference, branch/base, owner, lifecycle, current lease metadata, latest
+validation, diff counts/hashes/revisions, and durable review/commit/merge
+statuses. Absolute repository/worktree paths and writer lease fences are never
+projected. Runtime, model/provider, node, and execution-resource types are
+separate, and unknown/unavailable facts remain explicit. Codex quota, richer
+inventory, Jarvis intake, and durable notifications are not synthesized where
+no canonical Brain source exists.
+
+Collections are capped at 100 in the summary projection; ordering is active
+before terminal, newest updated first, then stable identity. Root and Workcell
+detail uses the existing bounded detail route. No Console database, ledger,
+provider payload, raw prompt, or browser authority was introduced. Evidence:
+`operations/reports/agent-mode-u0-e-resource-visibility-evidence-2026-09-14.md`.
+
+Exact next bounded U0 slice: **U0-F — Durable Escalations, Unread
+Notifications, and Remaining Resource/Quota Visibility Gaps**; do not start it
+automatically.

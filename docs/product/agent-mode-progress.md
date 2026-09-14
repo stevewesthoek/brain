@@ -1219,6 +1219,33 @@ Evidence: `operations/reports/agent-mode-u0-d-control-audit-session-hardening-ev
 Exact next U0 task: inspect the remaining U0 gaps and record one bounded next
 slice after this audit; do not start it automatically.
 
+## Current U0-E durable resource visibility — 2026-09-14
+
+U0-E — **Root, Workcell, Node, Runtime, Model, and Execution-Resource
+Visibility Gap Closure** — is **COMPLETE** for the bounded read-model gate. U0
+remains **IN PROGRESS**.
+
+The canonical `agent-mode-console-v1` response at `GET /agent-mode/console`
+now includes bounded Root Goals, Workcells, and execution resources. Root and
+Jarvis ownership comes from durable Agent Mode root/agent facts. Workcell
+records expose only safe repository references, branch/base metadata, status,
+lease ownership/currentness, latest validation, diff metadata, and durable
+review/commit/merge status; absolute paths, lease fences, raw diffs, prompts,
+provider payloads, and credentials are excluded. Existing durable host-health
+facts remain the only node-resource source.
+
+The `/agents` page adds read-only Roots, Workcells, and Resources views while
+retaining existing Overview, Agents, Organizations, Tasks, and Failures views.
+Runtime, model/provider, node, and execution-resource records remain distinct.
+No probes, inventory database, browser authority, scheduler action, lifecycle
+mutation, or new runtime behavior was added. Codex quota, richer node/
+worktree inventory, Jarvis intake, and notifications remain explicitly not yet
+surfaced where no canonical durable Brain source exists.
+
+Evidence: `operations/reports/agent-mode-u0-e-resource-visibility-evidence-2026-09-14.md`.
+Exact next bounded slice: **U0-F — Durable Escalations, Unread Notifications,
+and Remaining Resource/Quota Visibility Gaps**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

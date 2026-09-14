@@ -7,7 +7,7 @@ const emptyProjection = {
   freshness: { status: 'empty', sourceStatus: 'available', generatedAt: '2026-09-13T12:00:00.000Z', stateStorePresent: true, message: 'empty' },
   summary: { activeRootGoalCount: 0, activeAgentCount: 0, runningTaskCount: 0, runningAttemptCount: 0, blockedCount: 0, failedCount: 0, uncertainCount: 0, pendingApprovalCount: 0, activeScheduleCount: 0, reservedCost: 0, settledCost: 0 },
   agents: [], organizations: [], tasks: [], runs: [], attempts: [], runtimes: [], budgets: [], schedules: [], approvals: [],
-  evidenceSummary: { evidenceCount: 0, receiptCount: 0, latestEvidenceRefs: [] }, failures: [], modelResources: [], nodeResources: [], controlAudits: [],
+  evidenceSummary: { evidenceCount: 0, receiptCount: 0, latestEvidenceRefs: [] }, failures: [], modelResources: [], nodeResources: [], rootGoals: [], workcells: [], executionResources: [], controlAudits: [],
 };
 
 test('canonical Agent Mode Console projection parses its empty state', () => {
@@ -28,6 +28,19 @@ test('canonical schema keeps uncertainty and K5 final-result metadata explicit',
   });
   assert.equal(parsed.summary.uncertainCount, 1);
   assert.equal(parsed.organizations[0]?.finalResultId, 'final:1');
+});
+
+test('canonical schema parses root, Workcell, and distinct execution resources', () => {
+  const parsed = agentModeConsoleProjectionSchema.parse({
+    ...emptyProjection,
+    rootGoals: [{ rootGoalId: 'goal:1', jarvisAgentId: 'agent:jarvis', taskId: null, organizationPlanId: 'plan:1', status: 'active', cancellationState: 'active', deadline: null, policyId: 'policy:1', activeChildren: 1, totalChildCreations: 1, reservedCost: 0, settledCost: 0, createdAt: null, updatedAt: null }],
+    workcells: [{ workcellId: 'workcell:1', taskId: 'task:1', runId: 'run:1', attemptId: 'attempt:1', repositoryRef: 'brain', branch: 'agent/one', baseRef: 'main', ownerAgent: 'agent:one', status: 'active', createdAt: '2026-09-14T12:00:00.000Z', updatedAt: '2026-09-14T12:00:00.000Z', lease: null, validation: null, diff: null, reviewStatus: null, commitStatus: null, mergeStatus: null }],
+    executionResources: [{ resourceId: 'dispatch:1', attemptId: 'attempt:1', taskId: 'task:1', runId: 'run:1', runtimeRef: 'agent-mode.mock-runtime', runtimeProfileRef: 'agent-mode.mock.v1', modelRef: 'deferred:none', status: 'verified', freshness: 'known', updatedAt: null }],
+  });
+  assert.equal(parsed.rootGoals[0]?.jarvisAgentId, 'agent:jarvis');
+  assert.equal(parsed.workcells[0]?.repositoryRef, 'brain');
+  assert.equal(parsed.executionResources[0]?.freshness, 'known');
+  assert.equal(agentModeConsoleProjectionSchema.safeParse({ ...emptyProjection, workcells: [{ workcellId: 'workcell:1', taskId: 'task:1', runId: 'run:1', attemptId: 'attempt:1', repositoryRef: '/private/path', branch: 'main', baseRef: 'main', ownerAgent: 'agent:1', status: 'active', createdAt: 'now', updatedAt: 'now', lease: null, validation: null, diff: null, reviewStatus: null, commitStatus: null, mergeStatus: null, unexpected: true }] }).success, false);
 });
 
 test('canonical schema parses bounded control audit metadata and rejects unknown control status', () => {

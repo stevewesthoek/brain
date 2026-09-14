@@ -62,6 +62,28 @@ to later U0 slices. Legacy `/agent-console` remains compatible and continues
 to include its legacy summary adapter; it is not the canonical Agent Mode
 projection.
 
+### U0-E resource visibility
+
+The `agent-mode-console-v1` contract now includes bounded `rootGoals`,
+`workcells`, and `executionResources` collections, in addition to the existing
+separate runtime, model, and node-resource collections. Root Goals derive
+Jarvis/supervisor ownership and root policy/deadline/budget facts from durable
+Agent Mode state. Workcells derive safe repository reference, branch/base,
+owner, lifecycle, current lease metadata, latest validation, diff metadata,
+and durable review/commit/merge status from the existing observer. Absolute
+paths, lease fences, raw diffs, prompts, provider payloads, and credentials are
+not part of this API.
+
+The `/agents` page exposes Roots, Workcells, and Resources tabs as read-only
+operational views. New collections are capped at 100 and ordered active before
+terminal, newest updated first, then stable ID. Missing host, runtime, model,
+execution-resource, Codex quota, or Jarvis intake facts are shown as
+unavailable/not yet surfaced rather than synthesized or probed. The projection
+performs no AWS/provider/SSH/Tailscale/BrainNode/Harness calls and adds no
+Console database or inventory ledger. StateStore reopen and independent API
+callers reconstruct the same domain state; generated timestamps are request
+metadata only.
+
 ## Agent Mode detail drill-down
 
 U0-B adds one canonical detail route:
@@ -72,8 +94,9 @@ GET /agent-mode/console/detail/:kind/:id
 
 The versioned `agent-mode-console-detail-v1` response is derived from the same
 durable observer/StateStore authority as the summary projection. Its closed
-detail kinds are agent, task, run, attempt, organization, budget, schedule,
-failure, and evidence. Every list is bounded and deterministically ordered;
+detail kinds are root, agent, task, run, attempt, organization, workcell,
+budget, schedule, failure, and evidence. Every list is bounded and
+deterministically ordered;
 freshness, not-found, and unavailable states are explicit. Evidence is limited
 to safe metadata and references, never raw bodies. The route does not create a
 Console ledger, read SQLite in the browser, call providers, or mutate runtime

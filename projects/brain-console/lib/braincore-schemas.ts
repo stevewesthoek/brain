@@ -314,6 +314,35 @@ const agentModeConsoleNodeResourceSchema = z.object({
   observedAt: z.string().nullable(),
 }).strict();
 
+const agentModeConsoleRootGoalSchema = z.object({
+  rootGoalId: z.string(),
+  jarvisAgentId: z.string().nullable(),
+  taskId: z.string().nullable(),
+  organizationPlanId: z.string().nullable(),
+  status: z.string(),
+  cancellationState: z.string().nullable(),
+  deadline: z.string().nullable(),
+  policyId: z.string().nullable(),
+  activeChildren: z.number().nonnegative().nullable(),
+  totalChildCreations: z.number().nonnegative().nullable(),
+  reservedCost: z.number().nonnegative().nullable(),
+  settledCost: z.number().nonnegative().nullable(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleWorkcellSchema = z.object({
+  workcellId: z.string(), taskId: z.string(), runId: z.string(), attemptId: z.string(), repositoryRef: z.string(), branch: z.string(), baseRef: z.string(), ownerAgent: z.string(), status: z.string(), createdAt: z.string(), updatedAt: z.string(),
+  lease: z.object({ leaseId: z.string(), ownerAgent: z.string(), ownerAttempt: z.string(), status: z.string(), current: z.boolean(), expiresAt: z.string() }).strict().nullable(),
+  validation: z.object({ validationId: z.string(), validatorProfile: z.string(), status: z.string(), result: z.string(), diffId: z.string().nullable(), evidenceHash: z.string().nullable(), updatedAt: z.string() }).strict().nullable(),
+  diff: z.object({ diffId: z.string(), changedFileCount: z.number().nonnegative(), diffHash: z.string(), baseRevision: z.string(), currentRevision: z.string(), capturedAt: z.string() }).strict().nullable(),
+  reviewStatus: z.string().nullable(), commitStatus: z.string().nullable(), mergeStatus: z.string().nullable(),
+}).strict();
+
+const agentModeConsoleExecutionResourceSchema = z.object({
+  resourceId: z.string(), attemptId: z.string().nullable(), taskId: z.string().nullable(), runId: z.string().nullable(), runtimeRef: z.string().nullable(), runtimeProfileRef: z.string().nullable(), modelRef: z.string().nullable(), status: z.string(), freshness: z.enum(['known', 'unknown']), updatedAt: z.string().nullable(),
+}).strict();
+
 const agentModeConsoleControlAuditSchema = z.object({
   operationId: z.string().min(1).max(128),
   action: z.enum(['pause', 'resume', 'cancel', 'kill', 'review_decision']),
@@ -373,6 +402,9 @@ export const agentModeConsoleProjectionSchema = z.object({
   failures: z.array(agentModeConsoleFailureSchema).max(50),
   modelResources: z.array(agentModeConsoleModelResourceSchema).max(100),
   nodeResources: z.array(agentModeConsoleNodeResourceSchema).max(100),
+  rootGoals: z.array(agentModeConsoleRootGoalSchema).max(100),
+  workcells: z.array(agentModeConsoleWorkcellSchema).max(100),
+  executionResources: z.array(agentModeConsoleExecutionResourceSchema).max(100),
   controlAudits: z.array(agentModeConsoleControlAuditSchema).max(100),
 }).strict();
 export type AgentModeConsoleProjection = z.infer<typeof agentModeConsoleProjectionSchema>;
@@ -442,6 +474,12 @@ const agentModeConsoleAgentDetailSchema = z.object({
   runtime: agentModeConsoleDetailLifecycleSchema.nullable(), budget: agentModeConsoleDetailBudgetSchema.nullable(),
 }).strict();
 
+const agentModeConsoleRootDetailSchema = z.object({
+  kind: z.literal('root'), rootGoalId: z.string(), jarvisAgentId: z.string().nullable(), taskId: z.string().nullable(), organizationPlanId: z.string().nullable(), status: z.string(), cancellationState: z.string().nullable(), deadline: z.string().nullable(), policyId: z.string().nullable(), activeChildren: z.number().nonnegative().nullable(), totalChildCreations: z.number().nonnegative().nullable(), reservedCost: z.number().nonnegative().nullable(), settledCost: z.number().nonnegative().nullable(),
+  agents: z.array(z.object({ agentId: z.string(), parentAgentId: z.string().nullable(), status: z.string(), updatedAt: z.string().nullable() }).strict()).max(50),
+  tasks: z.array(z.object({ taskId: z.string(), runId: z.string().nullable(), status: z.string(), updatedAt: z.string().nullable() }).strict()).max(50),
+}).strict();
+
 const agentModeConsoleTaskDetailSchema = z.object({
   kind: z.literal('task'), taskId: z.string(), taskType: z.string().nullable(), taskSpecRef: z.string().nullable(), inputHash: z.string().nullable(), rootGoalId: z.string().nullable(), agentId: z.string().nullable(), parentAgentId: z.string().nullable(), status: z.string(), createdAt: z.string().nullable(), lifecycle: agentModeConsoleDetailLifecycleSchema,
 }).strict();
@@ -461,6 +499,14 @@ const agentModeConsoleOrganizationDetailSchema = z.object({
   finalResult: z.object({ finalResultId: z.string(), status: z.string(), auditorWorkItemId: z.string().nullable(), auditorResultRef: z.string().nullable(), aggregateDigest: z.string().nullable(), totalSettledCost: z.number().nonnegative(), finalizedAt: z.string().nullable() }).strict().nullable(),
 }).strict();
 
+const agentModeConsoleWorkcellDetailSchema = z.object({
+  kind: z.literal('workcell'), workcellId: z.string(), taskId: z.string(), runId: z.string(), attemptId: z.string(), repositoryRef: z.string(), branch: z.string(), baseRef: z.string(), ownerAgent: z.string(), status: z.string(), createdAt: z.string(), updatedAt: z.string(),
+  lease: z.object({ leaseId: z.string(), ownerAgent: z.string(), ownerAttempt: z.string(), status: z.string(), current: z.boolean(), expiresAt: z.string() }).strict().nullable(),
+  validation: z.object({ validationId: z.string(), validatorProfile: z.string(), status: z.string(), result: z.string(), diffId: z.string().nullable(), evidenceHash: z.string().nullable(), updatedAt: z.string() }).strict().nullable(),
+  diff: z.object({ diffId: z.string(), changedFileCount: z.number().nonnegative(), diffHash: z.string(), baseRevision: z.string(), currentRevision: z.string(), capturedAt: z.string() }).strict().nullable(),
+  reviewStatus: z.string().nullable(), commitStatus: z.string().nullable(), mergeStatus: z.string().nullable(),
+}).strict();
+
 const agentModeConsoleScheduleDetailSchema = z.object({
   kind: z.literal('schedule'), scheduleId: z.string(), eventIdentity: z.string().nullable(), enabled: z.boolean(), sourceType: z.string().nullable(), status: z.string(), nextDueAt: z.string().nullable(), nextEligibleAt: z.string().nullable(), latestDispatch: z.object({ eventId: z.string(), status: z.string(), occurredAt: z.string().nullable() }).strict().nullable(), latestTerminalResult: z.string().nullable(), retryState: z.object({ attemptCount: z.number().nonnegative(), maxAttempts: z.number().nonnegative(), lastFailure: z.string().nullable() }).strict(), deadLetterCount: z.number().nonnegative(), deadline: z.string().nullable(), rootGoalId: z.string().nullable(), history: z.array(z.object({ eventId: z.string(), status: z.string(), occurredAt: z.string().nullable(), reasonCode: z.string().nullable() }).strict()).max(50),
 }).strict();
@@ -470,11 +516,11 @@ const agentModeConsoleFailureDetailSchema = z.object({
 }).strict();
 
 const agentModeConsoleEvidenceDetailSchema = agentModeConsoleDetailEvidenceSchema.extend({ kind: z.literal('evidence') }).strict();
-const agentModeConsoleDetailPayloadSchema = z.discriminatedUnion('kind', [agentModeConsoleAgentDetailSchema, agentModeConsoleTaskDetailSchema, agentModeConsoleRunDetailSchema, agentModeConsoleAttemptDetailSchema, agentModeConsoleOrganizationDetailSchema, agentModeConsoleDetailBudgetSchema.extend({ kind: z.literal('budget') }).strict(), agentModeConsoleScheduleDetailSchema, agentModeConsoleFailureDetailSchema, agentModeConsoleEvidenceDetailSchema]);
+const agentModeConsoleDetailPayloadSchema = z.discriminatedUnion('kind', [agentModeConsoleRootDetailSchema, agentModeConsoleAgentDetailSchema, agentModeConsoleTaskDetailSchema, agentModeConsoleRunDetailSchema, agentModeConsoleAttemptDetailSchema, agentModeConsoleOrganizationDetailSchema, agentModeConsoleWorkcellDetailSchema, agentModeConsoleDetailBudgetSchema.extend({ kind: z.literal('budget') }).strict(), agentModeConsoleScheduleDetailSchema, agentModeConsoleFailureDetailSchema, agentModeConsoleEvidenceDetailSchema]);
 
 export const agentModeConsoleDetailResponseSchema = z.union([
-  z.object({ schemaVersion: z.literal('agent-mode-console-detail-v1'), generatedAt: z.string(), source: z.literal('agent-mode-state-store'), freshness: agentModeConsoleDetailFreshnessSchema, kind: z.enum(['agent', 'task', 'run', 'attempt', 'organization', 'budget', 'schedule', 'failure', 'evidence']), id: z.string(), status: z.literal('available'), detail: agentModeConsoleDetailPayloadSchema }).strict(),
-  z.object({ schemaVersion: z.literal('agent-mode-console-detail-v1'), generatedAt: z.string(), source: z.literal('agent-mode-state-store'), freshness: agentModeConsoleDetailFreshnessSchema, kind: z.enum(['agent', 'task', 'run', 'attempt', 'organization', 'budget', 'schedule', 'failure', 'evidence']), id: z.string(), status: z.enum(['not_found', 'unavailable']), reasonCode: z.enum(['DETAIL_NOT_FOUND', 'STATESTORE_UNAVAILABLE']), detail: z.null() }).strict(),
+  z.object({ schemaVersion: z.literal('agent-mode-console-detail-v1'), generatedAt: z.string(), source: z.literal('agent-mode-state-store'), freshness: agentModeConsoleDetailFreshnessSchema, kind: z.enum(['root', 'agent', 'task', 'run', 'attempt', 'organization', 'workcell', 'budget', 'schedule', 'failure', 'evidence']), id: z.string(), status: z.literal('available'), detail: agentModeConsoleDetailPayloadSchema }).strict(),
+  z.object({ schemaVersion: z.literal('agent-mode-console-detail-v1'), generatedAt: z.string(), source: z.literal('agent-mode-state-store'), freshness: agentModeConsoleDetailFreshnessSchema, kind: z.enum(['root', 'agent', 'task', 'run', 'attempt', 'organization', 'workcell', 'budget', 'schedule', 'failure', 'evidence']), id: z.string(), status: z.enum(['not_found', 'unavailable']), reasonCode: z.enum(['DETAIL_NOT_FOUND', 'STATESTORE_UNAVAILABLE']), detail: z.null() }).strict(),
 ]);
 export type AgentModeConsoleDetailResponse = z.infer<typeof agentModeConsoleDetailResponseSchema>;
 

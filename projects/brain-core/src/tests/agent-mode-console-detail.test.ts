@@ -42,6 +42,10 @@ function fixtureObserver(): AgentModeObserverProjection {
     operations: [{ operationId: 'operation:research', attemptId: 'attempt:research', state: 'verified', preparedAt: NOW, dispatchedAt: NOW, resultHash: 'result:research', evidenceRef: 'evidence:research' }],
     organizationPlans: [{ organizationPlanId: 'organization:fixture', rootGoalId: 'goal:root', supervisorAgentId: 'agent:jarvis', supervisorOrganizationRoleId: 'agent-mode.org-role.jarvis-ceo.v1', planVersion: 1, status: 'completed', readinessState: 'completed', deadline: '2026-09-14T13:00:00.000Z' }],
     organizationWorkItems: [{ organizationPlanId: 'organization:fixture', workItemId: 'work:research', workItemKey: 'research', organizationRoleId: 'agent-mode.org-role.research.v1', dependencyKeys: [], readiness: 'completed', delegationState: 'succeeded', childAgentId: 'agent:research', taskId: 'task:research', runId: 'run:research', attemptId: 'attempt:research', terminalStatus: 'succeeded', resultRef: 'k4:runtime:result:research', settledCost: 0 }],
+    workcells: [{ workcellId: 'workcell:research', taskId: 'task:research', runId: 'run:research', attemptId: 'attempt:research', repositoryRef: 'brain', branch: 'agent/research', baseRef: 'main', ownerAgent: 'agent:research', status: 'prepared', createdAt: NOW, updatedAt: NOW }],
+    workcellLeases: [{ leaseId: 'lease:research', workcellId: 'workcell:research', ownerAgent: 'agent:research', ownerAttempt: 'attempt:research', status: 'active', current: true, expiresAt: '2026-09-14T13:00:00.000Z' }],
+    workcellValidations: [{ validationId: 'validation:research', workcellId: 'workcell:research', validatorProfile: 'fixture-validator', status: 'completed', result: 'passed', diffId: 'diff:research', evidenceHash: 'hash:validation', updatedAt: NOW }],
+    workcellDiffs: [{ diffId: 'diff:research', workcellId: 'workcell:research', baseRevision: 'base:1', currentRevision: 'head:1', changedFiles: ['src/a.ts'], diffHash: 'hash:diff', capturedAt: NOW }],
     organizationFinalResults: [{ organizationPlanId: 'organization:fixture', organizationFinalResultId: 'final:fixture', status: 'succeeded', aggregateDigest: 'digest:fixture', auditorWorkItemId: 'work:auditor', auditorResultRef: 'k4:runtime:result:auditor', totalSettledCost: 0, finalizedAt: NOW }],
     spawnRootStates: [{ rootGoalId: 'goal:root', maxAggregateChildSteps: 100, reservedChildSteps: 4, maxAggregateChildCost: 4, reservedChildCost: 0, activeChildren: 0, totalChildCreations: 1, cancellation: 'active', deadline: '2026-09-14T13:00:00.000Z', updatedAt: NOW }],
     schedulerSchedules: [{ scheduleId: 'schedule:fixture', kind: 'heartbeat', deduplicationKey: 'fixture', status: 'pending', dueAt: NOW, nextEligibleAt: NOW, attemptCount: 0, maxAttempts: 3, lastFailure: null, deadline: '2026-09-14T13:00:00.000Z', correlationId: 'correlation:fixture', rootGoalId: 'goal:root' }],
@@ -53,7 +57,7 @@ function fixtureObserver(): AgentModeObserverProjection {
 test('detail projection reconstructs every closed kind from durable observer state', () => {
   const observer = fixtureObserver();
   const ids: Record<(typeof AGENT_MODE_CONSOLE_DETAIL_KINDS)[number], string> = {
-    agent: 'agent:research', task: 'task:research', run: 'run:research', attempt: 'attempt:research', organization: 'organization:fixture', budget: 'goal:root', schedule: 'schedule:fixture', failure: 'attempt:research', evidence: 'k4:evidence:evidence:research',
+    root: 'goal:root', agent: 'agent:research', task: 'task:research', run: 'run:research', attempt: 'attempt:research', organization: 'organization:fixture', workcell: 'workcell:research', budget: 'goal:root', schedule: 'schedule:fixture', failure: 'attempt:research', evidence: 'k4:evidence:evidence:research',
   };
   for (const kind of AGENT_MODE_CONSOLE_DETAIL_KINDS) {
     const result = buildAgentModeConsoleDetail(observer, kind, ids[kind], NOW);
@@ -65,6 +69,14 @@ test('detail projection reconstructs every closed kind from durable observer sta
   if (organization.status === 'available' && organization.detail.kind === 'organization') {
     assert.equal(organization.detail.workItems[0]?.workItemKey, 'research');
     assert.equal(organization.detail.finalResult?.finalResultId, 'final:fixture');
+  }
+  const root = buildAgentModeConsoleDetail(observer, 'root', 'goal:root', NOW);
+  assert.equal(root.status, 'available');
+  const workcell = buildAgentModeConsoleDetail(observer, 'workcell', 'workcell:research', NOW);
+  assert.equal(workcell.status, 'available');
+  if (workcell.status === 'available' && workcell.detail.kind === 'workcell') {
+    assert.equal(workcell.detail.lease?.leaseId, 'lease:research');
+    assert.equal(workcell.detail.diff?.changedFileCount, 1);
   }
 });
 

@@ -17,6 +17,9 @@ export const AGENT_MODE_CONSOLE_BOUNDS = Object.freeze({
   budgets: 100,
   modelResources: 100,
   nodeResources: 100,
+  rootGoals: 100,
+  workcells: 100,
+  executionResources: 100,
 });
 
 type LifecycleStatus = string;
@@ -159,6 +162,78 @@ export type AgentModeConsoleNodeResource = {
   observedAt: string | null;
 };
 
+export type AgentModeConsoleRootGoal = {
+  rootGoalId: string;
+  jarvisAgentId: string | null;
+  taskId: string | null;
+  organizationPlanId: string | null;
+  status: string;
+  cancellationState: string | null;
+  deadline: string | null;
+  policyId: string | null;
+  activeChildren: number | null;
+  totalChildCreations: number | null;
+  reservedCost: number | null;
+  settledCost: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type AgentModeConsoleWorkcell = {
+  workcellId: string;
+  taskId: string;
+  runId: string;
+  attemptId: string;
+  repositoryRef: string;
+  branch: string;
+  baseRef: string;
+  ownerAgent: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  lease: {
+    leaseId: string;
+    ownerAgent: string;
+    ownerAttempt: string;
+    status: string;
+    current: boolean;
+    expiresAt: string;
+  } | null;
+  validation: {
+    validationId: string;
+    validatorProfile: string;
+    status: string;
+    result: string;
+    diffId: string | null;
+    evidenceHash: string | null;
+    updatedAt: string;
+  } | null;
+  diff: {
+    diffId: string;
+    changedFileCount: number;
+    diffHash: string;
+    baseRevision: string;
+    currentRevision: string;
+    capturedAt: string;
+  } | null;
+  reviewStatus: string | null;
+  commitStatus: string | null;
+  mergeStatus: string | null;
+};
+
+export type AgentModeConsoleExecutionResource = {
+  resourceId: string;
+  attemptId: string | null;
+  taskId: string | null;
+  runId: string | null;
+  runtimeRef: string | null;
+  runtimeProfileRef: string | null;
+  modelRef: string | null;
+  status: string;
+  freshness: 'known' | 'unknown';
+  updatedAt: string | null;
+};
+
 export type AgentModeConsoleBudget = {
   rootGoalId: string;
   maxSteps: number;
@@ -257,6 +332,9 @@ export type AgentModeConsoleProjection = {
   failures: AgentModeConsoleFailure[];
   modelResources: AgentModeConsoleModelResource[];
   nodeResources: AgentModeConsoleNodeResource[];
+  rootGoals: AgentModeConsoleRootGoal[];
+  workcells: AgentModeConsoleWorkcell[];
+  executionResources: AgentModeConsoleExecutionResource[];
   controlAudits: AgentModeConsoleControlAudit[];
 };
 
@@ -264,6 +342,11 @@ type Row = Record<string, unknown>;
 
 function stringValue(row: Row, key: string): string | null {
   return typeof row[key] === 'string' ? row[key] as string : null;
+}
+
+function safeWorkcellRef(value: string | null): string {
+  if (!value || /^(?:[A-Za-z]:[\\/]|\\\\|\/)/.test(value) || value.includes('://')) return '[redacted]';
+  return value;
 }
 
 function numberValue(row: Row, key: string): number | null {
@@ -293,6 +376,14 @@ function stableOrder<T extends { id: string; status: string; updatedAt: string |
 
 function limit<T>(rows: readonly T[], bound: number): T[] {
   return rows.slice(0, bound);
+}
+
+function latestRow(rows: Row[], updatedKeys: string[]): Row | null {
+  return [...rows].sort((a, b) => {
+    const aUpdated = updatedKeys.map((key) => stringValue(a, key) ?? '').sort().at(-1) ?? '';
+    const bUpdated = updatedKeys.map((key) => stringValue(b, key) ?? '').sort().at(-1) ?? '';
+    return bUpdated.localeCompare(aUpdated);
+  })[0] ?? null;
 }
 
 function organizationRoleByChild(observer: AgentModeObserverProjection): Map<string, string> {
@@ -586,6 +677,87 @@ function buildProjection(observer: AgentModeObserverProjection, now: string): Ag
     observedAt: stringValue(row, 'observedAt'),
   } satisfies AgentModeConsoleNodeResource)), AGENT_MODE_CONSOLE_BOUNDS.nodeResources);
 
+  const organizationByRoot = new Map<string, Row>();
+  for (const organization of observer.organizationPlans.map(recordValue).filter((row): row is Row => row !== null)) {
+    const rootGoalId = stringValue(organization, 'rootGoalId');
+    if (rootGoalId) organizationByRoot.set(rootGoalId, organization);
+  }
+  const rootGoals = stableOrder(limit(observer.spawnRootStates.map(recordValue).filter((row): row is Row => row !== null).map((row) => {
+    const rootGoalId = stringValue(row, 'rootGoalId') ?? 'unknown-root';
+    const jarvis = observer.agents.map(recordValue).filter((agent): agent is Row => agent !== null).find((agent) => stringValue(agent, 'agentId') && stringValue(agent, 'rootGoalId') === rootGoalId && stringValue(agent, 'parentAgentId') === null && (stringValue(agent, 'agentKind') === 'jarvis' || stringValue(agent, 'agentKind') === 'supervisor'));
+    const organization = organizationByRoot.get(rootGoalId);
+    const rootTask = observer.tasks.map(recordValue).filter((task): task is Row => task !== null).find((task) => stringValue(task, 'taskId') === rootGoalId || stringValue(task, 'rootGoalId') === rootGoalId && stringValue(task, 'taskType') === 'root-goal');
+    const cancellation = stringValue(row, 'cancellation');
+    const deadline = stringValue(row, 'deadline');
+    const expired = deadline !== null && Number.isFinite(Date.parse(deadline)) && Date.parse(deadline) <= Date.parse(now);
+    return {
+      id: rootGoalId,
+      status: expired ? 'expired' : cancellation && cancellation !== 'active' ? cancellation : 'active',
+      updatedAt: stringValue(row, 'updatedAt'),
+      rootGoalId,
+      jarvisAgentId: jarvis ? stringValue(jarvis, 'agentId') : (organization ? stringValue(organization, 'supervisorAgentId') : null),
+      taskId: rootTask ? stringValue(rootTask, 'taskId') : null,
+      organizationPlanId: organization ? stringValue(organization, 'organizationPlanId') : null,
+      cancellationState: cancellation,
+      deadline,
+      policyId: stringValue(row, 'policyId'),
+      activeChildren: numberValue(row, 'activeChildren'),
+      totalChildCreations: numberValue(row, 'totalChildCreations'),
+      reservedCost: numberValue(row, 'reservedChildCost'),
+      settledCost: organizations.filter((candidate) => candidate.rootGoalId === rootGoalId).reduce((sum, candidate) => sum + candidate.aggregateCost, 0),
+      createdAt: stringValue(row, 'createdAt'),
+    } satisfies AgentModeConsoleRootGoal & { id: string; status: string; updatedAt: string | null };
+  }), AGENT_MODE_CONSOLE_BOUNDS.rootGoals));
+
+  const observerWorkcells = observer.workcells.map(recordValue).filter((row): row is Row => row !== null);
+  const observerLeases = observer.workcellLeases.map(recordValue).filter((row): row is Row => row !== null);
+  const observerValidations = observer.workcellValidations.map(recordValue).filter((row): row is Row => row !== null);
+  const observerDiffs = observer.workcellDiffs.map(recordValue).filter((row): row is Row => row !== null);
+  const observerReviews = observer.reviewRequests.map(recordValue).filter((row): row is Row => row !== null);
+  const observerCommits = observer.commitOperations.map(recordValue).filter((row): row is Row => row !== null);
+  const observerMerges = observer.mergeOperations.map(recordValue).filter((row): row is Row => row !== null);
+  const workcells = stableOrder(limit(observerWorkcells.map((row) => {
+    const workcellId = stringValue(row, 'workcellId') ?? 'unknown-workcell';
+    const leases = observerLeases.filter((lease) => stringValue(lease, 'workcellId') === workcellId);
+    const validations = observerValidations.filter((validation) => stringValue(validation, 'workcellId') === workcellId);
+    const diffs = observerDiffs.filter((diff) => stringValue(diff, 'workcellId') === workcellId);
+    const review = latestRow(observerReviews.filter((candidate) => stringValue(candidate, 'workcellId') === workcellId), ['updatedAt', 'createdAt']);
+    const commit = latestRow(observerCommits.filter((candidate) => stringValue(candidate, 'workcellId') === workcellId), ['updatedAt', 'createdAt', 'completedAt']);
+    const merge = latestRow(observerMerges.filter((candidate) => stringValue(candidate, 'workcellId') === workcellId), ['updatedAt', 'createdAt', 'completedAt']);
+    const lease = latestRow(leases, ['createdAt', 'expiresAt']);
+    const validation = latestRow(validations, ['updatedAt', 'completedAt', 'startedAt']);
+    const diff = latestRow(diffs, ['capturedAt']);
+    return {
+      id: workcellId,
+      status: stringValue(row, 'status') ?? 'unknown',
+      updatedAt: stringValue(row, 'updatedAt') ?? stringValue(row, 'createdAt') ?? '',
+      workcellId,
+      taskId: stringValue(row, 'taskId') ?? '',
+      runId: stringValue(row, 'runId') ?? '',
+      attemptId: stringValue(row, 'attemptId') ?? '',
+      repositoryRef: safeWorkcellRef(stringValue(row, 'repositoryRef')),
+      branch: safeWorkcellRef(stringValue(row, 'branch')),
+      baseRef: safeWorkcellRef(stringValue(row, 'baseRef')),
+      ownerAgent: stringValue(row, 'ownerAgent') ?? '',
+      createdAt: stringValue(row, 'createdAt') ?? '',
+      lease: lease ? { leaseId: stringValue(lease, 'leaseId') ?? 'unknown-lease', ownerAgent: stringValue(lease, 'ownerAgent') ?? '', ownerAttempt: stringValue(lease, 'ownerAttempt') ?? '', status: stringValue(lease, 'status') ?? 'unknown', current: lease.current === true, expiresAt: stringValue(lease, 'expiresAt') ?? '' } : null,
+      validation: validation ? { validationId: stringValue(validation, 'validationId') ?? 'unknown-validation', validatorProfile: stringValue(validation, 'validatorProfile') ?? '', status: stringValue(validation, 'status') ?? 'unknown', result: stringValue(validation, 'result') ?? 'unknown', diffId: stringValue(validation, 'diffId'), evidenceHash: stringValue(validation, 'evidenceHash'), updatedAt: stringValue(validation, 'updatedAt') ?? stringValue(validation, 'completedAt') ?? stringValue(validation, 'startedAt') ?? '' } : null,
+      diff: diff ? { diffId: stringValue(diff, 'diffId') ?? 'unknown-diff', changedFileCount: Array.isArray(diff.changedFiles) ? diff.changedFiles.length : 0, diffHash: stringValue(diff, 'diffHash') ?? '', baseRevision: stringValue(diff, 'baseRevision') ?? '', currentRevision: stringValue(diff, 'currentRevision') ?? '', capturedAt: stringValue(diff, 'capturedAt') ?? '' } : null,
+      reviewStatus: review ? stringValue(review, 'status') : null,
+      commitStatus: commit ? stringValue(commit, 'status') ?? stringValue(commit, 'result') : null,
+      mergeStatus: merge ? stringValue(merge, 'status') ?? stringValue(merge, 'result') : null,
+    } satisfies AgentModeConsoleWorkcell & { id: string; status: string; updatedAt: string | null };
+  }), AGENT_MODE_CONSOLE_BOUNDS.workcells));
+
+  const executionResources = stableOrder(limit(observerAttempts.map((row) => {
+    const attemptId = stringValue(row, 'attemptId');
+    const dispatch = attemptId ? dispatchByAttempt.get(attemptId) : undefined;
+    const run = stringValue(row, 'runId') ? observerRuns.map(recordValue).filter((candidate): candidate is Row => candidate !== null).find((candidate) => stringValue(candidate, 'runId') === stringValue(row, 'runId')) : null;
+    const task = run ? observerTasks.map(recordValue).filter((candidate): candidate is Row => candidate !== null).find((candidate) => stringValue(candidate, 'taskId') === stringValue(run, 'taskId')) : null;
+    const resourceId = stringValue(dispatch ?? {}, 'dispatchId') ?? attemptId ?? 'unknown-execution-resource';
+    return { id: resourceId, status: stringValue(dispatch ?? row, 'state') ?? stringValue(row, 'status') ?? 'unknown', updatedAt: stringValue(dispatch ?? row, 'updatedAt') ?? stringValue(dispatch ?? row, 'dispatchedAt') ?? stringValue(row, 'updatedAt') ?? stringValue(row, 'createdAt'), resourceId, attemptId, taskId: task ? stringValue(task, 'taskId') : null, runId: run ? stringValue(run, 'runId') : null, runtimeRef: stringValue(row, 'runtimeRef'), runtimeProfileRef: stringValue(row, 'runtimeProfileRef'), modelRef: stringValue(row, 'modelRef'), freshness: dispatch ? 'known' as const : 'unknown' as const } satisfies AgentModeConsoleExecutionResource & { id: string; status: string; updatedAt: string | null };
+  }), AGENT_MODE_CONSOLE_BOUNDS.executionResources));
+
   const controlAudits = observer.controlAudits.slice(0, 100).map((audit) => ({ ...audit }));
 
   const activeRootGoalCount = observer.spawnRootStates.filter((row) => {
@@ -640,6 +812,9 @@ function buildProjection(observer: AgentModeObserverProjection, now: string): Ag
     failures: boundedFailures,
     modelResources,
     nodeResources,
+    rootGoals,
+    workcells,
+    executionResources,
     controlAudits,
   };
 }

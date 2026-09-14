@@ -1545,6 +1545,41 @@ Evidence: `operations/reports/agent-mode-u0-d-control-audit-session-hardening-ev
 Exact next bounded U0 slice: inspect the remaining roadmap gaps and define the
 next explicitly authorized U0 task; do not start it automatically.
 
+### U0-E — Root, Workcell, Node, Runtime, Model, and Execution-Resource Visibility Gap Closure
+
+**Status:** COMPLETE for the bounded durable read-model visibility gate; U0
+remains IN PROGRESS.
+
+U0-E extends the canonical `agent-mode-console-v1` projection at
+`GET /agent-mode/console` with bounded Root Goals, Workcells, and distinct
+execution-resource records. Root/Jarvis ownership is derived from durable
+spawn-root and Agent Mode facts. Workcell views reuse the existing observer's
+safe repository reference, branch, base reference, lifecycle, lease,
+validation, diff, review, commit, and merge metadata; absolute paths and lease
+fences remain excluded. Nodes are represented only by existing durable
+host-health source facts, with no provider or host probes.
+
+The `/agents` read-only surface now provides Roots, Workcells, and Resources
+views in addition to the existing operational tabs. Runtime, model/provider,
+node, and execution-resource records remain separate types and are displayed
+only when durable facts exist. Codex quota, richer inventory, and Jarvis intake
+are explicitly unavailable/not yet surfaced where no canonical durable Brain
+source exists. The browser continues to read Brain Core through the existing
+Zod-validated client and owns no authoritative state.
+
+All new collections are bounded to 100 records and use active-before-terminal,
+newest-updated, stable-ID ordering. Root and Workcell detail uses the existing
+versioned detail route with metadata-only validation/diff/lease disclosures.
+Repeated projection reads remain side-effect free: no AWS, provider, runtime,
+BrainNode, Workcell, scheduler, or mutation call is performed. StateStore and
+observer facts remain the only authority; no Console database or inventory
+ledger was added.
+
+Evidence: `operations/reports/agent-mode-u0-e-resource-visibility-evidence-2026-09-14.md`.
+Exact next bounded U0 slice: **U0-F — Durable Escalations, Unread
+Notifications, and Remaining Resource/Quota Visibility Gaps** (subject to the
+next roadmap review); do not start it automatically.
+
 ## Phase V0 — Jarvis voice gateway
 
 **Status:** planned after U0 foundations; local non-text inference remains allowed

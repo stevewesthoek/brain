@@ -4,7 +4,7 @@ import { readAgentModeObserver, type AgentModeControlAuditProjection, type Agent
 export const AGENT_MODE_CONSOLE_DETAIL_VERSION = 'agent-mode-console-detail-v1' as const;
 
 export const AGENT_MODE_CONSOLE_DETAIL_KINDS = [
-  'agent', 'task', 'run', 'attempt', 'organization', 'budget', 'schedule', 'failure', 'evidence',
+  'root', 'agent', 'task', 'run', 'attempt', 'organization', 'workcell', 'budget', 'schedule', 'failure', 'evidence',
 ] as const;
 
 export type AgentModeConsoleDetailKind = typeof AGENT_MODE_CONSOLE_DETAIL_KINDS[number];
@@ -126,6 +126,24 @@ export type AgentModeConsoleAgentDetail = {
   budget: AgentModeConsoleDetailBudget | null;
 };
 
+export type AgentModeConsoleRootDetail = {
+  kind: 'root';
+  rootGoalId: string;
+  jarvisAgentId: string | null;
+  taskId: string | null;
+  organizationPlanId: string | null;
+  status: string;
+  cancellationState: string | null;
+  deadline: string | null;
+  policyId: string | null;
+  activeChildren: number | null;
+  totalChildCreations: number | null;
+  reservedCost: number | null;
+  settledCost: number | null;
+  agents: Array<{ agentId: string; parentAgentId: string | null; status: string; updatedAt: string | null }>;
+  tasks: Array<{ taskId: string; runId: string | null; status: string; updatedAt: string | null }>;
+};
+
 export type AgentModeConsoleTaskDetail = {
   kind: 'task';
   taskId: string;
@@ -211,6 +229,27 @@ export type AgentModeConsoleOrganizationDetail = {
   } | null;
 };
 
+export type AgentModeConsoleWorkcellDetail = {
+  kind: 'workcell';
+  workcellId: string;
+  taskId: string;
+  runId: string;
+  attemptId: string;
+  repositoryRef: string;
+  branch: string;
+  baseRef: string;
+  ownerAgent: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  lease: { leaseId: string; ownerAgent: string; ownerAttempt: string; status: string; current: boolean; expiresAt: string } | null;
+  validation: { validationId: string; validatorProfile: string; status: string; result: string; diffId: string | null; evidenceHash: string | null; updatedAt: string } | null;
+  diff: { diffId: string; changedFileCount: number; diffHash: string; baseRevision: string; currentRevision: string; capturedAt: string } | null;
+  reviewStatus: string | null;
+  commitStatus: string | null;
+  mergeStatus: string | null;
+};
+
 export type AgentModeConsoleScheduleDetail = {
   kind: 'schedule';
   scheduleId: string;
@@ -253,10 +292,12 @@ export type AgentModeConsoleEvidenceDetail = AgentModeConsoleDetailEvidence & { 
 export type AgentModeConsoleBudgetDetail = AgentModeConsoleDetailBudget & { kind: 'budget' };
 
 export type AgentModeConsoleDetail = AgentModeConsoleAgentDetail
+  | AgentModeConsoleRootDetail
   | AgentModeConsoleTaskDetail
   | AgentModeConsoleRunDetail
   | AgentModeConsoleAttemptDetail
   | AgentModeConsoleOrganizationDetail
+  | AgentModeConsoleWorkcellDetail
   | AgentModeConsoleBudgetDetail
   | AgentModeConsoleScheduleDetail
   | AgentModeConsoleFailureDetail
@@ -297,6 +338,11 @@ function rows(values: readonly Record<string, unknown>[]): Row[] {
 
 function text(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
+}
+
+function safeWorkcellRef(value: string | null): string {
+  if (!value || /^(?:[A-Za-z]:[\\/]|\\\\|\/)/.test(value) || value.includes('://')) return '[redacted]';
+  return value;
 }
 
 function number(value: unknown): number | null {
@@ -492,6 +538,20 @@ function buildDetail(observer: AgentModeObserverProjection, now: string, kind: A
   const runByTask = (value: string | null) => value ? byId(runs, 'taskId', value) : null;
   const attemptByRun = (value: string | null) => value ? byId(attempts, 'runId', value) : null;
 
+  if (kind === 'root') {
+    const root = rows(observer.spawnRootStates).find((candidate) => text(candidate.rootGoalId) === id);
+    if (!root) return null;
+    const agentRows = agents.filter((candidate) => text(candidate.rootGoalId) === id).slice(0, AGENT_MODE_CONSOLE_DETAIL_BOUNDS.children);
+    const taskRows = tasks.filter((candidate) => text(candidate.rootGoalId) === id || text(candidate.taskId) === id).slice(0, AGENT_MODE_CONSOLE_DETAIL_BOUNDS.tasks);
+    const organization = rows(observer.organizationPlans).find((candidate) => text(candidate.rootGoalId) === id);
+    const rootTask = taskRows.find((candidate) => text(candidate.taskId) === id || text(candidate.rootGoalId) === id && text(candidate.taskType) === 'root-goal');
+    const jarvis = agentRows.find((candidate) => text(candidate.parentAgentId) === null && ['jarvis', 'supervisor'].includes(text(candidate.agentKind) ?? ''));
+    const deadline = text(root.deadline);
+    const expired = deadline !== null && Number.isFinite(Date.parse(deadline)) && Date.parse(deadline) <= Date.parse(now);
+    const cancellation = text(root.cancellation);
+    return { kind, rootGoalId: id, jarvisAgentId: text(jarvis?.agentId) ?? text(organization?.supervisorAgentId), taskId: text(rootTask?.taskId), organizationPlanId: text(organization?.organizationPlanId), status: expired ? 'expired' : cancellation && cancellation !== 'active' ? cancellation : 'active', cancellationState: cancellation, deadline, policyId: text(root.policyId), activeChildren: number(root.activeChildren), totalChildCreations: number(root.totalChildCreations), reservedCost: number(root.reservedChildCost), settledCost: number(organization?.totalSettledCost), agents: agentRows.map((candidate) => ({ agentId: text(candidate.agentId) ?? 'unknown-agent', parentAgentId: text(candidate.parentAgentId), status: text(candidate.status) ?? 'unknown', updatedAt: text(candidate.childCreatedAt) })), tasks: taskRows.map((candidate) => ({ taskId: text(candidate.taskId) ?? 'unknown-task', runId: text(runByTask(text(candidate.taskId))?.runId), status: text(candidate.status) ?? 'unknown', updatedAt: text(candidate.createdAt) })) };
+  }
+
   if (kind === 'agent') {
     const agent = byId(agents, 'agentId', id);
     if (!agent) return null;
@@ -556,6 +616,24 @@ function buildDetail(observer: AgentModeObserverProjection, now: string, kind: A
     }).sort((a, b) => a.workItemKey.localeCompare(b.workItemKey));
     const final = rows(observer.organizationFinalResults).find((result) => text(result.organizationPlanId) === id);
     return { kind, organizationPlanId: id, rootGoalId: text(plan.rootGoalId) ?? 'unknown-root', supervisorAgentId: text(plan.supervisorAgentId) ?? 'unknown-supervisor', supervisorOrganizationRoleId: text(plan.supervisorOrganizationRoleId) ?? 'unknown-role', planVersion: number(plan.planVersion), status: text(plan.status) ?? 'unknown', readiness: text(plan.readinessState) ?? 'unknown', deadline: text(plan.deadline), workItems, finalResult: final ? { finalResultId: text(final.organizationFinalResultId) ?? 'unknown-final-result', status: text(final.status) ?? 'unknown', auditorWorkItemId: text(final.auditorWorkItemId), auditorResultRef: text(final.auditorResultRef), aggregateDigest: text(final.aggregateDigest), totalSettledCost: number(final.totalSettledCost) ?? 0, finalizedAt: text(final.finalizedAt) } : null };
+  }
+
+  if (kind === 'workcell') {
+    const workcell = rows(observer.workcells).find((candidate) => text(candidate.workcellId) === id);
+    if (!workcell) return null;
+    const workcellRows = (key: string, value: string) => rows((observer[key as keyof AgentModeObserverProjection] as Array<Record<string, unknown>> | undefined) ?? []).filter((candidate) => text(candidate.workcellId) === value);
+    const latest = (values: Row[], keys: string[]) => [...values].sort((a, b) => {
+      const at = keys.map((key) => text(a[key]) ?? '').sort().at(-1) ?? '';
+      const bt = keys.map((key) => text(b[key]) ?? '').sort().at(-1) ?? '';
+      return bt.localeCompare(at);
+    })[0] ?? null;
+    const lease = latest(workcellRows('workcellLeases', id), ['createdAt', 'expiresAt']);
+    const validation = latest(workcellRows('workcellValidations', id), ['updatedAt', 'completedAt', 'startedAt']);
+    const diff = latest(workcellRows('workcellDiffs', id), ['capturedAt']);
+    const review = latest(rows(observer.reviewRequests).filter((candidate) => text(candidate.workcellId) === id), ['updatedAt', 'createdAt']);
+    const commit = latest(rows(observer.commitOperations).filter((candidate) => text(candidate.workcellId) === id), ['updatedAt', 'createdAt', 'completedAt']);
+    const merge = latest(rows(observer.mergeOperations).filter((candidate) => text(candidate.workcellId) === id), ['updatedAt', 'createdAt', 'completedAt']);
+    return { kind, workcellId: id, taskId: text(workcell.taskId) ?? '', runId: text(workcell.runId) ?? '', attemptId: text(workcell.attemptId) ?? '', repositoryRef: safeWorkcellRef(text(workcell.repositoryRef)), branch: safeWorkcellRef(text(workcell.branch)), baseRef: safeWorkcellRef(text(workcell.baseRef)), ownerAgent: text(workcell.ownerAgent) ?? '', status: text(workcell.status) ?? 'unknown', createdAt: text(workcell.createdAt) ?? '', updatedAt: text(workcell.updatedAt) ?? '', lease: lease ? { leaseId: text(lease.leaseId) ?? 'unknown-lease', ownerAgent: text(lease.ownerAgent) ?? '', ownerAttempt: text(lease.ownerAttempt) ?? '', status: text(lease.status) ?? 'unknown', current: lease.current === true, expiresAt: text(lease.expiresAt) ?? '' } : null, validation: validation ? { validationId: text(validation.validationId) ?? 'unknown-validation', validatorProfile: text(validation.validatorProfile) ?? '', status: text(validation.status) ?? 'unknown', result: text(validation.result) ?? 'unknown', diffId: text(validation.diffId), evidenceHash: text(validation.evidenceHash), updatedAt: text(validation.updatedAt) ?? text(validation.completedAt) ?? text(validation.startedAt) ?? '' } : null, diff: diff ? { diffId: text(diff.diffId) ?? 'unknown-diff', changedFileCount: Array.isArray(diff.changedFiles) ? diff.changedFiles.length : 0, diffHash: text(diff.diffHash) ?? '', baseRevision: safeWorkcellRef(text(diff.baseRevision)), currentRevision: safeWorkcellRef(text(diff.currentRevision)), capturedAt: text(diff.capturedAt) ?? '' } : null, reviewStatus: text(review?.status), commitStatus: text(commit?.status) ?? text(commit?.result), mergeStatus: text(merge?.status) ?? text(merge?.result) };
   }
 
   if (kind === 'budget') {
