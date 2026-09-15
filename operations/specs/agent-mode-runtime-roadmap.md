@@ -1642,7 +1642,7 @@ automatically.
 
 ## Phase V0 — Jarvis voice gateway
 
-**Status:** V0-A, V0-B, V0-C1, and V0-C2 COMPLETE; V0-C COMPLETE; V0 remains IN PROGRESS; local non-text inference remains allowed
+**Status:** V0-A, V0-B, V0-C1, V0-C2, V0-C, and V0-D COMPLETE; V0 COMPLETE; local non-text inference remains allowed
 
 - microphone / push-to-talk / future wake-word input;
 - speech-to-text transport into Jarvis;
@@ -1763,11 +1763,19 @@ ledger, audio-file path, network call, model/runtime effect, or worker speech
 path. Late completion/error callbacks are fenced after interruption, and
 explicit replay reuses the same canonical response and output identity.
 
-Evidence: `operations/reports/agent-mode-v0-c2-jarvis-tts-playback-evidence-2026-09-15.md`.
+Evidence: `operations/reports/agent-mode-v0-c-jarvis-tts-interruptible-playback-evidence-2026-09-15.md`.
 V0-C is complete for the bounded response and speech-output contract; live
-audible acceptance remains a manual browser/device check. Exact next bounded
-task: **V0-D — Jarvis Voice Gateway Phase Exit Audit**. Do not start V0-D
-automatically.
+audible acceptance remains a manual browser/device check classified B. V0-D
+audits the complete gateway over the durable Jarvis/K4/K5 path, including typed
+and voice parity, replaceable transports, explicit non-authoritative voice
+approval semantics, interruption races, bounded retention, and a deterministic
+offline STT → K5 → Jarvis response → speech fixture. The audit passes: no live
+model/provider, network, BrainNode, Harness, Workcell, or lifecycle-control
+effect is introduced, and wake word remains a non-blocking future deferral.
+
+Evidence: `operations/reports/agent-mode-v0-d-voice-gateway-exit-audit-2026-09-15.md`.
+**V0-D COMPLETE; V0 COMPLETE.** The exact next phase is **Phase D0 — distribution
+and always-on options**. Do not start D0 automatically.
 
 ## Phase D0 — distribution and always-on options
 

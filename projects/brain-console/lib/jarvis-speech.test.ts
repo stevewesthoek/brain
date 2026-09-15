@@ -85,3 +85,20 @@ test('unavailable browser speech is explicit and cannot synthesize arbitrary tex
   assert.equal(state.speak({ text: 'Caller-authored speech' } as never).state, 'failed');
   assert.equal(fake.utterances.length, 0);
 });
+
+test('independent browser clients share canonical response identity but not playback state', () => {
+  const firstFake = new FakeSpeechSynthesis();
+  const secondFake = new FakeSpeechSynthesis();
+  const first = transport(firstFake);
+  const second = transport(secondFake);
+  first.speak(RESPONSE);
+  firstFake.utterances[0]!.onstart!();
+  second.speak(RESPONSE);
+  secondFake.utterances[0]!.onstart!();
+  assert.equal(first.getSnapshot().state, 'speaking');
+  assert.equal(second.getSnapshot().state, 'speaking');
+  first.interrupt();
+  assert.equal(first.getSnapshot().state, 'interrupted');
+  assert.equal(second.getSnapshot().state, 'speaking');
+  assert.equal(first.getSnapshot().outputId, second.getSnapshot().outputId);
+});

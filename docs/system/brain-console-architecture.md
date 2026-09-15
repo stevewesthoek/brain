@@ -105,10 +105,15 @@ No TTS provider credential, server playback ledger, audio file, provider probe,
 model/runtime call, network effect, or Brain lifecycle mutation is introduced.
 Unsupported speech is shown as unavailable, and re-speaking reuses the same
 canonical response rather than replaying any worker or K5 operation. The
-`/agents` surface remains an observer with no voice control mutations. V0-C is
-complete for this bounded response/output contract; live audible device
-acceptance is a manual follow-up. Exact next bounded slice: **V0-D — Jarvis
-Voice Gateway Phase Exit Audit**; do not start it automatically.
+`/agents` surface remains an observer with no voice control mutations. The
+V0-D exit audit confirms the complete typed/voice gateway over durable
+Jarvis/K4/K5 state, replaceable STT/TTS transports, structured response/evidence
+references, transport-only interruption, and explicit denial of voice control
+phrases. No live provider, network, lifecycle, or browser-authority effect is
+introduced. V0 is **COMPLETE**; browser/OS SpeechSynthesis remains privacy
+classification B and physical audible acceptance is a manual device check.
+Exact next phase: **Phase D0 — distribution and always-on options**; do not
+start it automatically.
 
 ## Agent Mode detail drill-down
 

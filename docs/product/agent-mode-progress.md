@@ -1403,9 +1403,35 @@ is explicit and the canonical text remains readable. Automated deterministic
 transport/schema tests pass; live audible device acceptance remains a manual
 follow-up. V0-C is **COMPLETE** and V0 remains **IN PROGRESS**.
 
-Evidence: `operations/reports/agent-mode-v0-c2-jarvis-tts-playback-evidence-2026-09-15.md`.
+Evidence: `operations/reports/agent-mode-v0-c-jarvis-tts-interruptible-playback-evidence-2026-09-15.md`.
 Exact next bounded task: **V0-D — Jarvis Voice Gateway Phase Exit Audit**; do not
 start it automatically.
+
+## Current V0-D Jarvis voice gateway phase-exit audit — 2026-09-15
+
+V0-D is **COMPLETE** and V0 is **COMPLETE**. The exit gate passes: voice is a
+transport over the same durable Jarvis, task, K4, and K5 contracts and can be
+replaced without changing identity or orchestration. The deterministic offline
+fixture proves STT → production durable Jarvis intake → the existing three-worker
+K5 fixture → authoritative structured results/evidence → canonical Jarvis
+response → replaceable fake speech transport. Typed and voice intake share the
+same durable authority; `approve` and `reject` voice phrases are explicitly
+denied and make no control-service calls.
+
+The audit confirms bounded audio/transcript/response retention, MLX safety
+guards, preservation of the separate Bible Studies transcription capability,
+transport-only interruption with late-callback fencing, Jarvis-only speech, and
+no model/provider/network/Harness/BrainNode/Workcell effects. Browser/OS
+SpeechSynthesis is classified privacy **B** because the application makes no
+provider request but the platform engine may be managed; physical audible output
+remains a manual device check. Wake word remains a non-blocking future deferral.
+
+Evidence: `operations/reports/agent-mode-v0-d-voice-gateway-exit-audit-2026-09-15.md`.
+The prior C2 evidence link was corrected to the actual canonical report
+`operations/reports/agent-mode-v0-c-jarvis-tts-interruptible-playback-evidence-2026-09-15.md`.
+
+The exact next roadmap phase is **Phase D0 — distribution and always-on
+options**. D0 has not started.
 
 ## Historical maintenance handoff — 2026-08-14
 

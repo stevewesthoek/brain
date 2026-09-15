@@ -1425,6 +1425,32 @@ viewports; audible device acceptance remains a manual follow-up because the
 validation service on port 4877 is an older build without the canonical response
 route. V0-C is complete; V0 remains **IN PROGRESS**.
 
-Evidence: `operations/reports/agent-mode-v0-c2-jarvis-tts-playback-evidence-2026-09-15.md`.
+Evidence: `operations/reports/agent-mode-v0-c-jarvis-tts-interruptible-playback-evidence-2026-09-15.md`.
 Exact next bounded task: **V0-D — Jarvis Voice Gateway Phase Exit Audit**; do not
+start it automatically.
+
+## V0-D Jarvis voice gateway phase-exit audit — 2026-09-15
+
+V0-D is **COMPLETE** and V0 is **COMPLETE**. The gateway is transport over the
+durable Jarvis/task/control-plane path: push-to-talk STT enters the production
+`JarvisTextIntakeService`, K5 delegates through K4, and deterministic
+`JarvisResponseFinalizer` output is the only text accepted by the replaceable
+browser speech transport. The offline fixture proves three distinct K5 worker
+lifecycles, authoritative structured results/evidence, typed/voice parity, and
+one deterministic end-to-end path without live models, providers, network,
+Harness, BrainNode, Workcells, or lifecycle mutations.
+
+Voice `approve`/`reject` intents are denied with no control-service call;
+interruption is transport-only and late callbacks cannot defeat it. Audio,
+transcripts, and response text are bounded and raw audio/pre-review transcript
+are ephemeral. MLX uses explicit local paths, bounded process I/O, timeout,
+validation, and locking; the Bible Studies transcription pipeline remains
+separate and unchanged. Browser/OS SpeechSynthesis is privacy classification B,
+not a guaranteed-offline claim; audible hardware acceptance is a manual,
+non-blocking check. Wake word is intentionally deferred.
+
+Evidence: `operations/reports/agent-mode-v0-d-voice-gateway-exit-audit-2026-09-15.md`.
+The C2 evidence reference is the actual canonical report
+`operations/reports/agent-mode-v0-c-jarvis-tts-interruptible-playback-evidence-2026-09-15.md`.
+Exact next phase: **Phase D0 — distribution and always-on options**; do not
 start it automatically.
