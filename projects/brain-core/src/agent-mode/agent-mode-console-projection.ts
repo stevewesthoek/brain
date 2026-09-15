@@ -686,9 +686,19 @@ function buildProjection(observer: AgentModeObserverProjection, now: string): Ag
     const rootGoalId = stringValue(organization, 'rootGoalId');
     if (rootGoalId) organizationByRoot.set(rootGoalId, organization);
   }
-  const rootGoals = stableOrder(limit(observer.spawnRootStates.map(recordValue).filter((row): row is Row => row !== null).map((row) => {
+  const rootStateRows: Row[] = observer.spawnRootStates.map(recordValue).filter((row): row is Row => row !== null);
+  const knownRootIds = new Set(rootStateRows.map((row) => stringValue(row, 'rootGoalId')).filter((value): value is string => value !== null));
+  for (const task of observer.tasks.map(recordValue).filter((row): row is Row => row !== null)) {
+    const taskType = stringValue(task, 'taskType');
+    const taskId = stringValue(task, 'taskId');
+    if (taskId && (taskType === 'root.goal' || taskType === 'root-goal') && !knownRootIds.has(taskId)) {
+      rootStateRows.push({ rootGoalId: taskId, cancellation: 'active', deadline: null, updatedAt: stringValue(task, 'createdAt'), policyId: null, activeChildren: null, totalChildCreations: null, reservedChildCost: null, createdAt: stringValue(task, 'createdAt') });
+      knownRootIds.add(taskId);
+    }
+  }
+  const rootGoals = stableOrder(limit(rootStateRows.map((row) => {
     const rootGoalId = stringValue(row, 'rootGoalId') ?? 'unknown-root';
-    const jarvis = observer.agents.map(recordValue).filter((agent): agent is Row => agent !== null).find((agent) => stringValue(agent, 'agentId') && stringValue(agent, 'rootGoalId') === rootGoalId && stringValue(agent, 'parentAgentId') === null && (stringValue(agent, 'agentKind') === 'jarvis' || stringValue(agent, 'agentKind') === 'supervisor'));
+    const jarvis = observer.agents.map(recordValue).filter((agent): agent is Row => agent !== null).find((agent) => stringValue(agent, 'agentId') && stringValue(agent, 'parentAgentId') === null && (stringValue(agent, 'agentKind') === 'jarvis' || stringValue(agent, 'agentKind') === 'supervisor') && (stringValue(agent, 'rootGoalId') === rootGoalId || stringValue(agent, 'agentId') === 'agent:jarvis'));
     const organization = organizationByRoot.get(rootGoalId);
     const rootTask = observer.tasks.map(recordValue).filter((task): task is Row => task !== null).find((task) => stringValue(task, 'taskId') === rootGoalId || stringValue(task, 'rootGoalId') === rootGoalId && stringValue(task, 'taskType') === 'root-goal');
     const cancellation = stringValue(row, 'cancellation');

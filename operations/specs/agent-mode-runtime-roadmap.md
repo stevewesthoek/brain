@@ -1682,6 +1682,43 @@ Exact next bounded slice: **V0-B — Push-to-Talk Input and Local Speech-to-Text
 Adapter**, including the production durable text-intake prerequisite; do not
 start it automatically.
 
+### V0-B — Push-to-Talk Input and Local Speech-to-Text Adapter
+
+**Status:** COMPLETE for the bounded durable intake, authenticated push-to-talk,
+and deterministic local STT adapter gate; V0 remains IN PROGRESS
+
+V0-B adds `agent-mode.jarvis-text-intake.v1` as the single Brain-owned domain
+service for typed and voice submissions. It persists only canonical text hashes,
+root/task ownership, operator identity, and an idempotency record; the root task,
+persistent `agent:jarvis` owner, intake record, and acceptance event commit in
+one StateStore transaction. Root and task identities are deterministic from the
+intake identity, so restart and concurrent retries converge without a process
+local ledger. Raw transcripts are not persisted.
+
+The authenticated Core route is `POST /agent-mode/jarvis/intake` and requires
+the narrow `agent-mode.intake` service capability. Brain Console server routes
+enforce the local operator session, same-origin provenance, CSRF, and loopback
+transport before proxying a signed Core request. The browser cannot choose the
+operator, root, task, Jarvis agent, policy, budget, runtime, or model.
+
+`MlxWhisperSpeechToTextProvider` is a local `SpeechToTextProvider` adapter with
+explicit argv (`shell: false`), bounded stdout/stderr, timeout handling, WAV
+header/duration/size validation, private temporary audio cleanup, and a
+fail-closed resource lock. Executable/model/lock paths are server configuration;
+there is no auto-download or provider/network probe. Deterministic process
+fixtures prove the adapter seam; live MLX inference remains deferred until host
+resource coordination with the retained Bible Studies transcription pipeline is
+explicitly verified.
+
+`/agents` adds explicit push-to-talk. Recording starts only after a user click,
+returns a bounded transcript for review, and requires a separate Submit action
+before durable intake. Failed, rejected, or discarded audio never creates a
+root. No voice control phrase reaches lifecycle control authority.
+
+Evidence: `operations/reports/agent-mode-v0-b-push-to-talk-local-stt-evidence-2026-09-15.md`.
+Exact next bounded slice: **V0-C — Jarvis Text-to-Speech Output and Interruptible
+Playback**; do not start it automatically.
+
 ## Phase D0 — distribution and always-on options
 
 **Status:** planned after the personal deployment is stable

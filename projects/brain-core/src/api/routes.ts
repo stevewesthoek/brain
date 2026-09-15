@@ -314,8 +314,9 @@ import { defaultAlertManager } from '../adapters/alerting.js';
 import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-orchestrator-planner.js';
 import { OrchestrationExecutor, recordApprovalDecision } from '../adapters/agent-orchestrator-executor.js';
 import { AGENT_MODE_CONTROL_ACTIONS, AgentModeControlService, parseAgentModeOperatorAttribution, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
+import { JARVIS_TEXT_INTAKE_SCHEMA_VERSION, JarvisTextIntakeService } from '../agent-mode/jarvis-text-intake.js';
 import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
-import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
+import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
 
 const getStatus = createStatusAdapter({
   startedAt: new Date(),
@@ -334,6 +335,7 @@ function isContainedHighImpactMutation(url: URL): boolean {
   const pathname = url.pathname;
 
   if (/^\/agent-mode\/control(?:\/|$)/u.test(pathname)) return true;
+  if (pathname === '/agent-mode/jarvis/intake') return true;
   if (/^\/agent-mode\/notifications\/[^/]+\/read$/u.test(pathname)) return true;
 
   if (new Set([
@@ -388,8 +390,16 @@ function isAgentModeControlPath(url: URL): boolean {
   return /^\/agent-mode\/control\/(?:run|review)\/[^/]+$/u.test(url.pathname);
 }
 
+function isAgentModeIntakePath(url: URL): boolean {
+  return url.pathname === '/agent-mode/jarvis/intake';
+}
+
 function isAgentModeControlNamespace(url: URL): boolean {
   return /^\/agent-mode\/control(?:\/|$)/u.test(url.pathname);
+}
+
+function isAgentModeIntakeNamespace(url: URL): boolean {
+  return /^\/agent-mode\/jarvis(?:\/|$)/u.test(url.pathname);
 }
 
 function isAgentModeNotificationNamespace(url: URL): boolean {
@@ -588,6 +598,37 @@ async function routeAgentModeControlRequest(url: URL, request: IncomingMessage, 
   }
 }
 
+async function routeAgentModeIntakeRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try { authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() }); } catch { sendAgentModeAuthFailure(response, 'service_identity_missing'); return; }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest({ method: request.method ?? 'POST', pathname: '/agent-mode/jarvis/intake', headers: requestHeaders }, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY);
+  if (!auth.ok) { sendAgentModeAuthFailure(response, auth.code); return; }
+  const parsed = await readBoundedRequestBody(request);
+  if (parsed.error || !parsed.body || !parsed.digest) { sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid'); return; }
+  const signedDigest = requestHeaders['x-brain-content-sha256'];
+  const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+  if (!signedDigestValue || signedDigestValue !== parsed.digest) { sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } }); return; }
+  const body = parsed.body;
+  if (!exactBodyKeys(body, ['schemaVersion', 'intakeId', 'source', 'operatorId', 'text'])) { sendAgentModeBodyError(response, 'intake_fields_invalid'); return; }
+  const schemaVersion = requiredBodyText(body, 'schemaVersion', 64);
+  const intakeId = requiredBodyText(body, 'intakeId', 128);
+  const operatorId = requiredBodyText(body, 'operatorId', 128);
+  const text = requiredBodyText(body, 'text', 4_000);
+  const source = body.source;
+  if (schemaVersion !== JARVIS_TEXT_INTAKE_SCHEMA_VERSION || !intakeId || !operatorId || !text || (source !== 'typed' && source !== 'voice')) { sendAgentModeBodyError(response, 'intake_fields_invalid'); return; }
+  const databasePath = defaultAgentModeDatabasePath();
+  if (!existsSync(databasePath)) { sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } }); return; }
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    store = new AgentModeSqliteStateStore(databasePath);
+    const result = new JarvisTextIntakeService(store, () => auth.identity.requestTimestamp).acceptCommand({ schemaVersion: JARVIS_TEXT_INTAKE_SCHEMA_VERSION, intakeId, source, operatorId, text, receivedAt: auth.identity.requestTimestamp });
+    const status = result.outcome === 'accepted' ? 201 : result.outcome === 'duplicate' ? 200 : result.outcome === 'conflict' ? 409 : 503;
+    sendAgentModeControlJson(response, status, { ok: result.outcome === 'accepted' || result.outcome === 'duplicate', result });
+  } catch { sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'jarvis_intake_unavailable', message: 'Jarvis text intake is unavailable.' } }); }
+  finally { store?.close(); }
+}
+
 async function routeAgentModeNotificationRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
   let authenticator: BrainServiceAuthenticator;
   try {
@@ -716,7 +757,7 @@ export async function routeRequest(
   }
 
   if (method === 'OPTIONS') {
-    if (isAgentModeControlNamespace(url) || isAgentModeNotificationNamespace(url)) {
+    if (isAgentModeControlNamespace(url) || isAgentModeNotificationNamespace(url) || isAgentModeIntakeNamespace(url)) {
       response.writeHead(204, {
         'access-control-allow-methods': 'GET, HEAD, OPTIONS',
         'access-control-allow-headers': 'content-type',
@@ -751,6 +792,11 @@ export async function routeRequest(
 
   if (method === 'POST' && isAgentModeControlPath(url)) {
     await routeAgentModeControlRequest(url, request, response);
+    return;
+  }
+
+  if (method === 'POST' && isAgentModeIntakePath(url)) {
+    await routeAgentModeIntakeRequest(request, response);
     return;
   }
 

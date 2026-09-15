@@ -395,3 +395,28 @@ worktree inventory, and broader operator controls remain later U0 slices.
 Evidence: `operations/reports/agent-mode-u0-f-escalations-notifications-evidence-2026-09-14.md`.
 Exact next bounded slice: **U0-G — Unified Brain Console Phase Exit Audit**; do
 not start it automatically.
+
+## V0-B Jarvis intake and push-to-talk boundary
+
+V0-B adds the durable `agent-mode.jarvis-text-intake.v1` contract behind
+`POST /agent-mode/jarvis/intake`. Brain Core is authoritative: the intake
+service atomically records the idempotency/ownership record, deterministic root
+task, and persistent Jarvis owner, while retaining only bounded hashes and
+references. Typed and voice submissions use the same service. The browser never
+chooses operator, root, task, policy, budget, runtime, or model.
+
+The Brain Console server enforces the local signed operator session, same-origin
+provenance, CSRF, and loopback transport before proxying the signed Core request.
+Push-to-talk transcription uses the local `MlxWhisperSpeechToTextProvider` only
+when an absolute executable, local model, and explicit resource lock are
+configured. It accepts owner-only temporary WAV files capped at 8 MiB and 30
+seconds, runs structured argv with `shell: false`, bounds output and timeout,
+and removes temporary audio on success or failure. There is no auto-download,
+provider probe, ModelGateway path, or network fallback; live MLX acceptance is
+deferred pending safe coordination with the retained Bible Studies pipeline.
+
+The `/agents` page starts the microphone only after an explicit click, keeps the
+capture in memory, shows a bounded transcript review, and requires explicit
+Submit. It has no voice lifecycle controls, wake word, browser authority, or
+raw transcript persistence. V0-B is read/submit ingress only; TTS and
+interruptible playback are the next V0 slice.

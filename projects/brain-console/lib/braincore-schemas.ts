@@ -90,6 +90,29 @@ export const agentModeControlResponseSchema = z.union([
   agentModeControlErrorResponseSchema,
 ]);
 
+export const jarvisTextIntakeReceiptSchema = z.object({
+  schemaVersion: z.literal('agent-mode.jarvis-text-intake.v1'),
+  intakeId: z.string().min(1).max(128),
+  status: z.enum(['accepted', 'duplicate']),
+  canonicalTextHash: z.string().regex(/^[a-f0-9]{64}$/u),
+  rootGoalId: z.string().min(1).max(256),
+  taskId: z.string().min(1).max(256),
+  jarvisAgentId: z.literal('agent:jarvis'),
+  createdAt: z.string(),
+}).strict();
+
+export const jarvisTextIntakeResponseSchema = z.union([
+  z.object({ ok: z.literal(true), result: z.object({ outcome: z.enum(['accepted', 'duplicate']), receipt: jarvisTextIntakeReceiptSchema }).strict() }).strict(),
+  z.object({ ok: z.literal(false), result: z.object({ outcome: z.enum(['conflict', 'denied']), reasonCode: z.enum(['JARVIS_INTAKE_CONFLICT', 'JARVIS_INTAKE_INVALID', 'JARVIS_INTAKE_UNAVAILABLE']) }).strict() }).strict(),
+]);
+
+export const jarvisTranscriptionResponseSchema = z.object({
+  ok: z.literal(true),
+  voiceRequestId: z.string().min(1).max(128),
+  transcript: z.string().min(1).max(2_000),
+  providerId: z.literal('mlx-whisper-local.v1'),
+}).strict();
+
 export type AgentModeControlResponse = z.infer<typeof agentModeControlResponseSchema>;
 
 const operatorSessionBaseSchema = {

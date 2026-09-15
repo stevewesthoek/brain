@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { agentModeNotificationReadResponseSchema, agentModeAttentionProjectionSchema, operatorSessionErrorResponseSchema, operatorSessionResponseSchema, agentModeControlResponseSchema } from './braincore-schemas';
+import { agentModeNotificationReadResponseSchema, agentModeAttentionProjectionSchema, operatorSessionErrorResponseSchema, operatorSessionResponseSchema, agentModeControlResponseSchema, jarvisTextIntakeResponseSchema, jarvisTranscriptionResponseSchema } from './braincore-schemas';
 
 export class OperatorClientError extends Error {
   constructor(readonly code: string, readonly status?: number) {
@@ -28,7 +28,7 @@ export async function operatorRequest<TSchema extends z.ZodTypeAny>(path: string
     response = await fetch(path, {
       ...init,
       credentials: 'same-origin',
-      headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+      headers: { ...(init?.body instanceof FormData ? {} : { 'content-type': 'application/json' }), ...(init?.headers ?? {}) },
     });
   } catch {
     throw new OperatorClientError('operator_request_failed');
@@ -57,4 +57,19 @@ export function markOperatorNotificationRead(notificationId: string, csrfToken: 
     method: 'POST',
     headers: { 'x-brain-console-csrf': csrfToken },
   });
+}
+
+export function submitJarvisIntake(input: { requestId: string; source: 'typed' | 'voice'; text: string; csrfToken: string }) {
+  return operatorRequest('/api/agent-mode/jarvis/intake', jarvisTextIntakeResponseSchema, {
+    method: 'POST',
+    headers: { 'x-brain-console-csrf': input.csrfToken },
+    body: JSON.stringify({ requestId: input.requestId, source: input.source, text: input.text }),
+  });
+}
+
+export function transcribeJarvisAudio(input: { requestId: string; audio: Blob; csrfToken: string }) {
+  const body = new FormData();
+  body.append('voiceRequestId', input.requestId);
+  body.append('audio', input.audio, 'recording.wav');
+  return operatorRequest('/api/agent-mode/jarvis/transcribe', jarvisTranscriptionResponseSchema, { method: 'POST', headers: { 'x-brain-console-csrf': input.csrfToken }, body });
 }

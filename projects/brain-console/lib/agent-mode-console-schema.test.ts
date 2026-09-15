@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { agentModeAttentionProjectionSchema, agentModeConsoleDetailResponseSchema, agentModeConsoleProjectionSchema } from './braincore-schemas';
+import { agentModeAttentionProjectionSchema, agentModeConsoleDetailResponseSchema, agentModeConsoleProjectionSchema, jarvisTextIntakeResponseSchema, jarvisTranscriptionResponseSchema } from './braincore-schemas';
 
 const emptyProjection = {
   schemaVersion: 'agent-mode-console-v1', generatedAt: '2026-09-13T12:00:00.000Z', source: 'agent-mode-state-store',
@@ -18,6 +18,13 @@ const emptyAttention = {
 
 test('canonical Agent Mode Console projection parses its empty state', () => {
   assert.equal(agentModeConsoleProjectionSchema.parse(emptyProjection).freshness.status, 'empty');
+});
+
+test('Jarvis intake and local transcription contracts are strict and bounded', () => {
+  const receipt = { schemaVersion: 'agent-mode.jarvis-text-intake.v1', intakeId: 'intake:one', status: 'accepted', canonicalTextHash: 'a'.repeat(64), rootGoalId: 'root:one', taskId: 'root:one', jarvisAgentId: 'agent:jarvis', createdAt: '2026-09-15T10:00:00.000Z' };
+  assert.equal(jarvisTextIntakeResponseSchema.parse({ ok: true, result: { outcome: 'accepted', receipt } }).result.outcome, 'accepted');
+  assert.equal(jarvisTextIntakeResponseSchema.safeParse({ ok: true, result: { outcome: 'accepted', receipt: { ...receipt, rootGoalId: 'forged', secret: 'no' } } }).success, false);
+  assert.equal(jarvisTranscriptionResponseSchema.parse({ ok: true, voiceRequestId: 'voice:one', transcript: 'Hello Jarvis.', providerId: 'mlx-whisper-local.v1' }).providerId, 'mlx-whisper-local.v1');
 });
 
 test('attention projection is strict, bounded, and distinguishes unread notifications', () => {

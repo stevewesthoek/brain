@@ -1339,3 +1339,40 @@ Evidence: `operations/reports/agent-mode-v0-a-voice-transport-contracts-evidence
 Exact next bounded slice: **V0-B — Push-to-Talk Input and Local Speech-to-Text
 Adapter**, including the production durable text-intake prerequisite; do not
 start it automatically.
+
+## V0-B durable Jarvis intake and push-to-talk — 2026-09-15
+
+V0-B is **COMPLETE** for the durable typed/voice intake and local STT adapter
+gate. `JarvisTextIntakeService` is the one domain path for both sources. It
+persists `agent_mode_jarvis_intakes` alongside a deterministic `root.goal` task
+and persistent `agent:jarvis` owner in one transaction. The table is an ingress
+idempotency/ownership record, not a second Task/Run/Attempt/result ledger. It
+stores no raw transcript; task input is the canonical text hash.
+
+Core exposes the authenticated `POST /agent-mode/jarvis/intake` route with the
+narrow `agent-mode.intake` capability. The Console `/api/agent-mode/jarvis/intake`
+proxy requires the local operator session, same-origin request, CSRF token, and
+loopback transport; it derives operator attribution server-side. Voice audio is
+accepted only by the authenticated `/api/agent-mode/jarvis/transcribe` proxy,
+which writes a random owner-only WAV file in a private temporary directory,
+invokes the configured local adapter, and removes the directory on every exit.
+
+The local `MlxWhisperSpeechToTextProvider` requires absolute configured
+executable/model paths and an explicit resource lock. It uses structured argv
+with `shell: false`, bounded JSON stdout, a 45-second timeout, 8 MiB WAV and
+30-second duration limits, and no download/network fallback. Missing
+configuration or an unavailable resource returns `STT_UNAVAILABLE`. The
+deterministic fixture tests are the acceptance path; live MLX execution remains
+deferred until a shared resource-coordination proof with the retained Bible
+Studies MLX process exists. The Bible Studies scripts and runbook are unchanged.
+
+The `/agents` UI starts recording only from an explicit click, converts the
+bounded in-memory capture to WAV, shows a transcript review, and requires an
+explicit Submit. Discard, microphone denial, STT failure, and invalid audio do
+not create a root. No voice input is routed to lifecycle control. Existing
+`/agent-mode/observer` and legacy `/agent-console` compatibility remain intact;
+the new canonical intake-created roots appear in `/agent-mode/console`.
+
+Evidence: `operations/reports/agent-mode-v0-b-push-to-talk-local-stt-evidence-2026-09-15.md`.
+Exact next bounded slice: **V0-C — Jarvis Text-to-Speech Output and Interruptible
+Playback**; do not start it automatically.

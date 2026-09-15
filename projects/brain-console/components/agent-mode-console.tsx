@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { AgentModeConsoleDetail, type AgentModeDetailSelection } from '@/components/agent-mode-console-detail';
 import { OperatorSessionPanel, ReviewControlButtons, RunControlButtons } from '@/components/operator-controls';
 import { markOperatorNotificationRead, readOperatorAttention, readOperatorSession } from '@/lib/operator-client';
+import { JarvisPushToTalk } from '@/components/jarvis-push-to-talk';
 
 type ConsoleTab = 'overview' | 'attention' | 'roots' | 'agents' | 'organizations' | 'workcells' | 'tasks' | 'resources' | 'failures';
 
@@ -170,6 +171,7 @@ export function AgentModeConsole() {
     <div className="stack agent-console-screen">
       <section className="page-heading"><div><div className="eyebrow">Agent Mode</div><h1>Agents</h1><p>Operational state is reconstructed from Brain Core’s durable Agent Mode StateStore. Lifecycle and review controls remain guarded by Brain Core.</p></div><div className="row"><StatusBadge status={freshness} label={freshness} /><span className="meta">{data ? `generated ${timeAgo(data.generatedAt)}` : 'waiting for Brain Core'}</span></div></section>
       <OperatorSessionPanel />
+      <JarvisPushToTalk />
       {query.isError && !data ? <div className="card"><div className="card-title">Agent Mode unavailable</div><p>Brain Core did not return the canonical Agent Mode console projection.</p></div> : null}
       {query.isFetching && !data ? <div className="card"><div className="card-title">Loading Agent Mode</div><p className="meta">Reading the bounded projection from Brain Core…</p></div> : null}
       {data ? <>

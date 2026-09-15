@@ -1333,6 +1333,37 @@ Evidence: `operations/reports/agent-mode-v0-a-voice-transport-contracts-evidence
 Exact next bounded slice: **V0-B — Push-to-Talk Input and Local Speech-to-Text
 Adapter**; do not start it automatically.
 
+## Current V0-B durable Jarvis intake and push-to-talk — 2026-09-15
+
+V0-B is **COMPLETE** for its bounded gate. Brain now has one durable
+`JarvisTextIntakeService` shared by typed and voice submissions. It creates the
+canonical root task and persistent `agent:jarvis` ownership atomically with the
+intake record, stores only bounded hashes and IDs, and returns deterministic
+duplicate/conflict outcomes across restart and concurrent retry.
+
+The authenticated Brain Core route is `POST /agent-mode/jarvis/intake` with the
+narrow `agent-mode.intake` capability. Console server routes derive operator
+identity from the signed local session and proxy typed/voice submissions; no
+browser-supplied root/task/policy/runtime/model fields are accepted. The
+canonical Agent Mode console projection discovers intake-created `root.goal`
+tasks even before K4 spawn-root state exists.
+
+Local STT uses `MlxWhisperSpeechToTextProvider` only when explicitly configured
+with an installed executable, local model, and resource lock. WAV is capped at
+8 MiB and 30 seconds; process argv, output, timeout, and private-temp cleanup
+are bounded. No network or model/provider gateway is used. Deterministic process
+fixtures cover successful JSON parsing, malformed output, timeout, and resource
+denial. Live MLX acceptance remains deferred until safe coordination with the
+retained Bible Studies MLX pipeline is proven.
+
+The `/agents` page provides click-to-record push-to-talk, transcript review,
+explicit submit, and discard. It does not expose voice control actions or
+always-on/wake-word behavior. V0 remains **IN PROGRESS**.
+
+Evidence: `operations/reports/agent-mode-v0-b-push-to-talk-local-stt-evidence-2026-09-15.md`.
+Exact next bounded slice: **V0-C — Jarvis Text-to-Speech Output and Interruptible
+Playback**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

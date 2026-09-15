@@ -111,7 +111,7 @@ function receipt(a: AgentModeAdmission, effectHash = 'effect:one', status: Opera
 test('K0.1 state survives reopen and K0.2 admission atomically correlates all records', () => {
   withDatabase((store, reopen) => {
     const a = admission();
-    assert.equal(store.schemaVersion, 8);
+    assert.equal(store.schemaVersion, 9);
     assert.equal(store.admitAttempt(a), 'created');
     assert.equal(store.admitAttempt(a), 'duplicate');
     assert.equal(store.createTask(a.task), 'duplicate');

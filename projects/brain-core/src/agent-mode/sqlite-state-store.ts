@@ -156,6 +156,22 @@ export type AgentModeOrganizationFinalizationResult =
   | { result: 'created' | 'duplicate'; finalResult: OrganizationFinalResult }
   | { result: 'conflict' | 'denied'; reasonCode: string };
 
+function mapJarvisIntakeRow(row: Record<string, unknown>): AgentModeJarvisIntakeRecord {
+  return {
+    intakeId: String(row.intake_id),
+    materialHash: String(row.material_hash),
+    schemaVersion: Number(row.schema_version) as 1,
+    source: String(row.source) as 'typed' | 'voice',
+    operatorId: String(row.operator_id),
+    canonicalTextHash: String(row.canonical_text_hash),
+    rootGoalId: String(row.root_goal_id),
+    taskId: String(row.task_id),
+    jarvisAgentId: String(row.jarvis_agent_id),
+    receivedAt: String(row.received_at),
+    createdAt: String(row.created_at),
+  };
+}
+
 function mapOrganizationFinalResultRow(row: Record<string, unknown>): OrganizationFinalResult {
   let workItemResults: OrganizationFinalResult['workItemResults'] = [];
   try {
@@ -542,6 +558,24 @@ export type AgentModeTask = {
   assignmentIntentKey?: string | null;
   taskSpecRef?: string | null;
 };
+
+export type AgentModeJarvisIntakeRecord = {
+  intakeId: string;
+  materialHash: string;
+  schemaVersion: 1;
+  source: 'typed' | 'voice';
+  operatorId: string;
+  canonicalTextHash: string;
+  rootGoalId: string;
+  taskId: string;
+  jarvisAgentId: string;
+  receivedAt: string;
+  createdAt: string;
+};
+
+export type AgentModeJarvisIntakePersistenceResult =
+  | { result: 'created' | 'duplicate'; record: AgentModeJarvisIntakeRecord }
+  | { result: 'conflict'; reasonCode: 'JARVIS_INTAKE_CONFLICT' };
 
 export type AgentModeRun = {
   runId: string;
@@ -1403,6 +1437,7 @@ export class AgentModeSqliteStateStore {
   private readonly hasChildAssignmentTables: boolean;
   private readonly hasOrganizationTables: boolean;
   private readonly hasAttentionTables: boolean;
+  private readonly hasJarvisIntakeTables: boolean;
 
   constructor(databasePath = defaultAgentModeDatabasePath(), options: { readOnly?: boolean } = {}) {
     this.databasePath = databasePath;
@@ -1445,6 +1480,7 @@ export class AgentModeSqliteStateStore {
       this.hasAttentionTables = this.tableExists('agent_mode_escalations')
         && this.tableExists('agent_mode_notifications')
         && this.tableExists('agent_mode_notification_reads');
+      this.hasJarvisIntakeTables = this.tableExists('agent_mode_jarvis_intakes');
       return;
     }
     this.database.exec('PRAGMA foreign_keys = ON;');
@@ -2148,6 +2184,7 @@ export class AgentModeSqliteStateStore {
     this.migrateChildAssignmentTables();
     this.ensureOrganizationFinalResultTable();
     this.ensureAttentionTables();
+    this.ensureJarvisIntakeTable();
     this.hasRuntimePidColumn = true;
     this.hasRuntimeIdentityColumns = true;
     this.hasWorkcellTables = true;
@@ -2158,13 +2195,14 @@ export class AgentModeSqliteStateStore {
     this.hasReviewReceiptTables = true;
     this.hasCommitReceiptTables = true;
     this.hasMergeReceiptTables = true;
-    this.database.prepare("UPDATE store_meta SET value = '8' WHERE key = 'schema_version' AND value IN ('1', '2', '3', '4', '5', '6', '7')").run();
+    this.database.prepare("UPDATE store_meta SET value = '9' WHERE key = 'schema_version' AND value IN ('1', '2', '3', '4', '5', '6', '7', '8')").run();
     this.hasSchedulerTables = true;
     this.hasEventSourceTables = true;
     this.hasSpawnAdmissionControlTables = true;
     this.hasChildAssignmentTables = true;
     this.hasOrganizationTables = true;
     this.hasAttentionTables = true;
+    this.hasJarvisIntakeTables = true;
   }
 
   static openExisting(databasePath = defaultAgentModeDatabasePath()): AgentModeSqliteStateStore | undefined {
@@ -2299,6 +2337,25 @@ export class AgentModeSqliteStateStore {
         PRIMARY KEY (notification_id, operator_id)
       );
       CREATE INDEX IF NOT EXISTS agent_mode_notifications_created ON agent_mode_notifications (created_at DESC, notification_id);
+    `);
+  }
+
+  private ensureJarvisIntakeTable(): void {
+    this.database.exec(`
+      CREATE TABLE IF NOT EXISTS agent_mode_jarvis_intakes (
+        intake_id TEXT PRIMARY KEY,
+        material_hash TEXT NOT NULL,
+        schema_version INTEGER NOT NULL CHECK (schema_version = 1),
+        source TEXT NOT NULL CHECK (source IN ('typed', 'voice')),
+        operator_id TEXT NOT NULL,
+        canonical_text_hash TEXT NOT NULL,
+        root_goal_id TEXT NOT NULL UNIQUE,
+        task_id TEXT NOT NULL UNIQUE REFERENCES tasks(task_id),
+        jarvis_agent_id TEXT NOT NULL REFERENCES agents(agent_id),
+        received_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS agent_mode_jarvis_intakes_created ON agent_mode_jarvis_intakes(created_at DESC, intake_id);
     `);
   }
 
@@ -3506,6 +3563,56 @@ export class AgentModeSqliteStateStore {
       ...(row.assignment_intent_key === null || row.assignment_intent_key === undefined ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
       ...(row.task_spec_ref === null || row.task_spec_ref === undefined ? {} : { taskSpecRef: String(row.task_spec_ref) }),
     }));
+  }
+
+  getJarvisIntake(intakeId: string): AgentModeJarvisIntakeRecord | undefined {
+    if (!this.hasJarvisIntakeTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_jarvis_intakes WHERE intake_id = ?').get(intakeId) as Record<string, unknown> | undefined;
+    return row ? mapJarvisIntakeRow(row) : undefined;
+  }
+
+  listJarvisIntakes(limit = 50): AgentModeJarvisIntakeRecord[] {
+    if (!this.hasJarvisIntakeTables) return [];
+    const boundedLimit = Math.max(0, Math.min(Math.floor(limit), 100));
+    return (this.database.prepare('SELECT * FROM agent_mode_jarvis_intakes ORDER BY created_at DESC, intake_id LIMIT ?').all(boundedLimit) as Array<Record<string, unknown>>).map(mapJarvisIntakeRow);
+  }
+
+  /** Atomically records one intake, its root task, and the persistent Jarvis owner. */
+  recordJarvisIntake(record: AgentModeJarvisIntakeRecord): AgentModeJarvisIntakePersistenceResult {
+    if (this.readOnly || !this.hasJarvisIntakeTables) throw new Error('Jarvis intake persistence is unavailable');
+    return this.withTransaction(() => {
+      const existing = this.database.prepare('SELECT * FROM agent_mode_jarvis_intakes WHERE intake_id = ?').get(record.intakeId) as Record<string, unknown> | undefined;
+      if (existing) {
+        return String(existing.material_hash) === record.materialHash
+          ? { result: 'duplicate' as const, record: mapJarvisIntakeRow(existing) }
+          : { result: 'conflict' as const, reasonCode: 'JARVIS_INTAKE_CONFLICT' as const };
+      }
+      const task = this.getTask(record.taskId);
+      if (task) throw new Error('Jarvis intake root task identity is already claimed');
+      const jarvis = this.getAgent(record.jarvisAgentId);
+      if (jarvis && jarvis.agentKind !== 'jarvis') throw new Error('Jarvis owner identity is not a Jarvis agent');
+      if (!jarvis) {
+        this.database.prepare('INSERT INTO agents (agent_id, agent_kind, role, display_name, policy_id, status) VALUES (?, ?, ?, ?, ?, ?)')
+          .run(record.jarvisAgentId, 'jarvis', 'persistent-executive', 'Jarvis', 'agent-mode.jarvis-intake.v1', 'active');
+      }
+      this.database.prepare('INSERT INTO tasks (task_id, task_type, input_hash, created_at, status, child_agent_id, assignment_intent_key, task_spec_ref) VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL)')
+        .run(record.taskId, 'root.goal', record.canonicalTextHash, record.receivedAt, 'admitted');
+      this.database.prepare(`
+        INSERT INTO agent_mode_jarvis_intakes (
+          intake_id, material_hash, schema_version, source, operator_id, canonical_text_hash,
+          root_goal_id, task_id, jarvis_agent_id, received_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(record.intakeId, record.materialHash, record.schemaVersion, record.source, record.operatorId, record.canonicalTextHash, record.rootGoalId, record.taskId, record.jarvisAgentId, record.receivedAt, record.createdAt);
+      this.appendEventIfAbsent({
+        eventId: `jarvis-intake:${record.intakeId}`,
+        entityType: 'jarvis_intake',
+        entityId: record.intakeId,
+        eventType: 'jarvis_intake_accepted',
+        occurredAt: record.createdAt,
+        payload: { intakeId: record.intakeId, source: record.source, operatorId: record.operatorId, rootGoalId: record.rootGoalId, taskId: record.taskId, jarvisAgentId: record.jarvisAgentId, canonicalTextHash: record.canonicalTextHash },
+      });
+      return { result: 'created' as const, record };
+    });
   }
 
   createRun(run: AgentModeRun): AgentModeOperationResult {

@@ -4,6 +4,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 export const BRAIN_SERVICE_AUTH_PROTOCOL_VERSION = 'brain-service-auth-v1' as const;
 export const BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY = 'agent-mode.control' as const;
 export const BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY = 'agent-mode.notifications' as const;
+export const BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY = 'agent-mode.intake' as const;
 export const BRAIN_SERVICE_AUTH_MAX_CLOCK_SKEW_MS = 60_000;
 export const BRAIN_SERVICE_AUTH_MAX_SERVICE_ID_LENGTH = 128;
 export const BRAIN_SERVICE_AUTH_MAX_REQUEST_ID_LENGTH = 128;
@@ -145,7 +146,7 @@ export function loadBrainServiceIdentityRegistry(env: NodeJS.ProcessEnv = proces
   const serviceId = env.BRAIN_CORE_SERVICE_ID;
   const secret = env.BRAIN_CORE_SERVICE_SECRET;
   if (!serviceId || !secret) return [];
-  return [{ serviceId, secret, allowedCapabilities: [BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY] }];
+  return [{ serviceId, secret, allowedCapabilities: [BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY] }];
 }
 
 export class BrainServiceAuthenticator {
