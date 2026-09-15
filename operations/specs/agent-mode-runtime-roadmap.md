@@ -1779,7 +1779,7 @@ and always-on options**. Do not start D0 automatically.
 
 ## Phase D0 — distribution and always-on options
 
-**Status:** planned after the personal deployment is stable
+**Status:** D0-A COMPLETE; D0 remains IN PROGRESS
 
 - portable configuration profiles separating personal integrations from core;
 - installer/bootstrap for another user;
@@ -1792,6 +1792,40 @@ and always-on options**. Do not start D0 automatically.
 Exit gate: another user can deploy the lean core without Office/MacBook-specific
 code or personal paths, and the control plane can later move off the Office Mac
 without changing the domain model.
+
+### D0-A — Portable Core Configuration Profile and Host-Neutral Runtime Contract
+
+**Status:** COMPLETE. D0 remains IN PROGRESS.
+
+D0-A establishes the versioned `brain-runtime-config-v1` contract and one strict
+Brain Core loader. Its lean-core profile contains the Core API, SQLite reference
+StateStore, Brain Console/Core URL boundary, home/config-derived runtime paths,
+BrainNode configuration root, scheduler/control surfaces, durable Agent Mode,
+and provider/resource interfaces. Personal integrations, secrets, and
+runtime-generated state remain separate categories; personal profiles are
+opt-in and secret values are never profile material.
+
+Resolution is deterministic: safe built-in defaults, portable profile, host-local
+profile, then known environment compatibility/override variables. JSON profiles
+are strict and versioned; unknown keys, invalid ports/URLs, unsafe paths, and
+unsupported StateStore kinds fail closed. Defaults derive from `HOME`/portable
+state roots and contain no Office or MacBook path. `BRAIN_AGENT_MODE_STATE_DIR`,
+`BRAIN_CORE_HOST`, and `BRAIN_CORE_PORT` remain compatible overrides. The
+read-only `brain-agent config validate` command reports only normalized
+non-secret configuration and capability availability; it performs no provider,
+network, runtime, scheduler, or StateStore write operation.
+
+Missing MLX, SpeechSynthesis, Bedrock, Tailscale, Workcell tooling, Mind, Bible
+Studies, FluidVoice, and other personal integrations do not prevent the lean
+core from being constructed; they are unavailable/optional capability states.
+SQLite is the D0-A reference backend behind the existing StateStore abstraction;
+Postgres/DynamoDB, installers, packaging, VPS/Tailscale deployment, AgentCore,
+and export/import remain later slices. D0 work does not claim H0 unattended or
+distributed release readiness.
+
+Evidence: `operations/reports/agent-mode-d0-a-portable-core-config-evidence-2026-09-15.md`.
+Exact next bounded slice: **D0-B — Reproducible Lean-Core Bootstrap and Dry-Run
+Installer**; do not start it automatically.
 
 ## Phase H0 — long-duration hardening
 

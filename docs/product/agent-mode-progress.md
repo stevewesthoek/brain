@@ -1433,6 +1433,29 @@ The prior C2 evidence link was corrected to the actual canonical report
 The exact next roadmap phase is **Phase D0 — distribution and always-on
 options**. D0 has not started.
 
+## Current D0-A portable core configuration — 2026-09-15
+
+D0-A is **COMPLETE** and D0 remains **IN PROGRESS**. Brain now has one strict,
+versioned `brain-runtime-config-v1` contract for the lean Core deployment.
+Built-in defaults, portable profile, host-local profile, and known environment
+overrides resolve deterministically. StateStore, Core bind/port, Console Core
+URL, BrainNode roots, runtime/temp roots, provider/resource references, and
+optional capability availability are explicit; secrets remain external and
+runtime-generated state remains outside configuration.
+
+The lean profile is independent of Office/MacBook paths, personal Mind,
+Bible Studies, FluidVoice, Video Orchestrator, Tailscale, and private provider
+state. Missing optional integrations are unavailable rather than startup-fatal.
+The existing `BRAIN_AGENT_MODE_STATE_DIR`, `BRAIN_CORE_HOST`, and
+`BRAIN_CORE_PORT` behavior remains compatible. `brain-agent config validate` is
+read-only, strict, redacted, and performs no network/provider/runtime probes.
+Temporary HOME and fake-install-root tests prove host-neutral semantics without
+changing Agent/Task/Run/Attempt, K4/K5, Jarvis, review, or voice contracts.
+
+Evidence: `operations/reports/agent-mode-d0-a-portable-core-config-evidence-2026-09-15.md`.
+Exact next bounded slice: **D0-B — Reproducible Lean-Core Bootstrap and Dry-Run
+Installer**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

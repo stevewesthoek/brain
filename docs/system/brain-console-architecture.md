@@ -115,6 +115,26 @@ classification B and physical audible acceptance is a manual device check.
 Exact next phase: **Phase D0 — distribution and always-on options**; do not
 start it automatically.
 
+### D0-A portable Core configuration boundary
+
+D0-A defines the host-neutral `brain-runtime-config-v1` contract for the
+deployable Core and its Console/Core URL boundary. Portable and host-local JSON
+profiles layer over safe defaults, followed by known environment overrides;
+secret material remains server-local and is never sent to the browser. Core
+defaults derive runtime/SQLite/BrainNode paths from `HOME` or explicit
+configuration and do not require Office, MacBook, Mind, Bible Studies,
+FluidVoice, Video Orchestrator, or personal provider paths.
+
+The browser continues to know only the configured public Core URL where needed;
+filesystem roots, service/operator secrets, node secrets, AWS identity, and
+provider credentials remain server-side. Configuration validation is read-only
+and performs no provider/network/runtime probe. Missing optional voice/model/node
+capabilities are reported unavailable while the lean Core remains bootable.
+The current `NEXT_PUBLIC_BRAIN_CORE_URL`/server-side `BRAIN_CORE_URL` Console
+configuration remains compatible; installer/bootstrap and deployment packaging
+are later D0 work. Exact next bounded slice: **D0-B — Reproducible Lean-Core
+Bootstrap and Dry-Run Installer**; do not start it automatically.
+
 ## Agent Mode detail drill-down
 
 U0-B adds one canonical detail route:

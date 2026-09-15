@@ -1454,3 +1454,33 @@ The C2 evidence reference is the actual canonical report
 `operations/reports/agent-mode-v0-c-jarvis-tts-interruptible-playback-evidence-2026-09-15.md`.
 Exact next phase: **Phase D0 — distribution and always-on options**; do not
 start it automatically.
+
+## D0-A Portable Core Configuration Profile — 2026-09-15
+
+D0-A is **COMPLETE**; D0 remains **IN PROGRESS**. The lean Brain runtime uses
+the strict versioned `brain-runtime-config-v1` contract in
+`projects/brain-core/src/agent-mode/portable-runtime-config.ts`. It resolves
+safe defaults, a portable JSON profile, an optional host-local JSON profile,
+and known environment overrides in that order. Configuration is non-secret;
+service/operator secrets, AWS/SSH/Tailscale credentials, and runtime-generated
+StateStore data are external categories.
+
+Portable defaults derive from `HOME` under `~/.local/brain`, with SQLite as the
+reference backend. Core bind host/port, Console Core URL, BrainNode config,
+runtime, and temporary roots are explicit and validated. Unsafe traversal,
+`.git`/device paths, invalid ports/URLs, unsupported StateStore kinds, unknown
+profile keys, and unsupported schema versions fail closed. Missing optional
+providers, MLX, SpeechSynthesis, Workcell tooling, Tailscale, Mind, Bible
+Studies, and FluidVoice do not make the lean core startup contract invalid.
+
+`BRAIN_AGENT_MODE_STATE_DIR`, `BRAIN_CORE_HOST`, and `BRAIN_CORE_PORT` remain
+compatibility overrides. `brain-agent config validate` prints only safe
+normalized configuration and capability classifications; it performs no
+network/provider probe, StateStore write, scheduler action, runtime launch,
+BrainNode operation, SSH, or Tailscale effect. BrainNode and NodeTransport
+protocols remain unchanged, and future StateStore backends remain behind the
+existing domain abstraction.
+
+Evidence: `operations/reports/agent-mode-d0-a-portable-core-config-evidence-2026-09-15.md`.
+Exact next bounded slice: **D0-B — Reproducible Lean-Core Bootstrap and Dry-Run
+Installer**; do not start it automatically.

@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { loadBrainRuntimeConfig } from './portable-runtime-config.js';
 import path from 'node:path';
 import type { EffectKind, OperationReceipt } from './agent-mode-contracts.js';
 import type { RuntimeProcessIdentity } from './runtime-process-identity.js';
@@ -1465,9 +1465,7 @@ function makeMergeReceipt(
 }
 
 export function defaultAgentModeDatabasePath(): string {
-  const stateRoot = process.env.BRAIN_AGENT_MODE_STATE_DIR
-    ?? path.join(homedir(), '.local', 'brain', 'agent-mode');
-  return path.join(stateRoot, 'agent-mode.db');
+  return loadBrainRuntimeConfig().stateStore.path;
 }
 
 /**

@@ -4,6 +4,7 @@ import { BrainNodeLocalPerimeter, createHmacAuthenticator, type BrainNodeCommand
 import { descriptorFromNodeLocalConfig, type NodeLocalConfig } from './node-enrollment.js';
 import { FileNodeDeduplicationStore } from './node-deduplication-store.js';
 import { AgentModeSqliteStateStore } from './sqlite-state-store.js';
+import { loadBrainRuntimeConfig } from './portable-runtime-config.js';
 
 const MAX_INPUT_BYTES = 1_048_576;
 
@@ -73,7 +74,7 @@ export async function runBrainNodeRunner(mode: '--handshake' | '--execute', conf
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args.length !== 1 || !['--handshake', '--execute'].includes(args[0]!)) { process.stderr.write('invalid BrainNode runner mode\n'); process.exitCode = 2; return; }
-  const configPath = process.env.BRAIN_NODE_CONFIG ?? path.join(homedir(), '.local', 'brain', 'node', 'node.json');
+  const configPath = process.env.BRAIN_NODE_CONFIG ?? path.join(loadBrainRuntimeConfig().node.configRoot, 'node.json');
   const { readFile } = await import('node:fs/promises');
   const config = JSON.parse(await readFile(configPath, 'utf8')) as NodeLocalConfig;
   const output = await runBrainNodeRunner(args[0] as '--handshake' | '--execute', config, process.env.BRAIN_NODE_AUTH_SECRET);

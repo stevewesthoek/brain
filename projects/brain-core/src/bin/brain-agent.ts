@@ -11,6 +11,7 @@ import { runAgentModeSchedulerTick } from '../agent-mode/scheduler.js';
 import { BRAIN_TASK_LIFECYCLE_SOURCE, GIT_REPOSITORY_REVISION_SOURCE, INFRASTRUCTURE_HOST_HEALTH_SOURCE, GitRepositoryEventSourceAdapter, HostHealthEventSourceAdapter, InternalLifecycleEventSourceAdapter, pollEventSourcesOnce } from '../agent-mode/event-source.js';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { loadBrainRuntimeConfig, safeBrainRuntimeConfigView } from '../agent-mode/portable-runtime-config.js';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://127.0.0.1:4877';
 
@@ -31,7 +32,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID [--operation-id ID] [--reason TEXT] | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent config validate | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID [--operation-id ID] [--reason TEXT] | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -65,6 +66,13 @@ function printModelRequest(rawModel: string): void {
 
 async function main(): Promise<void> {
   const command = process.argv[2];
+
+  if (command === 'config') {
+    if (process.argv[3] !== 'validate' || process.argv.length !== 4) { usage(); process.exitCode = 1; return; }
+    const config = loadBrainRuntimeConfig();
+    process.stdout.write(`${JSON.stringify({ kind: 'brain-runtime-config-validation', schemaVersion: config.schemaVersion, profile: config.profile, capabilities: config.optionalCapabilities, config: safeBrainRuntimeConfigView(config) }, null, 2)}\n`);
+    return;
+  }
 
   if (command === 'sources') {
     const action = process.argv[3];
