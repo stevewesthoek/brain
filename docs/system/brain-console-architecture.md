@@ -93,14 +93,22 @@ Brain-owned caller has published Jarvis text against an authoritative K5
 organization final-result reference. It does not expose raw worker results,
 prompts, reasoning, provider payloads, credentials, or evidence bodies.
 
-V0-C1 now provides the canonical Brain-owned deterministic response-generation
-and finalization producer. It consumes only the bounded Jarvis task-input and
-Jarvis-readable structured-result seams, requires an authoritative successful
-K5 final result, and publishes through the immutable Jarvis response service.
-Consequently `/agents` remains read-only and does not add speech output,
-playback, or interrupt controls. The exact next bounded slice is V0-C2 — Safe
-Jarvis TTS Provider Selection and Interruptible Playback; no speech provider is
-selected or invoked by V0-C1.
+V0-C1 provides the canonical Brain-owned deterministic response-generation and
+finalization producer. V0-C2 adds the read-only page's client-local speech
+effect: it fetches that response through Brain Core, validates the closed
+schema, and uses browser `SpeechSynthesis` with exact response text. The
+versioned speech request/receipt identity is derived from response identity and
+transport version; playback is explicitly interruptible and a late callback
+cannot defeat an interrupt.
+
+No TTS provider credential, server playback ledger, audio file, provider probe,
+model/runtime call, network effect, or Brain lifecycle mutation is introduced.
+Unsupported speech is shown as unavailable, and re-speaking reuses the same
+canonical response rather than replaying any worker or K5 operation. The
+`/agents` surface remains an observer with no voice control mutations. V0-C is
+complete for this bounded response/output contract; live audible device
+acceptance is a manual follow-up. Exact next bounded slice: **V0-D — Jarvis
+Voice Gateway Phase Exit Audit**; do not start it automatically.
 
 ## Agent Mode detail drill-down
 

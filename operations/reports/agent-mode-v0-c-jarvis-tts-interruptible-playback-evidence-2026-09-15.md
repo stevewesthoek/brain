@@ -1,121 +1,157 @@
-# Agent Mode V0-C — Jarvis TTS / Interruptible Playback Evidence
+# Agent Mode V0-C2 — Jarvis TTS / Interruptible Playback Evidence
 
 Date: 2026-09-15
+Starting HEAD: `3e323555 feat(agent-mode): finalize canonical Jarvis responses`
 
 ## Decision
 
-V0-C is **IN PROGRESS**. This bounded implementation establishes and tests the
-canonical Jarvis user-response boundary, but it does not claim production
-text-to-speech or interruptible playback.
+V0-C2 is **COMPLETE** for the bounded browser-local speech-output slice. V0-C
+is **COMPLETE**; V0 remains **IN PROGRESS** because the V0-D phase-exit audit
+has not started. V0-A, V0-B, and V0-C1 remain landed and green. No V0-D work was
+started.
 
-Starting HEAD was `0e7fcdee feat(agent-mode): add durable Jarvis voice ingress`.
-V0-A and V0-B are landed, K4 and K5 remain complete, and the protected
-unrelated worktree paths were left untouched.
+The result is a safe read-only output effect over the canonical Jarvis response;
+it is not a new runtime, model, provider, or control plane.
 
-## Boundary audit
+## Provider inventory and selection
 
-The repository contains durable Root Goal/Jarvis ownership, K4 lifecycle facts,
-and K5 structured organization final results. It does not contain a canonical
-production component that turns those authoritative facts into approved,
-human-facing Jarvis response text.
+The pre-implementation inventory classified the available backends as follows:
 
-The V0-A `responseText` is a deterministic transport-fixture field only. K4/K5
-worker and organization result references are structured execution/evidence
-references and are not automatically speech-safe. The existing AWS Polly
-adapter belongs to Video Orchestrator narration and is not a Jarvis provider.
-FluidVoice remains an external retained personal capability without a Brain
-Core adapter. No supported Jarvis TTS provider or playback transport could be
-selected without inventing a new provider boundary.
+| Candidate | Classification | Decision |
+| --- | --- | --- |
+| Video Orchestrator Polly | B — narration-specific AWS/S3/video adapter | Rejected; not a Jarvis provider |
+| Azure speech/media path | B/C — separate media capability | Rejected; no Jarvis adapter |
+| FluidVoice | C — retained personal external capability | Not inspected or integrated |
+| macOS `say` | B/C — local OS process | Not selected; unnecessary server coupling |
+| Browser `SpeechSynthesis` | A — client-local, feature-detectable effect | Selected |
+| Piper/eSpeak/Kokoro | D — no Brain adapter | Not introduced |
 
-Classification: **C for production Jarvis response generation and speech
-output**. The bounded prerequisite is a Brain-owned canonical
-response-generation/finalization producer. It must produce approved
-user-facing text from authoritative Brain facts and publish it through the
-response contract before a supported Jarvis TTS/playback adapter is selected.
+Browser-native `SpeechSynthesis` is the smallest safe transport: it requires no
+credentials or network, is activated by an explicit user gesture, and exposes
+local cancellation. It does not imply a model, provider, AgentRuntime,
+Harness, capability grant, or Brain authority.
 
-## Implemented response contract
+## Canonical input and contract
 
-`agent-mode.jarvis-user-response.v1` is a closed Brain-owned contract with:
-
-- fixed `agent:jarvis` owner and `jarvis` speaker role;
-- bounded normalized text (2,000 characters maximum);
-- root/task lineage and one authoritative K5 organization final-result source;
-- deterministic response ID, text hash, and material hash;
-- immutable `published` status;
-- no prompt, reasoning, worker output body, provider payload, credential, or raw
-  evidence body.
-
-`JarvisUserResponseService` is a publication boundary, not a response
-generator. It rejects extra authority-shaped fields, non-Jarvis ownership,
-non-canonical source references, invalid text, and malformed timestamps before
-StateStore persistence.
-
-## Durable persistence and read path
-
-The existing `AgentModeSqliteStateStore` was extended with one bounded
-`agent_mode_jarvis_user_responses` table. This is a response publication record,
-not a Task/Run/Attempt, provider, cost, or result ledger. One response is
-allowed per root; deterministic replay is a duplicate and conflicting material
-fails closed. The schema migration advances to version 10.
-
-The response record is inserted atomically with its bounded event reference and
-is reconstructed after close/reopen. The read-only route is:
+The only production input is the strict Brain Core response returned by:
 
 ```text
 GET /agent-mode/jarvis/responses/:rootGoalId
 ```
 
-The route opens the existing StateStore read-only, returns only the public
-response fields, omits the material hash, and performs no provider, model,
-runtime, filesystem, or network operation.
+The Console validates `agent-mode.jarvis-user-response.v1` and passes the
+validated response object to `BrowserJarvisSpeechTransport`. The transport
+speaks exactly `response.text`; it does not accept a separate text argument.
+Worker output, K4/K5 raw facts, prompts, reasoning, provider payloads, and
+caller-authored arbitrary text cannot enter the speech path. Worker speech is
+not exposed.
 
-## Deterministic and restart evidence
+The narrow request/receipt contract is versioned as
+`agent-mode.jarvis-speech-request.v1`. Its provider identity is
+`browser-speech-synthesis.v1`, effect classification is
+`CLIENT_LOCAL_EFFECT`, and playback states are bounded:
+`idle`, `starting`, `speaking`, `interrupted`, `completed`, `failed`, and
+`unavailable`. `deriveJarvisSpeechOutputId()` deterministically combines the
+canonical response ID with the transport version; no random or process ID is
+used. The browser-local receipt is an effect observation, not a durable Brain
+result ledger.
 
-The focused V0-C test file proves:
+## Playback, interruption, and replaceability
 
-- bounded canonical Jarvis-owned response validation;
-- deterministic response identity and text/material hashing;
-- authoritative K5 final-result source enforcement;
-- rejection of missing sources and non-Jarvis speakers;
-- idempotent publication and conflict rejection;
-- exact reconstruction after StateStore close/reopen;
-- read-only route retrieval without exposing material hash.
+`Speak` is enabled only for a loaded canonical response and is triggered by an
+explicit click. A new explicit speak cancels any prior local utterance. `Stop
+speaking` calls only `SpeechSynthesis.cancel()` and leaves Brain tasks, runs,
+attempts, budgets, agents, and cancellation authority unchanged. Generation
+fencing makes interruption win over late completion/error callbacks. A failed
+speech effect is reported locally and does not alter the canonical response or
+worker state. A later explicit Speak reuses the same response and deterministic
+output identity; it does not rerun K5 or any worker.
 
-Focused V0-A/V0-B/K5/observer/StateStore/scheduler validation passed **72/72**
-tests. Brain Core typecheck and build passed. The complete Brain Core suite
-passed **2,567/2,567** tests with no failures.
+The transport depends on narrow `SpeechSynthesisLike` and utterance factory
+interfaces. Tests replace the browser implementation with a deterministic fake;
+no live speech device, model, or external provider is needed for unit coverage.
+Unsupported browsers produce explicit `unavailable` state while leaving the
+canonical text readable.
 
-Brain Console typecheck and build passed. No Console source or UI behavior was
-changed in V0-C because production speech output is not enabled; the existing
-`/agents` push-to-talk/typed-intake surface remains unchanged and read-only
-with respect to lifecycle control.
+## Persistence, multi-client, and security
 
-## Side-effect audit
+No TTS table, audio file, playback cache, delivery record, or server playback
+ledger is added. Canonical response durability remains in the existing Brain
+StateStore; speech state is intentionally ephemeral per browser tab. Multiple
+clients read the same Brain response and may independently perform the same
+local effect without changing authoritative state. There is no new auth or
+capability boundary because there is no new server mutation or speech service.
 
-V0-C introduced no TTS provider, playback loop, interrupt mutation, model call,
-ModelGateway call, AgentRuntime call, Harness launch, BrainNode operation,
-Workcell operation, AWS/Bedrock/MiniMax/GLM/Opus/Codex call, network request, or
-repository mutation. No live MLX process was invoked. The response route only
-reads durable local state.
+The client bundle contains no secrets, credentials, environment values, raw
+prompts, hidden reasoning, provider request/response bodies, or filesystem
+paths. There are no AWS, Bedrock, MiniMax, GLM, Opus, Codex, SSH, BrainNode,
+Harness, Workcell, repository, or network operations.
 
-Counts for the response-boundary tests:
+## Validation
+
+| Check | Result |
+| --- | ---: |
+| Brain Console speech/schema focused tests | 14/14 passed |
+| Brain Core V0/K5/observer/StateStore/scheduler regression set | 74/74 passed |
+| Brain Core typecheck | passed previously and unchanged by C2 |
+| Brain Core build | passed previously and unchanged by C2 |
+| Brain Console typecheck | passed |
+| Brain Console production build | passed; `/agents` included |
+| `git diff --check` | clean before final staging; rerun after docs |
+
+The isolated Console visual check used the C2 checkout on port 4882. At the
+default desktop viewport the Agents navigation, summary cards, read-only
+operator area, and Agent Mode content remained inside the layout. At 390×844,
+the two-column navigation and operational cards remained usable without
+overlap. The local Brain Core service on port 4877 is an older build without
+`GET /agent-mode/console` and the response route, so live data and audible
+device acceptance could not be exercised there; the page correctly rendered an
+explicit unavailable state. This is a validation-environment limitation, not a
+speech failure. Live audible acceptance is therefore classified **B**: the
+supported transport and deterministic tests are complete, while manual browser
+audio acceptance remains deferred.
+
+## V0-C closure matrix
+
+| Requirement | Result |
+| --- | --- |
+| canonical Jarvis response only | PASS |
+| exact text, Jarvis-only speaker | PASS |
+| safe replaceable provider boundary | PASS — browser-local adapter |
+| deterministic output identity/idempotent replay | PASS |
+| explicit playback states | PASS |
+| interrupt-only local effect | PASS |
+| interrupt wins callback race | PASS |
+| failure/unsupported isolation | PASS |
+| no worker speech | PASS |
+| no model/provider/network effect | PASS |
+| no audio retention or delivery ledger | PASS |
+| desktop/narrow layout check | PASS |
+| live audible device acceptance | DEFERRED — classification B |
+
+V0 remaining-gap matrix: microphone/push-to-talk, STT transport, canonical
+response generation, and C2 speech output are complete; wake word remains
+roadmap-deferred; the broader voice gateway phase audit remains. The exact next
+bounded task is **V0-D — Jarvis Voice Gateway Phase Exit Audit**.
+
+## Side-effect counts
 
 ```text
-production Jarvis response producer calls: 0
-TTS provider calls: 0
-playback calls: 0
-interrupt mutations: 0
-live model/provider calls: 0
-runtime/Harness/BrainNode/Workcell calls: 0
-network calls: 0
+live model calls: 0
+ModelGateway calls: 0
+AgentRuntime calls from C2: 0
+Harness launches: 0
+AWS/Bedrock/MiniMax/GLM/Opus/Codex calls: 0
+BrainNode calls: 0
+Workcell operations: 0
+network/provider probes: 0
+Brain lifecycle/budget/task/agent mutations: 0
+durable TTS/audio records: 0
 ```
 
-## Next bounded task
+## Conclusion
 
-**Brain-owned canonical Jarvis response-generation/finalization producer.**
-
-It must create approved user-facing text from authoritative Brain state and
-publish through `JarvisUserResponseService`. Only after that prerequisite is
-accepted should the remaining V0-C speech provider, playback, and transport-only
-interrupt implementation be started. V0 remains in progress; V0-D is not
-started.
+V0-C2 and V0-C are complete for this bounded implementation. Brain now has a
+deterministic, replaceable, browser-local Jarvis speech output over the
+canonical Brain-owned response, with transport-only interruption and no new
+authority. V0 remains in progress. Do not start V0-D automatically.

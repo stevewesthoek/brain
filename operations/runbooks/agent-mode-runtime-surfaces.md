@@ -1400,9 +1400,31 @@ model, provider, or speaker authority, and publishes only through
 concurrent callers, and restart converge on one immutable response. Reads from
 `GET /agent-mode/jarvis/responses/:rootGoalId` remain side-effect free.
 
-No TTS provider, playback loop, interrupt mutation, model call, provider probe,
-BrainNode, Harness, FluidVoice, or network effect is permitted here. Workers
-never publish user-facing responses. Exact next bounded task:
-**V0-C2 — Safe Jarvis TTS Provider Selection and Interruptible Playback**;
-re-audit the provider boundary before implementing it, and do not start it or
-V0-D automatically.
+V0-C2 is **COMPLETE** for the bounded speech-output contract. The Brain Console
+`/agents` page reads `GET /agent-mode/jarvis/responses/:rootGoalId` through the
+existing `brainCoreRequest()` client and passes only the strict canonical
+`agent-mode.jarvis-user-response.v1` record to the browser-local
+`SpeechSynthesis` transport. The transport has versioned request/receipt
+metadata, a deterministic response/transport output identity, bounded states,
+and explicit feature-detected `unavailable` behavior.
+
+Speech text is exactly the canonical published Jarvis response. Worker output,
+raw K4/K5 facts, arbitrary caller text, prompts, reasoning, provider payloads,
+and audio paths are not accepted. `Stop speaking` calls only local speech
+cancel and is not Brain cancellation; generation fencing makes interruption
+win over late completion/error callbacks. Re-speaking uses the same response
+and output identity. There is no TTS server, durable playback ledger,
+credential, provider probe, model/runtime call, network effect, or lifecycle
+mutation. The Console remains an observer, and the read-only page has no voice
+control actions.
+
+Deterministic browser-transport/schema tests cover exact-text routing,
+unavailability, failure isolation, replay identity, and interrupt races. The
+isolated visual check confirms the `/agents` layout at desktop and narrow
+viewports; audible device acceptance remains a manual follow-up because the
+validation service on port 4877 is an older build without the canonical response
+route. V0-C is complete; V0 remains **IN PROGRESS**.
+
+Evidence: `operations/reports/agent-mode-v0-c2-jarvis-tts-playback-evidence-2026-09-15.md`.
+Exact next bounded task: **V0-D — Jarvis Voice Gateway Phase Exit Audit**; do not
+start it automatically.

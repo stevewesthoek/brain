@@ -1642,7 +1642,7 @@ automatically.
 
 ## Phase V0 — Jarvis voice gateway
 
-**Status:** V0-A, V0-B, and V0-C1 COMPLETE; V0-C remains IN PROGRESS; V0 remains IN PROGRESS; local non-text inference remains allowed
+**Status:** V0-A, V0-B, V0-C1, and V0-C2 COMPLETE; V0-C COMPLETE; V0 remains IN PROGRESS; local non-text inference remains allowed
 
 - microphone / push-to-talk / future wake-word input;
 - speech-to-text transport into Jarvis;
@@ -1721,8 +1721,8 @@ Playback**; do not start it automatically.
 
 ### V0-C — Jarvis response boundary, generation, and interruptible playback
 
-**Status:** response boundary and V0-C1 COMPLETE; V0-C remains IN PROGRESS;
-production speech output intentionally not enabled
+**Status:** V0-C COMPLETE through V0-C2; V0 remains IN PROGRESS; V0-D phase
+exit audit is not started
 
 The V0-C response-boundary slice established the immutable,
 `agent-mode.jarvis-user-response.v1` publication and read path. The V0-C1
@@ -1748,10 +1748,26 @@ authority; neither is stringified into an answer. Workers cannot publish
 user-facing responses. No model call, ModelGateway path, TTS provider, playback
 loop, interrupt mutation, provider probe, or external effect is introduced.
 
-V0-C1 is complete only for the response-generation/finalization prerequisite;
-V0-C overall remains IN PROGRESS. Exact next bounded task: **V0-C2 — Safe
-Jarvis TTS Provider Selection and Interruptible Playback**, after re-auditing a
-supported speech backend. Do not start V0-C2 or V0-D automatically.
+V0-C2 completes the remaining bounded speech-output slice with a browser-local
+`SpeechSynthesis` transport. It consumes only the canonical published Jarvis
+response from `GET /agent-mode/jarvis/responses/:rootGoalId`, validates the
+closed response schema, and uses the exact Brain-owned response text. The
+speech request/receipt contract is versioned, its output identity is derived
+from response identity plus transport version, and playback states are bounded
+and interruptible. `Stop speaking` calls only the browser transport cancel
+operation; it cannot cancel, pause, retry, or otherwise mutate Brain work.
+
+The transport is feature-detected and unavailable is explicit when browser
+speech is unsupported. It has no credentials, provider probe, server TTS
+ledger, audio-file path, network call, model/runtime effect, or worker speech
+path. Late completion/error callbacks are fenced after interruption, and
+explicit replay reuses the same canonical response and output identity.
+
+Evidence: `operations/reports/agent-mode-v0-c2-jarvis-tts-playback-evidence-2026-09-15.md`.
+V0-C is complete for the bounded response and speech-output contract; live
+audible acceptance remains a manual browser/device check. Exact next bounded
+task: **V0-D — Jarvis Voice Gateway Phase Exit Audit**. Do not start V0-D
+automatically.
 
 ## Phase D0 — distribution and always-on options
 

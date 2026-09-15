@@ -1388,10 +1388,24 @@ answers `Summarize the completed research.` with meaningful research,
 engineering, and audit content rather than IDs or hashes. Replay, concurrency,
 and StateStore reopen produce one immutable response.
 
-No TTS provider, playback, interrupt mutation, model call, provider probe, or
-external effect is introduced. Workers never own speech. Exact next bounded
-task: **V0-C2 — Safe Jarvis TTS Provider Selection and Interruptible Playback**;
-do not start it automatically.
+V0-C2 is now **COMPLETE** for the bounded browser-local speech transport. The
+`/agents` page reads the canonical published response from Brain Core, validates
+the strict Jarvis-owned schema, and speaks exactly that text through feature-
+detected browser `SpeechSynthesis`. The versioned speech request/receipt uses a
+deterministic response/transport identity; explicit Stop speaking interrupts
+only the local browser effect, with generation fencing so late completion or
+error callbacks cannot overwrite interruption. Re-speaking reuses the same
+response and output identity.
+
+No server TTS ledger, audio file, provider credential, network/probe, model,
+runtime, worker, or Brain lifecycle effect is added. Unsupported browser speech
+is explicit and the canonical text remains readable. Automated deterministic
+transport/schema tests pass; live audible device acceptance remains a manual
+follow-up. V0-C is **COMPLETE** and V0 remains **IN PROGRESS**.
+
+Evidence: `operations/reports/agent-mode-v0-c2-jarvis-tts-playback-evidence-2026-09-15.md`.
+Exact next bounded task: **V0-D — Jarvis Voice Gateway Phase Exit Audit**; do not
+start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 

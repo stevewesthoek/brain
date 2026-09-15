@@ -113,6 +113,26 @@ export const jarvisTranscriptionResponseSchema = z.object({
   providerId: z.literal('mlx-whisper-local.v1'),
 }).strict();
 
+const jarvisUserResponseSchema = z.object({
+  schemaVersion: z.literal('agent-mode.jarvis-user-response.v1'),
+  responseId: z.string().min(1).max(256),
+  rootGoalId: z.string().min(1).max(128),
+  taskId: z.string().min(1).max(128),
+  jarvisAgentId: z.literal('agent:jarvis'),
+  speakerRole: z.literal('jarvis'),
+  sourceResultRef: z.string().regex(/^organization-final-result:sha256:[a-f0-9]{64}$/u),
+  status: z.literal('published'),
+  text: z.string().min(1).max(2_000),
+  textHash: z.string().regex(/^[a-f0-9]{64}$/u),
+  createdAt: z.string(),
+}).strict();
+
+export const jarvisUserResponseReadResponseSchema = z.object({
+  ok: z.literal(true),
+  response: jarvisUserResponseSchema,
+}).strict();
+export type JarvisUserResponse = z.infer<typeof jarvisUserResponseSchema>;
+
 export type AgentModeControlResponse = z.infer<typeof agentModeControlResponseSchema>;
 
 const operatorSessionBaseSchema = {
