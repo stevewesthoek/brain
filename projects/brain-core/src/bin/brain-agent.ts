@@ -12,6 +12,7 @@ import { BRAIN_TASK_LIFECYCLE_SOURCE, GIT_REPOSITORY_REVISION_SOURCE, INFRASTRUC
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { loadBrainRuntimeConfig, safeBrainRuntimeConfigView } from '../agent-mode/portable-runtime-config.js';
+import { bootstrapPlanJson, createBrainBootstrapPlan } from '../agent-mode/bootstrap-plan.js';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://127.0.0.1:4877';
 
@@ -32,7 +33,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent config validate | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID [--operation-id ID] [--reason TEXT] | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID [--operation-id ID] [--reason TEXT] | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -71,6 +72,30 @@ async function main(): Promise<void> {
     if (process.argv[3] !== 'validate' || process.argv.length !== 4) { usage(); process.exitCode = 1; return; }
     const config = loadBrainRuntimeConfig();
     process.stdout.write(`${JSON.stringify({ kind: 'brain-runtime-config-validation', schemaVersion: config.schemaVersion, profile: config.profile, capabilities: config.optionalCapabilities, config: safeBrainRuntimeConfigView(config) }, null, 2)}\n`);
+    return;
+  }
+
+  if (command === 'bootstrap') {
+    if (process.argv[3] !== 'plan' || !process.argv.includes('--dry-run')) {
+      console.error('D0-B bootstrap is planning-only; use: brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH]');
+      process.exitCode = 1;
+      return;
+    }
+    const sourceRoot = flag('--source-root') ?? process.cwd();
+    const installationRoot = requiredFlag('--install-root');
+    const profilePath = flag('--profile');
+    const hostProfilePath = flag('--host-profile');
+    const stateRoot = flag('--state-root');
+    const mode = flag('--mode') as 'source-development' | 'packaged-release' | undefined;
+    const platform = flag('--platform');
+    const architecture = flag('--architecture');
+    const nodeVersion = flag('--node-version');
+    const npmVersion = flag('--npm-version');
+    const env: NodeJS.ProcessEnv = { ...process.env, ...(stateRoot ? { BRAIN_RUNTIME_STATE_ROOT: stateRoot } : {}), ...(profilePath ? { BRAIN_RUNTIME_PROFILE_PATH: profilePath } : {}), ...(hostProfilePath ? { BRAIN_RUNTIME_HOST_PROFILE_PATH: hostProfilePath } : {}) };
+    const runtimeConfig = loadBrainRuntimeConfig({ env, ...(profilePath ? { portableProfilePath: profilePath } : {}), ...(hostProfilePath ? { hostProfilePath } : {}) });
+    const sourceRevision = flag('--source-revision');
+    const plan = createBrainBootstrapPlan({ sourceRoot, installationRoot, runtimeConfig, mode: mode ?? 'source-development', ...(sourceRevision ? { sourceRevision } : {}), ...(profilePath ? { profilePath } : {}), ...(hostProfilePath ? { hostProfilePath } : {}), ...(platform ? { platform } : {}), ...(architecture ? { architecture } : {}), ...(nodeVersion ? { nodeVersion } : {}), ...(npmVersion ? { npmVersion } : {}), serviceAuthConfigured: Boolean(env.BRAIN_CORE_SERVICE_ID && env.BRAIN_CORE_SERVICE_SECRET), operatorAuthConfigured: Boolean(env.BRAIN_CONSOLE_OPERATOR_ID && env.BRAIN_CONSOLE_OPERATOR_SECRET) });
+    process.stdout.write(bootstrapPlanJson(plan));
     return;
   }
 

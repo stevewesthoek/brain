@@ -1827,6 +1827,36 @@ Evidence: `operations/reports/agent-mode-d0-a-portable-core-config-evidence-2026
 Exact next bounded slice: **D0-B — Reproducible Lean-Core Bootstrap and Dry-Run
 Installer**; do not start it automatically.
 
+### D0-B — Reproducible Lean-Core Bootstrap and Dry-Run Installer
+
+**Status:** COMPLETE. D0 remains IN PROGRESS.
+
+D0-B adds the deterministic `brain-bootstrap-plan-v1` contract and the
+read-only `brain-agent bootstrap plan --dry-run` CLI. The planner inspects
+only local platform, architecture, Node/npm, source manifests/revision,
+installation/state layout, and explicit secret-presence metadata. It emits a
+bounded source-development or packaged-release plan with fixed Core/Console
+components, `npm ci`/build actions, smoke checks, startup commands, and an
+explicit not-installed service plan.
+
+The plan is data only: it never installs packages, copies/stages files,
+registers or starts services, creates StateStore data, launches BrainNode or
+Harness, contacts a provider/network, or chooses models, credentials,
+capabilities, or personal integrations. Installation targets are fresh,
+compatible, unknown, or conflict states and are never overwritten. State is
+separate from source/install roots; critical runtime paths are absolute or
+home-relative; release provenance is supplied rather than inferred from a
+mutable checkout. Node `>=22.5.0` and npm `>=10.0.0` are the supported
+toolchain contract, with npm lockfile/build actions retained for the future
+explicit staging/install slice.
+
+Optional staging/execution is intentionally skipped in D0-B. Existing
+installation detection, rollback metadata, service registration, packaging,
+and real installation remain later D0 work. The exact next bounded slice is
+**D0-C — Portable Runtime Packaging Contract**; do not start it automatically.
+
+Evidence: `operations/reports/agent-mode-d0-b-lean-core-bootstrap-evidence-2026-09-15.md`.
+
 ## Phase H0 — long-duration hardening
 
 **Status:** final soak/release gate; safety and recovery conformance run in every earlier phase

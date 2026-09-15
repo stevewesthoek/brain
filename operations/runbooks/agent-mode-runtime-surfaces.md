@@ -1484,3 +1484,29 @@ existing domain abstraction.
 Evidence: `operations/reports/agent-mode-d0-a-portable-core-config-evidence-2026-09-15.md`.
 Exact next bounded slice: **D0-B — Reproducible Lean-Core Bootstrap and Dry-Run
 Installer**; do not start it automatically.
+
+## D0-B Reproducible Lean-Core Bootstrap — 2026-09-15
+
+D0-B is **COMPLETE**; D0 remains **IN PROGRESS**. Inspect a host-neutral
+bootstrap plan with:
+
+```bash
+brain-agent bootstrap plan --dry-run --install-root /absolute/target
+```
+
+The command emits `brain-bootstrap-plan-v1`. It is read-only and bounded:
+Core/Console `package-lock.json` files are verified, future `npm ci` and build
+steps are described, and local runtime/layout/auth presence checks are
+reported. It does not execute those package commands, write an installation or
+StateStore, register/start services, launch BrainNode/Harness, or perform
+network/provider/AWS/SSH/Tailscale operations. Use `--source-root`,
+`--source-revision`, `--mode packaged-release`, and explicit runtime/profile
+flags when a release manifest is available.
+
+The plan keeps mutable StateStore paths separate from source/install roots,
+rejects unsafe/relative critical paths and packaged source/install conflicts,
+never overwrites an existing target, and reports service status as
+`not-installed`. Secret handoff is presence-only; values remain external and
+are never printed. Optional staging and rollback execution are intentionally
+not implemented. Exact next bounded slice: **D0-C — Portable Runtime Packaging
+Contract**; do not start it automatically.

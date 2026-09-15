@@ -81,6 +81,7 @@ function portablePath(value: unknown, label: string, home: string): string {
   if (raw.startsWith('~/')) return path.join(home, raw.slice(2));
   if (raw === '~') return home;
   if (raw.includes('\\')) throw new Error(`${label} must use host-native path separators`);
+  if (!path.isAbsolute(raw)) throw new Error(`${label} must be absolute or home-relative`);
   const segments = raw.split(path.sep);
   if (segments.includes('..') || segments.includes('.git') || raw.startsWith('/dev/') || raw === '/dev') throw new Error(`${label} is outside the portable runtime boundary`);
   return path.normalize(raw);

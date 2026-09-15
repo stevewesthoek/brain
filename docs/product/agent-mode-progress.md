@@ -1456,6 +1456,24 @@ Evidence: `operations/reports/agent-mode-d0-a-portable-core-config-evidence-2026
 Exact next bounded slice: **D0-B — Reproducible Lean-Core Bootstrap and Dry-Run
 Installer**; do not start it automatically.
 
+## Current D0-B reproducible lean-core bootstrap — 2026-09-15
+
+D0-B is **COMPLETE** and D0 remains **IN PROGRESS**. Brain now emits the
+versioned, bounded `brain-bootstrap-plan-v1` contract through the read-only
+`brain-agent bootstrap plan --dry-run` command. The plan covers fixed Core and
+Console package-lock/build actions, startup/smoke checks, source versus
+release provenance, safe installation/state separation, existing-install
+detection, and external secret handoff without printing secret values.
+
+No D0-B command installs dependencies, stages files, registers services,
+starts processes, probes providers, creates runtime state, or invokes
+BrainNode/Harness. Node `>=22.5.0` and npm `>=10.0.0` are explicit package
+engine requirements. Optional staging, rollback execution, service
+registration, and real package installation remain later D0 work.
+
+Evidence: `operations/reports/agent-mode-d0-b-lean-core-bootstrap-evidence-2026-09-15.md`.
+Exact next bounded slice: **D0-C — Portable Runtime Packaging Contract**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

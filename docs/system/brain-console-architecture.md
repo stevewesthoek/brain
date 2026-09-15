@@ -135,6 +135,18 @@ configuration remains compatible; installer/bootstrap and deployment packaging
 are later D0 work. Exact next bounded slice: **D0-B — Reproducible Lean-Core
 Bootstrap and Dry-Run Installer**; do not start it automatically.
 
+### D0-B reproducible bootstrap boundary
+
+D0-B adds the Brain Core-owned `brain-bootstrap-plan-v1` dry-run contract and
+CLI for a future portable installation workflow. It describes fixed Core and
+Console lockfile/build actions, source/release provenance, safe install/state
+layout, startup/smoke checks, and an explicit `not-installed` service plan.
+Brain Console is not an installer: no package command, file staging, service
+registration/start, provider probe, runtime launch, or browser-side filesystem
+operation occurs. Optional staging, rollback execution, and deployment
+packaging remain later D0 work. The exact next bounded slice is **D0-C —
+Portable Runtime Packaging Contract**; do not start it automatically.
+
 ## Agent Mode detail drill-down
 
 U0-B adds one canonical detail route:

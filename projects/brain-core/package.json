@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.5.0",
+    "npm": ">=10.0.0"
+  },
   "description": "Local read-only Brain Core API for Obsidian-first machine state.",
   "bin": {
     "brain-agent": "dist/bin/brain-agent.js",
