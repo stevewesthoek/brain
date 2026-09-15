@@ -13,6 +13,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { loadBrainRuntimeConfig, safeBrainRuntimeConfigView } from '../agent-mode/portable-runtime-config.js';
 import { bootstrapPlanJson, createBrainBootstrapPlan } from '../agent-mode/bootstrap-plan.js';
+import { buildRuntimePackage, verifyRuntimePackage } from '../agent-mode/runtime-package.js';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://127.0.0.1:4877';
 
@@ -33,7 +34,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID [--operation-id ID] [--reason TEXT] | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build --output PATH --release-revision REV [--source-root PATH] | brain-agent package verify --root PATH | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID [--operation-id ID] [--reason TEXT] | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -96,6 +97,28 @@ async function main(): Promise<void> {
     const sourceRevision = flag('--source-revision');
     const plan = createBrainBootstrapPlan({ sourceRoot, installationRoot, runtimeConfig, mode: mode ?? 'source-development', ...(sourceRevision ? { sourceRevision } : {}), ...(profilePath ? { profilePath } : {}), ...(hostProfilePath ? { hostProfilePath } : {}), ...(platform ? { platform } : {}), ...(architecture ? { architecture } : {}), ...(nodeVersion ? { nodeVersion } : {}), ...(npmVersion ? { npmVersion } : {}), serviceAuthConfigured: Boolean(env.BRAIN_CORE_SERVICE_ID && env.BRAIN_CORE_SERVICE_SECRET), operatorAuthConfigured: Boolean(env.BRAIN_CONSOLE_OPERATOR_ID && env.BRAIN_CONSOLE_OPERATOR_SECRET) });
     process.stdout.write(bootstrapPlanJson(plan));
+    return;
+  }
+
+  if (command === 'package') {
+    const action = process.argv[3];
+    if (action === 'build') {
+      const outputRoot = requiredFlag('--output');
+      const releaseRevision = requiredFlag('--release-revision');
+      const sourceRoot = flag('--source-root') ?? process.cwd();
+      const platform = flag('--platform');
+      const architecture = flag('--architecture');
+      process.stdout.write(`${JSON.stringify(buildRuntimePackage({ sourceRoot, outputRoot, releaseRevision, ...(platform ? { platform } : {}), ...(architecture ? { architecture } : {}) }), null, 2)}\n`);
+      return;
+    }
+    if (action === 'verify') {
+      const result = verifyRuntimePackage(requiredFlag('--root'));
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      if (!result.ok) process.exitCode = 1;
+      return;
+    }
+    usage();
+    process.exitCode = 1;
     return;
   }
 

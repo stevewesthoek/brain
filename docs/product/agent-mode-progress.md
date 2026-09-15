@@ -1474,6 +1474,27 @@ registration, and real package installation remain later D0 work.
 Evidence: `operations/reports/agent-mode-d0-b-lean-core-bootstrap-evidence-2026-09-15.md`.
 Exact next bounded slice: **D0-C — Portable Runtime Packaging Contract**; do not start it automatically.
 
+## Current D0-C portable runtime package — 2026-09-15
+
+D0-C is **COMPLETE** and D0 remains **IN PROGRESS**. Core packages as prebuilt
+JavaScript plus exact lockfile/package metadata for later production dependency
+hydration. Console packages as verified Next standalone traced runtime plus
+required server/static/public assets. Both are represented by strict,
+deterministic `brain-runtime-package-v1` manifests with bounded allowlists,
+hashes, exact-file verification, no symlinks, normalized modes, and no
+personal/secret/mutable-state content.
+
+`brain-agent package build --output PATH --release-revision REV` writes only a
+fresh explicit package directory; `brain-agent package verify --root PATH` is
+read-only. Neither installs dependencies, starts/registers services, deploys,
+or contacts the network. An isolated real package Console startup served
+`/agents` successfully from its staged root. The D0-B evidence report did not
+include its terminally reported full-suite aggregate; no historical evidence
+was rewritten.
+
+Evidence: `operations/reports/agent-mode-d0-c-portable-runtime-packaging-evidence-2026-09-15.md`.
+Exact next bounded task: **D0-D — Local macOS/Linux Runtime Installation and Service Packaging Contract**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

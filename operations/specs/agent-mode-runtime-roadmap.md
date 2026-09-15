@@ -1857,6 +1857,40 @@ and real installation remain later D0 work. The exact next bounded slice is
 
 Evidence: `operations/reports/agent-mode-d0-b-lean-core-bootstrap-evidence-2026-09-15.md`.
 
+### D0-C — Portable Runtime Packaging Contract
+
+**Status:** COMPLETE. D0 remains IN PROGRESS.
+
+D0-C establishes the versioned `brain-runtime-package-v1` boundary and the
+read-only package verifier plus explicit `brain-agent package build` and
+`brain-agent package verify` seams. Core uses strategy B: prebuilt JavaScript
+`dist` with runtime `package.json`/lockfile metadata for later production
+dependency hydration. Console uses narrowly verified Next standalone output,
+including its traced runtime, required `.next` server assets, `.next/static`,
+and existing `public` assets, while excluding `.next/cache` and build traces.
+
+The package tree is allowlisted, path-normalized, symlink-free, mode-normalized
+to non-writable `0644` files, bounded to 20,000 files/100 MiB per file/500 MiB
+total, and verified by exact file set, size, SHA-256, package identity, and
+manifest hash. It contains only Core runtime JS/metadata, Console standalone
+runtime/static assets, and a safe `brain-runtime-config-v1` example template.
+Secrets, mutable StateStore/runtime data, logs, credentials, personal
+integrations, source checkout metadata, and personal absolute paths are
+excluded or sanitized. Package identity includes release revision, component,
+runtime, platform, architecture, dependency strategy, and file hashes, never
+HOME, staging roots, timestamps, or secrets.
+
+D0-C does not install or activate packages, run npm hydration, register or
+start launchd/systemd services, deploy VPS/Tailscale, or start H0. Builds and
+verification use local artifacts and no network. The real standalone Console
+artifact was started from an isolated package root on a temporary port and
+served `/agents` successfully. D0-B evidence did not contain its terminally
+reported 2,588/2,588 full-suite aggregate; D0-C records only its own observed
+validation. The exact next bounded task is **D0-D — Local macOS/Linux Runtime
+Installation and Service Packaging Contract**; do not start it automatically.
+
+Evidence: `operations/reports/agent-mode-d0-c-portable-runtime-packaging-evidence-2026-09-15.md`.
+
 ## Phase H0 — long-duration hardening
 
 **Status:** final soak/release gate; safety and recovery conformance run in every earlier phase

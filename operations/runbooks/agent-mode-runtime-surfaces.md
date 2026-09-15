@@ -1510,3 +1510,25 @@ never overwrites an existing target, and reports service status as
 are never printed. Optional staging and rollback execution are intentionally
 not implemented. Exact next bounded slice: **D0-C — Portable Runtime Packaging
 Contract**; do not start it automatically.
+
+## D0-C Portable Runtime Packaging — 2026-09-15
+
+D0-C is **COMPLETE**; D0 remains **IN PROGRESS**. Build a package only from
+verified local Core/Console artifacts:
+
+```bash
+brain-agent package build --output /fresh/package-root --release-revision REV
+brain-agent package verify --root /fresh/package-root
+```
+
+Core is prebuilt `dist` plus package metadata for later `npm` production
+hydration. Console is Next `standalone-traced`; the package includes its
+standalone server/traced dependencies, required `.next` server assets, and
+static/public assets, but never `.next/cache` or build traces. The verifier
+checks the strict `brain-runtime-package-v1` manifest, exact allowlisted file
+set, SHA-256/size, package identity/hash, bounds, no symlinks, normalized
+permissions, and no secrets, mutable state, logs, credentials, or personal
+paths. It is safe to run from any cwd and makes no network/provider/service
+call. Package build writes only to a fresh explicit target and does not install,
+activate, or register it. Exact next task: **D0-D — Local macOS/Linux Runtime
+Installation and Service Packaging Contract**; do not start it automatically.

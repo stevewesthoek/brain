@@ -147,6 +147,24 @@ operation occurs. Optional staging, rollback execution, and deployment
 packaging remain later D0 work. The exact next bounded slice is **D0-C —
 Portable Runtime Packaging Contract**; do not start it automatically.
 
+### D0-C portable runtime package boundary
+
+Brain Console production packaging uses narrowly enabled Next
+`output: 'standalone'`. The package builder copies only the generated traced
+standalone runtime, required `.next` server assets, `.next/static`, and
+existing `public` assets; `.next/cache`, traces, source, and checkout metadata
+are excluded. A real staged package served `/agents` from an isolated root
+with no source-checkout fallback. Generated absolute build paths are sanitized
+in staged text artifacts and the verifier rejects remaining personal paths.
+
+Core remains a prebuilt `dist` runtime with package/lockfile metadata for
+deterministic production dependency hydration; it is not falsely advertised as
+self-contained. `brain-runtime-package-v1` is verified by an exact bounded
+file manifest, hashes, sizes, package identity, and manifest hash. D0-C still
+does not install, start/register services, or deploy; the next bounded task is
+**D0-D — Local macOS/Linux Runtime Installation and Service Packaging
+Contract**.
+
 ## Agent Mode detail drill-down
 
 U0-B adds one canonical detail route:
