@@ -1364,6 +1364,31 @@ Evidence: `operations/reports/agent-mode-v0-b-push-to-talk-local-stt-evidence-20
 Exact next bounded slice: **V0-C — Jarvis Text-to-Speech Output and Interruptible
 Playback**; do not start it automatically.
 
+## Current V0-C response boundary audit — 2026-09-15
+
+V0-C remains **IN PROGRESS**. The repository has no canonical production Jarvis
+response-generation producer and no supported Jarvis speech backend. V0-A's
+`responseText` is fixture-only; K4/K5 worker and organization results expose
+structured authoritative references, not speech-safe user text. The existing
+Video Orchestrator Polly adapter is narration-specific and is not a Jarvis
+runtime dependency. FluidVoice remains an external retained capability and is
+not modified or invoked.
+
+Brain now provides the narrow versioned
+`agent-mode.jarvis-user-response.v1` boundary. It accepts bounded Jarvis-owned
+text only when it references a durable K5 organization final result, derives
+stable response/text/material identities, persists one immutable response per
+root with restart-safe idempotency, and serves it read-only through
+`GET /agent-mode/jarvis/responses/:rootGoalId`. No worker output, prompt,
+reasoning, provider payload, or raw evidence body is copied into the response
+record. Production TTS, playback, and interrupt behavior remain disabled.
+
+Exact next bounded prerequisite: a Brain-owned canonical Jarvis
+response-generation/finalization producer that creates approved user-facing
+text from authoritative Brain facts and publishes through this boundary. After
+that prerequisite, select and implement a supported Jarvis TTS/playback
+adapter. V0 remains **IN PROGRESS**; do not start V0-D automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

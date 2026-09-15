@@ -394,6 +394,10 @@ function isAgentModeIntakePath(url: URL): boolean {
   return url.pathname === '/agent-mode/jarvis/intake';
 }
 
+function isAgentModeJarvisResponsePath(url: URL): boolean {
+  return /^\/agent-mode\/jarvis\/responses\/[^/]+$/u.test(url.pathname);
+}
+
 function isAgentModeControlNamespace(url: URL): boolean {
   return /^\/agent-mode\/control(?:\/|$)/u.test(url.pathname);
 }
@@ -629,6 +633,21 @@ async function routeAgentModeIntakeRequest(request: IncomingMessage, response: S
   finally { store?.close(); }
 }
 
+function routeAgentModeJarvisResponseRequest(url: URL, response: ServerResponse): void {
+  let rootGoalId: string;
+  try { rootGoalId = decodeURIComponent(url.pathname.slice('/agent-mode/jarvis/responses/'.length)); } catch { sendJson(response, 400, { ok: false, error: { code: 'jarvis_response_root_invalid', message: 'Jarvis response root identity is invalid.' } }); return; }
+  if (!rootGoalId || rootGoalId.length > 128 || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/u.test(rootGoalId)) { sendJson(response, 400, { ok: false, error: { code: 'jarvis_response_root_invalid', message: 'Jarvis response root identity is invalid.' } }); return; }
+  const databasePath = defaultAgentModeDatabasePath();
+  const store = AgentModeSqliteStateStore.openExisting(databasePath);
+  if (!store) { sendJson(response, 404, { ok: false, error: { code: 'jarvis_response_not_found', message: 'No canonical Jarvis response exists for this root.' } }); return; }
+  try {
+    const record = store.getJarvisUserResponseForRoot(rootGoalId);
+    if (!record) { sendJson(response, 404, { ok: false, error: { code: 'jarvis_response_not_found', message: 'No canonical Jarvis response exists for this root.' } }); return; }
+    const { materialHash: _materialHash, ...publicResponse } = record;
+    sendJson(response, 200, { ok: true, response: publicResponse });
+  } finally { store.close(); }
+}
+
 async function routeAgentModeNotificationRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
   let authenticator: BrainServiceAuthenticator;
   try {
@@ -797,6 +816,11 @@ export async function routeRequest(
 
   if (method === 'POST' && isAgentModeIntakePath(url)) {
     await routeAgentModeIntakeRequest(request, response);
+    return;
+  }
+
+  if (method === 'GET' && isAgentModeJarvisResponsePath(url)) {
+    routeAgentModeJarvisResponseRequest(url, response);
     return;
   }
 

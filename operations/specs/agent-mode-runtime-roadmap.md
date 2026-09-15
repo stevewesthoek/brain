@@ -1642,7 +1642,7 @@ automatically.
 
 ## Phase V0 — Jarvis voice gateway
 
-**Status:** V0-A COMPLETE; V0 remains IN PROGRESS; local non-text inference remains allowed
+**Status:** V0-A and V0-B COMPLETE; V0-C response-boundary slice IN PROGRESS; V0 remains IN PROGRESS; local non-text inference remains allowed
 
 - microphone / push-to-talk / future wake-word input;
 - speech-to-text transport into Jarvis;
@@ -1718,6 +1718,36 @@ root. No voice control phrase reaches lifecycle control authority.
 Evidence: `operations/reports/agent-mode-v0-b-push-to-talk-local-stt-evidence-2026-09-15.md`.
 Exact next bounded slice: **V0-C — Jarvis Text-to-Speech Output and Interruptible
 Playback**; do not start it automatically.
+
+### V0-C — Jarvis response boundary audit and interruptible playback prerequisite
+
+**Status:** IN PROGRESS; canonical response boundary established, production
+speech output intentionally not enabled
+
+The V0-C audit found no Brain-owned production component that turns an
+authoritative K4/K5 result into approved human-facing Jarvis text, and no
+supported Jarvis TTS/playback backend that can be safely selected. The existing
+`responseText` in the V0-A gateway is fixture-only. K4/K5 result and final-result
+references are structured execution/evidence facts, not speech-safe text, and
+the Video Orchestrator Polly adapter is narration-specific and is not reused.
+
+Brain therefore adds the narrow, versioned
+`agent-mode.jarvis-user-response.v1` boundary. `JarvisUserResponseService`
+accepts only bounded Jarvis-owned text tied to one authoritative persisted K5
+organization final result, derives deterministic response/text/material hashes,
+persists one immutable response per root atomically and idempotently, and
+exposes it read-only at `GET /agent-mode/jarvis/responses/:rootGoalId`.
+Worker/runtime/provider bodies, prompts, reasoning, and raw evidence are not
+copied. No TTS provider, playback loop, interrupt mutation, model call,
+provider probe, or external effect is introduced by this slice.
+
+Exact next bounded prerequisite: **Brain-owned canonical Jarvis
+response-generation/finalization producer** that deterministically or through
+an explicitly governed future intelligence layer produces approved user-facing
+text from authoritative Brain facts and calls this response boundary. Only
+after that producer and a supported Jarvis speech backend are accepted should
+the remaining V0-C TTS/playback adapter be implemented. Do not claim V0-C or
+start V0-D automatically.
 
 ## Phase D0 — distribution and always-on options
 

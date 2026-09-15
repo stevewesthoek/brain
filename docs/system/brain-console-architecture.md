@@ -84,6 +84,21 @@ Console database or inventory ledger. StateStore reopen and independent API
 callers reconstruct the same domain state; generated timestamps are request
 metadata only.
 
+### V0-C Jarvis response visibility
+
+The current voice work has a narrow Brain Core response boundary, not a Console
+speech player. `GET /agent-mode/jarvis/responses/:rootGoalId` exposes only a
+bounded, immutable `agent-mode.jarvis-user-response.v1` record after a
+Brain-owned caller has published Jarvis text against an authoritative K5
+organization final-result reference. It does not expose raw worker results,
+prompts, reasoning, provider payloads, credentials, or evidence bodies.
+
+No production response-generation producer or supported Jarvis TTS backend is
+currently present. Consequently `/agents` remains read-only and does not add
+speech output, playback, or interrupt controls in V0-C. The next prerequisite
+is a canonical Brain-owned Jarvis response-generation/finalization producer;
+TTS/playback follows only after that boundary and a safe provider are accepted.
+
 ## Agent Mode detail drill-down
 
 U0-B adds one canonical detail route:

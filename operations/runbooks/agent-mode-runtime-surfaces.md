@@ -1376,3 +1376,31 @@ the new canonical intake-created roots appear in `/agent-mode/console`.
 Evidence: `operations/reports/agent-mode-v0-b-push-to-talk-local-stt-evidence-2026-09-15.md`.
 Exact next bounded slice: **V0-C — Jarvis Text-to-Speech Output and Interruptible
 Playback**; do not start it automatically.
+
+## V0-C Jarvis response boundary audit — 2026-09-15
+
+V0-C is **IN PROGRESS**. Before adding speech output, verify that a canonical
+Brain-owned response producer exists. The current V0-A `responseText` belongs
+only to the deterministic transport fixture. K4/K5 results and evidence are
+authoritative structured references, but are not automatically safe to speak.
+Do not feed worker output, raw runtime/provider payloads, prompts, or reasoning
+to a voice provider. Do not reuse the Video Orchestrator Polly adapter for
+Jarvis; it is a separate narration surface. FluidVoice remains external and
+retained, not a Brain Core adapter.
+
+The bounded `agent-mode.jarvis-user-response.v1` contract is the only new
+response boundary. `JarvisUserResponseService` requires fixed Jarvis ownership,
+bounded normalized text, a durable K5 organization final-result reference, and
+deterministic response/text/material identities. StateStore persists one
+immutable response per root and rejects conflicting or non-authoritative
+publication. Read-only retrieval is
+`GET /agent-mode/jarvis/responses/:rootGoalId`; it returns no material hash or
+runtime/provider body. Reads are side-effect free and do not invoke TTS,
+models, providers, BrainNode, Harness, or network.
+
+The exact prerequisite is **Brain-owned canonical Jarvis
+response-generation/finalization producer**. It must create approved
+user-facing text from authoritative Brain facts and publish it through the
+response contract. Only then should a supported Jarvis TTS adapter and
+interruptible playback transport be selected. V0-C does not claim production
+speech output, and V0-D must not start automatically.
