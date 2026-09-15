@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { AgentModeJarvisIntakeRecord, AgentModeSqliteStateStore } from './sqlite-state-store.js';
+import { JARVIS_TASK_INPUT_RETENTION_CLASS, JARVIS_TASK_INPUT_SCHEMA_VERSION, deriveJarvisTaskInputContentHash, type JarvisTaskInputV1 } from './jarvis-response-sources.js';
 
 export const JARVIS_TEXT_INTAKE_SCHEMA_VERSION = 'agent-mode.jarvis-text-intake.v1' as const;
 export const JARVIS_AGENT_ID = 'agent:jarvis' as const;
@@ -73,6 +74,7 @@ export class JarvisTextIntakeService {
     try {
       validateJarvisTextIntakeCommand(command);
       const canonicalTextHash = digest(canonicalJarvisText(command.text));
+      const createdAt = this.now();
       const record: AgentModeJarvisIntakeRecord = {
         intakeId: command.intakeId,
         materialHash: deriveJarvisIntakeMaterialHash(command),
@@ -84,9 +86,20 @@ export class JarvisTextIntakeService {
         taskId: deriveJarvisRootGoalId(command.intakeId),
         jarvisAgentId: JARVIS_AGENT_ID,
         receivedAt: command.receivedAt,
-        createdAt: this.now(),
+        createdAt,
       };
-      const persisted = this.store.recordJarvisIntake(record);
+      const taskInput: JarvisTaskInputV1 = {
+        schemaVersion: JARVIS_TASK_INPUT_SCHEMA_VERSION,
+        rootGoalId: record.rootGoalId,
+        taskId: record.taskId,
+        jarvisAgentId: 'agent:jarvis',
+        source: command.source,
+        text: canonicalJarvisText(command.text),
+        contentHash: deriveJarvisTaskInputContentHash(command.text),
+        retentionClass: JARVIS_TASK_INPUT_RETENTION_CLASS,
+        createdAt,
+      };
+      const persisted = this.store.recordJarvisIntake(record, taskInput);
       if (persisted.result === 'conflict') return { outcome: 'conflict', reasonCode: persisted.reasonCode };
       return { outcome: persisted.result === 'created' ? 'accepted' : 'duplicate', receipt: receipt(persisted.record, persisted.result === 'created' ? 'accepted' : 'duplicate') };
     } catch (error) {

@@ -13,6 +13,7 @@ import { deriveOrganizationPlanId, deriveOrganizationWorkItemId, evaluateOrganiz
 import { deriveOrganizationAggregation, organizationFinalResultFromAggregation, organizationFinalResultMaterial, type OrganizationFinalResult } from './organization-finalization.js';
 import { AGENT_MODE_ATTENTION_MAX_ITEMS, AGENT_MODE_ATTENTION_SCHEMA_VERSION, deriveEscalationId, deriveNotificationId, escalationMaterial, notificationMaterial, type AgentModeAttentionReconcileResult, type AgentModeAttentionSourceType, type AgentModeEscalation, type AgentModeEscalationKind, type AgentModeEscalationSeverity, type AgentModeEscalationStatus, type AgentModeNotification, type AgentModeNotificationKind } from './agent-mode-attention.js';
 import { canonicalJarvisUserResponseText, deriveJarvisUserResponseId, deriveJarvisUserResponseTextHash, jarvisUserResponseMaterialHash, type JarvisUserResponseV1 } from './jarvis-user-response.js';
+import { deriveJarvisReadableResultContentHash, validateJarvisReadableResult, validateJarvisTaskInput, type JarvisReadableResultV1, type JarvisTaskInputV1 } from './jarvis-response-sources.js';
 
 export type AgentModeAgent = {
   agentId: string;
@@ -187,6 +188,40 @@ function mapJarvisUserResponseRow(row: Record<string, unknown>): AgentModeJarvis
     textHash: String(row.text_hash),
     createdAt: String(row.created_at),
     materialHash: String(row.material_hash),
+  };
+}
+
+function mapJarvisTaskInputRow(row: Record<string, unknown>): JarvisTaskInputV1 {
+  return {
+    schemaVersion: String(row.schema_version) as JarvisTaskInputV1['schemaVersion'],
+    rootGoalId: String(row.root_goal_id),
+    taskId: String(row.task_id),
+    jarvisAgentId: String(row.jarvis_agent_id) as 'agent:jarvis',
+    source: String(row.source) as JarvisTaskInputV1['source'],
+    text: String(row.text),
+    contentHash: String(row.content_hash),
+    retentionClass: String(row.retention_class) as JarvisTaskInputV1['retentionClass'],
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapJarvisReadableResultRow(row: Record<string, unknown>): JarvisReadableResultV1 {
+  let facts: JarvisReadableResultV1['facts'] = [];
+  try {
+    const parsed = JSON.parse(String(row.facts_json)) as unknown;
+    if (!Array.isArray(parsed)) throw new Error('not an array');
+    facts = parsed as JarvisReadableResultV1['facts'];
+  } catch { throw new Error('Jarvis readable result is corrupt'); }
+  return {
+    schemaVersion: String(row.schema_version) as JarvisReadableResultV1['schemaVersion'],
+    resultRef: String(row.result_ref),
+    rootGoalId: String(row.root_goal_id),
+    taskId: String(row.task_id),
+    owner: String(row.owner) as JarvisReadableResultV1['owner'],
+    resultType: String(row.result_type) as JarvisReadableResultV1['resultType'],
+    facts,
+    contentHash: String(row.content_hash),
+    createdAt: String(row.created_at),
   };
 }
 
@@ -601,6 +636,10 @@ export type AgentModeJarvisUserResponseRecord = JarvisUserResponseV1 & {
 
 export type AgentModeJarvisUserResponsePersistenceResult =
   | { result: 'created' | 'duplicate'; response: AgentModeJarvisUserResponseRecord }
+  | { result: 'conflict' | 'denied'; reasonCode: string };
+
+export type AgentModeJarvisReadableResultPersistenceResult =
+  | { result: 'created' | 'duplicate'; resultRecord: JarvisReadableResultV1 }
   | { result: 'conflict' | 'denied'; reasonCode: string };
 
 export type AgentModeRun = {
@@ -1464,6 +1503,7 @@ export class AgentModeSqliteStateStore {
   private readonly hasOrganizationTables: boolean;
   private readonly hasAttentionTables: boolean;
   private readonly hasJarvisIntakeTables: boolean;
+  private readonly hasJarvisResponseSourceTables: boolean;
   private readonly hasJarvisUserResponseTables: boolean;
 
   constructor(databasePath = defaultAgentModeDatabasePath(), options: { readOnly?: boolean } = {}) {
@@ -1508,6 +1548,7 @@ export class AgentModeSqliteStateStore {
         && this.tableExists('agent_mode_notifications')
         && this.tableExists('agent_mode_notification_reads');
       this.hasJarvisIntakeTables = this.tableExists('agent_mode_jarvis_intakes');
+      this.hasJarvisResponseSourceTables = this.tableExists('agent_mode_jarvis_task_inputs') && this.tableExists('agent_mode_jarvis_readable_results');
       this.hasJarvisUserResponseTables = this.tableExists('agent_mode_jarvis_user_responses');
       return;
     }
@@ -2213,6 +2254,7 @@ export class AgentModeSqliteStateStore {
     this.ensureOrganizationFinalResultTable();
     this.ensureAttentionTables();
     this.ensureJarvisIntakeTable();
+    this.ensureJarvisResponseSourceTables();
     this.ensureJarvisUserResponseTable();
     this.hasRuntimePidColumn = true;
     this.hasRuntimeIdentityColumns = true;
@@ -2232,6 +2274,7 @@ export class AgentModeSqliteStateStore {
     this.hasOrganizationTables = true;
     this.hasAttentionTables = true;
     this.hasJarvisIntakeTables = true;
+    this.hasJarvisResponseSourceTables = true;
     this.hasJarvisUserResponseTables = true;
   }
 
@@ -2386,6 +2429,36 @@ export class AgentModeSqliteStateStore {
         created_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS agent_mode_jarvis_intakes_created ON agent_mode_jarvis_intakes(created_at DESC, intake_id);
+    `);
+  }
+
+  private ensureJarvisResponseSourceTables(): void {
+    this.database.exec(`
+      CREATE TABLE IF NOT EXISTS agent_mode_jarvis_task_inputs (
+        task_id TEXT PRIMARY KEY REFERENCES tasks(task_id),
+        schema_version TEXT NOT NULL CHECK (schema_version = 'agent-mode.jarvis-task-input.v1'),
+        root_goal_id TEXT NOT NULL UNIQUE,
+        jarvis_agent_id TEXT NOT NULL REFERENCES agents(agent_id),
+        source TEXT NOT NULL CHECK (source IN ('typed', 'voice')),
+        text TEXT NOT NULL CHECK (length(text) > 0 AND length(text) <= 4000),
+        content_hash TEXT NOT NULL,
+        retention_class TEXT NOT NULL CHECK (retention_class = 'root-lifecycle'),
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS agent_mode_jarvis_task_inputs_created ON agent_mode_jarvis_task_inputs(created_at DESC, task_id);
+      CREATE TABLE IF NOT EXISTS agent_mode_jarvis_readable_results (
+        result_ref TEXT PRIMARY KEY,
+        schema_version TEXT NOT NULL CHECK (schema_version = 'agent-mode.jarvis-readable-result.v1'),
+        root_goal_id TEXT NOT NULL,
+        task_id TEXT NOT NULL REFERENCES tasks(task_id),
+        owner TEXT NOT NULL CHECK (owner = 'brain'),
+        result_type TEXT NOT NULL CHECK (result_type = 'organization-summary'),
+        facts_json TEXT NOT NULL,
+        content_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE (root_goal_id)
+      );
+      CREATE INDEX IF NOT EXISTS agent_mode_jarvis_readable_results_created ON agent_mode_jarvis_readable_results(created_at DESC, result_ref);
     `);
   }
 
@@ -2604,6 +2677,12 @@ export class AgentModeSqliteStateStore {
   getOrganizationFinalResult(organizationPlanId: string): OrganizationFinalResult | undefined {
     if (!this.tableExists('agent_mode_organization_final_results')) return undefined;
     const row = this.database.prepare('SELECT * FROM agent_mode_organization_final_results WHERE organization_plan_id = ?').get(organizationPlanId) as Record<string, unknown> | undefined;
+    return row ? mapOrganizationFinalResultRow(row) : undefined;
+  }
+
+  getOrganizationFinalResultById(organizationFinalResultId: string): OrganizationFinalResult | undefined {
+    if (!this.tableExists('agent_mode_organization_final_results')) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_organization_final_results WHERE organization_final_result_id = ?').get(organizationFinalResultId) as Record<string, unknown> | undefined;
     return row ? mapOrganizationFinalResultRow(row) : undefined;
   }
 
@@ -3629,8 +3708,9 @@ export class AgentModeSqliteStateStore {
   }
 
   /** Atomically records one intake, its root task, and the persistent Jarvis owner. */
-  recordJarvisIntake(record: AgentModeJarvisIntakeRecord): AgentModeJarvisIntakePersistenceResult {
+  recordJarvisIntake(record: AgentModeJarvisIntakeRecord, taskInput?: JarvisTaskInputV1): AgentModeJarvisIntakePersistenceResult {
     if (this.readOnly || !this.hasJarvisIntakeTables) throw new Error('Jarvis intake persistence is unavailable');
+    if (taskInput && (validateJarvisTaskInput(taskInput) || taskInput.rootGoalId !== record.rootGoalId || taskInput.taskId !== record.taskId || taskInput.jarvisAgentId !== record.jarvisAgentId || taskInput.source !== record.source || taskInput.contentHash !== record.canonicalTextHash)) throw new Error('invalid Jarvis task input');
     return this.withTransaction(() => {
       const existing = this.database.prepare('SELECT * FROM agent_mode_jarvis_intakes WHERE intake_id = ?').get(record.intakeId) as Record<string, unknown> | undefined;
       if (existing) {
@@ -3654,6 +3734,12 @@ export class AgentModeSqliteStateStore {
           root_goal_id, task_id, jarvis_agent_id, received_at, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(record.intakeId, record.materialHash, record.schemaVersion, record.source, record.operatorId, record.canonicalTextHash, record.rootGoalId, record.taskId, record.jarvisAgentId, record.receivedAt, record.createdAt);
+      if (taskInput) this.database.prepare(`
+        INSERT INTO agent_mode_jarvis_task_inputs (
+          task_id, schema_version, root_goal_id, jarvis_agent_id, source, text,
+          content_hash, retention_class, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(taskInput.taskId, taskInput.schemaVersion, taskInput.rootGoalId, taskInput.jarvisAgentId, taskInput.source, taskInput.text, taskInput.contentHash, taskInput.retentionClass, taskInput.createdAt);
       this.appendEventIfAbsent({
         eventId: `jarvis-intake:${record.intakeId}`,
         entityType: 'jarvis_intake',
@@ -3664,6 +3750,60 @@ export class AgentModeSqliteStateStore {
       });
       return { result: 'created' as const, record };
     });
+  }
+
+  getJarvisTaskInput(taskId: string): JarvisTaskInputV1 | undefined {
+    if (!this.hasJarvisResponseSourceTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_jarvis_task_inputs WHERE task_id = ?').get(taskId) as Record<string, unknown> | undefined;
+    return row ? mapJarvisTaskInputRow(row) : undefined;
+  }
+
+  getJarvisReadableResult(resultRef: string): JarvisReadableResultV1 | undefined {
+    if (!this.hasJarvisResponseSourceTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_jarvis_readable_results WHERE result_ref = ?').get(resultRef) as Record<string, unknown> | undefined;
+    return row ? mapJarvisReadableResultRow(row) : undefined;
+  }
+
+  listJarvisReadableResults(limit = 50): JarvisReadableResultV1[] {
+    if (!this.hasJarvisResponseSourceTables) return [];
+    const boundedLimit = Math.max(0, Math.min(Math.floor(limit), 100));
+    return (this.database.prepare('SELECT * FROM agent_mode_jarvis_readable_results ORDER BY created_at DESC, result_ref LIMIT ?').all(boundedLimit) as Array<Record<string, unknown>>).map(mapJarvisReadableResultRow);
+  }
+
+  /** Stores bounded, Jarvis-readable business facts above K4 receipts; it is not a runtime/result ledger. */
+  recordJarvisReadableResult(record: JarvisReadableResultV1): AgentModeJarvisReadableResultPersistenceResult {
+    if (this.readOnly || !this.hasJarvisResponseSourceTables) return { result: 'denied', reasonCode: 'JARVIS_RESULT_PERSISTENCE_UNAVAILABLE' };
+    if (validateJarvisReadableResult(record)) return { result: 'denied', reasonCode: 'JARVIS_READABLE_RESULT_INVALID' };
+    try {
+      return this.withTransaction(() => {
+        const existing = this.database.prepare('SELECT * FROM agent_mode_jarvis_readable_results WHERE result_ref = ?').get(record.resultRef) as Record<string, unknown> | undefined;
+        if (existing) return String(existing.content_hash) === record.contentHash
+          ? { result: 'duplicate' as const, resultRecord: mapJarvisReadableResultRow(existing) }
+          : { result: 'conflict' as const, reasonCode: 'JARVIS_READABLE_RESULT_CONFLICT' };
+        const finalResult = this.getOrganizationFinalResultById(record.resultRef);
+        if (!finalResult || finalResult.rootGoalId !== record.rootGoalId || finalResult.status !== 'succeeded') return { result: 'denied' as const, reasonCode: 'JARVIS_READABLE_RESULT_SOURCE_UNAVAILABLE' };
+        if (finalResult.rootGoalId !== record.taskId || !finalResult.auditorWorkItemId) return { result: 'denied' as const, reasonCode: 'JARVIS_READABLE_RESULT_ROOT_INVALID' };
+        const finalFacts = new Map(finalResult.workItemResults.flatMap((item) => item.evidenceRefs.map((evidenceRef) => [evidenceRef, item.workItemKey] as const)));
+        if (record.facts.some((fact) => !finalResult.workItemResults.some((item) => item.workItemKey === fact.workItemKey) || fact.evidenceRefs.some((evidenceRef) => finalFacts.get(evidenceRef) !== fact.workItemKey))) return { result: 'denied' as const, reasonCode: 'JARVIS_READABLE_RESULT_EVIDENCE_INVALID' };
+        this.database.prepare(`
+          INSERT INTO agent_mode_jarvis_readable_results (
+            result_ref, schema_version, root_goal_id, task_id, owner, result_type,
+            facts_json, content_hash, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(record.resultRef, record.schemaVersion, record.rootGoalId, record.taskId, record.owner, record.resultType, JSON.stringify(record.facts), record.contentHash, record.createdAt);
+        this.appendEventIfAbsent({
+          eventId: `jarvis-readable-result:${record.resultRef}`,
+          entityType: 'organization_final_result',
+          entityId: record.resultRef,
+          eventType: 'jarvis_readable_result_published',
+          occurredAt: record.createdAt,
+          payload: { resultRef: record.resultRef, rootGoalId: record.rootGoalId, taskId: record.taskId, factCount: record.facts.length, contentHash: record.contentHash },
+        });
+        return { result: 'created' as const, resultRecord: record };
+      });
+    } catch {
+      return { result: 'conflict', reasonCode: 'JARVIS_READABLE_RESULT_CONFLICT' };
+    }
   }
 
   getJarvisUserResponse(responseId: string): AgentModeJarvisUserResponseRecord | undefined {

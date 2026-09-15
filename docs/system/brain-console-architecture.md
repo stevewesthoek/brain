@@ -93,11 +93,14 @@ Brain-owned caller has published Jarvis text against an authoritative K5
 organization final-result reference. It does not expose raw worker results,
 prompts, reasoning, provider payloads, credentials, or evidence bodies.
 
-No production response-generation producer or supported Jarvis TTS backend is
-currently present. Consequently `/agents` remains read-only and does not add
-speech output, playback, or interrupt controls in V0-C. The next prerequisite
-is a canonical Brain-owned Jarvis response-generation/finalization producer;
-TTS/playback follows only after that boundary and a safe provider are accepted.
+V0-C1 now provides the canonical Brain-owned deterministic response-generation
+and finalization producer. It consumes only the bounded Jarvis task-input and
+Jarvis-readable structured-result seams, requires an authoritative successful
+K5 final result, and publishes through the immutable Jarvis response service.
+Consequently `/agents` remains read-only and does not add speech output,
+playback, or interrupt controls. The exact next bounded slice is V0-C2 — Safe
+Jarvis TTS Provider Selection and Interruptible Playback; no speech provider is
+selected or invoked by V0-C1.
 
 ## Agent Mode detail drill-down
 

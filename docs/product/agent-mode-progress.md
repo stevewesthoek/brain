@@ -1364,30 +1364,34 @@ Evidence: `operations/reports/agent-mode-v0-b-push-to-talk-local-stt-evidence-20
 Exact next bounded slice: **V0-C — Jarvis Text-to-Speech Output and Interruptible
 Playback**; do not start it automatically.
 
-## Current V0-C response boundary audit — 2026-09-15
+## Current V0-C1 canonical Jarvis response generation — 2026-09-15
 
-V0-C remains **IN PROGRESS**. The repository has no canonical production Jarvis
-response-generation producer and no supported Jarvis speech backend. V0-A's
-`responseText` is fixture-only; K4/K5 worker and organization results expose
-structured authoritative references, not speech-safe user text. The existing
-Video Orchestrator Polly adapter is narration-specific and is not a Jarvis
-runtime dependency. FluidVoice remains an external retained capability and is
-not modified or invoked.
+V0-C1 is **COMPLETE** for the bounded deterministic response-generation and
+finalization prerequisite. V0-C remains **IN PROGRESS**. The repository has no
+live model or speech path in this slice; V0-A's `responseText` remains
+fixture-only, and the Video Orchestrator Polly adapter remains a separate
+narration surface.
 
-Brain now provides the narrow versioned
-`agent-mode.jarvis-user-response.v1` boundary. It accepts bounded Jarvis-owned
-text only when it references a durable K5 organization final result, derives
-stable response/text/material identities, persists one immutable response per
-root with restart-safe idempotency, and serves it read-only through
-`GET /agent-mode/jarvis/responses/:rootGoalId`. No worker output, prompt,
-reasoning, provider payload, or raw evidence body is copied into the response
-record. Production TTS, playback, and interrupt behavior remain disabled.
+Brain now retains the smallest bounded source material needed for a meaningful
+answer: `agent-mode.jarvis-task-input.v1` stores canonical original intent for
+the root lifecycle, and `agent-mode.jarvis-readable-result.v1` stores explicitly
+Jarvis-readable structured facts linked to the authoritative successful K5
+organization final result. These are not chat history, raw worker output, or a
+second K4 ledger. Facts and evidence references are bounded and linkage is
+validated against the K5 receipt.
 
-Exact next bounded prerequisite: a Brain-owned canonical Jarvis
-response-generation/finalization producer that creates approved user-facing
-text from authoritative Brain facts and publishes through this boundary. After
-that prerequisite, select and implement a supported Jarvis TTS/playback
-adapter. V0 remains **IN PROGRESS**; do not start V0-D automatically.
+`JarvisResponseFinalizer` is the only production user-facing response producer.
+It uses deterministic strategy A over those durable facts, requires completed
+successful K5 state, rejects caller-supplied text/model/provider/speaker
+authority, and publishes only through `JarvisUserResponseService`. The fixture
+answers `Summarize the completed research.` with meaningful research,
+engineering, and audit content rather than IDs or hashes. Replay, concurrency,
+and StateStore reopen produce one immutable response.
+
+No TTS provider, playback, interrupt mutation, model call, provider probe, or
+external effect is introduced. Workers never own speech. Exact next bounded
+task: **V0-C2 — Safe Jarvis TTS Provider Selection and Interruptible Playback**;
+do not start it automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 
