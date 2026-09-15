@@ -177,6 +177,16 @@ registration and activation remain separate explicit future operations, and
 the Console/browser never performs them. Current Office/MacBook topology and
 the `ssh:macbook` BrainNode deployment are not portable package inputs.
 
+### D0-F relocation cutover boundary
+
+D0-F is an isolated offline cutover drill, not a Console control. A closed
+source is exported and verified before a portable target is imported and
+foreground-validated; the source remains inactive throughout. The Console may
+project the target StateStore after activation, but it does not start services,
+perform relocation, signal imported PIDs, reuse stale leases, replay uncertain
+effects, or provide automatic failback. Linux parity remains contract-tested
+metadata unless a real Linux drill is separately performed.
+
 ### D0-E StateStore relocation boundary
 
 D0-E transfers only logical Brain state through the administrative

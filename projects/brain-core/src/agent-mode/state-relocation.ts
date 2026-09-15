@@ -2,10 +2,14 @@ import { createHash } from 'node:crypto';
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { AgentModeSqliteStateStore, type AgentModePortableRecordFamily } from './sqlite-state-store.js';
+import { verifyRuntimePackage } from './runtime-package.js';
+import { verifyInstalledRelease } from './local-install.js';
+import { loadBrainRuntimeConfig, type BrainRuntimeConfigLoadInput } from './portable-runtime-config.js';
 
 export const BRAIN_STATE_SNAPSHOT_SCHEMA_VERSION = 'brain-state-snapshot-v1' as const;
 export const BRAIN_STATE_IMPORT_SCHEMA_VERSION = 'brain-state-import-v1' as const;
 export const BRAIN_RELOCATION_SCHEMA_VERSION = 'brain-control-plane-relocation-v1' as const;
+export const BRAIN_CONTROL_PLANE_CUTOVER_SCHEMA_VERSION = 'brain-control-plane-cutover-v1' as const;
 export const STATE_SNAPSHOT_MAX_FAMILIES = 64;
 export const STATE_SNAPSHOT_MAX_RECORDS = 10_000;
 export const STATE_SNAPSHOT_MAX_RECORD_BYTES = 1_048_576;
@@ -37,6 +41,26 @@ export type RelocationPlan = {
   blockers: readonly ('source_not_quiesced' | 'snapshot_invalid' | 'schema_incompatible' | 'target_not_fresh' | 'package_incompatible' | 'target_config_invalid' | 'required_secret_missing' | 'host_local_authority_unreconciled' | 'uncertain_effect_requires_operator_attention')[];
 };
 
+export type RelocationAuthorityReport = {
+  status: 'classified';
+  attemptsInspected: number;
+  effectsInspected: number;
+  leasesInspected: number;
+  uncertainEffectCount: number;
+  activeRunCount: number;
+  classifications: readonly string[];
+};
+
+export type RelocationReadinessInput = {
+  snapshot: BrainStateSnapshot;
+  sourceStorePath: string;
+  targetPackageRoot: string;
+  targetInstallRoot: string;
+  targetStorePath: string;
+  targetConfig: BrainRuntimeConfigLoadInput;
+  requiredSecretPaths: readonly string[];
+};
+
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') return `{${Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, entry]) => `${JSON.stringify(key)}:${canonical(entry)}`).join(',')}}`;
@@ -55,10 +79,6 @@ function assertBoundedSnapshot(snapshot: BrainStateSnapshot): void {
   }
   if (total > STATE_SNAPSHOT_MAX_RECORDS || Object.keys(snapshot.counts).length !== snapshot.recordFamilies.length || Object.keys(snapshot.hashes).length !== snapshot.recordFamilies.length) throw new Error('snapshot completeness is invalid');
 }
-function snapshotMaterial(snapshot: BrainStateSnapshot): unknown {
-  return { schemaVersion: snapshot.schemaVersion, sourceStoreSchemaVersion: snapshot.sourceStoreSchemaVersion, sourceDomainVersion: snapshot.sourceDomainVersion, mode: snapshot.mode, recordFamilies: snapshot.recordFamilies.map((family) => ({ family: family.family, records: family.records })) };
-}
-
 export function createStateSnapshot(store: AgentModeSqliteStateStore, input: { mode: BrainStateSnapshot['mode']; createdAt: string }): BrainStateSnapshot {
   if (!store.isReadOnly) throw new Error('final relocation export requires an offline read-only store');
   if (!Number.isFinite(Date.parse(input.createdAt))) throw new Error('snapshot timestamp is invalid');
@@ -121,13 +141,51 @@ export function importStateSnapshot(snapshot: BrainStateSnapshot, targetStorePat
   }
 }
 
-export function createRelocationPlan(input: { snapshot: BrainStateSnapshot; targetRuntimePackageId: string; targetInstallId: string; targetStorePath: string; targetConfigValid: boolean; requiredSecretProvisioned: boolean; hostLocalAuthorityReconciled: boolean }): RelocationPlan {
-  const verification = verifyStateSnapshot(input.snapshot);
+export function classifyRelocationAuthority(store: AgentModeSqliteStateStore): RelocationAuthorityReport {
+  const attempts = store.listAttempts().slice(0, 100);
+  const effects = store.listEffects().slice(0, 100);
+  const leases = store.listSpawnRootStates().slice(0, 100);
+  const classifications = attempts.map((attempt) => store.classifyRecovery(attempt.attemptId, '2026-09-16T00:00:00.000Z'));
+  return { status: 'classified', attemptsInspected: attempts.length, effectsInspected: effects.length, leasesInspected: leases.length, uncertainEffectCount: effects.filter((effect) => effect.status === 'uncertain').length + attempts.filter((attempt) => attempt.status === 'uncertain').length, activeRunCount: store.listRuns().filter((run) => run.status !== undefined && ['created', 'active', 'paused'].includes(run.status)).length, classifications };
+}
+
+function targetMatchesSnapshot(snapshot: BrainStateSnapshot, targetStorePath: string): boolean {
+  const target = AgentModeSqliteStateStore.openExisting(targetStorePath);
+  if (!target || target.schemaVersion !== snapshot.sourceStoreSchemaVersion || target.quickIntegrityCheck() !== 'ok') { target?.close(); return false; }
+  try {
+    const families = target.readPortableRecordFamilies(STATE_SNAPSHOT_MAX_RECORDS);
+    return families.length === snapshot.recordFamilies.length && families.every((family) => snapshot.counts[family.family] === family.records.length && snapshot.hashes[family.family] === hash(family.records));
+  } finally { target.close(); }
+}
+
+/** Evidence-backed readiness; caller booleans are deliberately not accepted. */
+export function deriveRelocationReadiness(input: RelocationReadinessInput): { plan: RelocationPlan; authority: RelocationAuthorityReport | null } {
   const blockers: Array<RelocationPlan['blockers'][number]> = [];
-  if (!verification.ok) blockers.push('snapshot_invalid');
-  if (!path.isAbsolute(input.targetStorePath)) blockers.push('target_not_fresh');
-  if (!input.targetConfigValid) blockers.push('target_config_invalid');
-  if (!input.requiredSecretProvisioned) blockers.push('required_secret_missing');
-  if (!input.hostLocalAuthorityReconciled) blockers.push('host_local_authority_unreconciled');
-  return { schemaVersion: BRAIN_RELOCATION_SCHEMA_VERSION, sourceSnapshotId: input.snapshot.snapshotId, sourceStoreSchemaVersion: input.snapshot.sourceStoreSchemaVersion, targetRuntimePackageId: input.targetRuntimePackageId, targetInstallId: input.targetInstallId, targetStorePath: input.targetStorePath, activation: blockers.length === 0 ? 'ready-for-activation' : 'blocked', blockers };
+  const snapshotVerification = verifyStateSnapshot(input.snapshot);
+  if (!snapshotVerification.ok || input.snapshot.mode !== 'relocation-final') blockers.push('snapshot_invalid');
+  const sourceIsQuiesced = path.isAbsolute(input.sourceStorePath) && existsSync(input.sourceStorePath);
+  const source = sourceIsQuiesced ? AgentModeSqliteStateStore.openExisting(input.sourceStorePath) : undefined;
+  if (!source) blockers.push('source_not_quiesced'); else source.close();
+  const packageVerification = verifyRuntimePackage(input.targetPackageRoot);
+  let targetPackageId = 'unverified';
+  if (packageVerification.ok) targetPackageId = packageVerification.packageId; else blockers.push('package_incompatible');
+  const installVerification = verifyInstalledRelease(input.targetInstallRoot);
+  const targetInstallId = installVerification.ok ? installVerification.install.installId : 'unverified';
+  if (!installVerification.ok || installVerification.install.packageId !== targetPackageId) blockers.push('package_incompatible');
+  if (!path.isAbsolute(input.targetStorePath) || !targetMatchesSnapshot(input.snapshot, input.targetStorePath)) blockers.push('target_not_fresh');
+  try {
+    const config = loadBrainRuntimeConfig(input.targetConfig);
+    if (config.stateStore.path !== path.normalize(input.targetStorePath)) blockers.push('target_config_invalid');
+  } catch { blockers.push('target_config_invalid'); }
+  if (input.requiredSecretPaths.length > 16 || input.requiredSecretPaths.some((secretPath) => !path.isAbsolute(secretPath) || !existsSync(secretPath))) blockers.push('required_secret_missing');
+  const target = AgentModeSqliteStateStore.openExisting(input.targetStorePath);
+  const authority = target ? classifyRelocationAuthority(target) : null;
+  target?.close();
+  if (!authority || authority.uncertainEffectCount > 0 || authority.activeRunCount > 0) blockers.push('host_local_authority_unreconciled');
+  return { plan: { schemaVersion: BRAIN_RELOCATION_SCHEMA_VERSION, sourceSnapshotId: input.snapshot.snapshotId, sourceStoreSchemaVersion: input.snapshot.sourceStoreSchemaVersion, targetRuntimePackageId: targetPackageId, targetInstallId, targetStorePath: input.targetStorePath, activation: blockers.length === 0 ? 'ready-for-activation' : 'blocked', blockers: [...new Set(blockers)] }, authority };
+}
+
+/** Compatibility wrapper: untrusted legacy boolean assertions always remain blocked. */
+export function createRelocationPlan(input: { snapshot: BrainStateSnapshot; targetRuntimePackageId: string; targetInstallId: string; targetStorePath: string; targetConfigValid: boolean; requiredSecretProvisioned: boolean; hostLocalAuthorityReconciled: boolean }): RelocationPlan {
+  return { schemaVersion: BRAIN_RELOCATION_SCHEMA_VERSION, sourceSnapshotId: input.snapshot.snapshotId, sourceStoreSchemaVersion: input.snapshot.sourceStoreSchemaVersion, targetRuntimePackageId: input.targetRuntimePackageId, targetInstallId: input.targetInstallId, targetStorePath: input.targetStorePath, activation: 'blocked', blockers: ['source_not_quiesced', 'target_config_invalid', 'required_secret_missing', 'host_local_authority_unreconciled'] };
 }

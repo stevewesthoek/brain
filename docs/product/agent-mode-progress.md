@@ -1533,6 +1533,22 @@ Evidence: `operations/reports/agent-mode-d0-e-state-relocation-evidence-2026-09-
 Exact next bounded task: **D0-F — Control-Plane Relocation Cutover and
 Recovery Drill**; do not start it automatically.
 
+## Current D0-F control-plane cutover — 2026-09-16
+
+D0-F is **COMPLETE** and D0 is **COMPLETE**. An isolated macOS fixture now
+proves the complete offline relocation sequence from quiesced source through
+verified target package/install, fresh StateStore import, evidence-backed
+readiness, foreground Core/Console startup, restart, and semantic
+reconstruction. The source remains inactive; no service manager is invoked and
+no automatic failback exists. Readiness validates actual artifacts/config,
+secret references, imported state, schema compatibility, and bounded
+host-local authority rather than trusting caller booleans. Imported PIDs and
+stale lease authority are not reused; uncertain effects remain blocked from
+replay. Linux parity is contract-tested metadata only, not a live Linux drill.
+
+Evidence: `operations/reports/agent-mode-d0-f-control-plane-cutover-evidence-2026-09-16.md`.
+The next authoritative phase is **H0 — long-duration hardening**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

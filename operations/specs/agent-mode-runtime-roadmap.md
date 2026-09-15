@@ -1948,6 +1948,25 @@ The D0 exit gate is classification **B**: the relocation contract is proven,
 but an isolated local cutover/recovery drill remains. Exact next bounded task:
 **D0-F — Control-Plane Relocation Cutover and Recovery Drill**; do not start it automatically.
 
+### D0-F — Control-Plane Relocation Cutover and Recovery Drill
+
+**Status:** COMPLETE. D0 exit gate PASSED; D0 is COMPLETE.
+
+D0-F proves the bounded offline cutover procedure on isolated fixtures:
+closed/quiesced source, final logical snapshot, verification, portable target
+package/install, fresh import, evidence-backed readiness, foreground target
+startup, semantic validation, clean target restart, and source remaining
+inactive. Readiness derives actual package/install/config/secret/store and
+host-authority evidence; caller-provided booleans cannot authorize activation.
+Imported PIDs are never signalled, stale lease/fence evidence is not reused,
+safe re-admission uses normal K4 recovery with a fresh fence, and uncertain
+effects remain non-replayable. There is no service-manager registration,
+automatic source failback, split-brain mode, live Office cutover, or remote
+deployment.
+
+Evidence: `operations/reports/agent-mode-d0-f-control-plane-cutover-evidence-2026-09-16.md`.
+The next authoritative phase is **Phase H0 — long-duration hardening**; do not start it automatically.
+
 ## Phase H0 — long-duration hardening
 
 **Status:** final soak/release gate; safety and recovery conformance run in every earlier phase

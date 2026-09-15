@@ -1269,6 +1269,29 @@ Evidence: `operations/reports/agent-mode-u0-f-escalations-notifications-evidence
 Exact next bounded slice: **U0-G — Unified Brain Console Phase Exit Audit**; do
 not start it automatically.
 
+## D0-F Control-plane relocation cutover — 2026-09-16
+
+D0-F is **COMPLETE** and D0 is **COMPLETE**. The cutover drill is fixture-only:
+
+```text
+closed source → relocation-final snapshot → verify → portable target install
+→ fresh import → evidence-backed readiness → foreground target Core/Console
+→ semantic validation/restart
+```
+
+Readiness must inspect the verified package and install, current StateStore
+schema and imported records, target runtime config, external fixture secret
+references, source quiescence, and bounded host-local authority. A caller's
+`ready: true` or equivalent booleans are not authority. Source remains down
+while target is validated; no automatic source failback exists. Imported PIDs
+are never signalled, stale leases/fences are not reused, safe work follows
+normal recovery/re-admission, and uncertain effects are never replayed. Service
+manager activation remains separate and is not performed by the drill.
+
+Evidence: `operations/reports/agent-mode-d0-f-control-plane-cutover-evidence-2026-09-16.md`.
+Linux is contract-tested only; the next phase is **H0 — long-duration
+hardening** and must not start automatically.
+
 ## U0-G unified Brain Console phase-exit audit — 2026-09-14
 
 U0-G is **COMPLETE** and the U0 exit gate **PASSED**. U0 is **COMPLETE**;
