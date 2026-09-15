@@ -165,6 +165,18 @@ does not install, start/register services, or deploy; the next bounded task is
 **D0-D — Local macOS/Linux Runtime Installation and Service Packaging
 Contract**.
 
+### D0-D local service packaging boundary
+
+The D0-D local install contract consumes only a verified
+`brain-runtime-package-v1`. Console remains the D0-C standalone-traced
+component and receives no separate npm hydration. Generic user-scoped service
+descriptors reference the installed release, host config, and external secret
+file without embedding values; macOS uses LaunchAgent plist structure and
+Linux uses systemd-user units. Descriptor creation is inert packaging only:
+registration and activation remain separate explicit future operations, and
+the Console/browser never performs them. Current Office/MacBook topology and
+the `ssh:macbook` BrainNode deployment are not portable package inputs.
+
 ## Agent Mode detail drill-down
 
 U0-B adds one canonical detail route:

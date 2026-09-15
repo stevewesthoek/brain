@@ -1495,6 +1495,27 @@ was rewritten.
 Evidence: `operations/reports/agent-mode-d0-c-portable-runtime-packaging-evidence-2026-09-15.md`.
 Exact next bounded task: **D0-D — Local macOS/Linux Runtime Installation and Service Packaging Contract**; do not start it automatically.
 
+## Current D0-D local install and user-service packaging — 2026-09-15
+
+D0-D is **COMPLETE** and D0 remains **IN PROGRESS**. Verified runtime packages
+can now be explicitly applied into versioned release roots with separate
+mutable state, host config, external secret reference, service descriptors,
+and bounded install receipts. Repeated same-package applies converge; unknown
+or conflicting targets and unverified packages are rejected without writes.
+Core hydration is truthfully `npm ci --omit=dev` and may need registry access
+only during a future explicitly authorized live installation. Tests use a fake
+hydrator with zero network.
+
+macOS LaunchAgent and Linux systemd-user descriptors are rendered as generic,
+user-scoped, inert service packages with structured argv, external secret
+references, safe restart policy, and no automatic registration/start. Node is
+an external prerequisite. The current Office deployment, BrainNode instance,
+state, secrets, and service topology remain untouched; this is portable
+user-service packaging, not H0 unattended-release certification.
+
+Evidence: `operations/reports/agent-mode-d0-d-local-install-service-packaging-evidence-2026-09-15.md`.
+Exact next bounded task: **D0-E — StateStore Export/Import and Control-Plane Relocation Contract**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

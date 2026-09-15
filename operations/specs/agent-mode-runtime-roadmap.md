@@ -1779,7 +1779,7 @@ and always-on options**. Do not start D0 automatically.
 
 ## Phase D0 — distribution and always-on options
 
-**Status:** D0-A COMPLETE; D0 remains IN PROGRESS
+**Status:** D0-A COMPLETE; D0-B COMPLETE; D0-C COMPLETE; D0-D COMPLETE; D0 remains IN PROGRESS
 
 - portable configuration profiles separating personal integrations from core;
 - installer/bootstrap for another user;
@@ -1890,6 +1890,42 @@ validation. The exact next bounded task is **D0-D — Local macOS/Linux Runtime
 Installation and Service Packaging Contract**; do not start it automatically.
 
 Evidence: `operations/reports/agent-mode-d0-c-portable-runtime-packaging-evidence-2026-09-15.md`.
+
+### D0-D — Local macOS/Linux Runtime Installation and Service Packaging Contract
+
+**Status:** COMPLETE. D0 remains IN PROGRESS.
+
+D0-D adds `brain-local-install-v1` and `brain-service-package-v1`. An explicit
+local install apply verifies `brain-runtime-package-v1` before copying it into
+a versioned release root, keeps state/config/services separate, preserves an
+existing config, records a bounded non-domain install receipt, and converges
+on repeated installation of the same verified package. Unknown/non-empty
+targets and failed verification fail closed without writes; different package
+content is never merged into an existing target. Core's production dependency
+strategy is explicitly `npm ci --omit=dev` with lockfile enforcement; live
+hydration may require registry access, but D0-D tests use a fake hydrator and
+perform zero network access. Console's standalone-traced closure requires no
+additional hydration.
+
+The service package is host-neutral and user-scoped. macOS renders inert
+LaunchAgent plist descriptors (`com.brain.core`, `com.brain.console`); Linux
+renders inert `systemd --user` units. Both use structured executable/argv,
+target-local config and external mode-protected secret references, bounded
+restart policy, and `activation: not-registered`. No launchctl/systemctl/sudo,
+service registration, service start, OS-user creation, current Office change,
+or Brain lifecycle mutation occurs. Node remains an external validated
+`>=22.5.0` prerequisite; no Node bundle or automatic download is claimed.
+BrainNode remains a generic optional boundary and the existing `ssh:macbook`
+deployment is not reused or encoded.
+
+Temporary macOS/Linux fixtures prove installation, descriptor generation,
+separation, idempotency, cleanup, and security. D0-D provides portable
+user-service packaging, not H0 unattended-release approval. State migration,
+service activation/cutover, and VPS/Tailscale deployment remain later work.
+The exact next bounded task is **D0-E — StateStore Export/Import and
+Control-Plane Relocation Contract**; do not start it automatically.
+
+Evidence: `operations/reports/agent-mode-d0-d-local-install-service-packaging-evidence-2026-09-15.md`.
 
 ## Phase H0 — long-duration hardening
 

@@ -1511,6 +1511,32 @@ are never printed. Optional staging and rollback execution are intentionally
 not implemented. Exact next bounded slice: **D0-C — Portable Runtime Packaging
 Contract**; do not start it automatically.
 
+## D0-D Local Install and User-Service Packaging — 2026-09-15
+
+D0-D is **COMPLETE**; D0 remains **IN PROGRESS**. A verified package may be
+planned or explicitly applied only through the bounded local-install contract:
+
+```bash
+brain-agent local install plan --package /absolute/package --install-root /absolute/target --platform darwin --architecture arm64
+brain-agent local install apply --package /absolute/package --install-root /absolute/target --platform darwin --architecture arm64 --secret-ref config/secrets.env
+```
+
+Apply verifies the package first, writes only a fresh target, creates
+`releases/<package-id>/`, separate `state/`, `config/`, and inert `services/`,
+and records `install.json`. Core hydration is declared as fixed `npm ci
+--omit=dev` metadata but is not run by the plan or tests; live hydration may
+require registry access. Console standalone output needs no extra hydration.
+
+Service descriptors are user-scoped and not registered automatically:
+macOS uses generic LaunchAgent plist files; Linux uses generic systemd-user
+units. Both use structured argv, external secret/config references, and
+bounded on-failure restart metadata. Service-manager shutdown is only process
+termination and does not cancel/kill/replay Brain tasks. Do not run
+`launchctl`, `systemctl`, or `sudo` as part of D0-D. Existing Office/MacBook
+activation packets and `ssh:macbook` are personal deployment material, not
+portable installer inputs. Exact next task: **D0-E — StateStore Export/Import
+and Control-Plane Relocation Contract**; do not start it automatically.
+
 ## D0-C Portable Runtime Packaging — 2026-09-15
 
 D0-C is **COMPLETE**; D0 remains **IN PROGRESS**. Build a package only from
