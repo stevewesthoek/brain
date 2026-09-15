@@ -177,6 +177,16 @@ registration and activation remain separate explicit future operations, and
 the Console/browser never performs them. Current Office/MacBook topology and
 the `ssh:macbook` BrainNode deployment are not portable package inputs.
 
+### D0-E StateStore relocation boundary
+
+D0-E transfers only logical Brain state through the administrative
+`brain-state-snapshot-v1` contract. The source must be offline/quiesced and
+opened read-only; raw SQLite/WAL copying, browser export, remote upload, and
+service activation are not supported. A fresh target imports the bounded,
+deterministically hashed records transactionally and revalidates foreign keys
+before it is considered consumable. The Console remains a projection of the
+target Brain StateStore after activation; it is not involved in relocation.
+
 ## Agent Mode detail drill-down
 
 U0-B adds one canonical detail route:

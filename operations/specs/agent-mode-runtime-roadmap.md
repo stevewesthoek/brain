@@ -1779,7 +1779,7 @@ and always-on options**. Do not start D0 automatically.
 
 ## Phase D0 — distribution and always-on options
 
-**Status:** D0-A COMPLETE; D0-B COMPLETE; D0-C COMPLETE; D0-D COMPLETE; D0 remains IN PROGRESS
+**Status:** D0-A COMPLETE; D0-B COMPLETE; D0-C COMPLETE; D0-D COMPLETE; D0-E COMPLETE; D0 remains IN PROGRESS
 
 - portable configuration profiles separating personal integrations from core;
 - installer/bootstrap for another user;
@@ -1926,6 +1926,27 @@ The exact next bounded task is **D0-E — StateStore Export/Import and
 Control-Plane Relocation Contract**; do not start it automatically.
 
 Evidence: `operations/reports/agent-mode-d0-d-local-install-service-packaging-evidence-2026-09-15.md`.
+
+### D0-E — StateStore Export/Import and Control-Plane Relocation Contract
+
+**Status:** COMPLETE. D0 remains IN PROGRESS.
+
+D0-E establishes the backend-neutral `brain-state-snapshot-v1` logical
+StateStore transfer boundary. Final export is offline/quiesced and read-only;
+raw SQLite/WAL copying is not the public contract. Snapshots are bounded,
+deterministically identified and hashed, owner-only local artifacts that
+preserve domain IDs, event order, exact-once material, review/attention,
+scheduler, Jarvis, and K5 state without exporting credentials. Import targets a
+fresh current-schema StateStore only, uses one transaction and foreign-key
+verification, and performs no service activation, runtime replay, provider
+call, or network transfer. Host-local PIDs, leases/fences, dispatch, and
+UNCERTAIN effects remain evidence requiring existing recovery/reconciliation;
+they are never blindly trusted, reset, or replayed.
+
+Evidence: `operations/reports/agent-mode-d0-e-state-relocation-evidence-2026-09-15.md`.
+The D0 exit gate is classification **B**: the relocation contract is proven,
+but an isolated local cutover/recovery drill remains. Exact next bounded task:
+**D0-F — Control-Plane Relocation Cutover and Recovery Drill**; do not start it automatically.
 
 ## Phase H0 — long-duration hardening
 

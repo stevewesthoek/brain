@@ -1537,6 +1537,28 @@ activation packets and `ssh:macbook` are personal deployment material, not
 portable installer inputs. Exact next task: **D0-E — StateStore Export/Import
 and Control-Plane Relocation Contract**; do not start it automatically.
 
+## D0-E StateStore relocation — 2026-09-15
+
+D0-E is **COMPLETE**; D0 remains **IN PROGRESS**. Use only an explicitly
+closed source StateStore opened read-only:
+
+```bash
+brain-agent state export --store /absolute/closed.db --output /absolute/state.json --mode relocation-final
+brain-agent state verify --snapshot /absolute/state.json
+brain-agent state import --snapshot /absolute/state.json --target-store /absolute/fresh-target.db --expect-snapshot brain-state-snapshot:sha256:...
+```
+
+The snapshot is a bounded logical, backend-neutral artifact. It is not a raw
+SQLite/WAL copy, secret bundle, upload, or service operation. Import requires a
+fresh target and verifies hashes, current schema compatibility, and foreign
+keys atomically. IDs, event order, exact-once state, reviews, scheduler,
+Jarvis, and K5 records remain intact; host-local runtime/lease/PID authority
+and UNCERTAIN effects remain subject to normal reconciliation and are never
+blindly replayed. Export/import are offline administrative operations with no
+network, provider, runtime, service-manager, or live Office effects. Exact
+next task: **D0-F — Control-Plane Relocation Cutover and Recovery Drill**; do
+not start it automatically.
+
 ## D0-C Portable Runtime Packaging — 2026-09-15
 
 D0-C is **COMPLETE**; D0 remains **IN PROGRESS**. Build a package only from

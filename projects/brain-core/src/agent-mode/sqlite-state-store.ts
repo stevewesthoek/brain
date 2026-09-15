@@ -1468,6 +1468,11 @@ export function defaultAgentModeDatabasePath(): string {
   return loadBrainRuntimeConfig().stateStore.path;
 }
 
+export type AgentModePortableRecordFamily = {
+  family: string;
+  records: Array<Record<string, unknown>>;
+};
+
 /**
  * SQLite StateStore for the fixture-backed K0 kernel.
  *
@@ -2545,6 +2550,60 @@ export class AgentModeSqliteStateStore {
   get schemaVersion(): number {
     const row = this.database.prepare('SELECT value FROM store_meta WHERE key = ?').get('schema_version') as { value?: string } | undefined;
     return Number(row?.value ?? 0);
+  }
+
+  get isReadOnly(): boolean {
+    return this.readOnly;
+  }
+
+  /** Infrastructure-only logical row access used by the backend-neutral snapshot adapter. */
+  readPortableRecordFamilies(maxRecords = 10_000): AgentModePortableRecordFamily[] {
+    if (!this.readOnly) throw new Error('portable export requires a read-only, quiesced store');
+    if (!Number.isInteger(maxRecords) || maxRecords < 1 || maxRecords > 10_000) throw new Error('portable export bound is invalid');
+    const tables = (this.database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all() as Array<{ name?: string }>).map((row) => String(row.name)).filter(Boolean);
+    let total = 0;
+    return tables.map((table) => {
+      const columns = (this.database.prepare(`PRAGMA table_info(${JSON.stringify(table)})`).all() as Array<{ name?: string }>).map((column) => String(column.name));
+      const rows = this.database.prepare(`SELECT * FROM ${JSON.stringify(table)} ORDER BY rowid`).all() as Array<Record<string, unknown>>;
+      total += rows.length;
+      if (total > maxRecords) throw new Error('portable export exceeds record bound');
+      return { family: table, records: rows.map((row) => Object.fromEntries(columns.map((column) => [column, row[column]]))) };
+    });
+  }
+
+  /** Infrastructure-only logical row import; callers must validate the snapshot before invoking it. */
+  importPortableRecordFamilies(families: readonly AgentModePortableRecordFamily[]): void {
+    if (this.readOnly) throw new Error('portable import requires a writable fresh store');
+    this.withTransaction(() => {
+      const pending = new Map(families.map((family) => [family.family, family]));
+      const ordered: AgentModePortableRecordFamily[] = [];
+      while (pending.size > 0) {
+        let progressed = false;
+        for (const [name, family] of pending) {
+          const dependencies = (this.database.prepare(`PRAGMA foreign_key_list(${JSON.stringify(name)})`).all() as Array<{ table?: string }>).map((row) => String(row.table));
+          if (dependencies.every((dependency) => !pending.has(dependency))) {
+            ordered.push(family); pending.delete(name); progressed = true;
+          }
+        }
+        if (!progressed) throw new Error('portable import dependency cycle');
+      }
+      for (const family of ordered) {
+        if (!/^[A-Za-z0-9_]{1,96}$/u.test(family.family) || !this.tableExists(family.family)) throw new Error(`unknown portable record family: ${family.family}`);
+        for (const row of family.records) {
+          const columns = Object.keys(row).sort();
+          if (columns.length === 0) continue;
+          const placeholders = columns.map(() => '?').join(',');
+          const verb = family.family === 'store_meta' ? 'INSERT OR REPLACE' : 'INSERT';
+          this.database.prepare(`${verb} INTO ${JSON.stringify(family.family)} (${columns.map((column) => JSON.stringify(column)).join(',')}) VALUES (${placeholders})`).run(...columns.map((column) => row[column] as string | number | bigint | null | Uint8Array));
+        }
+      }
+      const foreignKeys = this.database.prepare('PRAGMA foreign_key_check').all() as Array<Record<string, unknown>>;
+      if (foreignKeys.length > 0) throw new Error('portable import foreign-key check failed');
+    });
+  }
+
+  quickIntegrityCheck(): string {
+    return String((this.database.prepare('PRAGMA quick_check').get() as { quick_check?: string } | undefined)?.quick_check ?? 'unknown');
   }
 
   withTransaction<T>(callback: () => T): T {

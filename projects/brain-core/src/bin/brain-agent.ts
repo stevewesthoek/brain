@@ -15,6 +15,7 @@ import { loadBrainRuntimeConfig, safeBrainRuntimeConfigView } from '../agent-mod
 import { bootstrapPlanJson, createBrainBootstrapPlan } from '../agent-mode/bootstrap-plan.js';
 import { buildRuntimePackage, verifyRuntimePackage } from '../agent-mode/runtime-package.js';
 import { createLocalInstallPlan, installRuntimePackage, readRuntimePackageManifest } from '../agent-mode/local-install.js';
+import { createStateSnapshot, importStateSnapshot, readStateSnapshot, verifyStateSnapshot, writeStateSnapshot } from '../agent-mode/state-relocation.js';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://127.0.0.1:4877';
 
@@ -35,7 +36,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build --output PATH --release-revision REV [--source-root PATH] | brain-agent package verify --root PATH | brain-agent local install plan|apply --package PATH --install-root PATH --platform darwin|linux --architecture arm64|x64 [--secret-ref PATH] [--node-executable PATH] | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once [--source-type git.repository.revision --source-id ID --repository-ref REF --repository-root PATH | --source-type brain.task.lifecycle | --source-type infrastructure.host-health] [--debounce-ms N] [--cooldown-ms N] [--catch-up-limit N] | brain-agent run [--model auto|minimax-m2.5|glm-5|opus-4.6] [--task TEXT] | brain-agent inspect|pause|resume|cancel|kill RUN_ID [--operation-id ID] [--reason TEXT] | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build --output PATH --release-revision REV [--source-root PATH] | brain-agent package verify --root PATH | brain-agent state export|verify|import ... | brain-agent local install plan|apply --package PATH --install-root PATH --platform darwin|linux --architecture arm64|x64 [--secret-ref PATH] [--node-executable PATH] | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once ... | brain-agent run ... | brain-agent inspect|pause|resume|cancel|kill RUN_ID ... | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -121,6 +122,31 @@ async function main(): Promise<void> {
     usage();
     process.exitCode = 1;
     return;
+  }
+
+  if (command === 'state') {
+    const action = process.argv[3];
+    if (action === 'verify') {
+      const result = verifyStateSnapshot(JSON.parse(readFileSync(requiredFlag('--snapshot'), 'utf8')));
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      if (!result.ok) process.exitCode = 1;
+      return;
+    }
+    if (action === 'export') {
+      const sourcePath = requiredFlag('--store'); const outputPath = requiredFlag('--output');
+      const source = AgentModeSqliteStateStore.openExisting(sourcePath);
+      if (!source) throw new Error('state export requires an existing closed source store');
+      try {
+        const snapshot = createStateSnapshot(source, { mode: (flag('--mode') as 'relocation-final' | 'backup/logical-fixture' | undefined) ?? 'relocation-final', createdAt: new Date().toISOString() });
+        writeStateSnapshot(snapshot, outputPath); process.stdout.write(`${JSON.stringify({ ok: true, snapshotId: snapshot.snapshotId, outputPath }, null, 2)}\n`);
+      } finally { source.close(); }
+      return;
+    }
+    if (action === 'import') {
+      const snapshot = readStateSnapshot(requiredFlag('--snapshot')); const result = importStateSnapshot(snapshot, requiredFlag('--target-store'), requiredFlag('--expect-snapshot'));
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`); if (!result.ok) process.exitCode = 1; return;
+    }
+    usage(); process.exitCode = 1; return;
   }
 
   if (command === 'local' && process.argv[3] === 'install') {

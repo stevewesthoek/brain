@@ -1516,6 +1516,23 @@ user-service packaging, not H0 unattended-release certification.
 Evidence: `operations/reports/agent-mode-d0-d-local-install-service-packaging-evidence-2026-09-15.md`.
 Exact next bounded task: **D0-E — StateStore Export/Import and Control-Plane Relocation Contract**; do not start it automatically.
 
+## Current D0-E StateStore relocation — 2026-09-15
+
+D0-E is **COMPLETE** and D0 remains **IN PROGRESS**. Brain now has a bounded
+`brain-state-snapshot-v1` logical export/import contract for a later offline
+control-plane move. Final export requires a closed source and read-only
+StateStore access; import creates only a fresh current-schema target and
+validates hashes and foreign keys transactionally. Domain identities, event
+order, exact-once material, reviews, scheduler, Jarvis, and K5 state are
+preserved. SQLite pages/WAL files, secrets, install/config metadata, uploads,
+service activation, and live migration are outside the contract. Host-local
+runtime/PID/lease authority and uncertain effects remain visible evidence for
+normal recovery reconciliation and are never blindly reused or replayed.
+
+Evidence: `operations/reports/agent-mode-d0-e-state-relocation-evidence-2026-09-15.md`.
+Exact next bounded task: **D0-F — Control-Plane Relocation Cutover and
+Recovery Drill**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not
