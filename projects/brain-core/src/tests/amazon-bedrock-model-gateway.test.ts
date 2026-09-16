@@ -160,3 +160,22 @@ test('classifies timeout, throttling, unavailable, and provider failures', async
     await assert.rejects(gatewayInstance.invoke(request('agent-mode/glm-5')), (error: unknown) => error instanceof ModelGatewayError && error.code === code);
   }
 });
+
+test('fixture provider outage blocks one request and a later eligible request recovers without fallback', async () => {
+  let available = false;
+  let calls = 0;
+  const gatewayInstance = gateway({ converse: async () => {
+    calls += 1;
+    if (!available) throw { name: 'ServiceUnavailableException' };
+    return { output: { message: { content: [{ text: 'fixture recovery' }] } } };
+  } });
+  await assert.rejects(
+    gatewayInstance.invoke(request('agent-mode/glm-5', { operationId: 'operation:outage', attemptId: 'attempt:outage' })),
+    (error: unknown) => error instanceof ModelGatewayError && error.code === 'model_unavailable',
+  );
+  available = true;
+  const recovered = await gatewayInstance.invoke(request('agent-mode/glm-5', { operationId: 'operation:recovered', attemptId: 'attempt:recovered' }));
+  assert.equal(recovered.text, 'fixture recovery');
+  assert.equal(recovered.providerId, 'amazon-bedrock');
+  assert.equal(calls, 2);
+});

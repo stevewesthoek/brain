@@ -1549,6 +1549,26 @@ replay. Linux parity is contract-tested metadata only, not a live Linux drill.
 Evidence: `operations/reports/agent-mode-d0-f-control-plane-cutover-evidence-2026-09-16.md`.
 The next authoritative phase is **H0 — long-duration hardening**; do not start it automatically.
 
+## Current H0-A deterministic hardening harness — 2026-09-16
+
+H0-A — **Deterministic Fault-Injection Matrix and Soak Harness Foundation** —
+is **COMPLETE** as a test-only foundation. D0 remains **COMPLETE**. The
+Brain Core test fixtures now have a strict versioned scenario/result contract,
+closed fault/action vocabulary, injected monotonic logical time, hard scenario
+bounds, deterministic fault order, bounded evidence references, and read-only
+safety/liveness/audit monitors. Existing K4/K5, ModelGateway, NodeTransport,
+restricted Harness, scheduler, StateStore, and relocation fixtures are reused;
+the harness adds no production fault endpoint and no second control plane.
+
+The release gate remains deliberately **INCOMPLETE**: accelerated fixture time
+does not prove a wall-clock soak. Live provider acceptance and the dedicated
+security release review are also not claimed. H0 remains **IN PROGRESS**.
+Controlled write-capability expansion remains separately approval-gated.
+
+Evidence: `operations/reports/agent-mode-h0-a-hardening-harness-evidence-2026-09-16.md`.
+Exact next task: **H0-B — Multi-Hour Isolated Autonomous Soak and
+Resource-Stability Acceptance**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

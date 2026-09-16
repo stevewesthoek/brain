@@ -1969,7 +1969,7 @@ The next authoritative phase is **Phase H0 — long-duration hardening**; do not
 
 ## Phase H0 — long-duration hardening
 
-**Status:** final soak/release gate; safety and recovery conformance run in every earlier phase
+**Status:** IN PROGRESS; final soak/release gate. D0 remains COMPLETE and is not reopened by H0.
 
 The relevant H0 soak/security gates must pass before broader unattended or
 distributed release, even when D0 packaging work is developed earlier.
@@ -1984,6 +1984,29 @@ new write capability requires exact scope, lease, policy, expiry, rollback,
 verification, evidence, and kill switch. Production, credential-sensitive,
 financial, deployment, and destructive actions remain outside this roadmap until
 separately authorized.
+
+### H0-A — Deterministic Fault-Injection Matrix and Soak Harness Foundation
+
+**Status:** COMPLETE for the deterministic, isolated fixture harness only.
+
+H0-A introduces test-only versioned scenario/result contracts, a closed action
+vocabulary, monotonic logical clock, bounded deterministic runner, safety and
+liveness monitors, and a gate that refuses to infer PASS from missing coverage.
+The fault inventory reuses existing Brain fixtures for provider failures,
+budget/quota admission, crash/recovery, fencing, duplicate delivery, host/node
+reconnect, spawn policy, restricted Harness denial, corruption rejection, and
+D0 restart/cutover. The matrix distinguishes existing fixture evidence from
+remaining composed coverage and later live acceptance. No production chaos
+endpoint, alternate scheduler, recovery policy, or StateStore was added.
+
+Accelerated fixture time is not wall-clock runtime. H0 remains **IN PROGRESS**;
+multi-hour wall-clock soak and security release review remain **NOT RUN** and
+the H0 gate is **INCOMPLETE** until their explicit evidence is present. No live
+provider or Office state is used by H0-A. Exact evidence:
+`operations/reports/agent-mode-h0-a-hardening-harness-evidence-2026-09-16.md`.
+
+Exact next bounded task: **H0-B — Multi-Hour Isolated Autonomous Soak and
+Resource-Stability Acceptance**. Do not start it automatically.
 
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 

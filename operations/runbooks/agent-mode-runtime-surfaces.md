@@ -1603,3 +1603,32 @@ paths. It is safe to run from any cwd and makes no network/provider/service
 call. Package build writes only to a fresh explicit target and does not install,
 activate, or register it. Exact next task: **D0-D — Local macOS/Linux Runtime
 Installation and Service Packaging Contract**; do not start it automatically.
+
+## H0-A Deterministic hardening harness — 2026-09-16
+
+H0-A is **COMPLETE** as a test-only harness foundation; H0 remains
+**IN PROGRESS** and D0 remains **COMPLETE**. Run the fixture suite with the
+Brain Core tests. Scenario IDs, action names, time, counts, and evidence refs
+are closed/bounded by `agent-mode.hardening-scenario.v1` and
+`agent-mode.hardening-result.v1`. Its fixture action adapter is injected by
+tests only; no production route or CLI accepts fault commands. Logical time
+advances monotonically without sleeping or patching global `Date`.
+
+The runner observes existing Brain fixtures and never substitutes a scheduler,
+recovery classifier, budget/fence authority, Task ledger, or provider gateway.
+Safety checks (exact-once, uncertainty replay, budget, fence, capability,
+terminal-state and secret projection) are distinct from bounded liveness and
+audit completeness. Fault matrices point to existing implementation tests and
+list composed coverage still missing. D0-F export/import/restart tests remain
+unchanged.
+
+Fixture-only acceptance uses no live Bedrock/Codex/provider call, remote node,
+Office Store, service-manager mutation, or network. H0-A's accelerated schedule
+is **not** a multi-hour soak and cannot close H0. The gate returns INCOMPLETE
+until every required class has evidence plus wall-clock soak and security
+release review. Controlled write capability expansion remains approval-gated.
+
+Exact next task: **H0-B — Multi-Hour Isolated Autonomous Soak and
+Resource-Stability Acceptance**. Select/confirm workload and resource
+thresholds against a measured isolated-process baseline before the run; do not
+start it automatically.

@@ -533,3 +533,14 @@ capture in memory, shows a bounded transcript review, and requires explicit
 Submit. It has no voice lifecycle controls, wake word, browser authority, or
 raw transcript persistence. V0-B is read/submit ingress only; TTS and
 interruptible playback are the next V0 slice.
+
+## H0-A hardening harness boundary
+
+H0-A adds a Brain Core **test-fixture-only** deterministic hardening harness.
+It is not a Console feature, API, persisted projection, or browser control.
+The closed scenario/result contracts, injected logical clock, and fault action
+adapter run only from fixture tests against existing Brain components. No
+browser can inject faults; Console reads do not participate in H0 execution.
+The accelerated fixture gate deliberately remains INCOMPLETE without later
+wall-clock soak and security-review evidence. D0 remains COMPLETE and H0
+remains IN PROGRESS.
