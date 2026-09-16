@@ -74,13 +74,20 @@ commands. It is not the generic DNS/account interface; use `cloudflare-api` or
 the guarded account wrappers for zones and DNS. The unified `cf` CLI remains a
 technical preview and is not canonicalized by Brain.
 
-## OfficeMac Workbench tunnel
+## OfficeMac Mastermind tunnel
 
 The owner-local OfficeMac tunnel is
-1b1fa7bf-a00f-4f1a-86bb-faecac746051. Its Workbench route is intentionally
-narrow:
+1b1fa7bf-a00f-4f1a-86bb-faecac746051. The final canonical Mastermind hostname
+is `mastermind.prochat.tools`; `workbench.prochat.tools` is retained as a
+temporary compatibility hostname. Both hostnames currently route through this
+same tunnel to the same native ingress:
 
-    workbench.prochat.tools -> http://127.0.0.1:3154
+    mastermind.prochat.tools -> http://127.0.0.1:3154
+    workbench.prochat.tools  -> http://127.0.0.1:3154
+
+Both public `/health` endpoints were verified against the native runtime on
+2026-09-16. Do not remove the legacy hostname until protocol/client migration
+is complete and post-cutover validation succeeds.
 
 As of 2026-08-22, cloudflared is 2026.8.2 and the local configuration
 explicitly uses protocol: http2. This is a reversible transport mitigation
@@ -96,6 +103,7 @@ the Workbench origin, expose port 3154 publicly, or use compatibility ports
 
     launchctl print gui/502/com.cloudflare.cloudflared
     curl http://127.0.0.1:20241/metrics
+    curl https://mastermind.prochat.tools/health
     curl https://workbench.prochat.tools/health
     curl http://127.0.0.1:3154/health
 
