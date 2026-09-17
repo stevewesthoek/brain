@@ -1632,3 +1632,37 @@ Exact next task: **H0-B — Multi-Hour Isolated Autonomous Soak and
 Resource-Stability Acceptance**. Select/confirm workload and resource
 thresholds against a measured isolated-process baseline before the run; do not
 start it automatically.
+
+## H0-B isolated wall-clock soak boundary — 2026-09-17
+
+H0-B is **COMPLETE** for the explicit isolated acceptance and H0 remains
+**IN PROGRESS**. Run only the bounded `brain-core` `test:h0-soak` command with
+an explicit preflight manifest. The preflight is 30 one-minute cycles and the
+acceptance is six real hours / 360 one-minute cycles. Thresholds are frozen from
+the full preflight sample maximum with explicit RSS/heap headroom; active
+resources, latency/drift, event/audit/evidence counts, missed cycles, and main
+SQLite-file size are bounded. Main SQLite, WAL, and SHM sizes must be recorded
+separately because checkpoints can relocate a bounded WAL batch into the main
+file. The final acceptance must still enforce the absolute main-file ceiling.
+
+The controller owns a fresh temporary HOME/TMPDIR/SQLite path and a single
+foreground IPC child. It must not inherit credentials, use detached processes,
+start launchd/systemd, touch Office state, or use live network/provider/node
+surfaces. Its fault schedule is fixed at 30-minute boundaries and includes
+duplicate delivery, provider outage recovery through an injected transport,
+stale fencing, fixture node reconnect, process restart, stuck-child TTL expiry,
+spawn denial, sandbox/capability denial, corrupted-state rejection, and
+StateStore reopen. Restart events are bounded to the two-hour boundaries plus
+one final clean reconstruction. Existing K4 scheduler, reservation,
+lease/fence, node, restricted-profile, and MockAgentRuntime fixtures remain
+authoritative; this soak does not add a result ledger or execution control
+plane.
+
+The 2026-09-17 acceptance passed `21,600,004.877417 ms`, `360/360` cycles,
+zero missed cycles, twelve verified fault points, zero threshold/invariant
+failures, zero active children, zero FK violations, and zero budget
+used/reserved. Evidence:
+`operations/reports/agent-mode-h0-b-wall-clock-soak-evidence-2026-09-17.md`.
+This does not close live-provider, unattended Office, or security-release
+gates. Exact next task: **H0-C — Security Release Review and Live Acceptance
+Audit**; do not start it automatically.

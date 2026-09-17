@@ -2008,6 +2008,41 @@ provider or Office state is used by H0-A. Exact evidence:
 Exact next bounded task: **H0-B — Multi-Hour Isolated Autonomous Soak and
 Resource-Stability Acceptance**. Do not start it automatically.
 
+### H0-B — Multi-Hour Isolated Autonomous Soak and Resource-Stability Acceptance
+
+**Status:** COMPLETE for the isolated six-hour wall-clock acceptance. H0 remains
+**IN PROGRESS** and its release gate remains **INCOMPLETE**; live provider
+acceptance and the dedicated security release review are not claimed.
+
+H0-B runs only as an explicit test command against a fresh temporary HOME,
+TMPDIR, SQLite StateStore, and session-owned foreground fixture worker. It uses
+the existing K4 scheduler, StateStore, reservation, lease/fence, node,
+restricted-profile, and MockAgentRuntime fixtures. It does not add a production
+fault endpoint, alternate control plane, daemon, provider probe, or live
+runtime path. The final measured preflight passed 30/30 one-minute cycles and
+froze full-sample resource ceilings with explicit headroom. The definitive
+acceptance then passed `21,600,004.877417 ms` monotonic elapsed time, `360/360`
+cycles, zero missed cycles, twelve verified half-hour fault points, two
+scheduled two-hour process restarts plus a final clean reconstruction, zero
+threshold failures, and zero invariant failures. SQLite main-file, WAL, and
+SHM telemetry are recorded separately so normal WAL checkpoint relocation does
+not become a false leak signal; the bounded main-file ceiling remains enforced.
+
+The fixture retained one completed K4 lifecycle and one expired stuck-child
+fixture for durable reconciliation checks. Final integrity was one Task, one
+Run, one Attempt, one receipt, one evidence ref, zero active children, zero
+foreign-key violations, zero reserved/used fixture budget, and no runtime
+replay. No live Bedrock/Codex/MiniMax/GLM/Opus call, Harness, BrainNode,
+Workcell, SSH/Tailscale, Office StateStore, network, service-manager, or
+production repository effect occurred. H0-B is not evidence for live or
+security release readiness.
+
+Evidence:
+`operations/reports/agent-mode-h0-b-wall-clock-soak-evidence-2026-09-17.md`.
+
+Exact next bounded task: **H0-C — Security Release Review and Live Acceptance
+Audit**. Do not start it automatically.
+
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 
 **Status:** complete for the 2026-09-09 audit; K4 remains not started

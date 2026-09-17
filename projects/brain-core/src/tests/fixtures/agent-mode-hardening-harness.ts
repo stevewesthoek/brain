@@ -347,13 +347,13 @@ export function validateHardeningResult(value: unknown): HardeningResultV1 {
   return value as HardeningResultV1;
 }
 
-export type HardeningCoverageStatus = 'fixture_pass' | 'live_pass' | 'not_run' | 'blocked' | 'failed';
+export type HardeningCoverageStatus = 'fixture_pass' | 'wall_clock_pass' | 'live_pass' | 'not_run' | 'blocked' | 'failed';
 export interface HardeningCoverageEntry { readonly faultClass: HardeningFaultClass; readonly status: HardeningCoverageStatus; readonly evidence: readonly string[]; }
 export interface HardeningGateResult { readonly schemaVersion: typeof HARDENING_GATE_SCHEMA; readonly status: 'PASS' | 'FAIL' | 'INCOMPLETE'; readonly missing: readonly string[]; }
 
 export function evaluateHardeningGate(entries: readonly HardeningCoverageEntry[], options: { readonly wallClockSoak: HardeningCoverageStatus; readonly securityReview: HardeningCoverageStatus }): HardeningGateResult {
   const missing: string[] = [];
-  const allowedStatuses = new Set<HardeningCoverageStatus>(['fixture_pass', 'live_pass', 'not_run', 'blocked', 'failed']);
+  const allowedStatuses = new Set<HardeningCoverageStatus>(['fixture_pass', 'wall_clock_pass', 'live_pass', 'not_run', 'blocked', 'failed']);
   if (!Array.isArray(entries) || !allowedStatuses.has(options.wallClockSoak) || !allowedStatuses.has(options.securityReview)) return { schemaVersion: HARDENING_GATE_SCHEMA, status: 'FAIL', missing: ['invalid_gate_input'] };
   if (entries.some((entry) => !entry || !faultSet.has(entry.faultClass) || !allowedStatuses.has(entry.status) || !Array.isArray(entry.evidence) || entry.evidence.some((ref: unknown) => !isSafeEvidenceRef(ref)))) return { schemaVersion: HARDENING_GATE_SCHEMA, status: 'FAIL', missing: ['invalid_gate_entry'] };
   for (const faultClass of HARDENING_FAULT_CLASSES) {
@@ -362,7 +362,7 @@ export function evaluateHardeningGate(entries: readonly HardeningCoverageEntry[]
     if (matching.length !== 1 || !matching[0]?.evidence.length || matching[0]?.status === 'not_run' || matching[0]?.status === 'blocked') missing.push(`scenario:${faultClass}`);
     else if (HARDENING_COVERAGE_MATRIX.find((entry) => entry.faultClass === faultClass)?.liveAcceptanceRequired && matching[0]?.status !== 'live_pass') missing.push(`live_acceptance:${faultClass}`);
   }
-  if (options.wallClockSoak !== 'live_pass') missing.push('wall_clock_soak');
+  if (options.wallClockSoak !== 'wall_clock_pass' && options.wallClockSoak !== 'live_pass') missing.push('wall_clock_soak');
   if (options.securityReview !== 'live_pass') missing.push('security_release_review');
   return { schemaVersion: HARDENING_GATE_SCHEMA, status: missing.length ? 'INCOMPLETE' : 'PASS', missing: missing.sort() };
 }

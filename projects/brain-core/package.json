@@ -27,6 +27,7 @@
     "test": "npm run build && node --test dist/tests/*.test.js",
     "test:infrastructure-unified-endpoints": "tsx --test src/tests/infrastructure-unified-endpoints.test.ts",
     "test:clr3-decision-runtime": "node --test src/tests/infinite-brain-decision-runtime.test.mjs",
+    "test:h0-soak": "npm run build && node dist/tests/agent-mode-hardening-wall-clock-soak.js",
     "test:vo-studio-write": "tsx --test src/tests/vo-studio-write.test.ts",
     "test:metadata-approval": "tsx --test --test-name-pattern=approveMetadataRequest src/tests/vo-studio-write.test.ts",
     "test:youtube-package-publish": "tsx --test --test-name-pattern=publishPackageRequest src/tests/vo-studio-write.test.ts",

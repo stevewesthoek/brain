@@ -223,6 +223,10 @@ test('H0 fault inventory is complete and fixture coverage cannot close the relea
   assert.ok(gate.missing.includes('wall_clock_soak'));
   assert.ok(gate.missing.includes('live_acceptance:host_loss_reconnect'));
   assert.ok(gate.missing.includes('live_acceptance:security'));
+  const isolatedWallClock = evaluateHardeningGate(entries, { wallClockSoak: 'wall_clock_pass', securityReview: 'not_run' });
+  assert.equal(isolatedWallClock.status, 'INCOMPLETE');
+  assert.ok(!isolatedWallClock.missing.includes('wall_clock_soak'));
+  assert.ok(isolatedWallClock.missing.includes('security_release_review'));
   const missing = evaluateHardeningGate(entries.slice(1), { wallClockSoak: 'not_run', securityReview: 'not_run' });
   assert.equal(missing.status, 'INCOMPLETE');
   assert.ok(missing.missing.includes('scenario:provider_outage'));

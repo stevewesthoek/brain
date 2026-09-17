@@ -2606,6 +2606,11 @@ export class AgentModeSqliteStateStore {
     return String((this.database.prepare('PRAGMA quick_check').get() as { quick_check?: string } | undefined)?.quick_check ?? 'unknown');
   }
 
+  /** Read-only integrity adjunct for isolated operational acceptance fixtures. */
+  foreignKeyViolationCount(): number {
+    return this.database.prepare('PRAGMA foreign_key_check').all().length;
+  }
+
   withTransaction<T>(callback: () => T): T {
     if (this.transactionDepth > 0) return callback();
     this.database.exec('BEGIN IMMEDIATE;');

@@ -1569,6 +1569,38 @@ Evidence: `operations/reports/agent-mode-h0-a-hardening-harness-evidence-2026-09
 Exact next task: **H0-B — Multi-Hour Isolated Autonomous Soak and
 Resource-Stability Acceptance**; do not start it automatically.
 
+## Current H0-B six-hour wall-clock acceptance — 2026-09-17
+
+H0-B — **Multi-Hour Isolated Autonomous Soak and Resource-Stability
+Acceptance** — is **COMPLETE** for the isolated test-only gate. H0 remains
+**IN PROGRESS** and the H0 release gate remains **INCOMPLETE**. A measured
+30-minute preflight froze bounded resource thresholds, followed by a genuine
+`21,600,004.877417 ms` monotonic acceptance with `360/360` completed cycles,
+zero missed cycles, twelve fixed and verified fault windows, two scheduled
+process restarts, and one final clean reconstruction. All threshold and
+invariant checks passed.
+
+The workload stays above the existing K4 control plane: it reuses durable
+StateStore/scheduler/reservation/lease/fence/node/restricted-profile fixtures
+and one MockAgentRuntime lifecycle. It does not launch a production daemon or
+provider. Final reconstruction retained one completed fixture lifecycle and
+one expired stuck-child fixture, with one Task/Run/Attempt, one receipt, one
+evidence reference, zero active children, zero FK violations, and zero budget
+used/reserved. No live model/provider, Harness, BrainNode, Workcell, network,
+SSH/Tailscale, Office state, service-manager, or production repository effect
+occurred. SQLite main, WAL, and SHM telemetry were tracked separately, with a
+frozen bounded main-file ceiling for checkpoint-aware stability measurement.
+
+The earlier calibration failures (checkpoint growth, warm-half RSS startup
+headroom, and a future-event post-restart probe) are retained in the evidence
+trail; the final fresh preflight and six-hour run passed after narrow repairs.
+Evidence:
+`operations/reports/agent-mode-h0-b-wall-clock-soak-evidence-2026-09-17.md`.
+
+The live-provider and dedicated security-review gates remain outstanding. Exact
+next bounded task: **H0-C — Security Release Review and Live Acceptance Audit**;
+do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not
