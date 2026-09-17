@@ -1672,6 +1672,28 @@ denial topology or a formal review of the live-required classification for
 capabilities absent from Brain's production composition, plus authorization of
 the existing disposable provider/remote-node packets.
 
+## Current H0-F absent-capability gate classification — 2026-09-17
+
+H0-F — **Absent-Capability Security Gate Classification Review** — is
+**COMPLETE**. H0 remains **IN PROGRESS** and its release gate remains
+**INCOMPLETE**. The exact pinned Harness SDK was reviewed directly. Its
+registry/`UNKNOWN_TOOL`, reserved `run_code` PTC transport, code runtime, and
+terminal/filesystem/subprocess package surfaces are real SDK capabilities, but
+the Brain production restricted composition does not inject or expose them.
+
+The hardening matrix therefore uses an explicit `acceptanceRequirement`:
+`sandbox_denial` and `tool_denial` are `STRUCTURAL_ABSENCE` classes and require
+machine-checked `structural_pass` evidence. They are not marked `live_pass`.
+The historical H0-C `liveAcceptanceRequired` flags remain unchanged for audit
+continuity; the explicit requirement is the current gate authority. Future
+production capability, Harness pin, or composition changes invalidate the
+structural evidence. Provider outage and remote-host loss remain blocked
+external-sensitive live prerequisites. Evidence:
+`operations/reports/agent-mode-h0-f-absent-capability-gate-review-evidence-2026-09-17.md`.
+
+Exact next prerequisite: authorize the bounded disposable provider and
+remote-node packets; do not start automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

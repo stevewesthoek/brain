@@ -2136,6 +2136,38 @@ for capabilities absent from Brain's production composition; separately
 authorize the existing H0-D disposable provider and remote-node packets. Do
 not start automatically.
 
+### H0-F — Absent-Capability Security Gate Classification Review
+
+**Status:** COMPLETE; H0 remains **IN PROGRESS** and its release gate remains
+**INCOMPLETE**.
+
+H0-F reviewed whether `sandbox_denial` and `tool_denial` can be accepted from
+structural absence in the current Brain production composition. The exact
+pinned DeepSeek Harness SDK (`c389f96bf3a9b6807cb71ed6bdad5849be0df6d8`,
+`0.1.3-alpha.2`) contains a tool registry, reserved `run_code` PTC transport,
+code-runtime support, and test-surface terminal/filesystem/subprocess paths.
+Brain's production restricted profile does not inject those surfaces: it uses
+an explicit patch list, an empty runtime tool allowlist, an explicit complete
+child environment, and a fixture-only LLM bridge. The tool and sandbox attack
+graphs therefore terminate at structural absence/unreachability in production;
+they are not relabeled as `live_pass`.
+
+The hardening matrix now has an explicit `acceptanceRequirement` separate from
+the historical H0-C `liveAcceptanceRequired` review dimension. Both absent
+capability classes require `structural_pass` plus bounded structural evidence.
+Missing structural evidence, fixture evidence, or `live_pass` alone remains
+incomplete. Any future production tool/sandbox authority, pinned Harness
+change, or production composition/injection change invalidates this evidence
+and reopens the relevant live/structural review. Provider outage and remote
+host loss remain the only external-sensitive blockers; this review did not
+contact either resource or any network/provider/runtime boundary.
+
+Evidence:
+`operations/reports/agent-mode-h0-f-absent-capability-gate-review-evidence-2026-09-17.md`.
+
+Exact next prerequisite: separately authorize the existing disposable
+provider-outage and remote-BrainNode packets; do not start automatically.
+
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 
 **Status:** complete for the 2026-09-09 audit; K4 remains not started

@@ -1752,3 +1752,28 @@ composition boundary, and zero authority widening. Existing D2 tests prove
 separate child identity, explicit environment, bounded protocol, and reaping;
 H0-E itself launches no denial child. Evidence:
 `operations/reports/agent-mode-h0-e-restricted-harness-live-denial-evidence-2026-09-17.md`.
+
+## H0-F absent-capability gate classification — 2026-09-17
+
+H0-F is **COMPLETE**; H0 remains **IN PROGRESS**. The exact pinned DeepSeek
+Harness SDK is audited by revision, not generic documentation. It contains a
+tool registry, reserved `run_code` PTC/code-runtime surfaces, and upstream
+terminal/filesystem/subprocess capability packages. Brain's production
+restricted adapter uses only the explicitly generated LLM fixture patch,
+passes `allowedToolNames: []`, disables unsafe service rows, validates the
+pinned root/version, and supplies an explicit child environment. It does not
+register tools, expose a sandbox API, discover plugins dynamically, or pass
+caller-selected capability lists.
+
+The H0 hardening matrix distinguishes `RUNTIME_DENIAL`,
+`STRUCTURAL_ABSENCE`, `POLICY_DENIAL`, and `NOT_APPLICABLE`. `sandbox_denial`
+and `tool_denial` now require explicit bounded `structural_pass` evidence;
+fixture evidence and `live_pass` alone do not satisfy that requirement. The
+evidence is invalidated by any production tool/sandbox authority, Harness pin
+change, or production composition/injection change. Provider outage and
+remote-host loss remain separately authorized live packets and are not run by
+this review. See:
+`operations/reports/agent-mode-h0-f-absent-capability-gate-review-evidence-2026-09-17.md`.
+
+Exact next prerequisite: authorize the disposable provider-outage and
+remote-BrainNode packets; do not start automatically.

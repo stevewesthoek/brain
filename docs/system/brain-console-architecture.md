@@ -589,6 +589,27 @@ separate-process/reaping evidence remains applicable, while H0-E itself has
 zero denial-child or external effects. Evidence:
 `operations/reports/agent-mode-h0-e-restricted-harness-live-denial-evidence-2026-09-17.md`.
 
+## H0-F absent-capability security classification — 2026-09-17
+
+H0-F reviewed the exact pinned Harness SDK against Brain's actual restricted
+production composition. The SDK has a real tool registry, reserved `run_code`
+PTC/code-runtime path, and upstream terminal/filesystem/subprocess surfaces;
+Brain does not inject or expose those surfaces. The production adapter uses an
+explicit patch list and empty tool allowlist, validates the pinned Harness
+root/version, disables unsafe service rows, and supplies an explicit complete
+child environment. The tool and sandbox attack graphs are structurally absent
+or unreachable in production, while their upstream/test-only edges remain
+recorded as such.
+
+The hardening gate uses explicit acceptance modes. `sandbox_denial` and
+`tool_denial` require machine-checked `STRUCTURAL_ABSENCE` evidence with
+`structural_pass`; they must not be relabeled `live_pass`. This does not add a
+Console fault API, capability broker, provider probe, or runtime authority.
+Structural evidence is invalidated by a production capability/composition
+change or a Harness pin change. Provider outage and remote-host loss remain
+the exact external-sensitive H0 blockers. Evidence:
+`operations/reports/agent-mode-h0-f-absent-capability-gate-review-evidence-2026-09-17.md`.
+
 ## H0-A hardening harness boundary
 
 H0-A adds a Brain Core **test-fixture-only** deterministic hardening harness.
