@@ -7,6 +7,11 @@
 **Default port:** `4881`  
 **Brain Core default:** `http://localhost:4877`
 
+Current Agent Mode status: U0, V0, D0 and H0 are complete for their recorded
+bounded gates. The post-H0 direction is **NO NEW FOUNDATION PHASE /
+RELEASE-MAINTENANCE MODE**; the Console remains an observer/guarded operator
+surface and is not a release controller.
+
 ## Canonical role
 
 Brain Console is the single leading operations dashboard for the Brain repo.
@@ -534,6 +539,10 @@ Submit. It has no voice lifecycle controls, wake word, browser authority, or
 raw transcript persistence. V0-B is read/submit ingress only; TTS and
 interruptible playback are the next V0 slice.
 
+The dated H0-C through H0-G and H0-A entries below preserve the earlier
+hardening chronology. The current H0 authority is the corrected H0-G2 report
+and the post-H0 decision boundary at the end of this document.
+
 ## H0-C security review and Console read boundary
 
 H0-C reviewed the Console trust boundary against the current Brain build. The
@@ -628,6 +637,23 @@ It is not a Console feature, API, persisted projection, or browser control.
 The closed scenario/result contracts, injected logical clock, and fault action
 adapter run only from fixture tests against existing Brain components. No
 browser can inject faults; Console reads do not participate in H0 execution.
-The accelerated fixture gate deliberately remains INCOMPLETE without later
-wall-clock soak and security-review evidence. D0 remains COMPLETE and H0
-remains IN PROGRESS.
+The accelerated fixture gate was deliberately incomplete without later
+wall-clock soak and security-review evidence. D0 remains COMPLETE. This is a
+historical H0-A state; the current H0-G2 closure is recorded below.
+
+## H0-G2 corrected external acceptance and post-H0 boundary — 2026-09-17
+
+The corrected H0-G2 disposable provider and remote BrainNode packets passed
+their bounded live gates, including provider deny/recovery and SSM-backed
+`SshNodeTransport` stop/start/reconnect with a read-only command. Exact-ID
+teardown left zero disposable resources. H0 is therefore complete and its
+release gate passed; no provider probe, runtime call, or Console authority is
+implied by this architecture document.
+
+The selected post-H0 direction is **NO NEW FOUNDATION PHASE /
+RELEASE-MAINTENANCE MODE**. The Console remains a durable Brain observer and
+guarded operator surface. The next bounded task is the release-maintenance
+baseline for signed release promotion, StateStore-plus-evidence backup/restore,
+upgrade/rollback rehearsal and operational handoff. It is not a Console
+mutation or a U0 reopening. See
+`operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.

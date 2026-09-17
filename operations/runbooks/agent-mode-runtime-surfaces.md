@@ -1,5 +1,15 @@
 # Agent Mode Runtime Surfaces
 
+## Current status — 2026-09-17
+
+K0–K5, U0, V0, D0 and H0 are complete for their recorded bounded gates. The
+Agent Mode lane is in **release-maintenance mode** with no new foundation phase
+authorized. The next bounded task is the release-maintenance baseline for
+signed release promotion, consistent StateStore-plus-evidence backup/restore,
+upgrade/rollback rehearsal and operational handoff; it is not started here.
+Historical “exact next task” entries below describe their state at the time
+they were written.
+
 ## One harness principle
 
 Brain is the single control/orchestration harness. It owns durable tasks, runs,
@@ -1816,5 +1826,26 @@ zero remain. Full evidence:
 `operations/reports/agent-mode-h0-g2-external-live-acceptance-evidence-2026-09-17.md`.
 
 U0, V0, and D0 are already recorded complete earlier in the roadmap. No
-successor phase after H0 is currently specified; make a separate roadmap
-decision before starting further work.
+successor foundation phase is created after H0. The dated H0 entries above are
+historical chronology; current status and direction are authoritative in the
+post-H0 decision below.
+
+## Post-H0 operating boundary — 2026-09-17
+
+The Agent Mode foundation is complete through H0 and the lane is now in
+**release-maintenance mode**. Do not create a new foundation phase merely by
+renaming the next task H1/K6. Keep Brain StateStore, K4 authority, K5
+organization, NodeTransport/BrainNode, Workcells, ModelGateway, Jarvis
+contracts and Console projections unchanged unless a separately authorized
+bounded change requires new evidence.
+
+The exact next bounded task is **Agent Mode release-maintenance baseline —
+signed release promotion with consistent backup/restore and rollback drill**.
+It is not started automatically. Release work must cover package provenance,
+supported version, consistent StateStore-plus-evidence backup/restore,
+upgrade/rollback compatibility, monitoring, incident, cost, support and
+migration handoff. No release operation may probe providers, replay uncertain
+effects, reuse stale leases, or turn the Console into an authority.
+
+See the full decision and gap classification in
+`operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.

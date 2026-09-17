@@ -1,5 +1,14 @@
 # Agent Mode Progress
 
+## Current status — 2026-09-17
+
+The foundational Agent Mode roadmap is **COMPLETE through H0**, including K0–K5,
+U0, V0 and D0. The H0 release gate passed through the corrected disposable
+provider and remote-node evidence. The selected post-H0 direction is **NO NEW
+FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**. Historical phase entries below
+retain their original chronology; the current next bounded task is the release
+maintenance baseline recorded in the post-H0 decision report.
+
 ## Agent Mode architecture handoff — 2026-09-08
 
 The next Brain phase is Agent Mode / Bring Brain Alive. The authoritative plan is
@@ -1732,8 +1741,26 @@ remain unchanged. Evidence:
 
 All source-enumerated hardening classes now satisfy their required acceptance.
 U0, V0, and D0 are already recorded complete earlier in the roadmap. No
-successor phase after H0 is currently specified; make a separate roadmap
-decision before starting further work.
+successor foundation phase is created after H0. The dated H0-A through H0-G
+entries above preserve historical closure chronology; the current authority is
+H0-G2 plus the post-H0 decision below.
+
+## Post-H0 roadmap decision — 2026-09-17
+
+The Agent Mode foundational roadmap is complete through H0. The selected
+direction is **NO NEW FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**. No H1/K6
+or other sequence-named foundation phase is being invented. Product iteration
+and optional platform work remain separately authorizable.
+
+The exact next bounded task is **Agent Mode release-maintenance baseline —
+signed release promotion with consistent backup/restore and rollback drill**.
+It is not started by this decision. The task will cover supported release
+version/provenance, StateStore-plus-evidence backup/restore, isolated
+upgrade/rollback, compatibility, monitoring, incident, cost, support and
+migration handoff. It must preserve the existing Brain authority boundaries.
+
+Full decision report:
+`operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
 
 ## Historical maintenance handoff — 2026-08-14
 

@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is complete for its closure gate, K4 is complete, K5-A, K5-B, K5-C, K5, U0, V0, D0, and H0 are complete for their recorded bounded gates; no post-H0 successor phase is currently specified
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is complete for its closure gate, K4 is complete, K5-A, K5-B, K5-C, K5, U0, V0, D0, and H0 are complete for their recorded bounded gates; the foundational roadmap is complete through H0 and the Agent Mode lane is in release-maintenance mode; no new foundation phase is authorized
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -1971,6 +1971,10 @@ The next authoritative phase is **Phase H0 — long-duration hardening**; do not
 
 **Status:** COMPLETE; final soak/release gate passed. D0 remains COMPLETE and is not reopened by H0.
 
+The dated H0-A through H0-G entries below preserve the closure chronology and
+their earlier intermediate statuses. The current H0 status is the H0-G2 entry
+and the post-H0 roadmap decision recorded after it.
+
 The relevant H0 soak/security gates must pass before broader unattended or
 distributed release, even when D0 packaging work is developed earlier.
 
@@ -2213,8 +2217,28 @@ zero remaining disposable resources. Full evidence:
 
 H0-G2 closes the two remaining external-sensitive classes:
 `provider_outage=live_pass` and `host_loss_reconnect=live_pass`. H0 is now
-complete. The current roadmap does not specify a successor phase after H0;
-make a separate roadmap decision before starting further work.
+complete. No successor foundation phase is created after H0; the post-H0
+decision is recorded in
+`operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
+
+## Post-H0 roadmap decision — 2026-09-17
+
+**Decision:** **NO NEW FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**.
+
+K0–K5, U0, V0, D0, and H0 are complete for their recorded bounded gates. The
+Agent Mode foundation is not reopened or extended by sequence number. Product
+iteration and optional platform work may be authorized independently, but the
+next bounded task is operational:
+
+> **Agent Mode release-maintenance baseline — signed release promotion with
+> consistent backup/restore and rollback drill.**
+
+That task is not started here. It will define the supported release/version,
+verify package provenance, rehearse StateStore-plus-evidence backup/restore and
+upgrade/rollback, and document monitoring, incident, cost, support and
+migration handoff without changing Agent Mode authority or creating a new
+foundation phase. The full decision, candidate comparison and gap inventory
+are in `operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
 
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 
