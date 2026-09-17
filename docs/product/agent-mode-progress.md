@@ -1715,6 +1715,27 @@ Exact next prerequisite: grant the approved non-production provisioning path
 the dedicated disposable IAM create/policy/profile permissions and rerun the
 same bounded H0-G packet. Do not use a shared or production identity/resource.
 
+## H0-G2 corrected disposable external live acceptance — 2026-09-17
+
+H0-G2 is **BLOCKED** and H0 remains **IN PROGRESS**. The corrected run used
+the approved dedicated `claude-codex-ec2-*` namespace, created one disposable
+EC2 instance, and destroyed the exact role, profile, security group, instance,
+and volume with the destroyer boundary. The real Brain Bedrock gateway passed
+one bounded MiniMax baseline request from the instance profile. Its temporary
+exact deny-policy outage attempt unexpectedly succeeded and is recorded as
+inconclusive rather than a pass. The real `SshNodeTransport` path was blocked
+before delivery because the local `session-manager-plugin` is unavailable; no
+inbound SSH was opened and no BrainNode domain command ran.
+
+No production source or shared IAM state changed, and exact cleanup found zero
+remaining disposable resources. H0-B soak and H0-C security-review validity
+remain unchanged. Evidence:
+`operations/reports/agent-mode-h0-g2-external-live-acceptance-evidence-2026-09-17.md`.
+
+Exact next bounded task: **H0-G3 — restore the approved SSM session boundary,
+resolve the exact deny-policy evaluation, and rerun the two remaining external
+live gates**. Do not start automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

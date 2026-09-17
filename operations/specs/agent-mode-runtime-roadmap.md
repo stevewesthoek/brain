@@ -2194,6 +2194,31 @@ path the dedicated disposable IAM create/policy/profile permissions, then
 rerun this same bounded H0-G packet. Do not use a shared or production
 identity/resource.
 
+### H0-G2 — Corrected Disposable External Live Acceptance — 2026-09-17
+
+**Status:** BLOCKED; H0 remains **IN PROGRESS** and its release gate remains
+**INCOMPLETE**.
+
+The corrected rerun used the approved dedicated `claude-codex-ec2-*` IAM
+namespace and successfully created and destroyed one bounded `t3.micro` EC2
+instance, profile, role, and security group. The real Brain Bedrock gateway
+produced one valid MiniMax baseline result from the instance profile. The
+temporary exact deny-policy outage attempt unexpectedly succeeded and is
+therefore inconclusive, not a live outage pass. The real `SshNodeTransport`
+path reached the SSM proxy boundary but could not start because the local
+`session-manager-plugin` is unavailable; no inbound SSH was opened and no
+BrainNode domain command ran.
+
+No production source, shared IAM, provider configuration, repository, or
+protected unrelated path changed. Exact-ID destroyer verification found zero
+remaining disposable resources. Full evidence:
+`operations/reports/agent-mode-h0-g2-external-live-acceptance-evidence-2026-09-17.md`.
+
+Exact remaining prerequisite: make the approved local SSM session plugin
+available and resolve why the exact temporary deny policy did not deny the
+instance-profile call, then rerun only the same bounded two external gates.
+Do not start automatically.
+
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 
 **Status:** complete for the 2026-09-09 audit; K4 remains not started
