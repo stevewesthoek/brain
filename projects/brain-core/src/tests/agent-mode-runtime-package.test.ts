@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { buildRuntimePackage, verifyRuntimePackage } from '../agent-mode/runtime-package.js';
+import { assertCleanSourceProvenance, buildRuntimePackage, verifyRuntimePackage } from '../agent-mode/runtime-package.js';
 
 function fixtureRoot(): string {
   const root = mkdtempSync(path.join('/tmp', 'brain-d0-c-source-'));
@@ -127,4 +128,23 @@ test('packages the bounded Core support closure needed by the installed read-onl
     for (const relative of supportFiles) assert.ok(manifest.files.some((file) => file.relativePath === relative));
     assert.deepEqual(verifyRuntimePackage(outputRoot).ok, true);
   } finally { rmSync(sourceRoot, { recursive: true, force: true }); rmSync(outputRoot, { recursive: true, force: true }); }
+});
+
+test('verified release packaging rejects dirty or mismatched Git source provenance', () => {
+  const root = mkdtempSync('/tmp/brain-d0-c-source-provenance-');
+  try {
+    execFileSync('git', ['init', '-q', root]);
+    execFileSync('git', ['-C', root, 'config', 'user.email', 'fixture@example.invalid']);
+    execFileSync('git', ['-C', root, 'config', 'user.name', 'fixture']);
+    writeFileSync(path.join(root, 'tracked.txt'), 'clean\n');
+    execFileSync('git', ['-C', root, 'add', 'tracked.txt']);
+    execFileSync('git', ['-C', root, 'commit', '-qm', 'fixture']);
+    const revision = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+    const clean = assertCleanSourceProvenance(root, revision);
+    assert.equal(clean.revision, revision);
+    assert.equal(clean.dirty, false);
+    assert.throws(() => assertCleanSourceProvenance(root, '0'.repeat(40)), /does not match Git HEAD/u);
+    writeFileSync(path.join(root, 'tracked.txt'), 'dirty\n');
+    assert.throws(() => assertCleanSourceProvenance(root, revision), /source tree must be clean/u);
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });

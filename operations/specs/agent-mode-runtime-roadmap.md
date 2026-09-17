@@ -2237,18 +2237,26 @@ foreign-key-checked, fresh-target-only and exact-once. Promotion and rollback
 gates fail closed until package, signature, backup, restore, isolated smoke and
 rollback evidence are present.
 
-The 2026-09-17 drill uses R0=`72fc9fd7` as the current pre-promotion baseline
-and R1=`1.0.0-rc.4` as an isolated signed candidate. A dedicated Ed25519
-production signing identity is provisioned in the macOS Keychain under
-`brain-agent-release-production-v1` (fingerprint
+The earlier RC.4 record remains historical and truthful: it was an isolated
+functional candidate, but it was superseded before production activation after
+the package-builder correction landed. The active R1 candidate is fresh
+`1.0.0-rc.5`, built from exact clean committed source
+`c81c6785bc976fc88b8492bd0eb1e20b2f8cd961` (tree
+`f6549f993a998d6311edc371417b9b62fc78d23c`). Its package ID is
+`brain-runtime-package:sha256:39df90b4497f2107f78ab4beb4f6457ff9d1f5dcdfb3d4c6397af065a94898c5`
+and its package manifest hash is
+`c343d410536a8d9f2c26761256f9849bfac5e7220021190411319eedfa639584`.
+The signed release ID is
+`brain-agent-release:sha256:5028c78a4369950f6481093c772a855e1c90819469c301b025c876f530cec8ce`.
+A dedicated Ed25519 production signing identity remains provisioned in the
+macOS Keychain under `brain-agent-release-production-v1` (fingerprint
 `348d91963cd74037ea3bf7331d0c25218c527a35bbef39aca33eaf11d6d322ca`); private
-key export is disabled. The corrected runtime package includes its bounded Core
-support closure, and the signed candidate passed isolated foreground smoke,
-logical backup/restore, exact-once restore, rollback rehearsal, and fail-closed
-tamper/incompatible-rollback checks. No live Office state changed. Full
-evidence is in
-`operations/reports/agent-mode-production-signing-nonprod-promotion-evidence-2026-09-17.md`;
-operator procedure is in `operations/runbooks/agent-mode-release-maintenance.md`.
+key export is disabled. The corrected package passed clean-source provenance,
+isolated foreground startup, logical backup/restore, exact-once restore,
+rollback rehearsal, and fail-closed mismatch checks. No live Office state
+changed. Full RC.5 evidence is in
+`operations/reports/agent-mode-clean-signed-release-candidate-evidence-2026-09-17.md`;
+the operator procedure is in `operations/runbooks/agent-mode-release-maintenance.md`.
 
 Production activation, service registration, public publishing, and push remain
 unauthorized. The Agent Mode lane remains in ordinary release-maintenance mode;

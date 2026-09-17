@@ -1,5 +1,6 @@
 import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 export const BRAIN_RUNTIME_PACKAGE_SCHEMA_VERSION = 'brain-runtime-package-v1' as const;
@@ -44,6 +45,7 @@ export type RuntimePackageInput = {
   sourceRoot: string;
   outputRoot: string;
   releaseRevision: string;
+  requireCleanSource?: boolean;
   platform?: string;
   architecture?: string;
 };
@@ -82,6 +84,27 @@ function absolutePath(value: string, label: string): string {
   const normalized = path.normalize(value);
   if (normalized === '/' || normalized.includes('/.git/') || normalized.includes('/node_modules/')) throw new Error(`${label} is unsafe`);
   return normalized;
+}
+
+export type RuntimeSourceProvenance = { revision: string; tree: string; dirty: boolean };
+
+export function assertCleanSourceProvenance(sourceRoot: string, expectedRevision: string): RuntimeSourceProvenance {
+  const root = absolutePath(sourceRoot, 'sourceRoot');
+  const git = (args: string[]): string => execFileSync('git', ['-C', root, ...args], { cwd: '/', encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  let revision: string;
+  let tree: string;
+  let status: string;
+  try {
+    revision = git(['rev-parse', '--verify', 'HEAD']);
+    tree = git(['rev-parse', '--verify', 'HEAD^{tree}']);
+    status = git(['status', '--porcelain', '--untracked-files=all']);
+  } catch {
+    throw new Error('sourceRoot must be a Git worktree for a verified release package');
+  }
+  if (!/^[0-9a-f]{40}$/u.test(revision) || !/^[0-9a-f]{40}$/u.test(tree)) throw new Error('Git source provenance is malformed');
+  if (revision !== expectedRevision) throw new Error('source revision does not match Git HEAD');
+  if (status.length > 0) throw new Error('source tree must be clean for a verified release package');
+  return { revision, tree, dirty: false };
 }
 
 function relativePath(value: string): string {
@@ -221,6 +244,7 @@ function requiredArtifacts(sourceRoot: string): { core: string; console: string;
 export function buildRuntimePackage(input: RuntimePackageInput): BrainRuntimePackage {
   const sourceRoot = absolutePath(input.sourceRoot, 'sourceRoot');
   if (!input.releaseRevision || /[\u0000-\u001f\u007f]/u.test(input.releaseRevision)) throw new Error('releaseRevision is required and bounded');
+  if (input.requireCleanSource) assertCleanSourceProvenance(sourceRoot, input.releaseRevision);
   const output = ensureFreshOutput(input.outputRoot);
   try {
     const artifacts = requiredArtifacts(sourceRoot);

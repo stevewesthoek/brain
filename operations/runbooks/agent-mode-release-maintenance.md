@@ -44,10 +44,24 @@ brain-agent release verify --manifest RELEASE.json --package PACKAGE \
 For the provisioned identity, add
 `--keychain-service com.brain.agent.release --keychain-account
 production-ed25519-v1 --key-id brain-agent-release-production-v1` to release
-creation. The active support record is R1=`1.0.0-rc.3`, source `78c14f46`,
-package ID
-`brain-runtime-package:sha256:1b90831bed1e4fa2d309046b6647958f3ba2014ab45cbff3058599a14d1c275e`,
-and R0=`0.9.0` is the rollback rehearsal target under the same v1 contracts.
+creation. The active support record is the fresh R1 candidate `1.0.0-rc.5`,
+built from the exact clean committed source
+`c81c6785bc976fc88b8492bd0eb1e20b2f8cd961` (tree
+`f6549f993a998d6311edc371417b9b62fc78d23c`). Its package ID is
+`brain-runtime-package:sha256:39df90b4497f2107f78ab4beb4f6457ff9d1f5dcdfb3d4c6397af065a94898c5`
+with manifest hash
+`c343d410536a8d9f2c26761256f9849bfac5e7220021190411319eedfa639584`.
+The signed release ID is
+`brain-agent-release:sha256:5028c78a4369950f6481093c772a855e1c90819469c301b025c876f530cec8ce`.
+R0=`0.9.0` remains the rollback rehearsal target under the same v1
+contracts. Historical RC.3 and RC.4 records remain unchanged; RC.4 was
+superseded before production activation because its declared source revision
+predated the package-builder correction committed in `c81c6785`.
+
+Verified release packaging must be run from a clean Git worktree with the
+revision derived by `git rev-parse HEAD`. `brain-agent package build` now
+fails closed on dirty source or a revision mismatch before creating its output
+directory.
 
 Do not trust filenames, mutable `ready` flags, package paths, or caller
 assertions. Signature or package mismatch is a failed promotion.
@@ -67,10 +81,10 @@ facts; do not replay them or infer safety from a PID.
 
 ## Promotion and rollback drill
 
-For this first baseline, R0 is the current validated pre-promotion baseline
-(`72fc9fd7`) and R1 is a separately signed candidate using the same validated
-runtime contract. The safe drill is: verify R0 and its logical backup; build
-and verify R1; install R1 into a fresh isolated root with service registration
+For this baseline, R0 is the current validated pre-promotion baseline
+(`72fc9fd7`) and R1 is the separately signed RC.5 candidate using the same
+validated runtime contract. The safe drill is: verify R0 and its logical
+backup; build and verify R1; install R1 into a fresh isolated root with service registration
 and start disabled; restore the backup into a fresh isolated R1 StateStore;
 run isolated foreground startup/smoke checks; then verify rollback
 compatibility and restore the R0 backup into a fresh R0 target if required.

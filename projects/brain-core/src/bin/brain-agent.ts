@@ -123,7 +123,7 @@ async function main(): Promise<void> {
       const sourceRoot = flag('--source-root') ?? process.cwd();
       const platform = flag('--platform');
       const architecture = flag('--architecture');
-      process.stdout.write(`${JSON.stringify(buildRuntimePackage({ sourceRoot, outputRoot, releaseRevision, ...(platform ? { platform } : {}), ...(architecture ? { architecture } : {}) }), null, 2)}\n`);
+      process.stdout.write(`${JSON.stringify(buildRuntimePackage({ sourceRoot, outputRoot, releaseRevision, requireCleanSource: true, ...(platform ? { platform } : {}), ...(architecture ? { architecture } : {}) }), null, 2)}\n`);
       return;
     }
     if (action === 'verify') {

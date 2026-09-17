@@ -1773,12 +1773,19 @@ is external to the repository. The provisioned production identity is recorded
 in the release-maintenance runbook and public metadata; private key export is
 disabled.
 
-The drill is isolated: R0 is the current pre-promotion revision
-`72fc9fd7`, candidate packaging/install/restore is fixture-backed, and no live
-Office state or provider is touched. Uncertain effects, lease/fence facts,
-Jarvis/K5 durable state and scheduler records remain logical StateStore data,
-not replay instructions or a duplicate ledger. See
-`operations/reports/agent-mode-production-signing-nonprod-promotion-evidence-2026-09-17.md`
+The superseded RC.4 record remains historical; it was not promoted after the
+package-builder correction landed. The active isolated candidate is fresh
+R1=`1.0.0-rc.5`, built from clean committed source `c81c6785` (tree
+`f6549f993a998d6311edc371417b9b62fc78d23c`) with package ID
+`brain-runtime-package:sha256:39df90b4497f2107f78ab4beb4f6457ff9d1f5dcdfb3d4c6397af065a94898c5`.
+The candidate passed the dirty-source fail-closed gate, Keychain signature and
+package verification, fixture-backed backup/restore, exact-once restore,
+isolated installed startup, rollback rehearsal, and mismatch rejection. R0
+remains the rollback target; no live Office state or provider is touched.
+Uncertain effects, lease/fence facts, Jarvis/K5 durable state and scheduler
+records remain logical StateStore data, not replay instructions or a duplicate
+ledger. See
+`operations/reports/agent-mode-clean-signed-release-candidate-evidence-2026-09-17.md`
 and `operations/runbooks/agent-mode-release-maintenance.md`.
 
 ## Historical maintenance handoff — 2026-08-14
