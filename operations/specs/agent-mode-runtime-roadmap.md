@@ -2292,6 +2292,26 @@ created. Evidence:
 The exact next task is **RC.6 — cut and validate the next signed release from
 the normalized immutable baseline**; do not start it automatically.
 
+## RC.6 — signed release candidate and isolated promotion drill — 2026-09-17
+
+**Status:** **PROMOTABLE; production activation NOT STARTED.** A fresh RC.6
+candidate was built from clean committed revision
+`284d162926a8ee8ce80421a726a06c3a22abbd65`, verified reproducible and
+fail-closed against package/source/tamper changes, and signed with the active
+macOS Keychain Ed25519 identity `brain-agent-release-production-v1`.
+
+The candidate passed logical `brain-state-snapshot-v1` backup/restore into
+fresh RC6 and normalized-baseline targets, exact-once/uncertain-state
+preservation, compatible rollback assessment, incompatible rollback rejection,
+and isolated installed Core/Console read-only smoke. It is retained outside
+Git under its immutable package identity. Production launchd services,
+descriptors, pointers, and canonical Store were read-only verified and left
+unchanged. Evidence:
+`operations/reports/agent-mode-rc6-signed-release-candidate-evidence-2026-09-18.md`.
+
+The exact next task is **separately authorize and execute production RC.6
+activation**; do not start it automatically.
+
 ## Post-H0 roadmap decision — 2026-09-17
 
 **Decision:** **NO NEW FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**.

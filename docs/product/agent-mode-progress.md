@@ -1841,6 +1841,21 @@ authorized task. Evidence:
 Exact next task: **RC.6 — cut and validate the next signed release from the
 normalized immutable baseline**; do not start it automatically.
 
+## RC.6 signed candidate and isolated promotion — 2026-09-17
+
+**PROMOTABLE; production activation NOT STARTED.** A fresh `1.0.0-rc.6`
+candidate was cut from clean committed revision `284d1629`, signed with the
+dedicated macOS Keychain Ed25519 identity, and verified against immutable
+package/source/schema identities. Logical backup/restore, exact-once and
+uncertain-state preservation, compatible rollback rehearsal, incompatible
+rollback rejection, and isolated installed Core/Console read-only smoke all
+passed. The candidate is retained outside Git by package identity; production
+services, pointers, and Store were not changed. Evidence:
+`operations/reports/agent-mode-rc6-signed-release-candidate-evidence-2026-09-18.md`.
+
+Exact next task: **separately authorize and execute production RC.6
+activation**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

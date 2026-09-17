@@ -44,19 +44,17 @@ brain-agent release verify --manifest RELEASE.json --package PACKAGE \
 For the provisioned identity, add
 `--keychain-service com.brain.agent.release --keychain-account
 production-ed25519-v1 --key-id brain-agent-release-production-v1` to release
-creation. The active support record is the fresh R1 candidate `1.0.0-rc.5`,
-built from the exact clean committed source
-`c81c6785bc976fc88b8492bd0eb1e20b2f8cd961` (tree
-`f6549f993a998d6311edc371417b9b62fc78d23c`). Its package ID is
-`brain-runtime-package:sha256:39df90b4497f2107f78ab4beb4f6457ff9d1f5dcdfb3d4c6397af065a94898c5`
+creation. The active support record is the fresh R1 candidate `1.0.0-rc.6`,
+built from clean committed source `284d162926a8ee8ce80421a726a06c3a22abbd65`.
+Its package ID is
+`brain-runtime-package:sha256:ff5809be3a48b01cd393e1817241f19e9b79556117b17035ce044090cfda3cfe`
 with manifest hash
-`c343d410536a8d9f2c26761256f9849bfac5e7220021190411319eedfa639584`.
+`18f8c9571be1403aec9bf785a7949baa2e6508da276e1e2cf9f3dfacd7ae3b8a`.
 The signed release ID is
-`brain-agent-release:sha256:5028c78a4369950f6481093c772a855e1c90819469c301b025c876f530cec8ce`.
-R0=`0.9.0` remains the rollback rehearsal target under the same v1
-contracts. Historical RC.3 and RC.4 records remain unchanged; RC.4 was
-superseded before production activation because its declared source revision
-predated the package-builder correction committed in `c81c6785`.
+`brain-agent-release:sha256:b5813f2c215f6db3fafc0685691cee43ba699f2d699bb748b1b4633804c03242`.
+The normalized immutable baseline is the rollback target under the same v1
+contracts. RC.5 and earlier RC records remain historical and are not
+recreated or relabeled.
 
 Verified release packaging must be run from a clean Git worktree with the
 revision derived by `git rev-parse HEAD`. `brain-agent package build` now
@@ -81,13 +79,13 @@ facts; do not replay them or infer safety from a PID.
 
 ## Promotion and rollback drill
 
-For this baseline, R0 is the current validated pre-promotion baseline
-(`72fc9fd7`) and R1 is the separately signed RC.5 candidate using the same
-validated runtime contract. The safe drill is: verify R0 and its logical
-backup; build and verify R1; install R1 into a fresh isolated root with service registration
-and start disabled; restore the backup into a fresh isolated R1 StateStore;
-run isolated foreground startup/smoke checks; then verify rollback
-compatibility and restore the R0 backup into a fresh R0 target if required.
+For the current baseline, R0 is the normalized immutable package and R1 is
+the separately signed RC.6 candidate using the same validated runtime
+contract. The safe drill is: verify R0 and its logical backup; build and
+verify R1; install R1 into a fresh isolated root with service registration and
+start disabled; restore the backup into a fresh isolated R1 StateStore; run
+isolated foreground startup/smoke checks; then verify rollback compatibility
+and restore the R0 backup into a fresh R0 target if required.
 
 The release gate is `promotable` only when package/signature, backup, restore,
 isolated smoke, and rollback evidence say exactly verified/passed. There is no
@@ -132,7 +130,7 @@ The canonical StateStore must be proven from at least two independent runtime
 facts where possible, such as the effective config path plus an active process
 file handle. A nearby SQLite file is not canonical by recency or size. During
 readiness recovery do not open, checkpoint, migrate, vacuum, export, snapshot,
-restore, close, or write the production Store. The expected RC.5 contract is
+restore, close, or write the production Store. The expected RC.6 contract is
 Store schema 10; compatibility remains unknown until the active Store is
 identified.
 
@@ -190,10 +188,45 @@ restore those exact descriptor files, bootstrap the two `com.office.*` labels,
 and verify the legacy Core/Console health routes. Do not delete the normalized
 release or Store during rollback diagnosis. If the five-minute observation
 passes, the immutable package is the retained rollback target for the next
-authorized RC.6 task; this procedure does not create or sign RC.6.
+authorized RC.6 task; the separate RC.6 candidate procedure is recorded below.
 
 Normalization evidence is in
 `operations/reports/agent-mode-production-baseline-normalization-evidence-2026-09-17.md`.
+
+## RC.6 signed candidate and isolated promotion — 2026-09-17
+
+Fresh candidate `1.0.0-rc.6` was cut from clean committed revision
+`284d162926a8ee8ce80421a726a06c3a22abbd65`:
+
+```text
+packageId: brain-runtime-package:sha256:ff5809be3a48b01cd393e1817241f19e9b79556117b17035ce044090cfda3cfe
+packageManifestHash: 18f8c9571be1403aec9bf785a7949baa2e6508da276e1e2cf9f3dfacd7ae3b8a
+releaseId: brain-agent-release:sha256:b5813f2c215f6db3fafc0685691cee43ba699f2d699bb748b1b4633804c03242
+```
+
+The package was reproduced from clean source and verified before signing with
+`brain-agent-release-production-v1` in the macOS Keychain. Release/package
+tamper checks fail closed. The verified candidate is retained outside Git in
+the application-support release vault by package identity with its signed
+manifest, public verification metadata, and bounded verification receipt.
+
+The logical `brain-state-snapshot-v1` backup was verified and restored into
+fresh RC6 and normalized-baseline targets; a second import into a populated
+target was rejected. The fixture retained Jarvis/K5 state, scheduler/review
+metadata, lease/fence lineage, settled effects, and one uncertain effect
+without replay. Rollback compatibility with the normalized baseline is
+`compatible`; contract mismatch is `incompatible`.
+
+The installed candidate passed foreground read-only Core/Console smoke on
+temporary localhost ports and was stopped. No service registration, production
+pointer change, production Store import, provider/model/network call, or
+publication occurred. Candidate disposition is **PROMOTABLE** only for a
+separately authorized production activation window; production activation is
+**NOT STARTED**. Evidence:
+`operations/reports/agent-mode-rc6-signed-release-candidate-evidence-2026-09-18.md`.
+
+The exact next task is **separately authorize and execute production RC.6
+activation**; do not start it automatically.
 
 ## Operational handoff
 
