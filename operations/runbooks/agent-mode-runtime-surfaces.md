@@ -1777,3 +1777,25 @@ this review. See:
 
 Exact next prerequisite: authorize the disposable provider-outage and
 remote-BrainNode packets; do not start automatically.
+
+## H0-G disposable external live acceptance — 2026-09-17
+
+The H0-G authorization packet is recognized but the 2026-09-17 run is
+**BLOCKED** at AWS disposable-boundary preflight. The configured provisioner
+identity authenticated in `us-east-1`, but AWS denied the first required
+dedicated H0-G `iam:CreateRole` call. The provider packet therefore made zero
+inference requests and the remote packet made zero EC2/SSM/NodeTransport
+operations. No shared IAM role, production provider configuration, Office or
+personal node, SSH/Tailscale route, or existing network resource was used.
+
+Before any future rerun, create the exact-ID cleanup manifest outside Git,
+freeze the USD 2.00 total-spend/45-minute resource bounds, use only a
+dedicated H0-G provider role and instance profile, and destroy every exact
+resource in the manifest in dependency order. The attempted run created no
+AWS resources; exact checks found zero remaining and its temporary local root
+was removed. Full evidence:
+`operations/reports/agent-mode-h0-g-external-live-acceptance-evidence-2026-09-17.md`.
+
+H0-B and H0-C remain valid because this packet changed no runtime behavior or
+production security-sensitive source. H0 remains open until both external
+classes have truthful `live_pass` evidence.

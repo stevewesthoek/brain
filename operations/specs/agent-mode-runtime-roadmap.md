@@ -2168,6 +2168,32 @@ Evidence:
 Exact next prerequisite: separately authorize the existing disposable
 provider-outage and remote-BrainNode packets; do not start automatically.
 
+### H0-G — Disposable External Live Acceptance — 2026-09-17
+
+**Status:** BLOCKED; H0 remains **IN PROGRESS** and its release gate remains
+**INCOMPLETE**.
+
+The current H0-G task explicitly authorized the existing disposable provider
+outage/recovery and remote-BrainNode host-loss/reconnect packets. A bounded
+preflight recognized that authorization, froze a USD 2.00 total-spend cap and
+an exact-ID cleanup manifest, and selected `us-east-1`, MiniMax M2.5, and the
+EC2 `t3.micro`/8 GiB gp3 shape. The first required disposable IAM role create
+was denied because the configured provisioner lacks `iam:CreateRole`. No
+provider role, instance profile, EC2 instance, S3 object, remote node, live
+Bedrock request, or inference was created or run. The temporary run root was
+removed and exact-name/tag checks found zero H0-G resources remaining.
+
+The provider and remote packets therefore remain `BLOCKED`, not `live_pass`.
+H0-F's `structural_pass` results, H0-B wall-clock evidence, and H0-C security
+audit remain valid because no production runtime or security-sensitive source
+changed. Evidence:
+`operations/reports/agent-mode-h0-g-external-live-acceptance-evidence-2026-09-17.md`.
+
+Exact remaining prerequisite: grant the approved non-production provisioning
+path the dedicated disposable IAM create/policy/profile permissions, then
+rerun this same bounded H0-G packet. Do not use a shared or production
+identity/resource.
+
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 
 **Status:** complete for the 2026-09-09 audit; K4 remains not started

@@ -1694,6 +1694,27 @@ external-sensitive live prerequisites. Evidence:
 Exact next prerequisite: authorize the bounded disposable provider and
 remote-node packets; do not start automatically.
 
+## Current H0-G disposable external live acceptance — 2026-09-17
+
+H0-G is **BLOCKED** and H0 remains **IN PROGRESS**. The current task explicitly
+authorized both independent disposable packets and their mandatory teardown.
+The bounded AWS preflight authenticated through the configured provisioner,
+froze the USD 2.00 total-spend/45-minute resource limits, and created an
+exact-ID cleanup manifest outside Git. The first required dedicated H0-G IAM
+role creation was denied by AWS (`iam:CreateRole`), so no provider role,
+instance profile, EC2 host, S3 object, remote BrainNode, live Bedrock request,
+or inference was created or run. Exact checks found zero H0-G resources
+remaining and the temporary run root was removed.
+
+The two external classes remain `blocked`, not `live_pass`; H0-F's structural
+acceptance, H0-B wall-clock gate, and H0-C audit remain valid because no
+production runtime or security-sensitive source changed. Evidence:
+`operations/reports/agent-mode-h0-g-external-live-acceptance-evidence-2026-09-17.md`.
+
+Exact next prerequisite: grant the approved non-production provisioning path
+the dedicated disposable IAM create/policy/profile permissions and rerun the
+same bounded H0-G packet. Do not use a shared or production identity/resource.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

@@ -610,6 +610,17 @@ change or a Harness pin change. Provider outage and remote-host loss remain
 the exact external-sensitive H0 blockers. Evidence:
 `operations/reports/agent-mode-h0-f-absent-capability-gate-review-evidence-2026-09-17.md`.
 
+## H0-G disposable external acceptance boundary — 2026-09-17
+
+H0-G's explicitly authorized disposable provider and remote-host packets were
+preflighted under the configured AWS provisioner, but the first dedicated IAM
+role creation was denied (`iam:CreateRole`). No provider inference, EC2 host,
+remote BrainNode, or Console/runtime boundary was exercised. This preserves
+the architecture rule that external acceptance uses a dedicated disposable
+identity and exact teardown rather than weakening production/shared authority.
+H0 remains open with `provider_outage` and `host_loss_reconnect` blocked. See
+`operations/reports/agent-mode-h0-g-external-live-acceptance-evidence-2026-09-17.md`.
+
 ## H0-A hardening harness boundary
 
 H0-A adds a Brain Core **test-fixture-only** deterministic hardening harness.
