@@ -2,7 +2,9 @@
 
 Status: **PASS — final bounded provider and remote NodeTransport gates passed**
 
-Starting HEAD: `a257e413 test(agent-mode): record disposable H0 live acceptance`
+Initial H0-G2 HEAD: `a257e413 test(agent-mode): record disposable H0 live acceptance`
+
+Final successful rerun HEAD: `1d3b8dcd test(agent-mode): record corrected H0 external boundary`
 
 Run ID: `h0g2-20260917-140014`
 
@@ -172,7 +174,7 @@ unchanged.
 
 H0-G2 status: **COMPLETE**. H0 status: **COMPLETE / RELEASE GATE PASSED**.
 
-## Exact remaining prerequisite
+## Intermediate blocker, superseded by final closure below
 
 Make the approved local AWS Systems Manager Session Manager plugin available,
 then explain why the exact role deny policy did not deny the instance-profile
