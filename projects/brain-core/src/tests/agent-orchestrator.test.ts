@@ -274,6 +274,10 @@ test('OrchestrationExecutor executes all tasks in order (no gates)', async () =>
   const plan = planProjectExecution('analyze the system', '');
   // Remove all approval gates for this test
   plan.approvalGates = [];
+  // This test verifies graph order and ledger semantics. Keep the fixture on
+  // the deterministic local executor so provider availability cannot decide
+  // whether the orchestration assertion passes.
+  plan.tasks = plan.tasks.map((task) => ({ ...task, executorType: 'bash' }));
 
   const executor = new OrchestrationExecutor(plan);
   const result = await executor.executeAll();
@@ -292,8 +296,8 @@ test('OrchestrationExecutor executes all tasks in order (no gates)', async () =>
 test('OrchestrationExecutor records completed task results in ledger', async () => {
   cleanupDirs();
   const tasks: AgentOrchestratorTask[] = [
-    { id: 't1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'gemini' },
-    { id: 't2', description: 'Generate', type: 'ai_generation', dependencies: ['t1'], status: 'pending', executorType: 'gemini' },
+    { id: 't1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'bash' },
+    { id: 't2', description: 'Generate', type: 'ai_generation', dependencies: ['t1'], status: 'pending', executorType: 'bash' },
   ];
 
   const plan: AgentOrchestratorPlan = {
@@ -355,7 +359,7 @@ test('OrchestrationExecutor reports error when dependency references unknown tas
 test('OrchestrationExecutor blocks task at unapproved gate', async () => {
   cleanupDirs();
   const tasks: AgentOrchestratorTask[] = [
-    { id: 'task-1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'gemini' },
+    { id: 'task-1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'bash' },
     { id: 'gate-1', description: 'Approval gate', type: 'approval_gate', dependencies: ['task-1'], status: 'pending', executorType: 'claude' },
     { id: 'task-2', description: 'Execute', type: 'ai_generation', dependencies: ['gate-1'], status: 'pending', executorType: 'gemini' },
   ];
@@ -386,9 +390,9 @@ test('OrchestrationExecutor proceeds past gate when approved', async () => {
   const planId = `plan-${Date.now()}`;
 
   const tasks: AgentOrchestratorTask[] = [
-    { id: 'task-1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'gemini' },
-    { id: 'gate-1', description: 'Approval gate', type: 'approval_gate', dependencies: ['task-1'], status: 'pending', executorType: 'claude' },
-    { id: 'task-2', description: 'Generate', type: 'ai_generation', dependencies: ['gate-1'], status: 'pending', executorType: 'gemini' },
+    { id: 'task-1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'bash' },
+    { id: 'gate-1', description: 'Approval gate', type: 'approval_gate', dependencies: ['task-1'], status: 'pending', executorType: 'bash' },
+    { id: 'task-2', description: 'Generate', type: 'ai_generation', dependencies: ['gate-1'], status: 'pending', executorType: 'bash' },
   ];
 
   const plan: AgentOrchestratorPlan = {
@@ -665,9 +669,9 @@ test('OrchestrationExecutor blocks downstream task when upstream is at approval 
   cleanupDirs();
   // t1 runs, gate is blocked (no approval), t2 depends on gate so also gets blocked
   const tasks: AgentOrchestratorTask[] = [
-    { id: 't1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'gemini' },
-    { id: 'gate', description: 'Gate', type: 'approval_gate', dependencies: ['t1'], status: 'pending', executorType: 'claude' },
-    { id: 't2', description: 'Downstream', type: 'ai_generation', dependencies: ['gate'], status: 'pending', executorType: 'gemini' },
+    { id: 't1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'bash' },
+    { id: 'gate', description: 'Gate', type: 'approval_gate', dependencies: ['t1'], status: 'pending', executorType: 'bash' },
+    { id: 't2', description: 'Downstream', type: 'ai_generation', dependencies: ['gate'], status: 'pending', executorType: 'bash' },
   ];
 
   const plan: AgentOrchestratorPlan = {

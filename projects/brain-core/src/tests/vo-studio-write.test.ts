@@ -350,10 +350,22 @@ test('approveThumbnailRequest approval has unique IDs', () => {
 });
 
 test('generateMetadataRequest generates YouTube metadata from the canonical moving-video content item', async () => {
-  const result = await generateMetadataRequest({
-    projectId: 'says-the-bible',
-    contentItemId: 'content-stb-story-052',
-  });
+  const originalFetch = globalThis.fetch;
+  // The metadata contract has a deterministic local fallback. Keep this
+  // fixture independent of selector/provider availability and network state.
+  globalThis.fetch = async () => {
+    throw new Error('offline metadata fixture');
+  };
+
+  let result;
+  try {
+    result = await generateMetadataRequest({
+      projectId: 'says-the-bible',
+      contentItemId: 'content-stb-story-052',
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 
   assert.equal(result.ok, true);
   assert.ok(result.approval);
@@ -362,7 +374,8 @@ test('generateMetadataRequest generates YouTube metadata from the canonical movi
   assert.ok(result.preview);
   assert.equal(result.preview!.job!.type, 'metadata');
   assert.equal(result.preview!.job!.status, 'pending_approval');
-  assert.equal(result.preview!.metadata!.youtubeTitle, 'Genesis: Creation Story | Says the Bible');
+  assert.equal(result.preview!.metadata!.youtubeTitle, 'Genesis: Creation Story');
+  assert.equal(result.preview!.metadata!.source, 'fallback');
   assert.ok(result.preview!.metadata!.youtubeDescription.length > 0);
   assert.ok(result.preview!.metadata!.youtubeTags.length > 0);
   assert.ok(result.preview!.metadata!.hashtags.length > 0);
