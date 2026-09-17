@@ -574,6 +574,21 @@ read-only disconnect/reconnect test with zero repository writes. No Console or
 Agent Mode read path may probe these resources. Evidence:
 `operations/reports/agent-mode-h0-d-live-boundary-readiness-evidence-2026-09-17.md`.
 
+## H0-E restricted Harness topology boundary — 2026-09-17
+
+H0-E confirmed that the pinned Harness SDK can represent an unregistered tool
+failure as `UNKNOWN_TOOL`, but Brain's production restricted composition has no
+tool registration or sandbox/filesystem service to receive such a request.
+The H0-E audit therefore adds no Console, provider, network, or runtime
+authority and does not relabel fixture-only denials as live evidence. Both
+sandbox and tool denial remain `UNSUPPORTED` / `not_run`.
+
+The Console remains outside this boundary: it cannot inject faults, register
+Harness tools, probe providers, or read child environments. Existing local
+separate-process/reaping evidence remains applicable, while H0-E itself has
+zero denial-child or external effects. Evidence:
+`operations/reports/agent-mode-h0-e-restricted-harness-live-denial-evidence-2026-09-17.md`.
+
 ## H0-A hardening harness boundary
 
 H0-A adds a Brain Core **test-fixture-only** deterministic hardening harness.

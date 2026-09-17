@@ -1648,6 +1648,30 @@ state was contacted. Evidence:
 Exact next prerequisite: authorize the disposable provider and remote-node
 packets and establish a safe supported restricted-runtime denial topology.
 
+## Current H0-E restricted Harness topology audit — 2026-09-17
+
+H0-E — **Restricted Harness Live-Denial Topology Closure** — is **COMPLETE AS
+A TOPOLOGY AUDIT**. H0 remains **IN PROGRESS** and its release gate remains
+**INCOMPLETE**.
+
+The pinned SDK has a stable `UNKNOWN_TOOL` error for an unregistered tool, but
+the Brain production restricted composition has no registered or injected
+tools and no sandbox/filesystem service. A synthetic denied request therefore
+cannot reach the real child boundary without adding production authority or an
+unapproved topology. Sandbox and tool denial remain **UNSUPPORTED / NOT RUN**;
+the profile and capability fixtures remain fixture evidence only.
+
+H0-E adds no production fault surface, tool broker, provider path, or network
+access. Existing separate-child and environment-isolation evidence remains
+valid, while H0-E itself launches zero denial children. Provider outage and
+remote-host loss remain **EXTERNAL_SENSITIVE / BLOCKED**. Evidence:
+`operations/reports/agent-mode-h0-e-restricted-harness-live-denial-evidence-2026-09-17.md`.
+
+Exact next prerequisite: security-approved support for a harmless restricted
+denial topology or a formal review of the live-required classification for
+capabilities absent from Brain's production composition, plus authorization of
+the existing disposable provider/remote-node packets.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

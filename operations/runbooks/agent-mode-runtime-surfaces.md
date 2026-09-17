@@ -1729,3 +1729,26 @@ No provider, credential, remote host, SSH/Tailscale, Office state, network,
 BrainNode, Workcell, scheduler, or production repository effect is authorized
 by this audit. Full evidence is in
 `operations/reports/agent-mode-h0-d-live-boundary-readiness-evidence-2026-09-17.md`.
+
+## H0-E restricted Harness live-denial topology closure — 2026-09-17
+
+H0-E is **COMPLETE AS A TOPOLOGY AUDIT**; H0 remains **IN PROGRESS** and its
+release gate remains **INCOMPLETE**. The pinned SDK's tool registry has a
+stable `UNKNOWN_TOOL` denial path, but the Brain production restricted runtime
+registers only the fixture LLM adapter, injects no tools, and exposes no
+sandbox/filesystem capability. There is consequently no safe request boundary
+for a real denied tool or sandbox action.
+
+Do not add a production denial switch, arbitrary tool registration, shell or
+filesystem authority, provider fallback, or chaos endpoint to manufacture this
+coverage. H0-E keeps both `sandbox_denial` and `tool_denial` at
+`UNSUPPORTED` / `not_run`; existing profile/capability tests are not live
+acceptance. The H0-D provider and remote-host packets remain unchanged and
+unexecuted. H0 still requires truthful `live_pass` for every live-required
+class.
+
+The H0-E test-only audit verifies the SDK error code, Brain's closed import and
+composition boundary, and zero authority widening. Existing D2 tests prove
+separate child identity, explicit environment, bounded protocol, and reaping;
+H0-E itself launches no denial child. Evidence:
+`operations/reports/agent-mode-h0-e-restricted-harness-live-denial-evidence-2026-09-17.md`.

@@ -2107,6 +2107,35 @@ remote BrainNode packets, and resolve a safe supported restricted-runtime
 denial topology before attempting the remaining H0 live gates. Do not start
 automatically.
 
+### H0-E — Restricted Harness Live-Denial Topology Closure
+
+**Status:** COMPLETE AS TOPOLOGY AUDIT; H0 remains **IN PROGRESS** and its
+release gate remains **INCOMPLETE**.
+
+H0-E audited the exact pinned SDK's tool registry and error semantics. The SDK
+has a stable `UNKNOWN_TOOL` path for names absent from the registry, but Brain's
+production restricted composition registers only the fixture LLM adapter,
+injects no tools, and exposes no sandbox/filesystem service. The safe fixture
+provider cannot synthesize a tool call into a capability surface that is not
+present. No production denial flag, tool registration, sandbox authority,
+provider/network path, or fault API was added. Sandbox and tool denial remain
+`UNSUPPORTED` / `not_run` pending a separately approved supported topology.
+
+The production restricted-runtime and profile import boundary remains closed;
+H0-E helpers are test-only. Existing isolated-process evidence continues to
+prove the pinned child, explicit environment, identity, bounded protocol, and
+reaping, but no H0-E denial child was launched because there was no valid
+denial target. Provider outage and remote-host loss remain
+`EXTERNAL_SENSITIVE` / `blocked`; their H0-D packets were revalidated without
+execution. Evidence:
+`operations/reports/agent-mode-h0-e-restricted-harness-live-denial-evidence-2026-09-17.md`.
+
+Exact next prerequisite: obtain security-approved support for a harmless
+restricted denial topology, or formally review the live-required classification
+for capabilities absent from Brain's production composition; separately
+authorize the existing H0-D disposable provider and remote-node packets. Do
+not start automatically.
+
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 
 **Status:** complete for the 2026-09-09 audit; K4 remains not started
