@@ -2043,6 +2043,41 @@ Evidence:
 Exact next bounded task: **H0-C — Security Release Review and Live Acceptance
 Audit**. Do not start it automatically.
 
+### H0-C — Security Release Review and Live Acceptance Audit
+
+**Status:** AUDIT COMPLETE; H0 remains **IN PROGRESS** and its release gate is
+**INCOMPLETE**.
+
+H0-C completed the current-build security release review across the Brain
+Console/browser boundary, Console server, Core API, service authentication,
+operator session/origin/CSRF boundary, control/review authority, StateStore,
+lease/fence, budget/spawn, runtime/Harness, NodeTransport, Jarvis ingress and
+speech boundaries, D0 relocation, and H0 test-only surfaces. The review found
+no BLOCKER or HIGH security finding. The review contract is test-only
+`agent-mode.security-release-review.v1`; it is bounded metadata and does not
+create a second policy or authority plane.
+
+The local current-build acceptance passed the read-only Console projection ten
+times and rejected an unauthenticated lifecycle mutation before body
+authorization. H0-B's genuine isolated-process evidence is reused only for
+process crash/restart, stale lease/fence, duplicate delivery, stuck-child TTL,
+and durable auditability. Provider outage and remote-host loss remain
+EXTERNAL_SENSITIVE and require separately authorized isolated resources.
+Sandbox/tool live acceptance remains UNSUPPORTED/NOT RUN because no safe live
+topology is authorized. Fixture evidence is never relabeled as live evidence.
+
+The H0 gate still requires `live_pass` for every `liveAcceptanceRequired` class;
+the security review is not allowed to turn the remaining external or
+unsupported classes into PASS. No live provider, Office state, remote host,
+SSH/Tailscale, service-manager, BrainNode, Workcell, repository, or network
+effect was used. Evidence:
+`operations/reports/agent-mode-h0-c-security-live-acceptance-evidence-2026-09-17.md`.
+
+Exact next bounded prerequisite: obtain separate authorization and disposable
+resource boundaries for the provider-outage and remote-host loss/reconnect
+acceptance, then run only those narrowly scoped H0 live gates. Do not start
+automatically.
+
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 
 **Status:** complete for the 2026-09-09 audit; K4 remains not started

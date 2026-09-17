@@ -534,6 +534,28 @@ Submit. It has no voice lifecycle controls, wake word, browser authority, or
 raw transcript persistence. V0-B is read/submit ingress only; TTS and
 interruptible playback are the next V0 slice.
 
+## H0-C security review and Console read boundary
+
+H0-C reviewed the Console trust boundary against the current Brain build. The
+Console is an observer: its versioned Agent Mode projection is derived from
+Brain StateStore/observer state, while TanStack Query remains temporary UI
+cache. The browser never reads SQLite, chooses service/operator identity,
+supplies lifecycle authority, or receives service secrets. Lifecycle mutations
+remain behind the server-only signed service request, authenticated local
+operator session, same-origin/loopback transport, and session-bound CSRF
+checks. The read-only projection performs no provider probe, runtime dispatch,
+scheduler mutation, or durable write.
+
+The H0-C review contract is test-only `agent-mode.security-release-review.v1`.
+It does not add a Console database, security policy, control plane, or
+provider/runtime authority. Current safe local acceptance covers ten
+side-effect-free projection reads and an unauthenticated mutation rejection.
+H0-B's isolated-process evidence is kept separate from fixture-only evidence;
+provider outage and remote-host loss require separately authorized disposable
+resources, and unsupported sandbox/tool live topologies remain not run.
+
+Evidence: `operations/reports/agent-mode-h0-c-security-live-acceptance-evidence-2026-09-17.md`.
+
 ## H0-A hardening harness boundary
 
 H0-A adds a Brain Core **test-fixture-only** deterministic hardening harness.

@@ -1666,3 +1666,36 @@ used/reserved. Evidence:
 This does not close live-provider, unattended Office, or security-release
 gates. Exact next task: **H0-C — Security Release Review and Live Acceptance
 Audit**; do not start it automatically.
+
+## H0-C security release review and live-acceptance boundary — 2026-09-17
+
+H0-C is **AUDIT COMPLETE**; H0 remains **IN PROGRESS**. The test-only review
+contract `agent-mode.security-release-review.v1` is closed, versioned, and
+bounded. It records all ten live-required classes and keeps fixture evidence,
+isolated wall-clock evidence, safe local live evidence, external-sensitive
+acceptance, and unsupported acceptance distinct. It grants no runtime,
+provider, tool, repository, budget, lease, or operator authority.
+
+The review covers Console/browser, Console server, Core API, server-only HMAC
+service auth, operator session/origin/CSRF, control/review/approval authority,
+StateStore, scheduler, lease/fence, budget/spawn, ModelGateway, AgentRuntime,
+restricted Harness, Workcells, BrainNode/NodeTransport, Jarvis typed/voice
+ingress/output, D0 relocation, and H0 fault surfaces. The local current-build
+probe reads the versioned Console projection ten times and confirms an
+unauthenticated lifecycle mutation is rejected before authorization. Read-only
+projection requests perform no provider probes, runtime dispatch, scheduler
+mutation, or StateStore mutation.
+
+H0-B evidence is reused as current-build isolated-process live evidence for
+process crash/restart, stale lease/fence, duplicate delivery, stuck-child TTL,
+and durable auditability. Provider outage and remote-host loss remain
+**EXTERNAL_SENSITIVE** and are **BLOCKED** pending separately authorized
+disposable resources. Sandbox/tool live acceptance is **UNSUPPORTED/NOT RUN**;
+the existing restricted-profile and capability fixtures are not relabeled as
+live. The H0 gate continues to require `live_pass` for every live-required
+class, so H0 is not closed by this review.
+
+Evidence: `operations/reports/agent-mode-h0-c-security-live-acceptance-evidence-2026-09-17.md`.
+Exact next bounded prerequisite: separately authorize provider-outage and
+remote-host loss/reconnect acceptance with disposable isolated resources; do
+not start automatically.

@@ -1597,9 +1597,33 @@ trail; the final fresh preflight and six-hour run passed after narrow repairs.
 Evidence:
 `operations/reports/agent-mode-h0-b-wall-clock-soak-evidence-2026-09-17.md`.
 
-The live-provider and dedicated security-review gates remain outstanding. Exact
-next bounded task: **H0-C — Security Release Review and Live Acceptance Audit**;
-do not start it automatically.
+## Current H0-C security release review — 2026-09-17
+
+H0-C — **Security Release Review and Live Acceptance Audit** — is **COMPLETE as
+an audit**. H0 remains **IN PROGRESS** and its release gate remains
+**INCOMPLETE**. The review covered the full current-build trust boundary from
+Brain Console and operator session provenance through Core service auth,
+StateStore, K4 admission/lease/budget/runtime authority, restricted Harness,
+NodeTransport, Jarvis typed/voice boundaries, D0 relocation, and H0 test-only
+surfaces. No BLOCKER or HIGH security finding was found. A test-only closed
+`agent-mode.security-release-review.v1` contract records bounded review
+identity, surface coverage, findings, and the ten live-acceptance
+classifications; it is not runtime authority.
+
+The safe local current-build acceptance read `/agent-mode/console` ten times
+with no runtime/provider/tool effect and rejected an unauthenticated lifecycle
+mutation with HTTP 401. H0-B's real isolated-process evidence is retained as
+live evidence only for process crash/restart, stale lease/fence, duplicate
+delivery, stuck-child TTL, and durable auditability. Provider outage and
+remote-host loss are explicitly **EXTERNAL_SENSITIVE** and were not exercised;
+sandbox/tool live acceptance is **UNSUPPORTED/NOT RUN**. No provider, Office
+state, remote host, SSH/Tailscale, service manager, BrainNode, Workcell,
+repository, or network effect occurred.
+
+Evidence:
+`operations/reports/agent-mode-h0-c-security-live-acceptance-evidence-2026-09-17.md`.
+Exact next bounded prerequisite: separately authorize disposable provider and
+remote-host boundaries for the remaining live gates; do not start automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 
