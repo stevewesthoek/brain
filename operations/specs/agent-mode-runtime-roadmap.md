@@ -2078,6 +2078,35 @@ resource boundaries for the provider-outage and remote-host loss/reconnect
 acceptance, then run only those narrowly scoped H0 live gates. Do not start
 automatically.
 
+### H0-D — Restricted Harness Live-Denial Acceptance and External Gate Authorization Readiness
+
+**Status:** COMPLETE AS BOUNDARY AUDIT; H0 remains **IN PROGRESS** and its
+release gate remains **INCOMPLETE**.
+
+H0-D verified that the exact pinned DeepSeek Harness is locally available at
+commit `c389f96bf3a9b6807cb71ed6bdad5849be0df6d8`, version `0.1.3-alpha.2`.
+The existing production `RestrictedHarnessAgentRuntime` and focused tests
+prove a separate child process, explicit complete child environment, pinned
+process identity, bounded protocol, and deterministic reaping. That proof is
+kept distinct from denial acceptance: the current safe adapter exposes only a
+fixture provider and no tools, so sandbox/tool live denial cannot be genuinely
+exercised without adding an unapproved live topology or widening authority.
+Those classes remain `UNSUPPORTED` / `not_run`.
+
+Provider outage and remote-host loss remain `EXTERNAL_SENSITIVE` / `blocked`.
+H0-D records exact future packets bounded to one disposable Bedrock request
+with zero retries/cost and one disposable remote BrainNode `repo.read` test
+with zero repository writes. No provider, credential, remote host,
+SSH/Tailscale, Office state, network, BrainNode, Workcell, or production
+repository effect was used. The H0 gate continues to require `live_pass` for
+every live-required class. Evidence:
+`operations/reports/agent-mode-h0-d-live-boundary-readiness-evidence-2026-09-17.md`.
+
+Exact next prerequisite: separately authorize the disposable provider and
+remote BrainNode packets, and resolve a safe supported restricted-runtime
+denial topology before attempting the remaining H0 live gates. Do not start
+automatically.
+
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 
 **Status:** complete for the 2026-09-09 audit; K4 remains not started

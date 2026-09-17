@@ -1699,3 +1699,33 @@ Evidence: `operations/reports/agent-mode-h0-c-security-live-acceptance-evidence-
 Exact next bounded prerequisite: separately authorize provider-outage and
 remote-host loss/reconnect acceptance with disposable isolated resources; do
 not start automatically.
+
+## H0-D restricted Harness and external-gate readiness — 2026-09-17
+
+H0-D is **COMPLETE AS A BOUNDARY AUDIT**; H0 remains **IN PROGRESS** and its
+release gate remains **INCOMPLETE**. The exact pinned Harness is available
+locally at commit `c389f96bf3a9b6807cb71ed6bdad5849be0df6d8`, version
+`0.1.3-alpha.2`. Existing `RestrictedHarnessAgentRuntime` evidence proves a
+real separate child, explicit complete environment, pinned process identity,
+bounded protocol, and reaping through the current runtime path.
+
+Do not call this denial acceptance. The safe local adapter has only the
+deterministic fixture provider and no tools. Sandbox/tool live gates therefore
+remain `UNSUPPORTED` / `not_run`; do not relabel profile or capability fixture
+tests. Provider outage and remote-host loss remain `EXTERNAL_SENSITIVE` /
+`blocked`.
+
+Future authorization packets are deliberately narrow:
+
+- provider outage: one harmless disposable Bedrock request, zero retries,
+  zero cost, at most 64 tokens and 120 seconds, with no fallback route and
+  teardown evidence;
+- host loss/reconnect: one disposable remote BrainNode, one controlled
+  disconnect/reconnect, at most two harmless commands, 180 seconds, and zero
+  repository writes. A same-host child/process loss is only `PARTIAL_ONLY`,
+  not host-loss evidence.
+
+No provider, credential, remote host, SSH/Tailscale, Office state, network,
+BrainNode, Workcell, scheduler, or production repository effect is authorized
+by this audit. Full evidence is in
+`operations/reports/agent-mode-h0-d-live-boundary-readiness-evidence-2026-09-17.md`.

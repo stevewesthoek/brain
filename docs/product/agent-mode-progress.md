@@ -1625,6 +1625,29 @@ Evidence:
 Exact next bounded prerequisite: separately authorize disposable provider and
 remote-host boundaries for the remaining live gates; do not start automatically.
 
+## Current H0-D live-boundary readiness audit — 2026-09-17
+
+H0-D — **Restricted Harness Live-Denial Acceptance and External Gate
+Authorization Readiness** — is **COMPLETE AS A BOUNDARY AUDIT**. H0 remains
+**IN PROGRESS** and its release gate remains **INCOMPLETE**.
+
+The exact pinned Harness is locally present and the current production adapter
+has genuine separate-child, explicit-environment, pinned-identity, bounded
+protocol, and reaping evidence. The safe local adapter is intentionally a
+fixture-only provider bridge with no tools; therefore sandbox and tool denial
+remain **UNSUPPORTED / NOT RUN**, rather than being promoted from fixture
+coverage. Provider outage and remote-host loss remain **EXTERNAL_SENSITIVE /
+BLOCKED** pending separately authorized disposable resources.
+
+H0-D records bounded authorization packets: one zero-cost, zero-retry
+disposable Bedrock request, and one disposable remote BrainNode read-only
+reconnect test with zero repository writes. No external resource or protected
+state was contacted. Evidence:
+`operations/reports/agent-mode-h0-d-live-boundary-readiness-evidence-2026-09-17.md`.
+
+Exact next prerequisite: authorize the disposable provider and remote-node
+packets and establish a safe supported restricted-runtime denial topology.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

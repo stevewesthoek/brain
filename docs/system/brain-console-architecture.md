@@ -556,6 +556,24 @@ resources, and unsupported sandbox/tool live topologies remain not run.
 
 Evidence: `operations/reports/agent-mode-h0-c-security-live-acceptance-evidence-2026-09-17.md`.
 
+## H0-D live-boundary readiness — 2026-09-17
+
+H0-D is a boundary audit, not a provider or remote-host execution grant. The
+current production restricted Harness adapter is locally available at the
+Brain-pinned commit and its existing tests prove separate-process startup,
+explicit child environment, pinned identity, bounded protocol, and reaping.
+The safe local bridge intentionally exposes only a deterministic fixture
+provider and no tools. Consequently, sandbox/tool denial remain
+`UNSUPPORTED` / `not_run`; fixture-only profile and capability denials must not
+be called live acceptance.
+
+Provider outage and remote-host loss remain `EXTERNAL_SENSITIVE` / `blocked`.
+Any future attempt requires separately authorized disposable resources: one
+bounded zero-cost/no-retry Bedrock request or one disposable remote BrainNode
+read-only disconnect/reconnect test with zero repository writes. No Console or
+Agent Mode read path may probe these resources. Evidence:
+`operations/reports/agent-mode-h0-d-live-boundary-readiness-evidence-2026-09-17.md`.
+
 ## H0-A hardening harness boundary
 
 H0-A adds a Brain Core **test-fixture-only** deterministic hardening harness.
