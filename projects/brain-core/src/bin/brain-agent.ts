@@ -10,13 +10,14 @@ import { WorkcellManager } from '../agent-mode/workcell.js';
 import { runAgentModeSchedulerTick } from '../agent-mode/scheduler.js';
 import { BRAIN_TASK_LIFECYCLE_SOURCE, GIT_REPOSITORY_REVISION_SOURCE, INFRASTRUCTURE_HOST_HEALTH_SOURCE, GitRepositoryEventSourceAdapter, HostHealthEventSourceAdapter, InternalLifecycleEventSourceAdapter, pollEventSourcesOnce } from '../agent-mode/event-source.js';
 import { existsSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { loadBrainRuntimeConfig, safeBrainRuntimeConfigView } from '../agent-mode/portable-runtime-config.js';
 import { bootstrapPlanJson, createBrainBootstrapPlan } from '../agent-mode/bootstrap-plan.js';
 import { buildRuntimePackage, verifyRuntimePackage } from '../agent-mode/runtime-package.js';
 import { createLocalInstallPlan, installRuntimePackage, readRuntimePackageManifest } from '../agent-mode/local-install.js';
 import { createStateSnapshot, importStateSnapshot, readStateSnapshot, verifyStateSnapshot, writeStateSnapshot } from '../agent-mode/state-relocation.js';
-import { createReleaseManifest, readReleaseManifest, verifyReleaseManifest, writeReleaseManifest } from '../agent-mode/release-maintenance.js';
+import { createReleaseManifest, createReleaseManifestWithSigner, readReleaseManifest, verifyReleaseManifest, writeReleaseManifest } from '../agent-mode/release-maintenance.js';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://127.0.0.1:4877';
 
@@ -49,6 +50,17 @@ function requiredFlag(name: string): string {
   const value = flag(name);
   if (!value) throw new Error(`missing required ${name}`);
   return value;
+}
+
+function signWithMacOSKeychain(material: string, service: string, account: string, keyId: string): string {
+  const script = path.resolve(process.cwd(), 'tools/infrastructure-identity-access/macos-keychain-release-signer.swift');
+  let parsed: { ok?: boolean; signatureBase64?: string; privateKeyExported?: boolean; algorithm?: string };
+  try {
+    const stdout = execFileSync('/usr/bin/swift', [script, 'sign', service, account, keyId], { cwd: '/', env: { PATH: '/usr/bin:/bin:/usr/sbin:/sbin', HOME: process.env.HOME ?? '/' }, input: material, encoding: 'utf8', timeout: 30_000, maxBuffer: 64 * 1024 });
+    parsed = JSON.parse(String(stdout)) as typeof parsed;
+  } catch { throw new Error('macOS Keychain release signer failed or returned malformed output'); }
+  if (parsed.ok !== true || parsed.algorithm !== 'Ed25519' || parsed.privateKeyExported !== false || typeof parsed.signatureBase64 !== 'string') throw new Error('macOS Keychain signer response was not admissible');
+  return parsed.signatureBase64;
 }
 
 function printModelRequest(rawModel: string): void {
@@ -128,9 +140,14 @@ async function main(): Promise<void> {
   if (command === 'release') {
     const action = process.argv[3];
     if (action === 'create') {
-      const manifest = createReleaseManifest({
-        packageRoot: requiredFlag('--package'), releaseVersion: requiredFlag('--release-version'), sourceRevision: requiredFlag('--source-revision'), keyId: requiredFlag('--key-id'), privateKey: readFileSync(requiredFlag('--private-key')), buildTimestamp: flag('--build-timestamp') ?? new Date().toISOString(), previousReleaseVersion: flag('--previous-release-version') ?? null,
-      });
+      const packageRoot = requiredFlag('--package'); const releaseVersion = requiredFlag('--release-version'); const sourceRevision = requiredFlag('--source-revision'); const keyId = requiredFlag('--key-id'); const buildTimestamp = flag('--build-timestamp') ?? new Date().toISOString(); const previousReleaseVersion = flag('--previous-release-version') ?? null;
+      const keychainService = flag('--keychain-service'); const keychainAccount = flag('--keychain-account');
+      if (Boolean(keychainService) !== Boolean(keychainAccount) || (keychainService && flag('--private-key'))) throw new Error('release create requires either --private-key or both keychain service and account');
+      const manifest = keychainService && keychainAccount
+        ? createReleaseManifestWithSigner({ packageRoot, releaseVersion, sourceRevision, keyId, buildTimestamp, previousReleaseVersion, signer: (material) => {
+          return signWithMacOSKeychain(material, keychainService, keychainAccount, keyId);
+        } })
+        : createReleaseManifest({ packageRoot, releaseVersion, sourceRevision, keyId, privateKey: readFileSync(requiredFlag('--private-key')), buildTimestamp, previousReleaseVersion });
       const output = requiredFlag('--output');
       writeReleaseManifest(manifest, output);
       process.stdout.write(`${JSON.stringify({ ok: true, releaseId: manifest.releaseId, releaseVersion: manifest.releaseVersion, output }, null, 2)}\n`);

@@ -1752,12 +1752,11 @@ direction is **NO NEW FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**. No H1/K6
 or other sequence-named foundation phase is being invented. Product iteration
 and optional platform work remain separately authorizable.
 
-The exact next bounded task is **Agent Mode release-maintenance baseline —
+The exact next bounded task was **Agent Mode release-maintenance baseline —
 signed release promotion with consistent backup/restore and rollback drill**.
-It is not started by this decision. The task will cover supported release
-version/provenance, StateStore-plus-evidence backup/restore, isolated
-upgrade/rollback, compatibility, monitoring, incident, cost, support and
-migration handoff. It must preserve the existing Brain authority boundaries.
+That operational task is now complete against the dedicated macOS-Keychain
+Ed25519 identity `brain-agent-release-production-v1`; production activation
+still requires separate explicit authorization.
 
 Full decision report:
 `operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
@@ -1770,14 +1769,16 @@ validated runtime package, a logical StateStore backup wrapper that preserves
 `brain-state-snapshot-v1`, fresh-target restore/exact-once checks, and
 fail-closed promotion/rollback assessment. The release identity is bound to
 version, source revision, package and schema hashes; private signing material
-is external and no production signing identity was provisioned here.
+is external to the repository. The provisioned production identity is recorded
+in the release-maintenance runbook and public metadata; private key export is
+disabled.
 
 The drill is isolated: R0 is the current pre-promotion revision
 `72fc9fd7`, candidate packaging/install/restore is fixture-backed, and no live
 Office state or provider is touched. Uncertain effects, lease/fence facts,
 Jarvis/K5 durable state and scheduler records remain logical StateStore data,
 not replay instructions or a duplicate ledger. See
-`operations/reports/agent-mode-release-maintenance-baseline-evidence-2026-09-17.md`
+`operations/reports/agent-mode-production-signing-nonprod-promotion-evidence-2026-09-17.md`
 and `operations/runbooks/agent-mode-release-maintenance.md`.
 
 ## Historical maintenance handoff — 2026-08-14

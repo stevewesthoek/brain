@@ -2238,14 +2238,21 @@ gates fail closed until package, signature, backup, restore, isolated smoke and
 rollback evidence are present.
 
 The 2026-09-17 drill uses R0=`72fc9fd7` as the current pre-promotion baseline
-and an isolated signed candidate fixture. It changes no live Office state and
-does not provision a production signing identity. Full evidence is in
-`operations/reports/agent-mode-release-maintenance-baseline-evidence-2026-09-17.md`;
+and R1=`1.0.0-rc.4` as an isolated signed candidate. A dedicated Ed25519
+production signing identity is provisioned in the macOS Keychain under
+`brain-agent-release-production-v1` (fingerprint
+`348d91963cd74037ea3bf7331d0c25218c527a35bbef39aca33eaf11d6d322ca`); private
+key export is disabled. The corrected runtime package includes its bounded Core
+support closure, and the signed candidate passed isolated foreground smoke,
+logical backup/restore, exact-once restore, rollback rehearsal, and fail-closed
+tamper/incompatible-rollback checks. No live Office state changed. Full
+evidence is in
+`operations/reports/agent-mode-production-signing-nonprod-promotion-evidence-2026-09-17.md`;
 operator procedure is in `operations/runbooks/agent-mode-release-maintenance.md`.
 
-The next work is ordinary release operations: provision an external
-production signing identity and run a separately authorized non-production
-promotion when required. No new Agent Mode foundation phase is authorized.
+Production activation, service registration, public publishing, and push remain
+unauthorized. The Agent Mode lane remains in ordinary release-maintenance mode;
+no new foundation phase is authorized.
 
 ## Post-H0 roadmap decision — 2026-09-17
 

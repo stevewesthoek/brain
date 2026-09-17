@@ -6,8 +6,9 @@ K0–K5, U0, V0, D0 and H0 are complete for their recorded bounded gates. The
 Agent Mode lane is in **release-maintenance mode** with no new foundation phase
 authorized. The bounded release-maintenance baseline for signed release
 promotion, consistent StateStore-plus-evidence backup/restore, upgrade/rollback
-rehearsal and operational handoff is complete. Production signing identity and
-live promotion remain separately authorized operational work.
+rehearsal and operational handoff is complete. The dedicated production
+signing identity and isolated non-production promotion drill are complete;
+production activation remains separately authorized operational work.
 Historical “exact next task” entries below describe their state at the time
 they were written.
 

@@ -10,7 +10,10 @@
 Current Agent Mode status: U0, V0, D0 and H0 are complete for their recorded
 bounded gates. The post-H0 direction is **NO NEW FOUNDATION PHASE /
 RELEASE-MAINTENANCE MODE**; the Console remains an observer/guarded operator
-surface and is not a release controller.
+surface and is not a release controller. The dedicated production Ed25519
+signing identity and isolated non-production release drill are operated by the
+release-maintenance procedure, outside the Console projection and mutation
+surface.
 
 ## Canonical role
 

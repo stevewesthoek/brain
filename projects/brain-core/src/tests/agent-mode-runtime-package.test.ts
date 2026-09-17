@@ -10,6 +10,7 @@ function fixtureRoot(): string {
   mkdirSync(path.join(root, 'projects', 'brain-console', '.next', 'standalone'), { recursive: true });
   mkdirSync(path.join(root, 'projects', 'brain-console', '.next', 'static'), { recursive: true });
   writeFileSync(path.join(root, 'projects', 'brain-core', 'dist', 'index.js'), 'console.log("core");\n');
+  writeFileSync(path.join(root, 'projects', 'brain-core', 'dist', 'runtime-helper.mjs'), 'export const fixture = true;\n');
   writeFileSync(path.join(root, 'projects', 'brain-core', 'package.json'), '{"name":"brain-core","dependencies":{"pg":"1.0.0"}}\n');
   writeFileSync(path.join(root, 'projects', 'brain-core', 'package-lock.json'), '{"lockfileVersion":3}\n');
   writeFileSync(path.join(root, 'projects', 'brain-console', '.next', 'standalone', 'server.js'), 'const buildNote = "/Users/Office/Repos/stevewesthoek/mind"; console.log(buildNote);\n');
@@ -32,6 +33,7 @@ test('builds and verifies a bounded allowlisted package with explicit runtime st
       ['brain-core', 'npm-production-hydration'], ['brain-console', 'standalone-traced'], ['runtime-config-template', 'none'],
     ]);
     assert.ok(manifest.files.some((file) => file.relativePath === 'core/dist/index.js'));
+    assert.ok(manifest.files.some((file) => file.relativePath === 'core/dist/runtime-helper.mjs'));
     assert.ok(manifest.files.some((file) => file.relativePath === 'console/standalone/server.js'));
     assert.equal(manifest.files.some((file) => file.relativePath.includes('.next/cache')), false);
     assert.equal(manifest.files.some((file) => file.relativePath.includes('/Users/Office')), false);
@@ -101,5 +103,28 @@ test('package manifest contains no secrets, mutable state, personal paths, or sh
     assert.equal(text.includes('&&'), false);
     assert.deepEqual(manifest.requiredExternalSecrets, ['BRAIN_CORE_SERVICE_ID', 'BRAIN_CORE_SERVICE_SECRET', 'BRAIN_CONSOLE_OPERATOR_ID', 'BRAIN_CONSOLE_OPERATOR_SECRET']);
     assert.equal(verifyRuntimePackage(outputRoot).ok, false);
+  } finally { rmSync(sourceRoot, { recursive: true, force: true }); rmSync(outputRoot, { recursive: true, force: true }); }
+});
+
+test('packages the bounded Core support closure needed by the installed read-only server', () => {
+  const sourceRoot = fixtureRoot();
+  const supportFiles = [
+    'tools/mind-canonical-path-registry.mjs',
+    'tools/infrastructure-catalog/governance-core.mjs',
+    'tools/context-learning/context-learning-core.mjs',
+    'operations/specs/infinite-brain-boundary-contracts.js',
+    'operations/specs/infinite-brain-path-registry.json',
+  ];
+  for (const relative of supportFiles) {
+    const target = path.join(sourceRoot, relative);
+    mkdirSync(path.dirname(target), { recursive: true });
+    writeFileSync(target, relative.endsWith('.json') ? '{"registry":true}\n' : 'export const fixtureSupport = true;\n');
+  }
+  const outputRoot = path.join('/tmp', `brain-d0-c-package-support-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  try {
+    const manifest = buildRuntimePackage({ sourceRoot, outputRoot, releaseRevision: 'fixture-revision', platform: 'linux', architecture: 'x64' });
+    assert.ok(manifest.components.some(({ id }) => id === 'brain-core-support'));
+    for (const relative of supportFiles) assert.ok(manifest.files.some((file) => file.relativePath === relative));
+    assert.deepEqual(verifyRuntimePackage(outputRoot).ok, true);
   } finally { rmSync(sourceRoot, { recursive: true, force: true }); rmSync(outputRoot, { recursive: true, force: true }); }
 });

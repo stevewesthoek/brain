@@ -65,6 +65,7 @@ export type PromotionAssessment = {
 };
 
 export type RollbackCompatibility = 'compatible' | 'restore-required' | 'incompatible';
+export type ReleaseSigner = (canonicalMaterial: string) => string;
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
@@ -131,6 +132,47 @@ export function createReleaseManifest(input: {
   const draft = { ...unsigned, releaseId: releaseId(unsigned), provenance: { scheme: 'ed25519-sha256' as const, keyId: input.keyId, signature: '' } };
   const signature = sign(null, Buffer.from(signedMaterial(draft), 'utf8'), key(input.privateKey)).toString('base64');
   return { ...draft, provenance: { ...draft.provenance, signature } };
+}
+
+/** Creates the same manifest using an external signer; private material never enters Brain Core. */
+export function createReleaseManifestWithSigner(input: {
+  packageRoot: string;
+  releaseVersion: string;
+  sourceRevision: string;
+  keyId: string;
+  signer: ReleaseSigner;
+  buildTimestamp: string;
+  previousReleaseVersion?: string | null;
+  supportStatus?: BrainAgentReleaseManifest['supportStatus'];
+}): BrainAgentReleaseManifest {
+  if (!releaseVersion(input.releaseVersion) || !boundedText(input.sourceRevision, 256) || !boundedText(input.keyId, 128) || !isIso(input.buildTimestamp)) throw new Error('release metadata is invalid');
+  if (input.previousReleaseVersion !== undefined && input.previousReleaseVersion !== null && !releaseVersion(input.previousReleaseVersion)) throw new Error('previous release version is invalid');
+  const verification = verifyRuntimePackage(input.packageRoot);
+  if (!verification.ok) throw new Error(`package is not verified: ${verification.detail}`);
+  const pkg = readRuntimePackageManifest(input.packageRoot);
+  if (pkg.releaseRevision !== input.sourceRevision) throw new Error('source revision does not match runtime package');
+  const unsigned = {
+    schemaVersion: BRAIN_AGENT_RELEASE_SCHEMA_VERSION,
+    releaseVersion: input.releaseVersion,
+    sourceRevision: input.sourceRevision,
+    runtimePackageId: pkg.packageId,
+    runtimePackageManifestHash: pkg.manifestHash,
+    coreBuildIdentity: packageComponentIdentity(pkg, 'brain-core'),
+    consoleBuildIdentity: packageComponentIdentity(pkg, 'brain-console'),
+    stateStoreSchemaVersion: BRAIN_AGENT_STATE_STORE_SCHEMA_VERSION,
+    stateSnapshotSchemaVersion: BRAIN_STATE_SNAPSHOT_SCHEMA_VERSION,
+    installContractVersion: BRAIN_LOCAL_INSTALL_SCHEMA_VERSION,
+    releaseContractVersion: BRAIN_AGENT_RELEASE_CONTRACT_VERSION,
+    nodeRange: pkg.nodeRange,
+    buildTimestamp: input.buildTimestamp,
+    supportStatus: input.supportStatus ?? 'candidate',
+    previousReleaseVersion: input.previousReleaseVersion ?? null,
+  } satisfies Omit<BrainAgentReleaseManifest, 'releaseId' | 'provenance'>;
+  const draft = { ...unsigned, releaseId: releaseId(unsigned), provenance: { scheme: 'ed25519-sha256' as const, keyId: input.keyId, signature: '' } };
+  const signature = input.signer(signedMaterial(draft));
+  if (!boundedText(signature, 16_384)) throw new Error('external signer response is invalid');
+  const finalDraft = { ...draft, provenance: { ...draft.provenance, signature } };
+  return finalDraft;
 }
 
 export function verifyReleaseManifest(manifest: unknown, input: { packageRoot: string; publicKey: KeyMaterial; expectedSourceRevision?: string; expectedReleaseVersion?: string }): ReleaseVerification {

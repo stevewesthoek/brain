@@ -9,7 +9,7 @@ export const BRAIN_RUNTIME_PACKAGE_MAX_TOTAL_BYTES = 500 * 1024 * 1024;
 
 export type RuntimePackagePlatform = 'darwin' | 'linux' | 'unsupported';
 export type RuntimePackageArchitecture = 'arm64' | 'x64' | 'unsupported';
-export type RuntimePackageComponent = 'brain-core' | 'brain-console' | 'runtime-config-template';
+export type RuntimePackageComponent = 'brain-core' | 'brain-console' | 'brain-core-support' | 'runtime-config-template';
 export type RuntimePackageDependencyStrategy = 'npm-production-hydration' | 'standalone-traced' | 'none';
 
 export type RuntimePackageFile = {
@@ -159,6 +159,41 @@ function copyFile(sourceFile: string, destination: string, relative: string, com
   files.push({ relativePath: relative, component, sha256: sha256(data), size: stat.size, contentClass });
 }
 
+function copyCoreSupport(sourceRoot: string, outputRoot: string, files: RuntimePackageFile[]): boolean {
+  const supportFiles = [
+    ['tools/mind-canonical-path-registry.mjs', 'tools/mind-canonical-path-registry.mjs'],
+    ['tools/infrastructure-catalog/governance-core.mjs', 'tools/infrastructure-catalog/governance-core.mjs'],
+    ['tools/context-learning/context-learning-core.mjs', 'tools/context-learning/context-learning-core.mjs'],
+    ['operations/specs/infinite-brain-boundary-contracts.js', 'operations/specs/infinite-brain-boundary-contracts.js'],
+    ['operations/specs/infinite-brain-path-registry.json', 'operations/specs/infinite-brain-path-registry.json'],
+  ] as const;
+  if (!supportFiles.every(([source]) => existsSync(path.join(sourceRoot, source)))) return false;
+  for (const [source, relative] of supportFiles) copyFile(path.join(sourceRoot, source), path.join(outputRoot, relative), relative, 'brain-core-support', relative.endsWith('.json') ? 'runtime-metadata' : 'runtime-entry', files, sourceRoot);
+  return true;
+}
+
+function rewritePackagedCoreImports(outputRoot: string, files: RuntimePackageFile[]): void {
+  const rewrites = new Map<string, Array<[string, string]>>([
+    ['core/dist/canonical-mind-path-registry.js', [["../../../tools/mind-canonical-path-registry.mjs", "../../tools/mind-canonical-path-registry.mjs"]]],
+    ['core/dist/mind-paths.js', [["../../../operations/specs/infinite-brain-boundary-contracts.js", "../../operations/specs/infinite-brain-boundary-contracts.js"]]],
+    ['core/dist/contracts/mind-contract.js', [["../../../../operations/specs/infinite-brain-boundary-contracts.js", "../../../operations/specs/infinite-brain-boundary-contracts.js"]]],
+    ['core/dist/adapters/infinite-brain-exact-scope-approval.js', [["../../../../operations/specs/infinite-brain-boundary-contracts.js", "../../../operations/specs/infinite-brain-boundary-contracts.js"]]],
+    ['core/dist/adapters/infrastructure-action-safety.mjs', [["../../../../tools/infrastructure-catalog/governance-core.mjs", "../../../tools/infrastructure-catalog/governance-core.mjs"]]],
+    ['core/dist/adapters/infrastructure-plane.mjs', [["../../../../tools/infrastructure-catalog/governance-core.mjs", "../../../tools/infrastructure-catalog/governance-core.mjs"]]],
+  ]);
+  for (const [relative, replacements] of rewrites) {
+    const file = files.find((candidate) => candidate.relativePath === relative);
+    if (!file) continue;
+    const target = path.join(outputRoot, relative);
+    const before = readFileSync(target, 'utf8');
+    const after = replacements.reduce((value, [from, to]) => value.replaceAll(from, to), before);
+    if (after === before) continue;
+    writeFileSync(target, after);
+    file.sha256 = sha256(Buffer.from(after));
+    file.size = Buffer.byteLength(after, 'utf8');
+  }
+}
+
 function manifestForIdentity(manifest: BrainRuntimePackage): Record<string, unknown> {
   const { packageId: _packageId, manifestHash: _manifestHash, ...identity } = manifest;
   return identity;
@@ -190,7 +225,9 @@ export function buildRuntimePackage(input: RuntimePackageInput): BrainRuntimePac
   try {
     const artifacts = requiredArtifacts(sourceRoot);
     const files: RuntimePackageFile[] = [];
-    copyTree(path.join(artifacts.core, 'dist'), output.root, 'brain-core', 'runtime-entry', files, 'core/dist', (relative) => relative.endsWith('.js') && !relative.startsWith('tests/'), sourceRoot);
+    copyTree(path.join(artifacts.core, 'dist'), output.root, 'brain-core', 'runtime-entry', files, 'core/dist', (relative) => (relative.endsWith('.js') || relative.endsWith('.mjs')) && !relative.startsWith('tests/'), sourceRoot);
+    const hasCoreSupport = copyCoreSupport(sourceRoot, output.root, files);
+    rewritePackagedCoreImports(output.root, files);
     copyFile(path.join(artifacts.core, 'package.json'), path.join(output.root, 'core', 'package.json'), 'core/package.json', 'brain-core', 'runtime-metadata', files, sourceRoot);
     copyFile(path.join(artifacts.core, 'package-lock.json'), path.join(output.root, 'core', 'package-lock.json'), 'core/package-lock.json', 'brain-core', 'runtime-dependency-metadata', files, sourceRoot);
     copyTree(artifacts.console, output.root, 'brain-console', 'runtime-entry', files, 'console/standalone', (relative) => relative !== '.next/trace', sourceRoot);
@@ -213,6 +250,7 @@ export function buildRuntimePackage(input: RuntimePackageInput): BrainRuntimePac
         { id: 'brain-core', dependencyStrategy: 'npm-production-hydration', required: true },
         { id: 'brain-console', dependencyStrategy: 'standalone-traced', required: true },
         { id: 'runtime-config-template', dependencyStrategy: 'none', required: true },
+        ...(hasCoreSupport ? [{ id: 'brain-core-support' as const, dependencyStrategy: 'none' as const, required: true }] : []),
       ], files,
       startup: { core: { executable: 'node', args: ['core', 'dist', 'index.js'], cwd: '.' }, console: { executable: 'node', args: ['console', 'standalone', 'server.js'], cwd: '.' } },
       configContract: 'brain-runtime-config-v1', requiredExternalSecrets: ['BRAIN_CORE_SERVICE_ID', 'BRAIN_CORE_SERVICE_SECRET', 'BRAIN_CONSOLE_OPERATOR_ID', 'BRAIN_CONSOLE_OPERATOR_SECRET'], optionalCapabilities: ['brain-node', 'voice-stt', 'browser-tts', 'bedrock'], manifestHash: '',

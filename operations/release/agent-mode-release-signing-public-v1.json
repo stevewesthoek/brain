@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "brain-agent-release-signing-public-v1",
+  "keyId": "brain-agent-release-production-v1",
+  "algorithm": "Ed25519",
+  "backend": "macos-keychain",
+  "reference": "keychain-ref://com.brain.agent.release/production-ed25519-v1",
+  "publicKeyBase64": "M8soLhwMRY2vFRPLpXqp0ZClDgc0osB3WqXJzRopxUQ=",
+  "fingerprint": "348d91963cd74037ea3bf7331d0c25218c527a35bbef39aca33eaf11d6d322ca",
+  "privateKeyExported": false,
+  "status": "active"
+}
