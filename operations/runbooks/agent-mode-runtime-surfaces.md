@@ -1802,21 +1802,18 @@ classes have truthful `live_pass` evidence.
 
 ## H0-G2 corrected disposable external live acceptance — 2026-09-17
 
-H0-G2 remains **BLOCKED**. The corrected packet successfully used the
-dedicated `claude-codex-ec2-*` provisioner boundary and exercised one real
-MiniMax Bedrock baseline request from the disposable EC2 instance profile. The
-temporary exact role deny-policy attempt unexpectedly succeeded, so provider
-outage evidence is inconclusive. The real `SshNodeTransport` path was blocked
-at the SSM `AWS-StartSSHSession` proxy because the local
-`session-manager-plugin` is unavailable. No inbound SSH, BrainNode domain
-command, host-loss cycle, or repository write was performed.
+H0-G2 is **COMPLETE** and H0 is **COMPLETE**. The final bounded packets used
+the dedicated `claude-codex-ec2-*` provisioner boundary and exact destroyer
+teardown. The provider packet passed real MiniMax baseline, exact deny-policy
+outage, and recovery. The remote packet exercised the real
+`SshNodeTransport` through SSM, performed one read-only BrainNode operation,
+survived one EC2 stop/start cycle, and reconnected to the same durable
+duplicate receipt/effect.
 
-The exact destroyer cleanup sequence removed the instance, profile, role,
-policies, security group, and root volume; zero disposable resources remain.
-The read-only external gate remains separate from the canonical local
-NodeTransport fixture. Full evidence:
+No inbound SSH, production source, shared IAM state, repository write, or
+provider fallback was used. Exact cleanup removed every disposable resource;
+zero remain. Full evidence:
 `operations/reports/agent-mode-h0-g2-external-live-acceptance-evidence-2026-09-17.md`.
 
-Exact next task: **H0-G3 — restore the approved SSM session boundary and
-resolve the deny-policy evaluation before rerunning the two external live
-gates**. Do not start automatically.
+The next authoritative phase is **U0 — unified Brain Console control
+surface**. Do not start it automatically.

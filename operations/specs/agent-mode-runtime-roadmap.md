@@ -1969,7 +1969,7 @@ The next authoritative phase is **Phase H0 — long-duration hardening**; do not
 
 ## Phase H0 — long-duration hardening
 
-**Status:** IN PROGRESS; final soak/release gate. D0 remains COMPLETE and is not reopened by H0.
+**Status:** COMPLETE; final soak/release gate passed. D0 remains COMPLETE and is not reopened by H0.
 
 The relevant H0 soak/security gates must pass before broader unattended or
 distributed release, even when D0 packaging work is developed earlier.
@@ -2196,28 +2196,25 @@ identity/resource.
 
 ### H0-G2 — Corrected Disposable External Live Acceptance — 2026-09-17
 
-**Status:** BLOCKED; H0 remains **IN PROGRESS** and its release gate remains
-**INCOMPLETE**.
+**Status:** COMPLETE; H0 is **COMPLETE** and its release gate **PASSED**.
 
-The corrected rerun used the approved dedicated `claude-codex-ec2-*` IAM
-namespace and successfully created and destroyed one bounded `t3.micro` EC2
-instance, profile, role, and security group. The real Brain Bedrock gateway
-produced one valid MiniMax baseline result from the instance profile. The
-temporary exact deny-policy outage attempt unexpectedly succeeded and is
-therefore inconclusive, not a live outage pass. The real `SshNodeTransport`
-path reached the SSM proxy boundary but could not start because the local
-`session-manager-plugin` is unavailable; no inbound SSH was opened and no
-BrainNode domain command ran.
+The final bounded closure used the dedicated `claude-codex-ec2-*` IAM
+namespace and exact destroyer teardown. The provider packet passed real
+MiniMax baseline, exact deny-policy outage, and recovery requests from an EC2
+instance profile with zero retries/fallbacks. The remote packet exercised the
+real `SshNodeTransport` through AWS SSM, performed one read-only BrainNode
+operation, survived one stop/start host-loss cycle, and reconnected to the
+same durable duplicate receipt/effect.
 
-No production source, shared IAM, provider configuration, repository, or
-protected unrelated path changed. Exact-ID destroyer verification found zero
-remaining disposable resources. Full evidence:
+No production source, shared IAM policy, provider configuration, repository,
+or protected unrelated path changed. Exact-ID destroyer verification found
+zero remaining disposable resources. Full evidence:
 `operations/reports/agent-mode-h0-g2-external-live-acceptance-evidence-2026-09-17.md`.
 
-Exact remaining prerequisite: make the approved local SSM session plugin
-available and resolve why the exact temporary deny policy did not deny the
-instance-profile call, then rerun only the same bounded two external gates.
-Do not start automatically.
+H0-G2 closes the two remaining external-sensitive classes:
+`provider_outage=live_pass` and `host_loss_reconnect=live_pass`. H0 is now
+complete. The next authoritative phase is **Phase U0 — unified Brain Console
+control surface**; do not start it automatically.
 
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 

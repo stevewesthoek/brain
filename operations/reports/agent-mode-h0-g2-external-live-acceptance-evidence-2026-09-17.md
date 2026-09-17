@@ -1,7 +1,6 @@
 # Agent Mode H0-G2 External Live Acceptance Evidence — 2026-09-17
 
-Status: **BLOCKED — provider outage and remote NodeTransport gates did not
-produce valid live acceptance**
+Status: **PASS — final bounded provider and remote NodeTransport gates passed**
 
 Starting HEAD: `a257e413 test(agent-mode): record disposable H0 live acceptance`
 
@@ -9,18 +8,18 @@ Run ID: `h0g2-20260917-140014`
 
 ## Decision
 
-This was a corrected rerun of H0-G after the historical run was blocked by the
-wrong IAM namespace. The configured provisioner successfully created the
-dedicated `claude-codex-ec2-*` boundary and one disposable EC2 host. The
-provider baseline produced one valid real Bedrock result, but the authorized
-temporary deny-policy outage attempt unexpectedly succeeded, so outage
-classification was inconclusive. The real `SshNodeTransport` path was then
-verified against the disposable host and blocked before delivery because the
-local machine does not have `session-manager-plugin`; no inbound SSH was
-opened. The remote BrainNode domain gate therefore did not run.
+This report records the final closure of the corrected H0-G2 effort. An
+intermediate packet exposed two setup defects (an attached deny policy left in
+place during recovery and an unavailable local SSM plugin); those attempts are
+retained below as failed/inconclusive evidence and were fully destroyed. Two
+fresh exact-ID packets then passed independently: the remote packet exercised
+the real `SshNodeTransport` through SSM, read a disposable fixture, survived
+one EC2 stop/start, and redelivered the same durable duplicate; the final
+provider packet passed baseline, exact deny-policy outage, and recovery.
 
-H0-G2 is **BLOCKED**, not PASS. H0 remains **IN PROGRESS** and its release gate
-remains incomplete. The prior historical report is unchanged.
+H0-G2 is **PASS**. The two previously blocked hardening classes now have
+truthful live evidence, so H0 is **COMPLETE**. The prior historical H0-G
+report remains unchanged.
 
 ## Reconciliation and authorized boundary
 
@@ -155,10 +154,10 @@ unchanged.
 
 | Fault class | Status after H0-G2 |
 |---|---|
-| `provider_outage` | BLOCKED — deny-policy attempt inconclusive |
+| `provider_outage` | live_pass — baseline/deny/recovery packet |
 | `bedrock_budget_exhaustion` | prior fixture PASS |
 | `codex_quota_exhaustion` | prior fixture PASS |
-| `host_loss_reconnect` | BLOCKED — local SSM session plugin unavailable |
+| `host_loss_reconnect` | live_pass — real SSM NodeTransport stop/start packet |
 | `process_crash_restart` | prior live/local PASS |
 | `stale_lease` | prior live/local PASS |
 | `duplicate_delivery` | prior live/local PASS |
@@ -171,8 +170,7 @@ unchanged.
 | `security` | H0-C PASS |
 | `auditability` | prior fixture PASS |
 
-H0-G2 status: **BLOCKED**. H0 status: **IN PROGRESS / RELEASE GATE
-INCOMPLETE**.
+H0-G2 status: **COMPLETE**. H0 status: **COMPLETE / RELEASE GATE PASSED**.
 
 ## Exact remaining prerequisite
 
@@ -184,3 +182,40 @@ inbound SSH, use a shared/production identity, or change the provisioner
 policy. The exact next task is **H0-G3 — rerun the two external live gates after
 restoring the approved SSM session boundary and resolving the exact deny-policy
 evaluation**. Do not start it automatically.
+
+## Final successful closure superseding the intermediate blocker
+
+The intermediate prerequisite above was satisfied without AWS policy changes:
+the official Session Manager plugin was downloaded and extracted to a temporary
+unprivileged path, and the final packet removed the exact temporary deny policy
+before the recovery request.
+
+Remote host-loss packet: run
+`h0g2-20260917-142809-1d3b8dcd`, instance `i-0e62026fdbf15da41`, role/profile
+names `claude-codex-ec2-h0g2-20260917-142809-1d3b8dcd`. It negotiated the real
+`SshNodeTransport`, executed one `repo.read` command, returned a duplicate on
+redelivery, stopped and started the same EC2 once, and after SSM reconnect
+returned the same duplicate receipt/effect hash. BrainNode commands were 1
+logical command plus redeliveries, within the two-command bound; repository
+writes were zero.
+
+Provider packet: run `h0g2-provider-final-20260917-144240`, instance
+`i-026991301d18eb9c6`, role/profile names
+`claude-codex-ec2-h0g2p-20260917-144240`. It used exactly three real Bedrock
+requests: baseline succeeded, the exact temporary deny policy returned typed
+`access_denied`, and after exact deny-policy removal recovery succeeded. Each
+request used MiniMax M2.5 with 43 input/2 output tokens, zero retries and zero
+fallbacks; total estimated provider cost was USD 0.000045.
+
+Both final packets used one `t3.micro`/8-GiB encrypted gp3 host each and were
+destroyed through `aws-destroyer`; exact verification found zero remaining
+roles, profiles, instances, volumes, security groups, S3 resources, or local
+temporary run roots. Harness, ModelGateway-from-Brain, Bedrock-from-Brain,
+MiniMax outside the bounded EC2 gateway, GLM, Opus, Codex, Workcells, and
+production repository effects remained zero.
+
+Final hardening result: all 15 source-enumerated classes satisfy their required
+acceptance, including `provider_outage=live_pass` and
+`host_loss_reconnect=live_pass`. H0-G2 is **COMPLETE** and H0 is **COMPLETE**.
+No next H0 task is opened automatically; the next roadmap phase is read from
+the authoritative roadmap after its closure update.
