@@ -1,6 +1,6 @@
 # Brain Agent Mode Runtime Roadmap
 
-**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is complete for its closure gate, K4 is complete, K5-A, K5-B, K5-C, and K5 are complete, and U0 is the next planned phase
+**Status:** authoritative direction; principal review approved with changes; A0.2/A1 offline gates plus K0.1–K0.4 fixture gates passed; K0–N0, K3.0–K3.4, K3.5-A–D, K3.6, and K3.7 are complete for their bounded gates; the K3 exit gate is complete; K4.0, K4.1-A, K4.1-B1, K4.1-B2, and K4.1-C1 are complete, K4.1-C2 is complete, K4.1 is complete, K4.2-A, K4.2-B, K4.2-C, K4.2-D1, K4.2-D2, K4.2-E1, and K4.2-E2 are complete for their bounded gates, K4.2 is complete, K4.3-A is complete for its bounded live acceptance gate, K4.3-B is complete for its closure gate, K4 is complete, K5-A, K5-B, K5-C, K5, U0, V0, D0, and H0 are complete for their recorded bounded gates; no post-H0 successor phase is currently specified
 **Created:** 2026-09-08
 **Discovery report:** `operations/reports/agent-mode-discovery-2026-09-08.md`
 **Principal review:** `operations/reports/agent-mode-astra-review-2026-09-08.md`
@@ -2213,8 +2213,8 @@ zero remaining disposable resources. Full evidence:
 
 H0-G2 closes the two remaining external-sensitive classes:
 `provider_outage=live_pass` and `host_loss_reconnect=live_pass`. H0 is now
-complete. The next authoritative phase is **Phase U0 — unified Brain Console
-control surface**; do not start it automatically.
+complete. The current roadmap does not specify a successor phase after H0;
+make a separate roadmap decision before starting further work.
 
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 

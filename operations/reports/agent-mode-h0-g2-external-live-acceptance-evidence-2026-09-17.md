@@ -217,5 +217,6 @@ production repository effects remained zero.
 Final hardening result: all 15 source-enumerated classes satisfy their required
 acceptance, including `provider_outage=live_pass` and
 `host_loss_reconnect=live_pass`. H0-G2 is **COMPLETE** and H0 is **COMPLETE**.
-No next H0 task is opened automatically; the next roadmap phase is read from
-the authoritative roadmap after its closure update.
+U0, V0, and D0 are already recorded complete earlier in the roadmap; no
+successor phase after H0 is currently specified. Make a separate roadmap
+decision before starting further work.

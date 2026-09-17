@@ -1815,5 +1815,6 @@ provider fallback was used. Exact cleanup removed every disposable resource;
 zero remain. Full evidence:
 `operations/reports/agent-mode-h0-g2-external-live-acceptance-evidence-2026-09-17.md`.
 
-The next authoritative phase is **U0 — unified Brain Console control
-surface**. Do not start it automatically.
+U0, V0, and D0 are already recorded complete earlier in the roadmap. No
+successor phase after H0 is currently specified; make a separate roadmap
+decision before starting further work.
