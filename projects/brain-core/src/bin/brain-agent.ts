@@ -16,6 +16,7 @@ import { bootstrapPlanJson, createBrainBootstrapPlan } from '../agent-mode/boots
 import { buildRuntimePackage, verifyRuntimePackage } from '../agent-mode/runtime-package.js';
 import { createLocalInstallPlan, installRuntimePackage, readRuntimePackageManifest } from '../agent-mode/local-install.js';
 import { createStateSnapshot, importStateSnapshot, readStateSnapshot, verifyStateSnapshot, writeStateSnapshot } from '../agent-mode/state-relocation.js';
+import { createReleaseManifest, readReleaseManifest, verifyReleaseManifest, writeReleaseManifest } from '../agent-mode/release-maintenance.js';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://127.0.0.1:4877';
 
@@ -36,7 +37,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build --output PATH --release-revision REV [--source-root PATH] | brain-agent package verify --root PATH | brain-agent state export|verify|import ... | brain-agent local install plan|apply --package PATH --install-root PATH --platform darwin|linux --architecture arm64|x64 [--secret-ref PATH] [--node-executable PATH] | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once ... | brain-agent run ... | brain-agent inspect|pause|resume|cancel|kill RUN_ID ... | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build|verify ... | brain-agent release create|verify ... | brain-agent state export|verify|import ... | brain-agent local install plan|apply ... | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once ... | brain-agent run ... | brain-agent inspect|pause|resume|cancel|kill RUN_ID ... | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -122,6 +123,25 @@ async function main(): Promise<void> {
     usage();
     process.exitCode = 1;
     return;
+  }
+
+  if (command === 'release') {
+    const action = process.argv[3];
+    if (action === 'create') {
+      const manifest = createReleaseManifest({
+        packageRoot: requiredFlag('--package'), releaseVersion: requiredFlag('--release-version'), sourceRevision: requiredFlag('--source-revision'), keyId: requiredFlag('--key-id'), privateKey: readFileSync(requiredFlag('--private-key')), buildTimestamp: flag('--build-timestamp') ?? new Date().toISOString(), previousReleaseVersion: flag('--previous-release-version') ?? null,
+      });
+      const output = requiredFlag('--output');
+      writeReleaseManifest(manifest, output);
+      process.stdout.write(`${JSON.stringify({ ok: true, releaseId: manifest.releaseId, releaseVersion: manifest.releaseVersion, output }, null, 2)}\n`);
+      return;
+    }
+    if (action === 'verify') {
+      const expectedSourceRevision = flag('--expected-source-revision'); const expectedReleaseVersion = flag('--expected-release-version');
+      const result = verifyReleaseManifest(readReleaseManifest(requiredFlag('--manifest')), { packageRoot: requiredFlag('--package'), publicKey: readFileSync(requiredFlag('--public-key')), ...(expectedSourceRevision ? { expectedSourceRevision } : {}), ...(expectedReleaseVersion ? { expectedReleaseVersion } : {}) });
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`); if (!result.ok) process.exitCode = 1; return;
+    }
+    usage(); process.exitCode = 1; return;
   }
 
   if (command === 'state') {

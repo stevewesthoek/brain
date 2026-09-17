@@ -1762,6 +1762,24 @@ migration handoff. It must preserve the existing Brain authority boundaries.
 Full decision report:
 `operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
 
+## Release-maintenance baseline — 2026-09-17
+
+**COMPLETE for the bounded baseline; Agent Mode remains in release-maintenance
+mode.** Brain now has an offline signed release manifest/verifier around the
+validated runtime package, a logical StateStore backup wrapper that preserves
+`brain-state-snapshot-v1`, fresh-target restore/exact-once checks, and
+fail-closed promotion/rollback assessment. The release identity is bound to
+version, source revision, package and schema hashes; private signing material
+is external and no production signing identity was provisioned here.
+
+The drill is isolated: R0 is the current pre-promotion revision
+`72fc9fd7`, candidate packaging/install/restore is fixture-backed, and no live
+Office state or provider is touched. Uncertain effects, lease/fence facts,
+Jarvis/K5 durable state and scheduler records remain logical StateStore data,
+not replay instructions or a duplicate ledger. See
+`operations/reports/agent-mode-release-maintenance-baseline-evidence-2026-09-17.md`
+and `operations/runbooks/agent-mode-release-maintenance.md`.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

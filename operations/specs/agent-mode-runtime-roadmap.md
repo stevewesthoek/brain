@@ -2221,6 +2221,32 @@ complete. No successor foundation phase is created after H0; the post-H0
 decision is recorded in
 `operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
 
+## Release-maintenance baseline — 2026-09-17
+
+**Status:** **COMPLETE for the bounded release-maintenance baseline.** The
+Agent Mode lane remains in release-maintenance mode; no H1/K6 foundation phase
+is created.
+
+The signed `brain-agent-release-v1` contract binds release version, source
+revision, the verified runtime package ID/manifest hash, component identities,
+StateStore/snapshot/install schemas, and release contract version. Its offline
+Ed25519 verifier rejects package tamper, signature mismatch, unsupported
+versions, and filename trust. The `brain-agent-backup-v1` wrapper preserves
+the existing logical `brain-state-snapshot-v1`; restore is integrity-checked,
+foreign-key-checked, fresh-target-only and exact-once. Promotion and rollback
+gates fail closed until package, signature, backup, restore, isolated smoke and
+rollback evidence are present.
+
+The 2026-09-17 drill uses R0=`72fc9fd7` as the current pre-promotion baseline
+and an isolated signed candidate fixture. It changes no live Office state and
+does not provision a production signing identity. Full evidence is in
+`operations/reports/agent-mode-release-maintenance-baseline-evidence-2026-09-17.md`;
+operator procedure is in `operations/runbooks/agent-mode-release-maintenance.md`.
+
+The next work is ordinary release operations: provision an external
+production signing identity and run a separately authorized non-production
+promotion when required. No new Agent Mode foundation phase is authorized.
+
 ## Post-H0 roadmap decision — 2026-09-17
 
 **Decision:** **NO NEW FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**.
@@ -2233,12 +2259,14 @@ next bounded task is operational:
 > **Agent Mode release-maintenance baseline — signed release promotion with
 > consistent backup/restore and rollback drill.**
 
-That task is not started here. It will define the supported release/version,
-verify package provenance, rehearse StateStore-plus-evidence backup/restore and
-upgrade/rollback, and document monitoring, incident, cost, support and
-migration handoff without changing Agent Mode authority or creating a new
-foundation phase. The full decision, candidate comparison and gap inventory
-are in `operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
+That bounded baseline is now complete. It defines the supported release/version,
+verifies package provenance, rehearses logical StateStore-plus-evidence
+backup/restore and upgrade/rollback gates, and documents monitoring, incident,
+cost, support and migration handoff without changing Agent Mode authority or
+creating a new foundation phase. Evidence is in
+`operations/reports/agent-mode-release-maintenance-baseline-evidence-2026-09-17.md`;
+the decision record remains in
+`operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
 
 ## Phase K3.6 — foundation audit, consolidation and K4 readiness
 

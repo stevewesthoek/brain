@@ -4,9 +4,10 @@
 
 K0–K5, U0, V0, D0 and H0 are complete for their recorded bounded gates. The
 Agent Mode lane is in **release-maintenance mode** with no new foundation phase
-authorized. The next bounded task is the release-maintenance baseline for
-signed release promotion, consistent StateStore-plus-evidence backup/restore,
-upgrade/rollback rehearsal and operational handoff; it is not started here.
+authorized. The bounded release-maintenance baseline for signed release
+promotion, consistent StateStore-plus-evidence backup/restore, upgrade/rollback
+rehearsal and operational handoff is complete. Production signing identity and
+live promotion remain separately authorized operational work.
 Historical “exact next task” entries below describe their state at the time
 they were written.
 
@@ -1849,3 +1850,23 @@ effects, reuse stale leases, or turn the Console into an authority.
 
 See the full decision and gap classification in
 `operations/reports/agent-mode-post-h0-roadmap-decision-2026-09-17.md`.
+
+## Release-maintenance boundary — 2026-09-17
+
+The Agent Mode foundation is complete through H0 and the lane is in
+release-maintenance mode. The signed `brain-agent-release-v1` manifest and
+offline verifier sit above the existing `brain-runtime-package-v1` package;
+they do not change K4/K5 execution authority. The manifest binds version,
+source revision, package ID/manifest hash, build identities, and Store,
+snapshot, install and release contract versions. Private signing material is
+external to Git.
+
+Backups use the existing quiesced logical `brain-state-snapshot-v1` export,
+wrapped only by bounded `brain-agent-backup-v1` metadata. Restore is
+fresh-target-only and verifies integrity, foreign keys, counts and hashes;
+SQLite WAL copying, domain duplication, uncertain-effect replay and lease/PID
+trust are prohibited. Offline promotion is blocked unless package/signature,
+backup, restore, isolated smoke and rollback evidence all pass. No service is
+registered or started by this baseline, and live Office/provider/network state
+is untouched. See `operations/runbooks/agent-mode-release-maintenance.md` and
+the dated evidence report.
