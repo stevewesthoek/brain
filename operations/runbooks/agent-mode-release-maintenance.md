@@ -1,6 +1,6 @@
 # Agent Mode release maintenance
 
-**Status:** bounded baseline complete, 2026-09-17
+**Status:** bounded baseline normalized, 2026-09-17
 
 This runbook covers the first supported release-maintenance mechanics for the
 Brain Agent Mode lane. It does not create a new foundation phase and does not
@@ -151,6 +151,50 @@ The supported future macOS layout is one operator-owned install root with
 activation window. It is a plan, not permission to create a second Core,
 second StateStore, or parallel scheduler.
 
+## Production baseline normalization
+
+The separately authorized 2026-09-17 normalization moved the Office Core and
+Console launch agents from the mutable `brain-runtime` checkout to the
+verified immutable install root:
+
+```text
+installRoot: /Users/Office/Library/Application Support/Brain/agent-mode
+releaseRevision: 2a93ab565c697bc18ecb01f1a25f3f9dada11240
+packageId: brain-runtime-package:sha256:bb9461f8f0b49e19edf9b9c59e634fde114d2ca9289d059fa16c3a9b24d17cba
+manifestHash: a7cd15fe3df41cdbf7de77bcd38267328a2284a32f4055107f8a61dead19c577
+installId: brain-local-install:sha256:a56d5e0475ecf83eebba0958a69fbdcbc57c609fd61af045e06707584a41715f
+stateStore: /Users/Office/Library/Application Support/Brain/agent-mode/state/agent-mode/agent-mode.db
+```
+
+The release payload is package-verifier clean and contains no symlinks. Core
+production dependencies are hydrated in the install-root dependency layer,
+outside the immutable release payload; the release verifier remains clean.
+The service descriptors use the supported `brain-runtime-config-v1` profile
+plus explicit state/port environment overrides, because the current runtime
+loader honors `BRAIN_RUNTIME_PROFILE_PATH` and the explicit compatibility
+variables. Console standalone startup additionally requires `PORT=4881` and
+`HOSTNAME=127.0.0.1`; `BRAIN_CONSOLE_PORT` alone is not a Next standalone
+server setting.
+
+The canonical Store was absent before cutover, so one empty schema-10 Store was
+initialized after the legacy services stopped. It passed integrity and foreign
+key checks and contained zero agents, tasks, runs, and attempts. No migration,
+backup, or existing-state discard occurred. The persistent `backups/` root is
+owner-only and reserved for the next logical StateStore backup; it contains no
+copy of the empty Store.
+
+The exact pre-change descriptors are retained at:
+`/Users/Office/Library/Application Support/Brain/agent-mode/recovery/2026-09-17T221500Z-legacy-launchd/`.
+If the normalized health gate fails, stop only the two current launch agents,
+restore those exact descriptor files, bootstrap the two `com.office.*` labels,
+and verify the legacy Core/Console health routes. Do not delete the normalized
+release or Store during rollback diagnosis. If the five-minute observation
+passes, the immutable package is the retained rollback target for the next
+authorized RC.6 task; this procedure does not create or sign RC.6.
+
+Normalization evidence is in
+`operations/reports/agent-mode-production-baseline-normalization-evidence-2026-09-17.md`.
+
 ## Operational handoff
 
 Monitor release/source/package/manifest hashes, backup ID, snapshot aggregate
@@ -171,6 +215,12 @@ Harness/ModelGateway effects and no production Office activation. The only
 started process was the installed candidate Core in the disposable root, in
 the foreground on localhost, and it was stopped after read-only `/status` and
 `/agent-mode/observer` smoke checks.
+
+The production normalization is the separate exception authorized on
+2026-09-17: it stopped and restarted only the two existing user launch agents,
+created one previously absent empty schema-10 Store, and performed localhost
+health reads. It made zero provider/model/AWS/SSH/Tailscale/BrainNode/Workcell/
+Harness/ModelGateway effects and created zero Agent Mode lifecycle records.
 
 ## Key rotation, retirement, and revocation
 

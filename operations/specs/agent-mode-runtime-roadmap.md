@@ -2262,6 +2262,36 @@ Production activation, service registration, public publishing, and push remain
 unauthorized. The Agent Mode lane remains in ordinary release-maintenance mode;
 no new foundation phase is authorized.
 
+### Production baseline normalization — 2026-09-17
+
+The separately authorized Office baseline-normalization task is **COMPLETE**.
+The running mutable `brain-runtime` checkout was preserved as rollback material
+and the Core/Console launch agents were switched to the verified immutable
+`brain-runtime-package-v1` install rooted at
+`/Users/Office/Library/Application Support/Brain/agent-mode`. The selected
+baseline is source revision `2a93ab565c697bc18ecb01f1a25f3f9dada11240`, package
+ID `brain-runtime-package:sha256:bb9461f8f0b49e19edf9b9c59e634fde114d2ca9289d059fa16c3a9b24d17cba`,
+and manifest hash
+`a7cd15fe3df41cdbf7de77bcd38267328a2284a32f4055107f8a61dead19c577`.
+
+The previously absent canonical Agent Mode StateStore was created once at the
+configured install-state path with schema 10, SQLite integrity `ok`, and no
+records; no migration or existing data discard occurred. Both launch agents
+run from the immutable release, preserve the localhost ports and legacy read
+routes, and passed a five-minute health observation. Exact pre-change launchd
+descriptors are retained under the install recovery vault. The persistent
+backup root exists for a future logical StateStore backup; no backup was
+created because the pre-normalization canonical Store was absent.
+
+This is a production baseline normalization, not an RC.6 cut or public release.
+The installed immutable baseline is the retained rollback target for the next
+authorized RC.6 task. No provider/model/AWS/SSH/Tailscale/BrainNode/Workcell/
+Harness/ModelGateway effect occurred and no Agent Mode lifecycle records were
+created. Evidence:
+`operations/reports/agent-mode-production-baseline-normalization-evidence-2026-09-17.md`.
+The exact next task is **RC.6 — cut and validate the next signed release from
+the normalized immutable baseline**; do not start it automatically.
+
 ## Post-H0 roadmap decision — 2026-09-17
 
 **Decision:** **NO NEW FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**.

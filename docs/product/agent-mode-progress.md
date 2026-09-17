@@ -1815,6 +1815,32 @@ canonical StateStore; then cut a new reproducible RC.6 rather than relabeling a
 different package as RC.5. Evidence:
 `operations/reports/agent-mode-production-activation-readiness-recovery-2026-09-17.md`.
 
+## Production baseline normalization — 2026-09-17
+
+The separately authorized production baseline normalization is **COMPLETE**.
+Office Core and Console now run from the verified immutable install at
+`/Users/Office/Library/Application Support/Brain/agent-mode`, using source
+revision `2a93ab565c697bc18ecb01f1a25f3f9dada11240`, package ID
+`brain-runtime-package:sha256:bb9461f8f0b49e19edf9b9c59e634fde114d2ca9289d059fa16c3a9b24d17cba`,
+and manifest hash
+`a7cd15fe3df41cdbf7de77bcd38267328a2284a32f4055107f8a61dead19c577`.
+
+The previously absent canonical Agent Mode StateStore was initialized once at
+the install-state path with schema 10 and zero domain records. It passed
+SQLite integrity/foreign-key checks; no existing Agent Mode state was migrated,
+overwritten, or discarded. The old mutable checkout and exact launchd
+descriptors remain retained recovery material. Core/Console compatibility and
+read-only routes remained healthy throughout a five-minute observation, and
+the service reads created no agents, tasks, runs, attempts, provider calls, or
+other execution effects.
+
+This does not cut or sign RC.6. The normalized immutable release is the retained
+rollback target and release-maintenance predecessor for the next separately
+authorized task. Evidence:
+`operations/reports/agent-mode-production-baseline-normalization-evidence-2026-09-17.md`.
+Exact next task: **RC.6 — cut and validate the next signed release from the
+normalized immutable baseline**; do not start it automatically.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not
