@@ -1788,6 +1788,33 @@ ledger. See
 `operations/reports/agent-mode-clean-signed-release-candidate-evidence-2026-09-17.md`
 and `operations/runbooks/agent-mode-release-maintenance.md`.
 
+## RC.5 production activation readiness recovery — 2026-09-17
+
+The separately authorized readiness-recovery task is **BLOCKED_MULTIPLE**;
+production activation remains blocked and no production service or StateStore
+was touched. The exact retained RC.5 artifact was not found. A clean rebuild
+from the recorded `c81c6785` source/tree passed structural package verification
+but produced package ID `brain-runtime-package:sha256:d2ee8d45f71296c2a80057c6cbd46ea53173f2c6e2f745ce7d39d438c21b0f29`
+and manifest hash `1acf3e2100f744f42d2f91f13ee1cf1ec70ca5f236393da3f3b326456b4309ee`,
+which are not RC.5. It was not re-signed or retained as RC.5.
+
+Read-only process evidence maps the complete Core generated closure to clean
+commit `9a5719e7`, but the live Console remains a mutable non-standalone Next
+build whose generated closure is not reproducible as the supported package
+contract. The active launchd services still run from the unversioned
+`brain-runtime` checkout. The configured default Agent Mode StateStore is
+absent, no Agent Mode SQLite handle is open, and the legacy Core routes do not
+prove a canonical Store. The isolated R0 rehearsal package is not accepted as
+the current production rollback target.
+
+The release-maintenance runbook now defines stable candidate-vault retention,
+baseline/runtime-closure identification, canonical Store corroboration, and
+immutable rollback retention. Exact next task: separately authorize production
+baseline normalization onto a supported immutable install with an explicit
+canonical StateStore; then cut a new reproducible RC.6 rather than relabeling a
+different package as RC.5. Evidence:
+`operations/reports/agent-mode-production-activation-readiness-recovery-2026-09-17.md`.
+
 ## Historical maintenance handoff — 2026-08-14
 
 The following records the product-specific maintenance state at that date, not

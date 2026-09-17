@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "brain-production-runtime-forensic-manifest-v1",
+  "capturedAt": "2026-09-17T21:31:55Z",
+  "serviceManager": "macos-launchd-user-agent",
+  "runtimeCheckout": {
+    "path": "/Users/Office/Repos/stevewesthoek/brain-runtime",
+    "checkoutHead": "8f8d6c8d7a1eb8929a7dbdc2329407ebb73a8c51",
+    "claimedSourceRevision": "9a5719e731f16c4e88bb34720c1679f1e3276be9",
+    "claimedDeploymentRevision": "9a5719e731f16c4e88bb34720c1679f1e3276be9",
+    "classification": "mutable-source-checkout-with-generated-runtime",
+    "dirtyPathCount": 13,
+    "runtimeRelevantSourceDirty": "not-observed",
+    "generatedConsoleProvenance": "not-cryptographically-reproducible"
+  },
+  "node": {
+    "executable": "/opt/homebrew/bin/node",
+    "version": "v25.9.0"
+  },
+  "services": [
+    {
+      "component": "brain-core",
+      "label": "com.office.brain-core",
+      "pid": 15733,
+      "entrypoint": "/Users/Office/Repos/stevewesthoek/brain-runtime/projects/brain-core/dist/index.js",
+      "workingDirectory": "/Users/Office/Repos/stevewesthoek/brain-runtime/projects/brain-core",
+      "entrypointSha256": "5d2040a2493dfdfecd011e8786ea03793a1e3e29c8cf1c5e84b13069894c2202",
+      "closure": {
+        "fileCount": 537,
+        "relativePathHashSha256": "08c6fafd7986cd530b6dc50f22fec5aa3c1521de6751d833461b54d71958294d",
+        "matchesCleanRevision": "9a5719e731f16c4e88bb34720c1679f1e3276be9"
+      }
+    },
+    {
+      "component": "brain-console",
+      "label": "com.office.brain-console",
+      "pid": 4039,
+      "entrypoint": "/Users/Office/Repos/stevewesthoek/brain-runtime/tools/brain-console-service.mjs",
+      "workingDirectory": "/Users/Office/Repos/stevewesthoek/brain-runtime/projects/brain-console",
+      "entrypointSha256": "899b34ccb139a912bda3de006597d95d08f38793d22165c590772fab1d70f7df",
+      "generatedBuild": {
+        "root": "/Users/Office/Repos/stevewesthoek/brain-runtime/projects/brain-console/.next",
+        "nonCacheFileCount": 268,
+        "buildId": "ymiDztvjgVW7YTYqqVI55",
+        "relativePathHashSha256": "343d85383ecff046fe756c32976f8981df81d88c84ccda8872026d7a2290606f",
+        "cleanNineAComparison": "same-path-set-but-368-hash-entry-differences"
+      }
+    }
+  ],
+  "dependencyIdentities": {
+    "corePackageLockSha256": "6bb3984385777245799ffb5f86a90f65624481d3616aa5ca81f51598190c7774",
+    "consolePackageLockSha256": "72ee349a88ee85d45a738b95b7ef64f9e2f629d31d5f4829922098b50a026c3f9",
+    "next": "15.5.19",
+    "react": "19.2.7",
+    "reactDom": "19.2.7"
+  },
+  "stateStore": {
+    "configuredDefaultPath": "/Users/Office/.local/brain/agent-mode/agent-mode.db",
+    "pathPresent": false,
+    "activeCoreHandleObserved": false,
+    "classification": "canonical-production-store-unproven"
+  }
+}

@@ -100,6 +100,57 @@ populated R1 target, and classified a contract mismatch as incompatible.
 Failed promotion or rollback remains blocked; neither path activates a
 service.
 
+## Production readiness recovery
+
+Before an authorized Office activation, first answer four questions from
+read-only evidence: the exact retained candidate artifact, the exact running
+runtime closure, the canonical active StateStore, and a compatible immutable
+rollback target. A release is not ready when any one of those is inferred from
+filenames, a dirty checkout, a stale database, a mutable pointer, or a legacy
+observer route.
+
+Candidate retention begins when a release becomes promotable. Use an
+operator-owned application-support vault outside Git, web roots, logs, and
+temporary directories, organized by immutable release/package identity. Retain
+the verified runtime package, package manifest, signed release manifest, public
+verification metadata, and a bounded verification receipt through the
+activation and rollback window. Never retain private signing material,
+credentials, StateStore files, WAL files, raw logs, or provider payloads.
+Temporary reconstruction outputs are not release artifacts and may be retired
+only after the retained copy has independently passed package and release
+verification. If exact package or manifest identity cannot be reproduced, do
+not re-sign it as the old release; cut a new immutable release instead.
+
+The production baseline record must identify the launchd/service descriptor,
+PID, executable, entrypoint, working directory, Node/runtime version, source or
+install root, release/package identity where available, and runtime-relevant
+hashes. Classify tracked and untracked paths by whether they can affect the
+running runtime closure. A clean Core source tree does not prove that an
+untracked generated Console build or manually launched service is immutable.
+
+The canonical StateStore must be proven from at least two independent runtime
+facts where possible, such as the effective config path plus an active process
+file handle. A nearby SQLite file is not canonical by recency or size. During
+readiness recovery do not open, checkpoint, migrate, vacuum, export, snapshot,
+restore, close, or write the production Store. The expected RC.5 contract is
+Store schema 10; compatibility remains unknown until the active Store is
+identified.
+
+Rollback requires a retained immutable package and manifest for the actual
+production baseline, or a separately identified compatible predecessor whose
+package, install contract, schema contract, and isolated startup smoke have
+passed. An earlier isolated rehearsal is not automatically the live rollback
+target. If the current runtime cannot be reproduced from committed source and
+no immutable installed predecessor exists, return
+`BLOCKED_ROLLBACK_TARGET_UNAVAILABLE` and normalize production in a separate
+authorized task; do not mutate service pointers in the readiness phase.
+
+The supported future macOS layout is one operator-owned install root with
+`releases/<package-id>/`, `state/`, `config/`, and `services/` children. The
+`brain-local-install-v1` plan leaves registration and start disabled until the
+activation window. It is a plan, not permission to create a second Core,
+second StateStore, or parallel scheduler.
+
 ## Operational handoff
 
 Monitor release/source/package/manifest hashes, backup ID, snapshot aggregate
