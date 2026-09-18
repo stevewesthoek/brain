@@ -4,6 +4,13 @@
   "type": "module",
   "version": "1.0.0",
   "main": "./src/index.mjs",
+  "bin": {
+    "evermind": "./src/cli/cli.mjs",
+    "evermind-capture-server": "./src/capture/server.mjs",
+    "evermind-watch": "./src/intake/drop-watch.mjs",
+    "evermind-artifact-cleanup": "./src/intake/artifact-retention.mjs",
+    "evermind-notification-action": "./src/notifications/action-cli.mjs"
+  },
   "exports": {
     ".": "./src/index.mjs"
   },
@@ -12,8 +19,15 @@
     "check": "npm run build",
     "typecheck": "npm run build",
     "test": "node --test test/*.test.mjs",
+    "test:native-acceptance": "node test/native-acceptance.mjs",
     "smoke": "node --test test/smoke.test.mjs",
     "cli": "node src/cli/cli.mjs",
+    "capture:server": "node src/capture/server.mjs",
+    "watch": "node src/intake/drop-watch.mjs",
+    "artifact:cleanup": "node src/intake/artifact-retention.mjs",
+    "notification:action": "node src/notifications/action-cli.mjs",
+    "build:macos-notifier": "src/notifications/macos/build-helper.sh",
+    "build:macos-companion": "src/notifications/macos/build-companion.sh",
     "provider": "node src/provider/server.mjs",
     "eval": "node src/evals/benchmark.mjs",
     "eval:gate": "node src/evals/gate.mjs"
