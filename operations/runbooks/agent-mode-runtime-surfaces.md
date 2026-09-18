@@ -52,6 +52,27 @@ Opening the optional menu performs no AWS probe. Claude Code remains supported
 by its dedicated launcher and resume code, but is intentionally absent from
 the normal selector.
 
+### `repos` Brain CLI resolution
+
+The repository picker does not require a manually linked `brain-agent` command.
+After the repository is selected, `tools/scripts/repos.sh` resolves the Brain
+entrypoint in this bounded order:
+
+1. an explicit absolute `BRAIN_AGENT_BIN` override;
+2. the active verified Brain runtime installation under
+   `~/Library/Application Support/Brain/agent-mode-rc6`;
+3. the built `projects/brain-core/dist/bin/brain-agent.js` in the Brain source
+   checkout, with a local `npm run build` only when the checkout has its local
+   TypeScript dependency and no built entrypoint;
+4. an executable `brain-agent` from `PATH` as a compatibility fallback.
+
+The installed runtime is preferred over a stale or unrelated PATH binary. The
+launcher invokes the resolved JavaScript entrypoint with a compatible Node
+runtime, preserving the selected repository as the child process working
+directory. It never installs packages, uses `sudo`, probes providers, or
+changes production StateStore/service state. `repos.sh --resolve-brain-cli`
+prints the bounded resolution for diagnostics without launching Brain.
+
 `Claude Code` remains a dedicated Claude coding runtime and continues to use
 `claude-bedrock-env.sh` when launched. `Codex` remains a separate
 subscription-backed coding/runtime resource with Brain quota/reserve policy.

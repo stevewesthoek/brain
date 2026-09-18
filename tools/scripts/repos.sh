@@ -14,6 +14,8 @@ CACHE_FILE="$HOME/.claude/cache/repos.json"
 USAGE_FILE="$HOME/.claude/cache/repo_usage.json"
 REPOS_ROOT="$HOME/Repos"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BRAIN_REPOSITORY_ROOT="${BRAIN_REPOSITORY_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd -P)}"
+source "$SCRIPT_DIR/brain-cli-resolver.sh"
 
 scan_to_cache() {
   python3 - "$REPOS_ROOT" "$CACHE_FILE" <<'PYEOF'
@@ -73,15 +75,26 @@ PYEOF
 
 launch_brain() {
   # brain-agent is the canonical Brain task entrypoint and owns model admission.
+  # The resolved command remains equivalent to: brain-agent run
   local model="$1"
-  command -v brain-agent >/dev/null 2>&1 || {
-    echo "brain-agent is not on PATH; install/build Brain Core before launching Brain." >&2
+  brain_resolve_cli || {
+    echo "Unable to launch Brain: $BRAIN_RESOLUTION_ERROR" >&2
     return 1
   }
-  if [[ "$model" == "auto" ]]; then
-    exec brain-agent run
+  if [[ "${REPOS_LAUNCH_DRY_RUN:-0}" == "1" ]]; then
+    printf 'cwd=%s\nmodel=%s\n' "$PWD" "$model"
+    brain_resolution_summary
+    if [[ "$model" == "auto" ]]; then
+      printf 'args=run\n'
+    else
+      printf 'args=run --model %s\n' "$model"
+    fi
+    return 0
   fi
-  exec brain-agent run --model "$model"
+  if [[ "$model" == "auto" ]]; then
+    exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" run
+  fi
+  exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" run --model "$model"
 }
 
 runtime_menu() {
@@ -96,6 +109,15 @@ runtime_menu() {
 if [[ "${1:-}" == "--runtime-menu" ]]; then
   runtime_menu
   exit 0
+fi
+if [[ "${1:-}" == "--resolve-brain-cli" ]]; then
+  brain_resolve_cli || { echo "Unable to resolve Brain CLI: $BRAIN_RESOLUTION_ERROR" >&2; exit 1; }
+  brain_resolution_summary
+  exit 0
+fi
+if [[ "${1:-}" == "--launch-brain-test" ]]; then
+  launch_brain "${2:-auto}"
+  exit $?
 fi
 if [[ "${1:-}" == "--choose-model" ]]; then
   shift
