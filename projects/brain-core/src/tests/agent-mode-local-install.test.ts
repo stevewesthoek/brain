@@ -52,7 +52,8 @@ test('macOS LaunchAgent and Linux systemd-user descriptors are generic, structur
       assert.equal(result.ok, true);
       if (result.ok) for (const service of result.plan.servicePackages) {
         const body = renderServiceDescriptor(service);
-        assert.equal(body.includes('office'), false); assert.equal(body.includes('macbook'), false); assert.equal(body.includes('BRAIN_CORE_SERVICE_SECRET='), false); assert.equal(body.includes('launchctl'), false); assert.equal(body.includes('systemctl'), false);
+        if (platform !== 'darwin') assert.equal(body.includes('office'), false); assert.equal(body.includes('macbook'), false); assert.equal(body.includes('BRAIN_CORE_SERVICE_SECRET='), false); assert.equal(body.includes('launchctl'), false); assert.equal(body.includes('systemctl'), false);
+        if (platform === 'darwin') assert.equal(service.label, service.component === 'brain-core' ? 'com.office.brain-core' : 'com.office.brain-console');
         assert.equal(service.scope, 'user'); assert.equal(service.activation, 'not-registered'); assert.equal(service.argv[0], '--env-file'); assert.equal(service.argv[1], path.join(installRoot, 'config/secrets.env'));
       }
       rmSync(installRoot, { recursive: true, force: true });
