@@ -85,6 +85,12 @@ test('service doctor is deterministic and rejects launchd unload or descriptor l
   assert.equal(wrongLabel.outcome, 'FAIL');
 });
 
+test('service doctor supports explicitly scoped isolated labels without changing production defaults', () => {
+  const isolated = evaluateServiceDoctor({ ...expected, coreLabel: 'com.brain.rc7.core', consoleLabel: 'com.brain.rc7.console' }, observed({ coreDescriptor: descriptor('core', { label: 'com.brain.rc7.core' }), consoleDescriptor: descriptor('console', { label: 'com.brain.rc7.console' }) }));
+  assert.equal(isolated.outcome, 'PASS', JSON.stringify(isolated));
+  assert.equal(evaluateServiceDoctor(expected, observed()).outcome, 'PASS');
+});
+
 test('launchd plist normalization is bounded and rejects malformed descriptors', () => {
   const valid = normalizeLaunchdDescriptor({ Label: 'com.office.brain-core', ProgramArguments: [process.execPath, '--env-file', '/tmp/secrets.env', '/tmp/index.js'], WorkingDirectory: '/tmp', EnvironmentVariables: { BRAIN_RUNTIME_PATH: '/tmp' }, RunAtLoad: true, KeepAlive: true });
   assert.equal(valid?.label, 'com.office.brain-core');

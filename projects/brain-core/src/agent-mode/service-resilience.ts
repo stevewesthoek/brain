@@ -44,6 +44,8 @@ export type ServiceDoctorExpected = {
   nodeMajor: number;
   stateStorePath: string;
   configPath?: string;
+  coreLabel?: string;
+  consoleLabel?: string;
 };
 
 export type ServiceDoctorObserved = {
@@ -137,7 +139,7 @@ export function inspectNodeExecutable(executable: string, expectedMajor: number 
 }
 
 function checkDescriptor(checks: ServiceDoctorCheck[], component: 'core' | 'console', descriptor: LaunchdDescriptor | undefined, expected: ServiceDoctorExpected): void {
-  const label = component === 'core' ? BRAIN_SERVICE_CORE_LABEL : BRAIN_SERVICE_CONSOLE_LABEL;
+  const label = component === 'core' ? expected.coreLabel ?? BRAIN_SERVICE_CORE_LABEL : expected.consoleLabel ?? BRAIN_SERVICE_CONSOLE_LABEL;
   const entrypoint = component === 'core' ? path.join(expected.runtimeRoot, 'core', 'dist', 'index.js') : path.join(expected.runtimeRoot, 'console', 'standalone', 'server.js');
   const expectedConfig = expected.configPath;
   const expectedRuntimeBasePath = expected.runtimeBasePath ?? path.dirname(path.dirname(expected.runtimeRoot));
@@ -223,8 +225,8 @@ export function runProductionServiceDoctor(input: { expected: ServiceDoctorExpec
   const { expected } = input;
   const coreDescriptor = readPlist(input.coreDescriptorPath);
   const consoleDescriptor = readPlist(input.consoleDescriptorPath);
-  const coreService = launchdService(BRAIN_SERVICE_CORE_LABEL, input.uid ?? (process.getuid?.() ?? 0));
-  const consoleService = launchdService(BRAIN_SERVICE_CONSOLE_LABEL, input.uid ?? (process.getuid?.() ?? 0));
+  const coreService = launchdService(expected.coreLabel ?? BRAIN_SERVICE_CORE_LABEL, input.uid ?? (process.getuid?.() ?? 0));
+  const consoleService = launchdService(expected.consoleLabel ?? BRAIN_SERVICE_CONSOLE_LABEL, input.uid ?? (process.getuid?.() ?? 0));
   const observed: ServiceDoctorObserved = {
     node: inspectNodeExecutable(expected.nodeExecutable, expected.nodeMajor),
     launchd: { coreLoaded: coreService.loaded, consoleLoaded: consoleService.loaded },

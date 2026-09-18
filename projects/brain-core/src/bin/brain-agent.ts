@@ -286,6 +286,8 @@ async function main(): Promise<void> {
     if (!Number.isInteger(expectedNodeMajor) || expectedNodeMajor < 1) throw new Error('--expected-node-major must be a positive integer');
     const configPath = flag('--config-path');
     const runtimeBasePath = flag('--runtime-base-path');
+    const coreLabel = flag('--core-label');
+    const consoleLabel = flag('--console-label');
     const result = runProductionServiceDoctor({
       expected: {
         runtimeRoot: requiredFlag('--runtime-root'),
@@ -296,6 +298,8 @@ async function main(): Promise<void> {
         nodeMajor: expectedNodeMajor,
         stateStorePath: requiredFlag('--state-store'),
         ...(configPath ? { configPath } : {}),
+        ...(coreLabel ? { coreLabel } : {}),
+        ...(consoleLabel ? { consoleLabel } : {}),
       },
       coreDescriptorPath: requiredFlag('--core-descriptor'),
       consoleDescriptorPath: requiredFlag('--console-descriptor'),
