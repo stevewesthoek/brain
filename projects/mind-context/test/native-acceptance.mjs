@@ -124,6 +124,29 @@ async function stopApp() {
   appProcess = null;
 }
 
+async function stopExistingEvermind() {
+  const result = spawnSync('/usr/bin/pgrep', ['-x', 'Evermind'], {encoding: 'utf8'});
+  if (result.status !== 0) return;
+
+  for (const rawPid of result.stdout.trim().split(/\s+/)) {
+    const pid = Number(rawPid);
+    if (!Number.isInteger(pid) || pid <= 0) continue;
+    try {
+      process.kill(pid, 'SIGTERM');
+    } catch (error) {
+      if (error?.code !== 'ESRCH') throw error;
+    }
+  }
+
+  const deadline = Date.now() + 2_000;
+  while (Date.now() < deadline) {
+    const remaining = spawnSync('/usr/bin/pgrep', ['-x', 'Evermind'], {encoding: 'utf8'});
+    if (remaining.status !== 0) return;
+    await wait(25);
+  }
+  throw new Error('existing Evermind companion did not terminate before acceptance start');
+}
+
 function writeProbeScript(probePath) {
   const script = [
     "const mode = process.env.EVERMIND_ACCEPTANCE_PROBE_MODE;",
@@ -155,6 +178,8 @@ async function runProcessProbe(probePath, mode, expectedError, assertions = {}) 
 }
 
 async function main() {
+  await stopExistingEvermind();
+
   const reviewCapture = createCapture('Native review-only fixture; disposable; no private content.');
   const reviewRequest = createReviewReadyCaptureRequest({captureId: reviewCapture.captureId, sourceType: 'acceptance-test', provenance: 'synthetic-fixture'});
   store.put(reviewRequest);
