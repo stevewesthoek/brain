@@ -74,3 +74,11 @@ test('unverified, conflicting, failed, and repeated installs are fail-closed or 
     assert.equal(installRuntimePackage({ packageRoot, installRoot, platform: 'linux', architecture: 'x64', nodeExecutable: '/different/node', nodeVersion: '22.5.0', secretRef: 'config/secrets.env' }).ok, false);
   } finally { rmSync(sourceRoot, { recursive: true, force: true }); rmSync(packageRoot, { recursive: true, force: true }); rmSync(installRoot, { recursive: true, force: true }); rmSync(unknown, { recursive: true, force: true }); }
 });
+
+test('local install rejects a declared Node runtime below the package contract', () => {
+  const sourceRoot = sourceFixture(); const packageRoot = packageFixture(sourceRoot); const installRoot = path.join(sourceRoot, `install-node-version-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  try {
+    const result = installRuntimePackage({ packageRoot, installRoot, platform: 'linux', architecture: 'x64', nodeExecutable: process.execPath, nodeVersion: '22.4.9', secretRef: 'config/secrets.env' });
+    assert.deepEqual(result, { ok: false, reason: 'invalid-input', detail: 'Node >=22.5.0 is required' });
+  } finally { rmSync(sourceRoot, { recursive: true, force: true }); rmSync(packageRoot, { recursive: true, force: true }); rmSync(installRoot, { recursive: true, force: true }); }
+});

@@ -1572,6 +1572,32 @@ activation packets and `ssh:macbook` are personal deployment material, not
 portable installer inputs. Exact next task: **D0-E — StateStore Export/Import
 and Control-Plane Relocation Contract**; do not start it automatically.
 
+The bounded host/service doctor is read-only and validates the active
+immutable release, Homebrew Node identity, launchd descriptors, launchd
+ownership, process cardinality, and StateStore integrity. It does not restart
+services or write runtime state:
+
+```bash
+brain-agent service doctor \
+  --runtime-root /absolute/immutable-release-root \
+  --expected-package-id brain-runtime-package:sha256:... \
+  --expected-source-revision COMMITTED_REVISION \
+  --expected-node /opt/homebrew/bin/node \
+  --expected-node-major 26 \
+  --state-store /absolute/state/agent-mode.db \
+  --config-path /absolute/config/brain-runtime-config.json \
+  --core-descriptor /absolute/services/com.brain.core.plist \
+  --console-descriptor /absolute/services/com.brain.console.plist
+```
+
+The production descriptor labels remain `com.office.brain-core` and
+`com.office.brain-console`; the `com.brain.*` filenames above are the
+install-root descriptor filenames. `BRAIN_RUNTIME_PATH` is the install root,
+while descriptor working directories and entrypoints must use the exact
+`releases/<package-id>` root. A failed doctor result is not an authorization to
+repair production in place; preserve evidence and use separate release
+maintenance authorization.
+
 ## D0-E StateStore relocation — 2026-09-15
 
 D0-E is **COMPLETE**; D0 remains **IN PROGRESS**. Use only an explicitly

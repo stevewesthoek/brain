@@ -196,6 +196,71 @@ authorized RC.6 task; the separate RC.6 candidate procedure is recorded below.
 Normalization evidence is in
 `operations/reports/agent-mode-production-baseline-normalization-evidence-2026-09-17.md`.
 
+## Production service resilience doctor
+
+`brain-agent service doctor` is the bounded read-only checker for the current
+host/service layer. It does not bootstrap, bootout, kickstart, restart, write
+the StateStore, or probe providers. It fails closed when any identity or
+cardinality check fails.
+
+Build the current maintenance tooling, then run it with the immutable RC.6
+support facts:
+
+```bash
+cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
+npm run build
+node dist/bin/brain-agent.js service doctor \
+  --runtime-root "/Users/Office/Library/Application Support/Brain/agent-mode-rc6/releases/brain-runtime-package:sha256:ff5809be3a48b01cd393e1817241f19e9b79556117b17035ce044090cfda3cfe" \
+  --expected-package-id "brain-runtime-package:sha256:ff5809be3a48b01cd393e1817241f19e9b79556117b17035ce044090cfda3cfe" \
+  --expected-source-revision "284d162926a8ee8ce80421a726a06c3a22abbd65" \
+  --expected-node "/opt/homebrew/bin/node" \
+  --expected-node-major 26 \
+  --state-store "/Users/Office/Library/Application Support/Brain/agent-mode/state/agent-mode/agent-mode.db" \
+  --config-path "/Users/Office/Library/Application Support/Brain/agent-mode/config/brain-runtime-config.json" \
+  --core-descriptor "/Users/Office/Library/Application Support/Brain/agent-mode/services/com.brain.core.plist" \
+  --console-descriptor "/Users/Office/Library/Application Support/Brain/agent-mode/services/com.brain.console.plist"
+```
+
+The doctor verifies the Node executable and version, package identity and
+source revision, immutable release root, `com.office.brain-core` and
+`com.office.brain-console` descriptor semantics, launchd ownership, one live
+process per service, and StateStore schema 10/integrity/foreign keys. The
+descriptor `BRAIN_RUNTIME_PATH` is the install root (the parent of
+`releases/<package-id>`); the working directory and entrypoint are the exact
+package release root. This distinction is intentional and is checked
+explicitly.
+
+The current host strategy is **Candidate A: external Homebrew Node with a
+bounded host policy**. RC.6 continues to use its supported external Node
+contract (`>=22.5.0`), while the Office service doctor currently requires the
+recorded Node major 26 and minimum `v26.8.2`. A Homebrew unlink, formula
+removal, broken symlink, or incompatible major causes the doctor to fail and
+must not be bypassed. Recovery is to restore the supported Homebrew Node
+formula through the owner-approved maintenance procedure, rerun the doctor,
+and verify the exact RC.6 descriptors; do not reinstall arbitrary software or
+change release pointers blindly.
+
+`brain-agent local install apply` also verifies the actual Node executable
+before writing a new isolated install. Repeated application remains
+idempotent for the same package/install identity. The doctor and installer do
+not create a second service, scheduler, StateStore, or runtime ledger.
+
+The September 18 outage is classified from repository evidence as:
+
+- `LAUNCHD_SERVICE_UNLOADED`: both supported labels were absent from the user
+  launchd domain;
+- `DEPENDENCY_FAILURE` / `MISSING_RUNTIME_FILE`: `/opt/homebrew/bin/node` was
+  a broken symlink to the absent Node 25.9.0 target;
+- `BROKEN_SERVICE_DESCRIPTOR`: both production descriptors pointed to the
+  rollback-baseline package rather than RC.6;
+- exact cause of the unload remains unknown from bounded launchd evidence.
+
+No RC.6 package contents, signed manifest, StateStore, or production pointer
+were changed by this hardening slice. The release decision is
+`NO_NEW_RELEASE_REQUIRED` for current host validation; a future release would
+be required only if this doctor/preflight logic is to become part of an
+immutable runtime package or if Node is moved inside that package.
+
 ## RC.6 signed candidate and isolated promotion — 2026-09-17 (historical)
 
 Fresh candidate `1.0.0-rc.6` was cut from clean committed revision
@@ -319,6 +384,7 @@ from a read-only health check. At minimum, record:
 | Area | Bounded check |
 | --- | --- |
 | Core/Console | launchd state/PID, `/status`, and Console `/agents` health |
+| Service resilience | `brain-agent service doctor`; fail closed on missing/wrong Node, release-root drift, descriptor drift, launchd unload, duplicate process, or Store mismatch |
 | Release identity | active immutable root, version, package ID, source revision, release ID |
 | StateStore | canonical path, schema 10, SQLite integrity, foreign keys |
 | Work backlog | Agent/Task/Run/Attempt counts, pending reviews, attention, uncertain effects |

@@ -18,6 +18,7 @@ import { buildRuntimePackage, verifyRuntimePackage } from '../agent-mode/runtime
 import { createLocalInstallPlan, installRuntimePackage, readRuntimePackageManifest } from '../agent-mode/local-install.js';
 import { createStateSnapshot, importStateSnapshot, readStateSnapshot, verifyStateSnapshot, writeStateSnapshot } from '../agent-mode/state-relocation.js';
 import { createReleaseManifest, createReleaseManifestWithSigner, readReleaseManifest, verifyReleaseManifest, writeReleaseManifest } from '../agent-mode/release-maintenance.js';
+import { inspectNodeExecutable, runProductionServiceDoctor } from '../agent-mode/service-resilience.js';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://127.0.0.1:4877';
 
@@ -38,7 +39,7 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build|verify ... | brain-agent release create|verify ... | brain-agent state export|verify|import ... | brain-agent local install plan|apply ... | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once ... | brain-agent run ... | brain-agent inspect|pause|resume|cancel|kill RUN_ID ... | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build|verify ... | brain-agent release create|verify ... | brain-agent state export|verify|import ... | brain-agent local install plan|apply ... | brain-agent service doctor ... | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once ... | brain-agent run ... | brain-agent inspect|pause|resume|cancel|kill RUN_ID ... | brain-agent workcell create|inspect|destroy ...');
 }
 
 function flag(name: string): string | undefined {
@@ -200,12 +201,39 @@ async function main(): Promise<void> {
       return;
     }
     if (action === 'apply') {
-      const result = installRuntimePackage(input);
+      const runtime = inspectNodeExecutable(input.nodeExecutable);
+      if (!runtime.ok) throw new Error(`local install requires an executable compatible Node runtime: ${runtime.reason ?? 'unknown'}`);
+      const result = installRuntimePackage({ ...input, nodeVersion: runtime.version ?? input.nodeVersion });
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       if (!result.ok) process.exitCode = 1;
       return;
     }
     usage(); process.exitCode = 1; return;
+  }
+
+  if (command === 'service' && process.argv[3] === 'doctor') {
+    const expectedNodeMajor = Number(flag('--expected-node-major') ?? '26');
+    if (!Number.isInteger(expectedNodeMajor) || expectedNodeMajor < 1) throw new Error('--expected-node-major must be a positive integer');
+    const configPath = flag('--config-path');
+    const runtimeBasePath = flag('--runtime-base-path');
+    const result = runProductionServiceDoctor({
+      expected: {
+        runtimeRoot: requiredFlag('--runtime-root'),
+        ...(runtimeBasePath ? { runtimeBasePath } : {}),
+        packageId: requiredFlag('--expected-package-id'),
+        sourceRevision: requiredFlag('--expected-source-revision'),
+        nodeExecutable: flag('--expected-node') ?? '/opt/homebrew/bin/node',
+        nodeMajor: expectedNodeMajor,
+        stateStorePath: requiredFlag('--state-store'),
+        ...(configPath ? { configPath } : {}),
+      },
+      coreDescriptorPath: requiredFlag('--core-descriptor'),
+      consoleDescriptorPath: requiredFlag('--console-descriptor'),
+      ...(flag('--uid') ? { uid: Number(flag('--uid')) } : {}),
+    });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    if (result.outcome !== 'PASS') process.exitCode = 1;
+    return;
   }
 
   if (command === 'sources') {
