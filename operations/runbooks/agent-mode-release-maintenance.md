@@ -255,6 +255,35 @@ created one previously absent empty schema-10 Store, and performed localhost
 health reads. It made zero provider/model/AWS/SSH/Tailscale/BrainNode/Workcell/
 Harness/ModelGateway effects and created zero Agent Mode lifecycle records.
 
+## RC.6 production activation receipt — 2026-09-18
+
+The separately authorized RC.6 production activation **PASSED**. The active
+release is `1.0.0-rc.6`, package
+`brain-runtime-package:sha256:ff5809be3a48b01cd393e1817241f19e9b79556117b17035ce044090cfda3cfe`,
+from source revision `284d162926a8ee8ce80421a726a06c3a22abbd65`. It runs from
+the immutable release root under the supported `com.office.brain-core` and
+`com.office.brain-console` launchd services. The normalized baseline package
+`brain-runtime-package:sha256:bb9461f8f0b49e19edf9b9c59e634fde114d2ca9289d059fa16c3a9b24d17cba`
+remains **ROLLBACK_SUPPORTED**.
+
+The activation backup is retained at the production backup path recorded in
+the activation evidence, with verified snapshot ID
+`brain-state-snapshot:sha256:c198792934471b24b81f6c8ef701e7cf554502ab335520a8082c4676c262e7c7`
+and backup ID
+`brain-agent-backup:sha256:db767cbcb070526a36174deaae631b92e83bd6c93cdf0b6a36e1746ceee2d8c3`.
+The Store remained schema 10, foreign-key enabled, integrity-clean, and empty;
+no lifecycle state was imported or mutated. Core and Console read-only smoke
+passed, followed by a finite observation window exceeding ten minutes with
+stable service PIDs and zero provider/model/runtime/network effects. Full
+evidence is in
+`operations/reports/agent-mode-rc6-production-activation-evidence-2026-09-18.md`.
+
+Production activation is now ordinary release maintenance. Keep the RC.6
+manifest, public-key metadata, baseline binding, backup, and rollback target;
+do not mutate an immutable release. Any future release or rollback requires a
+new bounded authorization and the preflight/quiesce/backup/verification gates
+above.
+
 ## Key rotation, retirement, and revocation
 
 Rotate by provisioning a new Keychain item under a new key ID, publishing its

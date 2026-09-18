@@ -1843,7 +1843,7 @@ normalized immutable baseline**; do not start it automatically.
 
 ## RC.6 signed candidate and isolated promotion — 2026-09-17
 
-**PROMOTABLE; production activation NOT STARTED.** A fresh `1.0.0-rc.6`
+**PRODUCTION_ACTIVE.** A fresh `1.0.0-rc.6`
 candidate was cut from clean committed revision `284d1629`, signed with the
 dedicated macOS Keychain Ed25519 identity, and verified against immutable
 package/source/schema identities. Logical backup/restore, exact-once and
@@ -1853,8 +1853,17 @@ passed. The candidate is retained outside Git by package identity; production
 services, pointers, and Store were not changed. Evidence:
 `operations/reports/agent-mode-rc6-signed-release-candidate-evidence-2026-09-18.md`.
 
-Exact next task: **separately authorize and execute production RC.6
-activation**; do not start it automatically.
+The separately authorized Office production activation passed on 2026-09-18.
+RC.6 now runs from an immutable release root through the supported launchd
+services. The normalized baseline is retained as **ROLLBACK_SUPPORTED** and a
+verified logical production backup is retained. Core and Console read-only
+smoke plus the required observation window passed with stable service
+identities, intact Store integrity, zero Agent Mode lifecycle records, and zero
+provider/model/runtime/network effects. Evidence:
+`operations/reports/agent-mode-rc6-production-activation-evidence-2026-09-18.md`.
+
+Agent Mode remains in ordinary release-maintenance mode; no new foundation
+phase or follow-on implementation task was started automatically.
 
 ## Historical maintenance handoff — 2026-08-14
 

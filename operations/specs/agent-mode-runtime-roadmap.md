@@ -2294,7 +2294,7 @@ the normalized immutable baseline**; do not start it automatically.
 
 ## RC.6 — signed release candidate and isolated promotion drill — 2026-09-17
 
-**Status:** **PROMOTABLE; production activation NOT STARTED.** A fresh RC.6
+**Status:** **PRODUCTION_ACTIVE.** A fresh RC.6
 candidate was built from clean committed revision
 `284d162926a8ee8ce80421a726a06c3a22abbd65`, verified reproducible and
 fail-closed against package/source/tamper changes, and signed with the active
@@ -2309,8 +2309,18 @@ descriptors, pointers, and canonical Store were read-only verified and left
 unchanged. Evidence:
 `operations/reports/agent-mode-rc6-signed-release-candidate-evidence-2026-09-18.md`.
 
-The exact next task is **separately authorize and execute production RC.6
-activation**; do not start it automatically.
+The separately authorized production activation passed on 2026-09-18. RC.6 is
+running from its immutable release root under the supported launchd services;
+the normalized baseline remains **ROLLBACK_SUPPORTED**, and the verified
+logical production backup is retained. Core and Console passed read-only smoke
+and a finite observation window with stable service identities, intact schema-10
+Store integrity, and zero Agent Mode lifecycle records or external effects.
+Evidence:
+`operations/reports/agent-mode-rc6-production-activation-evidence-2026-09-18.md`.
+
+The Agent Mode lane remains in release-maintenance mode. No new foundation
+phase is authorized by this activation; future operational work requires a
+separate bounded authorization.
 
 ## Post-H0 roadmap decision — 2026-09-17
 
