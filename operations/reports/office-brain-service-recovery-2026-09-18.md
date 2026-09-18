@@ -176,10 +176,14 @@ Production effect ledger:
 | Homebrew Node repair | 1 formula reinstall |
 | StateStore writes/restores | 0 |
 | Release deployment or RC.7 cut | 0 |
-| Provider/model/AWS/network/SSH/Tailscale effects | 0 |
+| Brain/provider/model/AWS/SSH/Tailscale effects | 0 |
 | BrainNode/Workcell effects | 0 |
 | Genieo or disk-cleanup operations | 0 |
 | Git push | 0 |
+
+Homebrew downloaded and verified the Node bottle and required formula
+dependencies as part of the explicitly bounded host dependency repair. No
+Brain API, provider, model, AWS, SSH, or Tailscale network call was made.
 
 ## Recovery decision
 
