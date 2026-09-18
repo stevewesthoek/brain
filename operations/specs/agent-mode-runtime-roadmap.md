@@ -2501,3 +2501,27 @@ provider installation is implied by A0.1 or this review.
 The separate C0 local-text cleanup lane may proceed only manifest-first and must
 preserve FluidVoice, MLX Whisper, and other separately classified non-text media
 capabilities. MacBook cleanup remains blocked until read-only inventory succeeds.
+
+## Agent Mode live terminal intake RC.7 candidate — 2026-09-18
+
+**Status:** candidate verified; production not promoted
+
+The bounded terminal-intake change adds the Core-owned `brain-agent submit` /
+`POST /agent-mode/terminal/intake` path. It persists Jarvis/root/task context,
+uses the existing K4 SpawnPolicy, reservation, assignment, dispatch and
+receipt authority, and admits only the closed read-only Codex CLI runtime for
+this candidate. No manual Agent Mode evidence variables, direct child inserts,
+live provider calls, or new control plane were added.
+
+The signed `1.0.0-rc.7` candidate was rebuilt from clean revision `9276aff7`,
+verified against the existing dedicated Keychain Ed25519 identity, installed
+in a fresh isolated root with canonical `com.office.brain-*` service labels,
+and exercised through the real `repos.sh` launcher. Duplicate replay,
+mutation denial, logical backup/restore, fresh-target-only restore, and
+RC.7-to-RC.6 rollback compatibility all passed. Production services and
+StateStore were not changed. Evidence:
+`operations/reports/agent-mode-live-terminal-intake-rc7-candidate-2026-09-18.md`.
+
+The exact next action is separately authorized RC.7 production promotion and
+observation. This candidate does not reopen the completed foundation phases or
+start a new roadmap phase.

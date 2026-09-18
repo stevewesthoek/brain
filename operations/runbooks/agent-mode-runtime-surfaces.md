@@ -1918,3 +1918,44 @@ backup, restore, isolated smoke and rollback evidence all pass. No service is
 registered or started by this baseline, and live Office/provider/network state
 is untouched. See `operations/runbooks/agent-mode-release-maintenance.md` and
 the dated evidence report.
+
+## Core-owned live terminal intake — RC.7 candidate
+
+The supported terminal entry path is the existing `repos.sh` launcher calling
+the installed `brain-agent submit` CLI. The CLI signs a bounded request for
+the authenticated Brain Core service and Core exposes the corresponding
+read-only status route under `/agent-mode/terminal/intake/<rootGoalId>`.
+
+The request must identify the repository ref and absolute repository root;
+Core resolves and validates the root against configured `repositoryRoots` and
+persists the repository/task/model context in the existing StateStore. The
+request then composes the existing K4 SpawnPolicy, child reservation,
+assignment, runtime dispatch, and receipt/settlement path. Organization or
+Jarvis intent never inserts children or calls a runtime directly.
+
+The RC.7 candidate admits only the closed read-only Codex mapping:
+
+```text
+runtime:codex-cli
+runtime-profile:codex-cli-read-only-v1
+task-spec:agent-mode.task-spec.terminal-read-only.v1
+```
+
+`repos.sh` exposes Auto and Codex for this path. Auto is a bounded alias for
+the admitted Codex route; MiniMax, GLM, Opus, and arbitrary provider/runtime
+selection are not terminal-intake authority. The installed runtime invokes
+Codex with an explicit repository root and read-only sandbox. No live model
+gateway, provider probe, Harness, BrainNode, Workcell, or repository-write
+operation is part of this candidate.
+
+The route is authenticated with the existing Brain Core service HMAC boundary.
+Do not provide `BRAIN_AGENT_MODE_*` variables or fabricate completion evidence
+from the shell. Duplicate request material converges on the same deterministic
+Jarvis root and K4 lifecycle. The read-only status response is derived from
+durable K4 state and bounded runtime receipt metadata.
+
+The RC.7 candidate was installed with activation disabled and tested on
+temporary localhost ports only. Production launchd labels remain
+`com.office.brain-core` and `com.office.brain-console`; no service was
+registered or started by the candidate drill. Full evidence is in
+`operations/reports/agent-mode-live-terminal-intake-rc7-candidate-2026-09-18.md`.

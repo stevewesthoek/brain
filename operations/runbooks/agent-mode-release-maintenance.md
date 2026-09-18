@@ -471,3 +471,35 @@ historical verification. If compromise is suspected, block affected release
 promotion, preserve manifests and backup evidence, provision a new identity,
 and issue a replacement candidate. Keychain deletion/revocation is not part
 of the routine drill.
+
+## RC.7 Core-owned terminal intake candidate — 2026-09-18
+
+`1.0.0-rc.7` is a **verified non-production candidate**, not a production
+activation. It was built from clean revision `9276aff7`, signed with the
+existing dedicated Keychain identity `brain-agent-release-production-v1`, and
+retained outside Git by package identity. The candidate includes the
+Core-owned terminal intake path and the canonical packaged macOS labels
+`com.office.brain-core` / `com.office.brain-console`.
+
+The final package is
+`brain-runtime-package:sha256:f5d3c6f8fbae2bd3e1d4d0ae3d377f3774a47abc0c5a840bbde872ed18ab1cc2`
+and the signed release identity is
+`brain-agent-release:sha256:e358be476bf21ce702a3da9879ab87571be7bf1c1cc39507930faca014011ec3`.
+
+The isolated drill installed the package with service registration disabled,
+hydrated Core dependencies, initialized a fresh StateStore, started Core and
+Console in the foreground on temporary localhost ports, and stopped both
+cleanly. The real `repos.sh` terminal path passed a read-only repository task;
+duplicate replay converged without additional lifecycle rows, and an
+explicitly unauthorized mutation was refused without changing the checkout.
+
+The final StateStore was exported through the existing logical snapshot
+contract. Backup verification, fresh R1/R0 restores, populated-target
+rejection, and RC.7-to-RC.6 compatibility all passed. No production Store,
+launchd registration, release pointer, provider, AWS, or external network was
+touched. Evidence:
+`operations/reports/agent-mode-live-terminal-intake-rc7-candidate-2026-09-18.md`.
+
+The exact next release-maintenance action is separately authorized RC.7
+production promotion and observation. Do not promote from a mutable checkout,
+reuse RC.6 identity, or treat this candidate as production-active.

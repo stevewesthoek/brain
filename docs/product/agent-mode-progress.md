@@ -14,6 +14,22 @@ bounded support record is
 evidence is
 `operations/reports/agent-mode-production-release-closeout-2026-09-18.md`.
 
+## RC.7 live terminal intake candidate — 2026-09-18
+
+The Core-owned terminal intake candidate is **VERIFIED / NOT PROMOTED**. The
+real `repos.sh` → `brain-agent submit` path now creates durable Jarvis/root
+context and executes through the existing K4 control plane using the closed
+read-only Codex CLI runtime. The final signed candidate is
+`1.0.0-rc.7`, package
+`brain-runtime-package:sha256:f5d3c6f8fbae2bd3e1d4d0ae3d377f3774a47abc0c5a840bbde872ed18ab1cc2`,
+from revision `9276aff7`.
+
+The candidate passed isolated Core/Console startup, terminal read-only smoke,
+duplicate replay, explicit mutation denial, logical backup/restore, and
+rollback compatibility against RC.6. It was not registered with launchd and
+did not change production. Evidence:
+`operations/reports/agent-mode-live-terminal-intake-rc7-candidate-2026-09-18.md`.
+
 ## Agent Mode architecture handoff — 2026-09-08
 
 The next Brain phase is Agent Mode / Bring Brain Alive. The authoritative plan is
