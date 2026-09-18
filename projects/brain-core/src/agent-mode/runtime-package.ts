@@ -290,7 +290,10 @@ export function buildRuntimePackage(input: RuntimePackageInput): BrainRuntimePac
 }
 
 function packageFiles(root: string): string[] {
-  return walkFiles(root).map((file) => relativePath(path.relative(root, file))).sort((a, b) => a.localeCompare(b));
+  return walkFiles(root)
+    .map((file) => relativePath(path.relative(root, file)))
+    .filter((file) => !file.startsWith('core/node_modules/'))
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export function verifyRuntimePackage(packageRoot: string): RuntimePackageVerification {
