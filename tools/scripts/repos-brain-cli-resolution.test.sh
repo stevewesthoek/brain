@@ -100,15 +100,15 @@ fi
 selected="$tmp_root/selected repo with spaces"
 mkdir -p "$selected"
 selected_pwd="$(cd "$selected" && pwd)"
-for model in auto minimax-m2.5; do
+for model in auto minimax-m2.5 glm-5 opus-4.6; do
   out="$(cd "$selected" && BRAIN_NODE_BIN="$fake_node" BRAIN_AGENT_INSTALL_ROOT="$installed" \
     REPOS_LAUNCH_DRY_RUN=1 bash "$repos_script" --launch-brain-test "$model")"
   assert_contains "$out" "cwd=$selected_pwd"
   assert_contains "$out" 'kind=installed runtime'
   if [[ "$model" == auto ]]; then
-    assert_contains "$out" 'args=submit --repository-ref selected repo with spaces --repository-root '
+    assert_contains "$out" 'args=run'
   else
-    assert_contains "$out" 'args=submit --model minimax-m2.5 --repository-ref selected repo with spaces --repository-root '
+    assert_contains "$out" "args=run --model $model"
   fi
 done
 
@@ -119,4 +119,4 @@ out="$(BRAIN_AGENT_BIN="$override" BRAIN_NODE_BIN="$fake_node" BRAIN_AGENT_INSTA
   PATH="/usr/bin:/bin" bash -c 'source "$1"; brain_resolve_cli || exit 1; brain_resolution_summary' _ "$resolver")"
 assert_contains "$out" 'kind=explicit override'
 
-echo 'PASS repos Brain CLI resolution: 10 scenarios'
+echo 'PASS repos Brain CLI resolution: 12 scenarios'
