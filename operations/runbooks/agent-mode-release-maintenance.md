@@ -475,23 +475,24 @@ of the routine drill.
 ## RC.7 Core-owned terminal intake candidate — 2026-09-18
 
 `1.0.0-rc.7` is a **verified non-production candidate**, not a production
-activation. It was built from clean revision `9276aff7`, signed with the
+activation. It was built from clean revision `555c9225`, signed with the
 existing dedicated Keychain identity `brain-agent-release-production-v1`, and
 retained outside Git by package identity. The candidate includes the
 Core-owned terminal intake path and the canonical packaged macOS labels
 `com.office.brain-core` / `com.office.brain-console`.
 
 The final package is
-`brain-runtime-package:sha256:f5d3c6f8fbae2bd3e1d4d0ae3d377f3774a47abc0c5a840bbde872ed18ab1cc2`
+`brain-runtime-package:sha256:08ef891956a6a16a43559626eb6d0434c70d67719fd96aaef6b4eab3bfd6c5bd`
 and the signed release identity is
-`brain-agent-release:sha256:e358be476bf21ce702a3da9879ab87571be7bf1c1cc39507930faca014011ec3`.
+`brain-agent-release:sha256:3a001f54370f94cca30732b4f523bafd3e579ade5cfb0f3cd4f10eeb42f5b55e`.
 
-The isolated drill installed the package with service registration disabled,
-hydrated Core dependencies, initialized a fresh StateStore, started Core and
-Console in the foreground on temporary localhost ports, and stopped both
-cleanly. The real `repos.sh` terminal path passed a read-only repository task;
-duplicate replay converged without additional lifecycle rows, and an
-explicitly unauthorized mutation was refused without changing the checkout.
+The isolated drill installed the package, hydrated Core dependencies,
+initialized a fresh StateStore, booted Core and Console through unique
+temporary launchd labels on ports `4998` and `4999`, and stopped both cleanly.
+The real `repos.sh` terminal path passed the read-only repository task twice;
+duplicate replay converged on one worker lifecycle, and an explicitly
+unauthorized mutation was refused without changing the checkout. The service
+doctor passed `22/22` checks.
 
 The final StateStore was exported through the existing logical snapshot
 contract. Backup verification, fresh R1/R0 restores, populated-target

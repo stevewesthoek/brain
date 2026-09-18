@@ -21,13 +21,14 @@ real `repos.sh` → `brain-agent submit` path now creates durable Jarvis/root
 context and executes through the existing K4 control plane using the closed
 read-only Codex CLI runtime. The final signed candidate is
 `1.0.0-rc.7`, package
-`brain-runtime-package:sha256:f5d3c6f8fbae2bd3e1d4d0ae3d377f3774a47abc0c5a840bbde872ed18ab1cc2`,
-from revision `9276aff7`.
+`brain-runtime-package:sha256:08ef891956a6a16a43559626eb6d0434c70d67719fd96aaef6b4eab3bfd6c5bd`,
+from revision `555c9225`.
 
-The candidate passed isolated Core/Console startup, terminal read-only smoke,
-duplicate replay, explicit mutation denial, logical backup/restore, and
-rollback compatibility against RC.6. It was not registered with launchd and
-did not change production. Evidence:
+The candidate passed the `22/22` service doctor, isolated launchd
+Core/Console startup, terminal read-only smoke, duplicate replay, explicit
+mutation denial, logical backup/restore, and rollback compatibility against
+RC.6. It used unique temporary labels only and did not change production.
+Evidence:
 `operations/reports/agent-mode-live-terminal-intake-rc7-candidate-2026-09-18.md`.
 
 ## Agent Mode architecture handoff — 2026-09-08

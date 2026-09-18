@@ -1954,8 +1954,10 @@ from the shell. Duplicate request material converges on the same deterministic
 Jarvis root and K4 lifecycle. The read-only status response is derived from
 durable K4 state and bounded runtime receipt metadata.
 
-The RC.7 candidate was installed with activation disabled and tested on
-temporary localhost ports only. Production launchd labels remain
-`com.office.brain-core` and `com.office.brain-console`; no service was
-registered or started by the candidate drill. Full evidence is in
+The RC.7 candidate was installed in a disposable root and tested through
+unique temporary launchd labels on temporary localhost ports only. The service
+doctor passed `22/22` checks, including exact package/source and descriptor
+bindings. Production launchd labels remain
+`com.office.brain-core` and `com.office.brain-console`; they were never
+registered, unloaded, or changed by the candidate drill. Full evidence is in
 `operations/reports/agent-mode-live-terminal-intake-rc7-candidate-2026-09-18.md`.

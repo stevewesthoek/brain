@@ -2513,13 +2513,13 @@ receipt authority, and admits only the closed read-only Codex CLI runtime for
 this candidate. No manual Agent Mode evidence variables, direct child inserts,
 live provider calls, or new control plane were added.
 
-The signed `1.0.0-rc.7` candidate was rebuilt from clean revision `9276aff7`,
+The final signed `1.0.0-rc.7` candidate was rebuilt from clean revision `555c9225`,
 verified against the existing dedicated Keychain Ed25519 identity, installed
-in a fresh isolated root with canonical `com.office.brain-*` service labels,
-and exercised through the real `repos.sh` launcher. Duplicate replay,
-mutation denial, logical backup/restore, fresh-target-only restore, and
-RC.7-to-RC.6 rollback compatibility all passed. Production services and
-StateStore were not changed. Evidence:
+in a fresh isolated root and exercised through unique temporary launchd labels
+and the real `repos.sh` launcher. The service doctor passed `22/22` checks.
+Duplicate replay, mutation denial, logical backup/restore, fresh-target-only
+restore, and RC.7-to-RC.6 rollback compatibility all passed. Production
+labels, services, and StateStore were not changed. Evidence:
 `operations/reports/agent-mode-live-terminal-intake-rc7-candidate-2026-09-18.md`.
 
 The exact next action is separately authorized RC.7 production promotion and
