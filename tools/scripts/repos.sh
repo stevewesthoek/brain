@@ -74,9 +74,13 @@ PYEOF
 }
 
 launch_brain() {
-  # brain-agent is the canonical Brain task entrypoint and owns model admission.
-  # The resolved command remains equivalent to: brain-agent run
+  # brain-agent is the canonical Brain task entrypoint and owns authenticated
+  # Jarvis intake plus K4 admission. The legacy fixture `run` command remains
+  # available explicitly for deterministic tests, but repos never invokes it.
   local model="$1"
+  local repository_ref
+  repository_ref="${PWD#"$REPOS_ROOT"/}"
+  [[ "$repository_ref" == "$PWD" ]] && repository_ref="$(basename "$PWD")"
   brain_resolve_cli || {
     echo "Unable to launch Brain: $BRAIN_RESOLUTION_ERROR" >&2
     return 1
@@ -85,24 +89,21 @@ launch_brain() {
     printf 'cwd=%s\nmodel=%s\n' "$PWD" "$model"
     brain_resolution_summary
     if [[ "$model" == "auto" ]]; then
-      printf 'args=run\n'
+      printf 'args=submit --repository-ref %s --repository-root %s\n' "$repository_ref" "$PWD"
     else
-      printf 'args=run --model %s\n' "$model"
+      printf 'args=submit --model %s --repository-ref %s --repository-root %s\n' "$model" "$repository_ref" "$PWD"
     fi
     return 0
   fi
   if [[ "$model" == "auto" ]]; then
-    exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" run
+    exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" submit --model auto --repository-ref "$repository_ref" --repository-root "$PWD"
   fi
-  exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" run --model "$model"
+  exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" submit --model "$model" --repository-ref "$repository_ref" --repository-root "$PWD"
 }
 
 runtime_menu() {
   printf '%s\n' \
     'Auto' \
-    'MiniMax M2.5' \
-    'GLM-5' \
-    'Opus 4.6' \
     'Codex'
 }
 
@@ -126,11 +127,8 @@ fi
 if [[ "${1:-}" == "--model" ]]; then
   case "${2:-}" in
     auto) tool='Auto' ;;
-    minimax-m2.5) tool='MiniMax M2.5' ;;
-    glm-5) tool='GLM-5' ;;
-    opus-4.6) tool='Opus 4.6' ;;
     codex) tool='Codex' ;;
-    *) echo "Usage: repos [--model auto|minimax-m2.5|glm-5|opus-4.6|codex]" >&2; exit 2 ;;
+    *) echo "Usage: repos [--model auto|codex]" >&2; exit 2 ;;
   esac
 else
   tool=$(runtime_menu | fzf \
@@ -174,13 +172,7 @@ record_usage "$selected_path"
 
 cd "$selected_path" || exit 1
 if [[ "$tool" == "Codex" ]]; then
-  exec codex
+  launch_brain codex
 elif [[ "$tool" == "Auto" ]]; then
   launch_brain auto
-elif [[ "$tool" == "MiniMax M2.5" ]]; then
-  launch_brain minimax-m2.5
-elif [[ "$tool" == "GLM-5" ]]; then
-  launch_brain glm-5
-elif [[ "$tool" == "Opus 4.6" ]]; then
-  launch_brain opus-4.6
 fi

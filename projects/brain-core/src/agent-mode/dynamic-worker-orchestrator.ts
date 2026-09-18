@@ -19,6 +19,7 @@ import {
   spawnCreationMaterialHash,
   spawnIntentKey,
   SPAWN_POLICY_READ_ONLY,
+  SPAWN_POLICY_TERMINAL_READ_ONLY,
   SPAWN_ROLE_READ_ONLY,
   type AgentRoleTemplate,
   type AgentSpawnPolicy,
@@ -29,6 +30,8 @@ import {
   AGENT_MODE_RUNTIME_PROFILES,
   MOCK_AGENT_RUNTIME_PROFILE_REF,
   MOCK_AGENT_RUNTIME_REF,
+  CODEX_CLI_RUNTIME_PROFILE_REF,
+  CODEX_CLI_RUNTIME_REF,
   RESTRICTED_HARNESS_PROFILE_REF,
   RESTRICTED_HARNESS_RUNTIME_REF,
   assignmentIntentKey,
@@ -59,6 +62,9 @@ export const K43A_LIVE_MINIMAX_ACTION_RULE_ID = 'agent-mode.action.k4-3-a-live-m
 export const K43A_LIVE_MINIMAX_TASK_SPEC_REF = 'task-spec:agent-mode-live-minimax-acceptance' as const;
 export const K43A_LIVE_MINIMAX_SOURCE_ID = 'source:k4-3-a-live-minimax' as const;
 export const K43A_LIVE_MINIMAX_CONTROLLER_REF = 'controller:agent-mode-k4-3-a' as const;
+export const TERMINAL_INTAKE_ACTION_RULE_ID = 'agent-mode.action.terminal-intake-codex-read-only.v1' as const;
+export const TERMINAL_INTAKE_TASK_SPEC_REF = 'task-spec:agent-mode-terminal-read-only-v1' as const;
+export const TERMINAL_INTAKE_CONTROLLER_REF = 'controller:agent-mode-terminal-intake-v1' as const;
 
 const MAX_RULES = 32;
 const MAX_EVENTS_PER_PASS = 16;
@@ -165,6 +171,28 @@ export const K43A_LIVE_MINIMAX_ACTION_RULE: SchedulerEventActionRule = Object.fr
   scopeMode: 'event.repository',
 });
 
+/** Core-owned terminal intake rule. It is injected only by the authenticated terminal intake service. */
+export const TERMINAL_INTAKE_ACTION_RULE: SchedulerEventActionRule = Object.freeze({
+  ruleId: TERMINAL_INTAKE_ACTION_RULE_ID,
+  version: 1,
+  enabled: true,
+  sourceType: BRAIN_TASK_LIFECYCLE_SOURCE,
+  eventType: TASK_LIFECYCLE_OBSERVED_EVENT,
+  spawnPolicyId: SPAWN_POLICY_TERMINAL_READ_ONLY,
+  spawnPolicyVersion: 1,
+  roleTemplateId: SPAWN_ROLE_READ_ONLY,
+  roleTemplateVersion: 1,
+  runtimeRef: CODEX_CLI_RUNTIME_REF,
+  runtimeProfileRef: CODEX_CLI_RUNTIME_PROFILE_REF,
+  taskSpecRef: TERMINAL_INTAKE_TASK_SPEC_REF,
+  requestedTtl: 10 * 60 * 1000,
+  requestedSteps: 1,
+  requestedCost: 0,
+  requestedTokens: 4_000,
+  requestedCapabilities: ['repo.read'],
+  scopeMode: 'event.repository',
+});
+
 export const DEFAULT_SCHEDULER_EVENT_ACTION_RULES: readonly SchedulerEventActionRule[] = Object.freeze([E1_FIXTURE_ACTION_RULE, E2_FIXTURE_ACTION_RULE, K43A_LIVE_MINIMAX_ACTION_RULE]);
 
 export type DynamicWorkerPhase =
@@ -265,9 +293,11 @@ function validRule(rule: SchedulerEventActionRule, policies: readonly AgentSpawn
   if (!template) return 'RULE_ROLE_UNKNOWN';
   const runtimeProfile = AGENT_MODE_RUNTIME_PROFILES.find((profile) => profile.runtimeRef === rule.runtimeRef && profile.runtimeProfileRef === rule.runtimeProfileRef);
   if (!runtimeProfile) return 'RULE_RUNTIME_UNKNOWN';
-  if ((rule.runtimeRef !== MOCK_AGENT_RUNTIME_REF || rule.runtimeProfileRef !== MOCK_AGENT_RUNTIME_PROFILE_REF)
-    && (rule.runtimeRef !== RESTRICTED_HARNESS_RUNTIME_REF || rule.runtimeProfileRef !== RESTRICTED_HARNESS_PROFILE_REF)) return 'RULE_RUNTIME_NOT_ALLOWED';
-  if ((rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF && rule.requestedCapabilities.length !== 0) || (rule.runtimeProfileRef === MOCK_AGENT_RUNTIME_PROFILE_REF && rule.taskSpecRef !== E1_FIXTURE_TASK_SPEC_REF) || (rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF && ![E2_FIXTURE_TASK_SPEC_REF, K43A_LIVE_MINIMAX_TASK_SPEC_REF].includes(rule.taskSpecRef as typeof E2_FIXTURE_TASK_SPEC_REF | typeof K43A_LIVE_MINIMAX_TASK_SPEC_REF)) || !SAFE_REF.test(rule.taskSpecRef) || rule.taskSpecRef.length > MAX_TASK_SPEC_LENGTH) return 'RULE_TASK_SPEC_INVALID';
+  const isMock = rule.runtimeRef === MOCK_AGENT_RUNTIME_REF && rule.runtimeProfileRef === MOCK_AGENT_RUNTIME_PROFILE_REF;
+  const isHarness = rule.runtimeRef === RESTRICTED_HARNESS_RUNTIME_REF && rule.runtimeProfileRef === RESTRICTED_HARNESS_PROFILE_REF;
+  const isCodex = rule.runtimeRef === CODEX_CLI_RUNTIME_REF && rule.runtimeProfileRef === CODEX_CLI_RUNTIME_PROFILE_REF;
+  if (!isMock && !isHarness && !isCodex) return 'RULE_RUNTIME_NOT_ALLOWED';
+  if ((isHarness && rule.requestedCapabilities.length !== 0) || (isMock && rule.taskSpecRef !== E1_FIXTURE_TASK_SPEC_REF) || (isHarness && ![E2_FIXTURE_TASK_SPEC_REF, K43A_LIVE_MINIMAX_TASK_SPEC_REF].includes(rule.taskSpecRef as typeof E2_FIXTURE_TASK_SPEC_REF | typeof K43A_LIVE_MINIMAX_TASK_SPEC_REF)) || (isCodex && rule.taskSpecRef !== TERMINAL_INTAKE_TASK_SPEC_REF) || !SAFE_REF.test(rule.taskSpecRef) || rule.taskSpecRef.length > MAX_TASK_SPEC_LENGTH) return 'RULE_TASK_SPEC_INVALID';
   if (!boundedPositive(rule.requestedTtl, 15 * 60 * 1000) || !Number.isSafeInteger(rule.requestedSteps) || rule.requestedSteps < 1 || rule.requestedSteps > 100 || !Number.isFinite(rule.requestedCost) || rule.requestedCost < 0 || rule.requestedCost > 0.25 || !Number.isSafeInteger(rule.requestedTokens ?? 0) || (rule.requestedTokens ?? 0) < 0 || (rule.requestedTokens ?? 0) > 6_000) return 'RULE_LIMIT_INVALID';
   if (rule.scopeMode !== 'event.repository' && rule.scopeMode !== 'none') return 'RULE_SCOPE_MODE_INVALID';
   if (new Set(rule.requestedCapabilities).size !== rule.requestedCapabilities.length || rule.requestedCapabilities.length > 8) return 'RULE_CAPABILITY_INVALID';

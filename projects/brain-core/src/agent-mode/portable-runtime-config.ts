@@ -29,6 +29,7 @@ export type BrainRuntimeConfig = {
   };
   providerRefs: string[];
   resourceRefs: string[];
+  repositoryRoots: string[];
 };
 
 type BrainRuntimeConfigLayer = {
@@ -43,6 +44,7 @@ type BrainRuntimeConfigLayer = {
   optionalCapabilities?: Partial<BrainRuntimeConfig['optionalCapabilities']> | undefined;
   providerRefs?: string[];
   resourceRefs?: string[];
+  repositoryRoots?: string[];
 };
 
 export type BrainRuntimeConfigLoadInput = {
@@ -110,9 +112,14 @@ function references(value: unknown, label: string): string[] {
   return value.map((entry, index) => boundedString(entry, `${label}[${index}]`, MAX_REFERENCE_LENGTH));
 }
 
+function repositoryRoots(value: unknown, label: string, home: string): string[] {
+  if (!Array.isArray(value) || value.length > 16) throw new Error(`${label} is invalid`);
+  return value.map((entry, index) => portablePath(entry, `${label}[${index}]`, home));
+}
+
 function parseLayer(value: unknown, label: string, home: string): BrainRuntimeConfigLayer {
   const input = objectRecord(value, label);
-  rejectUnknownKeys(input, ['schemaVersion', 'profile', 'deploymentMode', 'stateRoot', 'stateStore', 'core', 'console', 'node', 'optionalCapabilities', 'providerRefs', 'resourceRefs'], label);
+  rejectUnknownKeys(input, ['schemaVersion', 'profile', 'deploymentMode', 'stateRoot', 'stateStore', 'core', 'console', 'node', 'optionalCapabilities', 'providerRefs', 'resourceRefs', 'repositoryRoots'], label);
   if (input.schemaVersion !== undefined && input.schemaVersion !== BRAIN_RUNTIME_CONFIG_SCHEMA_VERSION) throw new Error(`${label}.schemaVersion is unsupported`);
   if (input.profile !== undefined && !['core', 'personal', 'test'].includes(input.profile as string)) throw new Error(`${label}.profile is invalid`);
   if (input.deploymentMode !== undefined && !['local', 'server'].includes(input.deploymentMode as string)) throw new Error(`${label}.deploymentMode is invalid`);
@@ -141,6 +148,7 @@ function parseLayer(value: unknown, label: string, home: string): BrainRuntimeCo
     ...(capabilities === undefined ? {} : { optionalCapabilities: Object.fromEntries(Object.entries(capabilities).map(([key, entry]) => [key, availability(entry, `${label}.optionalCapabilities.${key}`)])) as BrainRuntimeConfigLayer['optionalCapabilities'] }),
     ...(input.providerRefs === undefined ? {} : { providerRefs: references(input.providerRefs, `${label}.providerRefs`) }),
     ...(input.resourceRefs === undefined ? {} : { resourceRefs: references(input.resourceRefs, `${label}.resourceRefs`) }),
+    ...(input.repositoryRoots === undefined ? {} : { repositoryRoots: repositoryRoots(input.repositoryRoots, `${label}.repositoryRoots`, home) }),
   };
 }
 
@@ -210,6 +218,7 @@ function defaults(home: string): BrainRuntimeConfig {
     optionalCapabilities: { voiceStt: 'unavailable', voiceTts: 'client-capability', modelBedrock: 'unavailable', nodeLocal: 'unavailable', workcells: 'unavailable' },
     providerRefs: [],
     resourceRefs: [],
+    repositoryRoots: [],
   };
 }
 
@@ -239,6 +248,7 @@ export function loadBrainRuntimeConfig(input: BrainRuntimeConfigLoadInput = {}):
     optionalCapabilities: { ...derivedBase.optionalCapabilities, ...(effective.optionalCapabilities ?? {}) },
     providerRefs: effective.providerRefs ?? derivedBase.providerRefs,
     resourceRefs: effective.resourceRefs ?? derivedBase.resourceRefs,
+    repositoryRoots: effective.repositoryRoots ?? derivedBase.repositoryRoots,
   } as BrainRuntimeConfig;
   if (merged.stateStore.kind !== 'sqlite') throw new Error('unsupported StateStore kind');
   if (merged.stateStore.path.includes(path.join('.git', ''))) throw new Error('stateStore.path cannot be inside .git');

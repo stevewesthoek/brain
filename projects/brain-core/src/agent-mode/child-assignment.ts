@@ -5,6 +5,8 @@ export const MOCK_AGENT_RUNTIME_REF = 'runtime:mock-k0-4' as const;
 export const MOCK_AGENT_RUNTIME_PROFILE_REF = 'runtime-profile:mock-k0-4' as const;
 export const RESTRICTED_HARNESS_RUNTIME_REF = 'runtime:deepseek-harness:c389f96bf3a9b6807cb71ed6bdad5849be0df6d8' as const;
 export const RESTRICTED_HARNESS_PROFILE_REF = 'brain-agent-mode-restricted' as const;
+export const CODEX_CLI_RUNTIME_REF = 'runtime:codex-cli' as const;
+export const CODEX_CLI_RUNTIME_PROFILE_REF = 'runtime-profile:codex-cli-read-only-v1' as const;
 export const DEFERRED_ROUTE_REF = 'route:deferred' as const;
 export const DEFERRED_MODEL_REF = 'model:deferred' as const;
 
@@ -149,6 +151,13 @@ export const AGENT_MODE_RUNTIME_PROFILES: readonly AgentModeRuntimeProfile[] = O
     allowedRoleTemplateIds: [READ_ONLY_ROLE_TEMPLATE],
     allowedCapabilities: [REPOSITORY_READ_CAPABILITY],
     restrictedHarness: true,
+  },
+  {
+    runtimeRef: CODEX_CLI_RUNTIME_REF,
+    runtimeProfileRef: CODEX_CLI_RUNTIME_PROFILE_REF,
+    allowedRoleTemplateIds: [READ_ONLY_ROLE_TEMPLATE],
+    allowedCapabilities: [REPOSITORY_READ_CAPABILITY],
+    restrictedHarness: false,
   },
 ]);
 

@@ -29,6 +29,7 @@ export const SPAWN_ROLE_READ_ONLY = 'agent-mode.role.read-only.v1' as const;
 export const SPAWN_ROLE_SAFE_ENGINEERING = 'agent-mode.role.safe-engineering.v1' as const;
 export const SPAWN_POLICY_READ_ONLY = 'agent-mode.policy.read-only.v1' as const;
 export const SPAWN_POLICY_SAFE_ENGINEERING = 'agent-mode.policy.safe-engineering.v1' as const;
+export const SPAWN_POLICY_TERMINAL_READ_ONLY = 'agent-mode.policy.terminal-read-only.v1' as const;
 
 export const KNOWN_SPAWN_CAPABILITIES = Object.freeze([
   WORKCELL_READ_CAPABILITY,
@@ -255,6 +256,26 @@ export const AGENT_MODE_SPAWN_POLICIES: readonly AgentSpawnPolicy[] = Object.fre
   },
   {
     schemaVersion: SPAWN_POLICY_SCHEMA_VERSION,
+    policyId: SPAWN_POLICY_TERMINAL_READ_ONLY,
+    version: 1,
+    enabled: true,
+    allowedSourceTypes: [BRAIN_TASK_LIFECYCLE_SOURCE],
+    allowedEventTypes: [TASK_LIFECYCLE_OBSERVED_EVENT],
+    allowedRoleTemplateIds: [SPAWN_ROLE_READ_ONLY],
+    maxSpawnDepth: 1,
+    maxConcurrentChildren: 1,
+    maxTotalChildCreations: 1,
+    maxChildTtl: 10 * 60 * 1000,
+    maxChildSteps: 1,
+    maxChildBudget: 0,
+    capabilityCeiling: [WORKCELL_READ_CAPABILITY],
+    repositoryScopeRules: { allowed: ['*'], requireEventMatch: true },
+    resourceScopeRules: { allowed: [], requireEventMatch: true },
+    rootBudgetRules: { requireRemainingFacts: true, maxAggregateChildSteps: 1, maxAggregateChildBudget: 0 },
+    deadlineRules: { requireDeadline: true, maxTtl: 10 * 60 * 1000 },
+  },
+  {
+    schemaVersion: SPAWN_POLICY_SCHEMA_VERSION,
     policyId: 'agent-mode.policy.disabled-fixture.v1',
     version: 1,
     enabled: false,
@@ -280,6 +301,7 @@ function finitePositive(value: number): boolean { return Number.isFinite(value) 
 function finiteLimit(value: number): boolean { return Number.isSafeInteger(value) && value >= 0; }
 function validId(value: unknown): value is string { return typeof value === 'string' && SAFE_ID.test(value); }
 function validScope(value: unknown): value is string { return typeof value === 'string' && SAFE_SCOPE.test(value) && !value.includes('..') && !value.includes('://'); }
+function validPolicyScope(value: unknown): value is string { return value === '*' || validScope(value); }
 function validTimestamp(value: unknown): value is string { return typeof value === 'string' && Number.isFinite(Date.parse(value)); }
 function subset(values: readonly string[], ceiling: readonly string[]): boolean { return values.every((value) => ceiling.includes(value)); }
 
@@ -302,7 +324,7 @@ export function validateSpawnPolicyManifest(policies: readonly AgentSpawnPolicy[
     if (policy.schemaVersion !== SPAWN_POLICY_SCHEMA_VERSION || !validId(policy.policyId) || !Number.isSafeInteger(policy.version) || policy.version < 1) throw new Error('invalid spawn policy identity or schema');
     if (!unique(policy.allowedSourceTypes) || !unique(policy.allowedEventTypes) || !unique(policy.allowedRoleTemplateIds) || policy.allowedSourceTypes.some((value) => !validId(value) || value === '*') || policy.allowedEventTypes.some((value) => !validId(value) || value === '*') || policy.allowedRoleTemplateIds.some((value) => !templateIds.has(value))) throw new Error('invalid spawn policy allowlist');
     if (!finiteLimit(policy.maxSpawnDepth) || !finiteLimit(policy.maxConcurrentChildren) || !finiteLimit(policy.maxTotalChildCreations) || !finitePositive(policy.maxChildTtl) || !finiteLimit(policy.maxChildSteps) || !Number.isFinite(policy.maxChildBudget) || policy.maxChildBudget < 0 || !unique(policy.capabilityCeiling) || !subset(policy.capabilityCeiling, KNOWN_SPAWN_CAPABILITIES)) throw new Error('invalid spawn policy limits or capabilities');
-    for (const rules of [policy.repositoryScopeRules, policy.resourceScopeRules]) if (!unique(rules.allowed) || rules.allowed.some((value) => !validScope(value))) throw new Error('invalid spawn policy scope rule');
+    for (const rules of [policy.repositoryScopeRules, policy.resourceScopeRules]) if (!unique(rules.allowed) || rules.allowed.some((value) => !validPolicyScope(value))) throw new Error('invalid spawn policy scope rule');
     if (!rulesBoolean(policy.rootBudgetRules.requireRemainingFacts) || !finiteLimit(policy.rootBudgetRules.maxAggregateChildSteps) || !Number.isFinite(policy.rootBudgetRules.maxAggregateChildBudget) || policy.rootBudgetRules.maxAggregateChildBudget < 0 || !rulesBoolean(policy.deadlineRules.requireDeadline) || !finitePositive(policy.deadlineRules.maxTtl)) throw new Error('invalid spawn policy aggregate or deadline rule');
     if (policy.deadlineRules.maxTtl > policy.maxChildTtl) throw new Error('deadline rule cannot widen child TTL');
   }
@@ -383,7 +405,7 @@ function requestValid(request: SpawnRequest): boolean {
 
 function scopeAllowed(requested: string | null, allowed: readonly string[], roleAllows: boolean, eventScope: string | null, parentScopes: readonly string[], requireEventMatch: boolean): boolean {
   if (requested === null) return true;
-  if (!roleAllows || !allowed.includes(requested)) return false;
+  if (!roleAllows || (!allowed.includes(requested) && !allowed.includes('*'))) return false;
   if (requireEventMatch && eventScope === null) return false;
   if (requireEventMatch && requested !== eventScope) return false;
   return parentScopes.includes(requested);

@@ -106,9 +106,9 @@ for model in auto minimax-m2.5; do
   assert_contains "$out" "cwd=$selected_pwd"
   assert_contains "$out" 'kind=installed runtime'
   if [[ "$model" == auto ]]; then
-    assert_contains "$out" 'args=run'
+    assert_contains "$out" 'args=submit --repository-ref selected repo with spaces --repository-root '
   else
-    assert_contains "$out" 'args=run --model minimax-m2.5'
+    assert_contains "$out" 'args=submit --model minimax-m2.5 --repository-ref selected repo with spaces --repository-root '
   fi
 done
 

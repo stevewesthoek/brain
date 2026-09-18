@@ -171,6 +171,9 @@ function mapJarvisIntakeRow(row: Record<string, unknown>): AgentModeJarvisIntake
     jarvisAgentId: String(row.jarvis_agent_id),
     receivedAt: String(row.received_at),
     createdAt: String(row.created_at),
+    ...(row.repository_ref === null || row.repository_ref === undefined ? {} : { repositoryRef: String(row.repository_ref) }),
+    ...(row.repository_root === null || row.repository_root === undefined ? {} : { repositoryRoot: String(row.repository_root) }),
+    ...(row.requested_model === null || row.requested_model === undefined ? {} : { requestedModel: String(row.requested_model) }),
   };
 }
 
@@ -610,6 +613,9 @@ export type AgentModeTask = {
   childAgentId?: string | null;
   assignmentIntentKey?: string | null;
   taskSpecRef?: string | null;
+  repositoryRef?: string | null;
+  repositoryRoot?: string | null;
+  requestedModel?: string | null;
 };
 
 export type AgentModeJarvisIntakeRecord = {
@@ -624,6 +630,9 @@ export type AgentModeJarvisIntakeRecord = {
   jarvisAgentId: string;
   receivedAt: string;
   createdAt: string;
+  repositoryRef?: string | null;
+  repositoryRoot?: string | null;
+  requestedModel?: string | null;
 };
 
 export type AgentModeJarvisIntakePersistenceResult =
@@ -1265,6 +1274,7 @@ function runtimeResultFromReceipt(receipt: AgentModeRuntimeReceipt): AgentRuntim
     usage: receipt.usage,
     traceSummary: receipt.traceSummary,
     ...(receipt.failureCode === undefined ? {} : { failureCode: receipt.failureCode }),
+    ...(receipt.resultText === undefined ? {} : { resultText: receipt.resultText }),
     ...(receipt.cancellationObserved === undefined ? {} : { cancellationObserved: receipt.cancellationObserved }),
   };
 }
@@ -1658,7 +1668,10 @@ export class AgentModeSqliteStateStore {
         status TEXT NOT NULL,
         child_agent_id TEXT,
         assignment_intent_key TEXT,
-        task_spec_ref TEXT
+        task_spec_ref TEXT,
+        repository_ref TEXT,
+        repository_root TEXT,
+        requested_model TEXT
       );
       CREATE TABLE IF NOT EXISTS runs (
         run_id TEXT PRIMARY KEY,
@@ -2251,6 +2264,7 @@ export class AgentModeSqliteStateStore {
     this.migrateEffectsTable();
     this.migrateOutboxTable();
     this.migrateRunsTable();
+    this.migrateTasksTable();
     this.migrateReviewTables();
     this.migrateAgentTable();
     this.migrateChildAssignmentTables();
@@ -2344,6 +2358,12 @@ export class AgentModeSqliteStateStore {
     if (!columns.some((column) => column.name === 'runtime_identity')) this.database.exec('ALTER TABLE runs ADD COLUMN runtime_identity TEXT');
   }
 
+  private migrateTasksTable(): void {
+    const columns = new Set((this.database.prepare('PRAGMA table_info(tasks)').all() as Array<{ name?: string }>).map((column) => column.name));
+    const additions: Record<string, string> = { repository_ref: 'TEXT', repository_root: 'TEXT', requested_model: 'TEXT' };
+    for (const [name, type] of Object.entries(additions)) if (!columns.has(name)) this.database.exec(`ALTER TABLE tasks ADD COLUMN ${name} ${type}`);
+  }
+
   private migrateAgentTable(): void {
     const columns = this.database.prepare('PRAGMA table_info(agents)').all() as Array<{ name?: string }>;
     const existing = new Set(columns.map((column) => column.name));
@@ -2429,10 +2449,17 @@ export class AgentModeSqliteStateStore {
         task_id TEXT NOT NULL UNIQUE REFERENCES tasks(task_id),
         jarvis_agent_id TEXT NOT NULL REFERENCES agents(agent_id),
         received_at TEXT NOT NULL,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        repository_ref TEXT,
+        repository_root TEXT,
+        requested_model TEXT
       );
       CREATE INDEX IF NOT EXISTS agent_mode_jarvis_intakes_created ON agent_mode_jarvis_intakes(created_at DESC, intake_id);
     `);
+    const columns = new Set((this.database.prepare('PRAGMA table_info(agent_mode_jarvis_intakes)').all() as Array<{ name?: string }>).map((column) => column.name));
+    for (const [name, type] of Object.entries({ repository_ref: 'TEXT', repository_root: 'TEXT', requested_model: 'TEXT' })) {
+      if (!columns.has(name)) this.database.exec(`ALTER TABLE agent_mode_jarvis_intakes ADD COLUMN ${name} ${type}`);
+    }
   }
 
   private ensureJarvisResponseSourceTables(): void {
@@ -3351,6 +3378,11 @@ export class AgentModeSqliteStateStore {
     }
   }
 
+  getRuntimeReceiptForAttempt(attemptId: string): AgentModeRuntimeReceipt | undefined {
+    const row = this.database.prepare('SELECT receipt_json FROM effects WHERE attempt_id = ? ORDER BY rowid DESC LIMIT 1').get(attemptId) as { receipt_json?: string } | undefined;
+    return this.parseRuntimeReceipt(row?.receipt_json);
+  }
+
   recordRuntimeDispatchReceipt(receipt: AgentModeRuntimeReceipt): AgentModeRuntimeReceiptMutation {
     try {
       return this.withTransaction(() => {
@@ -3715,15 +3747,18 @@ export class AgentModeSqliteStateStore {
 
   createTask(task: AgentModeTask): AgentModeOperationResult {
     return this.withTransaction(() => {
-      const existing = this.database.prepare('SELECT task_type, input_hash, created_at, child_agent_id, assignment_intent_key, task_spec_ref FROM tasks WHERE task_id = ?').get(task.taskId) as Record<string, unknown> | undefined;
+      const existing = this.database.prepare('SELECT task_type, input_hash, created_at, child_agent_id, assignment_intent_key, task_spec_ref, repository_ref, repository_root, requested_model FROM tasks WHERE task_id = ?').get(task.taskId) as Record<string, unknown> | undefined;
       if (existing) {
         const same = existing.task_type === task.taskType
           && existing.input_hash === task.inputHash
-          && existing.created_at === task.createdAt;
+          && existing.created_at === task.createdAt
+          && (existing.repository_ref ?? null) === (task.repositoryRef ?? null)
+          && (existing.repository_root ?? null) === (task.repositoryRoot ?? null)
+          && (existing.requested_model ?? null) === (task.requestedModel ?? null);
         return same ? 'duplicate' : 'conflict';
       }
-      this.database.prepare('INSERT INTO tasks (task_id, task_type, input_hash, created_at, status, child_agent_id, assignment_intent_key, task_spec_ref) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(task.taskId, task.taskType, task.inputHash, task.createdAt, task.status ?? 'pending', task.childAgentId ?? null, task.assignmentIntentKey ?? null, task.taskSpecRef ?? null);
+      this.database.prepare('INSERT INTO tasks (task_id, task_type, input_hash, created_at, status, child_agent_id, assignment_intent_key, task_spec_ref, repository_ref, repository_root, requested_model) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(task.taskId, task.taskType, task.inputHash, task.createdAt, task.status ?? 'pending', task.childAgentId ?? null, task.assignmentIntentKey ?? null, task.taskSpecRef ?? null, task.repositoryRef ?? null, task.repositoryRoot ?? null, task.requestedModel ?? null);
       return 'created';
     });
   }
@@ -3740,6 +3775,9 @@ export class AgentModeSqliteStateStore {
       ...(row.child_agent_id === null || row.child_agent_id === undefined ? {} : { childAgentId: String(row.child_agent_id) }),
       ...(row.assignment_intent_key === null || row.assignment_intent_key === undefined ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
       ...(row.task_spec_ref === null || row.task_spec_ref === undefined ? {} : { taskSpecRef: String(row.task_spec_ref) }),
+      ...(row.repository_ref === null || row.repository_ref === undefined ? {} : { repositoryRef: String(row.repository_ref) }),
+      ...(row.repository_root === null || row.repository_root === undefined ? {} : { repositoryRoot: String(row.repository_root) }),
+      ...(row.requested_model === null || row.requested_model === undefined ? {} : { requestedModel: String(row.requested_model) }),
     };
   }
 
@@ -3754,6 +3792,9 @@ export class AgentModeSqliteStateStore {
       ...(row.child_agent_id === null || row.child_agent_id === undefined ? {} : { childAgentId: String(row.child_agent_id) }),
       ...(row.assignment_intent_key === null || row.assignment_intent_key === undefined ? {} : { assignmentIntentKey: String(row.assignment_intent_key) }),
       ...(row.task_spec_ref === null || row.task_spec_ref === undefined ? {} : { taskSpecRef: String(row.task_spec_ref) }),
+      ...(row.repository_ref === null || row.repository_ref === undefined ? {} : { repositoryRef: String(row.repository_ref) }),
+      ...(row.repository_root === null || row.repository_root === undefined ? {} : { repositoryRoot: String(row.repository_root) }),
+      ...(row.requested_model === null || row.requested_model === undefined ? {} : { requestedModel: String(row.requested_model) }),
     }));
   }
 
@@ -3788,14 +3829,15 @@ export class AgentModeSqliteStateStore {
         this.database.prepare('INSERT INTO agents (agent_id, agent_kind, role, display_name, policy_id, status) VALUES (?, ?, ?, ?, ?, ?)')
           .run(record.jarvisAgentId, 'jarvis', 'persistent-executive', 'Jarvis', 'agent-mode.jarvis-intake.v1', 'active');
       }
-      this.database.prepare('INSERT INTO tasks (task_id, task_type, input_hash, created_at, status, child_agent_id, assignment_intent_key, task_spec_ref) VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL)')
-        .run(record.taskId, 'root.goal', record.canonicalTextHash, record.receivedAt, 'admitted');
+      this.database.prepare('INSERT INTO tasks (task_id, task_type, input_hash, created_at, status, child_agent_id, assignment_intent_key, task_spec_ref, repository_ref, repository_root, requested_model) VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?)')
+        .run(record.taskId, 'root.goal', record.canonicalTextHash, record.receivedAt, 'admitted', record.repositoryRef ?? null, record.repositoryRoot ?? null, record.requestedModel ?? null);
       this.database.prepare(`
         INSERT INTO agent_mode_jarvis_intakes (
           intake_id, material_hash, schema_version, source, operator_id, canonical_text_hash,
-          root_goal_id, task_id, jarvis_agent_id, received_at, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(record.intakeId, record.materialHash, record.schemaVersion, record.source, record.operatorId, record.canonicalTextHash, record.rootGoalId, record.taskId, record.jarvisAgentId, record.receivedAt, record.createdAt);
+          root_goal_id, task_id, jarvis_agent_id, received_at, created_at,
+          repository_ref, repository_root, requested_model
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(record.intakeId, record.materialHash, record.schemaVersion, record.source, record.operatorId, record.canonicalTextHash, record.rootGoalId, record.taskId, record.jarvisAgentId, record.receivedAt, record.createdAt, record.repositoryRef ?? null, record.repositoryRoot ?? null, record.requestedModel ?? null);
       if (taskInput) this.database.prepare(`
         INSERT INTO agent_mode_jarvis_task_inputs (
           task_id, schema_version, root_goal_id, jarvis_agent_id, source, text,

@@ -19,6 +19,9 @@ import { createLocalInstallPlan, installRuntimePackage, readRuntimePackageManife
 import { createStateSnapshot, importStateSnapshot, readStateSnapshot, verifyStateSnapshot, writeStateSnapshot } from '../agent-mode/state-relocation.js';
 import { createReleaseManifest, createReleaseManifestWithSigner, readReleaseManifest, verifyReleaseManifest, writeReleaseManifest } from '../agent-mode/release-maintenance.js';
 import { inspectNodeExecutable, runProductionServiceDoctor } from '../agent-mode/service-resilience.js';
+import { brainServiceContentSha256, signBrainServiceRequest, BRAIN_SERVICE_AUTH_PROTOCOL_VERSION } from '../security/brain-service-auth.js';
+import { createHash } from 'node:crypto';
+import { createInterface } from 'node:readline';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://127.0.0.1:4877';
 
@@ -39,7 +42,69 @@ const MODEL_REFS: Record<string, AdmittedModelRef | 'auto'> = {
 };
 
 function usage(): void {
-  console.error('Usage: brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build|verify ... | brain-agent release create|verify ... | brain-agent state export|verify|import ... | brain-agent local install plan|apply ... | brain-agent service doctor ... | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once ... | brain-agent run ... | brain-agent inspect|pause|resume|cancel|kill RUN_ID ... | brain-agent workcell create|inspect|destroy ...');
+  console.error('Usage: brain-agent submit --repository-ref REF --repository-root PATH [--model auto|codex] [--task TEXT] [--json] | brain-agent config validate | brain-agent bootstrap plan --dry-run --install-root PATH [--source-root PATH] | brain-agent package build|verify ... | brain-agent release create|verify ... | brain-agent state export|verify|import ... | brain-agent local install plan|apply ... | brain-agent service doctor ... | brain-agent capabilities | brain-agent heartbeat --once | brain-agent scheduler tick | brain-agent sources poll --once ... | brain-agent run ... | brain-agent inspect|pause|resume|cancel|kill RUN_ID ... | brain-agent workcell create|inspect|destroy ...');
+}
+
+function localServiceIdentity(): { serviceId: string; secret: string } {
+  if (process.env.BRAIN_CORE_SERVICE_ID && process.env.BRAIN_CORE_SERVICE_SECRET) return { serviceId: process.env.BRAIN_CORE_SERVICE_ID, secret: process.env.BRAIN_CORE_SERVICE_SECRET };
+  const candidates = [process.env.BRAIN_SECRETS_FILE, path.join(path.dirname(process.argv[1] ?? ''), '../../../../../config/secrets.env'), '/Users/Office/Library/Application Support/Brain/agent-mode/config/secrets.env'].filter((value): value is string => Boolean(value));
+  for (const candidate of candidates) {
+    try {
+      const values = new Map<string, string>();
+      for (const line of readFileSync(candidate, 'utf8').split(/\r?\n/u)) {
+        const match = /^([A-Z0-9_]+)=(.*)$/u.exec(line.trim());
+        if (match) values.set(match[1]!, match[2]!.replace(/^['"]|['"]$/gu, ''));
+      }
+      const serviceId = values.get('BRAIN_CORE_SERVICE_ID');
+      const secret = values.get('BRAIN_CORE_SERVICE_SECRET');
+      if (serviceId && secret) return { serviceId, secret };
+    } catch { /* try the next bounded local config candidate */ }
+  }
+  throw new Error('Brain Core local service identity is unavailable');
+}
+
+function canonicalTerminalRequest(value: Record<string, string>): string { return JSON.stringify(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))); }
+
+async function promptTerminalTask(): Promise<string> {
+  const readline = createInterface({ input: process.stdin, output: process.stdout });
+  try { return await new Promise<string>((resolve) => readline.question('Jarvis goal: ', resolve)); } finally { readline.close(); }
+}
+
+async function submitTerminalTask(): Promise<void> {
+  const repositoryRef = requiredFlag('--repository-ref');
+  const repositoryRoot = requiredFlag('--repository-root');
+  const rawModel = flag('--model') ?? 'auto';
+  const model = rawModel === 'codex' ? 'gpt-5.6-luna' : rawModel;
+  const text = flag('--task') ?? await promptTerminalTask();
+  const operatorId = flag('--operator-id') ?? 'operator:local-terminal';
+  const coreUrl = flag('--core-url') ?? BASE_URL;
+  if (!['auto', 'gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.5'].includes(model)) throw new Error('terminal intake currently admits Auto or an explicitly selected Codex model only');
+  const material = { repositoryRef, repositoryRoot, model, text: text.trim() };
+  const requestId = `request:terminal:${createHash('sha256').update(canonicalTerminalRequest(material)).digest('hex').slice(0, 48)}`;
+  const body = JSON.stringify({ schemaVersion: 'agent-mode.terminal-intake.v1', requestId, operatorId, ...material });
+  const identity = localServiceIdentity();
+  const timestamp = new Date().toISOString();
+  const contentSha256 = brainServiceContentSha256(body);
+  const headers = {
+    'content-type': 'application/json',
+    'x-brain-auth-version': BRAIN_SERVICE_AUTH_PROTOCOL_VERSION,
+    'x-brain-service-id': identity.serviceId,
+    'x-brain-request-id': requestId,
+    'x-brain-request-timestamp': timestamp,
+    'x-brain-content-sha256': contentSha256,
+    'x-brain-signature': signBrainServiceRequest({ serviceId: identity.serviceId, secret: identity.secret, method: 'POST', pathname: '/agent-mode/terminal/intake', requestId, timestamp, contentSha256 }),
+  };
+  const response = await fetch(`${coreUrl.replace(/\/$/u, '')}/agent-mode/terminal/intake`, { method: 'POST', headers, body });
+  const payload = await response.json() as Record<string, unknown>;
+  if (process.argv.includes('--json')) { process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`); } else {
+    const status = (payload.status as Record<string, unknown> | undefined) ?? {};
+    const resultRecord = payload.result as Record<string, unknown> | undefined;
+    const receipt = resultRecord?.receipt as Record<string, unknown> | undefined;
+    process.stdout.write(`Jarvis ${String(status.status ?? 'accepted')} — root ${String((receipt && receipt.rootGoalId) ?? 'unknown')}\n`);
+    if (typeof status.resultText === 'string' && status.resultText.length > 0) process.stdout.write(`${status.resultText}\n`);
+    if (!response.ok) process.stderr.write(`${String((payload.error as Record<string, unknown> | undefined)?.message ?? 'terminal intake failed')}\n`);
+  }
+  if (!response.ok || ((payload.status as Record<string, unknown> | undefined)?.status !== 'completed')) process.exitCode = 1;
 }
 
 function flag(name: string): string | undefined {
@@ -84,6 +149,11 @@ function printModelRequest(rawModel: string): void {
 
 async function main(): Promise<void> {
   const command = process.argv[2];
+
+  if (command === 'submit') {
+    try { await submitTerminalTask(); } catch (error) { console.error(`brain-agent submit failed: ${error instanceof Error ? error.message : String(error)}`); process.exitCode = 1; }
+    return;
+  }
 
   if (command === 'config') {
     if (process.argv[3] !== 'validate' || process.argv.length !== 4) { usage(); process.exitCode = 1; return; }

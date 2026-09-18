@@ -45,6 +45,7 @@ export type AgentRuntimeResult = {
   usage: AgentModeRuntimeUsage;
   failureCode?: string;
   traceSummary: readonly string[];
+  resultText?: string;
   cancellationObserved?: boolean;
 };
 
@@ -79,6 +80,7 @@ export type AgentModeRuntimeReceipt = {
   usage: AgentModeRuntimeUsage;
   failureCode?: string;
   traceSummary: readonly string[];
+  resultText?: string;
   cancellationObserved?: boolean;
   effectHash: string;
   recordedAt: string;
@@ -154,6 +156,7 @@ export function validateRuntimeResult(result: AgentRuntimeResult): boolean {
     && boundedText(result.failureCode, 128)
     && result.traceSummary.length <= 8
     && result.traceSummary.every((entry) => typeof entry === 'string' && entry.length <= 128)
+    && (result.resultText === undefined || (typeof result.resultText === 'string' && result.resultText.length <= 12_000))
     && (result.status !== 'cancelled' || result.cancellationObserved === true);
 }
 
@@ -177,6 +180,7 @@ export function runtimeReceiptEffectHash(receipt: Omit<AgentModeRuntimeReceipt, 
     status: receipt.status,
     usage: receipt.usage,
     failureCode: receipt.failureCode ?? null,
+    resultText: receipt.resultText ?? null,
     cancellationObserved: receipt.cancellationObserved ?? false,
   })).digest('hex');
 }
@@ -222,6 +226,7 @@ export class AgentModeRuntimeDispatcher {
       status: result.status, usage: result.usage,
       ...(result.failureCode === undefined ? {} : { failureCode: result.failureCode }),
       traceSummary: [...result.traceSummary].slice(0, 8),
+      ...(result.resultText === undefined ? {} : { resultText: result.resultText.slice(0, 12_000) }),
       ...(result.cancellationObserved === undefined ? {} : { cancellationObserved: result.cancellationObserved }),
       recordedAt: request.requestedAt,
     } satisfies Omit<AgentModeRuntimeReceipt, 'effectHash'>;

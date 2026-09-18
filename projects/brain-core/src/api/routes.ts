@@ -315,7 +315,9 @@ import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-
 import { OrchestrationExecutor, recordApprovalDecision } from '../adapters/agent-orchestrator-executor.js';
 import { AGENT_MODE_CONTROL_ACTIONS, AgentModeControlService, parseAgentModeOperatorAttribution, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
 import { JARVIS_TEXT_INTAKE_SCHEMA_VERSION, JarvisTextIntakeService } from '../agent-mode/jarvis-text-intake.js';
+import { AgentModeTerminalIntakeService, TERMINAL_INTAKE_SCHEMA_VERSION, type TerminalIntakeCommandV1 } from '../agent-mode/terminal-intake.js';
 import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
+import { loadBrainRuntimeConfig } from '../agent-mode/portable-runtime-config.js';
 import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
 
 const getStatus = createStatusAdapter({
@@ -336,6 +338,7 @@ function isContainedHighImpactMutation(url: URL): boolean {
 
   if (/^\/agent-mode\/control(?:\/|$)/u.test(pathname)) return true;
   if (pathname === '/agent-mode/jarvis/intake') return true;
+  if (pathname === '/agent-mode/terminal/intake') return true;
   if (/^\/agent-mode\/notifications\/[^/]+\/read$/u.test(pathname)) return true;
 
   if (new Set([
@@ -394,6 +397,14 @@ function isAgentModeIntakePath(url: URL): boolean {
   return url.pathname === '/agent-mode/jarvis/intake';
 }
 
+function isAgentModeTerminalIntakePath(url: URL): boolean {
+  return url.pathname === '/agent-mode/terminal/intake';
+}
+
+function isAgentModeTerminalStatusPath(url: URL): boolean {
+  return /^\/agent-mode\/terminal\/intake\/[^/]+$/u.test(url.pathname);
+}
+
 function isAgentModeJarvisResponsePath(url: URL): boolean {
   return /^\/agent-mode\/jarvis\/responses\/[^/]+$/u.test(url.pathname);
 }
@@ -404,6 +415,10 @@ function isAgentModeControlNamespace(url: URL): boolean {
 
 function isAgentModeIntakeNamespace(url: URL): boolean {
   return /^\/agent-mode\/jarvis(?:\/|$)/u.test(url.pathname);
+}
+
+function isAgentModeTerminalNamespace(url: URL): boolean {
+  return /^\/agent-mode\/terminal(?:\/|$)/u.test(url.pathname);
 }
 
 function isAgentModeNotificationNamespace(url: URL): boolean {
@@ -633,6 +648,57 @@ async function routeAgentModeIntakeRequest(request: IncomingMessage, response: S
   finally { store?.close(); }
 }
 
+async function routeAgentModeTerminalIntakeRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try { authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() }); } catch { sendAgentModeAuthFailure(response, 'service_identity_missing'); return; }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest({ method: request.method ?? 'POST', pathname: '/agent-mode/terminal/intake', headers: requestHeaders }, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY);
+  if (!auth.ok) { sendAgentModeAuthFailure(response, auth.code); return; }
+  const parsed = await readBoundedRequestBody(request);
+  if (parsed.error || !parsed.body || !parsed.digest) { sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid'); return; }
+  const signedDigest = requestHeaders['x-brain-content-sha256'];
+  const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+  if (!signedDigestValue || signedDigestValue !== parsed.digest) { sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } }); return; }
+  const body = parsed.body;
+  if (!exactBodyKeys(body, ['schemaVersion', 'requestId', 'operatorId', 'repositoryRef', 'repositoryRoot', 'model', 'text'])) { sendAgentModeBodyError(response, 'terminal_intake_fields_invalid'); return; }
+  const command: TerminalIntakeCommandV1 = {
+    schemaVersion: requiredBodyText(body, 'schemaVersion', 64) as typeof TERMINAL_INTAKE_SCHEMA_VERSION,
+    requestId: requiredBodyText(body, 'requestId', 128) ?? '',
+    operatorId: requiredBodyText(body, 'operatorId', 128) ?? '',
+    repositoryRef: requiredBodyText(body, 'repositoryRef', 256) ?? '',
+    repositoryRoot: requiredBodyText(body, 'repositoryRoot', 1_024) ?? '',
+    model: requiredBodyText(body, 'model', 64) ?? '',
+    text: requiredBodyText(body, 'text', 4_000) ?? '',
+    receivedAt: auth.identity.requestTimestamp,
+  };
+  if (command.schemaVersion !== TERMINAL_INTAKE_SCHEMA_VERSION) { sendAgentModeBodyError(response, 'terminal_intake_fields_invalid'); return; }
+  const databasePath = defaultAgentModeDatabasePath();
+  if (!existsSync(databasePath)) { sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } }); return; }
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    store = new AgentModeSqliteStateStore(databasePath);
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: loadBrainRuntimeConfig().repositoryRoots, now: () => auth.identity.requestTimestamp });
+    const result = service.accept(command);
+    if (!('receipt' in result)) {
+      sendAgentModeControlJson(response, result.outcome === 'conflict' ? 409 : 400, { ok: false, result });
+      return;
+    }
+    const accepted = result;
+    const execution = await service.execute(accepted.receipt.rootGoalId);
+    sendAgentModeControlJson(response, 200, { ok: execution.result === 'COMPLETED', result: accepted, execution, status: service.status(accepted.receipt.rootGoalId) });
+  } catch { sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'terminal_intake_unavailable', message: 'Terminal Agent Mode intake is unavailable.' } }); }
+  finally { store?.close(); }
+}
+
+function routeAgentModeTerminalStatusRequest(url: URL, response: ServerResponse): void {
+  let rootGoalId: string;
+  try { rootGoalId = decodeURIComponent(url.pathname.slice('/agent-mode/terminal/intake/'.length)); } catch { sendJson(response, 400, { ok: false, error: { code: 'terminal_root_invalid', message: 'Terminal root identity is invalid.' } }); return; }
+  if (!rootGoalId || rootGoalId.length > 128 || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/u.test(rootGoalId)) { sendJson(response, 400, { ok: false, error: { code: 'terminal_root_invalid', message: 'Terminal root identity is invalid.' } }); return; }
+  const store = AgentModeSqliteStateStore.openExisting(defaultAgentModeDatabasePath());
+  if (!store) { sendJson(response, 404, { ok: false, error: { code: 'terminal_intake_not_found', message: 'No terminal intake exists for this root.' } }); return; }
+  try { sendJson(response, 200, { ok: true, status: new AgentModeTerminalIntakeService(store, { repositoryRoots: [] }).status(rootGoalId) }); } finally { store.close(); }
+}
+
 function routeAgentModeJarvisResponseRequest(url: URL, response: ServerResponse): void {
   let rootGoalId: string;
   try { rootGoalId = decodeURIComponent(url.pathname.slice('/agent-mode/jarvis/responses/'.length)); } catch { sendJson(response, 400, { ok: false, error: { code: 'jarvis_response_root_invalid', message: 'Jarvis response root identity is invalid.' } }); return; }
@@ -776,7 +842,7 @@ export async function routeRequest(
   }
 
   if (method === 'OPTIONS') {
-    if (isAgentModeControlNamespace(url) || isAgentModeNotificationNamespace(url) || isAgentModeIntakeNamespace(url)) {
+    if (isAgentModeControlNamespace(url) || isAgentModeNotificationNamespace(url) || isAgentModeIntakeNamespace(url) || isAgentModeTerminalNamespace(url)) {
       response.writeHead(204, {
         'access-control-allow-methods': 'GET, HEAD, OPTIONS',
         'access-control-allow-headers': 'content-type',
@@ -816,6 +882,16 @@ export async function routeRequest(
 
   if (method === 'POST' && isAgentModeIntakePath(url)) {
     await routeAgentModeIntakeRequest(request, response);
+    return;
+  }
+
+  if (method === 'POST' && isAgentModeTerminalIntakePath(url)) {
+    await routeAgentModeTerminalIntakeRequest(request, response);
+    return;
+  }
+
+  if (method === 'GET' && isAgentModeTerminalStatusPath(url)) {
+    routeAgentModeTerminalStatusRequest(url, response);
     return;
   }
 
