@@ -20,6 +20,7 @@ test('lean core defaults are versioned, portable, and personal integrations are 
   assert.equal(config.optionalCapabilities.voiceStt, 'unavailable');
   assert.equal(config.optionalCapabilities.voiceTts, 'client-capability');
   assert.equal(config.optionalCapabilities.modelBedrock, 'unavailable');
+  assert.equal(config.execution.codexCliPath, null);
   assert.equal(config.providerRefs.length, 0);
   assert.equal(JSON.stringify(config).includes('/Users/Office'), false);
 });
@@ -51,6 +52,17 @@ test('unknown keys, unsupported versions, unsafe paths, invalid ports, and inval
   assert.throws(() => loadBrainRuntimeConfig({ portableProfile: { stateStore: { path: '/tmp/.git/agent-mode.db' } } }), /portable runtime boundary/);
   assert.throws(() => loadBrainRuntimeConfig({ env: { BRAIN_RUNTIME_CORE_PORT: '0' } }), /invalid/);
   assert.throws(() => loadBrainRuntimeConfig({ portableProfile: { console: { coreUrl: 'http://user:password@example.test' } } }), /credentials/);
+  assert.throws(() => loadBrainRuntimeConfig({ portableProfile: { execution: { codexCliPath: 'codex' } } }), /absolute or home-relative/);
+});
+
+test('Core-owned execution resource configuration supplies an explicit Codex path without environment authority', () => {
+  const config = loadBrainRuntimeConfig({
+    home: '/tmp/d0-a-execution',
+    env: { HOME: '/tmp/d0-a-execution' },
+    portableProfile: { execution: { codexCliPath: '/opt/homebrew/bin/codex' } },
+  });
+  assert.equal(config.execution.codexCliPath, '/opt/homebrew/bin/codex');
+  assert.equal('BRAIN_CODEX_BIN' in config, false);
 });
 
 test('temporary HOME values produce equivalent semantics with host-local paths', () => {

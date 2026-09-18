@@ -20,6 +20,7 @@ export type BrainRuntimeConfig = {
   core: { bindHost: string; port: number };
   console: { coreUrl: string; port: number };
   node: { configRoot: string; runtimeDataRoot: string; temporaryRoot: string };
+  execution: { codexCliPath: string | null };
   optionalCapabilities: {
     voiceStt: BrainRuntimeAvailability;
     voiceTts: BrainRuntimeAvailability;
@@ -41,6 +42,7 @@ type BrainRuntimeConfigLayer = {
   core?: { bindHost?: string; port?: number };
   console?: { coreUrl?: string; port?: number };
   node?: { configRoot?: string; runtimeDataRoot?: string; temporaryRoot?: string };
+  execution?: { codexCliPath?: string | null };
   optionalCapabilities?: Partial<BrainRuntimeConfig['optionalCapabilities']> | undefined;
   providerRefs?: string[];
   resourceRefs?: string[];
@@ -119,7 +121,7 @@ function repositoryRoots(value: unknown, label: string, home: string): string[] 
 
 function parseLayer(value: unknown, label: string, home: string): BrainRuntimeConfigLayer {
   const input = objectRecord(value, label);
-  rejectUnknownKeys(input, ['schemaVersion', 'profile', 'deploymentMode', 'stateRoot', 'stateStore', 'core', 'console', 'node', 'optionalCapabilities', 'providerRefs', 'resourceRefs', 'repositoryRoots'], label);
+  rejectUnknownKeys(input, ['schemaVersion', 'profile', 'deploymentMode', 'stateRoot', 'stateStore', 'core', 'console', 'node', 'execution', 'optionalCapabilities', 'providerRefs', 'resourceRefs', 'repositoryRoots'], label);
   if (input.schemaVersion !== undefined && input.schemaVersion !== BRAIN_RUNTIME_CONFIG_SCHEMA_VERSION) throw new Error(`${label}.schemaVersion is unsupported`);
   if (input.profile !== undefined && !['core', 'personal', 'test'].includes(input.profile as string)) throw new Error(`${label}.profile is invalid`);
   if (input.deploymentMode !== undefined && !['local', 'server'].includes(input.deploymentMode as string)) throw new Error(`${label}.deploymentMode is invalid`);
@@ -134,6 +136,11 @@ function parseLayer(value: unknown, label: string, home: string): BrainRuntimeCo
   if (consoleConfig) { rejectUnknownKeys(consoleConfig, ['coreUrl', 'port'], `${label}.console`); }
   const node = input.node === undefined ? undefined : objectRecord(input.node, `${label}.node`);
   if (node) { rejectUnknownKeys(node, ['configRoot', 'runtimeDataRoot', 'temporaryRoot'], `${label}.node`); }
+  const execution = input.execution === undefined ? undefined : objectRecord(input.execution, `${label}.execution`);
+  if (execution) {
+    rejectUnknownKeys(execution, ['codexCliPath'], `${label}.execution`);
+    if (execution.codexCliPath !== undefined && execution.codexCliPath !== null) portablePath(execution.codexCliPath, `${label}.execution.codexCliPath`, home);
+  }
   const capabilities = input.optionalCapabilities === undefined ? undefined : objectRecord(input.optionalCapabilities, `${label}.optionalCapabilities`);
   if (capabilities) { rejectUnknownKeys(capabilities, ['voiceStt', 'voiceTts', 'modelBedrock', 'nodeLocal', 'workcells'], `${label}.optionalCapabilities`); }
   return {
@@ -145,6 +152,7 @@ function parseLayer(value: unknown, label: string, home: string): BrainRuntimeCo
     ...(core === undefined ? {} : { core: { ...(core.bindHost === undefined ? {} : { bindHost: boundedString(core.bindHost, `${label}.core.bindHost`, 255) }), ...(core.port === undefined ? {} : { port: port(core.port, `${label}.core.port`) }) } }),
     ...(consoleConfig === undefined ? {} : { console: { ...(consoleConfig.coreUrl === undefined ? {} : { coreUrl: url(consoleConfig.coreUrl, `${label}.console.coreUrl`) }), ...(consoleConfig.port === undefined ? {} : { port: port(consoleConfig.port, `${label}.console.port`) }) } }),
     ...(node === undefined ? {} : { node: { ...(node.configRoot === undefined ? {} : { configRoot: portablePath(node.configRoot, `${label}.node.configRoot`, home) }), ...(node.runtimeDataRoot === undefined ? {} : { runtimeDataRoot: portablePath(node.runtimeDataRoot, `${label}.node.runtimeDataRoot`, home) }), ...(node.temporaryRoot === undefined ? {} : { temporaryRoot: portablePath(node.temporaryRoot, `${label}.node.temporaryRoot`, home) }) } }),
+    ...(execution === undefined ? {} : { execution: { ...(execution.codexCliPath === undefined ? {} : { codexCliPath: execution.codexCliPath === null ? null : portablePath(execution.codexCliPath, `${label}.execution.codexCliPath`, home) }) } }),
     ...(capabilities === undefined ? {} : { optionalCapabilities: Object.fromEntries(Object.entries(capabilities).map(([key, entry]) => [key, availability(entry, `${label}.optionalCapabilities.${key}`)])) as BrainRuntimeConfigLayer['optionalCapabilities'] }),
     ...(input.providerRefs === undefined ? {} : { providerRefs: references(input.providerRefs, `${label}.providerRefs`) }),
     ...(input.resourceRefs === undefined ? {} : { resourceRefs: references(input.resourceRefs, `${label}.resourceRefs`) }),
@@ -159,12 +167,14 @@ function mergeLayers(...layers: BrainRuntimeConfigLayer[]): BrainRuntimeConfigLa
     const core = result.core;
     const consoleConfig = result.console;
     const node = result.node;
+    const execution = result.execution;
     const capabilities = result.optionalCapabilities;
     Object.assign(result, layer);
     if (layer.stateStore) result.stateStore = { ...stateStore, ...layer.stateStore };
     if (layer.core) result.core = { ...core, ...layer.core };
     if (layer.console) result.console = { ...consoleConfig, ...layer.console };
     if (layer.node) result.node = { ...node, ...layer.node };
+    if (layer.execution) result.execution = { ...execution, ...layer.execution };
     if (layer.optionalCapabilities) result.optionalCapabilities = { ...capabilities, ...layer.optionalCapabilities };
   }
   return result;
@@ -215,6 +225,7 @@ function defaults(home: string): BrainRuntimeConfig {
     core: { bindHost: BRAIN_RUNTIME_DEFAULT_CORE_HOST, port: BRAIN_RUNTIME_DEFAULT_CORE_PORT },
     console: { coreUrl: `http://${BRAIN_RUNTIME_DEFAULT_CORE_HOST}:${BRAIN_RUNTIME_DEFAULT_CORE_PORT}`, port: BRAIN_RUNTIME_DEFAULT_CONSOLE_PORT },
     node: { configRoot: path.join(stateRoot, 'node'), runtimeDataRoot: path.join(stateRoot, 'runtime'), temporaryRoot: path.join(stateRoot, 'tmp') },
+    execution: { codexCliPath: null },
     optionalCapabilities: { voiceStt: 'unavailable', voiceTts: 'client-capability', modelBedrock: 'unavailable', nodeLocal: 'unavailable', workcells: 'unavailable' },
     providerRefs: [],
     resourceRefs: [],
@@ -245,6 +256,7 @@ export function loadBrainRuntimeConfig(input: BrainRuntimeConfigLoadInput = {}):
     core: { ...derivedBase.core, ...(effective.core ?? {}) },
     console: { ...derivedBase.console, ...(effective.console ?? {}) },
     node: { ...derivedBase.node, ...(effective.node ?? {}) },
+    execution: { ...derivedBase.execution, ...(effective.execution ?? {}) },
     optionalCapabilities: { ...derivedBase.optionalCapabilities, ...(effective.optionalCapabilities ?? {}) },
     providerRefs: effective.providerRefs ?? derivedBase.providerRefs,
     resourceRefs: effective.resourceRefs ?? derivedBase.resourceRefs,

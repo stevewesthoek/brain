@@ -86,10 +86,10 @@ export class AgentModeTerminalIntakeService {
   private readonly repositoryRoots: readonly string[];
   private readonly runtimeFactory: (store: AgentModeSqliteStateStore) => AgentRuntime;
 
-  constructor(private readonly store: AgentModeSqliteStateStore, options: { now?: () => string; repositoryRoots?: readonly string[]; runtimeFactory?: (store: AgentModeSqliteStateStore) => AgentRuntime } = {}) {
+  constructor(private readonly store: AgentModeSqliteStateStore, options: { now?: () => string; repositoryRoots?: readonly string[]; codexCommand?: string; runtimeFactory?: (store: AgentModeSqliteStateStore) => AgentRuntime } = {}) {
     this.now = options.now ?? (() => new Date().toISOString());
     this.repositoryRoots = (options.repositoryRoots ?? []).map((entry) => canonicalRoot(entry));
-    this.runtimeFactory = options.runtimeFactory ?? ((stateStore) => new CodexCliAgentRuntime(stateStore));
+    this.runtimeFactory = options.runtimeFactory ?? ((stateStore) => new CodexCliAgentRuntime(stateStore, options.codexCommand));
   }
 
   private repositoryRoot(command: TerminalIntakeCommandV1): string {

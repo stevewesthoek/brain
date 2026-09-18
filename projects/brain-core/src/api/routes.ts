@@ -677,7 +677,8 @@ async function routeAgentModeTerminalIntakeRequest(request: IncomingMessage, res
   let store: AgentModeSqliteStateStore | undefined;
   try {
     store = new AgentModeSqliteStateStore(databasePath);
-    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: loadBrainRuntimeConfig().repositoryRoots, now: () => auth.identity.requestTimestamp });
+    const runtimeConfig = loadBrainRuntimeConfig();
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: runtimeConfig.repositoryRoots, ...(runtimeConfig.execution.codexCliPath === null ? {} : { codexCommand: runtimeConfig.execution.codexCliPath }), now: () => auth.identity.requestTimestamp });
     const result = service.accept(command);
     if (!('receipt' in result)) {
       sendAgentModeControlJson(response, result.outcome === 'conflict' ? 409 : 400, { ok: false, result });
