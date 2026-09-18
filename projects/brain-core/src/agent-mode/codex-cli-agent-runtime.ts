@@ -22,7 +22,10 @@ function safeModel(value: string | null | undefined): string | undefined {
 
 function runCodex(command: string, args: string[], cwd: string, input: string, signal: AbortSignal): Promise<{ code: number | null; signal: string | null; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, shell: false, stdio: ['pipe', 'ignore', 'pipe'], signal });
+    const commandDirectory = path.dirname(command);
+    const inheritedPath = process.env.PATH ?? '';
+    const childPath = [commandDirectory === '.' ? null : commandDirectory, inheritedPath, '/usr/bin:/bin:/usr/sbin:/sbin'].filter((entry): entry is string => Boolean(entry)).join(':');
+    const child = spawn(command, args, { cwd, env: { ...process.env, PATH: childPath }, shell: false, stdio: ['pipe', 'ignore', 'pipe'], signal });
     let stderr = '';
     child.stderr.setEncoding('utf8');
     child.stderr.on('data', (chunk: string) => { stderr = bounded(`${stderr}${chunk}`, MAX_STDERR); });
