@@ -78,16 +78,17 @@ technical preview and is not canonicalized by Brain.
 
 The owner-local OfficeMac tunnel is
 1b1fa7bf-a00f-4f1a-86bb-faecac746051. The final canonical Mastermind hostname
-is `mastermind.prochat.tools`; `workbench.prochat.tools` is retained as a
-temporary compatibility hostname. Both hostnames currently route through this
-same tunnel to the same native ingress:
+is `mastermind.prochat.tools`. The former public Workbench hostname was retired
+on 2026-09-18 after canonical and negative legacy-host validation. Only the
+canonical hostname routes through this tunnel to the native ingress:
 
     mastermind.prochat.tools -> http://127.0.0.1:3154
-    workbench.prochat.tools  -> http://127.0.0.1:3154
 
-Both public `/health` endpoints were verified against the native runtime on
-2026-09-16. Do not remove the legacy hostname until protocol/client migration
-is complete and post-cutover validation succeeds.
+The `workbench.prochat.tools` DNS record and local tunnel ingress rule are
+removed. Requests to the retired hostname must not redirect or reach the
+native service; an HTTP 404 with no response body is the expected negative
+probe. Workbench source, token, and session identifiers remain logical aliases
+inside the canonical Mastermind service and are not infrastructure routes.
 
 As of 2026-08-22, cloudflared is 2026.8.2 and the local configuration
 explicitly uses protocol: http2. This is a reversible transport mitigation
@@ -104,18 +105,19 @@ the Workbench origin, expose port 3154 publicly, or use compatibility ports
     launchctl print gui/502/com.cloudflare.cloudflared
     curl http://127.0.0.1:20241/metrics
     curl https://mastermind.prochat.tools/health
-    curl https://workbench.prochat.tools/health
     curl http://127.0.0.1:3154/health
 
 Require the LaunchAgent to be running, four active HA connections, zero
-cloudflared_tunnel_request_errors, and successful local and public health
-responses. Restart only the tunnel with:
+cloudflared_tunnel_request_errors, successful local and canonical public health
+responses, and a negative retired-host probe. Restart only the tunnel with:
 
     launchctl kickstart -k gui/502/com.cloudflare.cloudflared
 
-Rollback is a config-only change: remove protocol: http2, restart the same
-LaunchAgent, and repeat the verification checks. Preserve the Workbench app
-runtime while testing tunnel changes.
+Rollback of the hostname retirement is a separately approved, reversible
+two-part change: restore the backed-up local ingress rule and recreate the
+specific legacy DNS CNAME to this tunnel, then repeat the verification checks.
+Changing `protocol: http2` is an independent transport rollback. Preserve the
+Mastermind app runtime while testing tunnel changes.
 
 ## Checklist
 - Verify tunnel status
