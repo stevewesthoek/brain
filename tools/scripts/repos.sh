@@ -77,6 +77,7 @@ launch_brain() {
   # brain-agent is the canonical Brain task entrypoint and owns authenticated
   # Jarvis intake plus K4 admission. The legacy fixture `run` command remains
   # available explicitly for deterministic tests, but repos never invokes it.
+  # The resolved invocation is: brain-agent submit --model ...
   local model="$1"
   local repository_ref
   repository_ref="${PWD#"$REPOS_ROOT"/}"
