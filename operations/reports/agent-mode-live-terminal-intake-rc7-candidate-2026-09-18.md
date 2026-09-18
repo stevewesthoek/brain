@@ -1,6 +1,6 @@
 # Agent Mode live terminal intake RC.7 candidate evidence
 
-**Date:** 2026-09-18  
+**Date:** 2026-09-18
 **Disposition:** CANDIDATE VERIFIED; PRODUCTION NOT PROMOTED
 
 ## Scope and starting boundary
