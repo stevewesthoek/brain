@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "agent-mode-production-support-v1",
+  "supportStatus": "ordinary-release-maintenance",
+  "foundationStatus": "complete-through-h0",
+  "production": {
+    "releaseVersion": "1.0.0-rc.6",
+    "packageId": "brain-runtime-package:sha256:ff5809be3a48b01cd393e1817241f19e9b79556117b17035ce044090cfda3cfe",
+    "sourceRevision": "284d162926a8ee8ce80421a726a06c3a22abbd65",
+    "releaseId": "brain-agent-release:sha256:b5813f2c215f6db3fafc0685691cee43ba699f2d699bb748b1b4633804c03242",
+    "runtimeRoot": "/Users/Office/Library/Application Support/Brain/agent-mode-rc6",
+    "stateStorePath": "/Users/Office/Library/Application Support/Brain/agent-mode/state/agent-mode/agent-mode.db",
+    "activationDate": "2026-09-18",
+    "status": "PRODUCTION_ACTIVE"
+  },
+  "signing": {
+    "keyId": "brain-agent-release-production-v1",
+    "algorithm": "Ed25519",
+    "backend": "macos-keychain",
+    "reference": "keychain-ref://com.brain.agent.release/production-ed25519-v1",
+    "fingerprint": "348d91963cd74037ea3bf7331d0c25218c527a35bbef39aca33eaf11d6d322ca",
+    "privateKeyExported": false
+  },
+  "contracts": {
+    "stateStoreSchema": 10,
+    "snapshotContract": "brain-state-snapshot-v1",
+    "backupContract": "brain-agent-backup-v1",
+    "installContract": "brain-local-install-v1",
+    "releaseContract": "brain-agent-release-contract-v1",
+    "minimumNodeVersion": ">=22.5.0",
+    "minimumNpmVersion": ">=10.0.0"
+  },
+  "rollback": {
+    "status": "ROLLBACK_SUPPORTED",
+    "packageId": "brain-runtime-package:sha256:bb9461f8f0b49e19edf9b9c59e634fde114d2ca9289d059fa16c3a9b24d17cba",
+    "sourceRevision": "2a93ab565c697bc18ecb01f1a25f3f9dada11240",
+    "manifestHash": "a7cd15fe3df41cdbf7de77bcd38267328a2284a32f4055107f8a61dead19c577",
+    "releaseId": "brain-agent-release:baseline:bb9c113ef33508e01df22d455c9a0b81db5ff05d9f45f9dcaf3b69510e846a61",
+    "retentionWindow": {
+      "minimumDays": 30,
+      "startsAt": "2026-09-18",
+      "retireOnlyAfter": "successor release observation, fresh backup, and rollback compatibility evidence",
+      "preserveLongerWhen": [
+        "incident or open support investigation",
+        "uncertain effects or unreconciled state",
+        "StateStore or package contract change",
+        "failed successor activation or rollback drill"
+      ]
+    }
+  },
+  "backup": {
+    "status": "retained-and-verified",
+    "snapshotContract": "brain-state-snapshot-v1",
+    "snapshotId": "brain-state-snapshot:sha256:c198792934471b24b81f6c8ef701e7cf554502ab335520a8082c4676c262e7c7",
+    "backupId": "brain-agent-backup:sha256:db767cbcb070526a36174deaae631b92e83bd6c93cdf0b6a36e1746ceee2d8c3",
+    "location": "/Users/Office/Library/Application Support/Brain/agent-mode/backups/rc6-production-activation-20260918-072024",
+    "retentionOwner": "Brain Agent Mode release operations",
+    "retentionPurpose": "pre-activation restore and rollback evidence",
+    "retirementTrigger": "after rollback window and successor release closeout satisfy the retention policy"
+  },
+  "authorization": {
+    "successorFoundationPhaseAuthorized": false,
+    "productionActivationRequiresSeparateAuthorization": true
+  }
+}

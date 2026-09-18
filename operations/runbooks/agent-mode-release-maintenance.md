@@ -1,10 +1,13 @@
 # Agent Mode release maintenance
 
-**Status:** bounded baseline normalized, 2026-09-17
+**Status:** ordinary release maintenance active; RC.6 production active,
+2026-09-18
 
-This runbook covers the first supported release-maintenance mechanics for the
-Brain Agent Mode lane. It does not create a new foundation phase and does not
-authorize production activation, provider probing, or deployment.
+This runbook covers the supported release-maintenance mechanics for the Brain
+Agent Mode lane. The foundation roadmap and release-maintenance baseline are
+complete. It does not create a new foundation phase; production activation is
+separately authorized per release and this runbook does not authorize provider
+probing or deployment by itself.
 
 ## Release contract
 
@@ -193,7 +196,7 @@ authorized RC.6 task; the separate RC.6 candidate procedure is recorded below.
 Normalization evidence is in
 `operations/reports/agent-mode-production-baseline-normalization-evidence-2026-09-17.md`.
 
-## RC.6 signed candidate and isolated promotion — 2026-09-17
+## RC.6 signed candidate and isolated promotion — 2026-09-17 (historical)
 
 Fresh candidate `1.0.0-rc.6` was cut from clean committed revision
 `284d162926a8ee8ce80421a726a06c3a22abbd65`:
@@ -220,13 +223,13 @@ without replay. Rollback compatibility with the normalized baseline is
 The installed candidate passed foreground read-only Core/Console smoke on
 temporary localhost ports and was stopped. No service registration, production
 pointer change, production Store import, provider/model/network call, or
-publication occurred. Candidate disposition is **PROMOTABLE** only for a
-separately authorized production activation window; production activation is
-**NOT STARTED**. Evidence:
+publication occurred. At that time, candidate disposition was **PROMOTABLE**
+and production activation was **NOT STARTED**. That statement is historical
+and is superseded by the production activation receipt below. Evidence:
 `operations/reports/agent-mode-rc6-signed-release-candidate-evidence-2026-09-18.md`.
 
-The exact next task is **separately authorize and execute production RC.6
-activation**; do not start it automatically.
+The historical next task was production RC.6 activation; that task is now
+complete as recorded below.
 
 ## Operational handoff
 
@@ -283,6 +286,92 @@ manifest, public-key metadata, baseline binding, backup, and rollback target;
 do not mutate an immutable release. Any future release or rollback requires a
 new bounded authorization and the preflight/quiesce/backup/verification gates
 above.
+
+## Current support and rollback-retention policy
+
+The current bounded support record is
+`operations/release/agent-mode-production-support-v1.json`. It is the
+authoritative maintenance handoff for RC.6 identity, contract versions, the
+normalized rollback baseline, backup ownership, signing-key custody, and
+separate-authorization rules.
+
+Retain all of the following outside Git and web roots:
+
+- the immutable RC.6 package, signed manifest, public verification metadata,
+  and verification receipt;
+- the normalized baseline package and manifest/binding;
+- the verified pre-activation snapshot and backup manifest.
+
+The minimum rollback window is 30 calendar days from 2026-09-18 and extends
+until a successor release has completed production observation, received a
+fresh verified backup, and passed rollback-compatibility evidence. Preserve
+the baseline and backup longer for an incident, open support investigation,
+uncertain or unreconciled effects, a contract/schema change, or a failed
+successor activation/rollback drill. Retirement is a documented release-
+operations decision; this closeout deletes nothing.
+
+## Minimum monitoring handoff
+
+Use existing launchd, localhost health routes, StateStore checks, and retained
+release metadata. Do not build a second monitoring platform or probe providers
+from a read-only health check. At minimum, record:
+
+| Area | Bounded check |
+| --- | --- |
+| Core/Console | launchd state/PID, `/status`, and Console `/agents` health |
+| Release identity | active immutable root, version, package ID, source revision, release ID |
+| StateStore | canonical path, schema 10, SQLite integrity, foreign keys |
+| Work backlog | Agent/Task/Run/Attempt counts, pending reviews, attention, uncertain effects |
+| Scheduler | `/scheduler/status`, enabled state, latest terminal result, dead letters |
+| Budgets | authoritative reserved/settled steps, tokens, and cost; exhaustion/rejections |
+| Providers/runtime | durable subsystem errors only; no provider probe is implied |
+| BrainNode | durable connectivity/receipt state where applicable; no command execution |
+| Storage | install, release vault, backup, and StateStore filesystem usage |
+| Backup/release | backup age/verification, last successful activation (`2026-09-18`), last rollback drill (`2026-09-17`) |
+
+Any missing dependent resource is recorded as unavailable/unknown, never as a
+synthetic zero or healthy value.
+
+## Incident and rollback handoff
+
+Classify and respond through the existing authority boundaries:
+
+| Condition | Bounded response |
+| --- | --- |
+| Core or Console crash | preserve launchd/log/health evidence; inspect the exact service; use exact launchd label only if an authorized recovery is required |
+| StateStore integrity warning | stop promotion and new writes, preserve the Store/backup, and use the state relocation/restore procedure in a fresh target |
+| Scheduler stall | classify scheduler state from durable status; do not invent work or mutate schedules during diagnosis |
+| UNCERTAIN effect | do not replay or replace it; follow K4 reconciliation and retain the uncertainty in the incident record |
+| Provider outage or BrainNode loss | apply existing provider/BrainNode policy; no fallback authority or credential bypass |
+| Release identity/signature/package mismatch | fail closed; keep the active release and rollback target unchanged; cut a new candidate if needed |
+| Failed future upgrade | stop activation, preserve the pre-cutover backup, and rollback only after compatibility and safe-write conditions are proven |
+| Failed rollback | stop, preserve both release identities and Store evidence, and do not retry blindly |
+| Signing identity compromise | stop signing/promotion, retain public metadata for historical verification, provision a new key under a new ID, and issue a new signed release |
+
+Never use `pkill`, `killall`, name-based signals, live database copying, or a
+force bypass. A rollback after new writes requires a fresh safe-restore proof;
+the retained empty pre-activation backup is not silently applied over unknown
+new writes.
+
+## Future release triggers and rules
+
+Cut a new signed candidate only for a bounded production-source change such as
+a bugfix, security fix, dependency/security update, StateStore schema change,
+NodeTransport protocol change, provider adapter change, Core/Console contract
+change, signing-policy change, or critical runtime defect. Do not create RC.7
+as part of this closeout.
+
+Every future release must use a new immutable package/release identity and
+must not reuse RC.6 identity. Source changes require a fresh signed candidate;
+schema changes require migration and rollback proof; package-contract changes
+require compatibility evidence; security/auth changes require focused security
+review; and production activation always requires separate authorization.
+
+Future maintenance is classified as `BUGFIX`, `SECURITY_PATCH`,
+`DEPENDENCY_MAINTENANCE`, `PROVIDER_ADAPTER`, `WORKCELL_INTEGRATION`,
+`BRAINNODE_ADAPTER`, `CONSOLE_UX`, `JARVIS_VOICE_UX`, `RELEASE_OPERATIONS`, or
+`INCIDENT_RESPONSE`. These categories do not reopen the completed foundation
+roadmap and do not create a product-feature backlog.
 
 ## Key rotation, retirement, and revocation
 

@@ -7,6 +7,21 @@
 **Relationship to Infinite Brain:** sibling runtime lane; does not rewrite or
 reopen the completed Infinite Brain stabilization roadmap
 
+## Current release-maintenance closeout — 2026-09-18
+
+The Agent Mode foundation is **COMPLETE through H0**. The release-maintenance
+baseline is **COMPLETE**, RC.6 is **PRODUCTION_ACTIVE**, and the normalized
+previous baseline is **ROLLBACK_SUPPORTED**. The current lane is **ORDINARY
+RELEASE MAINTENANCE**; no H1, K6, D1, or other successor foundation phase is
+authorized.
+
+The bounded production support record is
+`operations/release/agent-mode-production-support-v1.json`. It is the current
+record for release identity, contract versions, rollback retention, backup
+ownership, signing-key custody, and separate-authorization rules. The
+production closeout evidence is
+`operations/reports/agent-mode-production-release-closeout-2026-09-18.md`.
+
 ## Authority and guardrails
 
 This roadmap governs Brain-owned durable agent execution. It does not change

@@ -5,9 +5,14 @@
 The foundational Agent Mode roadmap is **COMPLETE through H0**, including K0–K5,
 U0, V0 and D0. The H0 release gate passed through the corrected disposable
 provider and remote-node evidence. The selected post-H0 direction is **NO NEW
-FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**. Historical phase entries below
-retain their original chronology; the current next bounded task is the release
-maintenance baseline recorded in the post-H0 decision report.
+FOUNDATION PHASE / RELEASE-MAINTENANCE MODE**. RC.6 is **PRODUCTION_ACTIVE**,
+the normalized baseline is **ROLLBACK_SUPPORTED**, and the current posture is
+ordinary release maintenance. Historical phase entries below retain their
+original chronology; there is no authorized successor foundation phase. The
+bounded support record is
+`operations/release/agent-mode-production-support-v1.json`, and closeout
+evidence is
+`operations/reports/agent-mode-production-release-closeout-2026-09-18.md`.
 
 ## Agent Mode architecture handoff — 2026-09-08
 
