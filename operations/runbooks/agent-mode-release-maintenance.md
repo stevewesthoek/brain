@@ -332,6 +332,24 @@ from a read-only health check. At minimum, record:
 Any missing dependent resource is recorded as unavailable/unknown, never as a
 synthetic zero or healthy value.
 
+### Disk-capacity thresholds
+
+Use both percentage and absolute free space because a large disk can be highly
+utilized while retaining useful headroom:
+
+| Level | Trigger | Response |
+| --- | --- | --- |
+| Warning | `>=85%` used or `<100 GiB` free | review bounded consumers and backup/build headroom |
+| Action required | `>=90%` used or `<75 GiB` free | authorize a retention review before release builds/backups |
+| Critical | `>=95%` used or `<40 GiB` free | stop nonessential staging and cleanup decisions; do not delete protected release assets |
+
+The 2026-09-18 audit observed `96%` used and approximately `42 GiB` free:
+this crosses the percentage critical trigger and is an action-required watch
+item, while absolute free space remains just above the critical floor. A
+separate, path-specific cleanup authorization is required before reclaiming
+space. Thresholds do not authorize deletion, cache pruning, database vacuum,
+log truncation, or worktree cleanup.
+
 ## Incident and rollback handoff
 
 Classify and respond through the existing authority boundaries:
