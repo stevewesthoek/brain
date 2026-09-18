@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Evermind</string>
+	<key>CFBundleExecutable</key>
+	<string>Evermind</string>
+	<key>CFBundleIdentifier</key>
+	<string>tools.prochat.evermind</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Evermind</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>tools.prochat.evermind</string>
+			<key>CFBundleURLSchemes</key>
+			<array><string>evermind</string></array>
+		</dict>
+	</array>
+	<key>LSMinimumSystemVersion</key>
+	<string>15.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>EvermindNodePath</key>
+	<string>__EVERMIND_NODE_PATH__</string>
+	<key>EvermindRuntimeActionPath</key>
+	<string>__EVERMIND_RUNTIME_ACTION_PATH__</string>
+	<key>EvermindRootPath</key>
+	<string>__EVERMIND_ROOT_PATH__</string>
+	<key>EvermindDropFolder</key>
+	<string>__EVERMIND_DROP_FOLDER__</string>
+	<key>EvermindStoreRoot</key>
+	<string>__EVERMIND_STORE_ROOT__</string>
+</dict>
+</plist>
