@@ -75,6 +75,7 @@ test('fake installation profile loads without depending on repository cwd', () =
     assert.equal(config.stateStore.path, path.join(home, 'state', 'agent-mode', 'agent-mode.db'));
     assert.equal(config.node.configRoot.startsWith(installRoot), false);
     assert.equal(loadBrainRuntimeConfig({ home, env: { HOME: home, BRAIN_RUNTIME_PROFILE_PATH: profilePath } }).profile, 'test');
+    assert.equal(loadBrainRuntimeConfig({ home, env: { HOME: home, BRAIN_RUNTIME_CONFIG_PATH: profilePath } }).profile, 'test');
   } finally {
     rmSync(installRoot, { recursive: true, force: true });
   }

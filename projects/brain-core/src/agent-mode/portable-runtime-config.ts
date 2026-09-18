@@ -225,7 +225,7 @@ function defaults(home: string): BrainRuntimeConfig {
 export function loadBrainRuntimeConfig(input: BrainRuntimeConfigLoadInput = {}): BrainRuntimeConfig {
   const env = input.env ?? process.env;
   const home = portablePath(input.home ?? env.HOME ?? os.homedir(), 'home', input.home ?? env.HOME ?? os.homedir());
-  const portableProfilePath = input.portableProfilePath ?? env.BRAIN_RUNTIME_PROFILE_PATH;
+  const portableProfilePath = input.portableProfilePath ?? env.BRAIN_RUNTIME_PROFILE_PATH ?? env.BRAIN_RUNTIME_CONFIG_PATH;
   const hostProfilePath = input.hostProfilePath ?? env.BRAIN_RUNTIME_HOST_PROFILE_PATH;
   const portable = portableProfilePath ? readLayer(portableProfilePath, 'portable profile', home) : input.portableProfile === undefined ? {} : parseLayer(input.portableProfile, 'portable profile', home);
   const host = hostProfilePath ? readLayer(hostProfilePath, 'host profile', home) : input.hostProfile === undefined ? {} : parseLayer(input.hostProfile, 'host profile', home);
