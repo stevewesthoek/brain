@@ -56,3 +56,41 @@ export async function executeManagedProvider(selection, prompt, commands = {}) {
     fs.rmSync(privateDir, { recursive: true, force: true });
   }
 }
+
+/**
+ * Executes one already-admitted Bedrock Converse request through the managed
+ * AWS CLI boundary. This transport does not choose a model or retry failures.
+ */
+export async function executeManagedBedrockConverse(request, commands = {}) {
+  if (!request?.modelId || !request?.region || !Array.isArray(request.messages)) {
+    throw new Error('Bedrock transport request is incomplete');
+  }
+  const privateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-managed-bedrock-'));
+  const requestPath = path.join(privateDir, 'request.json');
+  try {
+    const inferenceConfig = { maxTokens: request.maxTokens };
+    if (request.temperature !== undefined) inferenceConfig.temperature = request.temperature;
+    fs.writeFileSync(requestPath, `${JSON.stringify({
+      modelId: request.modelId,
+      messages: request.messages,
+      inferenceConfig,
+      ...(request.tools ? {
+        toolConfig: {
+          tools: request.tools.map((tool) => ({
+            toolSpec: { ...tool, inputSchema: { json: tool.inputSchema } },
+          })),
+        },
+      } : {}),
+    })}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    const timeoutMs = request.timeoutMs ?? Math.max(1, Date.parse(request.deadline) - Date.now());
+    const stdout = await runManagedCommand(commands.aws ?? 'aws', [
+      'bedrock-runtime', 'converse',
+      '--region', request.region,
+      '--cli-input-json', pathToFileURL(requestPath).href,
+      '--output', 'json',
+    ], { timeoutMs: Math.min(Math.max(timeoutMs, 1), 600_000), env: commands.env });
+    return JSON.parse(stdout);
+  } finally {
+    fs.rmSync(privateDir, { recursive: true, force: true });
+  }
+}

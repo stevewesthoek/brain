@@ -46,16 +46,22 @@ declare module 'node:fs' {
     size: number;
     dev: number;
     ino: number;
+    mode: number;
   }
 
   export function existsSync(path: string): boolean;
   export function readdirSync(path: string, options: { withFileTypes: true }): Dirent[];
   export function statSync(path: string): Stats;
   export function mkdirSync(path: string, options?: { recursive?: boolean }): void;
-  export function writeFileSync(path: string, data: string, options?: { mode?: number; flag?: string }): void;
+  export function writeFileSync(path: string, data: string | Buffer, options?: { mode?: number; flag?: string }): void;
   export function renameSync(oldPath: string, newPath: string): void;
   export function appendFileSync(path: string, data: string): void;
-  export function readFileSync(path: string, encoding: 'utf8'): string;
+  export function readFileSync(path: string): Buffer;
+  export function readFileSync(path: string, encoding?: 'utf8'): string;
+  export function cpSync(source: string, destination: string, options?: { recursive?: boolean }): void;
+  export function lstatSync(path: string): Stats & { isSymbolicLink(): boolean };
+  export function chmodSync(path: string, mode: number): void;
+  export function symlinkSync(target: string, path: string): void;
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
 
   const fs: {
@@ -67,6 +73,10 @@ declare module 'node:fs' {
     renameSync: typeof renameSync;
     appendFileSync: typeof appendFileSync;
     readFileSync: typeof readFileSync;
+    cpSync: typeof cpSync;
+    lstatSync: typeof lstatSync;
+    chmodSync: typeof chmodSync;
+    symlinkSync: typeof symlinkSync;
     rmSync: typeof rmSync;
   };
 

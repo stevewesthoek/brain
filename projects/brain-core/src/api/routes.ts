@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
 import { existsSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { approveScript, approveVideoReview, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, requestVideoReviewChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, getVideoReview, runControlledYouTubePublish, getVideoJobThumbnail, resolveDownloadableVideo } from '../providers/video-orchestrator-provider.js';
@@ -106,6 +107,17 @@ import {
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
 import { getContinuousProcessingRouteResponse } from './domain-routers/continuous-processing-router.js';
+import { createConfiguredJarvisSystemOneReflexService } from '../agent-mode/jarvis-system-one-reflex.js';
+import { AGENT_MODE_CONTROL_ACTIONS, AgentModeControlService, parseAgentModeOperatorAttribution, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
+import { JARVIS_TEXT_INTAKE_SCHEMA_VERSION, JarvisTextIntakeService } from '../agent-mode/jarvis-text-intake.js';
+import { AgentModeTerminalIntakeService, TERMINAL_INTAKE_SCHEMA_VERSION, type TerminalIntakeCommandV1 } from '../agent-mode/terminal-intake.js';
+import { JarvisContextIntakeService, JARVIS_CONTEXT_INTAKE_SCHEMA_VERSION, type JarvisContextIntakeCommandV2 } from '../agent-mode/jarvis-context-intake.js';
+import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
+import { loadBrainRuntimeConfig } from '../agent-mode/portable-runtime-config.js';
+import { readAgentModeObserver } from '../agent-mode/agent-mode-observer.js';
+import { readAgentModeAttentionProjection, readAgentModeConsoleProjection } from '../agent-mode/agent-mode-console-projection.js';
+import { isAgentModeConsoleDetailKind, readAgentModeConsoleDetail } from '../agent-mode/agent-mode-console-detail.js';
+import { BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY, BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY, BrainServiceAuthenticator, brainServiceContentSha256, loadBrainServiceIdentityRegistry, type BrainServiceAuthFailureCode } from '../security/brain-service-auth.js';
 import { searchUnified } from '../adapters/unified-search.js';
 
 type RecentVideoJobsResult = Awaited<ReturnType<typeof getRecentVideoJobsResult>>;
@@ -380,6 +392,50 @@ function isContainedHighImpactMutation(url: URL): boolean {
   ].some((pattern) => pattern.test(pathname));
 }
 
+function isAgentModeControlPath(url: URL): boolean {
+  return /^\/agent-mode\/control\/(?:run|review)\/[^/]+$/u.test(url.pathname);
+}
+
+function isAgentModeIntakePath(url: URL): boolean {
+  return url.pathname === '/agent-mode/jarvis/intake' || url.pathname === '/agent-mode/jarvis/intake/v2';
+}
+
+function isAgentModeContextExpansionPath(url: URL): boolean {
+  return url.pathname === '/agent-mode/jarvis/context-expansion';
+}
+
+function isAgentModeTerminalIntakePath(url: URL): boolean {
+  return url.pathname === '/agent-mode/terminal/intake';
+}
+
+function isAgentModeTerminalStatusPath(url: URL): boolean {
+  return /^\/agent-mode\/terminal\/intake\/[^/]+$/u.test(url.pathname);
+}
+
+function isAgentModeJarvisResponsePath(url: URL): boolean {
+  return /^\/agent-mode\/jarvis\/responses\/[^/]+$/u.test(url.pathname);
+}
+
+function isAgentModeControlNamespace(url: URL): boolean {
+  return /^\/agent-mode\/control(?:\/|$)/u.test(url.pathname);
+}
+
+function isAgentModeIntakeNamespace(url: URL): boolean {
+  return /^\/agent-mode\/jarvis(?:\/|$)/u.test(url.pathname);
+}
+
+function isAgentModeTerminalNamespace(url: URL): boolean {
+  return /^\/agent-mode\/terminal(?:\/|$)/u.test(url.pathname);
+}
+
+function isAgentModeNotificationNamespace(url: URL): boolean {
+  return /^\/agent-mode\/notifications(?:\/|$)/u.test(url.pathname);
+}
+
+function isAgentModeNotificationPath(url: URL): boolean {
+  return url.pathname === '/agent-mode/notifications' || /^\/agent-mode\/notifications\/[^/]+\/read$/u.test(url.pathname);
+}
+
 function rejectContainedHighImpactMutation(response: ServerResponse): void {
   sendJson(response, 503, {
     ok: false,
@@ -394,6 +450,438 @@ function rejectContainedHighImpactMutation(response: ServerResponse): void {
       credentialValuesAccepted: false,
     },
   });
+}
+
+type AgentModeControlBody = Record<string, unknown>;
+const AGENT_MODE_CONTROL_BODY_MAX_BYTES = 16_384;
+
+function sendAgentModeControlJson(response: ServerResponse, statusCode: number, body: unknown): void {
+  const payload = JSON.stringify(body, redactingJsonReplacer, 2);
+  response.writeHead(statusCode, {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+    'access-control-allow-methods': 'OPTIONS',
+    'access-control-allow-headers': 'content-type',
+  });
+  response.end(`${payload}\n`);
+}
+
+function sendAgentModeAuthFailure(response: ServerResponse, code: BrainServiceAuthFailureCode): void {
+  sendAgentModeControlJson(response, code === 'service_capability_denied' ? 403 : 401, {
+    ok: false,
+    error: { code, message: 'Authenticated Brain service identity is required for this Agent Mode mutation.' },
+  });
+}
+
+function controlHttpStatus(outcome: string): number {
+  if (outcome === 'completed' || outcome === 'already_applied') return 200;
+  if (outcome === 'not_found') return 404;
+  if (outcome === 'forbidden') return 403;
+  if (outcome === 'unavailable') return 503;
+  return 409;
+}
+
+function exactBodyKeys(body: AgentModeControlBody, allowed: readonly string[]): boolean {
+  const allowedSet = new Set(allowed);
+  return Object.keys(body).every((key) => allowedSet.has(key));
+}
+
+function requiredBodyText(body: AgentModeControlBody, key: string, maxLength: number): string | undefined {
+  const value = body[key];
+  return typeof value === 'string' && value.length > 0 && value.length <= maxLength ? value : undefined;
+}
+
+async function readBoundedRequestBody(request: IncomingMessage): Promise<{ body?: AgentModeControlBody; digest?: string; error?: string }> {
+  if (!request.on) return { error: 'request_body_unavailable' };
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    let byteLength = 0;
+    let tooLarge = false;
+    request.on!('data', (chunk: Buffer | string) => {
+      if (tooLarge) return;
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      byteLength += bytes.length;
+      if (byteLength > AGENT_MODE_CONTROL_BODY_MAX_BYTES) {
+        tooLarge = true;
+        chunks.length = 0;
+        return;
+      }
+      chunks.push(bytes);
+    });
+    request.on!('end', () => {
+      if (tooLarge) {
+        resolve({ error: 'request_body_too_large' });
+        return;
+      }
+      const raw = Buffer.concat(chunks);
+      try {
+        const parsed: unknown = JSON.parse(raw.toString('utf8'));
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          resolve({ error: 'request_body_invalid' });
+          return;
+        }
+        resolve({ body: parsed as AgentModeControlBody, digest: brainServiceContentSha256(raw) });
+      } catch {
+        resolve({ error: 'request_body_invalid' });
+      }
+    });
+    request.on!('error', () => resolve({ error: 'request_body_unavailable' }));
+  });
+}
+
+function sendAgentModeBodyError(response: ServerResponse, code: string): void {
+  const status = code === 'request_body_too_large' ? 413 : 400;
+  sendAgentModeControlJson(response, status, { ok: false, error: { code, message: 'Agent Mode control request is invalid.' } });
+}
+
+async function routeAgentModeControlRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try {
+    authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() });
+  } catch {
+    sendAgentModeAuthFailure(response, 'service_identity_missing');
+    return;
+  }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest(
+    { method: request.method ?? 'POST', pathname: url.pathname, headers: requestHeaders },
+    BRAIN_SERVICE_AGENT_MODE_CONTROL_CAPABILITY,
+  );
+  if (!auth.ok) {
+    sendAgentModeAuthFailure(response, auth.code);
+    return;
+  }
+
+  const parsed = await readBoundedRequestBody(request);
+  if (parsed.error || !parsed.body || !parsed.digest) {
+    sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid');
+    return;
+  }
+  const signedDigest = requestHeaders['x-brain-content-sha256'];
+  const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+  if (!signedDigestValue || signedDigestValue !== parsed.digest) {
+    sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } });
+    return;
+  }
+
+  const runMatch = /^\/agent-mode\/control\/run\/([^/]+)$/u.exec(url.pathname);
+  const reviewMatch = /^\/agent-mode\/control\/review\/([^/]+)$/u.exec(url.pathname);
+  const body = parsed.body;
+  const actor = { source: 'service' as const, actorId: auth.identity.serviceId };
+  const requestedAt = auth.identity.requestTimestamp;
+  let result: ReturnType<AgentModeControlService['pauseRun']>;
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    const databasePath = defaultAgentModeDatabasePath();
+    if (!existsSync(databasePath)) {
+      sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } });
+      return;
+    }
+    store = new AgentModeSqliteStateStore(databasePath);
+    const service = new AgentModeControlService(store);
+    if (runMatch) {
+      if (!exactBodyKeys(body, ['schemaVersion', 'operationId', 'action', 'reason', 'operator'])) {
+        sendAgentModeBodyError(response, 'control_fields_invalid');
+        return;
+      }
+      const schemaVersion = requiredBodyText(body, 'schemaVersion', 64);
+      const operationId = requiredBodyText(body, 'operationId', 128);
+      const action = requiredBodyText(body, 'action', 16) as AgentModeLifecycleControlAction | undefined;
+      const reason = requiredBodyText(body, 'reason', 512);
+      const operator = parseAgentModeOperatorAttribution(body.operator);
+      if (!schemaVersion || !operationId || !action || !reason || !AGENT_MODE_CONTROL_ACTIONS.includes(action) || (body.operator !== undefined && !operator)) {
+        sendAgentModeBodyError(response, 'control_fields_invalid');
+        return;
+      }
+      const command = { schemaVersion: schemaVersion as 'agent-mode-control-v1', operationId, action, runId: decodeURIComponent(runMatch[1] ?? ''), actor, requestedAt, reason, ...(operator ? { operator } : {}) };
+      result = action === 'pause' ? service.pauseRun(command) : action === 'resume' ? service.resumeRun(command) : action === 'cancel' ? service.cancelRun(command) : service.killRun(command);
+    } else if (reviewMatch) {
+      if (!exactBodyKeys(body, ['schemaVersion', 'operationId', 'decision', 'reason', 'evidenceHash', 'operator'])) {
+        sendAgentModeBodyError(response, 'control_fields_invalid');
+        return;
+      }
+      const schemaVersion = requiredBodyText(body, 'schemaVersion', 64);
+      const operationId = requiredBodyText(body, 'operationId', 128);
+      const decision = requiredBodyText(body, 'decision', 16) as AgentModeReviewDecisionCommandV1['decision'] | undefined;
+      const reason = requiredBodyText(body, 'reason', 512);
+      const evidenceHash = requiredBodyText(body, 'evidenceHash', 256);
+      const operator = parseAgentModeOperatorAttribution(body.operator);
+      if (!schemaVersion || !operationId || !decision || !reason || !evidenceHash || !['approved', 'rejected'].includes(decision) || (body.operator !== undefined && !operator)) {
+        sendAgentModeBodyError(response, 'control_fields_invalid');
+        return;
+      }
+      const command: AgentModeReviewDecisionCommandV1 = { schemaVersion: schemaVersion as 'agent-mode-control-v1', operationId, reviewId: decodeURIComponent(reviewMatch[1] ?? ''), decision, actor, decidedAt: requestedAt, reason, evidenceHash, ...(operator ? { operator } : {}) };
+      result = service.decideReview(command);
+    } else {
+      sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_control_not_found', message: 'Agent Mode control route is not supported.' } });
+      return;
+    }
+    sendAgentModeControlJson(response, controlHttpStatus(result.outcome), { ok: result.outcome === 'completed' || result.outcome === 'already_applied', result });
+  } catch {
+    sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'agent_mode_control_unavailable', message: 'Agent Mode control is unavailable.' } });
+  } finally {
+    store?.close();
+  }
+}
+
+async function routeAgentModeIntakeRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try { authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() }); } catch { sendAgentModeAuthFailure(response, 'service_identity_missing'); return; }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest({ method: request.method ?? 'POST', pathname: '/agent-mode/jarvis/intake', headers: requestHeaders }, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY);
+  if (!auth.ok) { sendAgentModeAuthFailure(response, auth.code); return; }
+  const parsed = await readBoundedRequestBody(request);
+  if (parsed.error || !parsed.body || !parsed.digest) { sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid'); return; }
+  const signedDigest = requestHeaders['x-brain-content-sha256'];
+  const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+  if (!signedDigestValue || signedDigestValue !== parsed.digest) { sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } }); return; }
+  const body = parsed.body;
+  if (!exactBodyKeys(body, ['schemaVersion', 'intakeId', 'source', 'operatorId', 'text'])) { sendAgentModeBodyError(response, 'intake_fields_invalid'); return; }
+  const schemaVersion = requiredBodyText(body, 'schemaVersion', 64);
+  const intakeId = requiredBodyText(body, 'intakeId', 128);
+  const operatorId = requiredBodyText(body, 'operatorId', 128);
+  const text = requiredBodyText(body, 'text', 4_000);
+  const source = body.source;
+  if (schemaVersion !== JARVIS_TEXT_INTAKE_SCHEMA_VERSION || !intakeId || !operatorId || !text || (source !== 'typed' && source !== 'voice')) { sendAgentModeBodyError(response, 'intake_fields_invalid'); return; }
+  const databasePath = defaultAgentModeDatabasePath();
+  if (!existsSync(databasePath)) { sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } }); return; }
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    store = new AgentModeSqliteStateStore(databasePath);
+    const result = new JarvisTextIntakeService(store, () => auth.identity.requestTimestamp).acceptCommand({ schemaVersion: JARVIS_TEXT_INTAKE_SCHEMA_VERSION, intakeId, source, operatorId, text, receivedAt: auth.identity.requestTimestamp });
+    const status = result.outcome === 'accepted' ? 201 : result.outcome === 'duplicate' ? 200 : result.outcome === 'conflict' ? 409 : 503;
+    sendAgentModeControlJson(response, status, { ok: result.outcome === 'accepted' || result.outcome === 'duplicate', result });
+  } catch { sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'jarvis_intake_unavailable', message: 'Jarvis text intake is unavailable.' } }); }
+  finally { store?.close(); }
+}
+
+async function routeAgentModeContextIntakeRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try { authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() }); } catch { sendAgentModeAuthFailure(response, 'service_identity_missing'); return; }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest({ method: request.method ?? 'POST', pathname: '/agent-mode/jarvis/intake/v2', headers: requestHeaders }, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY);
+  if (!auth.ok) { sendAgentModeAuthFailure(response, auth.code); return; }
+  const parsed = await readBoundedRequestBody(request);
+  if (parsed.error || !parsed.body || !parsed.digest) { sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid'); return; }
+  const signedDigest = requestHeaders['x-brain-content-sha256'];
+  const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+  if (!signedDigestValue || signedDigestValue !== parsed.digest) { sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } }); return; }
+  const body = parsed.body;
+  if (!exactBodyKeys(body, ['schemaVersion', 'requestId', 'operatorId', 'model', 'text', 'contexts', 'conversationId', 'codexEscalation'])) { sendAgentModeBodyError(response, 'jarvis_context_intake_fields_invalid'); return; }
+  const command: JarvisContextIntakeCommandV2 = {
+    schemaVersion: requiredBodyText(body, 'schemaVersion', 64) as typeof JARVIS_CONTEXT_INTAKE_SCHEMA_VERSION,
+    requestId: requiredBodyText(body, 'requestId', 128) ?? '',
+    operatorId: requiredBodyText(body, 'operatorId', 128) ?? '',
+    model: requiredBodyText(body, 'model', 64) ?? '',
+    text: requiredBodyText(body, 'text', 4_000) ?? '',
+    contexts: body.contexts as JarvisContextIntakeCommandV2['contexts'],
+    receivedAt: auth.identity.requestTimestamp,
+    ...(typeof body.conversationId === 'string' ? { conversationId: body.conversationId } : {}),
+    ...(body.codexEscalation && typeof body.codexEscalation === 'object' ? { codexEscalation: body.codexEscalation as NonNullable<JarvisContextIntakeCommandV2['codexEscalation']> } : {}),
+  };
+  if (command.schemaVersion !== JARVIS_CONTEXT_INTAKE_SCHEMA_VERSION) { sendAgentModeBodyError(response, 'jarvis_context_intake_fields_invalid'); return; }
+  const databasePath = defaultAgentModeDatabasePath();
+  if (!existsSync(databasePath)) { sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } }); return; }
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    store = new AgentModeSqliteStateStore(databasePath);
+    const runtimeConfig = loadBrainRuntimeConfig();
+    const result = new JarvisContextIntakeService(store, { home: os.homedir(), eligibleRoots: runtimeConfig.eligibleLocalRoots, writableRoots: runtimeConfig.writableLocalRoots, now: auth.identity.requestTimestamp }).accept(command);
+    const status = result.outcome === 'accepted' ? 201 : result.outcome === 'duplicate' ? 200 : result.outcome === 'conflict' ? 409 : 400;
+    sendAgentModeControlJson(response, status, { ok: result.outcome === 'accepted' || result.outcome === 'duplicate', result });
+  } catch { sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'jarvis_context_intake_unavailable', message: 'Jarvis context intake is unavailable.' } }); }
+  finally { store?.close(); }
+}
+
+async function routeAgentModeContextExpansionRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try { authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() }); } catch { sendAgentModeAuthFailure(response, 'service_identity_missing'); return; }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest({ method: request.method ?? 'POST', pathname: '/agent-mode/jarvis/context-expansion', headers: requestHeaders }, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY);
+  if (!auth.ok) { sendAgentModeAuthFailure(response, auth.code); return; }
+  const parsed = await readBoundedRequestBody(request);
+  if (parsed.error || !parsed.body || !parsed.digest) { sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid'); return; }
+  const signedDigest = requestHeaders['x-brain-content-sha256'];
+  const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+  if (!signedDigestValue || signedDigestValue !== parsed.digest) { sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } }); return; }
+  const body = parsed.body;
+  if (!exactBodyKeys(body, ['rootGoalId', 'contexts', 'reasonCode', 'causationRef']) || !requiredBodyText(body, 'rootGoalId', 128) || !requiredBodyText(body, 'reasonCode', 128) || !requiredBodyText(body, 'causationRef', 256) || !Array.isArray(body.contexts)) { sendAgentModeBodyError(response, 'jarvis_context_expansion_fields_invalid'); return; }
+  const databasePath = defaultAgentModeDatabasePath();
+  if (!existsSync(databasePath)) { sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } }); return; }
+  const store = new AgentModeSqliteStateStore(databasePath);
+  try {
+    const runtimeConfig = loadBrainRuntimeConfig();
+    const result = new JarvisContextIntakeService(store, { home: os.homedir(), eligibleRoots: runtimeConfig.eligibleLocalRoots, writableRoots: runtimeConfig.writableLocalRoots, now: auth.identity.requestTimestamp }).expand(String(body.rootGoalId), body.contexts as JarvisContextIntakeCommandV2['contexts'], String(body.reasonCode), String(body.causationRef));
+    const status = result.outcome === 'accepted' ? 201 : result.outcome === 'duplicate' ? 200 : 400;
+    sendAgentModeControlJson(response, status, { ok: result.outcome === 'accepted' || result.outcome === 'duplicate', result });
+  } finally { store.close(); }
+}
+
+async function routeAgentModeTerminalIntakeRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try { authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() }); } catch { sendAgentModeAuthFailure(response, 'service_identity_missing'); return; }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest({ method: request.method ?? 'POST', pathname: '/agent-mode/terminal/intake', headers: requestHeaders }, BRAIN_SERVICE_AGENT_MODE_INTAKE_CAPABILITY);
+  if (!auth.ok) { sendAgentModeAuthFailure(response, auth.code); return; }
+  const parsed = await readBoundedRequestBody(request);
+  if (parsed.error || !parsed.body || !parsed.digest) { sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid'); return; }
+  const signedDigest = requestHeaders['x-brain-content-sha256'];
+  const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+  if (!signedDigestValue || signedDigestValue !== parsed.digest) { sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } }); return; }
+  const body = parsed.body;
+  if (!exactBodyKeys(body, ['schemaVersion', 'requestId', 'operatorId', 'repositoryRef', 'repositoryRoot', 'model', 'text', 'conversationId', 'codexEscalation'])) { sendAgentModeBodyError(response, 'terminal_intake_fields_invalid'); return; }
+  const command: TerminalIntakeCommandV1 = {
+    schemaVersion: requiredBodyText(body, 'schemaVersion', 64) as typeof TERMINAL_INTAKE_SCHEMA_VERSION,
+    requestId: requiredBodyText(body, 'requestId', 128) ?? '',
+    operatorId: requiredBodyText(body, 'operatorId', 128) ?? '',
+    repositoryRef: requiredBodyText(body, 'repositoryRef', 256) ?? '',
+    repositoryRoot: requiredBodyText(body, 'repositoryRoot', 1_024) ?? '',
+    model: requiredBodyText(body, 'model', 64) ?? '',
+    text: requiredBodyText(body, 'text', 4_000) ?? '',
+    receivedAt: auth.identity.requestTimestamp,
+    ...(typeof body.conversationId === 'string' ? { conversationId: body.conversationId } : {}),
+    ...(body.codexEscalation && typeof body.codexEscalation === 'object' ? { codexEscalation: body.codexEscalation as NonNullable<TerminalIntakeCommandV1['codexEscalation']> } : {}),
+  };
+  if (command.schemaVersion !== TERMINAL_INTAKE_SCHEMA_VERSION) { sendAgentModeBodyError(response, 'terminal_intake_fields_invalid'); return; }
+  const databasePath = defaultAgentModeDatabasePath();
+  if (!existsSync(databasePath)) { sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } }); return; }
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    store = new AgentModeSqliteStateStore(databasePath);
+    const runtimeConfig = loadBrainRuntimeConfig();
+    const reflex = createConfiguredJarvisSystemOneReflexService();
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: runtimeConfig.repositoryRoots, ...(runtimeConfig.execution.codexCliPath === null ? {} : { codexCommand: runtimeConfig.execution.codexCliPath }), now: () => auth.identity.requestTimestamp, ...(reflex ? { reflex } : {}) });
+    const result = service.accept(command);
+    if (!('receipt' in result)) {
+      sendAgentModeControlJson(response, result.outcome === 'conflict' ? 409 : 400, { ok: false, result });
+      return;
+    }
+    const accepted = result;
+    const rootGoalId = accepted.receipt.rootGoalId;
+    const initialStatus = service.status(rootGoalId);
+    sendAgentModeControlJson(response, accepted.outcome === 'accepted' ? 202 : 200, {
+      ok: true,
+      result: accepted,
+      execution: { result: 'ACCEPTED', rootGoalId },
+      status: initialStatus,
+    });
+
+    // Acceptance is durable before this response is written. Keep the same
+    // K4 execution path, but let the terminal follow the authoritative status
+    // endpoint instead of holding the HTTP request open until the worker ends.
+    const executionStore = store;
+    store = undefined;
+    setImmediate(() => {
+      void service.execute(rootGoalId)
+        .catch(() => undefined)
+        .finally(() => executionStore.close());
+    });
+  } catch { sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'terminal_intake_unavailable', message: 'Terminal Agent Mode intake is unavailable.' } }); }
+  finally { store?.close(); }
+}
+
+function routeAgentModeTerminalStatusRequest(url: URL, response: ServerResponse): void {
+  let rootGoalId: string;
+  try { rootGoalId = decodeURIComponent(url.pathname.slice('/agent-mode/terminal/intake/'.length)); } catch { sendJson(response, 400, { ok: false, error: { code: 'terminal_root_invalid', message: 'Terminal root identity is invalid.' } }); return; }
+  if (!rootGoalId || rootGoalId.length > 128 || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/u.test(rootGoalId)) { sendJson(response, 400, { ok: false, error: { code: 'terminal_root_invalid', message: 'Terminal root identity is invalid.' } }); return; }
+  const store = AgentModeSqliteStateStore.openExisting(defaultAgentModeDatabasePath());
+  if (!store) { sendJson(response, 404, { ok: false, error: { code: 'terminal_intake_not_found', message: 'No terminal intake exists for this root.' } }); return; }
+  try { sendJson(response, 200, { ok: true, status: new AgentModeTerminalIntakeService(store, { repositoryRoots: [] }).status(rootGoalId) }); } finally { store.close(); }
+}
+
+function routeAgentModeJarvisResponseRequest(url: URL, response: ServerResponse): void {
+  let rootGoalId: string;
+  try { rootGoalId = decodeURIComponent(url.pathname.slice('/agent-mode/jarvis/responses/'.length)); } catch { sendJson(response, 400, { ok: false, error: { code: 'jarvis_response_root_invalid', message: 'Jarvis response root identity is invalid.' } }); return; }
+  if (!rootGoalId || rootGoalId.length > 128 || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/u.test(rootGoalId)) { sendJson(response, 400, { ok: false, error: { code: 'jarvis_response_root_invalid', message: 'Jarvis response root identity is invalid.' } }); return; }
+  const databasePath = defaultAgentModeDatabasePath();
+  const store = AgentModeSqliteStateStore.openExisting(databasePath);
+  if (!store) { sendJson(response, 404, { ok: false, error: { code: 'jarvis_response_not_found', message: 'No canonical Jarvis response exists for this root.' } }); return; }
+  try {
+    const record = store.getJarvisUserResponseForRoot(rootGoalId);
+    if (!record) { sendJson(response, 404, { ok: false, error: { code: 'jarvis_response_not_found', message: 'No canonical Jarvis response exists for this root.' } }); return; }
+    const { materialHash: _materialHash, ...publicResponse } = record;
+    sendJson(response, 200, { ok: true, response: publicResponse });
+  } finally { store.close(); }
+}
+
+async function routeAgentModeNotificationRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let authenticator: BrainServiceAuthenticator;
+  try {
+    authenticator = new BrainServiceAuthenticator({ identities: loadBrainServiceIdentityRegistry() });
+  } catch {
+    sendAgentModeAuthFailure(response, 'service_identity_missing');
+    return;
+  }
+  const requestHeaders = (request as IncomingMessage & { headers?: IncomingHttpHeaders }).headers ?? {};
+  const auth = authenticator.authenticateRequest(
+    { method: request.method ?? 'GET', pathname: url.pathname, headers: requestHeaders },
+    BRAIN_SERVICE_AGENT_MODE_NOTIFICATIONS_CAPABILITY,
+  );
+  if (!auth.ok) {
+    sendAgentModeAuthFailure(response, auth.code);
+    return;
+  }
+  const databasePath = defaultAgentModeDatabasePath();
+  if (!existsSync(databasePath)) {
+    if (request.method === 'GET') sendAgentModeControlJson(response, 200, readAgentModeAttentionProjection(auth.identity.requestTimestamp, databasePath));
+    else sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'agent_mode_state_unavailable', message: 'Agent Mode state is unavailable.' } });
+    return;
+  }
+  if (request.method === 'GET' && url.pathname === '/agent-mode/notifications') {
+    const operatorId = url.searchParams.get('operatorId');
+    if (!operatorId || operatorId.length > 128) {
+      sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'operator_identity_invalid', message: 'Authenticated operator identity is invalid.' } });
+      return;
+    }
+    sendAgentModeControlJson(response, 200, readAgentModeAttentionProjection(auth.identity.requestTimestamp, databasePath, operatorId));
+    return;
+  }
+  let store: AgentModeSqliteStateStore | undefined;
+  try {
+    store = new AgentModeSqliteStateStore(databasePath);
+    if (request.method !== 'POST') {
+      sendAgentModeControlJson(response, 405, { ok: false, error: { code: 'agent_mode_notification_method_not_allowed', message: 'Agent Mode notification route is not supported.' } });
+      return;
+    }
+    const match = /^\/agent-mode\/notifications\/([^/]+)\/read$/u.exec(url.pathname);
+    if (!match) {
+      sendAgentModeControlJson(response, 404, { ok: false, error: { code: 'agent_mode_notification_not_found', message: 'Agent Mode notification route is not supported.' } });
+      return;
+    }
+    const parsed = await readBoundedRequestBody(request);
+    if (parsed.error || !parsed.body || !parsed.digest) {
+      sendAgentModeBodyError(response, parsed.error ?? 'request_body_invalid');
+      return;
+    }
+    const signedDigest = requestHeaders['x-brain-content-sha256'];
+    const signedDigestValue = Array.isArray(signedDigest) ? undefined : signedDigest;
+    if (!signedDigestValue || signedDigestValue !== parsed.digest) {
+      sendAgentModeControlJson(response, 400, { ok: false, error: { code: 'content_digest_mismatch', message: 'Signed request content digest does not match the request body.' } });
+      return;
+    }
+    const body = parsed.body;
+    if (!exactBodyKeys(body, ['schemaVersion', 'operatorId'])) {
+      sendAgentModeBodyError(response, 'notification_read_fields_invalid');
+      return;
+    }
+    const schemaVersion = requiredBodyText(body, 'schemaVersion', 64);
+    const operatorId = requiredBodyText(body, 'operatorId', 128);
+    if (schemaVersion !== 'agent-mode-notification-read-v1' || !operatorId) {
+      sendAgentModeBodyError(response, 'notification_read_fields_invalid');
+      return;
+    }
+    const notificationId = decodeURIComponent(match[1] ?? '');
+    if (!notificationId || notificationId.length > 256 || notificationId.includes('/')) {
+      sendAgentModeBodyError(response, 'notification_id_invalid');
+      return;
+    }
+    const result = store.markAgentModeNotificationRead({ notificationId, operatorId, readAt: auth.identity.requestTimestamp });
+    sendAgentModeControlJson(response, result.result === 'denied' ? 503 : 200, { schemaVersion: 'agent-mode-notification-read-v1', notificationId, readAt: result.readAt ?? null, result: result.result, reasonCode: result.reasonCode ?? null });
+  } catch {
+    sendAgentModeControlJson(response, 503, { ok: false, error: { code: 'agent_mode_notifications_unavailable', message: 'Agent Mode notifications are unavailable.' } });
+  } finally {
+    store?.close();
+  }
 }
 
 export async function routeRequest(
@@ -444,6 +932,15 @@ export async function routeRequest(
   }
 
   if (method === 'OPTIONS') {
+    if (isAgentModeControlNamespace(url) || isAgentModeNotificationNamespace(url) || isAgentModeIntakeNamespace(url) || isAgentModeTerminalNamespace(url)) {
+      response.writeHead(204, {
+        'access-control-allow-methods': 'GET, HEAD, OPTIONS',
+        'access-control-allow-headers': 'content-type',
+        'access-control-max-age': '86400',
+      });
+      response.end();
+      return;
+    }
     response.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'access-control-allow-methods': thumbnailPathMatch || isContainedHighImpactMutation(url)
@@ -465,6 +962,39 @@ export async function routeRequest(
       'Allow': 'GET, HEAD',
     });
     response.end(body);
+    return;
+  }
+
+  if (method === 'POST' && isAgentModeControlPath(url)) {
+    await routeAgentModeControlRequest(url, request, response);
+    return;
+  }
+  if (method === 'POST' && url.pathname === '/agent-mode/jarvis/intake/v2') {
+    await routeAgentModeContextIntakeRequest(request, response);
+    return;
+  }
+  if (method === 'POST' && isAgentModeContextExpansionPath(url)) {
+    await routeAgentModeContextExpansionRequest(request, response);
+    return;
+  }
+  if (method === 'POST' && url.pathname === '/agent-mode/jarvis/intake') {
+    await routeAgentModeIntakeRequest(request, response);
+    return;
+  }
+  if (method === 'POST' && isAgentModeTerminalIntakePath(url)) {
+    await routeAgentModeTerminalIntakeRequest(request, response);
+    return;
+  }
+  if (method === 'GET' && isAgentModeTerminalStatusPath(url)) {
+    routeAgentModeTerminalStatusRequest(url, response);
+    return;
+  }
+  if (method === 'GET' && isAgentModeJarvisResponsePath(url)) {
+    routeAgentModeJarvisResponseRequest(url, response);
+    return;
+  }
+  if (isAgentModeNotificationPath(url) && (method === 'GET' || method === 'POST')) {
+    await routeAgentModeNotificationRequest(url, request, response);
     return;
   }
 
@@ -509,6 +1039,25 @@ export async function routeRequest(
   const continuousProcessingResponse = getContinuousProcessingRouteResponse(url.pathname);
   if (continuousProcessingResponse) {
     sendJson(response, continuousProcessingResponse.statusCode, continuousProcessingResponse.body);
+    return;
+  }
+
+  const agentModeDetailMatch = /^\/agent-mode\/console\/detail\/([^/]+)\/([^/]+)$/u.exec(url.pathname);
+  if (agentModeDetailMatch) {
+    let kind: string;
+    let id: string;
+    try {
+      kind = decodeURIComponent(agentModeDetailMatch[1] ?? '');
+      id = decodeURIComponent(agentModeDetailMatch[2] ?? '');
+    } catch {
+      sendJson(response, 400, { error: { code: 'invalid_agent_mode_detail_path', message: 'Agent Mode detail path encoding is invalid.' } });
+      return;
+    }
+    if (!isAgentModeConsoleDetailKind(kind)) {
+      sendJson(response, 400, { error: { code: 'invalid_agent_mode_detail_kind', message: 'Agent Mode detail kind is not supported.' } });
+      return;
+    }
+    sendJson(response, 200, readAgentModeConsoleDetail(kind, id));
     return;
   }
 
@@ -964,6 +1513,12 @@ export async function routeRequest(
     case '/agent-events':
       sendJson(response, 200, { events: listAgentEvents() });
       return;
+    case '/agent-mode/observer':
+      sendJson(response, 200, readAgentModeObserver());
+      return;
+    case '/agent-mode/console':
+      sendJson(response, 200, readAgentModeConsoleProjection());
+      return;
     case '/agent-task-graph':
       sendJson(response, 200, readAgentTaskGraph());
       return;
@@ -980,7 +1535,7 @@ export async function routeRequest(
       sendJson(response, 200, readAgentApprovalGates());
       return;
     case '/agent-console':
-      sendJson(response, 200, readAgentConsoleSummary());
+      sendJson(response, 200, { ...readAgentConsoleSummary(), agentMode: readAgentModeObserver() });
       return;
     case '/agent-cost-summary':
       sendJson(response, 200, readAgentCostSummary());

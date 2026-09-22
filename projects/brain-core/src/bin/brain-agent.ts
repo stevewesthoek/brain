@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { analyzeVideo } from '../adapters/video-analysis-service.js';
+import { runAgentModeCli } from '../agent-mode/brain-agent-cli.js';
 
 const BASE_URL = process.env.BRAIN_CORE_URL ?? 'http://localhost:3000';
 
@@ -58,8 +59,12 @@ async function main(): Promise<void> {
   }
 
   if (command !== 'capabilities') {
-    console.error('Usage: brain-agent capabilities | brain-agent video analyze <url-or-path> [--focus "..."] [--save-to-mind]');
-    process.exitCode = 1;
+    if (command === 'video') {
+      console.error('Usage: brain-agent capabilities | brain-agent video analyze <url-or-path> [--focus "..."] [--save-to-mind]');
+      process.exitCode = 1;
+      return;
+    }
+    await runAgentModeCli();
     return;
   }
 
