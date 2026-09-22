@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Activity, AppWindow, BrainCircuit, CalendarClock, ClipboardList, FileVideo2, Gauge, Globe, LayoutDashboard, Laptop, ListVideo, Network, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
+import { Activity, AppWindow, Bot, BrainCircuit, CalendarClock, ClipboardList, FileVideo2, Gauge, Globe, LayoutDashboard, Laptop, ListVideo, Network, PlayCircle, Server, Settings, UploadCloud, Video } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { brainCoreRequest, BRAIN_CORE_URL } from '@/lib/braincore-client';
 import { brainCoreStatusSchema } from '@/lib/braincore-schemas';
@@ -14,6 +14,7 @@ import { CommandPalette } from '@/components/command-palette';
 
 const nav = [
   { href: '/command-center', label: 'Command Center', icon: LayoutDashboard },
+  { href: '/agents', label: 'Agents', icon: Bot },
   {
     href: '/brain',
     label: 'Brain',
