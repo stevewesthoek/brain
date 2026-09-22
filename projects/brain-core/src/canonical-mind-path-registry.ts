@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,7 +8,10 @@ import {
   resolveCanonicalPath,
 } from '../../../tools/mind-canonical-path-registry.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const MODULE_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
+const REPOSITORY_ROOT = path.resolve(MODULE_DIRECTORY, '..', '..', '..');
+const PACKAGED_ROOT = path.resolve(MODULE_DIRECTORY, '..', '..');
+const ROOT = existsSync(path.join(PACKAGED_ROOT, 'operations', 'specs', 'infinite-brain-path-registry.json')) ? PACKAGED_ROOT : REPOSITORY_ROOT;
 const REGISTRY = loadPathRegistry({ repoRoot: ROOT });
 
 export interface ClassifiedMindPathEntry {
