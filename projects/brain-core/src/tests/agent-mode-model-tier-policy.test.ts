@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { AGENT_MODE_PRINCIPAL_RESOURCES, AGENT_MODE_TIER_POLICY_VERSION, admitCodexResource, admitManualModelOverride, selectAgentModeAfterEscalationRequest, selectAgentModeExecutionModel, selectAgentModeModel, type AgentModePolicyInput, type RouteEvidence } from '../agent-mode/model-tier-policy.js';
+import { AGENT_MODE_PRINCIPAL_RESOURCES, AGENT_MODE_TIER_POLICY_VERSION, admitAgentModeAutoCandidateCost, admitAgentModeCost, admitCodexResource, admitManualModelOverride, selectAgentModeAfterEscalationRequest, selectAgentModeExecutionModel, selectAgentModeModel, type AgentModePolicyInput, type RouteEvidence } from '../agent-mode/model-tier-policy.js';
 import type { AdmittedModelRef } from '../agent-mode/model-gateway.js';
 
 const now = '2026-09-09T12:00:00.000Z';
@@ -35,6 +35,13 @@ test('root budget scope mismatch denies escalation', () => { const d = selectAge
 test('manual MiniMax selection is direct and policy-gated', () => { const d = selectAgentModeModel(input({ selectionMode: 'manual', manualModelRef: 'agent-mode/minimax-m2.5', taskClass: 'principal' })); assert.equal(d.ok, true); assert.equal(d.modelRef, 'agent-mode/minimax-m2.5'); });
 test('manual GLM selection is direct and policy-gated', () => { const d = selectAgentModeModel(input({ selectionMode: 'manual', manualModelRef: 'agent-mode/glm-5', taskClass: 'worker' })); assert.equal(d.ok, true); assert.equal(d.modelRef, 'agent-mode/glm-5'); });
 test('manual Opus selection remains fail closed without verified pricing', () => { const d = selectAgentModeModel(input({ selectionMode: 'manual', manualModelRef: 'agent-mode/claude-opus-4.6' })); assert.equal(d.ok, false); assert.equal(d.reason, 'cost_unknown'); });
+test('canonical cost admission is shared by selection and Auto candidate filtering', () => {
+  assert.deepEqual(admitAgentModeCost('agent-mode/claude-opus-4.6', 100, 100, 1), { ok: false, reason: 'cost_unknown', estimatedCostUsd: null });
+  assert.deepEqual(admitAgentModeAutoCandidateCost('agent-mode/claude-opus-4.6'), { ok: false, reason: 'cost_unknown' });
+  assert.deepEqual(admitAgentModeAutoCandidateCost('agent-mode/minimax-m2.5'), { ok: true });
+  assert.deepEqual(admitAgentModeCost('agent-mode/minimax-m2.5', 1000, 1000, 1), { ok: true, estimatedCostUsd: 0.0015 });
+  assert.deepEqual(admitAgentModeCost('agent-mode/glm-5', 1000, 1000, 0), { ok: false, reason: 'budget_exhausted', estimatedCostUsd: 0.0042 });
+});
 test('policy selection is offline and does not call the network', () => { const originalFetch = globalThis.fetch; let calls = 0; globalThis.fetch = (async () => { calls += 1; throw new Error('network must not be called'); }) as typeof fetch; try { selectAgentModeModel(input()); } finally { globalThis.fetch = originalFetch; } assert.equal(calls, 0); });
 
 test('execution senior class selects GLM after Auto scout', () => { const d = selectAgentModeModel(input({ taskClass: 'senior', phase: 'execution' })); assert.equal(d.modelRef, 'agent-mode/glm-5'); assert.equal(d.tier, 'senior'); });

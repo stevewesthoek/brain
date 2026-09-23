@@ -81,13 +81,15 @@ export class JarvisContextIntakeService {
   private readonly runtimeFactory: ((store: AgentModeSqliteStateStore) => AgentRuntime) | undefined;
   private readonly fixtureRuntimeAvailable: boolean;
   private readonly productionRuntimeAvailable: ReadonlySet<import('./model-gateway.js').AdmittedModelRef> | undefined;
+  private readonly productionAutoAdmittedModels: ReadonlySet<import('./model-gateway.js').AdmittedModelRef> | undefined;
   private readonly reflex: JarvisSystemOneReflexHook | undefined;
 
   constructor(private readonly store: AgentModeSqliteStateStore, private readonly admission: JarvisContextAdmissionOptions, private readonly now: () => string = () => new Date().toISOString(), options: { runtimeFactory?: (store: AgentModeSqliteStateStore) => AgentRuntime; productionRuntime?: JarvisProductionRuntimeConfiguration; reflex?: JarvisSystemOneReflexHook } = {}) {
     const productionRuntime = options.productionRuntime ?? loadJarvisProductionRuntimeConfiguration(this.now());
     this.runtimeFactory = options.runtimeFactory ?? productionRuntime?.runtimeFactory;
     this.fixtureRuntimeAvailable = options.runtimeFactory !== undefined;
-    this.productionRuntimeAvailable = productionRuntime?.availableModels;
+    this.productionRuntimeAvailable = productionRuntime?.runtimeAvailableModels ?? productionRuntime?.availableModels;
+    this.productionAutoAdmittedModels = productionRuntime?.availableModels;
     this.reflex = options.reflex;
   }
 
@@ -100,6 +102,10 @@ export class JarvisContextIntakeService {
   private actionRule(route: JarvisRuntimeRoute): SchedulerEventActionRule {
     if (route.source === 'codex-escalation') return JARVIS_CONTEXT_ACTION_RULE;
     return { ...JARVIS_CONTEXT_ACTION_RULE, ruleId: 'agent-mode.action.jarvis-context-auto.v1', taskSpecRef: JARVIS_CONTEXT_AUTO_TASK_SPEC_REF, runtimeRef: route.runtimeRef, runtimeProfileRef: route.runtimeProfileRef, requestedCost: route.runtimeRef === MOCK_AGENT_RUNTIME_REF ? 0 : 0.25, ...(route.modelRef ? { modelRef: route.modelRef } : {}) };
+  }
+
+  private deniedExecution(eventId: string, reasonCode: string): DynamicWorkerOrchestrationResult {
+    return { result: 'DENIED', eventId, ruleId: null, ruleVersion: null, actionRuleApplicationId: null, schedulerFence: null, spawnIntentKey: null, childAgentId: null, assignmentIntentKey: null, taskId: null, runId: null, attemptId: null, operationId: null, dispatchId: null, terminalWorkerOutcome: null, reasonCode };
   }
 
   private ensureContextEventSource(registeredAt: string): void {
@@ -178,19 +184,20 @@ export class JarvisContextIntakeService {
     const route = intake ? this.route({ schemaVersion: JARVIS_CONTEXT_INTAKE_SCHEMA_VERSION, requestId: intake.intakeId, operatorId: intake.operatorId, model: intake.requestedModel ?? 'auto', text: this.store.getJarvisTaskInput(rootGoalId)?.text ?? 'resume', contexts: [], receivedAt: intake.receivedAt, ...(intake.codexEscalation ? { codexEscalation: intake.codexEscalation } : {}) }) : { ok: false as const, reasonCode: 'MODEL_NOT_ADMITTED' as const };
     const existingAssignment = this.store.listChildAssignments().find((assignment) => assignment.sourceEventId === eventId);
     const existingRoute = existingAssignment ? routeFromK4Assignment(existingAssignment) : this.storedReflexRoute(rootGoalId);
-    const reflexStartedAt = this.reflex && !existingRoute ? this.now() : undefined;
-    if (reflexStartedAt) this.recordReflexStarted(rootGoalId, reflexStartedAt);
-    const reflexPreflight = this.reflex && !existingRoute ? await this.runReflexPreflight(rootGoalId, 'route' in route ? route.route.modelRef : undefined) : undefined;
-    const reflexCompletedAt = reflexPreflight ? this.now() : undefined;
     const selectedRoute = 'route' in route ? route.route : undefined;
+    const reflexStartedAt = this.reflex && !existingRoute && selectedRoute ? this.now() : undefined;
+    if (reflexStartedAt) this.recordReflexStarted(rootGoalId, reflexStartedAt);
+    const reflexPreflight = this.reflex && !existingRoute && selectedRoute ? await this.runReflexPreflight(rootGoalId, selectedRoute.modelRef) : undefined;
+    const reflexCompletedAt = reflexPreflight ? this.now() : undefined;
     const effectiveRoute = reflexPreflight && selectedRoute
-      ? applyJarvisReflexRoute({ requestedModel: intake?.requestedModel ?? 'auto', requestText: this.store.getJarvisTaskInput(rootGoalId)?.text ?? '', currentRoute: selectedRoute, envelope: reflexPreflight, ...(this.productionRuntimeAvailable ? { availableModels: this.productionRuntimeAvailable } : {}), fixtureRuntimeAvailable: this.fixtureRuntimeAvailable })
+      ? applyJarvisReflexRoute({ requestedModel: intake?.requestedModel ?? 'auto', requestText: this.store.getJarvisTaskInput(rootGoalId)?.text ?? '', currentRoute: selectedRoute, envelope: reflexPreflight, ...(this.productionAutoAdmittedModels ? { availableModels: this.productionAutoAdmittedModels } : this.fixtureRuntimeAvailable ? {} : { availableModels: new Set() }), fixtureRuntimeAvailable: this.fixtureRuntimeAvailable })
       : existingRoute ?? selectedRoute;
+    if (!effectiveRoute) return this.deniedExecution(event.eventId, 'MODEL_ROUTE_NOT_ADMITTED');
     if (reflexPreflight) {
       if (reflexPreflight.mode === 'ACTIVE_PILOT' && effectiveRoute) this.recordReflexRoute(rootGoalId, effectiveRoute);
       this.recordReflexPreflight(rootGoalId, { ...reflexPreflight, actualRouteModelRef: effectiveRoute?.modelRef ?? reflexPreflight.actualRouteModelRef }, reflexStartedAt, reflexCompletedAt);
     }
-    const actionRules = effectiveRoute ? [this.actionRule(effectiveRoute)] : [JARVIS_CONTEXT_ACTION_RULE];
+    const actionRules = [this.actionRule(effectiveRoute)];
     const result = await new AgentModeDynamicWorkerOrchestrator({ store: this.store, runtime: this.runtimeFactory(this.store), actionRules, rootFacts: (id, currentNow) => this.rootFacts(id, currentNow), ownerId: 'brain-jarvis-context', controllerRef: JARVIS_CONTEXT_CONTROLLER_REF, now, clock: this.now }).handleSchedulerEvent({ event, ...(schedulerClaim ? { schedulerClaim } : {}), now });
     if (reflexPreflight && this.reflex && shouldRunReflexPostflight(reflexPreflight)) {
       const postflight = await this.runReflexPostflight(reflexPreflight.originalRequestHash, result);
@@ -211,7 +218,7 @@ export class JarvisContextIntakeService {
 
   private storedReflexRoute(rootGoalId: string): JarvisRuntimeRoute | undefined {
     const event = this.store.listEvents(rootGoalId).reverse().find((entry) => entry.eventType === 'jarvis_reflex_route');
-    return persistedJarvisReflexRoute(event?.payload);
+    return persistedJarvisReflexRoute(event?.payload, this.productionAutoAdmittedModels);
   }
 
   private recordReflexStarted(rootGoalId: string, startedAt: string): void {

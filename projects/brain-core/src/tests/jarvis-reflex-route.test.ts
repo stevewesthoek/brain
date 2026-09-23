@@ -53,6 +53,20 @@ test('ACTIVE_PILOT applies only an admitted Jev model recommendation to Auto', (
   assert.equal(route.source, 'auto');
 });
 
+test('Jev cannot reintroduce runtime-available Opus denied by cost policy', () => {
+  const current = currentRoute();
+  const route = applyJarvisReflexRoute({
+    requestedModel: 'auto',
+    requestText: 'Design a complex migration',
+    currentRoute: current,
+    envelope: envelope({ complexity: 'complex', actualRouteModelRef: 'agent-mode/minimax-m2.5', recommendation: { modelRef: 'agent-mode/claude-opus-4.6', skillIds: [], contextIds: [] } }),
+    availableModels: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6']),
+    fixtureRuntimeAvailable: true,
+  });
+  assert.equal(route.modelRef, current.modelRef);
+  assert.notEqual(route.modelRef, 'agent-mode/claude-opus-4.6');
+});
+
 test('ACTIVE_PILOT can lower an adaptive quality-tier baseline through the same admitted route', () => {
   const baseline = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Inspect the repository and explain the implementation.', adaptiveRouting: true, fixtureRuntimeAvailable: true });
   assert.equal(baseline.ok, true);
@@ -81,5 +95,8 @@ test('persisted and assigned routes are bounded and deterministic', () => {
   const persisted = persistedJarvisReflexRoute({ modelRef: 'agent-mode/glm-5', runtimeRef: 'runtime:mock-k0-4', runtimeProfileRef: 'runtime-profile:mock-k0-4', source: 'auto', selectionReason: 'admitted-order', unexpectedAuthority: 'ignore' });
   assert.deepEqual(persisted, { modelRef: 'agent-mode/glm-5', runtimeRef: 'runtime:mock-k0-4', runtimeProfileRef: 'runtime-profile:mock-k0-4', source: 'auto', selectionReason: 'admitted-order' });
   assert.equal(persistedJarvisReflexRoute({ modelRef: 'shell-command', runtimeRef: 'shell', runtimeProfileRef: 'unsafe', source: 'auto' }), undefined);
+  assert.equal(persistedJarvisReflexRoute({ modelRef: 'agent-mode/claude-opus-4.6', runtimeRef: 'runtime:claude-code', runtimeProfileRef: 'runtime-profile:claude-code', source: 'auto', selectionReason: 'admitted-order' }), undefined);
+  assert.equal(persistedJarvisReflexRoute({ modelRef: 'agent-mode/glm-5', runtimeRef: 'runtime:model-gateway', runtimeProfileRef: 'runtime-profile:model-gateway', source: 'auto', selectionReason: 'admitted-order' }, new Set(['agent-mode/minimax-m2.5'])), undefined);
+  assert.equal(persistedJarvisReflexRoute({ modelRef: 'agent-mode/glm-5', runtimeRef: 'runtime:mock-k0-4', runtimeProfileRef: 'runtime-profile:mock-k0-4', source: 'auto', selectionReason: 'admitted-order' }, new Set(['agent-mode/glm-5'])), undefined);
   assert.deepEqual(routeFromK4Assignment({ modelRef: 'agent-mode/glm-5', runtimeRef: 'runtime:mock-k0-4', runtimeProfileRef: 'runtime-profile:mock-k0-4' }), persisted);
 });

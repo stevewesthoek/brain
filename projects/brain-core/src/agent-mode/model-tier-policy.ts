@@ -39,6 +39,26 @@ export const AGENT_MODE_PRICING: Readonly<Record<AdmittedModelRef, PricingRecord
   'agent-mode/claude-opus-4.6': { inputPerMillionUsd: null, outputPerMillionUsd: null, source: 'https://aws.amazon.com/bedrock/pricing/', observedAt: '2026-09-09', verified: false },
 };
 
+export type AgentModeCostAdmission =
+  | { ok: true; estimatedCostUsd: number }
+  | { ok: false; reason: 'cost_unknown' | 'budget_exhausted'; estimatedCostUsd: number | null };
+
+/** Canonical static pricing gate shared by model selection and runtime admission. */
+export function admitAgentModeCost(modelRef: AdmittedModelRef, inputTokens: number, outputTokens: number, maxDollars: number): AgentModeCostAdmission {
+  const estimatedCostUsd = estimateAgentModeCost(modelRef, inputTokens, outputTokens);
+  if (estimatedCostUsd === null) return { ok: false, reason: 'cost_unknown', estimatedCostUsd: null };
+  if (!Number.isFinite(maxDollars) || maxDollars < 0 || estimatedCostUsd > maxDollars) return { ok: false, reason: 'budget_exhausted', estimatedCostUsd };
+  return { ok: true, estimatedCostUsd };
+}
+
+/** Runtime candidate admission checks verified pricing before per-turn budget re-admission in K4. */
+export function admitAgentModeAutoCandidateCost(modelRef: AdmittedModelRef): { ok: true } | { ok: false; reason: 'cost_unknown' } {
+  const price = AGENT_MODE_PRICING[modelRef];
+  return price.verified && price.inputPerMillionUsd !== null && price.outputPerMillionUsd !== null
+    ? { ok: true }
+    : { ok: false, reason: 'cost_unknown' };
+}
+
 export type RouteEvidence = {
   modelRef: AdmittedModelRef;
   routeKind: BedrockRouteKind;
@@ -161,15 +181,16 @@ export function selectAgentModeModel(input: AgentModePolicyInput): AgentModePoli
     const route = AGENT_MODE_MODEL_ROUTES[ref];
     if (input.requiredContextTokens > route.maxContextTokens) { terminalFitReason = 'context_limit'; if (mode === 'manual' || tier === 'principal') break; tier = TIER_ORDER[TIER_ORDER.indexOf(tier) + 1]!; reason = 'context_limit'; continue; }
     if (input.requiredOutputTokens > route.maxOutputTokens) { terminalFitReason = 'output_limit'; if (mode === 'manual' || tier === 'principal') break; tier = TIER_ORDER[TIER_ORDER.indexOf(tier) + 1]!; reason = 'output_limit'; continue; }
+    const costAdmission = admitAgentModeCost(ref, input.inputTokens, input.outputTokens, input.maxDollars);
+    if (!costAdmission.ok && costAdmission.reason === 'cost_unknown') return { ...base, ok: false, modelRef: ref, tier, reason: costAdmission.reason, explanation: 'automatic dollar admission is denied until current pricing is verified' };
     const evidence = input.routeEvidence[ref];
     if (!evidence || evidence.accessState !== 'verified' || !fresh(evidence, input.now)) return { ...base, ok: false, reason: 'evidence_stale', explanation: 'selection is offline and requires fresh verified K1.1 route evidence' };
     if (evidence.state === 'unavailable' || evidence.state === 'unknown') return { ...base, ok: false, reason: 'route_unavailable', explanation: 'route is unavailable or health evidence is unknown' };
     const admittedRoute = route.routes.find((candidate) => candidate.kind === evidence.routeKind && candidate.id === evidence.routeId);
     if (!admittedRoute) return { ...base, ok: false, modelRef: ref, tier, reason: 'unadmitted_model', explanation: 'route binding is outside the fixed Agent Mode portfolio' };
     if (evidence.state === 'degraded') reason = 'route_degraded';
-    const estimatedCostUsd = estimateAgentModeCost(ref, input.inputTokens, input.outputTokens);
-    if (estimatedCostUsd === null) return { ...base, ok: false, modelRef: ref, tier, reason: 'cost_unknown', evidenceVersion: evidence.evidenceVersion, explanation: 'automatic dollar admission is denied until current pricing is verified' };
-    if (estimatedCostUsd > input.maxDollars) return { ...base, ok: false, modelRef: ref, tier, reason: 'budget_exhausted', estimatedCostUsd, evidenceVersion: evidence.evidenceVersion, explanation: 'estimated cost exceeds the supplied budget' };
+    if (!costAdmission.ok) return { ...base, ok: false, modelRef: ref, tier, reason: costAdmission.reason, estimatedCostUsd: costAdmission.estimatedCostUsd, evidenceVersion: evidence.evidenceVersion, explanation: 'estimated cost exceeds the supplied budget' };
+    const estimatedCostUsd = costAdmission.estimatedCostUsd;
     return { ...base, ok: true, modelRef: ref, tier, reason, route: { provider: 'amazon-bedrock', routeKind: evidence.routeKind, routeId: evidence.routeId, region: 'us-east-1' }, evidenceVersion: evidence.evidenceVersion, estimatedCostUsd, budgetReservation: { ...base.budgetReservation, dollars: estimatedCostUsd }, explanation: `deterministically selected ${tier} as the cheapest capable admitted cloud tier` };
   }
   const terminalReason = tier === 'principal' ? terminalFitReason : (reason === 'initial_selection' ? 'capability_mismatch' : reason);

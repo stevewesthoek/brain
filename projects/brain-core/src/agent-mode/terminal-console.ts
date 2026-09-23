@@ -238,7 +238,7 @@ export function renderTerminalConsole(status: TerminalExecutionStatus, options: 
       const displayText = hasUnsupportedToolCallText(turn.text)
         ? 'No tool was executed; the selected runtime returned an unsupported tool request.'
         : turn.speakerRole === 'jarvis' && previous?.speakerRole === 'user' && isJarvisRoutingQuestion(previous.text)
-          ? buildJarvisRoutingDisclosure({ requestedModel: status.requestedModel, route: { modelRef: status.modelRef ?? null, runtimeRef: status.runtimeRef ?? 'runtime:unavailable' }, reflex: status.reflex ?? null })
+          ? buildJarvisRoutingDisclosure({ requestedModel: status.requestedModel, route: { modelRef: status.modelRef ?? null, runtimeRef: status.runtimeRef ?? 'runtime:unavailable' }, reflex: status.reflex ?? null, ...(status.modelAdmissions ? { modelAdmissions: status.modelAdmissions } : {}) })
           : turn.text;
       lines.push(paint(turn.speakerRole === 'user' ? 'You' : 'Jarvis', turn.speakerRole === 'user' ? 'dim' : 'cyan', color));
       lines.push(...renderTerminalMarkdown(displayText, { width, color }));

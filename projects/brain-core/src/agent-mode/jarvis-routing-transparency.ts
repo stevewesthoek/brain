@@ -1,3 +1,5 @@
+import type { JarvisModelAdmission } from './jarvis-runtime-routing.js';
+
 export type JarvisRoutingTransparencyReflex = {
   mode: string;
   status: string;
@@ -35,6 +37,7 @@ export function buildJarvisRoutingDisclosure(input: {
   requestedModel: string | null | undefined;
   route: { modelRef?: string | null; runtimeRef: string } | null | undefined;
   reflex?: JarvisRoutingTransparencyReflex | null;
+  modelAdmissions?: readonly JarvisModelAdmission[];
 }): string {
   const requested = input.requestedModel === 'auto' ? 'Auto' : modelLabel(input.requestedModel);
   const reflex = input.reflex
@@ -43,5 +46,7 @@ export function buildJarvisRoutingDisclosure(input: {
   const recommendation = input.reflex?.recommendationModelRef
     ? ` Recommendation: ${modelLabel(input.reflex.recommendationModelRef)}.`
     : '';
-  return `Brain routing: ${requested} selected ${routeLabel(input.route)}. ${reflex}.${recommendation} This routing status is derived from Brain state; the model does not choose or redefine it.`;
+  const deniedAvailable = input.modelAdmissions?.filter((candidate) => candidate.runtimeAvailable && !candidate.autoAdmitted).map((candidate) => `${modelLabel(candidate.modelRef)} runtime available, Auto denied (${candidate.reasonCode ?? 'policy_denied'})`);
+  const admissionSummary = deniedAvailable?.length ? ` Auto admission: ${deniedAvailable.join('; ')}.` : '';
+  return `Brain routing: ${requested} selected ${routeLabel(input.route)}. ${reflex}.${recommendation}${admissionSummary} This routing status is derived from Brain state; the model does not choose or redefine it.`;
 }

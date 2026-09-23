@@ -131,6 +131,40 @@ test('production-configured Auto uses the K4 dispatcher with the ModelGateway ru
   } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
+test('execution-time Auto denial ignores stale Jev route and creates no worker lifecycle', async () => {
+  const directory = mkdtempSync(`${tmpdir()}/brain-terminal-intake-stale-route-`);
+  const repository = `${directory}/repo`;
+  mkdirSync(`${repository}/.git`, { recursive: true });
+  const store = new AgentModeSqliteStateStore(`${directory}/agent-mode.db`);
+  const runtimeAvailableModels = new Set<'agent-mode/minimax-m2.5' | 'agent-mode/glm-5' | 'agent-mode/claude-opus-4.6'>(['agent-mode/minimax-m2.5']);
+  const availableModels = new Set<'agent-mode/minimax-m2.5' | 'agent-mode/glm-5' | 'agent-mode/claude-opus-4.6'>(['agent-mode/minimax-m2.5']);
+  let runtimeCalls = 0;
+  const productionRuntime: JarvisProductionRuntimeConfiguration = {
+    availableModels,
+    runtimeAvailableModels,
+    runtimeFactory: () => ({ async run() { runtimeCalls += 1; return { status: 'succeeded', runtimeReceiptId: 'runtime-receipt:stale-route', resultHash: 'b'.repeat(64), evidenceRef: 'evidence:stale-route', usage: { steps: 1, tokens: 1, cost: 0 }, traceSummary: [] }; } }),
+  };
+  try {
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: [directory], now: () => NOW, productionRuntime });
+    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:stale-route', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Read only.', receivedAt: NOW });
+    assert.equal(accepted.outcome, 'accepted');
+    if (accepted.outcome !== 'accepted') return;
+    store.recordEvent({ eventId: `jarvis-reflex-route:${accepted.receipt.rootGoalId}`, entityType: 'jarvis_intake', entityId: accepted.receipt.rootGoalId, eventType: 'jarvis_reflex_route', occurredAt: NOW, payload: { modelRef: 'agent-mode/claude-opus-4.6', runtimeRef: 'runtime:claude-code', runtimeProfileRef: 'runtime-profile:claude-code', source: 'auto', selectionReason: 'admitted-order' } });
+    availableModels.clear();
+    runtimeAvailableModels.clear();
+    runtimeAvailableModels.add('agent-mode/claude-opus-4.6');
+
+    const execution = await service.execute(accepted.receipt.rootGoalId);
+    assert.equal(execution.result, 'DENIED');
+    assert.equal(execution.reasonCode, 'MODEL_ROUTE_NOT_ADMITTED');
+    assert.equal(runtimeCalls, 0);
+    assert.equal(store.listAgents().filter((agent) => agent.agentKind === 'worker').length, 0);
+    assert.equal(store.listTasks().filter((task) => task.childAgentId).length, 0);
+    assert.equal(store.listRuns().filter((run) => run.childAgentId).length, 0);
+    assert.equal(store.listAttempts().filter((attempt) => attempt.childAgentId).length, 0);
+  } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
 test('ACTIVE_PILOT narrows the downstream context prompt from an independently confident context choice', async () => {
   const directory = mkdtempSync(`${tmpdir()}/brain-terminal-intake-reflex-context-`);
   const repository = `${directory}/repo`;

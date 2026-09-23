@@ -1,4 +1,4 @@
-import { JARVIS_AUTO_MODEL_CANDIDATES } from './jarvis-runtime-routing.js';
+import { deriveJarvisModelAdmissions, JARVIS_AUTO_MODEL_CANDIDATES } from './jarvis-runtime-routing.js';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,8 +49,9 @@ export class JarvisSystemOneReflexService {
   }
 
   preflight(turn: JarvisReflexTurn): Promise<TurnDecisionEnvelopeV1> {
-    const available = new Set(this.runtimeFacts.available);
-    const candidateModels = JARVIS_AUTO_MODEL_CANDIDATES.filter((modelRef) => available.has(modelRef));
+    const runtimeAvailable = new Set(this.runtimeFacts.available.filter((modelRef): modelRef is typeof JARVIS_AUTO_MODEL_CANDIDATES[number] => (JARVIS_AUTO_MODEL_CANDIDATES as readonly string[]).includes(modelRef)));
+    const candidateModels = deriveJarvisModelAdmissions(runtimeAvailable).filter((candidate) => candidate.autoAdmitted).map((candidate) => candidate.modelRef);
+    const admittedRuntimeFacts = { ...this.runtimeFacts, available: candidateModels };
     const input: SystemOneReflexInput = {
       userRequest: turn.text,
       ...(turn.requestedModel ? { requestedModel: turn.requestedModel } : {}),
@@ -58,7 +59,7 @@ export class JarvisSystemOneReflexService {
       candidateModels: candidateModels.map((id) => ({ id })),
       candidateSkills: turn.candidateSkills ?? [],
       candidateContexts: turn.candidateContexts ?? [],
-      runtimeFacts: this.runtimeFacts,
+      runtimeFacts: admittedRuntimeFacts,
       ...(turn.actualRouteModelRef ? { actualRouteModelRef: turn.actualRouteModelRef } : {}),
       mode: this.mode,
     };

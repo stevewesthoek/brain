@@ -82,6 +82,20 @@ test('terminal presentation distinguishes unavailable observations from authorit
   assert.match(genuineZero, /Cost \$0\.0000 est\./u);
 });
 
+test('routing disclosure distinguishes runtime availability from cost admission', () => {
+  const rendered = renderTerminalConsole(status({
+    requestedModel: 'auto',
+    conversationHistory: [
+      { turnId: 'turn:user', sequence: 1, speakerRole: 'user', text: 'What model are you using?', status: 'completed', createdAt: NOW },
+      { turnId: 'turn:jarvis', sequence: 2, speakerRole: 'jarvis', text: 'routing facts', status: 'completed', createdAt: NOW },
+    ],
+    modelAdmissions: [
+      { modelRef: 'agent-mode/claude-opus-4.6', runtimeAvailable: true, autoAdmitted: false, reasonCode: 'cost_unknown' },
+    ],
+  }), { width: 200 });
+  assert.match(rendered, /Opus 4\.6 runtime available, Auto denied \(cost_unknown\)/u);
+});
+
 test('terminal console renders compact and expanded views and line fallback without ANSI in non-TTY mode', async () => {
   const telemetry = finishExecutionTelemetry({
     ...emptyExecutionTelemetry({ runtimeRef: 'runtime:codex-cli', modelRef: 'gpt-5.6-luna', startedAt: NOW }),

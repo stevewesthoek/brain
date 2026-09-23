@@ -27,6 +27,22 @@ test('Jarvis reflex uses only the closed Auto candidate set and keeps postflight
   assert.equal(postflight.status, 'verified');
 });
 
+test('Jev receives only policy-admitted candidates even when Opus runtime is available', async () => {
+  let candidates: readonly string[] = [];
+  const service = new JarvisSystemOneReflexService({
+    mode: 'ACTIVE_PILOT',
+    runtimeFacts: { available: ['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6'], policyVersion: 'test-policy-v1' },
+    client: async (request) => {
+      const state = request.state as { candidates?: { models?: readonly string[] }; runtime?: { available?: readonly string[] } };
+      candidates = state.candidates?.models ?? [];
+      assert.deepEqual(state.runtime?.available, candidates);
+      return { ok: false, reasonCode: 'test-stop' };
+    },
+  });
+  await service.preflight({ text: 'Inspect this substantial implementation carefully.', requestedModel: 'auto' });
+  assert.deepEqual(candidates, ['agent-mode/minimax-m2.5', 'agent-mode/glm-5']);
+});
+
 test('Jarvis reflex only presents currently admitted runtime models to Jev', async () => {
   let candidateModels: readonly string[] = [];
   const service = new JarvisSystemOneReflexService({

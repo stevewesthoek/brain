@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { classifyJarvisTurn, resolveJarvisRuntimeRoute, JARVIS_AUTO_MODEL_CANDIDATES } from '../agent-mode/jarvis-runtime-routing.js';
+import { classifyJarvisTurn, deriveJarvisModelAdmissions, resolveJarvisRuntimeRoute, JARVIS_AUTO_MODEL_CANDIDATES } from '../agent-mode/jarvis-runtime-routing.js';
 
 test('Jarvis Auto is closed to the permitted candidate set and never falls back to Codex', () => {
   assert.deepEqual(JARVIS_AUTO_MODEL_CANDIDATES, ['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6']);
@@ -35,9 +35,20 @@ test('production Auto routes only to explicitly available permitted runtimes', (
     assert.equal(result.route.runtimeRef, 'runtime:model-gateway');
   }
   const opus = resolveJarvisRuntimeRoute({ requestedModel: 'agent-mode/claude-opus-4.6', productionRuntimeAvailable: new Set(['agent-mode/claude-opus-4.6']) });
-  assert.equal(opus.ok, true);
-  if (opus.ok) assert.equal(opus.route.runtimeRef, 'runtime:claude-code');
+  assert.deepEqual(opus, { ok: false, reasonCode: 'MODEL_COST_UNKNOWN' });
+  assert.deepEqual(resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Implement a complex feature', productionRuntimeAvailable: new Set(['agent-mode/claude-opus-4.6']) }), { ok: false, reasonCode: 'AUTO_COST_ADMISSION_DENIED' });
   assert.deepEqual(resolveJarvisRuntimeRoute({ requestedModel: 'auto', productionRuntimeAvailable: new Set() }), { ok: false, reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' });
+});
+
+test('canonical candidate admission separates runtime availability from cost policy', () => {
+  const admissions = deriveJarvisModelAdmissions(new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6']));
+  assert.deepEqual(admissions.map(({ modelRef, runtimeAvailable, autoAdmitted, reasonCode }) => ({ modelRef, runtimeAvailable, autoAdmitted, reasonCode })), [
+    { modelRef: 'agent-mode/minimax-m2.5', runtimeAvailable: true, autoAdmitted: true, reasonCode: null },
+    { modelRef: 'agent-mode/glm-5', runtimeAvailable: true, autoAdmitted: true, reasonCode: null },
+    { modelRef: 'agent-mode/claude-opus-4.6', runtimeAvailable: true, autoAdmitted: false, reasonCode: 'cost_unknown' },
+  ]);
+  const unavailable = deriveJarvisModelAdmissions(new Set());
+  assert.equal(unavailable.every((candidate) => !candidate.autoAdmitted && candidate.reasonCode === 'runtime_unavailable'), true);
 });
 
 test('simple Auto turns use the admitted fast path and never fall through to Opus', () => {
@@ -45,7 +56,7 @@ test('simple Auto turns use the admitted fast path and never fall through to Opu
   assert.equal(classifyJarvisTurn('Inspect the repository at a high level; do not modify anything.'), 'moderate');
   assert.equal(classifyJarvisTurn('Design and implement a durable migration plan.'), 'complex');
   const simple = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'hello', productionRuntimeAvailable: new Set(['agent-mode/claude-opus-4.6']) });
-  assert.deepEqual(simple, { ok: false, reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' });
+  assert.deepEqual(simple, { ok: false, reasonCode: 'AUTO_COST_ADMISSION_DENIED' });
   const fast = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'hello', productionRuntimeAvailable: new Set(['agent-mode/glm-5', 'agent-mode/claude-opus-4.6']) });
   assert.equal(fast.ok, true);
   if (fast.ok) {

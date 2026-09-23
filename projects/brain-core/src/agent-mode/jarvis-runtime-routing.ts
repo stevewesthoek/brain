@@ -5,6 +5,7 @@ import {
   MOCK_AGENT_RUNTIME_REF,
 } from './child-assignment.js';
 import type { AdmittedModelRef } from './model-gateway.js';
+import { admitAgentModeAutoCandidateCost } from './model-tier-policy.js';
 import { CLAUDE_CODE_RUNTIME_PROFILE_REF, CLAUDE_CODE_RUNTIME_REF, MODEL_GATEWAY_RUNTIME_PROFILE_REF, MODEL_GATEWAY_RUNTIME_REF } from './child-assignment.js';
 
 /**
@@ -16,6 +17,28 @@ export const JARVIS_AUTO_MODEL_CANDIDATES: readonly AdmittedModelRef[] = Object.
   'agent-mode/glm-5',
   'agent-mode/claude-opus-4.6',
 ]);
+
+export type JarvisModelAdmission = {
+  modelRef: AdmittedModelRef;
+  runtimeAvailable: boolean;
+  autoAdmitted: boolean;
+  reasonCode: 'runtime_unavailable' | 'cost_unknown' | null;
+};
+
+/** Keep runtime discovery distinct from the Brain-owned policy-admitted set. */
+export function deriveJarvisModelAdmissions(runtimeAvailableModels: ReadonlySet<AdmittedModelRef>): readonly JarvisModelAdmission[] {
+  return JARVIS_AUTO_MODEL_CANDIDATES.map((modelRef) => {
+    const runtimeAvailable = runtimeAvailableModels.has(modelRef);
+    const costAdmission = admitAgentModeAutoCandidateCost(modelRef);
+    const autoAdmitted = runtimeAvailable && costAdmission.ok;
+    return {
+      modelRef,
+      runtimeAvailable,
+      autoAdmitted,
+      reasonCode: !runtimeAvailable ? 'runtime_unavailable' : !costAdmission.ok ? costAdmission.reason : null,
+    };
+  });
+}
 
 export type JarvisCodexEscalationApproval = {
   runtime: 'codex-cli';
@@ -36,7 +59,7 @@ export type JarvisRuntimeRoute = {
 
 export type JarvisRouteResolution =
   | { ok: true; route: JarvisRuntimeRoute }
-  | { ok: false; reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' | 'CODEX_ESCALATION_REQUIRED' | 'CODEX_ESCALATION_INVALID' | 'MODEL_NOT_ADMITTED' };
+  | { ok: false; reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' | 'AUTO_COST_ADMISSION_DENIED' | 'CODEX_ESCALATION_REQUIRED' | 'CODEX_ESCALATION_INVALID' | 'MODEL_NOT_ADMITTED' | 'MODEL_COST_UNKNOWN' };
 
 export type JarvisRouteResolutionInput = {
   requestedModel: string;
@@ -104,14 +127,22 @@ export function resolveJarvisRuntimeRoute(input: JarvisRouteResolutionInput): Ja
     const eligibleCandidates = complexity === 'simple'
       ? JARVIS_AUTO_MODEL_CANDIDATES.filter((candidate) => candidate !== 'agent-mode/claude-opus-4.6')
       : JARVIS_AUTO_MODEL_CANDIDATES;
+    const runtimeAvailable = input.fixtureRuntimeAvailable
+      ? new Set(JARVIS_AUTO_MODEL_CANDIDATES)
+      : input.productionRuntimeAvailable ?? new Set<AdmittedModelRef>();
+    const admissions = deriveJarvisModelAdmissions(runtimeAvailable);
+    const admitted = new Set(admissions.filter((candidate) => candidate.autoAdmitted).map((candidate) => candidate.modelRef));
+    const candidates = eligibleCandidates.filter((candidate) => admitted.has(candidate));
+    const denialReason = admissions.some((candidate) => candidate.runtimeAvailable && candidate.reasonCode === 'cost_unknown')
+      ? 'AUTO_COST_ADMISSION_DENIED' as const
+      : 'AUTO_RUNTIME_UNAVAILABLE' as const;
     if (input.fixtureRuntimeAvailable) {
-      const selected = selectAutoCandidate(eligibleCandidates, complexity, input.adaptiveRouting ?? false);
-      if (!selected) return { ok: false, reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' };
+      const selected = selectAutoCandidate(candidates, complexity, input.adaptiveRouting ?? false);
+      if (!selected) return { ok: false, reasonCode: denialReason };
       return { ok: true, route: { ...fixtureRoute(selected.candidate, 'auto'), selectionReason: complexity === 'simple' ? 'fast-path' : selected.adaptive ? 'adaptive-quality-tier' : 'admitted-order' } };
     }
-    const availableCandidates = eligibleCandidates.filter((candidate) => input.productionRuntimeAvailable?.has(candidate));
-    const selected = selectAutoCandidate(availableCandidates, complexity, input.adaptiveRouting ?? false);
-    if (!selected) return { ok: false, reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' };
+    const selected = selectAutoCandidate(candidates, complexity, input.adaptiveRouting ?? false);
+    if (!selected) return { ok: false, reasonCode: denialReason };
     return { ok: true, route: { ...productionRoute(selected.candidate, 'auto'), selectionReason: complexity === 'simple' ? 'fast-path' : selected.adaptive ? 'adaptive-quality-tier' : 'admitted-order' } };
   }
   if (isCodexRequest(requested)) {
@@ -124,7 +155,11 @@ export function resolveJarvisRuntimeRoute(input: JarvisRouteResolutionInput): Ja
     };
   }
   if (!(JARVIS_AUTO_MODEL_CANDIDATES as readonly string[]).includes(requested)) return { ok: false, reasonCode: 'MODEL_NOT_ADMITTED' };
-  if (input.fixtureRuntimeAvailable) return { ok: true, route: fixtureRoute(requested as AdmittedModelRef, 'explicit') };
-  if (!input.productionRuntimeAvailable?.has(requested as AdmittedModelRef)) return { ok: false, reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' };
-  return { ok: true, route: productionRoute(requested as AdmittedModelRef, 'explicit') };
+  const modelRef = requested as AdmittedModelRef;
+  const runtimeAvailable = input.fixtureRuntimeAvailable || input.productionRuntimeAvailable?.has(modelRef) === true;
+  if (!runtimeAvailable) return { ok: false, reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' };
+  const costAdmission = admitAgentModeAutoCandidateCost(modelRef);
+  if (!costAdmission.ok) return { ok: false, reasonCode: 'MODEL_COST_UNKNOWN' };
+  if (input.fixtureRuntimeAvailable) return { ok: true, route: fixtureRoute(modelRef, 'explicit') };
+  return { ok: true, route: productionRoute(modelRef, 'explicit') };
 }

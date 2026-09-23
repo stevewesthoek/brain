@@ -111,6 +111,7 @@ import { createConfiguredJarvisSystemOneReflexService } from '../agent-mode/jarv
 import { AGENT_MODE_CONTROL_ACTIONS, AgentModeControlService, parseAgentModeOperatorAttribution, type AgentModeLifecycleControlAction, type AgentModeReviewDecisionCommandV1 } from '../agent-mode/agent-mode-control-service.js';
 import { JARVIS_TEXT_INTAKE_SCHEMA_VERSION, JarvisTextIntakeService } from '../agent-mode/jarvis-text-intake.js';
 import { AgentModeTerminalIntakeService, TERMINAL_INTAKE_SCHEMA_VERSION, type TerminalIntakeCommandV1 } from '../agent-mode/terminal-intake.js';
+import { loadJarvisProductionRuntimeConfiguration } from '../agent-mode/jarvis-production-runtime.js';
 import { JarvisContextIntakeService, JARVIS_CONTEXT_INTAKE_SCHEMA_VERSION, type JarvisContextIntakeCommandV2 } from '../agent-mode/jarvis-context-intake.js';
 import { defaultAgentModeDatabasePath, AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
 import { loadBrainRuntimeConfig } from '../agent-mode/portable-runtime-config.js';
@@ -749,8 +750,9 @@ async function routeAgentModeTerminalIntakeRequest(request: IncomingMessage, res
   try {
     store = new AgentModeSqliteStateStore(databasePath);
     const runtimeConfig = loadBrainRuntimeConfig();
-    const reflex = createConfiguredJarvisSystemOneReflexService();
-    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: runtimeConfig.repositoryRoots, ...(runtimeConfig.execution.codexCliPath === null ? {} : { codexCommand: runtimeConfig.execution.codexCliPath }), now: () => auth.identity.requestTimestamp, ...(reflex ? { reflex } : {}) });
+    const productionRuntime = loadJarvisProductionRuntimeConfiguration(auth.identity.requestTimestamp);
+    const reflex = createConfiguredJarvisSystemOneReflexService({ runtimeFacts: { available: [...(productionRuntime?.availableModels ?? [])], policyVersion: 'jarvis-admitted-model-policy-v1' } });
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: runtimeConfig.repositoryRoots, ...(runtimeConfig.execution.codexCliPath === null ? {} : { codexCommand: runtimeConfig.execution.codexCliPath }), now: () => auth.identity.requestTimestamp, ...(productionRuntime ? { productionRuntime } : {}), ...(reflex ? { reflex } : {}) });
     const result = service.accept(command);
     if (!('receipt' in result)) {
       sendAgentModeControlJson(response, result.outcome === 'conflict' ? 409 : 400, { ok: false, result });

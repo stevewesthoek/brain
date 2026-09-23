@@ -1,11 +1,13 @@
 import { applyReflexPilotRecommendation, type TurnDecisionEnvelopeV1 } from './system-one-reflex.js';
-import { JARVIS_AUTO_MODEL_CANDIDATES, resolveJarvisRuntimeRoute, type JarvisRuntimeRoute } from './jarvis-runtime-routing.js';
+import { deriveJarvisModelAdmissions, JARVIS_AUTO_MODEL_CANDIDATES, resolveJarvisRuntimeRoute, type JarvisRuntimeRoute } from './jarvis-runtime-routing.js';
 import type { AdmittedModelRef } from './model-gateway.js';
+import { admitAgentModeAutoCandidateCost } from './model-tier-policy.js';
 
 export type PersistedJarvisReflexRoute = Pick<JarvisRuntimeRoute, 'modelRef' | 'runtimeRef' | 'runtimeProfileRef' | 'source' | 'selectionReason'>;
 
-function admittedModels(availableModels: ReadonlySet<AdmittedModelRef> | undefined): readonly string[] {
-  return availableModels ? [...availableModels] : JARVIS_AUTO_MODEL_CANDIDATES;
+function admittedModels(availableModels: ReadonlySet<AdmittedModelRef> | undefined, fixtureRuntimeAvailable: boolean): readonly string[] {
+  const runtimeAvailable = availableModels ?? (fixtureRuntimeAvailable ? new Set(JARVIS_AUTO_MODEL_CANDIDATES) : new Set<AdmittedModelRef>());
+  return deriveJarvisModelAdmissions(runtimeAvailable).filter((candidate) => candidate.autoAdmitted).map((candidate) => candidate.modelRef);
 }
 
 /**
@@ -21,7 +23,7 @@ export function applyJarvisReflexRoute(input: {
   fixtureRuntimeAvailable: boolean;
 }): JarvisRuntimeRoute {
   if (input.requestedModel !== 'auto') return input.currentRoute;
-  const recommendation = applyReflexPilotRecommendation(input.envelope, admittedModels(input.availableModels));
+  const recommendation = applyReflexPilotRecommendation(input.envelope, admittedModels(input.availableModels, input.fixtureRuntimeAvailable));
   if (!recommendation.modelRef || recommendation.modelRef === input.currentRoute.modelRef) return input.currentRoute;
   const resolved = resolveJarvisRuntimeRoute({
     requestedModel: recommendation.modelRef,
@@ -34,7 +36,7 @@ export function applyJarvisReflexRoute(input: {
     : input.currentRoute;
 }
 
-export function persistedJarvisReflexRoute(value: unknown): JarvisRuntimeRoute | undefined {
+export function persistedJarvisReflexRoute(value: unknown, currentlyAdmittedModels?: ReadonlySet<AdmittedModelRef>): JarvisRuntimeRoute | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const record = value as Record<string, unknown>;
   const modelRef = record.modelRef;
@@ -46,7 +48,11 @@ export function persistedJarvisReflexRoute(value: unknown): JarvisRuntimeRoute |
     || typeof runtimeRef !== 'string' || typeof runtimeProfileRef !== 'string'
     || (source !== 'auto' && source !== 'explicit')
     || (selectionReason !== undefined && selectionReason !== 'fast-path' && selectionReason !== 'admitted-order' && selectionReason !== 'adaptive-quality-tier' && selectionReason !== 'jev-cost-saving' && selectionReason !== 'explicit')) return undefined;
-  return { modelRef: modelRef as AdmittedModelRef, runtimeRef, runtimeProfileRef, source, ...(selectionReason ? { selectionReason } : {}) };
+  const admittedModelRef = modelRef as AdmittedModelRef;
+  if (!admitAgentModeAutoCandidateCost(admittedModelRef).ok || (currentlyAdmittedModels && !currentlyAdmittedModels.has(admittedModelRef))) return undefined;
+  const canonicalRoute = resolveJarvisRuntimeRoute({ requestedModel: admittedModelRef, fixtureRuntimeAvailable: currentlyAdmittedModels === undefined, ...(currentlyAdmittedModels ? { productionRuntimeAvailable: currentlyAdmittedModels } : {}) });
+  if (!canonicalRoute.ok || canonicalRoute.route.runtimeRef !== runtimeRef || canonicalRoute.route.runtimeProfileRef !== runtimeProfileRef) return undefined;
+  return { modelRef: admittedModelRef, runtimeRef, runtimeProfileRef, source, ...(selectionReason ? { selectionReason } : {}) };
 }
 
 export function routeFromK4Assignment(assignment: { modelRef: string; runtimeRef: string; runtimeProfileRef: string }): JarvisRuntimeRoute | undefined {

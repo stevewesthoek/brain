@@ -13,11 +13,12 @@ import type { AgentModeSqliteStateStore } from './sqlite-state-store.js';
 import type { AgentRuntime } from './runtime-dispatch.js';
 import type { AgentModeExecutionTelemetry, AgentModeTelemetryEvent } from './execution-telemetry.js';
 import { admitJarvisContextSet } from './jarvis-local-context.js';
-import { resolveJarvisRuntimeRoute, type JarvisCodexEscalationApproval, type JarvisRuntimeRoute } from './jarvis-runtime-routing.js';
+import { resolveJarvisRuntimeRoute, type JarvisCodexEscalationApproval, type JarvisRouteResolution, type JarvisRuntimeRoute } from './jarvis-runtime-routing.js';
 import { buildJarvisRoutingDisclosure, isJarvisRoutingQuestion } from './jarvis-routing-transparency.js';
 import { applyJarvisReflexRoute, persistedJarvisReflexRoute, routeFromK4Assignment } from './jarvis-reflex-route.js';
 import { canonicalJarvisConversationText, deriveJarvisConversationTurnId, JARVIS_CONVERSATION_TURN_SCHEMA_VERSION, type JarvisConversationTurnV1 } from './jarvis-conversation.js';
 import { loadJarvisProductionRuntimeConfiguration, type JarvisProductionRuntimeConfiguration } from './jarvis-production-runtime.js';
+import { deriveJarvisModelAdmissions, JARVIS_AUTO_MODEL_CANDIDATES, type JarvisModelAdmission } from './jarvis-runtime-routing.js';
 import { MOCK_AGENT_RUNTIME_REF } from './child-assignment.js';
 import type { JarvisSystemOneReflexHook } from './jarvis-system-one-reflex.js';
 import { asReflexSkillCandidates, listJarvisSkillCandidates } from './jarvis-skill-context.js';
@@ -64,7 +65,7 @@ export type TerminalIntakeReceiptV1 = {
 
 export type TerminalIntakeResult =
   | { outcome: 'accepted' | 'duplicate'; receipt: TerminalIntakeReceiptV1 }
-  | { outcome: 'conflict' | 'denied'; reasonCode: 'TERMINAL_INTAKE_CONFLICT' | 'TERMINAL_INTAKE_INVALID' | 'REPOSITORY_NOT_ALLOWED' | 'REPOSITORY_INVALID' | 'MODEL_NOT_ADMITTED' | 'AUTO_RUNTIME_UNAVAILABLE' | 'CODEX_ESCALATION_REQUIRED' | 'CODEX_ESCALATION_INVALID' | 'TERMINAL_INTAKE_UNAVAILABLE' };
+  | { outcome: 'conflict' | 'denied'; reasonCode: 'TERMINAL_INTAKE_CONFLICT' | 'TERMINAL_INTAKE_INVALID' | 'REPOSITORY_NOT_ALLOWED' | 'REPOSITORY_INVALID' | 'MODEL_NOT_ADMITTED' | 'MODEL_COST_UNKNOWN' | 'AUTO_COST_ADMISSION_DENIED' | 'AUTO_RUNTIME_UNAVAILABLE' | 'CODEX_ESCALATION_REQUIRED' | 'CODEX_ESCALATION_INVALID' | 'TERMINAL_INTAKE_UNAVAILABLE' };
 
 export type TerminalReflexStatus = {
   mode: 'OFF' | 'SHADOW' | 'ACTIVE_PILOT' | 'UNAVAILABLE';
@@ -100,6 +101,7 @@ export type TerminalExecutionStatus = {
   runtimeProfileRef: string | null;
   modelRef: string | null;
   requestedModel: string | null;
+  modelAdmissions?: readonly JarvisModelAdmission[];
   repositoryRef: string | null;
   startedAt: string | null;
   elapsedMs: number | null;
@@ -143,6 +145,8 @@ export class AgentModeTerminalIntakeService {
   private readonly runtimeFactory: (store: AgentModeSqliteStateStore) => AgentRuntime;
   private readonly fixtureRuntimeAvailable: boolean;
   private readonly productionRuntimeAvailable: ReadonlySet<import('./model-gateway.js').AdmittedModelRef> | undefined;
+  private readonly productionAutoAdmittedModels: ReadonlySet<import('./model-gateway.js').AdmittedModelRef> | undefined;
+  private readonly modelAdmissions: readonly JarvisModelAdmission[];
   private readonly reflex: JarvisSystemOneReflexHook | undefined;
 
   constructor(private readonly store: AgentModeSqliteStateStore, options: { now?: () => string; repositoryRoots?: readonly string[]; codexCommand?: string; runtimeFactory?: (store: AgentModeSqliteStateStore) => AgentRuntime; productionRuntime?: JarvisProductionRuntimeConfiguration; reflex?: JarvisSystemOneReflexHook } = {}) {
@@ -152,12 +156,14 @@ export class AgentModeTerminalIntakeService {
     }))];
     const productionRuntime = options.productionRuntime ?? loadJarvisProductionRuntimeConfiguration(this.now());
     this.fixtureRuntimeAvailable = options.runtimeFactory !== undefined;
-    this.productionRuntimeAvailable = productionRuntime?.availableModels;
+    this.productionRuntimeAvailable = productionRuntime?.runtimeAvailableModels ?? productionRuntime?.availableModels;
+    this.productionAutoAdmittedModels = productionRuntime?.availableModels;
+    this.modelAdmissions = productionRuntime?.modelAdmissions ?? deriveJarvisModelAdmissions(productionRuntime?.runtimeAvailableModels ?? (options.runtimeFactory ? new Set(JARVIS_AUTO_MODEL_CANDIDATES) : productionRuntime?.availableModels ?? new Set()));
     this.reflex = options.reflex;
     this.runtimeFactory = options.runtimeFactory ?? productionRuntime?.runtimeFactory ?? ((stateStore) => new CodexCliAgentRuntime(stateStore, options.codexCommand));
   }
 
-  private route(command: TerminalIntakeCommandV1): { route: JarvisRuntimeRoute } | { reasonCode: string } {
+  private route(command: TerminalIntakeCommandV1): { route: JarvisRuntimeRoute } | { reasonCode: Extract<JarvisRouteResolution, { ok: false }>['reasonCode'] } {
     const requestedModel = command.model === 'minimax-m2.5' ? 'agent-mode/minimax-m2.5' : command.model === 'glm-5' ? 'agent-mode/glm-5' : command.model === 'opus-4.6' ? 'agent-mode/claude-opus-4.6' : command.model;
     const resolved = resolveJarvisRuntimeRoute({ requestedModel, requestText: command.text, adaptiveRouting: this.reflex?.mode === 'ACTIVE_PILOT', fixtureRuntimeAvailable: this.fixtureRuntimeAvailable, ...(this.productionRuntimeAvailable ? { productionRuntimeAvailable: this.productionRuntimeAvailable } : {}), ...(command.codexEscalation ? { codexEscalation: command.codexEscalation } : {}) });
     return resolved.ok ? resolved : { reasonCode: resolved.reasonCode };
@@ -166,6 +172,10 @@ export class AgentModeTerminalIntakeService {
   private actionRule(route: JarvisRuntimeRoute): SchedulerEventActionRule {
     if (route.source === 'codex-escalation') return TERMINAL_INTAKE_ACTION_RULE;
     return { ...TERMINAL_INTAKE_ACTION_RULE, ruleId: 'agent-mode.action.terminal-intake-auto.v1', taskSpecRef: TERMINAL_INTAKE_AUTO_TASK_SPEC_REF, runtimeRef: route.runtimeRef, runtimeProfileRef: route.runtimeProfileRef, requestedCost: route.runtimeRef === MOCK_AGENT_RUNTIME_REF ? 0 : 0.25, ...(route.modelRef ? { modelRef: route.modelRef } : {}) };
+  }
+
+  private deniedExecution(eventId: string, reasonCode: string): DynamicWorkerOrchestrationResult {
+    return { result: 'DENIED', eventId, ruleId: null, ruleVersion: null, actionRuleApplicationId: null, schedulerFence: null, spawnIntentKey: null, childAgentId: null, assignmentIntentKey: null, taskId: null, runId: null, attemptId: null, operationId: null, dispatchId: null, terminalWorkerOutcome: null, reasonCode };
   }
 
   private repositoryRoot(command: TerminalIntakeCommandV1): string {
@@ -180,7 +190,7 @@ export class AgentModeTerminalIntakeService {
     try {
       validateCommand(command);
       const selected = this.route(command);
-      if ('reasonCode' in selected) return { outcome: 'denied', reasonCode: selected.reasonCode as 'MODEL_NOT_ADMITTED' | 'AUTO_RUNTIME_UNAVAILABLE' | 'CODEX_ESCALATION_REQUIRED' | 'CODEX_ESCALATION_INVALID' };
+      if ('reasonCode' in selected) return { outcome: 'denied', reasonCode: selected.reasonCode };
       const repositoryRoot = this.repositoryRoot(command);
       const intakeId = deriveJarvisIntakeId(command.requestId, 'typed');
       const rootGoalId = deriveJarvisRootGoalId(intakeId);
@@ -250,18 +260,19 @@ export class AgentModeTerminalIntakeService {
     const selectedRoute = 'route' in selected ? selected.route : undefined;
     const existingAssignment = this.store.listChildAssignments().find((assignment) => assignment.sourceEventId === event.eventId);
     const existingRoute = existingAssignment ? routeFromK4Assignment(existingAssignment) : this.storedReflexRoute(rootGoalId);
-    const reflexStartedAt = this.reflex && !existingRoute ? this.now() : undefined;
+    const reflexStartedAt = this.reflex && !existingRoute && selectedRoute ? this.now() : undefined;
     if (reflexStartedAt) this.recordReflexStarted(rootGoalId, reflexStartedAt);
-    const reflexPreflight = this.reflex && !existingRoute ? await this.runReflexPreflight(rootGoalId, selectedRoute?.modelRef) : undefined;
+    const reflexPreflight = this.reflex && !existingRoute && selectedRoute ? await this.runReflexPreflight(rootGoalId, selectedRoute.modelRef) : undefined;
     const reflexCompletedAt = reflexPreflight ? this.now() : undefined;
     const effectiveRoute = reflexPreflight && selectedRoute
-      ? applyJarvisReflexRoute({ requestedModel: intake?.requestedModel ?? 'auto', requestText: this.store.getJarvisTaskInput(rootGoalId)?.text ?? '', currentRoute: selectedRoute, envelope: reflexPreflight, ...(this.productionRuntimeAvailable ? { availableModels: this.productionRuntimeAvailable } : {}), fixtureRuntimeAvailable: this.fixtureRuntimeAvailable })
+      ? applyJarvisReflexRoute({ requestedModel: intake?.requestedModel ?? 'auto', requestText: this.store.getJarvisTaskInput(rootGoalId)?.text ?? '', currentRoute: selectedRoute, envelope: reflexPreflight, ...(this.productionAutoAdmittedModels ? { availableModels: this.productionAutoAdmittedModels } : this.fixtureRuntimeAvailable ? {} : { availableModels: new Set() }), fixtureRuntimeAvailable: this.fixtureRuntimeAvailable })
       : existingRoute ?? selectedRoute;
+    if (!effectiveRoute) return this.deniedExecution(event.eventId, 'MODEL_ROUTE_NOT_ADMITTED');
     if (reflexPreflight) {
       if (reflexPreflight.mode === 'ACTIVE_PILOT' && effectiveRoute) this.recordReflexRoute(rootGoalId, effectiveRoute);
       this.recordReflexPreflight(rootGoalId, { ...reflexPreflight, actualRouteModelRef: effectiveRoute?.modelRef ?? reflexPreflight.actualRouteModelRef }, reflexStartedAt, reflexCompletedAt);
     }
-    const actionRules = effectiveRoute ? [this.actionRule(effectiveRoute)] : [TERMINAL_INTAKE_ACTION_RULE];
+    const actionRules = [this.actionRule(effectiveRoute)];
     const result = await new AgentModeDynamicWorkerOrchestrator({ store: this.store, runtime: this.runtimeFactory(this.store), actionRules, rootFacts: (id, now) => this.rootFacts(id, now), ownerId: 'brain-terminal-intake', controllerRef: TERMINAL_INTAKE_CONTROLLER_REF, now: this.now(), clock: this.now }).handleSchedulerEvent({ event, now: this.now() });
     if (reflexPreflight && this.reflex && shouldRunReflexPostflight(reflexPreflight)) {
       const postflight = await this.runReflexPostflight(reflexPreflight.originalRequestHash, result);
@@ -286,7 +297,7 @@ export class AgentModeTerminalIntakeService {
   private storedReflexRoute(rootGoalId: string): JarvisRuntimeRoute | undefined {
     const events = this.store.listEvents(rootGoalId);
     const routeEvent = [...events].reverse().find((event) => event.eventType === 'jarvis_reflex_route');
-    return persistedJarvisReflexRoute(routeEvent?.payload);
+    return persistedJarvisReflexRoute(routeEvent?.payload, this.productionAutoAdmittedModels);
   }
 
   private recordReflexStarted(rootGoalId: string, startedAt: string): void {
@@ -468,6 +479,7 @@ export class AgentModeTerminalIntakeService {
       runtimeProfileRef: attempt?.runtimeProfileRef ?? assignment?.runtimeProfileRef ?? persistedRoute?.runtimeProfileRef ?? null,
       modelRef: attempt?.modelRef ?? persistedRoute?.modelRef ?? null,
       requestedModel: task?.requestedModel ?? null,
+      modelAdmissions: this.modelAdmissions,
       repositoryRef: task?.repositoryRef ?? null,
       startedAt,
       elapsedMs,
