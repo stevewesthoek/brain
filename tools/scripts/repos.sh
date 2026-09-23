@@ -4,12 +4,13 @@
 #
 # Step 1: choose a model/runtime surface.
 # Step 2: choose a repository from ~/Repos.
-# Brain-backed entries use the installed runtime's `run` contract. Codex stays
-# on its native CLI path and is never routed through Brain.
+# Brain-backed entries use the installed runtime's authenticated `submit`
+# intake. Codex stays on its native CLI path and is never routed through Brain.
 
 CACHE_FILE="$HOME/.claude/cache/repos.json"
 USAGE_FILE="$HOME/.claude/cache/repo_usage.json"
-REPOS_ROOT="$HOME/Repos"
+REPOS_ROOT="$(cd "$HOME/Repos" 2>/dev/null && pwd -P)"
+[[ -n "$REPOS_ROOT" ]] || REPOS_ROOT="$HOME/Repos"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/brain-cli-resolver.sh"
 
@@ -33,8 +34,10 @@ for dirpath, dirnames, _ in os.walk(root):
         dirnames.clear()
 
 repos.sort(key=lambda r: (r['account'], r['name']))
-with open(cache, 'w') as handle:
+temporary_cache = f"{cache}.{os.getpid()}.tmp"
+with open(temporary_cache, 'w') as handle:
     json.dump(repos, handle)
+os.replace(temporary_cache, cache)
 PYEOF
 }
 
@@ -87,6 +90,15 @@ runtime_menu() {
 
 launch_brain() {
   local model="$1"
+  local repository_root="$PWD"
+  local repository_ref
+  if [[ "$repository_root" == "$REPOS_ROOT/"* ]]; then
+    repository_ref="${repository_root#"$REPOS_ROOT/"}"
+  else
+    echo "Unable to launch Brain: selected repository is outside $REPOS_ROOT" >&2
+    return 1
+  fi
+
   brain_resolve_cli || {
     echo "Unable to launch Brain: $BRAIN_RESOLUTION_ERROR" >&2
     return 1
@@ -96,17 +108,17 @@ launch_brain() {
     printf 'cwd=%s\nmodel=%s\n' "$PWD" "$model"
     brain_resolution_summary
     if [[ "$model" == "auto" ]]; then
-      printf 'args=run\n'
+      printf 'args=submit --model auto --repository-ref %s --repository-root %s\n' "$repository_ref" "$repository_root"
     else
-      printf 'args=run --model %s\n' "$model"
+      printf 'args=submit --model %s --repository-ref %s --repository-root %s\n' "$model" "$repository_ref" "$repository_root"
     fi
     return 0
   fi
 
   if [[ "$model" == "auto" ]]; then
-    exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" run
+    exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" submit --model auto --repository-ref "$repository_ref" --repository-root "$repository_root"
   fi
-  exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" run --model "$model"
+  exec "$BRAIN_RESOLVED_NODE" "$BRAIN_RESOLVED_CLI" submit --model "$model" --repository-ref "$repository_ref" --repository-root "$repository_root"
 }
 
 if [[ "${1:-}" == "--runtime-menu" ]]; then
