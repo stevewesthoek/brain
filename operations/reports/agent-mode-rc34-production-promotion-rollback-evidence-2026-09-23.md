@@ -54,11 +54,14 @@ child lifecycle, whose authoritative runtime receipt settled failed with
 `CLAUDE_CODE_EXEC_FAILED`. No retry or second live request was made. No
 successful assistant result was produced. This is an acceptance failure, not a
 pass, and it conflicts with the explicitly unresolved/fail-closed Opus cost
-gate. Opus was not manually forced and no policy bypass was intentionally
-introduced by the operator. However, the observed Auto path did admit the Opus
-runtime while cost/admission was declared unresolved; whether the admission
-path bypassed or misapplied K4 policy remains unreconciled and must be treated
-as a security blocker before any new promotion attempt.
+gate. Opus was not manually forced by the operator. Source inspection confirms
+the integration gap: production runtime configuration marks Opus available
+when Claude Code is enabled and its executable is present; Auto then selects
+from the runtime-availability set without invoking the separate model-tier
+dollar-admission function that rejects unpriced Opus. The observed Auto path
+therefore admitted an Opus runtime while its cost remained unverified. This
+must be treated as a security blocker before any new promotion attempt; no
+policy bypass or speculative price change was made to work around it.
 
 RC27 was restored by booting out both RC34 labels, waiting for unload, restoring
 the saved descriptors/install records, and bootstrapping RC27 Core then Console.
@@ -79,6 +82,11 @@ IDs. StateStore integrity remained clean.
 - Full multi-route/Opus economics cohort: **WAIVED_BY_USER**, not passed. No
   additional US$1 cohort was run.
 - Opus cost/admission verification: **UNRESOLVED / FAIL-CLOSED REQUIRED**.
+
+The read-only Jarvis runtime-routing and model-tier-policy suites pass 53/53,
+but they exercise runtime-availability selection and dollar admission
+separately; they do not cover their integration. These tests were run against
+the exact committed `main` source and made no provider calls.
 
 ## Decision and next action
 
