@@ -11,7 +11,7 @@ export const BRAIN_RUNTIME_PACKAGE_MAX_TOTAL_BYTES = 500 * 1024 * 1024;
 
 export type RuntimePackagePlatform = 'darwin' | 'linux' | 'unsupported';
 export type RuntimePackageArchitecture = 'arm64' | 'x64' | 'unsupported';
-export type RuntimePackageComponent = 'brain-core' | 'brain-console' | 'brain-core-support' | 'jev-bridge' | 'runtime-config-template';
+export type RuntimePackageComponent = 'brain-core' | 'brain-console' | 'brain-core-support' | 'runtime-config-template';
 export type RuntimePackageDependencyStrategy = 'npm-production-hydration' | 'standalone-traced' | 'none';
 
 export type RuntimePackageFile = {
@@ -198,36 +198,6 @@ function copyCoreSupport(sourceRoot: string, outputRoot: string, files: RuntimeP
   return true;
 }
 
-function copyJevBridge(sourceRoot: string, outputRoot: string, files: RuntimePackageFile[]): boolean {
-  const runtimeFiles = [
-    'tools/jev/brain-jev.mjs',
-    'tools/jev/jev-contract.mjs',
-    'tools/jev/jev-ledger.mjs',
-    'tools/jev/jev-pricing.mjs',
-    'tools/jev/macos-keychain-enroll-typesafe.swift',
-    'tools/jev/macos-keychain-request-boundary.swift',
-    'tools/jev/package.json',
-    'tools/jev/package-lock.json',
-    'tools/jev/typesafe-request.mjs',
-    'tools/jev/node_modules/@typesafe-ai/sdk/LICENSE',
-    'tools/jev/node_modules/@typesafe-ai/sdk/README.md',
-    'tools/jev/node_modules/@typesafe-ai/sdk/package.json',
-    'tools/jev/node_modules/@typesafe-ai/sdk/dist/index.mjs',
-    'tools/infrastructure-identity-access/macos-keychain-adapter.mjs',
-    'tools/infrastructure-identity-access/macos-keychain-probe.swift',
-    'tools/infrastructure-identity-access/macos-keychain-verification-boundary.swift',
-  ] as const;
-  const present = runtimeFiles.filter((relative) => existsSync(path.join(sourceRoot, relative)));
-  if (present.length === 0) return false;
-  if (present.length !== runtimeFiles.length) throw new Error('Jev bridge runtime dependency closure is incomplete');
-  for (const relative of runtimeFiles) {
-    const sourceFile = path.join(sourceRoot, relative);
-    const contentClass = relative.endsWith('.json') ? 'runtime-dependency-metadata' : 'runtime-entry';
-    copyFile(sourceFile, path.join(outputRoot, relative), relative, 'jev-bridge', contentClass, files, sourceRoot);
-  }
-  return true;
-}
-
 function rewritePackagedCoreImports(outputRoot: string, files: RuntimePackageFile[]): void {
   const rewrites = new Map<string, Array<[string, string]>>([
     ['core/dist/canonical-mind-path-registry.js', [["../../../tools/mind-canonical-path-registry.mjs", "../../tools/mind-canonical-path-registry.mjs"]]],
@@ -236,7 +206,6 @@ function rewritePackagedCoreImports(outputRoot: string, files: RuntimePackageFil
     ['core/dist/adapters/infinite-brain-exact-scope-approval.js', [["../../../../operations/specs/infinite-brain-boundary-contracts.js", "../../../operations/specs/infinite-brain-boundary-contracts.js"]]],
     ['core/dist/adapters/infrastructure-action-safety.mjs', [["../../../../tools/infrastructure-catalog/governance-core.mjs", "../../../tools/infrastructure-catalog/governance-core.mjs"]]],
     ['core/dist/adapters/infrastructure-plane.mjs', [["../../../../tools/infrastructure-catalog/governance-core.mjs", "../../../tools/infrastructure-catalog/governance-core.mjs"]]],
-    ['core/dist/agent-mode/jarvis-system-one-reflex.js', [["../../../../tools/jev/brain-jev.mjs", "../../../tools/jev/brain-jev.mjs"]]],
   ]);
   for (const [relative, replacements] of rewrites) {
     const file = files.find((candidate) => candidate.relativePath === relative);
@@ -286,7 +255,6 @@ export function buildRuntimePackage(input: RuntimePackageInput): BrainRuntimePac
     const files: RuntimePackageFile[] = [];
     copyTree(path.join(artifacts.core, 'dist'), output.root, 'brain-core', 'runtime-entry', files, 'core/dist', (relative) => (relative.endsWith('.js') || relative.endsWith('.mjs')) && !relative.startsWith('tests/'), sourceRoot);
     const hasCoreSupport = copyCoreSupport(sourceRoot, output.root, files);
-    const hasJevBridge = copyJevBridge(sourceRoot, output.root, files);
     rewritePackagedCoreImports(output.root, files);
     copyFile(path.join(artifacts.core, 'package.json'), path.join(output.root, 'core', 'package.json'), 'core/package.json', 'brain-core', 'runtime-metadata', files, sourceRoot);
     copyFile(path.join(artifacts.core, 'package-lock.json'), path.join(output.root, 'core', 'package-lock.json'), 'core/package-lock.json', 'brain-core', 'runtime-dependency-metadata', files, sourceRoot);
@@ -311,7 +279,6 @@ export function buildRuntimePackage(input: RuntimePackageInput): BrainRuntimePac
         { id: 'brain-console', dependencyStrategy: 'standalone-traced', required: true },
         { id: 'runtime-config-template', dependencyStrategy: 'none', required: true },
         ...(hasCoreSupport ? [{ id: 'brain-core-support' as const, dependencyStrategy: 'none' as const, required: true }] : []),
-        ...(hasJevBridge ? [{ id: 'jev-bridge' as const, dependencyStrategy: 'none' as const, required: true }] : []),
       ], files,
       startup: { core: { executable: 'node', args: ['core', 'dist', 'index.js'], cwd: '.' }, console: { executable: 'node', args: ['console', 'standalone', 'server.js'], cwd: '.' } },
       configContract: 'brain-runtime-config-v1', requiredExternalSecrets: ['BRAIN_CORE_SERVICE_ID', 'BRAIN_CORE_SERVICE_SECRET', 'BRAIN_CONSOLE_OPERATOR_ID', 'BRAIN_CONSOLE_OPERATOR_SECRET'], optionalCapabilities: ['brain-node', 'voice-stt', 'browser-tts', 'bedrock'], manifestHash: '',
@@ -369,9 +336,6 @@ export function verifyRuntimePackage(packageRoot: string): RuntimePackageVerific
     if (totalBytes > BRAIN_RUNTIME_PACKAGE_MAX_TOTAL_BYTES) return { ok: false, reason: 'bounds-exceeded', detail: 'package total size exceeds bound' };
     for (const required of ['core/dist/index.js', 'core/package.json', 'core/package-lock.json', 'console/standalone/server.js', 'console/standalone/node_modules/next/package.json', 'console/standalone/.next/BUILD_ID', 'config/brain-runtime-config.example.json']) if (!listed.has(required)) return { ok: false, reason: 'missing-file', detail: required };
     if (!manifest.files.some((file) => file.relativePath.startsWith('console/standalone/.next/static/'))) return { ok: false, reason: 'missing-file', detail: 'console/standalone/.next/static' };
-    if (manifest.components.some((component) => component.id === 'jev-bridge')) {
-      for (const required of ['tools/jev/brain-jev.mjs', 'tools/jev/typesafe-request.mjs', 'tools/jev/node_modules/@typesafe-ai/sdk/dist/index.mjs', 'tools/infrastructure-identity-access/macos-keychain-adapter.mjs']) if (!listed.has(required)) return { ok: false, reason: 'missing-file', detail: required };
-    }
     return { ok: true, packageId: manifest.packageId, manifestHash: manifest.manifestHash, fileCount: manifest.files.length, totalBytes };
   } catch (error) { return { ok: false, reason: 'invalid-manifest', detail: error instanceof Error ? error.message : String(error) }; }
 }

@@ -157,18 +157,11 @@ test('packages the bounded Core support closure needed by the installed read-onl
   } finally { rmSync(sourceRoot, { recursive: true, force: true }); rmSync(outputRoot, { recursive: true, force: true }); }
 });
 
-test('packages Jev bridge code, native boundary, keychain adapter, and SDK as one immutable closure', () => {
+test('keeps the Jev bridge and Keychain boundary external to immutable runtime packages', () => {
   const sourceRoot = fixtureRoot();
-  const runtimeFiles = [
-    'tools/jev/brain-jev.mjs', 'tools/jev/jev-contract.mjs', 'tools/jev/jev-ledger.mjs', 'tools/jev/jev-pricing.mjs',
-    'tools/jev/macos-keychain-enroll-typesafe.swift', 'tools/jev/macos-keychain-request-boundary.swift',
-    'tools/jev/package.json', 'tools/jev/package-lock.json', 'tools/jev/typesafe-request.mjs',
-    'tools/jev/node_modules/@typesafe-ai/sdk/LICENSE', 'tools/jev/node_modules/@typesafe-ai/sdk/README.md',
-    'tools/jev/node_modules/@typesafe-ai/sdk/package.json', 'tools/jev/node_modules/@typesafe-ai/sdk/dist/index.mjs',
-    'tools/infrastructure-identity-access/macos-keychain-adapter.mjs',
-    'tools/infrastructure-identity-access/macos-keychain-probe.swift',
-    'tools/infrastructure-identity-access/macos-keychain-verification-boundary.swift',
-  ];
+  const bridgeFile = 'tools/jev/brain-jev.mjs';
+  const keychainFile = 'tools/infrastructure-identity-access/macos-keychain-adapter.mjs';
+  const runtimeFiles = [bridgeFile, keychainFile];
   for (const relative of runtimeFiles) {
     const target = path.join(sourceRoot, relative);
     mkdirSync(path.dirname(target), { recursive: true });
@@ -180,12 +173,11 @@ test('packages Jev bridge code, native boundary, keychain adapter, and SDK as on
   const outputRoot = path.join('/tmp', `brain-d0-c-package-jev-${Date.now()}-${Math.random().toString(16).slice(2)}`);
   try {
     const manifest = buildRuntimePackage({ sourceRoot, outputRoot, releaseRevision: 'fixture-revision', platform: 'darwin', architecture: 'arm64' });
-    assert.ok(manifest.components.some(({ id }) => id === 'jev-bridge'));
-    for (const relative of runtimeFiles) assert.ok(manifest.files.some((file) => file.relativePath === relative));
-    assert.equal(readFileSync(path.join(outputRoot, 'core', 'dist', 'agent-mode', 'jarvis-system-one-reflex.js'), 'utf8'), "export const bridge = '../../../tools/jev/brain-jev.mjs';\n");
+    assert.doesNotMatch(JSON.stringify(manifest.components), /jev-bridge/u);
+    for (const relative of runtimeFiles) assert.equal(manifest.files.some((file) => file.relativePath === relative), false);
+    assert.equal(manifest.files.some((file) => file.relativePath.startsWith('tools/jev/')), false);
+    assert.equal(manifest.files.some((file) => file.relativePath.startsWith('tools/infrastructure-identity-access/')), false);
     assert.equal(verifyRuntimePackage(outputRoot).ok, true);
-    rmSync(path.join(outputRoot, 'tools', 'jev', 'typesafe-request.mjs'));
-    assert.deepEqual(verifyRuntimePackage(outputRoot), { ok: false, reason: 'missing-file', detail: 'tools/jev/typesafe-request.mjs' });
   } finally { rmSync(sourceRoot, { recursive: true, force: true }); rmSync(outputRoot, { recursive: true, force: true }); }
 });
 
