@@ -3983,6 +3983,12 @@ export class AgentModeSqliteStateStore {
     return row ? mapJarvisIntakeRow(row) : undefined;
   }
 
+  getJarvisIntakeForRootGoal(rootGoalId: string): AgentModeJarvisIntakeRecord | undefined {
+    if (!this.hasJarvisIntakeTables) return undefined;
+    const row = this.database.prepare('SELECT * FROM agent_mode_jarvis_intakes WHERE root_goal_id = ?').get(rootGoalId) as Record<string, unknown> | undefined;
+    return row ? mapJarvisIntakeRow(row) : undefined;
+  }
+
   listJarvisIntakes(limit = 50): AgentModeJarvisIntakeRecord[] {
     if (!this.hasJarvisIntakeTables) return [];
     const boundedLimit = Math.max(0, Math.min(Math.floor(limit), 100));

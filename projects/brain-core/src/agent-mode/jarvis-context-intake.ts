@@ -180,7 +180,8 @@ export class JarvisContextIntakeService {
     const event = this.store.getSchedulerEvent(eventId);
     if (!event) throw new Error('Jarvis context event not found');
     const now = this.now();
-    const intake = event.causationId ? this.store.getJarvisIntake(event.causationId) : undefined;
+    const intake = (event.causationId ? this.store.getJarvisIntake(event.causationId) : undefined)
+      ?? this.store.getJarvisIntakeForRootGoal(rootGoalId);
     const route = intake ? this.route({ schemaVersion: JARVIS_CONTEXT_INTAKE_SCHEMA_VERSION, requestId: intake.intakeId, operatorId: intake.operatorId, model: intake.requestedModel ?? 'auto', text: this.store.getJarvisTaskInput(rootGoalId)?.text ?? 'resume', contexts: [], receivedAt: intake.receivedAt, ...(intake.codexEscalation ? { codexEscalation: intake.codexEscalation } : {}) }) : { ok: false as const, reasonCode: 'MODEL_NOT_ADMITTED' as const };
     const existingAssignment = this.store.listChildAssignments().find((assignment) => assignment.sourceEventId === eventId);
     const existingRoute = existingAssignment ? routeFromK4Assignment(existingAssignment) : this.storedReflexRoute(rootGoalId);
