@@ -2,14 +2,13 @@
 
 ## Outcome
 
-**BLOCKED; production rolled back to RC27.** The authorized RC47 production
-window completed artifact retention, fresh backup/restore proof, corrected
-descriptor validation, and launchd cutover. The first production
-`repos → Auto` read-only submission returned `terminal intake failed` and
-exited nonzero. This is a critical acceptance failure under the promotion
-authorization, so the smoke was not retried and production was immediately
-restored to the verified RC27 service descriptors and install pointer. The
-shared StateStore was not restored or modified during rollback.
+**BLOCKED; production is RC27.** The first RC47 activation attempt failed
+terminal intake and was rolled back. During the continued authorized window,
+one activation was stopped before live intake when the normal `repos` resolver
+still selected RC27. After correcting the pointer target, one production
+Jarvis/Auto turn succeeded and the next failed on its GLM-5 lifecycle. This is
+a critical acceptance failure; neither failed turn was retried. RC47 was
+immediately rolled back again. RC27 is healthy and remains the active release.
 
 ## Artifact and source identity
 
@@ -66,8 +65,10 @@ StateStore integrity/foreign keys.
 The normal `repos` shell function resolved to the exact retained RC47 CLI. One
 read-only Auto request was submitted for `stevewesthoek/brain`; the terminal
 returned `terminal intake failed` (nonzero exit). The failure stage is the
-terminal intake boundary. No provider/runtime identity or lower-level error
-code was returned to the caller, so this report does not infer a cause.
+terminal intake boundary. The interactive CLI prints only
+`payload.error.message`; Core's domain-denial response carries
+`result.reasonCode`, which the CLI did not display and which was not durably
+persisted.
 
 Post-failure durable observer state remained at 58 Agents, 120 Tasks, 120 Runs,
 and 57 Attempts, with zero ModelGateway operations. The most recent Attempt
@@ -98,10 +99,138 @@ Post-rollback checks:
 ## Security and limits
 
 No secret values, credentials, provider request/response bodies, or raw logs
-are included. Production Auto admission, Jev participation in a Jarvis turn,
-history/resume behavior for a new production turn, and the post-cutover
-observation window remain unverified because the initial terminal intake gate
-failed. The appropriate next action is a separately authorized diagnosis of
-the production terminal-intake failure against RC47, followed by a new explicit
-promotion/acceptance authorization only after the cause is established. RC27
-remains active and is the rollback baseline.
+are included. A follow-up read-only source/config diagnosis established the
+matching deterministic admission condition:
+
+- The retained RC47 Core environment had only one available runtime candidate:
+  Claude Opus was configured and its CLI was present, but Brain's Auto cost
+  policy marks Opus pricing unverified (`cost_unknown`) and therefore does not
+  admit it.
+- The stored GLM-5 and MiniMax Bedrock access evidence both expired at
+  `2026-09-21T21:32:09.807Z`, before the `2026-09-24` cutover. Both models are
+  consequently unavailable to Auto under the fresh-evidence gate.
+- Re-running the exact RC47 pure route resolver with the production-available
+  candidate set and submitted request text returns
+  `AUTO_COST_ADMISSION_DENIED`. This deterministic fail-closed result is not
+  evidence of a provider invocation or authentication defect.
+- Production Jev was not configured for this Core: `BRAIN_JEV_REFLEX_MODE` was
+  `OFF`, no bridge override was present, and the packaged default bridge path
+  did not exist. The separate `jev status` command proves only that the local
+  bridge credential/budget are available; it does not prove Core wiring.
+
+The continued authorized window below refreshed model-access evidence and
+explicitly configured the Jev bridge before a second cutover. Do not weaken
+Opus's cost gate, copy stale evidence forward, or retry a failed request.
+RC27 remains active and is the rollback baseline.
+
+## Continued authorized activation and acceptance — 2026-09-24 UTC
+
+### Fresh backup and restore proof
+
+A second, fresh pre-cutover backup was created after quiescing Core and
+Console. The logical export used the supported StateStore snapshot CLI; no
+live SQLite/WAL copy was made. Private bundle:
+
+`/Users/Office/Library/Application Support/Brain/agent-mode/backups/rc47-retry-precutover-20260924T230231Z`
+
+- RC27 snapshot: `brain-state-snapshot:sha256:998b72827373d8fe64e69cbf01a6d7f3a6f43d59fe33b8108ecd7c2102ce2344`.
+- Aggregate hash: `4692a2b4c8724d06a03e618be91c6c257c9745fed0509bc2b9070e06fffd1842`.
+- StateStore schema 11; 58 record families.
+- Snapshot verification passed. Restore into a fresh isolated target passed;
+  re-export reproduced the same snapshot ID and aggregate hash. Isolated
+  SQLite integrity was `ok`, with no foreign-key violations.
+- The bundle contains the RC27 Core/Console descriptors, package manifest,
+  and byte-matched canonical `/agent-mode-rc6/install.json` pointer. The
+  earlier `/agent-mode/install.json` pointer is not the resolver authority.
+- RC27 rollback package identity and signature had already passed the prior
+  artifact verification and were not modified.
+
+### Resolver correction and second cutover
+
+The first resumed cutover changed the legacy `/agent-mode/install.json`
+record, but `tools/scripts/brain-cli-resolver.sh` reads
+`$HOME/Library/Application Support/Brain/agent-mode-rc6/install.json`. The
+Core/Console paths were briefly RC47, but `repos --resolve-brain-cli` still
+returned RC27. No Jarvis request was submitted in that window. The identity
+mismatch was treated as critical and RC27 was restored before proceeding.
+
+The canonical RC27 pointer was then captured byte-for-byte in the fresh
+backup, and the RC47 install record was corrected/applied specifically at the
+resolver's `agent-mode-rc6/install.json` path. Fresh Bedrock metadata reads
+confirmed GLM-5 and MiniMax active, authorized, agreed, entitled, and region
+available. Their account-bound access evidence was refreshed for a bounded
+15-minute window. No inference was performed by these metadata reads.
+
+The second cutover passed the safe label-absence waits. RC47 Core and Console
+both returned HTTP 200; the RC47 service doctor passed 22/22. The normal
+`repos --resolve-brain-cli` resolved the exact retained RC47 CLI, and both
+loaded launchd descriptors and the canonical install pointer referred to the
+same package/source. The RC47 release remained the already-retained,
+signature-verified artifact; it was not rebuilt.
+
+### Bounded production Jarvis / Auto / Jev smoke
+
+Two read-only turns were submitted through the normal `repos → Auto` path for
+`stevewesthoek/brain`:
+
+1. `Hi.` completed. Auto selected MiniMax M2.5; one K4 Attempt and provider
+   process lifecycle completed, with one Jarvis response. Jev correctly
+   bypassed this simple turn with `REFLEX_SKIPPED_SIMPLE_TURN`. The terminal
+   displayed activity/progress, a single completed response, and no duplicate
+   rendering.
+2. The model/route/Jev status question was accepted, Auto selected GLM-5, and
+   Jev returned the durable fallback reason `REFLEX_LOW_CONFIDENCE`. The K4
+   GLM-5 Attempt and dispatch then settled as failed; no assistant response
+   was produced. This is a critical acceptance failure. The turn was not
+   retried.
+
+Durable observer facts after rollback show the pre-smoke baseline of 58 Agents,
+120 Tasks, 120 Runs, and 57 Attempts became 60 Agents, 124 Tasks, 124 Runs,
+and 59 Attempts: one completed and one failed worker lifecycle. The shared
+StateStore was not restored, preserving these truthful acceptance records.
+The completed MiniMax turn has provider prepare/spawn/exit lifecycle evidence.
+The failed GLM lifecycle has no provider-command lifecycle or provider request
+ID/status in durable evidence; therefore an escaped GLM provider request
+cannot be ruled in or out. No further model call was made.
+
+Jev's safe status moved from 149 to 150 calls. Its Keychain credential
+reference remains present; the secret was not read or exposed. The monthly
+budget remains capped at $10, with $9.994547 remaining; pilot remaining is
+$0.244586. The first turn proves simple-turn bypass; the second exposes the
+low-confidence fallback code. A successful Jev-assisted turn, adaptive
+bypass under load, context narrowing, and candidate-filtering behavior were
+not fully proven. Opus remains fail-closed because pricing is unverified;
+Codex was not selected and no escalation occurred.
+
+The RC47 stale-resume-route regression remains covered by the exact-source
+focused suite (99/99 passed), but a production resume/recall turn was not
+completed. No repository file mutation through Agent Mode, BrainNode,
+Workcell, Harness, or tool execution was observed. There was no production
+push or source change.
+
+### Second rollback and final state
+
+On the failed GLM turn, the CLI session was stopped and RC27 Core/Console
+descriptors plus the canonical `agent-mode-rc6/install.json` pointer were
+restored from the fresh backup. The shared StateStore was deliberately left
+intact. Post-rollback:
+
+- RC27 Core `/status`: HTTP 200; Console `/agents`: HTTP 200.
+- RC27 service doctor: **PASS, 22/22**.
+- Rollback observation: Core **10/10** and Console **10/10** HTTP-200 samples.
+- Canonical resolver again selects the RC27 CLI and pointer source revision
+  `6dbfee3fbfa4ac05cade1d7382502de5d3b189eb`.
+- Candidate port 4991 is stopped. RC27 remains active; there is no promotion.
+
+### Decision and exact blocker
+
+**GO_LIVE: NO — BLOCKED.** The production smoke did not pass because a
+GLM-5-routed K4 lifecycle failed after Jev's `REFLEX_LOW_CONFIDENCE` fallback.
+The durable failure record contains no safe provider error code, HTTP status,
+request ID, or provider lifecycle for that GLM attempt. Evidence is
+insufficient to classify it as a Brain source defect versus an external/model
+adapter failure. Do not retry or promote RC47. The exact next action is a
+read-only diagnosis of the failed Attempt's K4 receipt/dispatch path and the
+Jev low-confidence fallback handling, using retained durable state; any new
+production acceptance requires a separately scoped bounded window after the
+cause is established. RC27 remains the rollback baseline.
