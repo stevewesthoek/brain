@@ -254,3 +254,30 @@ Any future production acceptance requires a separately scoped bounded window
 after regenerating the descriptors from verified fresh evidence and checking
 the embedded `freshUntil` value—not the file mtime—before service startup and
 acceptance. RC27 remains the rollback baseline.
+
+## Continued read-only release preflight — 2026-09-24 UTC
+
+The retained RC47 package and signed manifest were reverified from the RC27
+maintenance CLI: **PASS**, matching version `1.0.0-rc.47`, source
+`8f4ad9683a28007888a758ea0713f8d5288f8e79`, package
+`brain-runtime-package:sha256:0401f3ccf6f983b1b82478282c95361f918cb1234b32ebffff85dcc0cf95f2f7`,
+and release
+`brain-agent-release:sha256:25986914d0ff3cbd667fb5277610b3b650757cd4a34d4522985de992bf520bd4`.
+The source revision is an ancestor of `origin/main`.
+
+The unchanged RC27 production baseline was independently rechecked: the
+read-only service doctor passed **22/22**, Core `/status` and Console
+`/agents` returned HTTP 200, launchd owns one process per service, and the
+canonical `repos` resolver selects the RC27 CLI. No production mutation or
+provider inference occurred during this continuation.
+
+A read-only Bedrock availability metadata preflight through the repository's
+approved `aws-provisioner` wrapper was denied for both `zai.glm-5` and
+`minimax.minimax-m2.5` with `AccessDeniedException` for
+`bedrock:GetFoundationModelAvailability`. No alternate AWS identity was tried
+and no IAM change was made. Current account/region/model access evidence
+therefore cannot be refreshed through the approved route. This is an external
+authorization blocker, separate from the stale embedded descriptor evidence.
+Do not cut over or submit a production Jarvis turn until an approved
+read-only evidence path is available and the refreshed timestamps are verified
+inside the candidate descriptors. RC27 remains active and healthy.
