@@ -215,7 +215,10 @@ export function renderTerminalConsole(status: TerminalExecutionStatus, options: 
       : `Jev ✓ ${status.reflex.latencyMs}ms${status.reflex.recommendationModelRef ? ` → ${modelLabel(status.reflex.recommendationModelRef)}` : ''}`
     : status.reflexPhase === 'preflight' ? 'Jev ◐ preflight' : status.reflexPhase === 'fallback' ? 'Jev unavailable' : 'Jev skipped';
   const header = `${paint('Jarvis', 'cyan', color)} · ${fit(repository, Math.max(12, width - 46))}    ${fit(model, 18)} · ${fit(runtime, 18)}`;
-  const state = `${status.status === 'running' ? '●' : status.status === 'completed' ? '✓' : status.status === 'failed' || status.status === 'uncertain' ? '!' : '·'} ${statusLabel(status.status)} · ${agentLabel} · ${access}`;
+  const reason = status.reasonCode === 'MODEL_GATEWAY_ACCOUNT_ACCESS_UNAVAILABLE'
+    ? 'Bedrock account access unavailable'
+    : status.reasonCode?.startsWith('MODEL_GATEWAY_') ? status.reasonCode.replace('MODEL_GATEWAY_', 'provider ').toLowerCase().replaceAll('_', ' ') : null;
+  const state = `${status.status === 'running' ? '●' : status.status === 'completed' ? '✓' : status.status === 'failed' || status.status === 'uncertain' ? '!' : '·'} ${statusLabel(status.status)}${reason ? ` · ${reason}` : ''} · ${agentLabel} · ${access}`;
   const activity = status.safeActivity ?? (status.status === 'running' ? 'Working' : 'No activity recorded');
   const spinner = SPINNER_FRAMES[(options.spinnerIndex ?? 0) % SPINNER_FRAMES.length] ?? '|';
   const lines = [

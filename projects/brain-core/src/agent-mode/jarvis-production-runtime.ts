@@ -9,6 +9,8 @@ import { ModelGatewayAgentRuntime } from './model-gateway-agent-runtime.js';
 import type { AgentRuntime, AgentRuntimeExecutionContext, AgentRuntimeResult, AgentRuntimeReconciliation } from './runtime-dispatch.js';
 import type { AgentModeSqliteStateStore } from './sqlite-state-store.js';
 
+export const JARVIS_UNAVAILABLE_MODEL_REFS_ENV = 'BRAIN_AGENT_MODE_UNAVAILABLE_MODEL_REFS';
+
 export type JarvisProductionRuntimeConfiguration = {
   /** Canonical policy-admitted model set consumed by Auto and Jev. */
   availableModels: ReadonlySet<AdmittedModelRef>;
@@ -48,21 +50,32 @@ function parseEvidence(): Partial<Record<AdmittedModelRef, ModelAccessEvidence>>
   } catch { return {}; }
 }
 
+/** Parse a closed, operator-supplied temporary unavailability list. Unknown refs fail closed. */
+export function parseUnavailableModelRefs(raw: string | undefined): ReadonlySet<AdmittedModelRef> | undefined {
+  if (raw === undefined || raw.trim() === '') return new Set();
+  const refs = raw.split(',').map((value) => value.trim());
+  if (refs.some((value) => !value || !JARVIS_AUTO_MODEL_CANDIDATES.includes(value as AdmittedModelRef))) return undefined;
+  return new Set(refs as AdmittedModelRef[]);
+}
+
 /** Production is opt-in: no environment variable means RC23 remains fail-closed. */
 export function loadJarvisProductionRuntimeConfiguration(now = new Date().toISOString(), gateway?: ModelGateway): JarvisProductionRuntimeConfiguration | undefined {
   if (process.env.BRAIN_AGENT_MODE_ENABLE_LIVE_RUNTIME !== '1') return undefined;
+  const unavailable = parseUnavailableModelRefs(process.env[JARVIS_UNAVAILABLE_MODEL_REFS_ENV]);
+  if (!unavailable) return undefined;
   const evidence = parseEvidence();
   const runtimeAvailable = new Set<AdmittedModelRef>();
   const accountRef = process.env.BRAIN_AGENT_MODE_ACCOUNT_REF;
   const modelGateway = accountRef ? (gateway ?? new AmazonBedrockModelGateway({ accountRef })) : undefined;
   for (const modelRef of ['agent-mode/minimax-m2.5', 'agent-mode/glm-5'] as const) {
     const item = evidence[modelRef];
-    if (modelGateway && item?.state === 'verified' && item.catalogVisible && item.callable && Date.parse(item.checkedAt) <= Date.parse(now) && Date.parse(now) < Date.parse(item.freshUntil)) runtimeAvailable.add(modelRef);
+    if (!unavailable.has(modelRef) && modelGateway && item?.state === 'verified' && item.catalogVisible && item.callable && Date.parse(item.checkedAt) <= Date.parse(now) && Date.parse(now) < Date.parse(item.freshUntil)) runtimeAvailable.add(modelRef);
   }
   const claudeCommand = process.env.BRAIN_CLAUDE_CODE_BIN ?? 'claude';
-  if (process.env.BRAIN_AGENT_MODE_ENABLE_CLAUDE_CODE === '1' && commandAvailable(claudeCommand)) runtimeAvailable.add('agent-mode/claude-opus-4.6');
+  if (!unavailable.has('agent-mode/claude-opus-4.6') && process.env.BRAIN_AGENT_MODE_ENABLE_CLAUDE_CODE === '1' && commandAvailable(claudeCommand)) runtimeAvailable.add('agent-mode/claude-opus-4.6');
   if (runtimeAvailable.size === 0) return undefined;
-  const modelAdmissions = deriveJarvisModelAdmissions(runtimeAvailable);
-  const available = new Set(modelAdmissions.filter((candidate) => candidate.autoAdmitted).map((candidate) => candidate.modelRef));
-  return { availableModels: available, runtimeAvailableModels: runtimeAvailable, modelAdmissions, runtimeFactory: (store) => new RoutedJarvisRuntime(modelGateway ? new ModelGatewayAgentRuntime(store, { gateway: modelGateway, accessEvidence: evidence }) : undefined, runtimeAvailable.has('agent-mode/claude-opus-4.6') ? new ClaudeCodeAgentRuntime(store, claudeCommand) : undefined) };
+  const callableEvidence = Object.fromEntries(Object.entries(evidence).filter(([modelRef]) => !unavailable.has(modelRef as AdmittedModelRef))) as Partial<Record<AdmittedModelRef, ModelAccessEvidence>>;
+  const admissions = deriveJarvisModelAdmissions(runtimeAvailable);
+  const available = new Set(admissions.filter((candidate) => candidate.autoAdmitted).map((candidate) => candidate.modelRef));
+  return { availableModels: available, runtimeAvailableModels: runtimeAvailable, modelAdmissions: admissions, runtimeFactory: (store) => new RoutedJarvisRuntime(modelGateway ? new ModelGatewayAgentRuntime(store, { gateway: modelGateway, accessEvidence: callableEvidence }) : undefined, runtimeAvailable.has('agent-mode/claude-opus-4.6') ? new ClaudeCodeAgentRuntime(store, claudeCommand) : undefined) };
 }

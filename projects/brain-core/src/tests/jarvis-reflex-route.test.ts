@@ -66,7 +66,6 @@ test('Jev cannot reintroduce runtime-available Opus denied by cost policy', () =
   assert.equal(route.modelRef, current.modelRef);
   assert.notEqual(route.modelRef, 'agent-mode/claude-opus-4.6');
 });
-
 test('ACTIVE_PILOT can lower an adaptive quality-tier baseline through the same admitted route', () => {
   const baseline = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Inspect the repository and explain the implementation.', adaptiveRouting: true, fixtureRuntimeAvailable: true });
   assert.equal(baseline.ok, true);
@@ -91,6 +90,25 @@ test('explicit model requests and unavailable recommendations remain unchanged',
   assert.equal(applyJarvisReflexRoute({ requestedModel: 'auto', requestText: 'hello', currentRoute: current, envelope: { ...envelope(), mode: 'SHADOW' }, fixtureRuntimeAvailable: true }).modelRef, current.modelRef);
 });
 
+test('Jev cannot reintroduce MiniMax when the active admitted set contains only GLM', () => {
+  const current = resolveJarvisRuntimeRoute({
+    requestedModel: 'auto',
+    requestText: 'Please inspect this repository and explain the result.',
+    productionRuntimeAvailable: new Set(['agent-mode/glm-5']),
+  });
+  assert.equal(current.ok, true);
+  if (!current.ok) return;
+  const route = applyJarvisReflexRoute({
+    requestedModel: 'auto',
+    requestText: 'Please inspect this repository and explain the result.',
+    currentRoute: current.route,
+    envelope: envelope({ recommendation: { modelRef: 'agent-mode/minimax-m2.5', skillIds: [], contextIds: [] } }),
+    availableModels: new Set(['agent-mode/glm-5']),
+    fixtureRuntimeAvailable: false,
+  });
+  assert.equal(route.modelRef, 'agent-mode/glm-5');
+  assert.equal(route.runtimeRef, current.route.runtimeRef);
+});
 test('persisted and assigned routes are bounded and deterministic', () => {
   const persisted = persistedJarvisReflexRoute({ modelRef: 'agent-mode/glm-5', runtimeRef: 'runtime:mock-k0-4', runtimeProfileRef: 'runtime-profile:mock-k0-4', source: 'auto', selectionReason: 'admitted-order', unexpectedAuthority: 'ignore' });
   assert.deepEqual(persisted, { modelRef: 'agent-mode/glm-5', runtimeRef: 'runtime:mock-k0-4', runtimeProfileRef: 'runtime-profile:mock-k0-4', source: 'auto', selectionReason: 'admitted-order' });

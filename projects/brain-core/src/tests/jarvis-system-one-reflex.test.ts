@@ -42,7 +42,6 @@ test('Jev receives only policy-admitted candidates even when Opus runtime is ava
   await service.preflight({ text: 'Inspect this substantial implementation carefully.', requestedModel: 'auto' });
   assert.deepEqual(candidates, ['agent-mode/minimax-m2.5', 'agent-mode/glm-5']);
 });
-
 test('Jarvis reflex only presents currently admitted runtime models to Jev', async () => {
   let candidateModels: readonly string[] = [];
   const service = new JarvisSystemOneReflexService({

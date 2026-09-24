@@ -131,6 +131,7 @@ export interface NormalizedModelResult {
 
 export type ModelGatewayFailureCode =
   | 'access_denied'
+  | 'account_access_unavailable'
   | 'model_unavailable'
   | 'route_invalid'
   | 'throttled'
@@ -139,17 +140,62 @@ export type ModelGatewayFailureCode =
   | 'invalid_request'
   | 'unknown';
 
+export interface ModelGatewayProviderFailureDiagnostic {
+  providerCode: string;
+  providerMessage: string;
+  requestId?: string;
+  httpStatus?: number;
+}
+
+export type ManagedProviderLifecycleStage =
+  | 'provider_command_prepare'
+  | 'provider_command_spawn_start'
+  | 'provider_command_spawn_success'
+  | 'provider_command_spawn_failure'
+  | 'provider_process_exit'
+  | 'provider_process_signal'
+  | 'provider_stderr_present'
+  | 'provider_error_parse_start'
+  | 'provider_error_parse_success'
+  | 'provider_error_parse_failure'
+  | 'provider_diagnostic_persist_start'
+  | 'provider_diagnostic_persist_success'
+  | 'provider_diagnostic_persist_failure'
+  | 'model_gateway_normalize_error';
+
+export interface ManagedProviderLifecycleEvent {
+  stage: ManagedProviderLifecycleStage;
+  elapsedMs: number;
+  exitCode?: number;
+  signal?: 'SIGABRT' | 'SIGALRM' | 'SIGBUS' | 'SIGFPE' | 'SIGHUP' | 'SIGILL' | 'SIGINT' | 'SIGKILL' | 'SIGPIPE' | 'SIGQUIT' | 'SIGSEGV' | 'SIGTERM' | 'SIGTRAP';
+  stderrPresent?: boolean;
+  parserOutcome?: 'success' | 'failure' | 'skipped';
+  errorKind?: 'spawn_error' | 'timeout' | 'output_limit' | 'lifecycle_persistence_failure' | 'malformed_error_output' | 'empty_stderr' | 'parser_failure' | 'diagnostic_unavailable';
+  publicErrorClass?: ModelGatewayFailureCode;
+}
+
+/** Runtime-owned sink for sanitized provider lifecycle facts and diagnostics. */
+export interface ModelGatewayExecutionObserver {
+  recordLifecycle?(event: ManagedProviderLifecycleEvent): void;
+  persistProviderDiagnostic(
+    failureCode: ModelGatewayFailureCode,
+    diagnostic: ModelGatewayProviderFailureDiagnostic | undefined,
+  ): void;
+}
+
 export interface ModelGateway {
-  invoke(request: AdmittedModelRequest): Promise<NormalizedModelResult>;
+  invoke(request: AdmittedModelRequest, observer?: ModelGatewayExecutionObserver): Promise<NormalizedModelResult>;
 }
 
 export class ModelGatewayError extends Error {
   readonly code: ModelGatewayFailureCode;
+  readonly providerDiagnostic: ModelGatewayProviderFailureDiagnostic | undefined;
 
-  constructor(code: ModelGatewayFailureCode, message: string) {
+  constructor(code: ModelGatewayFailureCode, message: string, providerDiagnostic?: ModelGatewayProviderFailureDiagnostic) {
     super(message);
     this.name = 'ModelGatewayError';
     this.code = code;
+    this.providerDiagnostic = providerDiagnostic;
   }
 }
 

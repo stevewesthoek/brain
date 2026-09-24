@@ -50,7 +50,6 @@ test('canonical candidate admission separates runtime availability from cost pol
   const unavailable = deriveJarvisModelAdmissions(new Set());
   assert.equal(unavailable.every((candidate) => !candidate.autoAdmitted && candidate.reasonCode === 'runtime_unavailable'), true);
 });
-
 test('simple Auto turns use the admitted fast path and never fall through to Opus', () => {
   assert.equal(classifyJarvisTurn('hi'), 'simple');
   assert.equal(classifyJarvisTurn('Inspect the repository at a high level; do not modify anything.'), 'moderate');

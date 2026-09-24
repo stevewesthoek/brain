@@ -3693,6 +3693,7 @@ export class AgentModeSqliteStateStore {
           if (attempt.cancellationStatus === 'running') return { result: 'denied', reasonCode: 'CANCELLATION_NOT_REQUESTED' };
           if (attempt.cancellationStatus === 'requested') this.acknowledgeCancellation(attempt.attemptId, now);
         }
+        this.appendEventIfAbsent({ eventId: `attempt-settlement-start:${operationId}`, entityType: 'attempt', entityId: attempt.attemptId, eventType: 'attempt_settlement_start', occurredAt: now, payload: { schemaVersion: 'agent-mode.attempt-settlement.v1', operationId, attemptId: attempt.attemptId, runtimeRef: attempt.runtimeRef, terminalStatus } });
         this.finishAttempt(attempt.attemptId, terminalStatus, now);
         const settled = this.settleBudgetInternal({ reservationId: reservation.reservationId, steps: receipt.usage.steps, tokens: receipt.usage.tokens, dollars: receipt.usage.cost, settledAt: now });
         if (settled === 'conflict') return { result: 'uncertain', reasonCode: 'BUDGET_CONFLICT' };
@@ -3706,6 +3707,7 @@ export class AgentModeSqliteStateStore {
         const eventType = receipt.status === 'succeeded' ? 'runtime_completed' : receipt.status === 'failed' ? 'runtime_failed' : 'runtime_cancelled';
         this.appendEventIfAbsent({ eventId: `${eventType}:${operationId}`, entityType: 'attempt', entityId: attempt.attemptId, eventType, occurredAt: now, payload: { operationId, dispatchId: receipt.dispatchId, childAgentId: child.agentId, resultHash: receipt.resultHash, evidenceRef: receipt.evidenceRef, usage: receipt.usage } });
         this.appendEventIfAbsent({ eventId: `child-settled:${assignment.assignmentIntentKey}`, entityType: 'child_assignment', entityId: assignment.assignmentIntentKey, eventType: 'child_settled', occurredAt: now, payload: { childAgentId: child.agentId, status: terminalStatus, operationId } });
+        this.appendEventIfAbsent({ eventId: `attempt-settlement-complete:${operationId}`, entityType: 'attempt', entityId: attempt.attemptId, eventType: 'attempt_settlement_complete', occurredAt: now, payload: { schemaVersion: 'agent-mode.attempt-settlement.v1', operationId, attemptId: attempt.attemptId, runtimeRef: attempt.runtimeRef, terminalStatus } });
         return { result: 'settled', receipt };
       });
     } catch (error) {

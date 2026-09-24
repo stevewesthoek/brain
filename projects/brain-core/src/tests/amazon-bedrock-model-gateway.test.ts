@@ -161,6 +161,62 @@ test('classifies timeout, throttling, unavailable, and provider failures', async
   }
 });
 
+test('classifies the known Bedrock account-access ValidationException without exposing provider text', async () => {
+  const gatewayInstance = gateway({ converse: async () => {
+    throw { name: 'ValidationException', message: 'Error 002: Access to Bedrock models is not allowed for this account' };
+  } });
+  await assert.rejects(
+    gatewayInstance.invoke(request('agent-mode/minimax-m2.5')),
+    (error: unknown) => error instanceof ModelGatewayError
+      && error.code === 'account_access_unavailable'
+      && error.message === 'Bedrock Converse invocation failed'
+      && !error.message.includes('Error 002'),
+  );
+});
+
+test('preserves only the bounded sanitized Bedrock provider diagnostic beside generic gateway failure', async () => {
+  const order: string[] = [];
+  const gatewayInstance = gateway({ converse: async () => {
+    throw Object.assign(new Error('Bedrock Converse invocation failed'), {
+      code: 'ValidationException',
+      providerDiagnostic: {
+        providerCode: 'ValidationException',
+        providerMessage: 'Error 002: Request parameters are invalid.',
+        requestId: 'req-12345678',
+        httpStatus: 400,
+        rawResponse: 'must not cross the gateway boundary',
+      },
+    });
+  } });
+  const observer = {
+    persistProviderDiagnostic(failureCode: string, diagnostic: { providerCode: string; providerMessage: string; requestId?: string; httpStatus?: number }) {
+      order.push('durable-diagnostic');
+      assert.equal(failureCode, 'invalid_request');
+      assert.deepEqual(diagnostic, {
+        providerCode: 'ValidationException',
+        providerMessage: 'Error 002: Request parameters are invalid.',
+        requestId: 'req-12345678',
+        httpStatus: 400,
+      });
+    },
+  };
+  await assert.rejects(
+    gatewayInstance.invoke(request('agent-mode/glm-5'), observer),
+    (error: unknown) => {
+      order.push('public-error-normalized');
+      return error instanceof ModelGatewayError
+        && error.code === 'invalid_request'
+        && error.message === 'Bedrock Converse invocation failed'
+        && error.providerDiagnostic?.providerCode === 'ValidationException'
+        && error.providerDiagnostic?.providerMessage === 'Error 002: Request parameters are invalid.'
+        && error.providerDiagnostic?.requestId === 'req-12345678'
+        && error.providerDiagnostic?.httpStatus === 400
+        && !JSON.stringify(error.providerDiagnostic).includes('rawResponse');
+    },
+  );
+  assert.deepEqual(order, ['durable-diagnostic', 'public-error-normalized']);
+});
+
 test('fixture provider outage blocks one request and a later eligible request recovers without fallback', async () => {
   let available = false;
   let calls = 0;
