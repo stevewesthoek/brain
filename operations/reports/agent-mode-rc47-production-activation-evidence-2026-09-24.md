@@ -281,3 +281,10 @@ authorization blocker, separate from the stale embedded descriptor evidence.
 Do not cut over or submit a production Jarvis turn until an approved
 read-only evidence path is available and the refreshed timestamps are verified
 inside the candidate descriptors. RC27 remains active and healthy.
+
+At `2026-09-24T23:41Z`, a repeated read-only GLM availability check through the
+same approved wrapper returned the same `AccessDeniedException`; no alternate
+profile or identity was attempted. At `2026-09-24T23:42Z`, the canonical
+Agent Mode observer was available and showed zero configured schedules; its
+latest scheduler tick was `NO_ACTION`. Thus the scheduler surface is
+responding, but no configured schedule execution was part of this verification.
