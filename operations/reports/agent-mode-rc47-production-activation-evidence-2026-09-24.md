@@ -189,9 +189,13 @@ Durable observer facts after rollback show the pre-smoke baseline of 58 Agents,
 and 59 Attempts: one completed and one failed worker lifecycle. The shared
 StateStore was not restored, preserving these truthful acceptance records.
 The completed MiniMax turn has provider prepare/spawn/exit lifecycle evidence.
-The failed GLM lifecycle has no provider-command lifecycle or provider request
-ID/status in durable evidence; therefore an escaped GLM provider request
-cannot be ruled in or out. No further model call was made.
+The failed GLM lifecycle has no provider-command lifecycle, provider request
+ID, or provider status. A read-only reconciliation of the durable runtime
+receipt's deterministic result hash against the exact RC47 source identifies
+the failure code as `MODEL_ACCESS_UNAVAILABLE`. The attempt therefore failed
+inside Brain's local runtime access-evidence gate, before the ModelGateway
+invocation; no GLM provider inference occurred. No further model call was
+made.
 
 Jev's safe status moved from 149 to 150 calls. Its Keychain credential
 reference remains present; the secret was not read or exposed. The monthly
@@ -226,11 +230,27 @@ intact. Post-rollback:
 
 **GO_LIVE: NO — BLOCKED.** The production smoke did not pass because a
 GLM-5-routed K4 lifecycle failed after Jev's `REFLEX_LOW_CONFIDENCE` fallback.
-The durable failure record contains no safe provider error code, HTTP status,
-request ID, or provider lifecycle for that GLM attempt. Evidence is
-insufficient to classify it as a Brain source defect versus an external/model
-adapter failure. Do not retry or promote RC47. The exact next action is a
-read-only diagnosis of the failed Attempt's K4 receipt/dispatch path and the
-Jev low-confidence fallback handling, using retained durable state; any new
-production acceptance requires a separately scoped bounded window after the
-cause is established. RC27 remains the rollback baseline.
+The exact RC47 Core descriptor used for the cutover embedded GLM access
+evidence with `checkedAt=2026-09-24T22:58:40Z` and
+`freshUntil=2026-09-24T23:13:40Z`. The failed Attempt/runtime-start event was
+recorded at `2026-09-24T23:13:39.112Z`, less than one second before that
+expiry. The descriptor saved in `rc47-refreshed-descriptors/` had a new file
+modification time but retained those old embedded evidence timestamps. The
+durable failure hash is the deterministic `MODEL_ACCESS_UNAVAILABLE` result;
+the exact source checks freshness again at runtime start and records
+`policy_admitted_model` only after that gate passes. Together, these facts
+locate the failure at Brain's local access-evidence freshness gate, before
+ModelGateway/provider invocation. The evidence had effectively expired by the
+runtime's gate, rather than indicating a GLM provider or authentication
+failure. The persisted receipt does not carry the runtime's sub-second
+`startedAt`, so the exact crossing instant cannot be independently recovered;
+the near-expiry window and failure code are durable.
+
+No Brain source defect is demonstrated. The operational defect is that the
+descriptor refresh did not embed the refreshed evidence timestamps and
+cutover proceeded with less than one second of freshness headroom at the
+recorded runtime-start event. Do not retry or promote RC47 from this window.
+Any future production acceptance requires a separately scoped bounded window
+after regenerating the descriptors from verified fresh evidence and checking
+the embedded `freshUntil` value—not the file mtime—before service startup and
+acceptance. RC27 remains the rollback baseline.
