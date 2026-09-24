@@ -294,10 +294,15 @@ export class AgentModeTerminalIntakeService {
     return result;
   }
 
+  private deniedExecution(eventId: string, reasonCode: string): DynamicWorkerOrchestrationResult {
+    return { result: 'DENIED', eventId, ruleId: null, ruleVersion: null, actionRuleApplicationId: null, schedulerFence: null, spawnIntentKey: null, childAgentId: null, assignmentIntentKey: null, taskId: null, runId: null, attemptId: null, operationId: null, dispatchId: null, terminalWorkerOutcome: null, reasonCode };
+  }
+
   private storedReflexRoute(rootGoalId: string): JarvisRuntimeRoute | undefined {
     const events = this.store.listEvents(rootGoalId);
     const routeEvent = [...events].reverse().find((event) => event.eventType === 'jarvis_reflex_route');
-    return persistedJarvisReflexRoute(routeEvent?.payload, this.productionAutoAdmittedModels);
+    const currentlyAdmittedModels = this.productionAutoAdmittedModels ?? (this.fixtureRuntimeAvailable ? undefined : new Set<import('./model-gateway.js').AdmittedModelRef>());
+    return persistedJarvisReflexRoute(routeEvent?.payload, currentlyAdmittedModels);
   }
 
   private recordReflexStarted(rootGoalId: string, startedAt: string): void {

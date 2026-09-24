@@ -131,6 +131,41 @@ test('context-intake reflex receives bounded semantic labels without filesystem 
   }
 });
 
+test('execution-time Auto denial ignores a stale context-intake Jev route and creates no worker lifecycle', async () => {
+  const { root } = fixture();
+  const store = new AgentModeSqliteStateStore(path.join(root, 'state', 'agent-mode.db'));
+  const availableModels = new Set<'agent-mode/minimax-m2.5' | 'agent-mode/glm-5' | 'agent-mode/claude-opus-4.6'>(['agent-mode/minimax-m2.5']);
+  let runtimeCalls = 0;
+  try {
+    const service = new JarvisContextIntakeService(store, { home: root }, () => NOW, {
+      productionRuntime: {
+        availableModels,
+        runtimeFactory: () => ({ async run() {
+          runtimeCalls += 1;
+          return { status: 'succeeded', runtimeReceiptId: 'runtime-receipt:stale-context-route', resultHash: 'b'.repeat(64), evidenceRef: 'evidence:stale-context-route', usage: { steps: 1, tokens: 1, cost: 0 }, traceSummary: [] };
+        } }),
+      },
+    });
+    const accepted = service.accept({ schemaVersion: 'agent-mode.jarvis-intake.v2', requestId: 'request:context:stale-route', operatorId: 'operator:test', model: 'auto', text: 'Read-only fixture request.', contexts: [], receivedAt: NOW });
+    assert.equal(accepted.outcome, 'accepted');
+    if (accepted.outcome !== 'accepted') return;
+
+    store.recordEvent({ eventId: `jarvis-reflex-route:${accepted.receipt.rootGoalId}`, entityType: 'jarvis_intake', entityId: accepted.receipt.rootGoalId, eventType: 'jarvis_reflex_route', occurredAt: NOW, payload: { modelRef: 'agent-mode/claude-opus-4.6', runtimeRef: 'runtime:claude-code', runtimeProfileRef: 'runtime-profile:claude-code', source: 'auto', selectionReason: 'stale-fixture-route' } });
+    availableModels.clear();
+
+    const execution = await service.execute(accepted.receipt.rootGoalId);
+    assert.equal(execution.result, 'DENIED');
+    assert.equal(execution.reasonCode, 'MODEL_ROUTE_NOT_ADMITTED');
+    assert.equal(runtimeCalls, 0);
+    assert.equal(store.listAgents().filter((agent) => agent.agentKind === 'worker').length, 0);
+    assert.equal(store.listTasks().filter((task) => task.childAgentId).length, 0);
+    assert.equal(store.listRuns().filter((run) => run.childAgentId).length, 0);
+    assert.equal(store.listAttempts().filter((attempt) => attempt.childAgentId).length, 0);
+  } finally {
+    store.close();
+  }
+});
+
 test('zero-context mode creates a root without a fake repository scope', () => {
   const { root } = fixture();
   const store = new AgentModeSqliteStateStore(path.join(root, 'state', 'agent-mode.db'));
