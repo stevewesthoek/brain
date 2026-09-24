@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -7,8 +7,9 @@ import { AgentModeTerminalIntakeService, TERMINAL_INTAKE_SCHEMA_VERSION } from '
 import { AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
 import type { AgentRuntime } from '../agent-mode/runtime-dispatch.js';
 import { ModelGatewayAgentRuntime } from '../agent-mode/model-gateway-agent-runtime.js';
-import type { ModelGateway } from '../agent-mode/model-gateway.js';
-import type { JarvisProductionRuntimeConfiguration } from '../agent-mode/jarvis-production-runtime.js';
+import { ModelGatewayError, type ModelGateway } from '../agent-mode/model-gateway.js';
+import { AmazonBedrockModelGateway } from '../adapters/amazon-bedrock-model-gateway.js';
+import { JARVIS_UNAVAILABLE_MODEL_REFS_ENV, loadJarvisProductionRuntimeConfiguration, parseUnavailableModelRefs, type JarvisProductionRuntimeConfiguration } from '../agent-mode/jarvis-production-runtime.js';
 import type { JarvisSystemOneReflexHook } from '../agent-mode/jarvis-system-one-reflex.js';
 import { JarvisContextIntakeService } from '../agent-mode/jarvis-context-intake.js';
 
@@ -163,6 +164,230 @@ test('execution-time Auto denial ignores stale Jev route and creates no worker l
     assert.equal(store.listRuns().filter((run) => run.childAgentId).length, 0);
     assert.equal(store.listAttempts().filter((attempt) => attempt.childAgentId).length, 0);
   } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('operator-declared MiniMax outage removes it from Auto and blocks already-assigned MiniMax dispatch', async () => {
+  const keys = ['BRAIN_AGENT_MODE_ENABLE_LIVE_RUNTIME', 'BRAIN_AGENT_MODE_ENABLE_CLAUDE_CODE', 'BRAIN_AGENT_MODE_ACCOUNT_REF', 'BRAIN_AGENT_MODE_ACCESS_EVIDENCE_JSON', JARVIS_UNAVAILABLE_MODEL_REFS_ENV] as const;
+  const previous = new Map(keys.map((key) => [key, process.env[key]]));
+  const evidence = (modelRef: 'agent-mode/minimax-m2.5' | 'agent-mode/glm-5', modelId: string) => ({
+    version: 'fixture-access-v1', accountRef: 'account:fixture', region: 'us-east-1', modelRef, modelId,
+    routeKind: 'direct', routeId: modelId, state: 'verified', catalogVisible: true, callable: true,
+    checkedAt: '2026-09-18T09:00:00.000Z', freshUntil: '2099-01-01T00:00:00.000Z', source: 'fixture',
+  });
+  let providerCalls = 0;
+  try {
+    process.env.BRAIN_AGENT_MODE_ENABLE_LIVE_RUNTIME = '1';
+    process.env.BRAIN_AGENT_MODE_ENABLE_CLAUDE_CODE = '0';
+    process.env.BRAIN_AGENT_MODE_ACCOUNT_REF = 'account:fixture';
+    process.env.BRAIN_AGENT_MODE_ACCESS_EVIDENCE_JSON = JSON.stringify({
+      'agent-mode/minimax-m2.5': evidence('agent-mode/minimax-m2.5', 'minimax.minimax-m2.5'),
+      'agent-mode/glm-5': evidence('agent-mode/glm-5', 'zai.glm-5'),
+    });
+    process.env[JARVIS_UNAVAILABLE_MODEL_REFS_ENV] = 'agent-mode/minimax-m2.5';
+    const config = loadJarvisProductionRuntimeConfiguration(NOW, { invoke: async () => { providerCalls += 1; throw new Error('provider must not be invoked'); } });
+    assert.deepEqual([...config?.availableModels ?? []], ['agent-mode/glm-5']);
+    const runtime = config!.runtimeFactory({} as AgentModeSqliteStateStore);
+    const blocked = await runtime.run({
+      context: { runtimeRef: 'runtime:model-gateway', modelRef: 'agent-mode/minimax-m2.5' } as never,
+      signal: new AbortController().signal,
+      isCancellationRequested: () => false,
+    });
+    assert.equal(blocked.failureCode, 'MODEL_ACCESS_UNAVAILABLE');
+    assert.equal(providerCalls, 0);
+    assert.deepEqual([...(parseUnavailableModelRefs(process.env[JARVIS_UNAVAILABLE_MODEL_REFS_ENV]) ?? [])], ['agent-mode/minimax-m2.5']);
+    assert.equal(parseUnavailableModelRefs('agent-mode/not-admitted'), undefined);
+  } finally {
+    for (const [key, value] of previous) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
+  }
+});
+
+test('Auto falls back to another admitted model through K4 and returns a clear denial when none remain', async () => {
+  const directory = mkdtempSync(`${tmpdir()}/brain-terminal-intake-outage-fallback-`);
+  const repository = `${directory}/repo`;
+  mkdirSync(`${repository}/.git`, { recursive: true });
+  const store = new AgentModeSqliteStateStore(`${directory}/agent-mode.db`);
+  let invocations = 0;
+  const productionRuntime: JarvisProductionRuntimeConfiguration = {
+    availableModels: new Set(['agent-mode/glm-5']),
+    runtimeFactory: () => ({ async run(input) { invocations += 1; return fakeRuntime().run(input); } }),
+  };
+  try {
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: [directory], now: () => NOW, productionRuntime });
+    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:glm-fallback', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Read only.', receivedAt: NOW });
+    assert.equal(accepted.outcome, 'accepted');
+    if (accepted.outcome !== 'accepted') return;
+    const execution = await service.execute(accepted.receipt.rootGoalId);
+    assert.equal(execution.result, 'COMPLETED');
+    assert.equal(service.status(accepted.receipt.rootGoalId).modelRef, 'agent-mode/glm-5');
+    assert.equal(invocations, 1);
+    assert.equal(store.listAgents().filter((agent) => agent.agentKind === 'worker').length, 1);
+    const unavailable = new AgentModeTerminalIntakeService(store, {
+      repositoryRoots: [directory], now: () => NOW,
+      productionRuntime: { availableModels: new Set(), runtimeFactory: () => { throw new Error('no worker should be constructed'); } },
+    }).accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:no-runtime', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Read only.', receivedAt: NOW });
+    assert.deepEqual(unavailable, { outcome: 'denied', reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' });
+    assert.equal(store.listAgents().filter((agent) => agent.agentKind === 'worker').length, 1);
+    assert.equal(store.listTasks().filter((task) => task.childAgentId).length, 1);
+  } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('known Bedrock account outage reaches Jarvis as a sanitized terminal failure through K4', async () => {
+  const directory = mkdtempSync(`${tmpdir()}/brain-terminal-intake-bedrock-outage-`);
+  const repository = `${directory}/repo`;
+  mkdirSync(`${repository}/.git`, { recursive: true });
+  let store = new AgentModeSqliteStateStore(`${directory}/agent-mode.db`);
+  const accessEvidence = {
+    version: 'fixture-access-v1', accountRef: 'account:fixture', region: 'us-east-1' as const,
+    modelRef: 'agent-mode/minimax-m2.5' as const, modelId: 'minimax.minimax-m2.5', routeKind: 'direct' as const,
+    routeId: 'minimax.minimax-m2.5', state: 'verified' as const, catalogVisible: true, callable: true,
+    checkedAt: '2026-09-18T09:00:00.000Z', freshUntil: '2099-01-01T00:00:00.000Z', source: 'fixture',
+  };
+  const gateway: ModelGateway = { async invoke() { throw new ModelGatewayError('account_access_unavailable', 'Bedrock Converse invocation failed', {
+    providerCode: 'ValidationException', providerMessage: 'Error 002: Access to Bedrock models is not allowed for this account.', requestId: 'req-12345678', httpStatus: 400,
+  }); } };
+  const productionRuntime: JarvisProductionRuntimeConfiguration = {
+    availableModels: new Set(['agent-mode/minimax-m2.5']),
+    runtimeFactory: (stateStore) => new ModelGatewayAgentRuntime(stateStore, { gateway, accessEvidence: { 'agent-mode/minimax-m2.5': accessEvidence }, now: () => NOW }),
+  };
+  try {
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: [directory], now: () => NOW, productionRuntime });
+    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:bedrock-outage', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Read only.', receivedAt: NOW });
+    assert.equal(accepted.outcome, 'accepted');
+    if (accepted.outcome !== 'accepted') return;
+    const result = await service.execute(accepted.receipt.rootGoalId);
+    assert.equal(result.result, 'COMPLETED');
+    assert.equal(result.terminalWorkerOutcome, 'failed');
+    const current = service.status(accepted.receipt.rootGoalId);
+    assert.equal(current.status, 'failed');
+    assert.equal(current.reasonCode, 'MODEL_GATEWAY_ACCOUNT_ACCESS_UNAVAILABLE');
+    assert.equal(current.conversationHistory?.filter((turn) => turn.speakerRole === 'user').length, 1);
+    assert.equal(current.conversationHistory?.filter((turn) => turn.speakerRole === 'jarvis').length, 0);
+    assert.equal(store.listAgents().filter((agent) => agent.agentKind === 'worker').length, 1);
+    const failedAttempt = store.listAttempts().find((attempt) => attempt.status === 'failed' && attempt.modelRef === 'agent-mode/minimax-m2.5');
+    assert.ok(failedAttempt);
+    const diagnostics = store.listEvents(failedAttempt.attemptId).filter((event) => event.eventType === 'model_gateway_provider_failure_diagnostic');
+    assert.equal(diagnostics.length, 1);
+    const diagnosticEvent = diagnostics[0]!;
+    assert.deepEqual(diagnosticEvent.payload, {
+      schemaVersion: 'agent-mode.model-gateway-provider-failure.v1', gatewayFailureCode: 'account_access_unavailable',
+      providerId: 'amazon-bedrock', modelRef: 'agent-mode/minimax-m2.5', modelId: 'minimax.minimax-m2.5', region: 'us-east-1',
+      providerCode: 'ValidationException', providerMessage: 'Error 002: Access to Bedrock models is not allowed for this account.', requestId: 'req-12345678', httpStatus: 400,
+    });
+    assert.equal(JSON.stringify(diagnosticEvent.payload).includes('Read only.'), false);
+    const failedAttemptId = failedAttempt.attemptId;
+    store.close();
+    store = new AgentModeSqliteStateStore(`${directory}/agent-mode.db`);
+    assert.deepEqual(store.listEvents(failedAttemptId).filter((event) => event.eventType === 'model_gateway_provider_failure_diagnostic')[0]?.payload, diagnosticEvent.payload);
+  } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('GLM Bedrock validation detail reaches the durable K4 attempt event through the production capture path', async () => {
+  const directory = mkdtempSync(`${tmpdir()}/brain-terminal-intake-glm-diagnostic-`);
+  const managedFixtureNow = '2098-09-18T10:00:00.000Z';
+  const repository = `${directory}/repo`;
+  mkdirSync(`${repository}/.git`, { recursive: true });
+  const fakeAws = `${directory}/aws`;
+  const tracePath = `${directory}/provider-trace.json`;
+  writeFileSync(fakeAws, `#!/usr/bin/env node
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const args = process.argv.slice(2);
+const requestPath = fileURLToPath(args[args.indexOf('--cli-input-json') + 1]);
+const request = JSON.parse(fs.readFileSync(requestPath, 'utf8'));
+fs.appendFileSync(process.env.CAPTURE_TRACE, JSON.stringify({
+  modelId: request.modelId,
+  region: args[args.indexOf('--region') + 1],
+}) + '\\n');
+process.stderr.write('An error occurred (ValidationException) when calling the Converse operation: Error 002: The supplied request is invalid: field [fixture_key] at position #1. (Service: BedrockRuntime, Status Code: 400, Request ID: req-12345678)\\nAuthorization: Bearer never-store-this-secret\\n');
+process.exit(4);
+`, { mode: 0o755 });
+  let store = new AgentModeSqliteStateStore(`${directory}/agent-mode.db`);
+  const modelRef = 'agent-mode/glm-5' as const;
+  const accessEvidence = {
+    version: 'fixture-access-v1', accountRef: 'account:fixture', region: 'us-east-1' as const,
+    modelRef, modelId: 'zai.glm-5', routeKind: 'direct' as const, routeId: 'zai.glm-5',
+    state: 'verified' as const, catalogVisible: true, callable: true,
+    checkedAt: '2098-09-18T09:00:00.000Z', freshUntil: '2100-01-01T00:00:00.000Z', source: 'fixture',
+  };
+  const gateway = new AmazonBedrockModelGateway({
+    accountRef: 'account:fixture',
+    now: () => new Date(managedFixtureNow),
+  });
+  const productionRuntime: JarvisProductionRuntimeConfiguration = {
+    availableModels: new Set([modelRef]),
+    runtimeFactory: (stateStore) => new ModelGatewayAgentRuntime(stateStore, {
+      gateway,
+      accessEvidence: { [modelRef]: accessEvidence },
+      now: () => managedFixtureNow,
+    }),
+  };
+  const originalPath = process.env.PATH;
+  const originalTrace = process.env.CAPTURE_TRACE;
+  try {
+    process.env.PATH = `${directory}${path.delimiter}${originalPath ?? ''}`;
+    process.env.CAPTURE_TRACE = tracePath;
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: [directory], now: () => managedFixtureNow, productionRuntime });
+    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:glm-diagnostic', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Read only.', receivedAt: managedFixtureNow });
+    assert.equal(accepted.outcome, 'accepted');
+    if (accepted.outcome !== 'accepted') return;
+
+    const execution = await service.execute(accepted.receipt.rootGoalId);
+    assert.equal(execution.result, 'COMPLETED');
+    assert.equal(execution.terminalWorkerOutcome, 'failed');
+    assert.equal(service.status(accepted.receipt.rootGoalId).reasonCode, 'MODEL_GATEWAY_INVALID_REQUEST');
+    const providerCalls = readFileSync(tracePath, 'utf8').trim().split('\n');
+    assert.equal(providerCalls.length, 1);
+    assert.deepEqual(JSON.parse(providerCalls[0]!), { modelId: 'zai.glm-5', region: 'us-east-1' });
+
+    const failedAttempt = store.listAttempts().find((attempt) => attempt.status === 'failed' && attempt.modelRef === modelRef);
+    assert.ok(failedAttempt);
+    const diagnostic = store.listEvents(failedAttempt.attemptId).find((event) => event.eventType === 'model_gateway_provider_failure_diagnostic');
+    assert.ok(diagnostic);
+    assert.deepEqual(diagnostic.payload, {
+      schemaVersion: 'agent-mode.model-gateway-provider-failure.v1',
+      gatewayFailureCode: 'invalid_request', providerId: 'amazon-bedrock', modelRef,
+      modelId: 'zai.glm-5', region: 'us-east-1', providerCode: 'ValidationException',
+      providerMessage: 'Error 002: The supplied request is invalid: field [fixture_key] at position #1.', requestId: 'req-12345678', httpStatus: 400,
+    });
+    assert.equal(JSON.stringify(store.listEvents(failedAttempt.attemptId)).includes('never-store-this-secret'), false);
+    assert.equal(JSON.stringify(store.listEvents(failedAttempt.attemptId)).includes('Read only.'), false);
+    const lifecycle = store.listEvents(failedAttempt.attemptId).filter((event) => event.eventType.startsWith('provider_') || event.eventType === 'model_gateway_normalize_error');
+    assert.ok(lifecycle.some((event) => event.eventType === 'provider_command_spawn_success'));
+    assert.ok(lifecycle.some((event) => event.eventType === 'provider_error_parse_success'));
+    assert.ok(lifecycle.some((event) => event.eventType === 'provider_diagnostic_persist_success'));
+    assert.ok(lifecycle.some((event) => event.eventType === 'model_gateway_normalize_error'));
+    assert.ok(lifecycle.findIndex((event) => event.eventType === 'provider_diagnostic_persist_success') < lifecycle.findIndex((event) => event.eventType === 'model_gateway_normalize_error'));
+    assert.equal(JSON.stringify(lifecycle).includes('never-store-this-secret'), false);
+    assert.equal(JSON.stringify(lifecycle).includes('Read only.'), false);
+    const attemptEvents = store.listEvents(failedAttempt.attemptId);
+    const settlementStart = attemptEvents.findIndex((event) => event.eventType === 'attempt_settlement_start');
+    const settlementComplete = attemptEvents.findIndex((event) => event.eventType === 'attempt_settlement_complete');
+    const runtimeFailure = attemptEvents.findIndex((event) => event.eventType === 'runtime_failed');
+    assert.ok(settlementStart >= 0 && settlementComplete > settlementStart && runtimeFailure > settlementStart);
+    assert.deepEqual(attemptEvents[settlementStart]?.payload && Object.fromEntries(
+      Object.entries(attemptEvents[settlementStart]!.payload).filter(([key]) => key !== 'operationId'),
+    ), {
+      schemaVersion: 'agent-mode.attempt-settlement.v1', attemptId: failedAttempt.attemptId,
+      runtimeRef: failedAttempt.runtimeRef, terminalStatus: 'failed',
+    });
+    assert.equal(typeof (attemptEvents[settlementStart]?.payload as { operationId?: unknown }).operationId, 'string');
+
+    const failedAttemptId = failedAttempt.attemptId;
+    const expectedPayload = diagnostic.payload;
+    store.close();
+    store = new AgentModeSqliteStateStore(`${directory}/agent-mode.db`);
+    const reopenedEvents = store.listEvents(failedAttemptId);
+    assert.deepEqual(reopenedEvents.find((event) => event.eventType === 'model_gateway_provider_failure_diagnostic')?.payload, expectedPayload);
+    assert.ok(reopenedEvents.some((event) => event.eventType === 'provider_error_parse_success'));
+    assert.ok(reopenedEvents.some((event) => event.eventType === 'attempt_settlement_complete'));
+  } finally {
+    if (originalPath === undefined) delete process.env.PATH;
+    else process.env.PATH = originalPath;
+    if (originalTrace === undefined) delete process.env.CAPTURE_TRACE;
+    else process.env.CAPTURE_TRACE = originalTrace;
+    store.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test('ACTIVE_PILOT narrows the downstream context prompt from an independently confident context choice', async () => {

@@ -1,3 +1,4 @@
+import { performance } from 'node:perf_hooks';
 import { executeManagedBedrockConverse } from './managed-provider-executor.mjs';
 import {
   AGENT_MODE_MODEL_ROUTES,
@@ -9,6 +10,9 @@ import {
   type BedrockToolUse,
   type BedrockRouteKind,
   type ModelGateway,
+  type ModelGatewayExecutionObserver,
+  type ManagedProviderLifecycleEvent,
+  type ModelGatewayProviderFailureDiagnostic,
   type NormalizedModelResult,
 } from '../agent-mode/model-gateway.js';
 import { AGENT_MODE_PRICING } from '../agent-mode/model-tier-policy.js';
@@ -33,7 +37,10 @@ export interface BedrockConverseTransportResponse {
 }
 
 export interface BedrockConverseTransport {
-  converse(request: BedrockConverseTransportRequest): Promise<BedrockConverseTransportResponse>;
+  converse(
+    request: BedrockConverseTransportRequest,
+    onLifecycleEvent?: (event: ManagedProviderLifecycleEvent) => void,
+  ): Promise<BedrockConverseTransportResponse>;
 }
 
 export interface AmazonBedrockModelGatewayOptions {
@@ -44,7 +51,9 @@ export interface AmazonBedrockModelGatewayOptions {
 }
 
 const defaultTransport: BedrockConverseTransport = {
-  converse: (request) => executeManagedBedrockConverse(request),
+  converse: (request, onLifecycleEvent) => executeManagedBedrockConverse(request, {
+    ...(onLifecycleEvent ? { onLifecycleEvent } : {}),
+  }),
 };
 
 export class AmazonBedrockModelGateway implements ModelGateway {
@@ -64,8 +73,13 @@ export class AmazonBedrockModelGateway implements ModelGateway {
     }
   }
 
-  async invoke(request: AdmittedModelRequest): Promise<NormalizedModelResult> {
+  async invoke(request: AdmittedModelRequest, observer?: ModelGatewayExecutionObserver): Promise<NormalizedModelResult> {
     const startedAt = this.now();
+    const monotonicStartedAt = performance.now();
+    const recordLifecycle = (event: ManagedProviderLifecycleEvent) => observer?.recordLifecycle?.({
+      ...event,
+      elapsedMs: Math.max(0, Math.round(performance.now() - monotonicStartedAt)),
+    });
     const route = AGENT_MODE_MODEL_ROUTES[request.modelRef];
     if (!route || request.providerId !== 'amazon-bedrock') {
       throw new ModelGatewayError('invalid_request', 'request is outside the admitted Agent Mode Bedrock portfolio');
@@ -114,7 +128,7 @@ export class AmazonBedrockModelGateway implements ModelGateway {
         ...(request.tools ? { tools: request.tools } : {}),
         maxTokens: request.maxTokens,
         deadline: request.deadline,
-      });
+      }, observer ? (event) => recordLifecycle(event) : undefined);
       const completedAt = this.now();
       return {
         text: normalizeFinalText(response),
@@ -143,9 +157,30 @@ export class AmazonBedrockModelGateway implements ModelGateway {
       };
     } catch (error) {
       if (error instanceof ModelGatewayError) throw error;
-      throw new ModelGatewayError(classifyProviderError(error), 'Bedrock Converse invocation failed');
+      const failureCode = classifyProviderError(error);
+      const diagnostic = safeProviderDiagnostic(error);
+      observer?.persistProviderDiagnostic(failureCode, diagnostic);
+      recordLifecycle({ stage: 'model_gateway_normalize_error', elapsedMs: 0, publicErrorClass: failureCode });
+      throw new ModelGatewayError(failureCode, 'Bedrock Converse invocation failed', diagnostic);
     }
   }
+}
+
+function safeProviderDiagnostic(error: unknown): ModelGatewayProviderFailureDiagnostic | undefined {
+  const value = (error as { providerDiagnostic?: unknown } | null)?.providerDiagnostic;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.providerCode !== 'string' || !/^[A-Za-z][A-Za-z0-9]{0,63}$/.test(candidate.providerCode)) return undefined;
+  if (typeof candidate.providerMessage !== 'string' || candidate.providerMessage.length < 1 || candidate.providerMessage.length > 256
+    || !/^[A-Za-z0-9 .,;:()_#\[\]/'-]+$/.test(candidate.providerMessage)
+    || /authorization|bearer|secret.?access.?key|session.?token|credential|AKIA[0-9A-Z]{12,}|ASIA[0-9A-Z]{12,}|-----BEGIN|https?:\/\/|file:\/\/|\b(?:prompt|messages?\s*(?:\.|\[)|content\s*(?:\.|\[)|inputText|requestBody)\b/i.test(candidate.providerMessage)) return undefined;
+  const result: ModelGatewayProviderFailureDiagnostic = {
+    providerCode: candidate.providerCode,
+    providerMessage: candidate.providerMessage,
+  };
+  if (typeof candidate.requestId === 'string' && /^[A-Za-z0-9-]{8,128}$/.test(candidate.requestId)) result.requestId = candidate.requestId;
+  if (typeof candidate.httpStatus === 'number' && Number.isInteger(candidate.httpStatus) && candidate.httpStatus >= 400 && candidate.httpStatus <= 599) result.httpStatus = candidate.httpStatus;
+  return result;
 }
 
 function estimateCost(modelRef: AdmittedModelRequest['modelRef'], usage: { inputTokens: number; outputTokens: number }): number | null {
@@ -189,10 +224,11 @@ function nonNegativeInteger(value: unknown): number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : 0;
 }
 
-function classifyProviderError(error: unknown): 'access_denied' | 'model_unavailable' | 'route_invalid' | 'throttled' | 'timeout' | 'provider_error' | 'invalid_request' | 'unknown' {
+function classifyProviderError(error: unknown): 'access_denied' | 'account_access_unavailable' | 'model_unavailable' | 'route_invalid' | 'throttled' | 'timeout' | 'provider_error' | 'invalid_request' | 'unknown' {
   const candidate = error as { name?: unknown; code?: unknown; message?: unknown; '$metadata'?: { httpStatusCode?: unknown } };
   const code = `${candidate?.name ?? ''} ${candidate?.code ?? ''}`.toLowerCase();
   const message = String(candidate?.message ?? error ?? '').toLowerCase();
+  if (code.includes('validation') && message.includes('access to bedrock models is not allowed for this account')) return 'account_access_unavailable';
   if (code.includes('accessdenied') || code.includes('expiredtoken') || code.includes('unrecognizedclient') || code.includes('unauthorized')) return 'access_denied';
   if (code.includes('throttl') || message.includes('rate exceeded')) return 'throttled';
   if (code.includes('modelnotready') || code.includes('serviceunavailable') || code.includes('modelunavailable')) return 'model_unavailable';

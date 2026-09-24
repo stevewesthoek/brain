@@ -1,9 +1,11 @@
 import type { AISelection } from './ai-model-selector.js';
+import type { ManagedProviderLifecycleEvent } from '../agent-mode/model-gateway.js';
 
 export interface ManagedProviderCommands {
   aws?: string;
   codex?: string;
   env?: NodeJS.ProcessEnv;
+  onLifecycleEvent?: (event: ManagedProviderLifecycleEvent) => void;
 }
 
 export interface ManagedBedrockConverseRequest {

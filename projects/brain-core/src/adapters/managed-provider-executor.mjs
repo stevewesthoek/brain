@@ -1,13 +1,29 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { runManagedCommand } from './managed-command-runner.mjs';
 
 const ADMITTED_PROVIDERS = new Set(['claude-bedrock', 'codex-cli']);
 
 function boundedTimeout(selection) {
   return Math.min(Math.max(selection.timeoutInferenceSec * 1_000, 30_000), 600_000);
+}
+
+function parseBedrockFailureDiagnostic(stderr) {
+  const serviceError = stderr.match(/An error occurred \(([A-Za-z][A-Za-z0-9]{0,63})\) when calling the [A-Za-z0-9]+ operation: ([^\r\n]{1,512})/);
+  if (!serviceError) return undefined;
+  const providerCode = serviceError[1];
+  let providerMessage = serviceError[2].split(/\s+\(Service:/i, 1)[0].replace(/\x1b\[[0-9;]*m/g, '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
+  if (/authorization|bearer|secret.?access.?key|session.?token|credential|AKIA[0-9A-Z]{12,}|ASIA[0-9A-Z]{12,}|-----BEGIN|https?:\/\/|file:\/\//i.test(providerMessage)) return undefined;
+  if (/\b(?:prompt|messages?\s*(?:\.|\[)|content\s*(?:\.|\[)|inputText|requestBody)\b/i.test(providerMessage)) return undefined;
+  providerMessage = providerMessage.replace(/\s+/g, ' ').slice(0, 256);
+  if (!providerMessage || !/^[A-Za-z0-9 .,;:()_#\[\]/'-]+$/.test(providerMessage)) return undefined;
+  const result = { providerCode, providerMessage };
+  const requestId = stderr.match(/(?:RequestId|Request ID|x-amzn-requestid)\s*[:=]\s*([A-Za-z0-9-]{8,128})/i)?.[1];
+  if (requestId) result.requestId = requestId;
+  const status = stderr.match(/(?:Status Code|HTTP Status Code|httpStatusCode)\s*[:=]\s*(4\d\d|5\d\d)\b/i)?.[1];
+  if (status) result.httpStatus = Number(status);
+  return result;
 }
 
 export async function executeManagedProvider(selection, prompt, commands = {}) {
@@ -27,7 +43,7 @@ export async function executeManagedProvider(selection, prompt, commands = {}) {
       const stdout = await runManagedCommand(commands.aws ?? 'aws', [
         'bedrock-runtime', 'converse',
         '--region', process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? 'us-east-1',
-        '--cli-input-json', pathToFileURL(requestPath).href,
+        '--cli-input-json', `file://${requestPath}`,
         '--output', 'json',
       ], { timeoutMs: boundedTimeout(selection), env: commands.env });
       const response = JSON.parse(stdout);
@@ -86,9 +102,14 @@ export async function executeManagedBedrockConverse(request, commands = {}) {
     const stdout = await runManagedCommand(commands.aws ?? 'aws', [
       'bedrock-runtime', 'converse',
       '--region', request.region,
-      '--cli-input-json', pathToFileURL(requestPath).href,
+      '--cli-input-json', `file://${requestPath}`,
       '--output', 'json',
-    ], { timeoutMs: Math.min(Math.max(timeoutMs, 1), 600_000), env: commands.env });
+    ], {
+      timeoutMs: Math.min(Math.max(timeoutMs, 1), 600_000),
+      env: commands.env,
+      failureDiagnosticParser: parseBedrockFailureDiagnostic,
+      onLifecycleEvent: commands.onLifecycleEvent,
+    });
     return JSON.parse(stdout);
   } finally {
     fs.rmSync(privateDir, { recursive: true, force: true });

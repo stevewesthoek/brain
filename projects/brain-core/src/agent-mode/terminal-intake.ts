@@ -473,7 +473,9 @@ export class AgentModeTerminalIntakeService {
       resultText: conversationResult?.text ?? receipt?.resultText ?? null,
       resultRef: receipt?.resultHash ?? null,
       evidenceRef: receipt?.evidenceRef ?? null,
-      reasonCode: attempt?.status === 'failed' ? 'WORKER_FAILED' : attempt?.status === 'uncertain' ? 'RUNTIME_UNCERTAIN' : null,
+      reasonCode: attempt?.status === 'failed'
+        ? safeRuntimeFailureCode(receipt?.failureCode) ?? 'WORKER_FAILED'
+        : attempt?.status === 'uncertain' ? 'RUNTIME_UNCERTAIN' : null,
       workerCount: workers.length,
       runtimeRef: attempt?.runtimeRef ?? assignment?.runtimeRef ?? persistedRoute?.runtimeRef ?? null,
       runtimeProfileRef: attempt?.runtimeProfileRef ?? assignment?.runtimeProfileRef ?? persistedRoute?.runtimeProfileRef ?? null,
@@ -495,6 +497,22 @@ export class AgentModeTerminalIntakeService {
       conversationHistory,
     };
   }
+}
+
+function safeRuntimeFailureCode(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const safeCodes = new Set([
+    'MODEL_GATEWAY_ACCESS_DENIED',
+    'MODEL_GATEWAY_ACCOUNT_ACCESS_UNAVAILABLE',
+    'MODEL_GATEWAY_MODEL_UNAVAILABLE',
+    'MODEL_GATEWAY_ROUTE_INVALID',
+    'MODEL_GATEWAY_THROTTLED',
+    'MODEL_GATEWAY_TIMEOUT',
+    'MODEL_GATEWAY_PROVIDER_ERROR',
+    'MODEL_GATEWAY_INVALID_REQUEST',
+    'MODEL_GATEWAY_UNKNOWN',
+  ]);
+  return safeCodes.has(value) ? value : undefined;
 }
 
 export function createTerminalIntakeService(store: AgentModeSqliteStateStore, repositoryRoots: readonly string[]): AgentModeTerminalIntakeService {

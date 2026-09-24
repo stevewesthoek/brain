@@ -148,6 +148,70 @@ test('submission feedback appears before intake resolves and stops cleanly', () 
   assert.match(output.text, /\u001b\[2K/u);
 });
 
+test('TTY resize redraw preserves prior turns and one active timer without overflow or duplicate output', async () => {
+  const writes: string[] = [];
+  const inputState = { listeners: new Map<string, (...args: unknown[]) => void>() };
+  const input = {
+    isTTY: true,
+    resume() { return input; },
+    pause() { return input; },
+    setRawMode() { return input; },
+    on(event: 'data' | 'keypress' | 'resize', listener: (...args: unknown[]) => void) { inputState.listeners.set(event, listener); return input; },
+    removeListener(event: 'data' | 'keypress' | 'resize') { inputState.listeners.delete(event); return input; },
+  };
+  const output: { isTTY: boolean; columns: number; write(value: string): void } = {
+    isTTY: true,
+    columns: 80,
+    write(value) {
+      writes.push(value);
+      if (!resized && value.startsWith('\u001b[2J')) {
+        resized = true;
+        output.columns = 40;
+        inputState.listeners.get('resize')?.();
+      }
+    },
+  };
+  let resized = false;
+  let reads = 0;
+  const history = [
+    { turnId: 'turn:user:1', sequence: 1, speakerRole: 'user' as const, text: 'First earlier question', status: 'completed' as const, createdAt: NOW },
+    { turnId: 'turn:jarvis:1', sequence: 2, speakerRole: 'jarvis' as const, text: 'First earlier answer', status: 'completed' as const, createdAt: NOW },
+    { turnId: 'turn:user:2', sequence: 3, speakerRole: 'user' as const, text: 'Second earlier question', status: 'completed' as const, createdAt: NOW },
+    { turnId: 'turn:jarvis:2', sequence: 4, speakerRole: 'jarvis' as const, text: 'Second earlier answer wraps across the narrowed terminal width.', status: 'completed' as const, createdAt: NOW },
+  ];
+  const result = await runTerminalConsole({
+    rootGoalId: 'root:jarvis:resize-fixture',
+    startedAt: NOW,
+    clock: () => Date.parse(NOW) + 12_000,
+    isTTY: true,
+    pollMs: 250,
+    input,
+    output,
+    errorOutput: { write() {} },
+    readStatus: async () => {
+      reads += 1;
+      return status({
+        status: reads === 1 ? 'running' : 'completed',
+        conversationHistory: history,
+        resultText: reads === 1 ? null : 'Current Jarvis result',
+      });
+    },
+  });
+
+  assert.equal(result.detached, false);
+  assert.equal(resized, true);
+  const draws = writes.filter((value) => value.startsWith('\u001b[2J\u001b[H'));
+  assert.equal(draws.length, 3, 'initial running draw, resize redraw, and terminal draw');
+  const resizeDraw = draws[1]!.replace(/\u001b\[[0-?]*[ -/]*[@-~]/gu, '');
+  assert.match(resizeDraw, /00:12/u);
+  assert.equal((resizeDraw.match(/00:12/gu) ?? []).length, 1, 'the elapsed timer appears once');
+  const normalizedResizeDraw = resizeDraw.replace(/\s+/gu, ' ');
+  assert.match(normalizedResizeDraw, /Second earlier answer wraps across the narrowed terminal width\./u);
+  assert.equal((normalizedResizeDraw.match(/Second earlier answer wraps across the narrowed terminal width\./gu) ?? []).length, 1);
+  assert.equal(resizeDraw.split('\n').filter(Boolean).every((line) => line.length <= 40), true);
+  assert.equal((resizeDraw.match(/◐/gu) ?? []).length, 1, 'one active spinner frame');
+  assert.equal(result.status?.status, 'completed');
+});
 test('in-flight Jev phase is visible without inventing worker state', () => {
   const rendered = renderTerminalConsole(status({ childAgentId: null, childTaskId: null, childRunId: null, attemptId: null, modelRef: null, runtimeRef: null, runtimeProfileRef: null, reflexPhase: 'preflight', safeActivity: 'Jev preflight' }), { width: 80 });
   assert.match(rendered, /Jev ◐ preflight/u);
@@ -162,6 +226,11 @@ test('terminal Markdown rendering formats bounded headings, emphasis, code, list
   assert.match(rendered.join('\n'), /• one/u);
   assert.match(rendered.join('\n'), /1\. two/u);
   assert.match(rendered.join('\n'), /const x = 1;/u);
+  const wrappedInline = renderTerminalMarkdown('**bold words remain formatted across a narrow terminal** and `inline code wraps safely across rows`', { width: 20, color: true });
+  const visibleInline = wrappedInline.join('\n').replace(/\u001b\[[0-?]*[ -/]*[@-~]/gu, '');
+  assert.match(visibleInline.replace(/\s+/gu, ' '), /bold words remain formatted across a narrow terminal and inline code wraps safely across rows/u);
+  assert.doesNotMatch(visibleInline, /\*\*|`/u);
+  assert.equal(visibleInline.split('\n').every((line) => line.length <= 20), true);
 });
 
 test('terminal result is not rendered twice when durable and receipt text differ only by whitespace', () => {
@@ -205,6 +274,15 @@ test('unsupported provider tool-call text is never rendered as a successful answ
   assert.doesNotMatch(receiptOnly, /<minimax:tool_call>|<invoke/u);
 });
 
+test('terminal failure shows a bounded Bedrock outage message and not provider payload text', () => {
+  const rendered = renderTerminalConsole(status({
+    status: 'failed',
+    reasonCode: 'MODEL_GATEWAY_ACCOUNT_ACCESS_UNAVAILABLE',
+    safeActivity: 'Execution failed',
+  }));
+  assert.match(rendered, /Bedrock account access unavailable/u);
+  assert.doesNotMatch(rendered, /Error 002|ValidationException|credentials|access key/u);
+});
 test('TTY console restores cursor and raw-mode state after a terminal result', async () => {
   const output: { text: string } = { text: '' };
   const inputState = { rawModes: [] as boolean[], resumed: 0, paused: 0, listeners: new Map<string, (...args: unknown[]) => void>() };
