@@ -108,6 +108,19 @@ The routing implementation uses verified price data for deterministic cost
 ordering. No canonical comparative provider latency measurements exist in the
 current Brain contracts, so latency ranking is not claimed or fabricated.
 
+## Read-only authorization follow-up
+
+At `2026-09-25T14:41:53.938Z`, the same `ClaudeCodexProvisioner` role again
+returned `AUTHORIZED` plus `AVAILABLE` agreement, entitlement, and region
+availability for both `zai.glm-5` and `minimax.minimax-m2.5` in `us-east-1`.
+This control-plane availability result does not establish Bedrock inference
+permission. A read-only IAM policy simulation for `bedrock:InvokeModel` could
+not run: the approved role received `AccessDenied` for the simulation request,
+so the simulated invoke decision is **UNKNOWN**, not implicitly denied. No IAM
+write or identity change was performed, and this diagnostic made zero model
+inferences. The sanitized diagnostic is retained in the private bundle as
+`read-only-authorization-check.json`.
+
 ## Decision
 
 **BLOCKED — external/provider authorization or configuration gate.** The
@@ -120,6 +133,6 @@ candidate is not declared ready for production promotion.
 Do not retry under the current authorization. The exact next action is for the
 AWS administrator to review the approved role’s narrowly scoped Bedrock
 inference authorization for `minimax.minimax-m2.5` in `us-east-1`, using the
-retained sanitized failure facts or authorized AWS audit records. Any further
-inference requires fresh explicit user authorization. RC47 production remains
-unchanged.
+retained sanitized failure facts or authorized AWS audit records; the current
+role cannot self-simulate that permission. Any further inference requires
+fresh explicit user authorization. RC47 production remains unchanged.
