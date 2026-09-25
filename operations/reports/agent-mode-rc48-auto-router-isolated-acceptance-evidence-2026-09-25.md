@@ -83,6 +83,31 @@ Core/CLI processes exited, and port 4992 is no longer listening. The private
 StateStore and diagnostics remain preserved; they were not deleted during
 cleanup.
 
+## Deterministic routing validation
+
+The precise historical RC47 cause for `hi` selecting GLM-5 cannot be proven
+from this acceptance bundle: it contains no durable per-turn admission snapshot
+for that earlier production turn. The preceding source used a general
+candidate selection path; GLM could be selected if MiniMax was not in the
+canonically admitted runtime set. The claim that MiniMax was admitted for that
+specific turn is not independently established here. The RC48 source makes
+trivial/normal/reasoning/high tiers explicit and guards simple-turn Jev
+recommendations from replacing the deterministic route.
+
+After the acceptance, the isolated source worktree passed 118 focused tests:
+86 across model-tier policy, Jarvis routing, Jev/reflex routing, and
+low-confidence behavior; and 32 across terminal rendering, Jarvis history,
+authoritative model disclosure, failure presentation, and K4 terminal intake.
+These prove the deterministic route matrix, simple-turn MiniMax selection,
+Jev simple-turn bypass, low-confidence non-escalation, GLM reasoning route,
+Opus cost gate, and Codex Auto exclusion without live inference. Core
+typecheck/build and Console typecheck/build had passed in the earlier source
+validation; they were not rerun during this failure-only acceptance follow-up.
+
+The routing implementation uses verified price data for deterministic cost
+ordering. No canonical comparative provider latency measurements exist in the
+current Brain contracts, so latency ranking is not claimed or fabricated.
+
 ## Decision
 
 **BLOCKED — external/provider authorization or configuration gate.** The
