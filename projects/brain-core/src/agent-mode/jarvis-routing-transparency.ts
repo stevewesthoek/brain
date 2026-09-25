@@ -29,10 +29,11 @@ export function isJarvisRoutingQuestion(text: string | undefined): boolean {
   if (/^how (?:do|can|should) i (?:invoke|use|call|enable|run)\s+(?:jev|system[- ]one reflex)\b/u.test(normalized)) return false;
   const clauses = normalized.split(/[,;?]|\band\b/u).map((clause) => clause.trim());
   const modelIdentityQuestion = clauses.some((clause) => /^(?:(?:what|which) (?:model|llm|provider|runtime|route)(?: are you (?:actually )?(?:using|running)| is (?:this|active|selected|running)| did you use| did auto choose)(?: this turn)?|(?:what|which) model did you use(?: this turn)?|what are you (?:running|powered by|using)|how are you routed|what route|(?:are|were) you (?:currently )?(?:running|using|powered by)(?: on)? (?:claude|opus|codex|glm(?:-?5)?|minimax(?:[- ]m2\.5)?|gpt-[a-z0-9.-]+))$/u.test(clause));
+  const namedModelStatusQuestion = clauses.some((clause) => /^did you (?:use|run) (?:the )?(?:agent-mode\/)?(?:claude(?: code)?|opus(?:[ -]4\.6)?|codex(?: cli)?|glm(?:-?5)?|minimax(?:[ -]m2\.5)?|gpt-[a-z0-9.-]+)(?: this turn)?$/u.test(clause));
   const autoChoiceQuestion = clauses.some((clause) => /^(?:what|which) did auto (?:choose|select|pick)(?: for this turn)?$/u.test(clause));
   const jevStatusQuestion = /\b(?:jev|system[- ]one reflex)\b/u.test(normalized)
     && /\b(?:use|using|used|run|ran|call|called|invoke|invoked|active|available|status|participat\w*|work|make use|unavailable|bypass\w*|skip\w*|fallback|confidence|this turn|decid\w*|recommend\w*|choos\w*|select\w*)\b/u.test(normalized);
-  return modelIdentityQuestion || autoChoiceQuestion || jevStatusQuestion
+  return modelIdentityQuestion || namedModelStatusQuestion || autoChoiceQuestion || jevStatusQuestion
     || /^(?:what is jev|what is system[- ]one reflex|are you using jev)$/u.test(normalized)
     || /^(?:what are you using|how are you routed|what route|status|health|are you there)$/u.test(normalized);
 }

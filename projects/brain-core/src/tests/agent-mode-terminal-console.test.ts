@@ -283,6 +283,10 @@ test('routing intent recognizes natural model and Jev status questions without t
   assert.equal(isJarvisRoutingQuestion('Which model should I use for embeddings?'), false);
   assert.equal(isJarvisRoutingQuestion('What provider supports X?'), false);
   assert.equal(isJarvisRoutingQuestion('What model did you use?'), true);
+  assert.equal(isJarvisRoutingQuestion('Did you use GLM-5?'), true);
+  assert.equal(isJarvisRoutingQuestion('Did you use GLM-5 this turn?'), true);
+  assert.equal(isJarvisRoutingQuestion('Did you run MiniMax M2.5 this turn?'), true);
+  assert.equal(isJarvisRoutingQuestion('Did you use GLM-5 as an example in the docs?'), false);
   assert.equal(isJarvisRoutingQuestion('What did Auto choose?'), true);
   assert.equal(isJarvisRoutingQuestion('Are you running Claude?'), true);
   assert.equal(isJarvisRoutingQuestion('Which model is running?'), true);
