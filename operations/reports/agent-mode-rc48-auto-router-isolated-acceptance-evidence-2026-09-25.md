@@ -175,11 +175,15 @@ is retained outside Git at:
 `/Users/Office/Library/Application Support/Brain/agent-mode/acceptance-evidence/rc48-auto-router-retry-20260925T1545Z.hfpbvI/`
 
 The candidate Core stopped after completion and port 4992 is no longer
-listening. Production remains RC47; no production endpoint, service, or
-StateStore was used or modified. No repository/tool mutation, Codex
-escalation, Harness, BrainNode, Workcell, GLM-5, Opus, or Codex execution
-occurred. Across the original failed request and the separately authorized
-retry, MiniMax requests total two; the retry was the final authorized call.
+listening. During the isolated acceptance turn, no production endpoint,
+service, or StateStore was used; there was no repository/tool mutation,
+Codex escalation, Harness, BrainNode, Workcell, GLM-5, Opus, or Codex
+execution. The later forensic reconciliation made one read-only Observer GET
+and immutable-mode read-only SQLite queries against the production StateStore;
+it did not modify production state. This report was committed locally as
+scoped evidence and was not pushed. Across the original failed request and the
+separately authorized retry, MiniMax requests total two; the retry was the
+final authorized call.
 
 ## Revalidation and current gate assessment
 
