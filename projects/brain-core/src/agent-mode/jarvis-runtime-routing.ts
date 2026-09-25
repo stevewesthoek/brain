@@ -74,16 +74,33 @@ export type JarvisRouteResolutionInput = {
 };
 
 export type JarvisTurnComplexity = 'simple' | 'moderate' | 'complex' | 'unknown';
+export type JarvisCapabilityTier = 'trivial' | 'normal' | 'reasoning' | 'high';
+const TIER_CANDIDATE_ORDER: Readonly<Record<JarvisCapabilityTier, readonly AdmittedModelRef[]>> = {
+  trivial: ['agent-mode/minimax-m2.5', 'agent-mode/glm-5'],
+  normal: ['agent-mode/minimax-m2.5', 'agent-mode/glm-5'],
+  reasoning: ['agent-mode/glm-5', 'agent-mode/claude-opus-4.6'],
+  high: ['agent-mode/claude-opus-4.6', 'agent-mode/glm-5'],
+};
 
 /** Deterministic UX hint; it never grants capability or chooses a provider. */
 export function classifyJarvisTurn(text: string | undefined): JarvisTurnComplexity {
   if (!text || text.trim().length === 0) return 'unknown';
   const normalized = text.trim().replace(/\s+/gu, ' ').toLowerCase();
-  if (/^(hi|hello|hey|thanks|thank you|good morning|good afternoon|good evening)[!.?]*$/u.test(normalized)) return 'simple';
+  if (/^(hi|hello|hey|thanks|thank you|ok|okay|cool|good morning|good afternoon|good evening|what can you do|what can you help me with)[!.?]*$/u.test(normalized)) return 'simple';
   if (/^(what model(?: are you using)?|which model|what are you using|are you using jev|what is jev|status|health|are you there)[!.?]*$/u.test(normalized)) return 'simple';
   if (normalized.length <= 160 && /^(show|list|inspect|read|check)\b/u.test(normalized) && !/\b(implement|change|write|deploy|delete|modify)\b/u.test(normalized)) return 'moderate';
   if (/\b(architect|design|implement|refactor|migrate|debug|investigate|deploy)\b/u.test(normalized) || normalized.length > 800) return 'complex';
   return 'moderate';
+}
+
+/** Closed deterministic capability hint; it cannot grant model or runtime authority. */
+export function classifyJarvisCapabilityTier(text: string | undefined): JarvisCapabilityTier {
+  if (!text || text.trim().length === 0) return 'normal';
+  const normalized = text.trim().replace(/\s+/gu, ' ').toLowerCase();
+  if (classifyJarvisTurn(normalized) === 'simple') return 'trivial';
+  if (/\b(large refactor|complex architecture|system architecture|architect a|difficult debugging|high[- ]ambiguity|deep technical design|design and implement|rewrite the architecture)\b/u.test(normalized)) return 'high';
+  if (/\b(multi[- ]file|compare (?:these )?(?:three|multiple) modules|race condition|nontrivial debugging|debug|investigate|root cause|multi[- ]step reasoning|architecture comparison|trade[- ]offs between)\b/u.test(normalized)) return 'reasoning';
+  return 'normal';
 }
 
 function fixtureRoute(modelRef: AdmittedModelRef, source: JarvisRuntimeRoute['source']): JarvisRuntimeRoute {
@@ -109,24 +126,22 @@ function validEscalation(approval: JarvisCodexEscalationApproval | undefined): b
     && approval.approvedBy.trim().length > 0 && approval.approvedBy.length <= 128);
 }
 
-function selectAutoCandidate(candidates: readonly AdmittedModelRef[], complexity: JarvisTurnComplexity, adaptiveRouting: boolean): { candidate: AdmittedModelRef; adaptive: boolean } | undefined {
+function selectAutoCandidate(candidates: readonly AdmittedModelRef[], tier: JarvisCapabilityTier): { candidate: AdmittedModelRef; adaptive: boolean } | undefined {
   if (candidates.length === 0) return undefined;
-  if (!adaptiveRouting || complexity === 'simple' || complexity === 'unknown') return { candidate: candidates[0]!, adaptive: false };
-  // Adaptive mode creates a measurable cheaper-route opportunity at the
-  // known-priced senior tier. Opus remains an explicit Brain-owned escalation
-  // outcome, never the default Auto baseline.
-  const preferred = ['agent-mode/glm-5', 'agent-mode/minimax-m2.5', 'agent-mode/claude-opus-4.6'];
-  const candidate = preferred.find((modelRef) => candidates.includes(modelRef as AdmittedModelRef)) as AdmittedModelRef | undefined;
-  return candidate ? { candidate, adaptive: candidate !== candidates[0] } : { candidate: candidates[0]!, adaptive: false };
+  // Capability tier is fixed first; cost admission has already removed
+  // unknown-priced routes. The remaining closed order chooses the least-cost
+  // admitted route for that tier. Latency is not fabricated or probed here.
+  const candidate = TIER_CANDIDATE_ORDER[tier].find((modelRef) => candidates.includes(modelRef));
+  if (!candidate) return undefined;
+  return { candidate, adaptive: candidate !== candidates[0] };
 }
 
 export function resolveJarvisRuntimeRoute(input: JarvisRouteResolutionInput): JarvisRouteResolution {
   const requested = input.requestedModel;
   if (requested === 'auto') {
     const complexity = classifyJarvisTurn(input.requestText);
-    const eligibleCandidates = complexity === 'simple'
-      ? JARVIS_AUTO_MODEL_CANDIDATES.filter((candidate) => candidate !== 'agent-mode/claude-opus-4.6')
-      : JARVIS_AUTO_MODEL_CANDIDATES;
+    const tier = classifyJarvisCapabilityTier(input.requestText);
+    const eligibleCandidates = TIER_CANDIDATE_ORDER[tier];
     const runtimeAvailable = input.fixtureRuntimeAvailable
       ? new Set(JARVIS_AUTO_MODEL_CANDIDATES)
       : input.productionRuntimeAvailable ?? new Set<AdmittedModelRef>();
@@ -137,11 +152,11 @@ export function resolveJarvisRuntimeRoute(input: JarvisRouteResolutionInput): Ja
       ? 'AUTO_COST_ADMISSION_DENIED' as const
       : 'AUTO_RUNTIME_UNAVAILABLE' as const;
     if (input.fixtureRuntimeAvailable) {
-      const selected = selectAutoCandidate(candidates, complexity, input.adaptiveRouting ?? false);
+      const selected = selectAutoCandidate(candidates, tier);
       if (!selected) return { ok: false, reasonCode: denialReason };
       return { ok: true, route: { ...fixtureRoute(selected.candidate, 'auto'), selectionReason: complexity === 'simple' ? 'fast-path' : selected.adaptive ? 'adaptive-quality-tier' : 'admitted-order' } };
     }
-    const selected = selectAutoCandidate(candidates, complexity, input.adaptiveRouting ?? false);
+    const selected = selectAutoCandidate(candidates, tier);
     if (!selected) return { ok: false, reasonCode: denialReason };
     return { ok: true, route: { ...productionRoute(selected.candidate, 'auto'), selectionReason: complexity === 'simple' ? 'fast-path' : selected.adaptive ? 'adaptive-quality-tier' : 'admitted-order' } };
   }

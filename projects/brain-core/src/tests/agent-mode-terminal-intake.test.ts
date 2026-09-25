@@ -530,8 +530,11 @@ test('terminal routing answer is Brain-owned and model output cannot leak unsupp
     return { text: prompt.includes('tool fragment') ? '<minimax:tool_call><invoke name="filesystem_list_allowed_directories">' : "I'm using Claude 3.5 (Sonnet).", providerId: 'amazon-bedrock', modelRef: request.modelRef, modelId: request.modelId, routeKind: request.routeKind, routeId: request.routeId, region: 'us-east-1', usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 }, cost: { inputPerMillionUsd: null, outputPerMillionUsd: null, estimatedUsd: null, pricingSource: 'fixture' }, latencyMs: 1, completedAt: NOW, accessEvidenceVersion: request.accessEvidence.version, operationId: request.operationId, attemptId: request.attemptId };
   } };
   const productionRuntime: JarvisProductionRuntimeConfiguration = {
-    availableModels: new Set(['agent-mode/minimax-m2.5']),
-    runtimeFactory: (stateStore) => new ModelGatewayAgentRuntime(stateStore, { gateway, accessEvidence: { 'agent-mode/minimax-m2.5': { version: 'fixture-access-v1', accountRef: 'account:fixture', region: 'us-east-1', modelRef: 'agent-mode/minimax-m2.5', modelId: 'minimax.minimax-m2.5', routeKind: 'direct', routeId: 'minimax.minimax-m2.5', state: 'verified', catalogVisible: true, callable: true, checkedAt: '2026-09-18T09:00:00.000Z', freshUntil: '2099-01-01T00:00:00.000Z', source: 'fixture' } } }),
+    availableModels: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5']),
+    runtimeFactory: (stateStore) => new ModelGatewayAgentRuntime(stateStore, { gateway, accessEvidence: {
+      'agent-mode/minimax-m2.5': { version: 'fixture-access-v1', accountRef: 'account:fixture', region: 'us-east-1', modelRef: 'agent-mode/minimax-m2.5', modelId: 'minimax.minimax-m2.5', routeKind: 'direct', routeId: 'minimax.minimax-m2.5', state: 'verified', catalogVisible: true, callable: true, checkedAt: '2026-09-18T09:00:00.000Z', freshUntil: '2099-01-01T00:00:00.000Z', source: 'fixture' },
+      'agent-mode/glm-5': { version: 'fixture-access-v1', accountRef: 'account:fixture', region: 'us-east-1', modelRef: 'agent-mode/glm-5', modelId: 'zai.glm-5', routeKind: 'direct', routeId: 'zai.glm-5', state: 'verified', catalogVisible: true, callable: true, checkedAt: '2026-09-18T09:00:00.000Z', freshUntil: '2099-01-01T00:00:00.000Z', source: 'fixture' },
+    } }),
   };
   try {
     const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: [directory], now: () => NOW, productionRuntime });
@@ -608,11 +611,11 @@ test('ACTIVE_PILOT persists the effective route before K4 dispatch and reuses it
     async preflight(input) {
       return {
         schemaVersion: 'brain.system-one.turn-decision.v1', mode: 'ACTIVE_PILOT', status: 'recommendation', originalRequestHash: 'd'.repeat(64),
-        intent: 'task', interactionMode: 'direct', complexity: 'simple', clarificationNeed: 'none', requiredCapabilities: [], likelySkills: [],
+        intent: 'task', interactionMode: 'direct', complexity: 'moderate', clarificationNeed: 'none', requiredCapabilities: [], likelySkills: [],
         contextNeeds: { candidateCount: input.candidateContexts?.length ?? 0, selectedIds: [] }, deepReasoningNeed: 'none', expensiveModelNeed: 'none',
-        candidateModelScores: [{ modelRef: 'agent-mode/glm-5', score: 1 }], riskSignals: [], verificationNeed: 'none', confidence: 0.95,
+        candidateModelScores: [{ modelRef: 'agent-mode/minimax-m2.5', score: 1 }], riskSignals: [], verificationNeed: 'none', confidence: 0.95,
         provider: { providerId: 'typesafe', model: 'jev-1.13.0' }, usage: { inputTokens: 10, outputTokens: 2 }, latencyMs: 12,
-        cost: { amountUsd: 0.000001, basis: 'token_calculated' }, recommendation: { modelRef: 'agent-mode/glm-5', skillIds: [], contextIds: [] },
+        cost: { amountUsd: 0.000001, basis: 'token_calculated' }, recommendation: { modelRef: 'agent-mode/minimax-m2.5', skillIds: [], contextIds: [] },
         actualRouteModelRef: input.actualRouteModelRef ?? null, reasonCode: null,
       };
     },
@@ -620,7 +623,7 @@ test('ACTIVE_PILOT persists the effective route before K4 dispatch and reuses it
   };
   try {
     const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: [directory], now: () => NOW, runtimeFactory: () => fakeRuntime(), reflex });
-    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:pilot-route', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'hello', receivedAt: NOW });
+    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:pilot-route', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Compare these three modules and identify the likely race condition.', receivedAt: NOW });
     assert.equal(accepted.outcome, 'accepted');
     if (accepted.outcome !== 'accepted') return;
     await service.execute(accepted.receipt.rootGoalId);
@@ -628,7 +631,7 @@ test('ACTIVE_PILOT persists the effective route before K4 dispatch and reuses it
     const routeIndex = events.findIndex((event) => event.eventType === 'jarvis_reflex_route');
     const preflightIndex = events.findIndex((event) => event.eventType === 'jarvis_reflex_preflight');
     assert.equal(routeIndex >= 0 && routeIndex < preflightIndex, true);
-    assert.equal(store.listChildAssignments()[0]?.modelRef, 'agent-mode/glm-5');
+    assert.equal(store.listChildAssignments()[0]?.modelRef, 'agent-mode/minimax-m2.5');
     await service.execute(accepted.receipt.rootGoalId);
     assert.equal(store.listChildAssignments().length, 1);
     assert.equal(store.listEvents(accepted.receipt.rootGoalId).filter((event) => event.eventType === 'jarvis_reflex_route').length, 1);

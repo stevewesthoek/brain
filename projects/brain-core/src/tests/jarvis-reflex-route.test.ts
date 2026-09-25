@@ -32,25 +32,53 @@ const envelope = (overrides: Partial<TurnDecisionEnvelopeV1> = {}): TurnDecision
   ...overrides,
 });
 
-function currentRoute() {
-  const result = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'hello', fixtureRuntimeAvailable: true });
+function currentRoute(requestText = 'hello') {
+  const result = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText, fixtureRuntimeAvailable: true });
   assert.equal(result.ok, true);
   if (!result.ok) throw new Error('fixture route unavailable');
   return result.route;
 }
 
-test('ACTIVE_PILOT applies only an admitted Jev model recommendation to Auto', () => {
+test('ACTIVE_PILOT applies only an admitted Jev model recommendation to nontrivial Auto', () => {
   const route = applyJarvisReflexRoute({
     requestedModel: 'auto',
-    requestText: 'hello',
-    currentRoute: currentRoute(),
-    envelope: envelope(),
+    requestText: 'Compare these three modules and identify the likely race condition.',
+    currentRoute: currentRoute('Compare these three modules and identify the likely race condition.'),
+    envelope: envelope({ recommendation: { modelRef: 'agent-mode/minimax-m2.5', skillIds: [], contextIds: [] } }),
     availableModels: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5']),
     fixtureRuntimeAvailable: true,
   });
-  assert.equal(route.modelRef, 'agent-mode/glm-5');
+  assert.equal(route.modelRef, 'agent-mode/minimax-m2.5');
   assert.equal(route.runtimeRef, 'runtime:mock-k0-4');
   assert.equal(route.source, 'auto');
+});
+
+test('trivial-turn Jev bypass cannot be overridden by a stale or synthetic recommendation', () => {
+  const route = applyJarvisReflexRoute({
+    requestedModel: 'auto',
+    requestText: 'hi',
+    currentRoute: currentRoute(),
+    envelope: envelope({ recommendation: { modelRef: 'agent-mode/glm-5', skillIds: [], contextIds: [] } }),
+    availableModels: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5']),
+    fixtureRuntimeAvailable: true,
+  });
+  assert.equal(route.modelRef, 'agent-mode/minimax-m2.5');
+  assert.equal(route.selectionReason, 'fast-path');
+});
+
+test('Jev low confidence preserves deterministic Brain routing without upward escalation', () => {
+  const requestText = 'Compare these three modules and identify the likely race condition.';
+  const baseline = currentRoute(requestText);
+  const route = applyJarvisReflexRoute({
+    requestedModel: 'auto',
+    requestText,
+    currentRoute: baseline,
+    envelope: envelope({ status: 'fallback', confidence: 0.2, reasonCode: 'REFLEX_LOW_CONFIDENCE', recommendation: { modelRef: 'agent-mode/claude-opus-4.6', skillIds: [], contextIds: [] } }),
+    availableModels: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6']),
+    fixtureRuntimeAvailable: true,
+  });
+  assert.equal(baseline.modelRef, 'agent-mode/glm-5');
+  assert.equal(route.modelRef, 'agent-mode/glm-5');
 });
 
 test('Jev cannot reintroduce runtime-available Opus denied by cost policy', () => {
@@ -66,14 +94,15 @@ test('Jev cannot reintroduce runtime-available Opus denied by cost policy', () =
   assert.equal(route.modelRef, current.modelRef);
   assert.notEqual(route.modelRef, 'agent-mode/claude-opus-4.6');
 });
-test('ACTIVE_PILOT can lower an adaptive quality-tier baseline through the same admitted route', () => {
-  const baseline = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Inspect the repository and explain the implementation.', adaptiveRouting: true, fixtureRuntimeAvailable: true });
+test('ACTIVE_PILOT can lower a reasoning-tier baseline through the same admitted route', () => {
+  const requestText = 'Compare these three modules and identify the likely race condition.';
+  const baseline = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText, adaptiveRouting: true, fixtureRuntimeAvailable: true });
   assert.equal(baseline.ok, true);
   if (!baseline.ok) return;
   assert.equal(baseline.route.modelRef, 'agent-mode/glm-5');
   const route = applyJarvisReflexRoute({
     requestedModel: 'auto',
-    requestText: 'Inspect the repository and explain the implementation.',
+    requestText,
     currentRoute: baseline.route,
     envelope: envelope({ complexity: 'moderate', actualRouteModelRef: 'agent-mode/glm-5', recommendation: { modelRef: 'agent-mode/minimax-m2.5', skillIds: [], contextIds: [] } }),
     availableModels: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5']),

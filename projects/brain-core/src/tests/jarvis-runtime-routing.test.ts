@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { classifyJarvisTurn, deriveJarvisModelAdmissions, resolveJarvisRuntimeRoute, JARVIS_AUTO_MODEL_CANDIDATES } from '../agent-mode/jarvis-runtime-routing.js';
+import { AGENT_MODE_PRICING } from '../agent-mode/model-tier-policy.js';
+import { classifyJarvisCapabilityTier, classifyJarvisTurn, deriveJarvisModelAdmissions, resolveJarvisRuntimeRoute, JARVIS_AUTO_MODEL_CANDIDATES } from '../agent-mode/jarvis-runtime-routing.js';
 
 test('Jarvis Auto is closed to the permitted candidate set and never falls back to Codex', () => {
   assert.deepEqual(JARVIS_AUTO_MODEL_CANDIDATES, ['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6']);
@@ -64,17 +65,33 @@ test('simple Auto turns use the admitted fast path and never fall through to Opu
   }
 });
 
-test('candidate adaptive routing creates a bounded quality-tier baseline without making Auto permanently Opus', () => {
-  const moderate = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Inspect the repository and explain the relevant implementation.', adaptiveRouting: true, productionRuntimeAvailable: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6']) });
-  assert.equal(moderate.ok, true);
-  if (moderate.ok) {
-    assert.equal(moderate.route.modelRef, 'agent-mode/glm-5');
-    assert.equal(moderate.route.selectionReason, 'adaptive-quality-tier');
+test('minimum-capable model tiers route trivial and normal to MiniMax, reasoning to GLM, and high work safely', () => {
+  assert.equal(AGENT_MODE_PRICING['agent-mode/minimax-m2.5'].inputPerMillionUsd! <= AGENT_MODE_PRICING['agent-mode/glm-5'].inputPerMillionUsd!, true);
+  assert.equal(AGENT_MODE_PRICING['agent-mode/minimax-m2.5'].outputPerMillionUsd! <= AGENT_MODE_PRICING['agent-mode/glm-5'].outputPerMillionUsd!, true);
+  const all = new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6'] as const);
+  assert.equal(classifyJarvisCapabilityTier('hi'), 'trivial');
+  assert.equal(classifyJarvisCapabilityTier('thanks'), 'trivial');
+  assert.equal(classifyJarvisCapabilityTier('Summarize this short paragraph.'), 'normal');
+  assert.equal(classifyJarvisCapabilityTier('Compare these three modules and identify the likely race condition.'), 'reasoning');
+  assert.equal(classifyJarvisCapabilityTier('Design and implement a durable migration plan.'), 'high');
+
+  for (const requestText of ['hi', 'thanks', 'Summarize this short paragraph.']) {
+    const result = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText, adaptiveRouting: true, productionRuntimeAvailable: all });
+    assert.equal(result.ok, true);
+    if (result.ok) assert.equal(result.route.modelRef, 'agent-mode/minimax-m2.5');
   }
-  const complex = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Design and implement a durable migration plan.', adaptiveRouting: true, productionRuntimeAvailable: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6']) });
-  assert.equal(complex.ok, true);
-  if (complex.ok) assert.equal(complex.route.modelRef, 'agent-mode/glm-5');
-  const simple = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'hello', adaptiveRouting: true, productionRuntimeAvailable: new Set(['agent-mode/minimax-m2.5', 'agent-mode/glm-5', 'agent-mode/claude-opus-4.6']) });
-  assert.equal(simple.ok, true);
-  if (simple.ok) assert.equal(simple.route.modelRef, 'agent-mode/minimax-m2.5');
+  const reasoning = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Compare these three modules and identify the likely race condition.', productionRuntimeAvailable: all });
+  assert.equal(reasoning.ok, true);
+  if (reasoning.ok) assert.equal(reasoning.route.modelRef, 'agent-mode/glm-5');
+
+  // Opus is runtime-present but cannot be admitted while canonical pricing is unknown.
+  // High-tier routing therefore falls back only to the admitted GLM route.
+  const high = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Design and implement a durable migration plan.', productionRuntimeAvailable: all });
+  assert.equal(high.ok, true);
+  if (high.ok) assert.equal(high.route.modelRef, 'agent-mode/glm-5');
+  const noGlmForReasoning = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'Compare these three modules and identify the likely race condition.', productionRuntimeAvailable: new Set(['agent-mode/minimax-m2.5']) });
+  assert.deepEqual(noGlmForReasoning, { ok: false, reasonCode: 'AUTO_RUNTIME_UNAVAILABLE' });
+  const trivialFallback = resolveJarvisRuntimeRoute({ requestedModel: 'auto', requestText: 'hi', productionRuntimeAvailable: new Set(['agent-mode/glm-5']) });
+  assert.equal(trivialFallback.ok, true);
+  if (trivialFallback.ok) assert.equal(trivialFallback.route.modelRef, 'agent-mode/glm-5');
 });

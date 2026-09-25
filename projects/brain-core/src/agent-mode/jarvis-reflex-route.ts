@@ -1,5 +1,5 @@
 import { applyReflexPilotRecommendation, type TurnDecisionEnvelopeV1 } from './system-one-reflex.js';
-import { deriveJarvisModelAdmissions, JARVIS_AUTO_MODEL_CANDIDATES, resolveJarvisRuntimeRoute, type JarvisRuntimeRoute } from './jarvis-runtime-routing.js';
+import { classifyJarvisTurn, deriveJarvisModelAdmissions, JARVIS_AUTO_MODEL_CANDIDATES, resolveJarvisRuntimeRoute, type JarvisRuntimeRoute } from './jarvis-runtime-routing.js';
 import type { AdmittedModelRef } from './model-gateway.js';
 import { admitAgentModeAutoCandidateCost } from './model-tier-policy.js';
 
@@ -23,6 +23,9 @@ export function applyJarvisReflexRoute(input: {
   fixtureRuntimeAvailable: boolean;
 }): JarvisRuntimeRoute {
   if (input.requestedModel !== 'auto') return input.currentRoute;
+  // Trivial turns are resolved before Jev. Even a stale or synthetic Jev
+  // envelope cannot replace the deterministic cheapest-capable fast path.
+  if (classifyJarvisTurn(input.requestText) === 'simple') return input.currentRoute;
   const recommendation = applyReflexPilotRecommendation(input.envelope, admittedModels(input.availableModels, input.fixtureRuntimeAvailable));
   if (!recommendation.modelRef || recommendation.modelRef === input.currentRoute.modelRef) return input.currentRoute;
   const resolved = resolveJarvisRuntimeRoute({
