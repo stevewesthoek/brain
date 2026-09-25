@@ -1,6 +1,6 @@
 import type { TerminalExecutionStatus } from './terminal-intake.js';
 import { renderTerminalMarkdown } from './terminal-markdown.js';
-import { buildJarvisRoutingDisclosure, hasUnsupportedToolCallText, isJarvisRoutingQuestion } from './jarvis-routing-transparency.js';
+import { buildJarvisRoutingDisclosure, describeJarvisReflexStatus, hasJarvisRoutingFacts, hasUnsupportedToolCallText, isJarvisRoutingQuestion } from './jarvis-routing-transparency.js';
 
 export const TERMINAL_CONSOLE_POLL_MS = 1_000;
 const FINAL_STATUSES = new Set(['completed', 'failed', 'cancelled', 'uncertain']);
@@ -210,10 +210,8 @@ export function renderTerminalConsole(status: TerminalExecutionStatus, options: 
   const agentLabel = `${formatCount(status.workerCount)} agent${status.workerCount === 1 ? '' : 's'}`;
   const elapsed = formatElapsed(currentElapsed(status, options.nowMs, options.startedAt));
   const reflex = status.reflex
-    ? status.reflex.status === 'fallback'
-      ? status.reflex.reasonCode?.startsWith('REFLEX_SKIPPED_') ? `Jev skipped${status.reflex.reasonCode ? ` · ${fit(status.reflex.reasonCode.replace('REFLEX_SKIPPED_', '').toLowerCase(), 24)}` : ''}` : `Jev unavailable${status.reflex.reasonCode ? ` · ${fit(status.reflex.reasonCode, 24)}` : ''}`
-      : `Jev ✓ ${status.reflex.latencyMs}ms${status.reflex.recommendationModelRef ? ` → ${modelLabel(status.reflex.recommendationModelRef)}` : ''}`
-    : status.reflexPhase === 'preflight' ? 'Jev ◐ preflight' : status.reflexPhase === 'fallback' ? 'Jev unavailable' : 'Jev skipped';
+    ? describeJarvisReflexStatus(status.reflex)
+    : status.reflexPhase === 'preflight' ? 'Jev ◐ preflight' : 'Jev status not recorded';
   const header = `${paint('Jarvis', 'cyan', color)} · ${fit(repository, Math.max(12, width - 46))}    ${fit(model, 18)} · ${fit(runtime, 18)}`;
   const reason = status.reasonCode === 'MODEL_GATEWAY_ACCOUNT_ACCESS_UNAVAILABLE'
     ? 'Bedrock account access unavailable'
@@ -230,9 +228,24 @@ export function renderTerminalConsole(status: TerminalExecutionStatus, options: 
   const telemetry = telemetryLine(status, expanded);
   if (telemetry) lines.push(fit(telemetry, width));
   const history = status.conversationHistory ?? [];
-  const displayResultText = status.resultText && hasUnsupportedToolCallText(status.resultText)
+  const displayedHistoryTexts: string[] = [];
+  let displayResultText = status.resultText && hasUnsupportedToolCallText(status.resultText)
     ? 'No tool was executed; the selected runtime returned an unsupported tool request.'
     : status.resultText;
+  let latestJarvisIndex = -1;
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    if (history[index]?.speakerRole === 'jarvis') { latestJarvisIndex = index; break; }
+  }
+  const latestJarvisTurn = latestJarvisIndex >= 0 ? history[latestJarvisIndex] : undefined;
+  const latestJarvisQuestion = latestJarvisIndex > 0 ? history[latestJarvisIndex - 1] : undefined;
+  if (latestJarvisTurn && latestJarvisQuestion?.speakerRole === 'user'
+    && Boolean(latestJarvisTurn.rootGoalId && latestJarvisQuestion.rootGoalId === latestJarvisTurn.rootGoalId)
+    && isJarvisRoutingQuestion(latestJarvisQuestion.text)) {
+    const facts = latestJarvisTurn.routingFacts;
+    displayResultText = hasJarvisRoutingFacts(facts)
+      ? buildJarvisRoutingDisclosure({ requestedModel: facts.requestedModel, route: facts.runtimeRef ? { modelRef: facts.modelRef, modelId: facts.modelId, providerId: facts.providerId, runtimeRef: facts.runtimeRef, selectionReason: facts.selectionReason } : null, reflex: facts.reflex ?? null })
+      : 'Brain routing metadata for this turn is not recorded; the selected model and Jev status cannot be verified.';
+  }
   if (history.length > 0) {
     lines.push('');
     const boundedHistory = history.slice(-64);
@@ -240,9 +253,14 @@ export function renderTerminalConsole(status: TerminalExecutionStatus, options: 
       const previous = index > 0 ? boundedHistory[index - 1] : undefined;
       const displayText = hasUnsupportedToolCallText(turn.text)
         ? 'No tool was executed; the selected runtime returned an unsupported tool request.'
-        : turn.speakerRole === 'jarvis' && previous?.speakerRole === 'user' && isJarvisRoutingQuestion(previous.text)
-          ? buildJarvisRoutingDisclosure({ requestedModel: status.requestedModel, route: { modelRef: status.modelRef ?? null, runtimeRef: status.runtimeRef ?? 'runtime:unavailable' }, reflex: status.reflex ?? null, ...(status.modelAdmissions ? { modelAdmissions: status.modelAdmissions } : {}) })
+        : turn.speakerRole === 'jarvis' && previous?.speakerRole === 'user'
+          && Boolean(turn.rootGoalId && previous.rootGoalId === turn.rootGoalId)
+          && isJarvisRoutingQuestion(previous.text)
+          ? hasJarvisRoutingFacts(turn.routingFacts)
+            ? buildJarvisRoutingDisclosure({ requestedModel: turn.routingFacts.requestedModel, route: turn.routingFacts.runtimeRef ? { modelRef: turn.routingFacts.modelRef, modelId: turn.routingFacts.modelId, providerId: turn.routingFacts.providerId, runtimeRef: turn.routingFacts.runtimeRef, selectionReason: turn.routingFacts.selectionReason } : null, reflex: turn.routingFacts.reflex ?? null })
+            : 'Brain routing metadata for this turn is not recorded; the selected model and Jev status cannot be verified.'
           : turn.text;
+      displayedHistoryTexts.push(displayText);
       lines.push(paint(turn.speakerRole === 'user' ? 'You' : 'Jarvis', turn.speakerRole === 'user' ? 'dim' : 'cyan', color));
       lines.push(...renderTerminalMarkdown(displayText, { width, color }));
       if (turn.status !== 'completed') lines.push(paint(`[${turn.status}]`, 'yellow', color));
@@ -250,7 +268,7 @@ export function renderTerminalConsole(status: TerminalExecutionStatus, options: 
     }
     if (lines.at(-1) === '') lines.pop();
     const normalizeDisplayText = (value: string): string => value.replace(/\s+/gu, ' ').trim();
-    if (displayResultText && !history.some((turn) => turn.speakerRole === 'jarvis' && normalizeDisplayText(turn.text) === normalizeDisplayText(displayResultText))) {
+    if (displayResultText && !displayedHistoryTexts.some((text) => normalizeDisplayText(text) === normalizeDisplayText(displayResultText))) {
       lines.push('', paint('Jarvis', 'cyan', color), ...renderTerminalMarkdown(displayResultText.slice(0, 12_000), { width, color }));
     }
   } else if (displayResultText) {

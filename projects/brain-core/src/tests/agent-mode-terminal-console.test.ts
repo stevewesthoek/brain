@@ -8,6 +8,7 @@ import { renderTerminalConsole, runTerminalConsole, startTerminalSubmissionFeedb
 import { renderTerminalMarkdown } from '../agent-mode/terminal-markdown.js';
 import { AgentModeTerminalIntakeService, TERMINAL_INTAKE_SCHEMA_VERSION, type TerminalExecutionStatus } from '../agent-mode/terminal-intake.js';
 import { AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
+import { buildJarvisRoutingDisclosure, describeJarvisReflexStatus, hasJarvisRoutingFacts, isJarvisRoutingQuestion } from '../agent-mode/jarvis-routing-transparency.js';
 
 const NOW = '2026-09-19T16:00:00.000Z';
 
@@ -82,18 +83,19 @@ test('terminal presentation distinguishes unavailable observations from authorit
   assert.match(genuineZero, /Cost \$0\.0000 est\./u);
 });
 
-test('routing disclosure distinguishes runtime availability from cost admission', () => {
+test('routing question without per-turn facts fails closed instead of using current candidate availability', () => {
   const rendered = renderTerminalConsole(status({
     requestedModel: 'auto',
     conversationHistory: [
-      { turnId: 'turn:user', sequence: 1, speakerRole: 'user', text: 'What model are you using?', status: 'completed', createdAt: NOW },
-      { turnId: 'turn:jarvis', sequence: 2, speakerRole: 'jarvis', text: 'routing facts', status: 'completed', createdAt: NOW },
+      { turnId: 'turn:user', sequence: 1, speakerRole: 'user', rootGoalId: 'root:jarvis:fixture', text: 'What model are you using?', status: 'completed', createdAt: NOW },
+      { turnId: 'turn:jarvis', sequence: 2, speakerRole: 'jarvis', rootGoalId: 'root:jarvis:fixture', text: 'routing facts', status: 'completed', createdAt: NOW },
     ],
     modelAdmissions: [
       { modelRef: 'agent-mode/claude-opus-4.6', runtimeAvailable: true, autoAdmitted: false, reasonCode: 'cost_unknown' },
     ],
   }), { width: 200 });
-  assert.match(rendered, /Opus 4\.6 runtime available, Auto denied \(cost_unknown\)/u);
+  assert.match(rendered, /Brain routing metadata for this turn is not recorded/u);
+  assert.doesNotMatch(rendered, /Opus 4\.6 runtime available, Auto not admitted/u);
 });
 
 test('terminal console renders compact and expanded views and line fallback without ANSI in non-TTY mode', async () => {
@@ -244,23 +246,107 @@ test('terminal result is not rendered twice when durable and receipt text differ
 test('routing questions render Brain-owned Auto and Jev facts instead of model-authored claims', () => {
   const rendered = renderTerminalConsole(status({
     status: 'completed',
-    modelRef: 'agent-mode/minimax-m2.5',
+    modelRef: 'agent-mode/glm-5',
     runtimeRef: 'runtime:model-gateway',
     reflex: {
       mode: 'ACTIVE_PILOT', status: 'fallback', latencyMs: 11,
-      recommendationModelRef: 'agent-mode/glm-5', actualRouteModelRef: 'agent-mode/minimax-m2.5',
+      recommendationModelRef: null, actualRouteModelRef: 'agent-mode/glm-5',
       confidence: 0.3, usage: { inputTokens: 1, outputTokens: 1 }, cost: { amountUsd: 0.000001, basis: 'fixture' },
-      reasonCode: 'REFLEX_RECOMMENDATION_NOT_ADMITTED', postflightStatus: 'fallback',
+      reasonCode: 'REFLEX_LOW_CONFIDENCE', postflightStatus: 'fallback',
     },
     conversationHistory: [
-      { turnId: 'turn:user:model', sequence: 1, speakerRole: 'user', text: 'What model are you using?', status: 'completed', createdAt: NOW },
-      { turnId: 'turn:jarvis:model', sequence: 2, speakerRole: 'jarvis', text: "I'm using Claude 3.5 (Sonnet).", status: 'completed', createdAt: NOW },
+      { turnId: 'turn:user:model', sequence: 1, speakerRole: 'user', rootGoalId: 'root:model', text: 'Which model is this?', status: 'completed', createdAt: NOW },
+      { turnId: 'turn:jarvis:model', sequence: 2, speakerRole: 'jarvis', rootGoalId: 'root:model', text: 'Opus 4.6 — model ID us.anthropic.claude-opus-4-6-v1.', status: 'completed', createdAt: NOW, routingFacts: { requestedModel: 'auto', modelRef: 'agent-mode/minimax-m2.5', modelId: 'minimax.minimax-m2.5', providerId: 'amazon-bedrock', runtimeRef: 'runtime:model-gateway', reflex: { mode: 'ACTIVE_PILOT', status: 'fallback', recommendationModelRef: null, actualRouteModelRef: 'agent-mode/minimax-m2.5', reasonCode: 'REFLEX_SKIPPED_SIMPLE_TURN' } } },
+      { turnId: 'turn:user:jev', sequence: 3, speakerRole: 'user', rootGoalId: 'root:jev', text: 'Do you make use of JEV', status: 'completed', createdAt: NOW },
+      { turnId: 'turn:jarvis:jev', sequence: 4, speakerRole: 'jarvis', rootGoalId: 'root:jev', text: "I don't use JEV (or any system by that name).", status: 'completed', createdAt: NOW, routingFacts: { requestedModel: 'auto', modelRef: 'agent-mode/glm-5', modelId: 'zai.glm-5', providerId: 'amazon-bedrock', runtimeRef: 'runtime:model-gateway', selectionReason: 'admitted-order', reflex: { mode: 'ACTIVE_PILOT', status: 'fallback', recommendationModelRef: null, actualRouteModelRef: 'agent-mode/glm-5', reasonCode: 'REFLEX_LOW_CONFIDENCE' } } },
     ],
+    resultText: "I don't use JEV (or any system by that name).",
   }), { width: 180 });
+  assert.match(rendered, /Auto → GLM-5 · model-gateway/u, 'current terminal header reflects the current turn route');
   assert.match(rendered, /Brain routing: Auto selected MiniMax M2\.5 via model-gateway/u);
-  assert.match(rendered, /Jev ACTIVE_PILOT · fallback/u);
-  assert.match(rendered, /REFLEX_RECOMMENDATION_NOT_ADMITTED/u);
-  assert.doesNotMatch(rendered, /Claude 3\.5/u);
+  assert.match(rendered, /Jev bypassed deterministically · REFLEX_SKIPPED_SIMPLE_TURN/u);
+  assert.match(rendered, /Brain routing: Auto selected GLM-5 via model-gateway/u);
+  assert.match(rendered, /Amazon Bedrock · admitted candidate order/u);
+  assert.match(rendered, /Jev ran; low-confidence fallback, recommendation not applied · REFLEX_LOW_CONFIDENCE/u);
+  assert.doesNotMatch(rendered, /Opus 4\.6|I don't use JEV/u);
+  assert.equal((rendered.match(/Brain routing:/gu) ?? []).length, 2, 'each of the two routing questions has one deterministic disclosure');
+});
+
+test('routing intent recognizes natural model and Jev status questions without treating general model discussion as status', () => {
+  assert.equal(isJarvisRoutingQuestion('What model are you actually using?'), true);
+  assert.equal(isJarvisRoutingQuestion('which model is this?'), true);
+  assert.equal(isJarvisRoutingQuestion('Do you make use of JEV'), true);
+  assert.equal(isJarvisRoutingQuestion('Do you use Jev?'), true);
+  assert.equal(isJarvisRoutingQuestion('Are you using Jev?'), true);
+  assert.equal(isJarvisRoutingQuestion('Did you invoke Jev?'), true);
+  assert.equal(isJarvisRoutingQuestion('Did you call Jev for this turn?'), true);
+  assert.equal(isJarvisRoutingQuestion('Which model should I use for embeddings?'), false);
+  assert.equal(isJarvisRoutingQuestion('What provider supports X?'), false);
+  assert.equal(isJarvisRoutingQuestion('What model did you use?'), true);
+  assert.equal(isJarvisRoutingQuestion('What did Auto choose?'), true);
+  assert.equal(isJarvisRoutingQuestion('Are you running Claude?'), true);
+  assert.equal(isJarvisRoutingQuestion('Which model is running?'), true);
+  assert.equal(isJarvisRoutingQuestion('How do I invoke Jev?'), false);
+  assert.equal(isJarvisRoutingQuestion('What is Jev?'), true);
+  assert.equal(isJarvisRoutingQuestion('Did Jev run this turn?'), true);
+  assert.equal(isJarvisRoutingQuestion('What did Auto choose?'), true);
+  assert.equal(isJarvisRoutingQuestion('What did Jev decide?'), true);
+  assert.equal(isJarvisRoutingQuestion('What did Jev recommend?'), true);
+  assert.equal(isJarvisRoutingQuestion('Explain how language models work in general.'), false);
+});
+
+test('interleaved conversation roots do not apply another root’s routing disclosure', () => {
+  const rendered = renderTerminalConsole(status({
+    conversationHistory: [
+      { turnId: 'turn:user:a', sequence: 1, speakerRole: 'user', rootGoalId: 'root:a', text: 'Which model are you using?', status: 'completed', createdAt: NOW },
+      { turnId: 'turn:user:b', sequence: 2, speakerRole: 'user', rootGoalId: 'root:b', text: 'Summarize this bounded fact.', status: 'completed', createdAt: NOW },
+      { turnId: 'turn:jarvis:b', sequence: 3, speakerRole: 'jarvis', rootGoalId: 'root:b', text: 'I am Opus 4.6.', status: 'completed', createdAt: NOW, routingFacts: { requestedModel: 'auto', modelRef: 'agent-mode/glm-5', modelId: 'zai.glm-5', providerId: 'amazon-bedrock', runtimeRef: 'runtime:model-gateway' } },
+    ],
+  }));
+  assert.match(rendered, /I am Opus 4\.6\./u);
+  assert.doesNotMatch(rendered, /Brain routing:/u);
+});
+
+test('Jev status distinguishes deterministic bypass, low confidence, service unavailability, and policy rejection', () => {
+  const reflex = (reasonCode: string, mode = 'ACTIVE_PILOT', status = 'fallback') => ({
+    mode, status, recommendationModelRef: null, actualRouteModelRef: 'agent-mode/glm-5', reasonCode,
+  });
+  assert.match(describeJarvisReflexStatus(reflex('REFLEX_SKIPPED_SIMPLE_TURN')), /bypassed deterministically/u);
+  assert.match(describeJarvisReflexStatus(reflex('REFLEX_LOW_CONFIDENCE')), /low-confidence fallback/u);
+  assert.doesNotMatch(describeJarvisReflexStatus(reflex('REFLEX_LOW_CONFIDENCE')), /unavailable/u);
+  assert.match(describeJarvisReflexStatus(reflex('REFLEX_PROVIDER_UNAVAILABLE')), /Jev unavailable/u);
+  assert.match(describeJarvisReflexStatus(reflex('CREDENTIAL_MISSING')), /Jev unavailable · CREDENTIAL_MISSING/u);
+  assert.match(describeJarvisReflexStatus(reflex('JEV_BUDGET_EXHAUSTED')), /skipped by Brain budget gate/u);
+  assert.match(describeJarvisReflexStatus(reflex('REFLEX_RECOMMENDATION_NOT_ADMITTED')), /recommendation not admitted, route unchanged/u);
+  assert.match(describeJarvisReflexStatus(reflex('REFLEX_INVALID_BRIDGE_RESPONSE')), /Jev failed closed/u);
+  assert.match(describeJarvisReflexStatus(reflex('REFLEX_ELIGIBLE', 'ACTIVE_PILOT', 'recommendation')), /Jev participated; recommendation recorded/u);
+  assert.match(describeJarvisReflexStatus(reflex('REFLEX_ELIGIBLE', 'UNAVAILABLE', 'fallback')), /Jev unavailable/u);
+  assert.match(describeJarvisReflexStatus(null), /not recorded/u);
+});
+
+test('authoritative model disclosure follows Brain route facts rather than provider self-identification', () => {
+  const examples = [
+    { modelRef: 'agent-mode/glm-5', modelId: 'zai.glm-5', claim: 'I am Opus 4.6.' },
+    { modelRef: 'agent-mode/minimax-m2.5', modelId: 'minimax.minimax-m2.5', claim: 'I am Claude.' },
+  ] as const;
+  for (const example of examples) {
+    const facts = { modelRef: example.modelRef, modelId: example.modelId, providerId: 'amazon-bedrock', runtimeRef: 'runtime:model-gateway' };
+    assert.equal(hasJarvisRoutingFacts(facts), true);
+    const disclosure = buildJarvisRoutingDisclosure({ requestedModel: 'auto', route: facts });
+    assert.match(disclosure, new RegExp(example.modelId.replaceAll('.', '\\.'), 'u'));
+    assert.doesNotMatch(disclosure, new RegExp(example.claim.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'u'));
+  }
+  const opusFacts = { modelRef: 'agent-mode/claude-opus-4.6', modelId: null, providerId: null, runtimeRef: 'runtime:claude-code' };
+  const opusDisclosure = buildJarvisRoutingDisclosure({ requestedModel: 'auto', route: opusFacts });
+  assert.match(opusDisclosure, /Auto selected Opus 4\.6 via Claude Code/u);
+  assert.doesNotMatch(opusDisclosure, /GLM-5/u);
+  const codexDisclosure = buildJarvisRoutingDisclosure({ requestedModel: 'codex', route: { modelRef: 'gpt-5.6-luna', runtimeRef: 'runtime:codex-cli' } });
+  assert.match(codexDisclosure, /Codex CLI \(Brain-reported model gpt-5\.6-luna\)/u);
+  assert.doesNotMatch(codexDisclosure, /Auto selected/u);
+  const inconsistentCodexDisclosure = buildJarvisRoutingDisclosure({ requestedModel: 'auto', route: { modelRef: 'gpt-5.6-luna', runtimeRef: 'runtime:codex-cli' } });
+  assert.match(inconsistentCodexDisclosure, /Codex escalation selected/u);
+  assert.doesNotMatch(inconsistentCodexDisclosure, /Auto selected/u);
+  assert.equal(hasJarvisRoutingFacts({ modelRef: null, modelId: null, providerId: null, runtimeRef: null }), false);
 });
 
 test('unsupported provider tool-call text is never rendered as a successful answer', () => {

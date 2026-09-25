@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { AgentModeTerminalIntakeService, TERMINAL_INTAKE_SCHEMA_VERSION } from '../agent-mode/terminal-intake.js';
+import { deriveJarvisConversationTurnId, JARVIS_CONVERSATION_TURN_SCHEMA_VERSION } from '../agent-mode/jarvis-conversation.js';
 import { AgentModeSqliteStateStore } from '../agent-mode/sqlite-state-store.js';
 import type { AgentRuntime } from '../agent-mode/runtime-dispatch.js';
 import { ModelGatewayAgentRuntime } from '../agent-mode/model-gateway-agent-runtime.js';
@@ -108,6 +109,72 @@ test('terminal status exposes bounded Jev participation and route facts without 
   } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 
+test('Jarvis routing answer is persisted from its own K4 Attempt and Jev fallback event', async () => {
+  const directory = mkdtempSync(`${tmpdir()}/brain-terminal-routing-authority-`);
+  const repository = `${directory}/repo`;
+  mkdirSync(`${repository}/.git`, { recursive: true });
+  const store = new AgentModeSqliteStateStore(`${directory}/agent-mode.db`);
+  const reflex: JarvisSystemOneReflexHook = {
+    async preflight(input) {
+      return {
+        schemaVersion: 'brain.system-one.turn-decision.v1', mode: 'ACTIVE_PILOT', status: 'fallback', originalRequestHash: 'f'.repeat(64),
+        intent: 'status', interactionMode: 'direct', complexity: 'moderate', clarificationNeed: 'none', requiredCapabilities: [], likelySkills: [],
+        contextNeeds: { candidateCount: input.candidateContexts?.length ?? 0, selectedIds: [] }, deepReasoningNeed: 'none', expensiveModelNeed: 'none',
+        candidateModelScores: [], riskSignals: [], verificationNeed: 'recommended', confidence: 0.3,
+        provider: { providerId: 'typesafe', model: 'jev-fixture' }, usage: { inputTokens: 3, outputTokens: 1 }, latencyMs: 8,
+        cost: { amountUsd: 0.000001, basis: 'token_calculated' }, recommendation: null,
+        actualRouteModelRef: input.actualRouteModelRef ?? null, reasonCode: 'REFLEX_LOW_CONFIDENCE',
+      };
+    },
+    async postflight(input) { return { status: 'verified', originalRequestHash: input.originalRequestHash, confidence: 0.3, latencyMs: 1, usage: null, cost: null, reasonCode: null }; },
+  };
+  try {
+    const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: [directory], now: () => NOW, runtimeFactory: () => ({ async run(input) { return { status: 'succeeded', runtimeReceiptId: `runtime-receipt:${input.context.attemptId}`, resultHash: 'e'.repeat(64), evidenceRef: 'evidence:routing-authority', usage: { steps: 1, tokens: 1, cost: 0 }, traceSummary: [], resultText: 'I am Opus 4.6 and Jev is unavailable.' }; } }), reflex });
+    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:routing-authority', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Which model is this, and did Jev run this turn?', receivedAt: NOW });
+    assert.equal(accepted.outcome, 'accepted');
+    if (accepted.outcome !== 'accepted') return;
+    await service.execute(accepted.receipt.rootGoalId);
+    const current = service.status(accepted.receipt.rootGoalId);
+    const assistant = current.conversationHistory?.find((turn) => turn.speakerRole === 'jarvis');
+    assert.ok(assistant);
+    assert.equal(assistant.routingFacts?.modelRef, current.modelRef);
+    assert.equal(assistant.routingFacts?.runtimeRef, current.runtimeRef);
+    assert.equal(assistant.routingFacts?.selectionReason, null, 'an unbound root-level route reason is not attributed to the K4 Attempt');
+    assert.equal(assistant.routingFacts?.reflex?.reasonCode, 'REFLEX_LOW_CONFIDENCE');
+    assert.match(assistant.text, /Brain routing: Auto selected MiniMax M2\.5 via MockAgentRuntime/u);
+    assert.match(assistant.text, /Jev ran; low-confidence fallback/u);
+    assert.doesNotMatch(assistant.text, /I am Opus 4\.6|Jev is unavailable/u);
+    assert.equal(current.resultText, assistant.text);
+
+    const next = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:routing-authority-next', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'glm-5', text: 'Read-only follow-up.', receivedAt: '2026-09-18T10:00:01.000Z', ...(accepted.receipt.conversationId ? { conversationId: accepted.receipt.conversationId } : {}) });
+    assert.equal(next.outcome, 'accepted');
+    if (next.outcome !== 'accepted') return;
+    await service.execute(next.receipt.rootGoalId);
+    const later = service.status(next.receipt.rootGoalId);
+    const earlierAssistant = later.conversationHistory?.find((turn) => turn.turnId === assistant.turnId);
+    assert.equal(later.modelRef, 'agent-mode/glm-5');
+    assert.equal(earlierAssistant?.routingFacts?.modelRef, 'agent-mode/minimax-m2.5');
+    assert.match(earlierAssistant?.text ?? '', /Auto selected MiniMax M2\.5/u);
+    assert.match(earlierAssistant?.text ?? '', /REFLEX_LOW_CONFIDENCE/u);
+    assert.doesNotMatch(earlierAssistant?.text ?? '', /I am Opus 4\.6/u);
+
+    const forged = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:routing-link-forgery', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Which model is this?', receivedAt: '2026-09-18T10:00:02.000Z', ...(accepted.receipt.conversationId ? { conversationId: accepted.receipt.conversationId } : {}) });
+    assert.equal(forged.outcome, 'accepted');
+    if (forged.outcome !== 'accepted') return;
+    const sourceReceipt = current.attemptId ? store.getRuntimeReceiptForAttempt(current.attemptId) : undefined;
+    assert.ok(sourceReceipt);
+    const conversationId = forged.receipt.conversationId;
+    assert.ok(conversationId);
+    const forgedAssistant = { schemaVersion: JARVIS_CONVERSATION_TURN_SCHEMA_VERSION, turnId: '', conversationId, sequence: 6, speakerRole: 'jarvis' as const, text: 'I am Opus 4.6.', status: 'completed' as const, rootGoalId: forged.receipt.rootGoalId, taskId: forged.receipt.rootGoalId, sourceResultRef: `runtime-receipt:${current.attemptId}:${sourceReceipt.resultHash}`, createdAt: '2026-09-18T10:00:02.001Z' };
+    forgedAssistant.turnId = deriveJarvisConversationTurnId(forgedAssistant);
+    assert.equal(store.recordJarvisConversationTurn(forgedAssistant).result, 'created');
+    const unlinked = service.status(forged.receipt.rootGoalId).conversationHistory?.find((turn) => turn.turnId === forgedAssistant.turnId);
+    assert.equal(unlinked?.routingFacts, undefined, 'a K4 receipt from another root cannot authorize route facts');
+    assert.match(unlinked?.text ?? '', /metadata for this turn is not recorded/u);
+
+  } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
 test('production-configured Auto uses the K4 dispatcher with the ModelGateway runtime', async () => {
   const directory = mkdtempSync(`${tmpdir()}/brain-terminal-intake-model-gateway-`);
   const repository = `${directory}/repo`;
@@ -121,7 +188,7 @@ test('production-configured Auto uses the K4 dispatcher with the ModelGateway ru
   };
   try {
     const service = new AgentModeTerminalIntakeService(store, { repositoryRoots: [directory], now: () => NOW, productionRuntime });
-    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:model-gateway', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Read only.', receivedAt: NOW });
+    const accepted = service.accept({ schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION, requestId: 'request:terminal:model-gateway', operatorId: 'operator:local', repositoryRef: 'brain', repositoryRoot: repository, model: 'auto', text: 'Which model is this?', receivedAt: NOW });
     assert.equal(accepted.outcome, 'accepted');
     if (accepted.outcome !== 'accepted') return;
     const execution = await service.execute(accepted.receipt.rootGoalId);
@@ -129,6 +196,7 @@ test('production-configured Auto uses the K4 dispatcher with the ModelGateway ru
     const status = service.status(accepted.receipt.rootGoalId);
     assert.equal(invocations, 1, JSON.stringify(status));
     assert.equal(status.modelRef, 'agent-mode/minimax-m2.5');
+    assert.match(status.resultText ?? '', /MiniMax M2\.5 via model-gateway \[minimax\.minimax-m2\.5\] · Amazon Bedrock/u);
   } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 });
 

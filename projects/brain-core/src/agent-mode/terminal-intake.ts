@@ -14,7 +14,7 @@ import type { AgentRuntime } from './runtime-dispatch.js';
 import type { AgentModeExecutionTelemetry, AgentModeTelemetryEvent } from './execution-telemetry.js';
 import { admitJarvisContextSet } from './jarvis-local-context.js';
 import { resolveJarvisRuntimeRoute, type JarvisCodexEscalationApproval, type JarvisRouteResolution, type JarvisRuntimeRoute } from './jarvis-runtime-routing.js';
-import { buildJarvisRoutingDisclosure, isJarvisRoutingQuestion } from './jarvis-routing-transparency.js';
+import { buildJarvisRoutingDisclosure, hasJarvisRoutingFacts, isJarvisRoutingQuestion } from './jarvis-routing-transparency.js';
 import { applyJarvisReflexRoute, persistedJarvisReflexRoute, routeFromK4Assignment } from './jarvis-reflex-route.js';
 import { canonicalJarvisConversationText, deriveJarvisConversationTurnId, JARVIS_CONVERSATION_TURN_SCHEMA_VERSION, type JarvisConversationTurnV1 } from './jarvis-conversation.js';
 import { loadJarvisProductionRuntimeConfiguration, type JarvisProductionRuntimeConfiguration } from './jarvis-production-runtime.js';
@@ -82,6 +82,27 @@ export type TerminalReflexStatus = {
 
 export type TerminalReflexPhase = 'preflight' | 'completed' | 'fallback';
 
+export type TerminalConversationRoutingFacts = {
+  requestedModel: string | null;
+  modelRef: string | null;
+  modelId: string | null;
+  providerId: string | null;
+  runtimeRef: string | null;
+  selectionReason?: JarvisRuntimeRoute['selectionReason'] | null;
+  reflex?: Pick<TerminalReflexStatus, 'mode' | 'status' | 'recommendationModelRef' | 'actualRouteModelRef' | 'reasonCode'>;
+};
+
+export type TerminalConversationTurn = {
+  turnId: string;
+  sequence: number;
+  speakerRole: 'user' | 'jarvis';
+  rootGoalId?: string;
+  text: string;
+  status: string;
+  createdAt: string;
+  routingFacts?: TerminalConversationRoutingFacts;
+};
+
 export type TerminalExecutionStatus = {
   schemaVersion: typeof TERMINAL_INTAKE_SCHEMA_VERSION;
   rootGoalId: string;
@@ -122,7 +143,7 @@ export type TerminalExecutionStatus = {
   };
   updatedAt: string | null;
   conversationId?: string | null;
-  conversationHistory?: readonly { turnId: string; sequence: number; speakerRole: 'user' | 'jarvis'; text: string; status: string; createdAt: string }[];
+  conversationHistory?: readonly TerminalConversationTurn[];
 };
 
 function digest(value: unknown): string { return createHash('sha256').update(JSON.stringify(value)).digest('hex'); }
@@ -284,14 +305,87 @@ export class AgentModeTerminalIntakeService {
       if (receipt?.resultText && conversationId && this.store.listJarvisConversationTurns(conversationId).every((turn) => turn.rootGoalId !== rootGoalId || turn.speakerRole !== 'jarvis')) {
         const sequence = this.store.listJarvisConversationTurns(conversationId).length + 1;
         const status = receipt.status === 'succeeded' ? 'completed' : receipt.status;
+        const routingFacts = this.routingFacts(rootGoalId, result.attemptId);
         const responseText = canonicalJarvisConversationText(isJarvisRoutingQuestion(this.store.getJarvisTaskInput(rootGoalId)?.text)
-          ? buildJarvisRoutingDisclosure({ requestedModel: intake?.requestedModel ?? null, route: effectiveRoute ?? null, reflex: reflexPreflight ? { mode: reflexPreflight.mode, status: reflexPreflight.status, recommendationModelRef: reflexPreflight.recommendation?.modelRef ?? null, actualRouteModelRef: effectiveRoute?.modelRef ?? reflexPreflight.actualRouteModelRef, reasonCode: reflexPreflight.reasonCode } : null })
+          ? hasJarvisRoutingFacts(routingFacts)
+          ? buildJarvisRoutingDisclosure({ requestedModel: routingFacts.requestedModel ?? intake?.requestedModel ?? null, route: routingFacts.runtimeRef ? { modelRef: routingFacts.modelRef, modelId: routingFacts.modelId, providerId: routingFacts.providerId, runtimeRef: routingFacts.runtimeRef, selectionReason: routingFacts.selectionReason } : effectiveRoute ?? null, reflex: routingFacts.reflex ?? null })
+            : 'Brain routing metadata for this turn is not recorded; the selected model and Jev status cannot be verified.'
           : receipt.resultText);
         const response: JarvisConversationTurnV1 = { schemaVersion: JARVIS_CONVERSATION_TURN_SCHEMA_VERSION, turnId: deriveJarvisConversationTurnId({ conversationId, sequence, speakerRole: 'jarvis', rootGoalId, text: responseText }), conversationId, sequence, speakerRole: 'jarvis', text: responseText, status, rootGoalId, taskId: rootGoalId, sourceResultRef: `runtime-receipt:${result.attemptId}:${receipt.resultHash}`, createdAt: this.now() };
         this.store.recordJarvisConversationTurn(response);
       }
     }
     return result;
+  }
+
+  /** Per-turn facts come from that turn's K4 Attempt and Brain-owned events, never adjacent turns. */
+  private routingFacts(rootGoalId: string, attemptId: string | null | undefined): TerminalConversationRoutingFacts {
+    const task = this.store.getTask(rootGoalId);
+    const candidateAttempt = attemptId ? this.store.getAttempt(attemptId) : undefined;
+    const candidateChild = candidateAttempt ? this.store.getAgent(candidateAttempt.agentId) : undefined;
+    const candidateAssignment = candidateAttempt ? this.store.getChildAssignment(candidateAttempt.agentId) : undefined;
+    const linked = candidateAttempt && candidateChild?.agentKind === 'worker' && candidateChild.rootGoalId === rootGoalId
+      && candidateAssignment?.attemptId === candidateAttempt.attemptId
+      && candidateAssignment.runId === candidateAttempt.runId
+      ? { attempt: candidateAttempt, child: candidateChild, assignment: candidateAssignment }
+      : undefined;
+    const child = linked?.child;
+    const assignment = linked?.assignment;
+    const attempt = linked?.attempt;
+    const receipt = attempt ? this.store.getRuntimeReceiptForAttempt(attempt.attemptId) : undefined;
+    const attemptEvents = attempt ? this.store.listEvents(attempt.attemptId) : [];
+    const admittedModelEvent = [...attemptEvents].reverse().find((event) => event.eventType === 'policy_admitted_model');
+    const admittedModel = admittedModelEvent?.payload as { modelRef?: unknown; modelId?: unknown; providerId?: unknown } | undefined;
+    const providerEvent = [...attemptEvents].reverse().find((event) => {
+      const payload = event.payload as { providerId?: unknown } | undefined;
+      return event.eventType.startsWith('provider_') && typeof payload?.providerId === 'string';
+    });
+    const providerFacts = providerEvent?.payload as { providerId?: unknown; modelId?: unknown } | undefined;
+    const route = attempt ? this.storedReflexRoute(rootGoalId) : undefined;
+    // Selection reason is currently stored on a root-level event, not bound to
+    // the authoritative K4 assignment. Do not attribute it to a concurrent or
+    // redelivered attempt; omit it until K4 persists attempt-scoped causation.
+    const selectionReason = null;
+    const events = this.store.listEvents(rootGoalId);
+    const reflexEvent = [...events].reverse().find((event) => event.eventType === 'jarvis_reflex_preflight' || event.eventType === 'jarvis_reflex_fallback');
+    const payload = reflexEvent?.payload as Record<string, unknown> | undefined;
+    const mode = payload?.mode;
+    const status = payload?.status;
+    const validMode: TerminalReflexStatus['mode'] | undefined = mode === 'OFF' || mode === 'SHADOW' || mode === 'ACTIVE_PILOT' || mode === 'UNAVAILABLE' ? mode : undefined;
+    const validStatus: TerminalReflexStatus['status'] | undefined = status === 'off' || status === 'recommendation' || status === 'fallback' ? status : undefined;
+    const reasonCode = typeof payload?.reasonCode === 'string' && /^[A-Z0-9_:-]{1,128}$/u.test(payload.reasonCode) ? payload.reasonCode : null;
+    const reflex = validMode && validStatus ? {
+      mode: validMode,
+      status: validStatus,
+      recommendationModelRef: typeof payload?.recommendationModelRef === 'string' ? payload.recommendationModelRef : null,
+      actualRouteModelRef: typeof payload?.actualRouteModelRef === 'string' ? payload.actualRouteModelRef : null,
+      reasonCode,
+    } : undefined;
+    const attemptModelRef = attempt?.modelRef === 'model:deferred' ? null : attempt?.modelRef;
+    const modelRef = attemptModelRef ?? receipt?.telemetry?.modelRef ?? assignment?.modelRef ?? route?.modelRef ?? null;
+    const admittedModelId = typeof admittedModel?.modelId === 'string' ? admittedModel.modelId : null;
+    const providerModelId = typeof providerFacts?.modelId === 'string' ? providerFacts.modelId : null;
+    const modelId = admittedModel?.modelRef === modelRef && admittedModelId !== null
+      && /^[a-z0-9][a-z0-9._:/-]{0,139}$/u.test(admittedModelId)
+      && (!providerModelId || providerModelId === admittedModelId)
+      ? admittedModelId
+      : null;
+    const receiptProvider = receipt?.telemetry?.provider ?? null;
+    const eventProvider = typeof providerFacts?.providerId === 'string' ? providerFacts.providerId : null;
+    const admittedProvider = typeof admittedModel?.providerId === 'string' ? admittedModel.providerId : null;
+    const observedProviders = [admittedProvider, receiptProvider, eventProvider].filter((value): value is string => Boolean(value));
+    const providerConsistent = observedProviders.every((value) => value === observedProviders[0]);
+    const providerCandidate = providerConsistent ? eventProvider ?? receiptProvider ?? admittedProvider : null;
+    const providerId = providerConsistent && typeof providerCandidate === 'string' && /^[a-z0-9][a-z0-9._-]{0,63}$/u.test(providerCandidate) ? providerCandidate : null;
+    return {
+      requestedModel: task?.requestedModel ?? null,
+      modelRef,
+      modelId,
+      providerId,
+      runtimeRef: attempt?.runtimeRef ?? assignment?.runtimeRef ?? route?.runtimeRef ?? null,
+      selectionReason,
+      ...(reflex ? { reflex } : {}),
+    };
   }
 
   private storedReflexRoute(rootGoalId: string): JarvisRuntimeRoute | undefined {
@@ -461,6 +555,34 @@ export class AgentModeTerminalIntakeService {
     const conversationId = this.store.getJarvisConversationIdForRoot(rootGoalId) ?? null;
     const conversationHistory = conversationId ? this.store.listJarvisConversationTurns(conversationId) : [];
     const conversationResult = [...conversationHistory].reverse().find((turn) => turn.speakerRole === 'jarvis' && turn.rootGoalId === rootGoalId);
+    const projectedConversationHistory: TerminalConversationTurn[] = conversationHistory.map((turn, index) => {
+      const previous = index > 0 ? conversationHistory[index - 1] : undefined;
+      const isRoutingAnswer = turn.speakerRole === 'jarvis' && previous?.speakerRole === 'user'
+        && Boolean(turn.rootGoalId && previous.rootGoalId === turn.rootGoalId)
+        && isJarvisRoutingQuestion(previous.text);
+      const receiptLink = turn.sourceResultRef?.match(/^runtime-receipt:(.+):([a-f0-9]{64})$/u);
+      const attemptIdFromReceipt = receiptLink?.[1];
+      const linkedReceipt = attemptIdFromReceipt ? this.store.getRuntimeReceiptForAttempt(attemptIdFromReceipt) : undefined;
+      const receiptLinkIsAuthoritative = Boolean(receiptLink && turn.rootGoalId && turn.taskId === turn.rootGoalId && linkedReceipt?.resultHash === receiptLink[2]);
+      const routingFacts = isRoutingAnswer && receiptLinkIsAuthoritative && turn.rootGoalId ? this.routingFacts(turn.rootGoalId, attemptIdFromReceipt) : undefined;
+      const text = isRoutingAnswer
+        ? hasJarvisRoutingFacts(routingFacts)
+          ? buildJarvisRoutingDisclosure({ requestedModel: routingFacts.requestedModel, route: routingFacts.runtimeRef ? { modelRef: routingFacts.modelRef, modelId: routingFacts.modelId, providerId: routingFacts.providerId, runtimeRef: routingFacts.runtimeRef, selectionReason: routingFacts.selectionReason } : null, reflex: routingFacts.reflex ?? null })
+          : 'Brain routing metadata for this turn is not recorded; the selected model and Jev status cannot be verified.'
+        : turn.text;
+      return {
+        turnId: turn.turnId,
+        sequence: turn.sequence,
+        speakerRole: turn.speakerRole,
+        ...(turn.rootGoalId ? { rootGoalId: turn.rootGoalId } : {}),
+        text,
+        status: turn.status,
+        createdAt: turn.createdAt,
+        ...(hasJarvisRoutingFacts(routingFacts) ? { routingFacts } : {}),
+      };
+    });
+    const projectedConversationResult = conversationResult ? projectedConversationHistory.find((turn) => turn.turnId === conversationResult.turnId) : undefined;
+    const authoritativeConversationResult = projectedConversationResult?.text ?? conversationResult?.text ?? receipt?.resultText ?? null;
     return {
       schemaVersion: TERMINAL_INTAKE_SCHEMA_VERSION,
       rootGoalId,
@@ -471,7 +593,7 @@ export class AgentModeTerminalIntakeService {
       childTaskId: assignment?.taskId ?? null,
       childRunId: assignment?.runId ?? null,
       attemptId: attempt?.attemptId ?? null,
-      resultText: conversationResult?.text ?? receipt?.resultText ?? null,
+      resultText: authoritativeConversationResult,
       resultRef: receipt?.resultHash ?? null,
       evidenceRef: receipt?.evidenceRef ?? null,
       reasonCode: attempt?.status === 'failed'
@@ -495,7 +617,7 @@ export class AgentModeTerminalIntakeService {
       phaseTimings,
       updatedAt: attempt?.updatedAt ?? assignment?.updatedAt ?? rootRunState?.createdAt ?? null,
       conversationId,
-      conversationHistory,
+      conversationHistory: projectedConversationHistory,
     };
   }
 }
