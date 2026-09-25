@@ -192,14 +192,21 @@ The exact retained RC48 package reverified with 2,567 files and manifest hash
 release signature verified as Ed25519 for release
 `brain-agent-release:sha256:fd7fc7cff41a1c0831851930f8f2a049fecf916e7017e0dcefb7287251dcaa3d`.
 
-The source-level defect was that trivial turns lacked a dedicated capability
-tier and Jev was not prevented from replacing their initial route. In the old
-route, GLM could be chosen if MiniMax was absent from the admitted set, or if
-an admitted Jev recommendation replaced the baseline. The durable record for
-the exact historical production `hi` turn lacks the admission/recommendation
-snapshot needed to distinguish those two paths, so the specific historical
-branch is not asserted. RC48 closes both paths by selecting the trivial tier
-deterministically before Jev and enforcing K4 admission at dispatch.
+The production StateStore was subsequently checked read-only in immutable
+SQLite mode. It contains one completed GLM turn from `2026-09-25T10:58Z` whose
+stored input is 22 characters (the text is intentionally not reproduced
+here). The exact RC47 package classifies that stored input as `moderate`; its
+durable route event says `adaptive-quality-tier`. The same root's Jev facts
+show `REFLEX_LOW_CONFIDENCE` with no recommendation model, so Jev did not
+select GLM for that turn: Brain's baseline adaptive tier did. Two other
+durable turns whose stored user text is literally `hi` (on September 21 and
+22) used Opus under the earlier routing state, not GLM. Therefore the
+available production evidence does not corroborate the initial assertion that
+an exact literal-`hi` input selected GLM; it does precisely explain the
+matched GLM turn as moderate-tier adaptive routing. The pre-fix source also
+allowed Jev to replace a simple-turn route, which RC48 now prevents. RC48's
+isolated literal-`hi` acceptance confirms MiniMax selection and deterministic
+Jev bypass.
 
 The deterministic matrix covers trivial and normal MiniMax selection,
 reasoning-tier GLM selection, high-tier Opus admission/cost fallback, unavailable
