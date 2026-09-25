@@ -36,3 +36,18 @@ did not rewrite the RC47 Core descriptor, change its embedded access evidence,
 or extend that evidence's `freshUntil`; the descriptor remains governed by its
 existing freshness boundary. Production remains RC47, with the retained RC27
 rollback target unchanged.
+
+## Read-only recheck — 2026-09-25 13:14:36 UTC
+
+The check was repeated through the same `aws-provisioner` wrapper with
+`AWS_PROFILE=provisioner`. STS identity was reduced locally to the friendly
+role name `ClaudeCodexProvisioner` before reporting. Both metadata responses
+again returned `authorizationStatus=AUTHORIZED`, agreement and entitlement
+`AVAILABLE`, and `regionAvailability=AVAILABLE` in `us-east-1`:
+
+| Model ID | Authorization | Agreement | Entitlement | Region |
+|---|---|---|---|---|
+| `zai.glm-5` | `AUTHORIZED` | `AVAILABLE` | `AVAILABLE` | `AVAILABLE` |
+| `minimax.minimax-m2.5` | `AUTHORIZED` | `AVAILABLE` | `AVAILABLE` | `AVAILABLE` |
+
+No inference, identity switch, IAM change, or production mutation occurred.
