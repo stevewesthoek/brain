@@ -120,3 +120,35 @@ The five accepted turns are existing durable evidence, not new work performed du
 ## Final status
 
 **RC47 is PRODUCTION_ACTIVE; RC27 remains the verified ROLLBACK_TARGET.** The candidate was not rebuilt or modified, the StateStore was preserved, and the prior unrelated worktree changes were not staged or altered. The RC47 source is already present on canonical `main`; the only intended landing changes for this continuation are this scoped evidence and the production-support record. No source rewrite or force push occurred.
+
+## Read-only continuation verification — 2026-09-25 13:23:30 UTC
+
+The canonical local observer and install metadata were checked without
+submitting a Jarvis turn. The install pointer still names the exact RC47
+package/source above; Core `/status` and Console `/agents` returned HTTP 200,
+and the service doctor passed 22/22. A read-only account-bound availability
+refresh through `aws-provisioner` / `AWS_PROFILE=provisioner` again identified
+the friendly caller role `ClaudeCodexProvisioner`; GLM-5 (`zai.glm-5`) and
+MiniMax M2.5 (`minimax.minimax-m2.5`) were authorized and available in
+`us-east-1`. The availability read did not change the already-fresh descriptor
+evidence timestamps.
+
+The observer showed 66 Agents, 136 Tasks, 136 Runs, and 65 Attempts. Today's
+durable Attempt projection contains five completed `agent-mode/glm-5` and one
+completed `agent-mode/minimax-m2.5` lifecycle, all on
+`runtime:model-gateway`. Durable Jarvis reflex events include three
+`REFLEX_LOW_CONFIDENCE` fallbacks with actual route GLM-5 and two
+`REFLEX_SKIPPED_SIMPLE_TURN` fallbacks with actual route MiniMax. The newest
+GLM-5 Attempt has same-root route evidence (`adaptive-quality-tier`), Jev
+low-confidence fallback evidence, provider admission (`zai.glm-5`), and a
+successful runtime receipt/settlement. Some older completed Attempts do not
+have a matching reflex event in the bounded observer response, so aggregate
+event counts are not treated as per-Attempt proof for those rows. No prompt,
+assistant body, or provider payload was retrieved or copied here.
+
+These checks were read-only: no model/provider inference, runtime dispatch,
+repository action, production service mutation, or StateStore mutation was
+performed. They strengthen the RC47 durable-facts evidence but do not validate
+the source-only branch changes, which are not in the immutable active RC47
+package. A successor release and its acceptance remain subject to the
+authorization fields in `agent-mode-production-support-v1.json`.
