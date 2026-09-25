@@ -136,3 +136,79 @@ inference authorization for `minimax.minimax-m2.5` in `us-east-1`, using the
 retained sanitized failure facts or authorized AWS audit records; the current
 role cannot self-simulate that permission. Any further inference requires
 fresh explicit user authorization. RC47 production remains unchanged.
+
+## Explicitly authorized RC48 retry after Bedrock policy update — 2026-09-25
+
+After the user confirmed adding the narrowly scoped policy statement, one new
+isolated MiniMax call was explicitly authorized as a retry. No further retry
+was authorized. The earlier failed provider attempt described above remains
+retained and unchanged; this section records the later successful attempt and
+supersedes the earlier blocked acceptance decision for the RC48 candidate.
+
+The exact retained RC48 package, release, and source identities above were
+rechecked. Through the same approved `ClaudeCodexProvisioner` role in
+`us-east-1`, the read-only Bedrock availability check returned authorized and
+available for both MiniMax M2.5 and GLM-5. No identity change or IAM mutation
+was made by this task.
+
+The exact packaged RC48 Core and CLI ran in an isolated environment at
+`127.0.0.1:4992` with a separate copied StateStore. One `hi` turn with
+`--model auto` completed. Brain selected MiniMax M2.5
+(`agent-mode/minimax-m2.5`, provider model `minimax.minimax-m2.5`) on
+`runtime:model-gateway`. Jev recorded `REFLEX_SKIPPED_SIMPLE_TURN`; no Jev
+inference occurred. The K4 Task, Run, and Attempt completed, the ModelGateway
+receipt is durably `succeeded` / `accepted`, and the Jarvis conversation has
+completed user and Jarvis turns linked to the runtime receipt. SQLite
+integrity is `ok`. The result reference is
+`6fddc0433ec162151cb27ff7de5ebe35368a3e8fc38c7ee095d84a98b890cc75`.
+
+The successful Jarvis response did not itself state the model name; no extra
+inference was made for a status question because the MiniMax authorization was
+already consumed. Brain's authoritative route metadata and the focused
+deterministic terminal-disclosure tests agree on the actual MiniMax route and
+Jev bypass. The optional additional conversational status turn was not
+performed.
+
+The retry evidence, including the isolated StateStore and this result record,
+is retained outside Git at:
+
+`/Users/Office/Library/Application Support/Brain/agent-mode/acceptance-evidence/rc48-auto-router-retry-20260925T1545Z.hfpbvI/`
+
+The candidate Core stopped after completion and port 4992 is no longer
+listening. Production remains RC47; no production endpoint, service, or
+StateStore was used or modified. No repository/tool mutation, Codex
+escalation, Harness, BrainNode, Workcell, GLM-5, Opus, or Codex execution
+occurred. Across the original failed request and the separately authorized
+retry, MiniMax requests total two; the retry was the final authorized call.
+
+## Revalidation and current gate assessment
+
+On the clean source worktree at `0674c11877348069b5ad06d51e47118fb5969abc`,
+the router/Jev/terminal focused suite passed 95/95 and the K4
+SpawnPolicy/assignment/runtime-dispatch, ModelGateway, and resume-route suite
+passed 190/190. Brain Core and Brain Console typechecks and builds passed.
+The exact retained RC48 package reverified with 2,567 files and manifest hash
+`fa0ec49fa321b6f1df85f0d21ea150a613b7972ae09f59126a052ae74028ed6a`; the
+release signature verified as Ed25519 for release
+`brain-agent-release:sha256:fd7fc7cff41a1c0831851930f8f2a049fecf916e7017e0dcefb7287251dcaa3d`.
+
+The source-level defect was that trivial turns lacked a dedicated capability
+tier and Jev was not prevented from replacing their initial route. In the old
+route, GLM could be chosen if MiniMax was absent from the admitted set, or if
+an admitted Jev recommendation replaced the baseline. The durable record for
+the exact historical production `hi` turn lacks the admission/recommendation
+snapshot needed to distinguish those two paths, so the specific historical
+branch is not asserted. RC48 closes both paths by selecting the trivial tier
+deterministically before Jev and enforcing K4 admission at dispatch.
+
+The deterministic matrix covers trivial and normal MiniMax selection,
+reasoning-tier GLM selection, high-tier Opus admission/cost fallback, unavailable
+MiniMax fallback, Jev bypass and low-confidence non-escalation, Codex Auto
+exclusion, and Brain-owned model/Jev disclosures. No canonical comparative
+latency evidence exists, so no measured latency ranking is claimed. No second
+provider inference was needed for these routing and disclosure assertions.
+
+**Current isolated acceptance: PASS. Candidate decision: READY_FOR_PRODUCTION_PROMOTION.**
+This is readiness only; production promotion/cutover was not performed or
+authorized by this goal. RC47 remains `PRODUCTION_ACTIVE` and RC27 remains the
+rollback target.
