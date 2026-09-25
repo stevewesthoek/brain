@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "agent-mode-production-support-v1",
+  "supportStatus": "ordinary-release-maintenance",
+  "foundationStatus": "complete-through-h0",
+  "production": {
+    "releaseVersion": "1.0.0-rc.47",
+    "packageId": "brain-runtime-package:sha256:0401f3ccf6f983b1b82478282c95361f918cb1234b32ebffff85dcc0cf95f2f7",
+    "sourceRevision": "8f4ad9683a28007888a758ea0713f8d5288f8e79",
+    "releaseId": "brain-agent-release:sha256:25986914d0ff3cbd667fb5277610b3b650757cd4a34d4522985de992bf520bd4",
+    "runtimeRoot": "/Users/Office/Library/Application Support/Brain/agent-mode-rc6",
+    "stateStorePath": "/Users/Office/Library/Application Support/Brain/agent-mode/state/agent-mode/agent-mode.db",
+    "activationDate": "2026-09-25",
+    "status": "PRODUCTION_ACTIVE",
+    "lastReconciledAt": "2026-09-25"
+  },
+  "terminalIntake": {
+    "status": "PRODUCTION_OPERATIONAL",
+    "contract": "agent-mode.terminal-intake.v1",
+    "normalShellSurface": "repos -> Auto -> goal -> result",
+    "runtime": "runtime:claude-code",
+    "repositoryRoots": ["~/Repos"],
+    "readOnlyProfile": true,
+    "serviceIdentityDiscovery": "installed metadata to canonical external secrets.env",
+    "manualSecretOrInternalEvidenceEnvironment": false
+  },
+  "signing": {
+    "keyId": "brain-agent-release-production-v1",
+    "algorithm": "Ed25519",
+    "backend": "macos-keychain",
+    "reference": "keychain-ref://com.brain.agent.release/production-ed25519-v1",
+    "fingerprint": "348d91963cd74037ea3bf7331d0c25218c527a35bbef39aca33eaf11d6d322ca",
+    "privateKeyExported": false
+  },
+  "contracts": {
+    "stateStoreSchema": 11,
+    "snapshotContract": "brain-state-snapshot-v1",
+    "backupContract": "brain-agent-backup-v1",
+    "installContract": "brain-local-install-v1",
+    "releaseContract": "brain-agent-release-contract-v1",
+    "minimumNodeVersion": ">=22.5.0",
+    "minimumNpmVersion": ">=10.0.0"
+  },
+  "rollback": {
+    "status": "ROLLBACK_SUPPORTED",
+    "packageId": "brain-runtime-package:sha256:267e41d9df24b83abd632cfc1c4dbb4c0333a2245db5cea576c7dbf776c47246",
+    "sourceRevision": "6dbfee3fbfa4ac05cade1d7382502de5d3b189eb",
+    "manifestHash": "5bd1e1af3b8af54683f4b428e9c862cf8f26f1badf15e9542bec4deee75cb547",
+    "releaseId": "brain-agent-release:sha256:7a792ed73e85782f56f7ca7aa1cd6a9c66249dd7ba9585c7caf5f8d55acd235b",
+    "stateStoreSchemaVersion": 11,
+    "rollbackMechanism": "restore-rc27-install-and-service-descriptors; preserve-shared-state-store-schema-11",
+    "retentionWindow": {
+      "minimumDays": 30,
+      "startsAt": "2026-09-21",
+      "retireOnlyAfter": "successor release observation, fresh backup, and rollback compatibility evidence",
+      "preserveLongerWhen": [
+        "incident or open support investigation",
+        "uncertain effects or unreconciled state",
+        "StateStore or package contract change",
+        "failed successor activation or rollback drill"
+      ]
+    }
+  },
+  "backup": {
+    "status": "retained-and-verified",
+    "snapshotContract": "brain-state-snapshot-v1",
+    "snapshotId": "brain-state-snapshot:sha256:58cf58329726f0d9bc566ca6a5b8e8c9af88ad132595ee06d94e758bebba3414",
+    "backupId": "brain-agent-backup:sha256:964db692fca80ad653ef0c3f8f03dfc506b0816de93c98c11182079d87aba0b9",
+    "location": "/Users/Office/Library/Application Support/Brain/agent-mode/backups/rc47-go-live-precutover-20260925T0955Z.0jZN3L",
+    "retentionOwner": "Brain Agent Mode release operations",
+    "retentionPurpose": "fresh pre-cutover RC27 rollback snapshot and restore-compatibility evidence",
+    "retirementTrigger": "after rollback window and successor release closeout satisfy the retention policy"
+  },
+  "authorization": {
+    "successorFoundationPhaseAuthorized": false,
+    "productionActivationRequiresSeparateAuthorization": true
+  }
+}
